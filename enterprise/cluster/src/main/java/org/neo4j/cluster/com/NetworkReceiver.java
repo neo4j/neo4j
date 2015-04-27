@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -53,9 +53,9 @@ import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
@@ -105,18 +105,18 @@ public class NetworkReceiver
 
     private Monitor monitor;
     private Configuration config;
-    private StringLogger msgLog;
+    private Log msgLog;
 
     private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
 
     volatile boolean bindingDetected = false;
 
-    public NetworkReceiver( Monitor monitor, Configuration config, Logging logging )
+    public NetworkReceiver( Monitor monitor, Configuration config, LogProvider logProvider )
     {
         this.monitor = monitor;
         this.config = config;
-        this.msgLog = logging.getMessagesLog( getClass() );
+        this.msgLog = logProvider.getLog( getClass() );
     }
 
     @Override

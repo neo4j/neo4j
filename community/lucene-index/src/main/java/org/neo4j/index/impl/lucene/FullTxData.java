@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -52,6 +52,7 @@ import java.util.Set;
 import org.neo4j.index.lucene.QueryContext;
 
 import static java.util.Collections.emptyList;
+
 import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
 import static org.neo4j.index.impl.lucene.LuceneIndex.KEY_DOC_ID;
 
@@ -77,6 +78,12 @@ class FullTxData extends TxData
      * well as any specific key which is pulled out from the incoming query.
      */
     private static final String ORPHANS_KEY = "__all__";
+    /**
+     * When querying we need to distinguish between documents coming from the store and documents
+     * coming from transaction state. A field with this key is put on all documents in transaction state.
+     */
+    public static final String TX_STATE_KEY = "__tx_state__";
+    private static final byte[] TX_STATE_VALUE = new byte[] {1};
     private static final String ORPHANS_VALUE = "1";
 
     private Directory directory;
@@ -104,6 +111,7 @@ class FullTxData extends TxData
             if ( document == null )
             {
                 document = IndexType.newDocument( entityId );
+                document.add( new Field( TX_STATE_KEY, TX_STATE_VALUE ) );
                 cachedDocuments.put( id, document );
                 add = true;
             }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -41,9 +41,8 @@ import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class PropertyDeduplicator
 {
@@ -76,7 +75,7 @@ public class PropertyDeduplicator
     public void deduplicateProperties() throws IOException
     {
         final StoreFactory storeFactory = new StoreFactory(
-                fileSystem, workingDir, pageCache, DEV_NULL, new Monitors(), StoreVersionMismatchHandler.ALLOW_OLD_VERSION );
+                fileSystem, workingDir, pageCache, NullLogProvider.getInstance(), new Monitors(), StoreVersionMismatchHandler.ALLOW_OLD_VERSION );
 
         try ( PropertyStore propertyStore = storeFactory.newPropertyStore( propertyStorePath );
               NodeStore nodeStore = storeFactory.newNodeStore( nodeStorePath );

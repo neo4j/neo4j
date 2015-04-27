@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -148,7 +148,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceTraceability
                         // So circle this back to the user saying there's something wrong with the field.
                         throw new IllegalStateException( "At " + sourceDescription() + ":" + lineNumber() +
                                 " there's a field starting with a quote and whereas it ends that quote there seems " +
-                                " to be character in that field after that ending quote. That isn't supported." +
+                                " to be characters in that field after that ending quote. That isn't supported." +
                                 " This is what I read: '" +
                                 new String( buffer, seekStartPos, bufferPos-seekStartPos ) + "'" );
                     }
@@ -164,7 +164,6 @@ public class BufferedCharSeeker implements CharSeeker, SourceTraceability
                     {
                         lineNumber++;
                     }
-                    nextChar( skippedChars );
                 }
                 else if ( ch == BACK_SLASH )
                 {   // Legacy concern, support java style quote encoding

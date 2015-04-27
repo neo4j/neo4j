@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -34,15 +34,15 @@ import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class FullDiffCheck extends DiffCheck
 {
-    public FullDiffCheck( StringLogger logger )
+    public FullDiffCheck( LogProvider logProvider )
     {
-        super( logger );
+        super( logProvider );
     }
 
     @Override
@@ -54,10 +54,10 @@ public class FullDiffCheck extends DiffCheck
         String storeDir = tuningConfiguration.get( GraphDatabaseSettings.store_dir ).getAbsolutePath();
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         LabelScanStore labelScanStore =
-            new LuceneLabelScanStoreBuilder( storeDir, diffs.getRawNeoStore(), fileSystem, logger ).build();
+            new LuceneLabelScanStoreBuilder( storeDir, diffs.getRawNeoStore(), fileSystem, logProvider ).build();
 
         SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
         DirectStoreAccess stores = new DirectStoreAccess( diffs, labelScanStore, indexes );
-        return new FullCheck( tuningConfiguration, ProgressMonitorFactory.NONE ).execute( stores, logger );
+        return new FullCheck( tuningConfiguration, ProgressMonitorFactory.NONE ).execute( stores, log );
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -30,7 +30,7 @@ import org.junit.Test;
 
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.TickingClock;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static junit.framework.TestCase.fail;
@@ -110,7 +110,7 @@ public class ServerTest
 
     private Server<Object, Object> newServer( final TxChecksumVerifier checksumVerifier )
     {
-        return new Server<Object, Object>( null, mock( Server.Configuration.class ), new DevNullLoggingService(),
+        return new Server<Object, Object>( null, mock( Server.Configuration.class ), NullLogProvider.getInstance(),
                 Protocol.DEFAULT_FRAME_LENGTH,
                 new ProtocolVersion( ((byte) 0), ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
                 checksumVerifier, new TickingClock( 0, 1 ),

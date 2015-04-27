@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.info;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Logger;
 
 /**
  * An object that can extract diagnostics information from a source of a
@@ -56,12 +56,12 @@ public interface DiagnosticsExtractor<T>
 
     /**
      * Dump the diagnostic information of the specified source for the specified
-     * {@link DiagnosticsPhase phase} to the provided {@link StringLogger log}.
+     * {@link DiagnosticsPhase phase} to the provided {@link Logger logger}.
      * 
-     * @see DiagnosticsProvider#dump(DiagnosticsPhase, StringLogger)
+     * @see DiagnosticsProvider#dump(DiagnosticsPhase, Logger)
      * @param source the source to get diagnostics information from.
      * @param phase the {@link DiagnosticsPhase phase} to dump information for.
-     * @param log the {@link StringLogger log} to dump information to.
+     * @param logger the {@link Logger logger} to dump information to.
      */
-    void dumpDiagnostics( T source, DiagnosticsPhase phase, StringLogger log );
+    void dumpDiagnostics( T source, DiagnosticsPhase phase, Logger logger );
 }

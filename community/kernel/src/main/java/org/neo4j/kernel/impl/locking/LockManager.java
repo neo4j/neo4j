@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.locking;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.community.LockNotFoundException;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Logger;
 
 /**
  * The LockManager can lock resources for reading or writing. By doing this one
@@ -119,8 +119,8 @@ public interface LockManager
     long getDetectedDeadlockCount();
 
     /**
-     * Utility method for debugging. Dumps info to {@code logging} about txs having locks on resources.
+     * Utility method for debugging. Dumps info to {@code logger} about txs having locks on resources.
      */
-    void dumpLocksOnResource( Object resource, Logging logging );
+    public void dumpLocksOnResource( final Object resource, Logger logger );
 
 }

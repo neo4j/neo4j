@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,12 +21,15 @@ package org.neo4j.consistency;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.function.Supplier;
+import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
@@ -45,9 +48,12 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.DuplicatingLog;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 public class ConsistencyCheckService
@@ -65,10 +71,11 @@ public class ConsistencyCheckService
     }
 
     public Result runFullConsistencyCheck( String storeDir,
-                                                  Config tuningConfiguration,
-                                                  ProgressMonitorFactory progressFactory,
-                                           StringLogger logger ) throws ConsistencyCheckIncompleteException
+                                           Config tuningConfiguration,
+                                           ProgressMonitorFactory progressFactory,
+                                           LogProvider logProvider ) throws ConsistencyCheckIncompleteException, IOException
     {
+        Log log = logProvider.getLog( getClass() );
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         tuningConfiguration = configForStoreDir( tuningConfiguration, new File( storeDir ) );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
@@ -78,7 +85,7 @@ public class ConsistencyCheckService
         try
         {
             return runFullConsistencyCheck(
-                    storeDir, tuningConfiguration, progressFactory, logger, fileSystem, pageCache );
+                    storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache );
         }
         finally
         {
@@ -88,29 +95,43 @@ public class ConsistencyCheckService
             }
             catch ( IOException e )
             {
-                logger.error( "Failure during shutdown of the page cache", e );
+                log.error( "Failure during shutdown of the page cache", e );
             }
         }
     }
 
     public Result runFullConsistencyCheck( String storeDir, Config tuningConfiguration,
                                            ProgressMonitorFactory progressFactory,
-                                           StringLogger logger,
-                                           FileSystemAbstraction fileSystem,
+                                           LogProvider logProvider,
+                                           final FileSystemAbstraction fileSystem,
                                            PageCache pageCache )
             throws ConsistencyCheckIncompleteException
     {
+        Log log = logProvider.getLog( getClass() );
         Monitors monitors = new Monitors();
         StoreFactory factory = new StoreFactory(
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
-                pageCache, fileSystem, logger,
+                pageCache, fileSystem, logProvider,
                 monitors
         );
 
         ConsistencySummaryStatistics summary;
-        File reportFile = chooseReportPath( tuningConfiguration );
-        StringLogger report = StringLogger.lazyLogger( reportFile );
+        final File reportFile = chooseReportPath( tuningConfiguration );
+        Log reportLog = new ConsistencyReportLog( Suppliers.lazySingleton( new Supplier<PrintWriter>()
+        {
+            @Override
+            public PrintWriter get()
+            {
+                try
+                {
+                    return new PrintWriter( createOrOpenAsOuputStream( fileSystem, reportFile, true ) );
+                } catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        } ) );
 
         try ( NeoStore neoStore = factory.newNeoStore( false ) )
         {
@@ -119,15 +140,14 @@ public class ConsistencyCheckService
             LabelScanStore labelScanStore = null;
             try
             {
-
                 labelScanStore = new LuceneLabelScanStoreBuilder(
-                        storeDir, store.getRawNeoStore(), fileSystem, logger ).build();
+                        storeDir, store.getRawNeoStore(), fileSystem, logProvider ).build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                         DirectoryFactory.PERSISTENT,
                         tuningConfiguration );
                 DirectStoreAccess stores = new DirectStoreAccess( store, labelScanStore, indexes );
                 FullCheck check = new FullCheck( tuningConfiguration, progressFactory );
-                summary = check.execute( stores, StringLogger.tee( logger, report ) );
+                summary = check.execute( stores, new DuplicatingLog( log, reportLog ) );
             }
             finally
             {
@@ -140,18 +160,14 @@ public class ConsistencyCheckService
                 }
                 catch ( IOException e )
                 {
-                    logger.error( "Failure during shutdown of label scan store", e );
+                    log.error( "Failure during shutdown of label scan store", e );
                 }
             }
-        }
-        finally
-        {
-            report.close();
         }
 
         if ( !summary.isConsistent() )
         {
-            logger.logMessage( String.format( "See '%s' for a detailed consistency report.", reportFile.getPath() ) );
+            log.warn( "See '%s' for a detailed consistency report.", reportFile.getPath() );
             return Result.FAILURE;
         }
 

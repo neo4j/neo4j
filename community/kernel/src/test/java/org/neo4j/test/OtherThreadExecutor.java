@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -33,8 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.function.Predicate;
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
+import org.neo4j.logging.Logger;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -50,7 +49,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @param <T>
  * @author Mattias Persson
  */
-public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger, RuntimeException>, Closeable
+public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
 {
     private final ExecutorService commandExecutor = newSingleThreadExecutor( this );
     protected final T state;
@@ -335,34 +334,32 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         }
     }
 
-    @Override
-    public boolean visit( LineLogger logger )
+    public void dump( Logger logger )
     {
-        logger.logLine( getClass().getName() + ", " + this + " state:" + state + " thread:" + thread +
-                        " execution:" + executionState );
+        logger.log( getClass().getName() + ", " + this + " state:" + state + " thread:" + thread +
+                " execution:" + executionState );
         if ( thread != null )
         {
-            logger.logLine( "Thread state:" + thread.getState() );
-            logger.logLine( "" );
+            logger.log( "Thread state:" + thread.getState() );
+            logger.log( "" );
             for ( StackTraceElement element : thread.getStackTrace() )
             {
-                logger.logLine( element.toString() );
+                logger.log( element.toString() );
             }
         }
         else
         {
-            logger.logLine( "No operations performed yet, so no thread" );
+            logger.log( "No operations performed yet, so no thread" );
         }
         if ( lastExecutionTrigger != null )
         {
-            logger.logLine( "" );
-            logger.logLine( "Last execution triggered from:" );
+            logger.log( "" );
+            logger.log( "Last execution triggered from:" );
             for ( StackTraceElement element : lastExecutionTrigger.getStackTrace() )
             {
-                logger.logLine( element.toString() );
+                logger.log( element.toString() );
             }
         }
-        return true;
     }
 
     public void interrupt()

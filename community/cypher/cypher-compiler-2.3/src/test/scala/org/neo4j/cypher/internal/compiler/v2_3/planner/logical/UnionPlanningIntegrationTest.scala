@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,56 +19,61 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Identifier, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a") {
 
-    val setup: UnionPlanningIntegrationTest.this.type#given = new given {
+    val setup = new given {
       knownLabels = Set("A", "B")
     }
     implicit val (logicalPlan, semanticTable) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a")
 
     logicalPlan should equal(
-      Union(
-        Projection(
-          NodeByLabelScan("  a@7", LazyLabel(LabelName("A")_), Set.empty)(solved),
-          Map("a" -> Identifier("  a@7")_)
-        )(solved),
-        Projection(
-          NodeByLabelScan("  a@43", LazyLabel(LabelName("B")_), Set.empty)(solved),
-          Map("a" -> Identifier("  a@43")_)
+      ProduceResult(Seq("a"), Seq.empty, Seq.empty,
+        Union(
+          Projection(
+            NodeByLabelScan("  a@7", LazyLabel(LabelName("A") _), Set.empty)(solved),
+            Map("a" -> Identifier("  a@7") _)
+          )(solved),
+          Projection(
+            NodeByLabelScan("  a@43", LazyLabel(LabelName("B") _), Set.empty)(solved),
+            Map("a" -> Identifier("  a@43") _)
+          )(solved)
         )(solved)
-      )(solved)
+      )
     )
   }
+
   test("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a") {
 
-    val setup: UnionPlanningIntegrationTest.this.type#given = new given {
+    val setup = new given {
       knownLabels = Set("A", "B")
     }
     implicit val (logicalPlan, semanticTable) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a")
 
     logicalPlan should equal(
-      Aggregation(
-        left = Union(
-          Projection(
-            NodeByLabelScan("  a@7", LazyLabel(LabelName("A")_), Set.empty)(solved),
-            Map("a" -> Identifier("  a@7")_)
+      ProduceResult(Seq("a"), Seq.empty, Seq.empty,
+        Aggregation(
+          left = Union(
+            Projection(
+              NodeByLabelScan("  a@7", LazyLabel(LabelName("A") _), Set.empty)(solved),
+              Map("a" -> Identifier("  a@7") _)
+            )(solved),
+            Projection(
+              NodeByLabelScan("  a@39", LazyLabel(LabelName("B") _), Set.empty)(solved),
+              Map("a" -> Identifier("  a@39") _)
+            )(solved)
           )(solved),
-          Projection(
-            NodeByLabelScan("  a@39", LazyLabel(LabelName("B")_), Set.empty)(solved),
-            Map("a" -> Identifier("  a@39")_)
-          )(solved)
-        )(solved),
-        groupingExpressions = Map("a" -> ident("a")),
-        aggregationExpression = Map.empty
-      )(solved)
+          groupingExpressions = Map("a" -> ident("a")),
+          aggregationExpression = Map.empty
+        )(solved)
+      )
     )
   }
 }

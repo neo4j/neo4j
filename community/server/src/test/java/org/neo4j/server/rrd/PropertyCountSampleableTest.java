@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -29,7 +29,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
@@ -48,7 +48,7 @@ public class PropertyCountSampleableTest
     @Before
     public void setupReferenceNode()
     {
-        db = new WrappedDatabase( (InternalAbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase() );
+        db = new WrappedDatabase( (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase() );
         DependencyResolver dependencyResolver = db.getGraph().getDependencyResolver();
         sampleable = new PropertyCountSampleable( dependencyResolver.resolveDependency( NeoStoreSupplier.class ) );
 

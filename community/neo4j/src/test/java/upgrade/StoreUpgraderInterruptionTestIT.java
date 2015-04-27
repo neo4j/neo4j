@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -43,7 +43,8 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
@@ -87,7 +88,7 @@ public class StoreUpgraderInterruptionTestIT
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
 
         StoreMigrator failingStoreMigrator = new StoreMigrator(
-                new SilentMigrationProgressMonitor(), fileSystem, DevNullLoggingService.DEV_NULL )
+                new SilentMigrationProgressMonitor(), fileSystem, NullLogService.getInstance() )
         {
             @Override
             public void migrate(
@@ -117,7 +118,7 @@ public class StoreUpgraderInterruptionTestIT
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
 
         newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem,
-                DevNullLoggingService.DEV_NULL ) )
+                NullLogService.getInstance() ) )
                 .migrateIfNeeded( workingDirectory, schemaIndexProvider, pageCache );
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
@@ -126,8 +127,7 @@ public class StoreUpgraderInterruptionTestIT
 
     private StoreUpgrader newUpgrader( StoreMigrator migrator )
     {
-        DevNullLoggingService logging = new DevNullLoggingService();
-        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fileSystem, StoreUpgrader.NO_MONITOR, logging );
+        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fileSystem, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
         upgrader.addParticipant( migrator );
         return upgrader;
     }

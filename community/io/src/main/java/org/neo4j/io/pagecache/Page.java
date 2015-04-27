@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -75,4 +75,9 @@ public interface Page
      *                     reopened and the swapIn operation must be retried.
      */
     void swapOut( StoreChannel channel, long offset, int length ) throws IOException;
+
+    /**
+     * Set the byte contents of this page to be all zeros.
+     */
+    void clear();
 }

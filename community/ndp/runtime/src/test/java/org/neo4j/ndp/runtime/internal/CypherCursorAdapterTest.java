@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -29,8 +29,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.runtime.internal.runner.StreamMatchers.equalsStream;
 import static org.neo4j.runtime.internal.runner.StreamMatchers.eqRecord;
+import static org.neo4j.runtime.internal.runner.StreamMatchers.equalsStream;
 
 public class CypherCursorAdapterTest
 {
@@ -51,6 +51,6 @@ public class CypherCursorAdapterTest
         assertThat( cursor, equalsStream(
                 new String[]{"name"},
                 eqRecord( equalTo( "bob" ) ),
-                eqRecord( equalTo( "Steve Brook" ) )) );
+                eqRecord( equalTo( "Steve Brook" ) ) ) );
     }
 }

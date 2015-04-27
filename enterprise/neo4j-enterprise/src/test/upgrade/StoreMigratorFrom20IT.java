@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -43,9 +43,9 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -69,7 +69,7 @@ public class StoreMigratorFrom20IT
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
     {
         // WHEN
-        upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL ) )
+        upgrader( new StoreMigrator( monitor, fs, NullLogService.getInstance() ) )
                 .migrateIfNeeded(
                 find20FormatStoreDirectory( storeDir.directory() ), schemaIndexProvider, pageCache );
 
@@ -103,7 +103,7 @@ public class StoreMigratorFrom20IT
         File legacyStoreDir = find20FormatStoreDirectory( storeDir.directory() );
 
         // When
-        upgrader( new StoreMigrator( monitor, fs, DevNullLoggingService.DEV_NULL ) ).migrateIfNeeded(
+        upgrader( new StoreMigrator( monitor, fs, NullLogService.getInstance() ) ).migrateIfNeeded(
                 legacyStoreDir, schemaIndexProvider, pageCache );
         ClusterManager.ManagedCluster cluster = buildClusterWithMasterDirIn( fs, legacyStoreDir, life );
         cluster.await( allSeesAllAsAvailable() );
@@ -150,8 +150,7 @@ public class StoreMigratorFrom20IT
 
     private StoreUpgrader upgrader( StoreMigrator storeMigrator )
     {
-        DevNullLoggingService logging = new DevNullLoggingService();
-        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, logging );
+        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
         upgrader.addParticipant( storeMigrator );
         return upgrader;
     }
@@ -178,7 +177,7 @@ public class StoreMigratorFrom20IT
                 new DefaultIdGeneratorFactory(),
                 pageCache,
                 fs,
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 new Monitors() );
     }
 

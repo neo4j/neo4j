@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -121,5 +121,17 @@ public class ByteBufferPage implements Page
         duplicate.position( 0 );
         duplicate.limit( length );
         channel.writeAll( duplicate, offset );
+    }
+
+    @Override
+    public void clear()
+    {
+        ByteBuffer duplicate = buffer.duplicate();
+        duplicate.clear();
+        int length = duplicate.capacity();
+        for ( int i = 0; i < length; i++ )
+        {
+            duplicate.put( (byte) 0 );
+        }
     }
 }

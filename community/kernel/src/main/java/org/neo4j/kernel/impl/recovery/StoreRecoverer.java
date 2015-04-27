@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.transaction.log.LogRecoveryCheck;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
 /**
  * For now, an external tool that can determine if a given store will need
@@ -85,7 +85,7 @@ public class StoreRecoverer
         }
     }
 
-    public void recover( File dataDir, Map<String, String> params, Logging logging )
+    public void recover( File dataDir, Map<String, String> params, LogProvider userLogProvider )
     {
         // For now, just launch a full embedded database on top of the
         // directory.
@@ -96,7 +96,7 @@ public class StoreRecoverer
         new EmbeddedGraphDatabase(
                 dataDir.getAbsolutePath(),
                 params,
-                GraphDatabaseDependencies.newDependencies().logging(logging ) )
+                GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider ) )
             .shutdown();
     }
 }

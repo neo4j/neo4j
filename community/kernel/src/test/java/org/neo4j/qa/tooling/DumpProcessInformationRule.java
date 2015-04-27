@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import org.hamcrest.Matcher;
 import org.junit.rules.ExternalResource;
 
-import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.logging.NullLogProvider;
 
 public class DumpProcessInformationRule extends ExternalResource
 {
@@ -58,7 +58,7 @@ public class DumpProcessInformationRule extends ExternalResource
             @Override
             public void dump() throws Exception
             {
-                new DumpProcessInformation( new SystemOutLogging(), baseDir ).doThreadDump( processFilter );
+                new DumpProcessInformation( NullLogProvider.getInstance(), baseDir ).doThreadDump( processFilter );
             }
         };
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -30,7 +30,8 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
@@ -40,7 +41,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     protected final IndexPopulator populator;
     private final String indexUserDescription;
     private final IndexCountsRemover indexCountsRemover;
-    private final StringLogger logger;
+    private final Log log;
 
     public FailedIndexProxy(IndexDescriptor descriptor,
                             IndexConfiguration configuration,
@@ -49,13 +50,13 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
                             IndexPopulator populator,
                             IndexPopulationFailure populationFailure,
                             IndexCountsRemover indexCountsRemover,
-                            StringLogger logger )
+                            LogProvider logProvider )
     {
         super( descriptor, providerDescriptor, populationFailure, configuration );
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
         this.indexCountsRemover = indexCountsRemover;
-        this.logger = logger;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -64,7 +65,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
         indexCountsRemover.remove();
         String message = "FailedIndexProxy#drop index on " + indexUserDescription + " dropped due to:\n" +
                      getPopulationFailure().asString();
-        logger.info( message );
+        log.info( message );
         populator.drop();
         return VOID;
     }

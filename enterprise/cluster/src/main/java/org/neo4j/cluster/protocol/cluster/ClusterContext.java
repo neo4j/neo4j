@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -25,11 +25,12 @@ import java.util.Map;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.ConfigurationContext;
-import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseState;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Represents the context necessary for cluster operations. Includes instance membership calls, election
@@ -39,7 +40,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseSt
  * @see ClusterState
  */
 public interface ClusterContext
-    extends LoggingContext, TimeoutsContext, ConfigurationContext
+    extends LogService, TimeoutsContext, ConfigurationContext
 {
     public static final int NO_ELECTOR_VERSION = -1;
 

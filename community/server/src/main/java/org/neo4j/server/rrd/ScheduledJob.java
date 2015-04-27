@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,15 +22,18 @@ package org.neo4j.server.rrd;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class ScheduledJob
 {
     private final Timer timer;
 
-    public ScheduledJob( final Runnable job, String name, long delay, long period, final Logging logging )
+    public ScheduledJob( final Runnable job, String name, long delay, long period, final LogProvider logProvider )
     {
         timer = new Timer( name );
+        final Log log = logProvider.getLog( getClass() );
+
         TimerTask runJob = new TimerTask()
         {
             @Override
@@ -41,7 +44,7 @@ public class ScheduledJob
                     job.run();
                 } catch ( Exception e )
                 {
-                    logging.getConsoleLog( getClass() ).warn( "Unable to execute scheduled job", e );
+                    log.warn( "Unable to execute scheduled job", e );
                 }
             }
         };

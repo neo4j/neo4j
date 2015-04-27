@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,15 +22,15 @@ package org.neo4j.consistency.checking.incremental;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.store.DiffStore;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
 
 public class LoggingDiffCheck extends DiffCheck
 {
     private final DiffCheck checker;
 
-    public LoggingDiffCheck( DiffCheck checker, StringLogger logger )
+    public LoggingDiffCheck( DiffCheck checker, LogProvider logProvider )
     {
-        super( logger );
+        super( logProvider );
         this.checker = checker;
     }
 
@@ -45,7 +45,7 @@ public class LoggingDiffCheck extends DiffCheck
     {
         if ( !summary.isConsistent() )
         {
-            logger.logMessage( "Inconsistencies found: " + summary );
+            log.warn( "Inconsistencies found: " + summary );
             // TODO: log all changes by the transaction
         }
     }

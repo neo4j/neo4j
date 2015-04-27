@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -29,9 +29,9 @@ import java.util.Collection;
 import org.hamcrest.Matcher;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.hamcrest.Matchers.isIn;
 import static org.neo4j.helpers.Format.time;
@@ -47,16 +47,16 @@ public class DumpProcessInformation
         boolean doHeapDump = arg.getBoolean( HEAP, false, true );
         String[] containing = arg.orphans().toArray( new String[arg.orphans().size()] );
         String dumpDir = arg.get( DIR, "data" );
-        new DumpProcessInformation( new SystemOutLogging(), new File( dumpDir ) ).dumpRunningProcesses(
+        new DumpProcessInformation( FormattedLogProvider.toOutputStream( System.out ), new File( dumpDir ) ).dumpRunningProcesses(
                 doHeapDump, containing );
     }
     
-    private final StringLogger logger;
+    private final Log log;
     private final File outputDirectory;
     
-    public DumpProcessInformation( Logging logging, File outputDirectory )
+    public DumpProcessInformation( LogProvider logProvider, File outputDirectory )
     {
-        this.logger = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
         this.outputDirectory = outputDirectory;
     }
     
@@ -77,7 +77,7 @@ public class DumpProcessInformation
     public File doThreadDump( Pair<Long, String> pid ) throws Exception
     {
         File outputFile = new File( outputDirectory, fileName( "threaddump", pid ) );
-        logger.info( "Creating thread dump of " + pid + " to " + outputFile.getAbsolutePath() );
+        log.info( "Creating thread dump of " + pid + " to " + outputFile.getAbsolutePath() );
         String[] cmdarray = new String[] {"jstack", "" + pid.first()};
         Process process = Runtime.getRuntime().exec( cmdarray );
         writeProcessOutputToFile( process, outputFile );
@@ -87,7 +87,7 @@ public class DumpProcessInformation
     public void doHeapDump( Pair<Long, String> pid ) throws Exception
     {
         File outputFile = new File( outputDirectory, fileName( "heapdump", pid ) );
-        logger.info( "Creating heap dump of " + pid + " to " + outputFile.getAbsolutePath() );
+        log.info( "Creating heap dump of " + pid + " to " + outputFile.getAbsolutePath() );
         String[] cmdarray = new String[] {"jmap", "-dump:file=" + outputFile.getAbsolutePath(), "" + pid.first() };
         Runtime.getRuntime().exec( cmdarray ).waitFor();
     }
@@ -133,7 +133,7 @@ public class DumpProcessInformation
         }
         process.waitFor();
         
-        logger.info( "Found jPids:" + jPids + ", excluded:" + excludedJPids );
+        log.info( "Found jPids:" + jPids + ", excluded:" + excludedJPids );
         
         return jPids;
     }

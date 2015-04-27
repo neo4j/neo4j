@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -28,6 +28,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
@@ -40,7 +41,6 @@ import org.neo4j.ndp.messaging.v1.message.PullAllMessage;
 import org.neo4j.ndp.messaging.v1.message.RecordMessage;
 import org.neo4j.ndp.messaging.v1.message.RunMessage;
 import org.neo4j.ndp.messaging.v1.message.SuccessMessage;
-import org.neo4j.ndp.messaging.v1.util.BytePrinter;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
 
 import static java.util.Arrays.asList;
@@ -162,7 +162,7 @@ public class MessageFormatTest
     private <T extends Message> T unpack( MessageFormat.Reader reader, RecordingByteChannel channel )
     {
         // Unpack
-        String serialized = BytePrinter.hex( channel.getBytes() );
+        String serialized = HexPrinter.hex( channel.getBytes() );
         RecordingMessageHandler messages = new RecordingMessageHandler();
         try
         {

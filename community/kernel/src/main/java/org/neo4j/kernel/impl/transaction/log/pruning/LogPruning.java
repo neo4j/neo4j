@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,8 +23,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.impl.transaction.log.LogRotation.PrintFormat;
 
 /**
@@ -35,12 +35,12 @@ public class LogPruning
 {
     private final Lock pruneLock = new ReentrantLock();
     private final LogPruneStrategy pruneStrategy;
-    private final StringLogger msgLog;
+    private final Log msgLog;
 
-    public LogPruning( LogPruneStrategy pruneStrategy, Logging logging )
+    public LogPruning( LogPruneStrategy pruneStrategy, LogProvider logProvider )
     {
         this.pruneStrategy = pruneStrategy;
-        msgLog = logging.getMessagesLog( getClass() );
+        msgLog = logProvider.getLog( getClass() );
     }
 
     @Override

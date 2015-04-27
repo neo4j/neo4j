@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -49,12 +49,10 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
 import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
 import org.neo4j.kernel.impl.util.collection.TimedRepository;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.slaveLocksTimeout;
 
@@ -111,7 +109,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
     public static final int UNFINISHED_TRANSACTION_CLEANUP_DELAY = 1_000;
 
     private final SPI spi;
-    private final StringLogger msgLog;
     private final Config config;
     private final Monitor monitor;
     private final long epoch;
@@ -121,16 +118,15 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     private final int unfinishedSessionsCheckInterval;
 
-    public MasterImpl( SPI spi, Monitor monitor, Logging logging, Config config )
+    public MasterImpl( SPI spi, Monitor monitor, Config config )
     {
-        this( spi, monitor, logging, config, UNFINISHED_TRANSACTION_CLEANUP_DELAY );
+        this( spi, monitor, config, UNFINISHED_TRANSACTION_CLEANUP_DELAY );
     }
 
-    public MasterImpl( final SPI spi, Monitor monitor, Logging logging, Config config, int staleSlaveReapIntervalMillis )
+    public MasterImpl( final SPI spi, Monitor monitor, Config config, int staleSlaveReapIntervalMillis )
     {
         this.spi = spi;
         this.unfinishedSessionsCheckInterval = staleSlaveReapIntervalMillis;
-        this.msgLog = logging.getMessagesLog( getClass() );
         this.config = config;
         this.monitor = monitor;
         this.epoch = generateEpoch();

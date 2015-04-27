@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -24,8 +24,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.Log;
 
 /**
  * Handle the collection of kernel event handlers, and fire events as needed.
@@ -37,9 +37,9 @@ public class KernelEventHandlers
     implements Lifecycle
 {
     private final List<KernelEventHandler> kernelEventHandlers = new CopyOnWriteArrayList<>();
-    private final StringLogger log;
+    private final Log log;
 
-    public KernelEventHandlers(StringLogger log)
+    public KernelEventHandlers( Log log )
     {
         this.log = log;
     }

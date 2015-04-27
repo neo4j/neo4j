@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -68,6 +68,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defa
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.relationshipData;
 
 
 public class CsvInputTest
@@ -117,8 +118,8 @@ public class CsvInputTest
     public void shouldCloseDataIteratorsInTheEnd() throws Exception
     {
         // GIVEN
-        CharSeeker nodeData = spy( charSeeker( "test" ) );
-        CharSeeker relationshipData = spy( charSeeker( "test" ) );
+        CharSeeker nodeData = spy( charSeeker( "1" ) );
+        CharSeeker relationshipData = spy( charSeeker( "1,1" ) );
         IdType idType = IdType.STRING;
         Iterable<DataFactory<InputNode>> nodeDataIterable = dataIterable( given( nodeData ) );
         Iterable<DataFactory<InputRelationship>> relationshipDataIterable =
@@ -700,6 +701,52 @@ public class CsvInputTest
             assertNode( nodes.next(), 2L, properties( "sprop", new String[] {"a", "b"}, "lprop", new long[] {10, 20} ),
                     labels() );
             assertFalse( nodes.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldFailOnRelationshipWithMissingStartIdField() throws Exception
+    {
+        // GIVEN
+        Iterable<DataFactory<InputRelationship>> data = relationshipData( CsvInputTest.<InputRelationship>data(
+                ":START_ID,:END_ID,:TYPE\n" +
+                ",1," ) );
+        Input input = new CsvInput( null, null, data, defaultFormatRelationshipFileHeader(), IdType.INTEGER, COMMAS,
+                badCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator<InputRelationship> relationships = input.relationships().iterator() )
+        {
+            relationships.next();
+            fail( "Should have failed" );
+        }
+        catch ( InputException e )
+        {
+            // THEN good
+            assertThat( e.getMessage(), containsString( Type.START_ID.name() ) );
+        }
+    }
+
+    @Test
+    public void shouldFailOnRelationshipWithMissingEndIdField() throws Exception
+    {
+        // GIVEN
+        Iterable<DataFactory<InputRelationship>> data = relationshipData( CsvInputTest.<InputRelationship>data(
+                ":START_ID,:END_ID,:TYPE\n" +
+                "1,," ) );
+        Input input = new CsvInput( null, null, data, defaultFormatRelationshipFileHeader(), IdType.INTEGER, COMMAS,
+                badCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator<InputRelationship> relationships = input.relationships().iterator() )
+        {
+            relationships.next();
+            fail( "Should have failed" );
+        }
+        catch ( InputException e )
+        {
+            // THEN good
+            assertThat( e.getMessage(), containsString( Type.END_ID.name() ) );
         }
     }
 

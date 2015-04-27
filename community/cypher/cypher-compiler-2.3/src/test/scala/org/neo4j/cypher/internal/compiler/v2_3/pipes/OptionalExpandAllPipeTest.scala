@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Direction, Relationship}
 import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._

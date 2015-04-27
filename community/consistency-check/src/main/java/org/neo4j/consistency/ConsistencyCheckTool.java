@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -32,8 +32,9 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -57,7 +58,7 @@ public class ConsistencyCheckTool
         void pull();
     }
 
-    public static void main( String[] args )
+    public static void main( String[] args ) throws IOException
     {
         ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(), System.err );
         try
@@ -92,7 +93,7 @@ public class ConsistencyCheckTool
         this.exitHandle = exitHandle;
     }
 
-    void run( String... args ) throws ToolFailureException
+    void run( String... args ) throws ToolFailureException, IOException
     {
         Args arguments = Args.withFlags( RECOVERY, PROP_OWNER ).parse( args );
         String storeDir = determineStoreDirectory( arguments );
@@ -100,19 +101,15 @@ public class ConsistencyCheckTool
 
         attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir );
 
-        StringLogger logger = StringLogger.SYSTEM;
+        LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
         try
         {
             consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
-                    ProgressMonitorFactory.textual( System.err ), logger );
+                    ProgressMonitorFactory.textual( System.err ), logProvider );
         }
         catch ( ConsistencyCheckIncompleteException e )
         {
             throw new ToolFailureException( "Check aborted due to exception", e );
-        }
-        finally
-        {
-            logger.flush();
         }
     }
 

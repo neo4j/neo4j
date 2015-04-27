@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -30,10 +30,9 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
 
 import org.neo4j.helpers.TimeUtil;
-import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsPhase;
+import org.neo4j.logging.Logger;
 import org.neo4j.server.web.ServerInternalSettings;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -132,29 +131,18 @@ public interface Configurator
     DiagnosticsExtractor<Configurator> DIAGNOSTICS = new DiagnosticsExtractor<Configurator>()
     {
         @Override
-        public void dumpDiagnostics( final Configurator source, DiagnosticsPhase phase, StringLogger log )
+        public void dumpDiagnostics( final Configurator source, DiagnosticsPhase phase, Logger logger )
         {
             if ( phase.isInitialization() || phase.isExplicitlyRequested() )
             {
                 final Configuration config = source.configuration();
-                log.logLongMessage( "Server configuration:", new PrefetchingIterator<String>()
+                logger.log( "Server configuration:" );
+                Iterator<String> keys = config.getKeys();
+                while ( keys.hasNext() )
                 {
-                    final Iterator<?> keys = config.getKeys();
-
-                    @Override
-                    protected String fetchNextOrNull()
-                    {
-                        while ( keys.hasNext() )
-                        {
-                            Object key = keys.next();
-                            if ( key instanceof String )
-                            {
-                                return key + " = " + config.getProperty( (String) key );
-                            }
-                        }
-                        return null;
-                    }
-                }, true );
+                    String key = keys.next();
+                    logger.log( "%s=%s", key, config.getProperty( key ) );
+                }
             }
         }
 

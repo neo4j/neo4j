@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,15 +22,14 @@ package org.neo4j.kernel.impl.transaction.command;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -42,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.SORT_BY_NODE_ID;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
@@ -50,27 +50,18 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  */
 public class IndexTransactionApplier extends NeoCommandHandler.Adapter
 {
-    private static final Comparator<NodeLabelUpdate> nodeLabelUpdateComparator = new Comparator<NodeLabelUpdate>()
-    {
-        @Override
-        public int compare( NodeLabelUpdate o1, NodeLabelUpdate o2 )
-        {
-            return Long.compare( o1.getNodeId(), o2.getNodeId() );
-        }
-    };
-
     private final ValidatedIndexUpdates indexUpdates;
     private List<NodeLabelUpdate> labelUpdates;
 
     private final IndexingService indexingService;
-    private final LabelScanStore labelScanStore;
+    private final Provider<LabelScanWriter> labelScanWriters;
 
     public IndexTransactionApplier( IndexingService indexingService, ValidatedIndexUpdates indexUpdates,
-            LabelScanStore labelScanStore )
+            Provider<LabelScanWriter> labelScanWriters )
     {
         this.indexingService = indexingService;
         this.indexUpdates = indexUpdates;
-        this.labelScanStore = labelScanStore;
+        this.labelScanWriters = labelScanWriters;
     }
 
     @Override
@@ -97,6 +88,9 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
     private void updateIndexes() throws IOException, IndexCapacityExceededException, IndexEntryConflictException
     {
         // We only allow a single writer at the time to update the schema index stores
+        // TODO we should probably do two things here:
+        //   - make the synchronized block more granular, over each index or something
+        //   - not even on each index, but make the decision up to the index implementation instead
         synchronized ( indexingService )
         {
             indexUpdates.flush();
@@ -105,17 +99,15 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
 
     private void updateLabelScanStore() throws IOException, IndexCapacityExceededException
     {
-        Collections.sort( labelUpdates, nodeLabelUpdateComparator );
+        // Even if the node commands are sorted by node id, they are not totally ordered by node id,
+        // since created records comes before updated records, which comes before deleted records.
+        Collections.sort( labelUpdates, SORT_BY_NODE_ID );
 
-        // We only allow a single writer at the time to update the label scan store
-        synchronized ( labelScanStore )
+        try ( LabelScanWriter writer = labelScanWriters.instance() )
         {
-            try ( LabelScanWriter writer = labelScanStore.newWriter() )
+            for ( NodeLabelUpdate update : labelUpdates )
             {
-                for ( NodeLabelUpdate update : labelUpdates )
-                {
-                    writer.write( update );
-                }
+                writer.write( update );
             }
         }
     }

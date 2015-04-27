@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -31,6 +31,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLog;
 import org.neo4j.server.ServerTestUtils;
 
 import static org.junit.Assert.assertEquals;
@@ -41,12 +43,14 @@ public class ConfiguratorTest
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
+    public final Log log = NullLog.getInstance();
+
     @Test
     public void shouldProvideAConfiguration() throws IOException
     {
         File configFile = PropertyFileBuilder.builder( folder.getRoot() )
                 .build();
-        Config config = new PropertyFileConfigurator( configFile ).configuration();
+        Config config = new PropertyFileConfigurator( configFile, log ).configuration();
         assertNotNull( config );
     }
 
@@ -57,7 +61,7 @@ public class ConfiguratorTest
                 .withNameValue( "foo", "bar" )
                 .build();
 
-        Config testConf = new PropertyFileConfigurator( configFile ).configuration();
+        Config testConf = new PropertyFileConfigurator( configFile, log ).configuration();
 
         final String EXPECTED_VALUE = "bar";
         assertEquals( EXPECTED_VALUE, testConf.getParams().get( "foo" ) );
@@ -71,7 +75,7 @@ public class ConfiguratorTest
                 .withNameValue( "foo", "bar" )
                 .build();
 
-        ConfigurationBuilder configurator = new PropertyFileConfigurator( configFile );
+        ConfigurationBuilder configurator = new PropertyFileConfigurator( configFile, log );
         Config testConf = configurator.configuration();
 
         assertNotNull( testConf );
@@ -89,7 +93,7 @@ public class ConfiguratorTest
                 .withDbTuningPropertyFile( databaseTuningPropertyFile )
                 .build();
 
-        ConfigurationBuilder configurator = new PropertyFileConfigurator( propertyFileWithDbTuningProperty );
+        ConfigurationBuilder configurator = new PropertyFileConfigurator( propertyFileWithDbTuningProperty, log );
 
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         assertNotNull( databaseTuningProperties );
@@ -111,7 +115,7 @@ public class ConfiguratorTest
         out.write( System.getProperty( "line.separator" ) );
         out.close();
 
-        ConfigurationBuilder configurator = new PropertyFileConfigurator( file );
+        ConfigurationBuilder configurator = new PropertyFileConfigurator( file, log );
 
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = configurator.configuration().get( ServerSettings.third_party_packages );
         assertNotNull( thirdpartyJaxRsPackages );

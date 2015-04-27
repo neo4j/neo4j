@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -32,7 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 
@@ -59,7 +59,7 @@ public class StoreFactoryTest
         PageCache pageCache = pageCacheRule.getPageCache( fs );
 
         storeFactory = new StoreFactory( new Config( configParams ), new DefaultIdGeneratorFactory(),
-                pageCache, fs, StringLogger.DEV_NULL, new Monitors() );
+                pageCache, fs, NullLogProvider.getInstance(), new Monitors() );
     }
 
     @After

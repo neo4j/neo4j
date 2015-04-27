@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -31,6 +31,8 @@ import org.apache.lucene.store.LockObtainFailedException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
@@ -42,8 +44,8 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 public class LuceneLabelScanStore
@@ -61,6 +63,7 @@ public class LuceneLabelScanStore
     private boolean needsRebuild;
     private final File directoryLocation;
     private final FileSystemAbstraction fs;
+    private final Lock lock = new ReentrantLock( true );
 
     public interface Monitor
     {
@@ -77,9 +80,9 @@ public class LuceneLabelScanStore
         void rebuilt( long roughNodeCount );
     }
 
-    public static Monitor loggerMonitor( Logging logging )
+    public static Monitor loggerMonitor( LogProvider logProvider )
     {
-        final StringLogger logger = logging.getMessagesLog( LuceneLabelScanStore.class );
+        final Log log = logProvider.getLog( LuceneLabelScanStore.class );
         return new Monitor()
         {
             @Override
@@ -90,33 +93,33 @@ public class LuceneLabelScanStore
             @Override
             public void noIndex()
             {
-                logger.info( "No lucene scan store index found, this might just be first use. " +
+                log.info( "No lucene scan store index found, this might just be first use. " +
                              "Preparing to rebuild." );
             }
 
             @Override
             public void lockedIndex( LockObtainFailedException e )
             {
-                logger.warn( "Index is locked by another process or database", e );
+                log.warn( "Index is locked by another process or database", e );
             }
 
             @Override
             public void corruptIndex( IOException corruptionException )
             {
-                logger.warn( "Lucene scan store index could not be read. Preparing to rebuild.",
+                log.warn( "Lucene scan store index could not be read. Preparing to rebuild.",
                         corruptionException );
             }
 
             @Override
             public void rebuilding()
             {
-                logger.info( "Rebuilding lucene scan store, this may take a while" );
+                log.info( "Rebuilding lucene scan store, this may take a while" );
             }
 
             @Override
             public void rebuilt( long highNodeId )
             {
-                logger.info( "Lucene scan store rebuilt (roughly " + highNodeId + " nodes)" );
+                log.info( "Lucene scan store rebuilt (roughly " + highNodeId + " nodes)" );
             }
         };
     }
@@ -169,14 +172,6 @@ public class LuceneLabelScanStore
     public AllEntriesLabelScanReader newAllEntriesReader()
     {
         return strategy.newNodeLabelReader( searcherManager );
-    }
-
-    @Override
-    public void recover( Iterator<NodeLabelUpdate> updates ) throws IOException, IndexCapacityExceededException
-    {
-        // The way we update and commit fits for recovery as well since we use writer.updateDocument(...)
-        // which deletes any existing documents and just adds the new and up-to-date version.
-        write( updates );
     }
 
     @Override
@@ -314,7 +309,10 @@ public class LuceneLabelScanStore
     @Override
     public LabelScanWriter newWriter()
     {
-        return strategy.acquireWriter( this );
+        // Only a single writer is allowed at any point in time. For that this lock is used and passed
+        // onto the writer to release in its close()
+        lock.lock();
+        return strategy.acquireWriter( this, lock );
     }
 
     private boolean indexExists()

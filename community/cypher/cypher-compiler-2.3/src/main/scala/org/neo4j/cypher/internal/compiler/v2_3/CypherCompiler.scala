@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.LRUCache
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
@@ -69,7 +68,7 @@ object CypherCompilerFactory {
                         queryPlanTTL: Long, clock: Clock, monitors: Monitors,
                         logger: InfoLogger,
                         rewriterSequencer: (String) => RewriterStepSequencer,
-                        plannerName: CostBasedPlannerName,
+                        plannerName: Option[CostBasedPlannerName],
                         runtimeName: RuntimeName): CypherCompiler = {
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
@@ -78,8 +77,17 @@ object CypherCompilerFactory {
     val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
-    val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, planningMonitor, clock, queryPlanner = queryPlanner, plannerName = plannerName, runtimeName = runtimeName, rewriterSequencer = rewriterSequencer)
-    val pipeBuilder = new LegacyVsNewExecutablePlanBuilder(new LegacyExecutablePlanBuilder(monitors, rewriterSequencer), planner, planBuilderMonitor)
+
+    val pickedPlannerName = plannerName.getOrElse(FallbackPlannerName)
+    val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, planningMonitor, clock, queryPlanner = queryPlanner, rewriterSequencer = rewriterSequencer, plannerName = pickedPlannerName, runtimeName = runtimeName)
+    // falling back to legacy planner is allowed only when no cost-based planner is picked explicitly (e.g., COST, IDP)
+    val pipeBuilder = pickedPlannerName match {
+      case FallbackPlannerName =>
+        new LegacyVsNewExecutablePlanBuilder(new LegacyExecutablePlanBuilder(monitors, rewriterSequencer), planner, planBuilderMonitor)
+      case _ =>
+        new ErrorReportingExecutablePlanBuilder(planner)
+    }
+
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](queryCacheSize)
     monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)

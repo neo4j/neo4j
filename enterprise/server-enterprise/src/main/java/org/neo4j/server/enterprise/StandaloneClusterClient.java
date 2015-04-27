@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -20,6 +20,7 @@
 package org.neo4j.server.enterprise;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,19 +33,22 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvid
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
-import org.neo4j.kernel.logging.LogbackWeakDependency;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.FormattedLogProvider;
 
 import static org.neo4j.cluster.client.ClusterClient.adapt;
 import static org.neo4j.helpers.Exceptions.peel;
 import static org.neo4j.helpers.collection.MapUtil.loadStrictly;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 import static org.neo4j.server.configuration.Configurator.DB_TUNING_PROPERTY_FILE_KEY;
 import static org.neo4j.server.configuration.Configurator.NEO_SERVER_CONFIG_FILE_KEY;
 
@@ -66,9 +70,9 @@ public class StandaloneClusterClient
 {
     private final LifeSupport life = new LifeSupport();
 
-    private StandaloneClusterClient( Logging logging, ClusterClient clusterClient )
+    private StandaloneClusterClient( JobScheduler jobScheduler, ClusterClient clusterClient )
     {
-        life.add( logging );
+        life.add( jobScheduler );
         life.add( clusterClient );
         addShutdownHook();
         life.start();
@@ -87,7 +91,7 @@ public class StandaloneClusterClient
     }
 
 
-    public static void main( String[] args )
+    public static void main( String[] args ) throws IOException
     {
         String propertiesFile = System.getProperty( NEO_SERVER_CONFIG_FILE_KEY );
         File dbProperties = extractDbTuningProperties( propertiesFile );
@@ -104,10 +108,11 @@ public class StandaloneClusterClient
         verifyConfig( config );
         try
         {
-            Logging logging = logging();
+            JobScheduler jobScheduler = new Neo4jJobScheduler();
+            LogService logService = logService( new DefaultFileSystemAbstraction(), jobScheduler );
             ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-            new StandaloneClusterClient( logging, new ClusterClient( new Monitors(), adapt( new Config( config ) ),
-                    logging, new NotElectableElectionCredentialsProvider(), objectStreamFactory,
+            new StandaloneClusterClient( jobScheduler, new ClusterClient( new Monitors(), adapt( new Config( config ) ),
+                    logService, new NotElectableElectionCredentialsProvider(), objectStreamFactory,
                     objectStreamFactory ) );
         }
         catch ( LifecycleException e )
@@ -167,14 +172,12 @@ public class StandaloneClusterClient
         }
     }
 
-    private static Logging logging()
+    private static LogService logService( FileSystemAbstraction fileSystem, JobScheduler jobScheduler ) throws IOException
     {
         File home = new File( System.getProperty( "neo4j.home" ) );
         String logDir = System.getProperty( "org.neo4j.cluster.logdirectory",
-                new File( new File( new File( home, "data" ), "log" ), "arbiter" ).getPath() );
-        Config config = new Config( stringMap( InternalAbstractGraphDatabase.Configuration.store_dir.name(), logDir ) );
-
-        return LogbackWeakDependency.tryLoadLogbackService( config, DEFAULT_TO_CLASSIC, new Monitors() );
+                new File( new File( new File( home, "data" ), "log" ), "arbiter" ).getAbsolutePath() );
+        return new StoreLogService( FormattedLogProvider.toOutputStream( System.out ), fileSystem, new File( logDir ), jobScheduler );
     }
 
     private static File extractDbTuningProperties( String propertiesFile )

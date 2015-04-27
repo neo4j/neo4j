@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -55,13 +55,14 @@ import org.neo4j.kernel.ha.HighAvailabilityMemberInfoProvider;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 class ClusterInstance
 {
     private final Executor stateMachineExecutor;
-    private final Logging logging;
+    private final LogService logService;
     private final MultiPaxosServerFactory factory;
     private final ProtocolServer server;
     private final MultiPaxosContext ctx;
@@ -83,9 +84,9 @@ class ClusterInstance
     private boolean online = true;
 
     public static ClusterInstance newClusterInstance( InstanceId id, URI uri, Monitors monitors,
-                                                      ClusterConfiguration configuration, Logging logging )
+                                                      ClusterConfiguration configuration, LogService logService )
     {
-        MultiPaxosServerFactory factory = new MultiPaxosServerFactory( configuration, logging, monitors.newMonitor( StateMachines.Monitor.class ) );
+        MultiPaxosServerFactory factory = new MultiPaxosServerFactory( configuration, logService, monitors.newMonitor( StateMachines.Monitor.class ) );
 
         ClusterInstanceInput input = new ClusterInstanceInput();
         ClusterInstanceOutput output = new ClusterInstanceOutput( uri );
@@ -96,12 +97,12 @@ class ClusterInstance
 
         InMemoryAcceptorInstanceStore acceptorInstances = new InMemoryAcceptorInstanceStore();
 
-        DelayedDirectExecutor executor = new DelayedDirectExecutor( logging );
+        DelayedDirectExecutor executor = new DelayedDirectExecutor( logService.getInternalLogProvider() );
         final MultiPaxosContext context = new MultiPaxosContext( id,
                 Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
-                new ClusterConfiguration( configuration.getName(), logging.getMessagesLog( ClusterConfiguration.class ),
+                new ClusterConfiguration( configuration.getName(), logService.getInternalLogProvider(),
                         configuration.getMemberURIs() ),
-                executor, logging, objStreamFactory, objStreamFactory, acceptorInstances, timeouts,
+                executor, logService, objStreamFactory, objStreamFactory, acceptorInstances, timeouts,
                 new DefaultElectionCredentialsProvider( id, new StateVerifierLastTxIdGetter(),
                         new MemberInfoProvider() )
         );
@@ -110,22 +111,22 @@ class ClusterInstance
         SnapshotContext snapshotContext = new SnapshotContext( context.getClusterContext(),
                 context.getLearnerContext() );
 
-        DelayedDirectExecutor taskExecutor = new DelayedDirectExecutor( logging );
+        DelayedDirectExecutor taskExecutor = new DelayedDirectExecutor( logService.getInternalLogProvider() );
         ProtocolServer ps = factory.newProtocolServer(
                 id, input, output, DIRECT_EXECUTOR, taskExecutor, timeouts, context, snapshotContext );
 
-        return new ClusterInstance( DIRECT_EXECUTOR, logging, factory, ps, context, acceptorInstances, timeouts,
+        return new ClusterInstance( DIRECT_EXECUTOR, logService, factory, ps, context, acceptorInstances, timeouts,
                 input, output, uri );
     }
 
-    public ClusterInstance( Executor stateMachineExecutor, Logging logging, MultiPaxosServerFactory factory,
+    public ClusterInstance( Executor stateMachineExecutor, LogService logService, MultiPaxosServerFactory factory,
                             ProtocolServer server,
                             MultiPaxosContext ctx, InMemoryAcceptorInstanceStore acceptorInstanceStore,
                             ProverTimeouts timeouts, ClusterInstanceInput input, ClusterInstanceOutput output,
                             URI uri )
     {
         this.stateMachineExecutor = stateMachineExecutor;
-        this.logging = logging;
+        this.logService = logService;
         this.factory = factory;
         this.server = server;
         this.ctx = ctx;
@@ -215,7 +216,7 @@ class ClusterInstance
         return toString().hashCode();
     }
 
-    private StateMachine snapshotStateMachine( Logging logging, MultiPaxosContext snapshotCtx, StateMachine
+    private StateMachine snapshotStateMachine( LogProvider logProvider, MultiPaxosContext snapshotCtx, StateMachine
             stateMachine )
     {
         // This is done this way because all the state machines are sharing one piece of global state
@@ -261,7 +262,7 @@ class ClusterInstance
         {
             throw new IllegalArgumentException( "I don't know how to snapshot this state machine: " + stateMachine );
         }
-        return new StateMachine( ctx, stateMachine.getMessageType(), stateMachine.getState(), logging );
+        return new StateMachine( ctx, stateMachine.getMessageType(), stateMachine.getState(), logProvider );
     }
 
     public ClusterInstance newCopy()
@@ -278,10 +279,10 @@ class ClusterInstance
         ClusterInstanceOutput output = new ClusterInstanceOutput( uri );
         ClusterInstanceInput input = new ClusterInstanceInput();
 
-        DelayedDirectExecutor executor = new DelayedDirectExecutor( logging );
+        DelayedDirectExecutor executor = new DelayedDirectExecutor( logService.getInternalLogProvider() );
 
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-        MultiPaxosContext snapshotCtx = ctx.snapshot( logging, timeoutsSnapshot, executor, snapshotAcceptorInstances,
+        MultiPaxosContext snapshotCtx = ctx.snapshot( logService, timeoutsSnapshot, executor, snapshotAcceptorInstances,
                 objectStreamFactory, objectStreamFactory,
                 new DefaultElectionCredentialsProvider( server.getServerId(), new StateVerifierLastTxIdGetter(),
                         new MemberInfoProvider() )
@@ -291,14 +292,14 @@ class ClusterInstance
         List<StateMachine> snapshotMachines = new ArrayList<>();
         for ( StateMachine stateMachine : server.getStateMachines().getStateMachines() )
         {
-            snapshotMachines.add( snapshotStateMachine( logging, snapshotCtx, stateMachine ) );
+            snapshotMachines.add( snapshotStateMachine( logService.getInternalLogProvider(), snapshotCtx, stateMachine ) );
         }
 
         ProtocolServer snapshotProtocolServer = factory.constructSupportingInfrastructureFor( server.getServerId(),
                 input, output, executor, timeoutsSnapshot, stateMachineExecutor,
                 snapshotCtx, snapshotMachines.toArray( new StateMachine[snapshotMachines.size()] ) );
 
-        return new ClusterInstance( stateMachineExecutor, logging, factory, snapshotProtocolServer, snapshotCtx,
+        return new ClusterInstance( stateMachineExecutor, logService, factory, snapshotProtocolServer, snapshotCtx,
                 snapshotAcceptorInstances, timeoutsSnapshot, input, output, uri );
     }
 

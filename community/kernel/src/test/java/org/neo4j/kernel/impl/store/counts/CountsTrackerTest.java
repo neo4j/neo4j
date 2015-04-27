@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -201,7 +201,7 @@ public class CountsTrackerTest
         {
             final Barrier.Control barrier = new Barrier.Control();
             CountsTracker tracker = life.add( new CountsTracker(
-                    the.logger(), the.fileSystem(), the.pageCache(), the.testPath() )
+                    the.logProvider(), the.fileSystem(), the.pageCache(), the.testPath() )
             {
                 @Override
                 protected boolean include( CountsKey countsKey, ReadableBuffer value )
@@ -345,7 +345,7 @@ public class CountsTrackerTest
 
     private CountsTracker newTracker()
     {
-        return new CountsTracker( the.logger(), the.fileSystem(), the.pageCache(), the.testPath() ).setInitializer(
+        return new CountsTracker( the.logProvider(), the.fileSystem(), the.pageCache(), the.testPath() ).setInitializer(
                 new DataInitializer<CountsAccessor.Updater>()
                 {
                     @Override

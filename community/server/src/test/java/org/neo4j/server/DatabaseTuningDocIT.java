@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,8 +19,6 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -28,9 +26,8 @@ import java.util.Map;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class DatabaseTuningDocIT extends ExclusiveServerTestBase
@@ -66,18 +63,14 @@ public class DatabaseTuningDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldLogWarningAndContinueIfTuningFilePropertyDoesNotResolve() throws IOException
     {
-        Logging logging = new BufferingLogging();
-        NeoServer server = CommunityServerBuilder.server()
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        NeoServer server = CommunityServerBuilder.server( logProvider )
                 .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .withNonResolvableTuningFile()
-                .withLogging( logging )
                 .build();
         server.start();
 
-        String logDump = logging.toString();
-        assertThat( logDump,
-                containsString( String.format( "The specified file for database performance tuning properties [" ) ) );
-        assertThat( logDump, containsString( String.format( "] does not exist." ) ) );
+        logProvider.assertContainsMessageContaining( "The specified file for database performance tuning properties [%s] does not exist." );
 
         server.stop();
     }

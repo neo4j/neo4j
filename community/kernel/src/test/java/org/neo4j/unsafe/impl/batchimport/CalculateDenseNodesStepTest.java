@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -50,7 +50,7 @@ public class CalculateDenseNodesStepTest
         Configuration config = Configuration.DEFAULT;
         NodeRelationshipCache cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, -1 );
         Step<long[]> step = new CalculateDenseNodesStep( control, config, cache );
-        step.start( false );
+        step.start( 0 );
         maxOutNumberOfProcessors( step );
 
         // WHEN sending many batches, all which "happens" to have ids of the same radix, in fact

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{Operations, QueryContext}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Direction, Relationship}
 import org.mockito.Mockito
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Collection, Literal}
@@ -44,7 +44,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
     // when
     val result: Iterator[ExecutionContext] =
-      DirectedRelationshipByIdSeekPipe("a", EntityByIdExprs(Seq(Literal(17))), to, from)().createResults(queryState)
+      DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(17)), to, from)().createResults(queryState)
 
     // then
     result.toList should equal(List(Map("a" -> rel, "to" -> endNode, "from" -> startNode)))
@@ -67,7 +67,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     val relName = "a"
     // whens
     val result =
-      DirectedRelationshipByIdSeekPipe(relName, EntityByIdExprs(Seq(Literal(42), Literal(21))), to, from)().createResults(queryState)
+      DirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(Collection(Literal(42), Literal(21))), to, from)().createResults(queryState)
 
     // then
     result.toList should equal(List(
@@ -87,7 +87,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
     // when
     val result: Iterator[ExecutionContext] =
-      DirectedRelationshipByIdSeekPipe("a", EntityByIdExprs(Seq(Literal(null))), to, from)().createResults(queryState)
+      DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(null)), to, from)().createResults(queryState)
 
     // then
     result.toList should be(empty)

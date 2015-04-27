@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -46,7 +46,8 @@ import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.Logger;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.String.format;
@@ -152,14 +153,14 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private final CappedOperation<Void> transactionCloseWaitLogger;
 
     public NeoStore( File fileName, Config conf, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-                     FileSystemAbstraction fileSystemAbstraction, final StringLogger stringLogger,
+                     FileSystemAbstraction fileSystemAbstraction, final LogProvider logProvider,
                      RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore, PropertyStore propStore,
                      RelationshipStore relStore, NodeStore nodeStore, SchemaStore schemaStore,
                      RelationshipGroupStore relGroupStore, CountsTracker counts,
                      StoreVersionMismatchHandler versionMismatchHandler, Monitors monitors )
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                stringLogger, versionMismatchHandler );
+                logProvider, versionMismatchHandler );
         this.relTypeStore = relTypeStore;
         this.labelTokenStore = labelTokenStore;
         this.propStore = propStore;
@@ -174,7 +175,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             @Override
             protected void triggered( Void event )
             {
-                stringLogger.info( format( "Waiting for all transactions to close...%n  committed: %s%n  closed:    %s",
+                log.info( format( "Waiting for all transactions to close...%n  committed: %s%n  closed:    %s",
                         lastCommittedTx, lastClosedTx ) );
             }
         };
@@ -183,7 +184,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             @Override
             public void initialize( CountsAccessor.Updater updater )
             {
-                stringLogger.warn( "Missing counts store, rebuilding it." );
+                log.warn( "Missing counts store, rebuilding it." );
                 new CountsComputer( NeoStore.this ).initialize( updater );
             }
 
@@ -765,17 +766,26 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         return relGrabSize;
     }
 
-    public boolean isStoreOk()
+    /**
+     * Throws cause of store not being OK.
+     */
+    public void verifyStoreOk()
     {
-        return getStoreOk() && relTypeStore.getStoreOk() && labelTokenStore.getStoreOk() && propStore.getStoreOk()
-                && relStore.getStoreOk() && nodeStore.getStoreOk() && schemaStore.getStoreOk()
-                && relGroupStore.getStoreOk();
+        visitStore( new Visitor<CommonAbstractStore,RuntimeException>()
+        {
+            @Override
+            public boolean visit( CommonAbstractStore element )
+            {
+                element.checkStoreOk();
+                return false;
+            }
+        } );
     }
 
     @Override
-    public void logVersions( StringLogger.LineLogger msgLog )
+    public void logVersions( Logger msgLog )
     {
-        msgLog.logLine( "Store versions:" );
+        msgLog.log( "Store versions:" );
         super.logVersions( msgLog );
         schemaStore.logVersions( msgLog );
         nodeStore.logVersions( msgLog );
@@ -784,13 +794,12 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         labelTokenStore.logVersions( msgLog );
         propStore.logVersions( msgLog );
         relGroupStore.logVersions( msgLog );
-        stringLogger.flush();
     }
 
     @Override
-    public void logIdUsage( StringLogger.LineLogger msgLog )
+    public void logIdUsage( Logger msgLog )
     {
-        msgLog.logLine( "Id usage:" );
+        msgLog.log( "Id usage:" );
         schemaStore.logIdUsage( msgLog );
         nodeStore.logIdUsage( msgLog );
         relStore.logIdUsage( msgLog );
@@ -798,7 +807,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         labelTokenStore.logIdUsage( msgLog );
         propStore.logIdUsage( msgLog );
         relGroupStore.logIdUsage( msgLog );
-        stringLogger.flush();
     }
 
     public NeoStoreRecord asRecord()
@@ -964,7 +972,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
      * {@link #closeStorage()} (where that method could be deleted all together and do a visit in {@link #close()}),
      * {@link #logIdUsage(org.neo4j.kernel.impl.util.StringLogger.LineLogger)},
      * {@link #logVersions(org.neo4j.kernel.impl.util.StringLogger.LineLogger)},
-     * {@link #isStoreOk()},
      * For a good samaritan to pick up later.
      */
     @Override

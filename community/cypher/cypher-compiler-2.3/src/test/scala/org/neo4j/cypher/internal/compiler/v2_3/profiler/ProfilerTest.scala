@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.profiler
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{NestedPipeExpression, ProjectedPath}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, WritesNodes}
@@ -28,6 +27,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.GraphDatabaseService
 
 import scala.collection.immutable.::
 
@@ -105,7 +106,7 @@ class ProfilerTest extends CypherFunSuite {
     val projectedPath = mock[ProjectedPath]
     val DB_HITS = 100
     val innerPipe = NestedPipeExpression(new ProfilerTestPipe(SingleRowPipe(), "nested pipe", rows = 10, dbAccess = DB_HITS), projectedPath)
-    val pipeUnderInspection = ProjectionNewPipe(SingleRowPipe(), Map("x" -> innerPipe))()
+    val pipeUnderInspection = ProjectionPipe(SingleRowPipe(), Map("x" -> innerPipe))()
 
     val queryContext = mock[QueryContext]
     val profiler = new Profiler
@@ -125,9 +126,9 @@ class ProfilerTest extends CypherFunSuite {
     val projectedPath = mock[ProjectedPath]
     val DB_HITS = 100
     val nestedExpression = NestedPipeExpression(new ProfilerTestPipe(SingleRowPipe(), "nested pipe1", rows = 10, dbAccess = DB_HITS), projectedPath)
-    val innerInnerPipe = ProjectionNewPipe(SingleRowPipe(), Map("y"->nestedExpression))()
+    val innerInnerPipe = ProjectionPipe(SingleRowPipe(), Map("y"->nestedExpression))()
     val innerPipe = NestedPipeExpression(new ProfilerTestPipe(innerInnerPipe, "nested pipe2", rows = 10, dbAccess = DB_HITS), projectedPath)
-    val pipeUnderInspection = ProjectionNewPipe(SingleRowPipe(), Map("x" -> innerPipe))()
+    val pipeUnderInspection = ProjectionPipe(SingleRowPipe(), Map("x" -> innerPipe))()
 
     val queryContext = mock[QueryContext]
     val profiler = new Profiler
@@ -140,6 +141,44 @@ class ProfilerTest extends CypherFunSuite {
 
     // THEN the ProjectionNewPipe has correctly recorded the dbhits
     assertRecorded(decoratedResult, "Projection", expectedRows = 1, expectedDbHits = DB_HITS * 2)
+  }
+
+  test("should not count rows multiple times when the same pipe is used multiple times") {
+    val profiler = new Profiler
+
+    val pipe1 = SingleRowPipe()
+    val iter1 = Iterator(ExecutionContext.empty, ExecutionContext.empty, ExecutionContext.empty)
+
+    val profiled1 = profiler.decorate(pipe1, iter1)
+    profiled1.toList // consume it
+    profiled1.asInstanceOf[ProfilingIterator].count should equal(3)
+
+    val pipe2 = SingleRowPipe()
+    val iter2 = Iterator(ExecutionContext.empty, ExecutionContext.empty)
+
+    val profiled2 = profiler.decorate(pipe2, iter2)
+    profiled2.toList // consume it
+    profiled2.asInstanceOf[ProfilingIterator].count should equal(2)
+  }
+
+  test("should not count dbhits multiple times when the same pipe is used multiple times") {
+    val profiler = new Profiler
+
+    val pipe1 = SingleRowPipe()
+    val ctx1 = mock[QueryContext]
+    val state1 = QueryState(mock[GraphDatabaseService], ctx1, mock[ExternalResource], Map.empty, mock[PipeDecorator])
+
+    val profiled1 = profiler.decorate(pipe1, state1)
+    profiled1.query.createNode()
+    profiled1.query.asInstanceOf[ProfilingQueryContext].count should equal(1)
+
+    val pipe2 = SingleRowPipe()
+    val ctx2 = mock[QueryContext]
+    val state2 = QueryState(mock[GraphDatabaseService], ctx2, mock[ExternalResource], Map.empty, mock[PipeDecorator])
+
+    val profiled2 = profiler.decorate(pipe2, state2)
+    profiled2.query.createNode()
+    profiled2.query.asInstanceOf[ProfilingQueryContext].count should equal(1)
   }
 
   private def assertRecorded(result: InternalPlanDescription, name: String, expectedRows: Int, expectedDbHits: Int) {
@@ -177,5 +216,4 @@ case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int
     val (source :: Nil) = sources
     copy(source = source)
   }
-
 }

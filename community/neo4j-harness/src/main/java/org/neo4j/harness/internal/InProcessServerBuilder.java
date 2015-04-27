@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,6 +21,7 @@ package org.neo4j.harness.internal;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -29,24 +30,23 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.harness.TestServerBuilder;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.ClassicLoggingService;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.server.configuration.Configurator.DATABASE_LOCATION_PROPERTY_KEY;
 import static org.neo4j.server.configuration.Configurator.WEBSERVER_PORT_PROPERTY_KEY;
 import static org.neo4j.test.Digests.md5Hex;
 
 public class InProcessServerBuilder implements TestServerBuilder
 {
+    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     private File serverFolder;
-    private Logging logging;
     private final Extensions extensions = new Extensions();
     private final Fixtures fixtures = new Fixtures();
 
@@ -66,9 +66,18 @@ public class InProcessServerBuilder implements TestServerBuilder
     @Override
     public ServerControls newServer()
     {
-        Dependencies dependencies = GraphDatabaseDependencies.newDependencies().logging( logging );
+        final OutputStream logOutputStream;
+        try
+        {
+            logOutputStream = createOrOpenAsOuputStream( fileSystem, new File( serverFolder, "neo4j.log" ), true );
+        } catch ( IOException e )
+        {
+            throw new RuntimeException( "Unable to create log file", e );
+        }
+        final FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( logOutputStream );
+        GraphDatabaseFacadeFactory.Dependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
         InProcessServerControls controls = new InProcessServerControls( serverFolder,
-                new CommunityNeoServer( new MapConfigurator( config, extensions.toList() ), dependencies ), logging );
+                new CommunityNeoServer( new MapConfigurator( config, extensions.toList() ), dependencies, userLogProvider ), logOutputStream );
         controls.start();
         try
         {
@@ -126,7 +135,6 @@ public class InProcessServerBuilder implements TestServerBuilder
     {
         this.serverFolder = new File(dir, randomFolderName()).getAbsoluteFile();
         config.put( DATABASE_LOCATION_PROPERTY_KEY, serverFolder.getAbsolutePath() );
-        logging = new ClassicLoggingService( new Config( stringMap( store_dir.name(), serverFolder.getAbsolutePath() ) ) );
         return this;
     }
 

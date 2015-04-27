@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class OnDiskLastTxIdGetterTest
 {
@@ -37,7 +38,7 @@ public class OnDiskLastTxIdGetterTest
     {
         // This is a sign that we have some bad coupling on our hands.
         // We currently have to do this because of our lifecycle and construction ordering.
-        InternalAbstractGraphDatabase graphdb = mock( InternalAbstractGraphDatabase.class );
+        GraphDatabaseAPI graphdb = mock( GraphDatabaseAPI.class );
         DependencyResolver resolver = mock( DependencyResolver.class );
         NeoStoreSupplier supplier = mock( NeoStoreSupplier.class );
         NeoStore neoStore = mock( NeoStore.class );

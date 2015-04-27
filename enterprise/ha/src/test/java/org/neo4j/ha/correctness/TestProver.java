@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -27,8 +27,8 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
-import org.neo4j.kernel.impl.util.TestLogging;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Arrays.asList;
@@ -45,9 +45,8 @@ public class TestProver
     public void aClusterSnapshotShouldEqualItsOrigin() throws Exception
     {
         // Given
-        Logging logging = new TestLogging();
         ClusterConfiguration config = new ClusterConfiguration( "default",
-                logging.getMessagesLog( ClusterConfiguration.class ),
+                NullLogProvider.getInstance(),
                 "cluster://localhost:5001",
                 "cluster://localhost:5002",
                 "cluster://localhost:5003" );
@@ -55,11 +54,11 @@ public class TestProver
         ClusterState state = new ClusterState(
                 asList(
                         newClusterInstance( new InstanceId( 1 ), new URI( "cluster://localhost:5001" ),
-                                new Monitors(), config, logging ),
+                                new Monitors(), config, NullLogService.getInstance() ),
                         newClusterInstance( new InstanceId( 2 ), new URI( "cluster://localhost:5002" ),
-                                new Monitors(), config, logging ),
+                                new Monitors(), config, NullLogService.getInstance() ),
                         newClusterInstance( new InstanceId( 3 ), new URI( "cluster://localhost:5003" ),
-                                new Monitors(), config, logging ) ),
+                                new Monitors(), config, NullLogService.getInstance() ) ),
                 emptySetOf( ClusterAction.class )
         );
 
@@ -75,9 +74,8 @@ public class TestProver
     public void twoStatesWithSameSetupAndPendingMessagesShouldBeEqual() throws Exception
     {
         // Given
-        Logging logging = new TestLogging();
         ClusterConfiguration config = new ClusterConfiguration( "default",
-                logging.getMessagesLog( ClusterConfiguration.class ),
+                NullLogProvider.getInstance(),
                 "cluster://localhost:5001",
                 "cluster://localhost:5002",
                 "cluster://localhost:5003" );
@@ -85,11 +83,11 @@ public class TestProver
         ClusterState state = new ClusterState(
                 asList(
                         newClusterInstance( new InstanceId( 1 ), new URI( "cluster://localhost:5001" ),
-                                new Monitors(), config, logging ),
+                                new Monitors(), config, NullLogService.getInstance() ),
                         newClusterInstance( new InstanceId( 2 ), new URI( "cluster://localhost:5002" ),
-                                new Monitors(), config, logging ),
+                                new Monitors(), config, NullLogService.getInstance() ),
                         newClusterInstance( new InstanceId( 3 ), new URI( "cluster://localhost:5003" ),
-                                new Monitors(), config, logging ) ),
+                                new Monitors(), config, NullLogService.getInstance() ) ),
                 emptySetOf( ClusterAction.class )
         );
 

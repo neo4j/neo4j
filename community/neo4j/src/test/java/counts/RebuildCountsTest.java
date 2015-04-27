@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -37,12 +37,11 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.util.TestLogger;
-import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -51,7 +50,7 @@ import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.warn;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class RebuildCountsTest
@@ -76,7 +75,9 @@ public class RebuildCountsTest
         assertEquals( HUMANS, tracker.nodeCount( labelId( HUMAN ), newDoubleLongRegister() ).readSecond() );
 
         // and also
-        logger().assertAtLeastOnce( warn( "Missing counts store, rebuilding it." ) );
+        internalLogProvider.assertAtLeastOnce(
+                inLog( NeoStore.class ).warn( "Missing counts store, rebuilding it." )
+        );
     }
 
     @Test
@@ -99,7 +100,9 @@ public class RebuildCountsTest
         assertEquals( 0, tracker.nodeCount( labelId( HUMAN ), newDoubleLongRegister() ).readSecond() );
 
         // and also
-        logger().assertAtLeastOnce( warn( "Missing counts store, rebuilding it." ) );
+        internalLogProvider.assertAtLeastOnce(
+                inLog( NeoStore.class ).warn( "Missing counts store, rebuilding it." )
+        );
     }
 
     private void createAliensAndHumans()
@@ -185,7 +188,8 @@ public class RebuildCountsTest
 
         fs.mkdirs( storeDir );
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
-        db = dbFactory.setLogging( logging )
+        db = dbFactory.setUserLogProvider( userLogProvider )
+                      .setInternalLogProvider( internalLogProvider )
                       .setFileSystem( fs )
                       .addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) )
                       .newImpermanentDatabaseBuilder( storeDir.getAbsolutePath() )
@@ -205,11 +209,6 @@ public class RebuildCountsTest
         }
     }
 
-    private TestLogger logger()
-    {
-        return logging.getMessagesLog( StoreFactory.class );
-    }
-
     private static final int ALIENS = 16;
     private static final int HUMANS = 16;
     private static final Label ALIEN = label( "Alien" );
@@ -218,7 +217,8 @@ public class RebuildCountsTest
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
-    private final TestLogging logging = new TestLogging();
+    private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
+    private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
 
     private GraphDatabaseService db;
     private final File storeDir = new File( "store" ).getAbsoluteFile();

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -27,13 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 
-import static java.lang.String.format;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
@@ -47,17 +46,17 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
 
     /** Quick lookup of users by name */
     private final Map<String, User> usersByName = new ConcurrentHashMap<>();
-    private final StringLogger log;
+    private final Log log;
 
     /** Master list of users */
     private volatile List<User> users = new ArrayList<>();
 
     private final UserSerialization serialization = new UserSerialization();
 
-    public FileUserRepository( Path file, Logging logging )
+    public FileUserRepository( Path file, LogProvider logProvider )
     {
         this.authFile = file.toAbsolutePath();
-        this.log = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -210,7 +209,7 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
             loadedUsers = serialization.deserializeUsers( fileBytes );
         } catch ( UserSerialization.FormatException e )
         {
-            log.error( format( "Ignoring authorization file \"%s\" (%s)", authFile.toAbsolutePath(), e.getMessage() ) );
+            log.error( "Ignoring authorization file \"%s\" (%s)", authFile.toAbsolutePath(), e.getMessage() );
             loadedUsers = new ArrayList<>();
         }
 

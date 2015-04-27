@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -26,9 +26,8 @@ import java.util.Map;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.advanced.helpers.AdvancedServerBuilder;
@@ -59,10 +58,10 @@ public class ServerManagementTest
                 AdvancedServerBuilder
                         .server()
                         .usingDatabaseDir( dbDirectory1 )
-                        .createPropertiesFiles(), ConsoleLogger.DEV_NULL );
+                        .createPropertiesFiles(), NullLog.getInstance() );
 
         // When
-        NeoServer server = cleanup.add( new AdvancedNeoServer( config, graphDbDependencies() ) );
+        NeoServer server = cleanup.add( new AdvancedNeoServer( config, graphDbDependencies(), NullLogProvider.getInstance() ) );
         server.start();
 
         assertNotNull( server.getDatabase().getGraph() );
@@ -80,7 +79,7 @@ public class ServerManagementTest
 
     private static GraphDatabaseDependencies graphDbDependencies()
     {
-        return GraphDatabaseDependencies.newDependencies().logging( new SingleLoggingService( StringLogger.DEV_NULL ) );
+        return GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() );
     }
 
     private static void setProperty( Config config, String key, String value )

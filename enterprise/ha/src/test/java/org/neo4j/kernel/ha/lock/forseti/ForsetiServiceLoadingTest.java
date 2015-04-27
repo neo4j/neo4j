@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.test.EmbeddedDatabaseRule;
@@ -50,7 +50,7 @@ public class ForsetiServiceLoadingTest
     public void shouldAllowUsingCommunityLockManager() throws Exception
     {
         // When
-        dbRule.setConfig( InternalAbstractGraphDatabase.Configuration.lock_manager, "community" );
+        dbRule.setConfig( GraphDatabaseFacadeFactory.Configuration.lock_manager, "community" );
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
 
         // Then

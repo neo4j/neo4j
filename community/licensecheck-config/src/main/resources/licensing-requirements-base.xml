@@ -36,9 +36,6 @@
     </artifact>
   </missing-licenses>
   <override-licenses>
-    <artifact id="org.slf4j:jcl-over-slf4j:">
-      <license>ASL2.0</license>
-    </artifact>
     <artifact id="org.scala-lang:scala-library:">
       <license>BSD - Scala License</license>
     </artifact>

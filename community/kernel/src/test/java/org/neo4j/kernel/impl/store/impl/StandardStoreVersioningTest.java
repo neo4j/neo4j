@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.store.format.Store;
 import org.neo4j.kernel.impl.store.standard.StandardStore;
 import org.neo4j.kernel.impl.store.standard.StoreFormat;
 import org.neo4j.kernel.impl.store.standard.StoreToolkit;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
@@ -62,10 +62,10 @@ public class StandardStoreVersioningTest
     {
         // Given
         Store<?, ?> onePointOhStore = new StandardStore<>( new VersionedStoreFormat("v0.1.0"),
-                new File("/store"), new TestStoreIdGenerator(), pageCache, fsRule.get(), StringLogger.DEV_NULL );
+                new File("/store"), new TestStoreIdGenerator(), pageCache, fsRule.get(), NullLogProvider.getInstance() );
 
         Store<?, ?> twoPointOhStore = new StandardStore<>( new VersionedStoreFormat("v0.2.0"),
-                new File("/store"), new TestStoreIdGenerator(), pageCache, fsRule.get(), StringLogger.DEV_NULL );
+                new File("/store"), new TestStoreIdGenerator(), pageCache, fsRule.get(), NullLogProvider.getInstance() );
 
         // A store with an older version
         onePointOhStore.start();

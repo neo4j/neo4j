@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,6 +21,7 @@ package org.neo4j.graphdb.factory;
 
 import org.junit.Test;
 
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Config;
 
@@ -48,7 +49,17 @@ public class GraphDatabaseSettingsTest
     {
         Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
         String name = setting.name();
-        assertThat( new Config( stringMap( name, "244" ) ).get( setting ), is( 244L ) );
+        assertThat( new Config( stringMap( name, "16384" ) ).get( setting ), is( 16 * KiB ) );
         assertThat( new Config( stringMap( name, "2244g" ) ).get( setting ), is( 2244 * GiB ) );
+    }
+
+    @Test( expected = InvalidSettingException.class )
+    public void pageCacheSettingMustRejectOverlyConstrainedMemorySetting() throws Exception
+    {
+        long pageSize = new Config().get( GraphDatabaseSettings.mapped_memory_page_size );
+        Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
+        String name = setting.name();
+        // We configure the page cache to have one byte less than two pages worth of memory. This must throw:
+        new Config( stringMap( name, "" + (pageSize * 2 - 1) ) ).get( setting );
     }
 }

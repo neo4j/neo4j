@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.PathImpl
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.NestedPipeExpression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{PathImpl, NestedPipeExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ArgumentPipe, ExpandAllPipe, LazyTypes}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, LegacyExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.BeLikeMatcher._
@@ -369,7 +368,8 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
       )
     }
 
-    val legacyExpression = result.executionPlanDescription().arguments.collect {case n: LegacyExpression => n}.head
+    val args = result.executionPlanDescription().children.head.arguments
+    val legacyExpression = args.collect {case n: LegacyExpression => n}.head
     val pipe = legacyExpression.value.asInstanceOf[NestedPipeExpression].pipe
 
     pipe should beLike {

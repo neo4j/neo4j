@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,8 +22,8 @@ package org.neo4j.jmx.impl;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
 
 @Service.Implementation(KernelExtensionFactory.class)
 public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensionFactory.Dependencies>
@@ -32,7 +32,7 @@ public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensi
     {
         KernelData getKernelData();
 
-        Logging getLogging();
+        LogService getLogService();
     }
 
 
@@ -46,6 +46,6 @@ public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensi
     @Override
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        return new JmxKernelExtension( dependencies.getKernelData(), dependencies.getLogging() );
+        return new JmxKernelExtension( dependencies.getKernelData(), dependencies.getLogService().getInternalLogProvider() );
     }
 }

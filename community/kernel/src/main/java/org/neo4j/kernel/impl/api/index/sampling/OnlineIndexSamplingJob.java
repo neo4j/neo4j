@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -25,8 +25,8 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
@@ -38,18 +38,18 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     private final IndexDescriptor indexDescriptor;
     private final IndexProxy indexProxy;
     private final IndexStoreView storeView;
-    private final StringLogger logger;
+    private final Log log;
     private final String indexUserDescription;
 
     public OnlineIndexSamplingJob( IndexProxy indexProxy,
                                    IndexStoreView storeView,
                                    String indexUserDescription,
-                                   Logging logging )
+                                   LogProvider logProvider )
     {
         this.indexDescriptor = indexProxy.getDescriptor();
         this.indexProxy = indexProxy;
         this.storeView = storeView;
-        this.logger = logging.getMessagesLog( OnlineIndexSamplingJob.class );
+        this.log = logProvider.getLog( getClass() );
         this.indexUserDescription = indexUserDescription;
     }
 
@@ -62,7 +62,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     @Override
     public void run()
     {
-        try( DurationLogger durationLogger = new DurationLogger( logger, "Sampling index " + indexUserDescription ) )
+        try( DurationLogger durationLogger = new DurationLogger( log, "Sampling index " + indexUserDescription ) )
         {
             try
             {
@@ -78,7 +78,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
                         long sampleSize = sample.readSecond();
                         storeView.replaceIndexCounts( indexDescriptor, unique, sampleSize, indexSize );
                         durationLogger.markAsFinished();
-                        logger.info(
+                        log.info(
                             format( "Sampled index %s with %d unique values in sample of avg size %d taken from " +
                                     "index containing %d entries",
                                     indexUserDescription, unique, sampleSize, indexSize ) );

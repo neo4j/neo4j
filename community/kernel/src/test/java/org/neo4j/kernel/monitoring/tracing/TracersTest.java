@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -24,31 +24,31 @@ import org.junit.Test;
 
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 public class TracersTest
 {
-    private StringLogger msgLog;
-    private StringBuffer logBuffer;
+    private AssertableLogProvider logProvider;
+    private Log log;
 
     @Before
     public void setUp()
     {
-        logBuffer = new StringBuffer();
-        msgLog = StringLogger.wrap( logBuffer );
+        logProvider = new AssertableLogProvider();
+        log = logProvider.getLog( getClass() );
         System.setProperty( "org.neo4j.helpers.Service.printServiceLoaderStackTraces", "true" );
     }
 
     @Test
     public void mustProduceNullImplementationsWhenRequested() throws Exception
     {
-        Tracers tracers = new Tracers( "null", msgLog );
+        Tracers tracers = new Tracers( "null", log );
         assertThat( tracers.pageCacheTracer, is( PageCacheTracer.NULL ) );
         assertThat( tracers.transactionTracer, is( TransactionTracer.NULL ) );
         assertNoWarning();
@@ -57,7 +57,7 @@ public class TracersTest
     @Test
     public void mustProduceNullImplementationsWhenRequestedIgnoringCase() throws Exception
     {
-        Tracers tracers = new Tracers( "NuLl", msgLog );
+        Tracers tracers = new Tracers( "NuLl", log );
         assertThat( tracers.pageCacheTracer, is( PageCacheTracer.NULL ) );
         assertThat( tracers.transactionTracer, is( TransactionTracer.NULL ) );
         assertNoWarning();
@@ -66,7 +66,7 @@ public class TracersTest
     @Test
     public void mustProduceDefaultImplementationForNullConfiguration() throws Exception
     {
-        Tracers tracers = new Tracers( null, msgLog );
+        Tracers tracers = new Tracers( null, log );
         assertDefaultImplementation( tracers );
         assertNoWarning();
     }
@@ -74,7 +74,7 @@ public class TracersTest
     @Test
     public void mustProduceDefaultImplementationWhenRequested() throws Exception
     {
-        Tracers tracers = new Tracers( "default", msgLog );
+        Tracers tracers = new Tracers( "default", log );
         assertDefaultImplementation( tracers );
         assertNoWarning();
     }
@@ -82,7 +82,7 @@ public class TracersTest
     @Test
     public void mustProduceDefaultImplementationWhenRequestedIgnoringCase() throws Exception
     {
-        Tracers tracers = new Tracers( "DeFaUlT", msgLog );
+        Tracers tracers = new Tracers( "DeFaUlT", log );
         assertDefaultImplementation( tracers );
         assertNoWarning();
     }
@@ -90,9 +90,9 @@ public class TracersTest
     @Test
     public void mustProduceDefaultImplementationWhenRequestingUnknownImplementation() throws Exception
     {
-        Tracers tracers = new Tracers( "there's nothing like this", msgLog );
+        Tracers tracers = new Tracers( "there's nothing like this", log );
         assertDefaultImplementation( tracers );
-        assertWarning();
+        assertWarning( "there's nothing like this" );
     }
 
     private void assertDefaultImplementation( Tracers tracers )
@@ -103,11 +103,13 @@ public class TracersTest
 
     private void assertNoWarning()
     {
-        assertThat( logBuffer.toString(), is( "" ) );
+        logProvider.assertNoLoggingOccurred();
     }
 
-    private void assertWarning()
+    private void assertWarning( String implementationName )
     {
-        assertThat( logBuffer.toString(), not( is( "" ) ) );
+        logProvider.assertExactly(
+                AssertableLogProvider.inLog( getClass() ).warn( "Using default tracer implementations instead of '%s'", implementationName )
+        );
     }
 }

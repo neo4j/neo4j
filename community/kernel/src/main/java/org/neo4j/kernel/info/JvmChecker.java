@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.info;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 public class JvmChecker
 {
@@ -28,12 +28,12 @@ public class JvmChecker
     public static final String INCOMPATIBLE_JVM_VERSION_WARNING = "You are using an unsupported version of " +
             "the Java runtime. Please use Oracle(R) Java(TM) Runtime Environment 7 or OpenJDK(TM) 7.";
 
-    private final StringLogger stringLogger;
+    private final Log log;
     private final JvmMetadataRepository jvmMetadataRepository;
 
-    public JvmChecker( StringLogger stringLogger, JvmMetadataRepository jvmMetadataRepository )
+    public JvmChecker( Log log, JvmMetadataRepository jvmMetadataRepository )
     {
-        this.stringLogger = stringLogger;
+        this.log = log;
         this.jvmMetadataRepository = jvmMetadataRepository;
     }
 
@@ -44,11 +44,11 @@ public class JvmChecker
 
         if ( !javaVmName.matches( "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM" ) )
         {
-            stringLogger.warn( INCOMPATIBLE_JVM_WARNING );
+            log.warn( INCOMPATIBLE_JVM_WARNING );
         }
         else if ( !javaVersion.matches( "^1\\.7.*" ) )
         {
-            stringLogger.warn( INCOMPATIBLE_JVM_VERSION_WARNING );
+            log.warn( INCOMPATIBLE_JVM_VERSION_WARNING );
         }
     }
 }

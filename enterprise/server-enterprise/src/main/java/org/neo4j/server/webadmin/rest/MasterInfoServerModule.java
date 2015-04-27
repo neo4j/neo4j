@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,8 +23,8 @@ import java.net.URI;
 import java.util.List;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
@@ -35,13 +35,13 @@ public class MasterInfoServerModule implements ServerModule
 {
     private final WebServer server;
     private final Config config;
-    private final ConsoleLogger log;
+    private final Log log;
 
-    public MasterInfoServerModule( WebServer server, Config config, Logging logging )
+    public MasterInfoServerModule( WebServer server, Config config, LogProvider logProvider )
     {
         this.server = server;
         this.config = config;
-        this.log = logging.getConsoleLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -50,7 +50,7 @@ public class MasterInfoServerModule implements ServerModule
         URI baseUri = managementApiUri();
         server.addJAXRSClasses( getClassNames(), baseUri.toString(), null );
 
-        log.log( "Mounted REST API at: " + baseUri.toString() );
+        log.info( "Mounted REST API at: %s", baseUri.toString() );
     }
 
     @Override

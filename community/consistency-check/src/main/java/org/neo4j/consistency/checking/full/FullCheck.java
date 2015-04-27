@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 public class FullCheck
 {
@@ -70,11 +70,11 @@ public class FullCheck
         this.progressFactory = progressFactory;
     }
 
-    public ConsistencySummaryStatistics execute( DirectStoreAccess stores, StringLogger logger )
+    public ConsistencySummaryStatistics execute( DirectStoreAccess stores, Log log )
             throws ConsistencyCheckIncompleteException
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
-        InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( logger ), summary );
+        InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( log ), summary );
 
         OwnerCheck ownerCheck = new OwnerCheck( checkPropertyOwners );
         CountsBuilderDecorator countsBuilder =
@@ -100,7 +100,7 @@ public class FullCheck
 
         if ( !summary.isConsistent() )
         {
-            logger.logMessage( "Inconsistencies found: " + summary );
+            log.warn( "Inconsistencies found: " + summary );
         }
         return summary;
     }

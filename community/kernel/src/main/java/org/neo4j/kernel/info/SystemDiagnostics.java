@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -50,9 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
+import org.neo4j.logging.Logger;
 
 enum SystemDiagnostics implements DiagnosticsProvider
 {
@@ -62,7 +60,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
         private static final String IBM_OS_BEAN = "com.ibm.lang.management.OperatingSystemMXBean";
         
         @Override
-        void dump( StringLogger.LineLogger logger )
+        void dump( Logger logger )
         {
             OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
             logBeanBytesProperty( logger, "Total Physical memory: ", os, SUN_OS_BEAN, "getTotalPhysicalMemorySize" );
@@ -74,29 +72,29 @@ enum SystemDiagnostics implements DiagnosticsProvider
             logBeanBytesProperty( logger, "Free physical memory: ", os, IBM_OS_BEAN, "getFreePhysicalMemorySize" );
         }
 
-        private void logBeanBytesProperty( StringLogger.LineLogger logger, String message, Object bean, String type,
+        private void logBeanBytesProperty( Logger logger, String message, Object bean, String type,
                 String method )
         {
             Object value = getBeanProperty( bean, type, method, null );
-            if ( value instanceof Number ) logger.logLine( message + bytes( ( (Number) value ).longValue() ) );
+            if ( value instanceof Number ) logger.log( message + bytes( ( (Number) value ).longValue() ) );
         }
     },
     JAVA_MEMORY( "JVM memory information:" )
     {
         @Override
-        void dump( StringLogger.LineLogger logger )
+        void dump( Logger logger )
         {
-            logger.logLine( "Free  memory: " + bytes( Runtime.getRuntime().freeMemory() ) );
-            logger.logLine( "Total memory: " + bytes( Runtime.getRuntime().totalMemory() ) );
-            logger.logLine( "Max   memory: " + bytes( Runtime.getRuntime().maxMemory() ) );
+            logger.log( "Free  memory: " + bytes( Runtime.getRuntime().freeMemory() ) );
+            logger.log( "Total memory: " + bytes( Runtime.getRuntime().totalMemory() ) );
+            logger.log( "Max   memory: " + bytes( Runtime.getRuntime().maxMemory() ) );
             for ( GarbageCollectorMXBean gc : ManagementFactory.getGarbageCollectorMXBeans() )
             {
-                logger.logLine( "Garbage Collector: " + gc.getName() + ": " + Arrays.toString( gc.getMemoryPoolNames() ) );
+                logger.log( "Garbage Collector: " + gc.getName() + ": " + Arrays.toString( gc.getMemoryPoolNames() ) );
             }
             for ( MemoryPoolMXBean pool : ManagementFactory.getMemoryPoolMXBeans() )
             {
                 MemoryUsage usage = pool.getUsage();
-                logger.logLine( String.format( "Memory Pool: %s (%s): committed=%s, used=%s, max=%s, threshold=%s",
+                logger.log( String.format( "Memory Pool: %s (%s): committed=%s, used=%s, max=%s, threshold=%s",
                         pool.getName(), pool.getType(), usage == null ? "?" : bytes( usage.getCommitted() ),
                         usage == null ? "?" : bytes( usage.getUsed() ), usage == null ? "?" : bytes( usage.getMax() ),
                         pool.isUsageThresholdSupported() ? bytes( pool.getUsageThreshold() ) : "?" ) );
@@ -108,17 +106,17 @@ enum SystemDiagnostics implements DiagnosticsProvider
         private static final String SUN_UNIX_BEAN = "com.sun.management.UnixOperatingSystemMXBean";
         
         @Override
-        void dump( StringLogger.LineLogger logger )
+        void dump( Logger logger )
         {
             OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
-            logger.logLine( String.format( "Operating System: %s; version: %s; arch: %s; cpus: %s", os.getName(),
+            logger.log( String.format( "Operating System: %s; version: %s; arch: %s; cpus: %s", os.getName(),
                     os.getVersion(), os.getArch(), os.getAvailableProcessors() ) );
             logBeanProperty( logger, "Max number of file descriptors: ", os, SUN_UNIX_BEAN, "getMaxFileDescriptorCount" );
             logBeanProperty( logger, "Number of open file descriptors: ", os, SUN_UNIX_BEAN, "getOpenFileDescriptorCount" );
-            logger.logLine( "Process id: " + runtime.getName() );
-            logger.logLine( "Byte order: " + ByteOrder.nativeOrder() );
-            logger.logLine( "Local timezone: " + getLocalTimeZone() );
+            logger.log( "Process id: " + runtime.getName() );
+            logger.log( "Byte order: " + ByteOrder.nativeOrder() );
+            logger.log( "Local timezone: " + getLocalTimeZone() );
         }
 
         private String getLocalTimeZone()
@@ -127,31 +125,30 @@ enum SystemDiagnostics implements DiagnosticsProvider
             return tz.getID();
         }
 
-
-        private void logBeanProperty( StringLogger.LineLogger logger, String message, Object bean, String type, String method )
+        private void logBeanProperty( Logger logger, String message, Object bean, String type, String method )
         {
             Object value = getBeanProperty( bean, type, method, null );
-            if ( value != null ) logger.logLine( message + value );
+            if ( value != null ) logger.log( message + value );
         }
     },
     JAVA_VIRTUAL_MACHINE( "JVM information:" )
     {
         @Override
-        void dump( StringLogger.LineLogger logger )
+        void dump( Logger logger )
         {
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
-            logger.logLine( "VM Name: " + runtime.getVmName() );
-            logger.logLine( "VM Vendor: " + runtime.getVmVendor() );
-            logger.logLine( "VM Version: " + runtime.getVmVersion() );
+            logger.log( "VM Name: " + runtime.getVmName() );
+            logger.log( "VM Vendor: " + runtime.getVmVendor() );
+            logger.log( "VM Version: " + runtime.getVmVersion() );
             CompilationMXBean compiler = ManagementFactory.getCompilationMXBean();
-            logger.logLine( "JIT compiler: " + ( ( compiler == null ) ? "unknown" : compiler.getName() ) );
-            logger.logLine( "VM Arguments: " + runtime.getInputArguments() );
+            logger.log( "JIT compiler: " + ( ( compiler == null ) ? "unknown" : compiler.getName() ) );
+            logger.log( "VM Arguments: " + runtime.getInputArguments() );
         }
     },
     CLASSPATH( "Java classpath:" )
     {
         @Override
-        void dump( StringLogger.LineLogger logger )
+        void dump( Logger logger )
         {
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             Collection<String> classpath;
@@ -168,7 +165,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
             }
             for ( String path : classpath )
             {
-                logger.logLine( path );
+                logger.log( path );
             }
         }
 
@@ -215,19 +212,19 @@ enum SystemDiagnostics implements DiagnosticsProvider
     LIBRARY_PATH( "Library path:" )
     {
         @Override
-        void dump( StringLogger.LineLogger logger )
+        void dump( Logger logger )
         {
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             for ( String path : runtime.getLibraryPath().split( File.pathSeparator ) )
             {
-                logger.logLine( canonicalize( path ) );
+                logger.log( canonicalize( path ) );
             }
         }
     },
     SYSTEM_PROPERTIES( "System.properties:" )
     {
         @Override
-        void dump( StringLogger.LineLogger logger )
+        void dump( Logger logger )
         {
             for ( Object property : System.getProperties().keySet() )
             {
@@ -236,7 +233,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
                     String key = (String) property;
                     if ( key.startsWith( "java." ) || key.startsWith( "os." ) || key.endsWith( ".boot.class.path" )
                          || key.equals( "line.separator" ) ) continue;
-                    logger.logLine( key + " = " + System.getProperty( key ) );
+                    logger.log( key + " = " + System.getProperty( key ) );
                 }
             }            
         }
@@ -252,7 +249,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
         }
 
         @Override
-        void dump( StringLogger.LineLogger logger )
+        void dump( Logger logger )
         {
             for ( File subdir : SYS_BLOCK.listFiles( new java.io.FileFilter()
             {
@@ -272,7 +269,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
                         try
                         {
                             for ( String line; null != ( line = reader.readLine() ); )
-                                logger.logLine( line );
+                                logger.log( line );
                         }
                         finally
                         {
@@ -290,7 +287,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
     NETWORK( "Network information:" )
     {
         @Override
-        void dump( LineLogger logger )
+        void dump( Logger logger )
         {
             try
             {
@@ -299,19 +296,19 @@ enum SystemDiagnostics implements DiagnosticsProvider
                 while ( networkInterfaces.hasMoreElements() )
                 {
                     NetworkInterface iface = networkInterfaces.nextElement();
-                    logger.logLine( String.format( "Interface %s:", iface.getDisplayName() ) );
+                    logger.log( String.format( "Interface %s:", iface.getDisplayName() ) );
 
                     Enumeration<InetAddress> addresses = iface.getInetAddresses();
                     while ( addresses.hasMoreElements() )
                     {
                         InetAddress address = addresses.nextElement();
                         String hostAddress = address.getHostAddress();
-                        logger.logLine( String.format( "    address: %s", hostAddress ) );
+                        logger.log( "    address: %s", hostAddress );
                     }
                 }
             } catch ( SocketException e )
             {
-                logger.logLine( "ERROR: failed to inspect network interfaces and addresses: " + e.getMessage() );
+                logger.log( "ERROR: failed to inspect network interfaces and addresses: " + e.getMessage() );
             }
         }
     },
@@ -349,23 +346,16 @@ enum SystemDiagnostics implements DiagnosticsProvider
     }
 
     @Override
-    public void dump( DiagnosticsPhase phase, StringLogger log )
+    public void dump( DiagnosticsPhase phase, Logger logger )
     {
         if ( phase.isInitialization() || phase.isExplicitlyRequested() )
         {
-            log.logLongMessage( message, new Visitor<StringLogger.LineLogger, RuntimeException>()
-            {
-                @Override
-                public boolean visit( LineLogger logger )
-                {
-                    dump( logger );
-                    return false;
-                }
-            }, true );
+            logger.log( message );
+            dump( logger );
         }
     }
 
-    abstract void dump( StringLogger.LineLogger logger );
+    abstract void dump( Logger logger );
 
     private static String canonicalize( String path )
     {

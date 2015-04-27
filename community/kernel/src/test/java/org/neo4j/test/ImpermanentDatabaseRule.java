@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,33 +21,46 @@ package org.neo4j.test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
 /**
  * JUnit @Rule for configuring, creating and managing an ImpermanentGraphDatabase instance.
  */
 public class ImpermanentDatabaseRule extends DatabaseRule
 {
-    private Logging logging;
+    private final LogProvider userLogProvider;
+    private final LogProvider internalLogProvider;
 
     public ImpermanentDatabaseRule()
     {
+        this( null );
     }
 
-    public ImpermanentDatabaseRule( Logging logging )
+    public ImpermanentDatabaseRule( LogProvider logProvider )
     {
-        this.logging = logging;
+        this.userLogProvider = logProvider;
+        this.internalLogProvider = logProvider;
     }
 
     @Override
     protected GraphDatabaseFactory newFactory()
     {
-        return new TestGraphDatabaseFactory( logging );
+        return maybeSetInternalLogProvider( maybeSetUserLogProvider( new TestGraphDatabaseFactory() ) );
     }
 
     @Override
     protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
     {
         return ((TestGraphDatabaseFactory) factory).newImpermanentDatabaseBuilder();
+    }
+
+    private TestGraphDatabaseFactory maybeSetUserLogProvider( TestGraphDatabaseFactory factory )
+    {
+        return ( userLogProvider == null ) ? factory : factory.setUserLogProvider( userLogProvider );
+    }
+
+    private TestGraphDatabaseFactory maybeSetInternalLogProvider( TestGraphDatabaseFactory factory )
+    {
+        return ( internalLogProvider == null ) ? factory : factory.setInternalLogProvider( internalLogProvider );
     }
 }

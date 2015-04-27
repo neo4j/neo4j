@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -27,10 +27,10 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
 import org.neo4j.ndp.runtime.Sessions;
 import org.neo4j.ndp.runtime.internal.StandardSessions;
 import org.neo4j.ndp.transport.socket.SocketTransport;
@@ -47,19 +47,21 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
 {
     public static class Settings
     {
-        @Description( "Max time that sessions can be idle, after this interval a session will get closed." )
-        public static final Setting<Boolean> ndp_enabled = setting("experimental.ndp.enabled", BOOLEAN,
+        @Description("Max time that sessions can be idle, after this interval a session will get closed.")
+        public static final Setting<Boolean> ndp_enabled = setting( "experimental.ndp.enabled", BOOLEAN,
                 "false" );
 
-        @Description( "Host and port for the Neo4j Data Protocol http transport" )
+        @Description("Host and port for the Neo4j Data Protocol http transport")
         public static final Setting<HostnamePort> ndp_address =
-                setting("dbms.ndp.address", HOSTNAME_PORT, "localhost:7687" );
+                setting( "dbms.ndp.address", HOSTNAME_PORT, "localhost:7687" );
     }
 
     public interface Dependencies
     {
-        Logging logging();
+        LogService logService();
+
         Config config();
+
         GraphDatabaseService db();
     }
 
@@ -74,11 +76,11 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
         final Config config = dependencies.config();
         final GraphDatabaseService gdb = dependencies.db();
         final GraphDatabaseAPI api = (GraphDatabaseAPI) gdb;
-        final StringLogger log = dependencies.logging().getMessagesLog( Sessions.class );
+        final Log log = dependencies.logService().getInternalLog( Sessions.class );
         final HostnamePort address = config.get( Settings.ndp_address );
         final LifeSupport life = new LifeSupport();
 
-        if(config.get( Settings.ndp_enabled ))
+        if ( config.get( Settings.ndp_enabled ) )
         {
             final Sessions env = life.add( new StandardSessions( api, log ) );
 

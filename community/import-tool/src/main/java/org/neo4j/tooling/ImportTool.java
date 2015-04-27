@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -36,17 +36,22 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.Version;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.util.Converters;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.ClassicLoggingService;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -56,13 +61,11 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
-import static java.lang.System.out;
 import static java.nio.charset.Charset.defaultCharset;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
@@ -133,11 +136,6 @@ public class ImportTool
         STACKTRACE( "stacktrace", null,
                 "<true/false>",
                 "Enable printing of error stack traces." ),
-        BAD( "bad", null,
-                "<file name>",
-                "Relationships that refer to nodes that cannot be found can, instead of making the import fail,"
-                        + " be logged to a file specified by this option. Can be relative (to store directory)"
-                        + " or absolute" ),
         BAD_TOLERANCE( "bad-tolerance", 1000,
                 "<max number of bad entries>",
                 "Number of bad entries before the import is considered failed. This tolerance threshold is "
@@ -155,14 +153,14 @@ public class ImportTool
                 "Whether or not to skip importing relationships that refers to missing node ids, i.e. either "
                         + "start or end node id/group referring to node that wasn't specified by the "
                         + "node input data. "
-                        + "Skipped nodes will be logged into file specified by " + BAD.key()
+                        + "Skipped nodes will be logged"
                         + ", containing at most number of entites specified by " + BAD_TOLERANCE.key() + "." ),
         SKIP_DUPLICATE_NODES( "skip-duplicate-nodes", Boolean.FALSE,
                 "<true/false>",
                 "Whether or not to skip importing nodes that have the same id/group. In the event of multiple "
                         + "nodes within the same group having the same id, the first encountered will be imported "
                         + "whereas consecutive such nodes will be skipped. "
-                        + "Skipped nodes will be logged into file specified by " + BAD.key()
+                        + "Skipped nodes will be logged"
                         + ", containing at most number of entites specified by " + BAD_TOLERANCE.key() + "." );
 
 
@@ -240,7 +238,7 @@ public class ImportTool
      *
      * @param incomingArguments arguments for specifying input and configuration for the import.
      */
-    public static void main( String[] incomingArguments )
+    public static void main( String[] incomingArguments ) throws IOException
     {
         main( incomingArguments, false );
     }
@@ -252,7 +250,7 @@ public class ImportTool
      * @param defaultSettingsSuitableForTests default configuration geared towards unit/integration
      * test environments, for example lower default buffer sizes.
      */
-    public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests )
+    public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests ) throws IOException
     {
         Args args = Args.parse( incomingArguments );
         if ( asksForUsage( args ) )
@@ -267,7 +265,6 @@ public class ImportTool
         boolean enableStacktrace;
         Number processors = null;
         Input input = null;
-        String badFileName;
         int badTolerance;
         Charset inputEncoding;
         boolean skipBadRelationships, skipDuplicateNodes;
@@ -278,14 +275,13 @@ public class ImportTool
                     Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
             nodesFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.NODE_DATA.key() );
             relationshipsFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.RELATIONSHIP_DATA.key() );
+            validateInputFiles( nodesFiles, relationshipsFiles );
             enableStacktrace = args.getBoolean( Options.STACKTRACE.key(), Boolean.FALSE, Boolean.TRUE );
             processors = args.getNumber( Options.PROCESSORS.key(), null );
             IdType idType = args.interpretOption( Options.ID_TYPE.key(),
                     withDefault( (IdType)Options.ID_TYPE.defaultValue() ), TO_ID_TYPE );
             badTolerance = args.getNumber( Options.BAD_TOLERANCE.key(),
                     (Number) Options.BAD_TOLERANCE.defaultValue() ).intValue();
-
-            badFileName = args.get( Options.BAD.key );
             inputEncoding = Charset.forName( args.get( Options.INPUT_ENCODING.key(), defaultCharset().name() ) );
             skipBadRelationships = args.getBoolean( Options.SKIP_BAD_RELATIONSHIPS.key(),
                     (Boolean)Options.SKIP_BAD_RELATIONSHIPS.defaultValue(), true );
@@ -303,15 +299,18 @@ public class ImportTool
         }
 
         LifeSupport life = new LifeSupport();
-        Logging logging = life.add( new ClassicLoggingService(
-                new Config( stringMap( store_dir.name(), storeDir.getAbsolutePath() ) ) ) );
+
+        JobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
+        LogService logService = life.add( new StoreLogService( NullLogProvider.getInstance(), fs, storeDir, jobScheduler ) );
+
         life.start();
         org.neo4j.unsafe.impl.batchimport.Configuration config =
-                importConfiguration( processors, badFileName, defaultSettingsSuitableForTests );
+                importConfiguration( processors, defaultSettingsSuitableForTests );
         BatchImporter importer = new ParallelBatchImporter( storeDir.getPath(),
                 config,
-                logging,
+                logService.getInternalLogProvider(),
                 ExecutionMonitors.defaultVisible() );
+        printInputSummary( storeDir, nodesFiles, relationshipsFiles );
         boolean success = false;
         try
         {
@@ -324,10 +323,10 @@ public class ImportTool
         }
         finally
         {
-            File badFile = config.badFile( storeDir );
+            File badFile = new File( storeDir, BAD_FILE_NAME );
             if ( badFile.exists() )
             {
-                out.println( "There were bad entries which were skipped and logged into " +
+                System.out.println( "There were bad entries which were skipped and logged into " +
                         badFile.getAbsolutePath() );
             }
 
@@ -352,8 +351,57 @@ public class ImportTool
         }
     }
 
+    private static void printInputSummary( File storeDir, Collection<Option<File[]>> nodesFiles,
+            Collection<Option<File[]>> relationshipsFiles )
+    {
+        System.out.println( "Importing the contents of these files into " + storeDir + ":" );
+        printInputFiles( "Nodes", nodesFiles );
+        printInputFiles( "Relationships", relationshipsFiles );
+    }
+
+    private static void printInputFiles( String name, Collection<Option<File[]>> files )
+    {
+        if ( files.isEmpty() )
+        {
+            return;
+        }
+
+        System.out.println( name + ":" );
+        int i = 0;
+        String indent = "  ";
+        for ( Option<File[]> group : files )
+        {
+            if ( i++ > 0 )
+            {
+                System.out.println();
+            }
+            if ( group.metadata() != null )
+            {
+                System.out.println( indent + ":" + group.metadata() );
+            }
+            for ( File file : group.value() )
+            {
+                System.out.println( indent + file );
+            }
+        }
+        System.out.println();
+    }
+
+    private static void validateInputFiles( Collection<Option<File[]>> nodesFiles,
+            Collection<Option<File[]>> relationshipsFiles )
+    {
+        if ( nodesFiles.isEmpty() )
+        {
+            if ( relationshipsFiles.isEmpty() )
+            {
+                throw new IllegalArgumentException( "No input specified, nothing to import" );
+            }
+            throw new IllegalArgumentException( "No node input specified, cannot import relationships without nodes" );
+        }
+    }
+
     private static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
-            final String badFileName, final boolean defaultSettingsSuitableForTests )
+            final boolean defaultSettingsSuitableForTests )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
         {
@@ -361,18 +409,6 @@ public class ImportTool
             public int maxNumberOfProcessors()
             {
                 return processors != null ? processors.intValue() : super.maxNumberOfProcessors();
-            }
-
-            @Override
-            public File badFile( File storeDirectory )
-            {
-                if ( badFileName == null )
-                {
-                    return super.badFile( storeDirectory );
-                }
-
-                File part = new File( badFileName );
-                return part.isAbsolute() ? part : new File( storeDirectory, badFileName );
             }
 
             @Override
@@ -389,13 +425,20 @@ public class ImportTool
      */
     private static RuntimeException andPrintError( String typeOfError, Exception e, boolean stackTrace )
     {
+        if ( e.getClass().equals( DuplicateInputIdException.class ) )
+        {
+            System.err.println( "Duplicate input ids that would otherwise clash can be put into separate id space,"
+                    + " read more about how to use id spaces in the manual:"
+                    + " http://neo4j.com/docs/" + Version.getKernel().getVersion() +
+                    "/import-tool-header-format.html#_id_spaces" );
+        }
+
         System.err.println( typeOfError + ": " + e.getMessage() );
         if ( stackTrace )
         {
             e.printStackTrace( System.err );
         }
         System.err.println();
-        printUsage( System.err );
 
         // Mute the stack trace that the default exception handler would have liked to print.
         // Calling System.exit( 1 ) or similar would be convenient on one hand since we can set
@@ -556,8 +599,31 @@ public class ImportTool
         public Collection<Option<File[]>> apply( Args args, String key )
         {
             return args.interpretOptionsWithMetadata( key, Converters.<File[]>optional(),
-                    Converters.toFiles( MULTI_FILE_DELIMITER ), Validators.FILES_EXISTS,
-                    Validators.<File>atLeast( 1 ) );
+                    Converters.toFiles( MULTI_FILE_DELIMITER ), FILES_EXISTS,
+                    Validators.<File>atLeast( "--" + key, 1 ) );
         }
     };
+
+    private static final Validator<File[]> FILES_EXISTS = new Validator<File[]>()
+    {
+        @Override
+        public void validate( File[] files )
+        {
+            for ( File file : files )
+            {
+                if ( file.getName().startsWith( ":" ) )
+                {
+                    warn( "It looks like you're trying to specify default label or relationship type (" +
+                            file.getName() + "). Please put such directly on the key, f.ex. " +
+                            Options.NODE_DATA.argument() + ":MyLabel" );
+                }
+                Validators.FILE_EXISTS.validate( file );
+            }
+        }
+    };
+
+    private static void warn( String warning )
+    {
+        System.err.println( warning );
+    }
 }

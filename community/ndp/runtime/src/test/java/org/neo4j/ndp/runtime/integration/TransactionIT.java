@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -33,7 +33,8 @@ public class TransactionIT
     @Rule
     public TestSessions env = new TestSessions();
 
-    @Test @SuppressWarnings( "unchecked" )
+    @Test
+    @SuppressWarnings("unchecked")
     public void shouldHandleBeginCommit() throws Throwable
     {
         // Given
@@ -56,7 +57,8 @@ public class TransactionIT
         assertThat( responses.next(), success() );
     }
 
-    @Test @SuppressWarnings( "unchecked" )
+    @Test
+    @SuppressWarnings("unchecked")
     public void shouldHandleBeginRollback() throws Throwable
     {
         // Given

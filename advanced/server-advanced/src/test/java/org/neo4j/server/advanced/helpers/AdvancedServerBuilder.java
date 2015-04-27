@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,40 +22,33 @@ package org.neo4j.server.advanced.helpers;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.server.helpers.LoggingFactory;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.rest.web.DatabaseActions;
 
 import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
-import static org.neo4j.server.helpers.LoggingFactory.IMPERMANENT_LOGGING;
-import static org.neo4j.server.helpers.LoggingFactory.given;
 
 public class AdvancedServerBuilder extends CommunityServerBuilder
 {
-    private AdvancedServerBuilder( LoggingFactory loggingFactory )
+    private AdvancedServerBuilder( LogProvider userLogProvider )
     {
-        super( loggingFactory );
+        super( userLogProvider );
     }
 
-    public AdvancedServerBuilder( Logging logging )
+    public static AdvancedServerBuilder server( LogProvider userLogProvider )
     {
-        this( given( logging ) );
-    }
-
-    public static AdvancedServerBuilder server( Logging logging )
-    {
-        return new AdvancedServerBuilder( logging );
+        return new AdvancedServerBuilder( userLogProvider );
     }
 
     public static AdvancedServerBuilder server()
     {
-        return new AdvancedServerBuilder( IMPERMANENT_LOGGING );
+        return new AdvancedServerBuilder( NullLogProvider.getInstance() );
     }
 
     @Override
@@ -65,18 +58,18 @@ public class AdvancedServerBuilder extends CommunityServerBuilder
     }
 
     @Override
-    protected AdvancedNeoServer build(File configFile, ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies dependencies)
+    protected AdvancedNeoServer build(File configFile, ConfigurationBuilder configurator, GraphDatabaseFacadeFactory.Dependencies dependencies)
     {
-        return new TestAdvancedNeoServer( configurator, configFile, dependencies );
+        return new TestAdvancedNeoServer( configurator, configFile, dependencies, logProvider );
     }
 
     private class TestAdvancedNeoServer extends AdvancedNeoServer
     {
         private final File configFile;
 
-        public TestAdvancedNeoServer( ConfigurationBuilder propertyFileConfigurator, File configFile, InternalAbstractGraphDatabase.Dependencies dependencies )
+        public TestAdvancedNeoServer( ConfigurationBuilder propertyFileConfigurator, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
         {
-            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? EMBEDDED : IN_MEMORY_DB ), dependencies );
+            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? EMBEDDED : IN_MEMORY_DB ), dependencies, logProvider );
             this.configFile = configFile;
         }
 

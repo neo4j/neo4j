@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.Matchers.is;
@@ -103,7 +103,7 @@ public class StoreMigratorFrom21IT
         ConsistencyCheckService service = new ConsistencyCheckService();
 
         ConsistencyCheckService.Result result = service.runFullConsistencyCheck(
-                dir.getAbsolutePath(), new Config(), ProgressMonitorFactory.NONE, StringLogger.SYSTEM );
+                dir.getAbsolutePath(), new Config(), ProgressMonitorFactory.NONE, NullLogProvider.getInstance() );
         assertTrue( result.isSuccessful() );
 
         database = builder.newGraphDatabase();

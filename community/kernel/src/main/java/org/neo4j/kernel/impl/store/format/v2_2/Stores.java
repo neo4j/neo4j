@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -29,29 +29,29 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.standard.StandardStore;
 import org.neo4j.kernel.impl.store.standard.StoreFormat;
 import org.neo4j.kernel.impl.store.standard.StoreIdGenerator;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
 
 public final class Stores
 {
     public static class NodeStore_v2_2 extends StandardStore<NodeRecord, NodeStoreFormat_v2_2.NodeRecordCursor>
     {
-        public NodeStore_v2_2(File dbFileName, StoreIdGenerator idGenerator, PageCache pageCache, FileSystemAbstraction fs, StringLogger log )
+        public NodeStore_v2_2(File dbFileName, StoreIdGenerator idGenerator, PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider )
         {
-            super( new NodeStoreFormat_v2_2(), dbFileName, idGenerator, pageCache, fs, log );
+            super( new NodeStoreFormat_v2_2(), dbFileName, idGenerator, pageCache, fs, logProvider );
         }
     }
     public static class RelStore_v2_2 extends StandardStore<RelationshipRecord, RelationshipStoreFormat_v2_2.RelationshipRecordCursor>
     {
-        public RelStore_v2_2( File dbFileName, StoreIdGenerator idGenerator, PageCache pageCache, FileSystemAbstraction fs, StringLogger log )
+        public RelStore_v2_2( File dbFileName, StoreIdGenerator idGenerator, PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider )
         {
-            super( new RelationshipStoreFormat_v2_2(), dbFileName, idGenerator, pageCache, fs, log );
+            super( new RelationshipStoreFormat_v2_2(), dbFileName, idGenerator, pageCache, fs, logProvider );
         }
     }
     public static class RelGroupStore_v2_2 extends StandardStore<RelationshipGroupRecord, RelationshipGroupStoreFormat_v2_2.RelationshipGroupRecordCursor>
     {
-        public RelGroupStore_v2_2( StoreFormat<RelationshipGroupRecord, RelationshipGroupStoreFormat_v2_2.RelationshipGroupRecordCursor> format, File dbFileName, StoreIdGenerator idGenerator, PageCache pageCache, FileSystemAbstraction fs, StringLogger log )
+        public RelGroupStore_v2_2( StoreFormat<RelationshipGroupRecord, RelationshipGroupStoreFormat_v2_2.RelationshipGroupRecordCursor> format, File dbFileName, StoreIdGenerator idGenerator, PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider )
         {
-            super( format, dbFileName, idGenerator, pageCache, fs, log );
+            super( format, dbFileName, idGenerator, pageCache, fs, logProvider );
         }
     }
 }

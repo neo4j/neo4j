@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.symbols
 
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherException, SyntaxException, CypherTypeException}
+import org.neo4j.cypher.internal.compiler.v2_3.{CypherException, CypherTypeException, SyntaxException}
 
 import scala.collection.Map
 
@@ -52,6 +52,16 @@ case class SymbolTable(identifiers: Map[String, CypherType] = Map.empty) {
     true
   } catch {
     case _: CypherException => false
+  }
+
+  def intersect(other: SymbolTable): SymbolTable = {
+    val overlap = identifiers.keySet intersect other.identifiers.keySet
+
+    val mergedIdentifiers = (overlap map {
+      key => key -> identifiers(key).leastUpperBound(other.identifiers(key))
+    }).toMap
+
+    new SymbolTable(mergedIdentifiers)
   }
 }
 

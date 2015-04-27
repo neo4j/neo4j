@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -33,7 +33,6 @@ import org.neo4j.kernel.ha.com.master.MasterImplTest;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdRange;
-import org.neo4j.kernel.impl.util.TestLogging;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -56,7 +55,7 @@ public class MasterEpochTest
         when( spi.getTransactionChecksum( anyLong() ) ).thenReturn( 10L );
         StoreId storeId = new StoreId();
         MasterImpl master = new MasterImpl( spi,
-                mock( MasterImpl.Monitor.class ), new TestLogging(),
+                mock( MasterImpl.Monitor.class ),
                 new Config( stringMap( ClusterSettings.server_id.name(), "1" ) ) );
         HandshakeResult handshake = master.handshake( 1, storeId ).response();
         master.start();

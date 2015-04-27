@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,9 +22,9 @@ package org.neo4j.ndp.runtime.internal;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.Sessions;
 import org.neo4j.ndp.runtime.internal.session.SessionStateMachine;
@@ -36,14 +36,14 @@ import org.neo4j.ndp.runtime.internal.session.SessionStateMachine;
 public class StandardSessions extends LifecycleAdapter implements Sessions
 {
     private final GraphDatabaseAPI gds;
-    private final StringLogger log;
+    private final Log log;
     private final LifeSupport life = new LifeSupport();
     private final DependencyResolver deps;
 
     private CypherStatementRunner queryEngine;
     private ThreadToStatementContextBridge txBridge;
 
-    public StandardSessions( GraphDatabaseAPI gds, StringLogger log )
+    public StandardSessions( GraphDatabaseAPI gds, Log log )
     {
         this.deps = gds.getDependencyResolver();
         this.gds = gds;

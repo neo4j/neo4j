@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -25,7 +25,8 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Used for the actual storage of "schema state".
@@ -36,13 +37,13 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
 {
     private Map<Object, Object> state;
 
-    private final StringLogger logger;
+    private final Log log;
     private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
 
-    public KernelSchemaStateStore( StringLogger stringLogger )
+    public KernelSchemaStateStore( LogProvider logProvider )
     {
         this.state = new HashMap<>(  );
-        this.logger = stringLogger;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @SuppressWarnings("unchecked")
@@ -114,6 +115,6 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
         finally {
             lock.writeLock().unlock();
         }
-        logger.info( "Schema state store has been cleared." );
+        log.info( "Schema state store has been cleared." );
     }
 }

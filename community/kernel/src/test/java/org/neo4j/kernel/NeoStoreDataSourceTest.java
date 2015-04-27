@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,17 +19,19 @@
  */
 package org.neo4j.kernel;
 
-import static org.mockito.Mockito.mock;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.NeoStoreDataSourceRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
+
+import static org.mockito.Mockito.mock;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NeoStoreDataSourceTest
 {
@@ -52,7 +54,7 @@ public class NeoStoreDataSourceTest
         try
         {
             KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ),
-                    DevNullLoggingService.DEV_NULL );
+                    NullLogProvider.getInstance().getLog( KernelHealth.class ) );
 
             theDataSource = ds.getDataSource( dir, fs.get(), pageCacheRule.getPageCache( fs.get() ),
                     stringMap(), kernelHealth );

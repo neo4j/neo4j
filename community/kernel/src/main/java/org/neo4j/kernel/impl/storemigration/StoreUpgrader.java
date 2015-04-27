@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -33,8 +33,8 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * A migration process to migrate {@link StoreMigrationParticipant migration participants}, if there's
@@ -108,15 +108,15 @@ public class StoreUpgrader
     private final UpgradeConfiguration upgradeConfiguration;
     private final FileSystemAbstraction fileSystem;
     private final Monitor monitor;
-    private final StringLogger log;
+    private final Log log;
 
     public StoreUpgrader( UpgradeConfiguration upgradeConfiguration, FileSystemAbstraction fileSystem,
-            Monitor monitor, Logging logging )
+            Monitor monitor, LogProvider logProvider )
     {
         this.fileSystem = fileSystem;
         this.upgradeConfiguration = upgradeConfiguration;
         this.monitor = monitor;
-        this.log = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     public void addParticipant( StoreMigrationParticipant participant )

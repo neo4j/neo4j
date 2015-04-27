@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -624,7 +624,7 @@ public class ImdbDocTest
 //    }
 
     @Test
-    public void batchInsert()
+    public void batchInsert() throws Exception
     {
         Neo4jTestCase.deleteFileOrDirectory( new File(
                 "target/neo4jdb-batchinsert" ) );

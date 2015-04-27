@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -69,7 +69,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
         while ( true )
         {
             int versionBefore = version;
-            if ( versionBefore % 2 == 1 ) // TODO there must be a more efficient way of checking this
+            if ( (versionBefore & 1) == 1 )
             {   // Someone else is updating those values as we speak, go another round
                 continue;
             }

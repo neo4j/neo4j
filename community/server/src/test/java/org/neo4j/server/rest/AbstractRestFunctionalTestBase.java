@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Before;
+import org.junit.Rule;
+
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.Before;
-import org.junit.Rule;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -86,13 +86,13 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         String script = createScript( scriptTemplate );
         String queryString = "{\"query\": \"" + script + "\",\"params\":{" + parameterString + "}}";
 
-        String snippet = org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier$.MODULE$.apply(script);
+        String snippet = org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier$.MODULE$.apply(script);
         gen().expectedStatus( status.getStatusCode() )
                 .payload( queryString )
                 .description( AsciidocHelper.createAsciiDocSnippet( "cypher", snippet ) );
         return gen().post( endpoint ).entity();
     }
-    
+
     protected String formatJavaScript( String script )
     {
         script = script.replace( ";", "\n" );
@@ -103,12 +103,12 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return "_Raw script source_\n\n" + "[source, javascript]\n" + "----\n"
                + script + "----\n";
     }
-    
+
     private Long idFor( String name )
     {
         return data.get().get( name ).getId();
     }
-    
+
     private String createParameterString( Pair<String, String>[] params )
     {
         String paramString = "";
@@ -130,7 +130,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         }
         return template;
     }
-    
+
     protected String startGraph( String name )
     {
         return AsciidocHelper.createGraphVizWithNodeId( "Starting Graph", graphdb(), name );
@@ -141,7 +141,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         return server().getDatabase().getGraph();
     }
-    
+
     protected String getDataUri()
     {
         return "http://localhost:7474/db/data/";
@@ -171,7 +171,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         return getDataUri() + PATH_NODE_INDEX + "/" + indexName;
     }
-    
+
     protected String postRelationshipIndexUri( String indexName )
     {
         return getDataUri() + PATH_RELATIONSHIP_INDEX + "/" + indexName;
@@ -192,7 +192,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         }
         return result.toArray(nodes);
     }
-    
+
     public void assertSize( int expectedSize, String entity )
     {
         Collection<?> hits;
@@ -206,7 +206,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
             throw new RuntimeException( e );
         }
     }
-    
+
     public String getPropertiesUri( Relationship rel )
     {
         return getRelationshipUri(rel)+  "/properties";
@@ -215,17 +215,17 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         return getNodeUri(node)+  "/properties";
     }
-    
+
     public RESTDocsGenerator gen() {
         return gen.get();
     }
-    
+
     public void description( String description )
     {
         gen().description( description );
-        
+
     }
-    
+
     protected String getDocumentationSectionName() {
         return "dev/rest-api";
     }

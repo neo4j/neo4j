@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -26,9 +26,9 @@ import org.junit.runners.model.Statement;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.internal.StandardSessions;
 import org.neo4j.ndp.transport.socket.SocketTransport;
@@ -54,8 +54,8 @@ public class Neo4jWithSocket implements TestRule
             {
                 final GraphDatabaseService gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
                 final GraphDatabaseAPI api = ((GraphDatabaseAPI) gdb);
-                StringLogger log = api.getDependencyResolver().resolveDependency( Logging.class )
-                        .getMessagesLog( Session.class );
+                Log log = api.getDependencyResolver().resolveDependency( LogService.class )
+                        .getInternalLog( Session.class );
 
                 transport = life.add( new SocketTransport(
                         new HostnamePort( "localhost:7687" ), log, life.add( new StandardSessions( api, log ) )

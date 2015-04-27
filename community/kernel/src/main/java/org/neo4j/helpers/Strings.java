@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -189,5 +189,31 @@ public final class Strings
                     break;
             }
         }
+    }
+
+    /**
+     * Use this to standardize the width of some text output to all be left-justified and space-padded
+     * on the right side to fill up the given column width.
+     *
+     * @param str
+     * @param columnWidth
+     * @return
+     */
+    public static String ljust( String str, int columnWidth )
+    {
+        return String.format( "%-" + columnWidth + "s", str );
+    }
+
+    /**
+     * Use this to standardize the width of some text output to all be right-justified and space-padded
+     * on the left side to fill up the given column width.
+     *
+     * @param str
+     * @param columnWidth
+     * @return
+     */
+    public static String rjust( String str, int columnWidth )
+    {
+        return String.format( "%" + columnWidth + "s", str );
     }
 }

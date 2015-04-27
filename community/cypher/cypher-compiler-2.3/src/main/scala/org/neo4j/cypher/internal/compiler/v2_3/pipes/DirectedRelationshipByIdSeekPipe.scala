@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, Plan
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 
-case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityByIdRhs, toNode: String, fromNode: String)
+case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, toNode: String, fromNode: String)
                                            (val estimatedCardinality: Option[Double] = None)
                                            (implicit pipeMonitor: PipeMonitor)
   extends Pipe

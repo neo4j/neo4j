@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,7 +23,7 @@ import java.net.URI;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.logging.LogService;
 
 /**
  * <p>
@@ -66,5 +66,5 @@ public abstract class BackupExtensionService extends Service
      * @return A URI where the scheme is the service's name and there exist host
      *         and port parts that point to a backup source.
      */
-    public abstract URI resolve( String address, Args arguments, Logging logging );
+    public abstract URI resolve( String address, Args arguments, LogService logService );
 }

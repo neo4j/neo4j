@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -53,6 +53,10 @@ import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
 
 public class OnlineBackupKernelExtension implements Lifecycle
 {
+
+    private Object startBindingListener;
+    private Object bindingListener;
+
     public interface BackupProvider
     {
         TheBackupInterface newBackup();
@@ -65,14 +69,14 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
     private final Config config;
     private final GraphDatabaseAPI graphDatabaseAPI;
-    private final Logging logging;
+    private final LogProvider logProvider;
     private final Monitors monitors;
     private BackupServer server;
     private final BackupProvider backupProvider;
     private volatile URI me;
 
     public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI,
-                                        final KernelPanicEventGenerator kpeg, final Logging logging,
+                                        final KernelPanicEventGenerator kpeg, final LogProvider logProvider,
                                         final Monitors monitors )
     {
         this( config, graphDatabaseAPI, new BackupProvider()
@@ -101,17 +105,17 @@ public class OnlineBackupKernelExtension implements Lifecycle
                             }
                         } );
             }
-        }, monitors, logging );
+        }, monitors, logProvider );
     }
 
     public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI, BackupProvider provider,
-                                        Monitors monitors, Logging logging )
+                                        Monitors monitors, LogProvider logProvider )
     {
         this.config = config;
         this.graphDatabaseAPI = graphDatabaseAPI;
         this.backupProvider = provider;
         this.monitors = monitors;
-        this.logging = logging;
+        this.logProvider = logProvider;
     }
 
     @Override
@@ -127,23 +131,26 @@ public class OnlineBackupKernelExtension implements Lifecycle
             try
             {
                 server = new BackupServer( backupProvider.newBackup(), config.get( online_backup_server ),
-                        logging, monitors.newMonitor( ByteCounterMonitor.class, BackupServer.class ), monitors.newMonitor( RequestMonitor.class, BackupServer.class ) );
+                        logProvider, monitors.newMonitor( ByteCounterMonitor.class, BackupServer.class ), monitors.newMonitor( RequestMonitor.class, BackupServer.class ) );
                 server.init();
                 server.start();
 
                 try
                 {
+                    startBindingListener = new StartBindingListener();
                     graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberEvents.class).addClusterMemberListener(
-                            new StartBindingListener() );
+                            (ClusterMemberListener) startBindingListener );
 
-                    graphDatabaseAPI.getDependencyResolver().resolveDependency( BindingNotifier.class ).addBindingListener( new BindingListener()
-                            {
-                                @Override
-                                public void listeningAt( URI myUri )
-                                {
-                                    me = myUri;
-                                }
-                            } );
+                    bindingListener = new BindingListener()
+                    {
+                        @Override
+                        public void listeningAt( URI myUri )
+                        {
+                            me = myUri;
+                        }
+                    };
+                    graphDatabaseAPI.getDependencyResolver().resolveDependency( BindingNotifier.class ).addBindingListener(
+                            (BindingListener) bindingListener );
                 }
                 catch ( NoClassDefFoundError | IllegalArgumentException e )
                 {
@@ -168,6 +175,11 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
             try
             {
+                graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberEvents.class).removeClusterMemberListener(
+                        (ClusterMemberListener) startBindingListener );
+                graphDatabaseAPI.getDependencyResolver().resolveDependency( BindingNotifier.class ).removeBindingListener(
+                        (BindingListener) bindingListener );
+
                 ClusterMemberAvailability client = getClusterMemberAvailability();
                 client.memberIsUnavailable( BACKUP );
             }

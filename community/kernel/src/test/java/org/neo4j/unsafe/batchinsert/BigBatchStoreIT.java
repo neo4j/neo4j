@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -62,7 +62,7 @@ public class BigBatchStoreIT implements RelationshipType
     };
     
     @Before
-    public void doBefore()
+    public void doBefore() throws Exception
     {
         db = BatchInserters.inserter( PATH, fs.get());
     }
@@ -91,7 +91,7 @@ public class BigBatchStoreIT implements RelationshipType
         testHighIds( (long) pow( 2, 33 ), 1, 1600 );
     }
     
-    private void testHighIds( long highMark, int minus, int requiredHeapMb )
+    private void testHighIds( long highMark, int minus, int requiredHeapMb ) throws Exception
     {
         assumeTrue( machineIsOkToRunThisTest( testName.getMethodName(), requiredHeapMb ) );
         

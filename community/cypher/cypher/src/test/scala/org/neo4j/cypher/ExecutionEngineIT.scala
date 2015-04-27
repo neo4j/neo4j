@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -40,7 +40,7 @@ class ExecutionEngineIT extends CypherFunSuite {
 
     //then
     plan1.getArguments.get("planner") should equal("COST")
-    plan2.getArguments.get("planner") should equal("RULE")
+    plan2.getArguments.get("planner") should equal("COST")
   }
 
   test("by default when using cypher 2.3 some queries should default to COST and others to RULE") {
@@ -55,7 +55,9 @@ class ExecutionEngineIT extends CypherFunSuite {
 
     //then
     plan1.getArguments.get("planner") should equal("COST")
+    plan1.getArguments.get("planner-impl") should equal("GREEDY")
     plan2.getArguments.get("planner") should equal("COST")
+    plan2.getArguments.get("planner-impl") should equal("GREEDY")
   }
 
   test("should be able to set RULE as default when using cypher 2.2") {
@@ -83,7 +85,8 @@ class ExecutionEngineIT extends CypherFunSuite {
     val plan = db.execute("PROFILE MATCH (a) RETURN a").getExecutionPlanDescription
 
     //then
-    plan.getArguments().get("planner") should equal("RULE")
+    plan.getArguments.get("planner") should equal("RULE")
+    plan.getArguments.get("planner-impl") should equal("RULE")
   }
 
   test("should be able to force COST as default when using cypher 2.2") {
@@ -112,7 +115,8 @@ class ExecutionEngineIT extends CypherFunSuite {
     val plan = db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
 
     //then
-    plan.getArguments().get("planner") should equal("COST")
+    plan.getArguments.get("planner") should equal("COST")
+    plan.getArguments.get("planner-impl") should equal("IDP")
   }
 
   test("should throw error if using COST for older versions") {

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -38,8 +38,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
@@ -68,7 +68,8 @@ public class IndexPopulationJob implements Runnable
     private final UpdateableSchemaState updateableSchemaState;
     private final String indexUserDescription;
     private final FailedIndexProxyFactory failureDelegate;
-    private final StringLogger log;
+    private final LogProvider logProvider;
+    private final Log log;
     private final IndexCountsRemover indexCountsRemover;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
 
@@ -84,7 +85,7 @@ public class IndexPopulationJob implements Runnable
                               FlippableIndexProxy flipper,
                               IndexStoreView storeView,
                               UpdateableSchemaState updateableSchemaState,
-                              Logging logging,
+                              LogProvider logProvider,
                               IndexingService.Monitor monitor )
     {
         this.descriptor = descriptor;
@@ -96,8 +97,9 @@ public class IndexPopulationJob implements Runnable
         this.updateableSchemaState = updateableSchemaState;
         this.indexUserDescription = indexUserDescription;
         this.failureDelegate = failureDelegateFactory;
+        this.logProvider = logProvider;
         this.monitor = monitor;
-        this.log = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
         this.indexCountsRemover = IndexCountsRemover.Factory.create( storeView, descriptor );
     }
 
@@ -113,8 +115,7 @@ public class IndexPopulationJob implements Runnable
         {
             try
             {
-                log.info( format("Index population started: [%s]", indexUserDescription) );
-                log.flush();
+                log.info( "Index population started: [%s]", indexUserDescription );
                 populator.create();
                 storeView.replaceIndexCounts( descriptor, 0, 0, 0 );
 
@@ -147,8 +148,7 @@ public class IndexPopulationJob implements Runnable
 
                 flipper.flip( duringFlip, failureDelegate );
                 success = true;
-                log.info( format("Index population completed. Index is now online: [%s]", indexUserDescription) );
-                log.flush();
+                log.info( "Index population completed. Index is now online: [%s]", indexUserDescription );
             }
             catch ( Throwable t )
             {
@@ -167,7 +167,6 @@ public class IndexPopulationJob implements Runnable
                 if ( !(t instanceof IndexEntryConflictException) /*TODO: && this is a unique index...*/ )
                 {
                     log.error( format("Failed to populate index: [%s]", indexUserDescription), t );
-                    log.flush();
                 }
 
                 // Set failure cause to be stored persistently
@@ -181,7 +180,7 @@ public class IndexPopulationJob implements Runnable
                 // place is that we would otherwise introduce a race condition where updates could come
                 // in to the old context, if something failed in the job we send to the flipper.
                 flipper.flipTo( new FailedIndexProxy( descriptor, config, providerDescriptor, indexUserDescription,
-                                                      populator, failure( t ), indexCountsRemover, log ) );
+                                                      populator, failure( t ), indexCountsRemover, logProvider ) );
             }
             finally
             {
@@ -200,7 +199,6 @@ public class IndexPopulationJob implements Runnable
                 catch ( Throwable e )
                 {
                     log.error( format("Unable to close failed populator for index: [%s]", indexUserDescription), e );
-                    log.flush();
                 }
             }
         }

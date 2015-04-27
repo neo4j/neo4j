@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,18 +23,18 @@ import java.net.URI;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class HeartbeatLeftListener extends ClusterListener.Adapter
 {
     private final HeartbeatContext heartbeatContext;
-    private final StringLogger log;
+    private final Log log;
 
-    public HeartbeatLeftListener( HeartbeatContext heartbeatContext, Logging logging )
+    public HeartbeatLeftListener( HeartbeatContext heartbeatContext, LogProvider logProvider )
     {
         this.heartbeatContext = heartbeatContext;
-        this.log = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override

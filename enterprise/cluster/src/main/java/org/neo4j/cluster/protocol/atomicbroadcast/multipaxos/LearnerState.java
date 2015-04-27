@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -26,7 +26,7 @@ import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.statemachine.State;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 /**
  * State machine for Paxos Learner
@@ -72,7 +72,7 @@ public enum LearnerState
                             InstanceId instanceId = new InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstance( instanceId );
 
-                            StringLogger logger = context.getLogger( getClass() );
+                            Log log = context.getInternalLog( getClass() );
 
                             // Skip if we already know about this
                             if ( instanceId.getId() <= context.getLastDeliveredInstanceId() )
@@ -88,7 +88,7 @@ public enum LearnerState
                              * The conditional below is simply so that no expensive deserialization will happen if we
                              * are not to print anything anyway if debug is not enabled.
                              */
-                            if ( logger.isDebugEnabled() )
+                            if ( log.isDebugEnabled() )
                             {
                                 String description;
                                 if ( instance.value_2 instanceof Payload )
@@ -101,7 +101,7 @@ public enum LearnerState
                                 {
                                     description = instance.value_2.toString();
                                 }
-                                logger.debug(
+                                log.debug(
                                         "Learned and closed instance "+instance.id +
                                                 " from conversation " +
                                                 instance.conversationIdHeader +
@@ -141,14 +141,14 @@ public enum LearnerState
                                 else
                                 {
                                     // Found hole - we're waiting for this to be filled, i.e. timeout already set
-                                    context.getLogger( LearnerState.class ).debug( "*** HOLE! WAITING " +
+                                    context.getInternalLog( LearnerState.class ).debug( "*** HOLE! WAITING " +
                                             "FOR " + (context.getLastDeliveredInstanceId() + 1) );
                                 }
                             }
                             else
                             {
                                 // Found hole - we're waiting for this to be filled, i.e. timeout already set
-                                context.getLogger( LearnerState.class ).debug( "*** GOT " + instanceId
+                                context.getInternalLog( LearnerState.class ).debug( "*** GOT " + instanceId
                                         + ", WAITING FOR " + (context.getLastDeliveredInstanceId() + 1) );
 
                                 context.setTimeout( "learn", Message.timeout( LearnerMessage.learnTimedout,

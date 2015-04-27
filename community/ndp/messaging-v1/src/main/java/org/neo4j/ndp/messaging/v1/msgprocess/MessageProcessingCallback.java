@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,14 +23,14 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 import org.neo4j.ndp.messaging.v1.MessageHandler;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
 
 public class MessageProcessingCallback<T> implements Session.Callback<T,Void>
 {
-    protected final StringLogger log;
+    protected final Log log;
 
     protected MessageHandler<IOException> out;
 
@@ -38,7 +38,7 @@ public class MessageProcessingCallback<T> implements Session.Callback<T,Void>
     private Runnable onCompleted;
     private boolean ignored;
 
-    public MessageProcessingCallback( StringLogger logger )
+    public MessageProcessingCallback( Log logger )
     {
         this.log = logger;
     }

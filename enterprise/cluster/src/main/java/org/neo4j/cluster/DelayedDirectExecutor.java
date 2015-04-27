@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Executor that executes the Runnables when drain() is called. Allows async jobs to be scheduled, and then
@@ -36,11 +36,11 @@ public class DelayedDirectExecutor extends AbstractExecutorService
 {
     private List<Runnable> runnables = new ArrayList<Runnable>();
 
-    private final StringLogger log;
+    private final Log log;
 
-    public DelayedDirectExecutor( Logging logging )
+    public DelayedDirectExecutor( LogProvider logProvider )
     {
-        this.log = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override

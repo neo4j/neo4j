@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -27,11 +27,13 @@ import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class FailedIndexProxyTest
 {
@@ -47,9 +49,8 @@ public class FailedIndexProxyTest
     public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
     {
         // given
-        StringLogger log = mock( StringLogger.class );
         FailedIndexProxy index = new FailedIndexProxy( descriptor, config, providerDescriptor, userDescription,
-                indexPopulator, indexPopulationFailure, indexCountsRemover, log );
+                indexPopulator, indexPopulationFailure, indexCountsRemover, NullLogProvider.getInstance() );
 
         // when
         index.drop();
@@ -64,13 +65,15 @@ public class FailedIndexProxyTest
     public void shouldLogReasonForDroppingIndex() throws IOException
     {
         // given
-        StringLogger log = mock( StringLogger.class );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
         new FailedIndexProxy( new IndexDescriptor( 0, 0 ), config, new SchemaIndexProvider.Descriptor( "foo", "bar" ), "foo",
-                mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ), indexCountsRemover, log ).drop();
+                mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ), indexCountsRemover, logProvider ).drop();
 
         // then
-        verify(log).info( "FailedIndexProxy#drop index on foo dropped due to:\nit broke" );
+        logProvider.assertAtLeastOnce(
+                inLog( FailedIndexProxy.class ).info( "FailedIndexProxy#drop index on foo dropped due to:\nit broke" )
+        );
     }
 }

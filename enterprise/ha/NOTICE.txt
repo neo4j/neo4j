@@ -29,6 +29,3 @@ Apache Software License, Version 2.0
   Lucene Core
   The Netty Project
 
-MIT License
-  SLF4J API Module
-

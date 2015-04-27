@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.webadmin.console;
 
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.webadmin.console.ScriptSession;
 
 public interface ConsoleSessionFactory
 {
-    ScriptSession createSession( String engineName, Database database );
+    ScriptSession createSession( String engineName, Database database, LogProvider logProvider );
     Iterable<String> supportedEngines();
 }

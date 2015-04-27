@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -24,8 +24,6 @@ import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
-
-import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.junit.Assert.assertEquals;
 
@@ -425,6 +423,6 @@ public class LifeSupportTest
 
     private LifeSupport newLifeSupport()
     {
-        return new LifeSupport( StringLogger.DEV_NULL );
+        return new LifeSupport();
     }
 }

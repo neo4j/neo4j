@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -52,6 +52,10 @@ class SemanticTable(
     case e: UnsupportedOperationException =>
       throw new InternalException(s"Did not find any type information for identifier $s", e)
   }
+
+  def isNode(expr: String) = getTypeFor(expr) == symbols.CTNode.invariant
+
+  def isRelationship(expr: String) = getTypeFor(expr) == symbols.CTRelationship.invariant
 
   def isNode(expr: Identifier) = types(expr).specified == symbols.CTNode.invariant
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -50,11 +50,14 @@ public class ParallelSort
     private final int threads;
     private long[][] sortBuckets;
     private final ProgressListener progress;
+    private final Comparator comparator;
 
     public ParallelSort( Radix radix, LongArray dataCache, NumberArrayStats dataStats,
-            IntArray tracker, NumberArrayStats trackerStats, int threads, ProgressListener progress )
+            IntArray tracker, NumberArrayStats trackerStats, int threads, ProgressListener progress,
+            Comparator comparator )
     {
         this.progress = progress;
+        this.comparator = comparator;
         this.radixIndexCount = radix.getRadixIndexCounts();
         this.radixCalculator = radix.calculator();
         this.dataCache = dataCache;
@@ -213,12 +216,12 @@ public class ParallelSort
         long right = clearCollision( dataCache.get( tracker.get( ri ) ) );
         while ( li < ri )
         {
-            if ( Utils.unsignedCompare( left, pivot, CompareType.LT ) )
+            if ( comparator.lt( left, pivot ) )
             {
                 //increment left to find the greater element than the pivot
                 left = clearCollision( dataCache.get( tracker.get( ++li ) ) );
             }
-            else if ( Utils.unsignedCompare( right, pivot, CompareType.GE ) )
+            else if ( comparator.ge( right, pivot ) )
             {
                 //decrement right to find the smaller element than the pivot
                 right = clearCollision( dataCache.get( tracker.get( --ri ) ) );
@@ -233,7 +236,7 @@ public class ParallelSort
             }
         }
         int partingIndex = ri;
-        if ( Utils.unsignedCompare( right, pivot, CompareType.LT ) )
+        if ( comparator.lt( right, pivot ) )
         {
             partingIndex++;
         }
@@ -261,6 +264,37 @@ public class ParallelSort
         recursiveQsort( start, pivot, random, workerProgress );
         recursiveQsort( pivot + 1, end, random, workerProgress );
     }
+
+    /**
+     * Pluggable comparator for the comparisons that quick-sort needs in order to function.
+     */
+    public interface Comparator
+    {
+        /**
+         * @return {@code true} if {@code left} is less than {@code pivot}.
+         */
+        boolean lt( long left, long pivot );
+
+        /**
+         * @return {@code true} if {@code right} is greater than or equal to {@code pivot}.
+         */
+        boolean ge( long right, long pivot );
+    }
+
+    public static final Comparator DEFAULT = new Comparator()
+    {
+        @Override
+        public boolean lt( long left, long pivot )
+        {
+            return Utils.unsignedCompare( left, pivot, CompareType.LT );
+        }
+
+        @Override
+        public boolean ge( long right, long pivot )
+        {
+            return Utils.unsignedCompare( right, pivot, CompareType.GE );
+        }
+    };
 
     /**
      * Sorts a part of data in dataCache covered by trackerCache. Values in data cache doesn't change location,

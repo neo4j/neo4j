@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryExceptio
 import org.neo4j.cypher.internal.compiler.v2_3.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.{ExecutionMode, ProfileMode}
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ProfileMode}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.{Statement => KernelStatement}
@@ -39,7 +39,7 @@ case class CompiledPlan(updating: Boolean,
                         periodicCommit: Option[PeriodicCommitInfo] = None,
                         fingerprint: Option[PlanFingerprint] = None,
                         plannerUsed: PlannerName,
-                        executionResultBuilder: (KernelStatement, GraphDatabaseService, ExecutionMode, Map[String, Any]) => InternalExecutionResult)
+                        executionResultBuilder: (KernelStatement, GraphDatabaseService, ExecutionMode, Map[String, Any], CompletionListener) => InternalExecutionResult)
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
@@ -83,9 +83,11 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
 
       def run(queryContext: QueryContext, kernelStatement: KernelStatement,
                        planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult =
-        compiledPlan.executionResultBuilder(kernelStatement, graph, planType, params)
+        compiledPlan.executionResultBuilder(kernelStatement, graph, planType, params, new CompletionListener {
+          override def complete(success: Boolean) = queryContext.close(success)
+        })
 
-      def plannerUsed: PlannerName = CostPlannerName
+      def plannerUsed: PlannerName = GreedyPlannerName
 
       def isPeriodicCommit: Boolean = compiledPlan.periodicCommit.isDefined
 

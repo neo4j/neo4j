@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -34,10 +29,13 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.locks.Lock;
 
-import static java.lang.Long.parseLong;
-import static java.lang.String.valueOf;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -45,11 +43,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
+import static java.lang.Long.parseLong;
+import static java.lang.String.valueOf;
+
 import static org.neo4j.kernel.api.impl.index.BitmapDocumentFormat.RANGE;
 
 public class LuceneLabelScanStoreWriterTest
 {
-
     public static final BitmapDocumentFormat FORMAT = BitmapDocumentFormat._32;
 
     @Test
@@ -64,7 +64,7 @@ public class LuceneLabelScanStoreWriterTest
         assertNotEquals( node1Range, node2Range );
 
         // when
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( new StubStorageService(), FORMAT );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( new StubStorageService(), FORMAT, mock( Lock.class ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{} ) );
         try
         {
@@ -87,7 +87,7 @@ public class LuceneLabelScanStoreWriterTest
         StubStorageService storage = new StubStorageService();
 
         // when
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, FORMAT );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, FORMAT, mock( Lock.class ) );
 
         writer.write( NodeLabelUpdate.labelChanges( nodeId, new long[]{}, new long[]{label1, label2} ) );
         writer.close();
@@ -115,7 +115,7 @@ public class LuceneLabelScanStoreWriterTest
         assertEquals( range, format.bitmapFormat().rangeOf( nodeId2 ) );
 
         // when
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 
         writer.write( NodeLabelUpdate.labelChanges( nodeId1, new long[]{}, new long[]{label1} ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{label2} ) );
@@ -144,7 +144,7 @@ public class LuceneLabelScanStoreWriterTest
         assertNotEquals( node1Range, node2Range );
 
         // when
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 
         writer.write( NodeLabelUpdate.labelChanges( nodeId1, new long[]{}, new long[]{label1} ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{label2} ) );
@@ -173,12 +173,12 @@ public class LuceneLabelScanStoreWriterTest
         assertEquals( range, format.bitmapFormat().rangeOf( nodeId2 ) );
 
         // node already indexed
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId1, new long[]{}, new long[]{label1} ) );
         writer.close();
 
         // when
-        writer = new LuceneLabelScanWriter( storage, format );
+        writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{label2} ) );
         writer.close();
 
@@ -190,7 +190,7 @@ public class LuceneLabelScanStoreWriterTest
 
     private class StubStorageService implements LabelScanStorageStrategy.StorageService
     {
-        private Map<Term, Document> storage = new HashMap<>();
+        private final Map<Term, Document> storage = new HashMap<>();
 
         @Override
         public void updateDocument( Term term, Document document ) throws IOException
@@ -209,7 +209,7 @@ public class LuceneLabelScanStoreWriterTest
         {
             return new IndexSearcher( mock( IndexReader.class ) )
             {
-                private Map<Integer, Document> docIds = new HashMap<>();
+                private final Map<Integer, Document> docIds = new HashMap<>();
 
                 @Override
                 public TopDocs search( Query query, int n )

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,11 +23,10 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
+import org.neo4j.logging.Logger;
 
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
@@ -61,7 +60,7 @@ import static org.neo4j.kernel.impl.locking.LockType.WRITE;
  * starvation and increase performance since only waiting txs that can acquire
  * the lock are notified.
  */
-class RWLock implements Visitor<LineLogger, RuntimeException>
+class RWLock
 {
     private final Object resource; // the resource this RWLock locks
     private final LinkedList<WaitElement> waitingThreadList = new LinkedList<>();
@@ -461,36 +460,35 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         return waitingThreadList.size();
     }
 
-    @Override
-    public synchronized boolean visit( LineLogger logger )
+    public synchronized boolean logTo( Logger logger )
     {
-        logger.logLine( "Total lock count: readCount=" + totalReadCount
-            + " writeCount=" + totalWriteCount + " for " + resource );
+        logger.log( "Total lock count: readCount=" + totalReadCount
+                + " writeCount=" + totalWriteCount + " for " + resource );
 
-        logger.logLine( "Waiting list:" );
+        logger.log( "Waiting list:" );
         Iterator<WaitElement> wElements = waitingThreadList.iterator();
         while ( wElements.hasNext() )
         {
             WaitElement we = wElements.next();
-            logger.logLine( "[" + we.waitingThread + "("
-                + we.element.readCount + "r," + we.element.writeCount + "w),"
-                + we.lockType + "]" );
+            logger.log( "[" + we.waitingThread + "("
+                    + we.element.readCount + "r," + we.element.writeCount + "w),"
+                    + we.lockType + "]" );
             if ( wElements.hasNext() )
             {
-                logger.logLine( "," );
+                logger.log( "," );
             }
             else
             {
-                logger.logLine( "" );
+                logger.log( "" );
             }
         }
 
-        logger.logLine( "Locking transactions:" );
+        logger.log( "Locking transactions:" );
         Iterator<TxLockElement> lElements = txLockElementMap.values().iterator();
         while ( lElements.hasNext() )
         {
             TxLockElement tle = lElements.next();
-            logger.logLine( "" + tle.tx + "(" + tle.readCount + "r,"
+            logger.log( "" + tle.tx + "(" + tle.readCount + "r,"
                 + tle.writeCount + "w)" );
         }
         return true;

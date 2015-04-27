@@ -1,0 +1,109 @@
+[[ndp-transport]]
+== Transport layer
+The protocol uses a TCP transport for sending and receiving messages.
+The transport protocol is responsible for:
+
+* Negotiating Neo4j protocol version
+* Establishing and terminating sessions
+* Routing messages from clients to specific sessions and back
+
+The transport is versioned along with the rest of the data protocol - however, versioning applies only after a version negotiation handshake takes place.
+Before that handshake, the protocol will remain stable across versions to support backwards compatibility.
+
+=== Sessions
+
+A connection to the server via a transport is called a session.
+Each session with the server is isolated and the server tracks the current state based on the requests and responses delivered within that session.
+
+Neo4j uses 'sticky sessions', which means that, in a database cluster, each session is tied to one specific Neo4j instance.
+
+=== Connecting
+
+To initialize a new session, the client connects using a regular TCP socket to the address the server has been configured to use.
+Once the socket is connected, a handshake to establish which protocol version to use takes place.
+
+In the handshake, the client proposes up to four protocol versions it supports, in order of preference.
+The proposal is always represented as four 32-bit unsigned big-endian integers.
+Each integer represents a proposed protocol version to use, or zero (`00 00 00 00`) for "none".
+
+The server will respond with a single 32-bit unsigned big-endian integer representing the chosen protocol, this will always be the highest-priority protocol version the server supports.
+If none of the proposed protocols are supported, the server responds with zero (`00 00 00 00`) and closes the connection.
+
+.Initial handshake
+[source,ndp_exchange]
+----
+Client: <connect>
+Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
+         Version 1      None         None         None
+
+Server: 00 00 00 01
+          Choose
+         version 1
+----
+
+.No supported version
+[source,ndp_exchange]
+----
+Client: <connect>
+Client: 00 00 00 06  00 00 00 00  00 00 00 00  00 00 00 00
+         Version 6      None         None         None
+
+Server: 00 00 00 00
+           None
+         supported
+
+Server: <disconnect>
+----
+
+=== Message framing
+
+The transport protocol uses a framing layer to wrap messages.
+
+Each message is transferred as one or more `chunks` of data.
+Each chunk starts with a two-byte header, an unsigned big-endian 16-bit integer, representing the size of the chunk.
+The header is not counted towards this size.
+A message can be divided across multiple chunks, allowing client and server alike to efficiently transfer messages larger than their network buffers.
+
+Each message ends with two bytes with the value `00 00`, these are not counted towards the chunk length.
+
+.A message in one chunk
+[source,ndp_chunking_example]
+----
+Chunk size: 16
+Message data: 00 01 02 03  04 05 06 07  08 09 0A 0B  0C 0D 0E 0F
+
+00 10  00 01 02 03  04 05 06 07  08 09 0A 0B  0C 0D 0E 0F  00 00
+chunk  |                    Message                     |   End
+header |                     Data                       |  Marker
+----
+
+.A message split in two chunks
+[source,ndp_chunking_example]
+----
+Chunk size: 8
+Message data: 00 01 02 03  04 05 06 07  08 09 0A 0B  0C  0D 0E 0F
+
+00 08  00 01 02 03  04 05 06 07  00 08  08 09 0A 0B  0C 0D 0E 0F  00 00
+chunk1 |        Message       |  chunk2 |         Message      |   End
+header |         Data         |  header |          Data        |  Marker
+----
+
+.Two messages
+[source,ndp_chunking_example]
+----
+Chunk size: 16
+Message 1 data: 00 01 02 03  04 05 06 07  08 09 0A 0B  0C  0D 0E 0F
+Message 2 data: 0F 0E 0D 0C  0B 0A 09 08
+
+00 10  00 01 02 03  04 05 06 07  08 09 0A 0B  0C 0D 0E 0F  00 00
+chunk  |                   Message 1                    |   End
+header |                     Data                       |  Marker
+
+00 08  0F 0E 0D 0C  0B 0A 09 08  00 00
+chunk  |       Message 2      |   End
+header |         Data         |  Marker
+----
+
+=== Disconnecting
+
+To end a session, the client simply closes the TCP socket.

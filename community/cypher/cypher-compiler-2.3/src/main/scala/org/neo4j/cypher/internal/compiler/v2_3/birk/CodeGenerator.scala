@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,34 +22,43 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.ExecutionMode
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
-import org.neo4j.cypher.internal.compiler.v2_3.{PropertyKeyId, CostPlannerName}
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{INT, LONG, OBJECT, DOUBLE, STRING}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.{CodeGenContext, Namer}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PlanFingerprint, CompiledPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, CompletionListener, PlanFingerprint}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{SemanticTable, CantCompileQueryException}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanIdentificationBuilder,
-LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, InstrumentedGraphStatistics}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.spi.{InstrumentedGraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, GreedyPlannerName}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
 
 import scala.collection.Map
-import scala.collection.immutable.Stack
 
 object CodeGenerator {
+  def generateClass(instructions: Seq[Instruction]) = {
+    val className = Namer.newClassName()
+    val source = generateCodeFromInstructions(className, instructions)
+    //    print(indentNicely(source))
+    Javac.compile(s"$packageName.$className", source)
+  }
+
+  object JavaTypes {
+    val LONG = "long"
+    val INT = "int"
+    val OBJECT = "Object"
+    val OBJECT_ARRAY = "Object[]"
+    val MAP = "java.util.Map"
+    val DOUBLE = "double"
+    val STRING = "String"
+    val NUMBER = "Number"
+  }
+
   private val packageName = "org.neo4j.cypher.internal.compiler.v2_3.birk.generated"
   private val nameCounter = new AtomicInteger(0)
-
-  def nextClassName(): String = {
-    val x = nameCounter.getAndIncrement
-    s"GeneratedExecutionPlan$x"
-  }
 
   def indentNicely(in: String): String = {
 
@@ -76,91 +85,21 @@ object CodeGenerator {
 
   def n = System.lineSeparator()
 
-  object JavaTypes {
-    val LONG = "long"
-    val INT = "int"
-    val OBJECT = "Object"
-    val OBJECTARRAY = "Object[]"
-    val DOUBLE = "double"
-    val STRING = "String"
-    val NUMBER = "Number"
-  }
-}
-
-class Namer(prefix: String) {
-  var varCounter = 0
-
-  def next(): String = {
-    varCounter += 1
-    prefix + varCounter
-  }
-
-  def nextWithType(typ: String): JavaSymbol = JavaSymbol(next(), typ)
-}
-
-case class JavaSymbol(name: String, javaType: String)
-
-class CodeGenerator {
-
-  import CodeGenerator.{n, nextClassName, packageName}
-  import scala.collection.JavaConverters._
-
-  def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable) = {
-    plan match {
-      case _: ProduceResult =>
-        val className = nextClassName()
-        val planStatements: Seq[Instruction] = createResultAst(plan, semanticTable)
-        val source = generateCodeFromAst(className, planStatements)
-        val clazz = Javac.compile(s"$packageName.$className",source )
-
-        val fp = planContext.statistics match {
-          case igs: InstrumentedGraphStatistics =>
-            Some(PlanFingerprint(clock.currentTimeMillis(), planContext.txIdProvider(), igs.snapshot.freeze))
-          case _ =>
-            None
-        }
-
-        val idMap = LogicalPlanIdentificationBuilder(plan)
-        val description: InternalPlanDescription = LogicalPlan2PlanDescription(plan, idMap)
-
-        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, params: Map[String, Any]) => Javac.newInstance(clazz, st, db,  mode, description, asJavaHashMap(params))
-
-        CompiledPlan(updating = false, None, fp, CostPlannerName, builder)
-
-      case _ => throw new CantCompileQueryException("Can only compile plans with ProduceResult on top")
-    }
-  }
-
-  private def asJavaHashMap(params: Map[String, Any]) = {
-    val jMap = new util.HashMap[String, Object]()
-    params.foreach {
-      case (key, value) => jMap.put(key, javaValue(value))
-    }
-    jMap
-  }
-
-  private def javaValue( value: Any ): Object = value match {
-    case iter: Seq[_] => iter.map( javaValue ).asJava
-    case iter: Map[_, _] => Eagerly.immutableMapValues( iter, javaValue ).asJava
-    case x: Any => x.asInstanceOf[AnyRef]
-
-  }
-
-  private def generateCodeFromAst(className: String, statements: Seq[Instruction]) = {
+  private def generateCodeFromInstructions(className: String, instructions: Seq[Instruction]) = {
     val importLines: Set[String] =
-      statements.
+      instructions.
         map(_.importedClasses()).
         reduceOption(_ ++ _).
         getOrElse(Set.empty)
 
-    val imports = if(importLines.nonEmpty)
+    val imports = if (importLines.nonEmpty)
       importLines.toSeq.sorted.mkString("import ", s";${n}import ", ";")
     else
       ""
-    val fields = statements.map(_.fields().trim).reduce(_ + n + _)
-    val init = statements.map(_.generateInit().trim).reduce(_ + n + _)
-    val methodBody = statements.map(_.generateCode().trim).reduce(_ + n + _)
-    val privateMethods = statements.flatMap(_.methods).distinct.sortBy(_.name)
+    val fields = instructions.map(_.fields().trim).reduce(_ + n + _)
+    val init = instructions.map(_.generateInit().trim).reduce(_ + n + _)
+    val methodBody = instructions.map(_.generateCode().trim).reduce(_ + n + _)
+    val privateMethods = instructions.flatMap(_.methods).distinct.sortBy(_.name)
     val privateMethodText = privateMethods.map(_.generateCode.trim).reduceOption(_ + n + _).getOrElse("")
 
     //TODO move imports to set and merge with the other imports, or use full paths
@@ -176,8 +115,10 @@ class CodeGenerator {
        |import org.neo4j.graphdb.Result.ResultRow;
        |import org.neo4j.graphdb.Result.ResultVisitor;
        |import org.neo4j.graphdb.Result;
+       |import org.neo4j.graphdb.Transaction;
        |import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
-       |import org.neo4j.cypher.internal.ExecutionMode;
+       |import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
+       |import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompletionListener;
        |import java.util.Map;
        |
        |$imports
@@ -190,9 +131,10 @@ class CodeGenerator {
        |private final ExecutionMode executionMode;
        |private final Map<String, Object> params;
        |
-       |public $className( Statement statement, GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params )
+       |public $className( CompletionListener completion, Statement statement, GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params )
        |{
-       |  this.ro = statement.readOperations( );
+       |  super( completion, statement );
+       |  this.ro = statement.readOperations();
        |  this.db = db;
        |  this.executionMode = executionMode;
        |  this.description = description;
@@ -219,146 +161,74 @@ class CodeGenerator {
        |try
        |{
        |$methodBody
+       |success();
        |}
        |catch (Exception e)
        |{
        |//TODO proper error handling
        |throw new RuntimeException( e );
        |}
+       |finally
+       |{
+       |close();
+       |}
        |}
        |$privateMethodText
        |}""".stripMargin
   }
 
-  private def createResultAst(plan: LogicalPlan, semanticTable: SemanticTable): Seq[Instruction] = {
-    var variables: Map[String, JavaSymbol] = Map.empty
-    var probeTables: Map[NodeHashJoin, CodeThunk] = Map.empty
-    val variableName = new Namer("v")
-    val methodName = new Namer("m")
+  private def createInstructions(plan: LogicalPlan, semanticTable: SemanticTable): Seq[Instruction] = {
+    import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.LogicalPlanConverter._
 
-    def produce(plan: LogicalPlan, stack: Stack[LogicalPlan]): (Option[JavaSymbol], Seq[Instruction]) = {
-      plan match {
-        case AllNodesScan(IdName(name), arguments) =>
-          val variable = variableName.nextWithType(LONG)
-          variables += (name -> variable)
-          val (methodHandle, actions) = consume(stack.top, plan, stack.pop)
-          (methodHandle, Seq(WhileLoop(variable, ScanAllNodes(), actions)))
-
-        case NodeByLabelScan(IdName(name), label, _) =>
-          val nodeVariable = variableName.nextWithType(LONG)
-          val labelToken = variableName.nextWithType(INT)
-          variables += (name -> nodeVariable)
-          val (methodHandle, actions) = consume(stack.top, plan, stack.pop)
-          (methodHandle, Seq(WhileLoop(nodeVariable, ScanForLabel(label.name, labelToken), actions)))
-
-        case NodeHashJoin(_, lhs, rhs) =>
-          val (Some(symbol), lAst) = produce(lhs, stack.push(plan))
-          val lhsMethod = MethodInvocation(symbol.name, symbol.javaType, methodName.next(), lAst)
-          val (x, r) = produce(rhs, stack.push(plan))
-          (x, lhsMethod +: r)
-
-        case e: SingleRow =>
-          val (methodHandle, actions) = consume(stack.top, plan, stack.pop)
-          (methodHandle, Seq(actions))
-
-        case _: ProduceResult | _: Expand | _: Projection =>
-          produce(plan.lhs.get, stack.push(plan))
-
-        case _ => throw new CantCompileQueryException(s"$plan is not yet supported")
-      }
-    }
-
-    def consume(plan: LogicalPlan, from: LogicalPlan, stack: Stack[LogicalPlan]): (Option[JavaSymbol], Instruction) = {
-      plan match {
-        case ProduceResult(nodes, rels, other, _) =>
-          (None, ProduceResults(nodes.map(c => c -> variables(c).name).toMap,
-            rels.map(c => c -> variables(c).name).toMap,
-            other.map(c => c -> variables(c).name).toMap))
-
-        case join@NodeHashJoin(nodes, lhs, rhs) if from eq lhs =>
-          val nodeId = variables(nodes.head.name)
-          val probeTableName = variableName.next()
-          val symbols = (lhs.availableSymbols.map(_.name) intersect variables.keySet diff nodes.map(_.name)).map(s => s -> variables(s)).toMap
-
-          val probeTable = BuildProbeTable(probeTableName, nodeId.name, symbols, variableName)
-          val probeTableSymbol = JavaSymbol(probeTableName, probeTable.producedType)
-
-          probeTables += (join -> probeTable.generateFetchCode)
-
-          (Some(probeTableSymbol), probeTable)
-
-        case join@NodeHashJoin(nodes, lhs, rhs) if from eq rhs =>
-          val nodeId = variables(nodes.head.name)
-          val thunk = probeTables(join)
-          thunk.vars foreach(variables += _)
-          val (x, action) = consume(stack.top, plan, stack.pop)
-
-          (x, GetMatchesFromProbeTable(nodeId.name, thunk, action))
-
-        case Expand(_, IdName(fromNode), dir, relTypes, IdName(to), IdName(rel), ExpandAll) =>
-          val relVar = variableName.nextWithType(LONG)
-          val nodeVar = variableName.nextWithType(LONG)
-          variables  += rel -> relVar
-          variables  += to -> nodeVar
-
-          val (x, action) = consume(stack.top, plan, stack.pop)
-          (x, WhileLoop(relVar, ExpandC(variables(fromNode).name, relVar.name, dir, relTypes.map(t => variableName.next -> t.name).toMap,nodeVar.name, action), Instruction.empty))
-
-        case Projection(_, expressions)  =>
-          def findProjectionInstruction(expression: Expression): ProjectionInstruction = expression match {
-                case nodeOrRel@Identifier(name) if semanticTable.isNode(nodeOrRel) || semanticTable.isRelationship(nodeOrRel) =>
-                  ProjectNodeOrRelationship(variables(name))
-
-                case Property(node@Identifier(name), propKey) if semanticTable.isNode(node) =>
-                  val token = propKey.id(semanticTable).map(_.id)
-                  ProjectNodeProperty(token, propKey.name, variables(name).name, variableName)
-
-                case Property(rel@Identifier(name), propKey) if semanticTable.isRelationship(rel) =>
-                  val token = propKey.id(semanticTable).map(_.id)
-                  ProjectRelProperty(token, propKey.name, variables(name).name, variableName)
-
-                case Parameter(name) => ProjectParameter(name)
-
-                case lit: IntegerLiteral =>
-                  ProjectLiteral(JavaSymbol(s"${lit.value.toString}L", LONG))
-
-                case lit: DoubleLiteral =>
-                  ProjectLiteral(JavaSymbol(lit.value.toString, DOUBLE))
-
-                case lit: StringLiteral =>
-                  ProjectLiteral(JavaSymbol(s""""${lit.value}"""", STRING))
-
-                case lit: Literal =>
-                  ProjectLiteral(JavaSymbol(lit.value.toString, OBJECT))
-
-                case Collection(exprs) =>
-                  ProjectCollection(exprs.map(findProjectionInstruction))
-
-                case Add(lhs, rhs) =>
-                  val leftOp = findProjectionInstruction(lhs)
-                  val rightOp = findProjectionInstruction(rhs)
-                  ProjectAddition(leftOp, rightOp)
-
-                case other => throw new CantCompileQueryException(s"Projections of $other not yet supported")
-              }
-
-          val projectionInstructions = expressions.map {
-              case (identifier, expression) =>
-                val instruction = findProjectionInstruction(expression)
-                variables += identifier -> instruction.projectedVariable
-                instruction
-            }.toSeq
-
-          val (x, action) = consume(stack.top, plan, stack.pop)
-
-          (x, ProjectProperties(projectionInstructions, action))
-
-        case _ => throw new CantCompileQueryException(s"$plan is not yet supported")
-      }
-    }
-
-    val (_, result) = produce(plan, Stack.empty)
-
+    val (_, result) = plan.asCodeGenPlan.produce(CodeGenContext(semanticTable))
     result
   }
+}
+
+case class JavaSymbol(name: String, javaType: String)
+
+class CodeGenerator {
+
+  import CodeGenerator.{createInstructions, generateClass}
+
+  import scala.collection.JavaConverters._
+
+  def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable) = {
+    plan match {
+      case _: ProduceResult =>
+        val clazz = generateClass(createInstructions(plan, semanticTable))
+
+        val fp = planContext.statistics match {
+          case igs: InstrumentedGraphStatistics =>
+            Some(PlanFingerprint(clock.currentTimeMillis(), planContext.txIdProvider(), igs.snapshot.freeze))
+          case _ =>
+            None
+        }
+
+        val idMap = LogicalPlanIdentificationBuilder(plan)
+        val description: InternalPlanDescription = LogicalPlan2PlanDescription(plan, idMap)
+
+        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, params: Map[String, Any], completion: CompletionListener) =>
+          Javac.newInstance(clazz, completion, st, db, mode, description, asJavaHashMap(params))
+
+        CompiledPlan(updating = false, None, fp, GreedyPlannerName, builder)
+
+      case _ => throw new CantCompileQueryException("Can only compile plans with ProduceResult on top")
+    }
+  }
+
+  private def asJavaHashMap(params: Map[String, Any]) = {
+    val jMap = new util.HashMap[String, Object]()
+    params.foreach {
+      case (key, value) => jMap.put(key, javaValue(value))
+    }
+    jMap
+  }
+
+  private def javaValue(value: Any): Object = value match {
+    case iter: Seq[_] => iter.map(javaValue).asJava
+    case iter: Map[_, _] => Eagerly.immutableMapValues(iter, javaValue).asJava
+    case x: Any => x.asInstanceOf[AnyRef]
+  }
+
 }

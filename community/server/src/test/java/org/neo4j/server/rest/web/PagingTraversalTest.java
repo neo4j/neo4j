@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,7 +22,6 @@ package org.neo4j.server.rest.web;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
-
 import javax.ws.rs.core.Response;
 
 import org.junit.After;
@@ -33,7 +32,7 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -59,12 +58,12 @@ public class PagingTraversalTest
     private GraphDbHelper helper;
     private LeaseManager leaseManager;
     private static final int SIXTY_SECONDS = 60;
-    private InternalAbstractGraphDatabase graph;
+    private GraphDatabaseAPI graph;
 
     @Before
     public void startDatabase() throws IOException
     {
-        graph = (InternalAbstractGraphDatabase)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graph = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase(graph);
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );

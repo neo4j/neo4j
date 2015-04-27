@@ -102,37 +102,6 @@ properties file, _conf/neo4j.properties_.
 The graph database engine has a range of performance tuning options which are enumerated in <<server-performance>>.
 Note that other factors than Neo4j tuning should be considered when performance tuning a server, including general server load, memory and file contention, and even garbage collection penalties on the JVM, though such considerations are beyond the scope of this configuration document.
 
-== Server logging configuration ==
-
-Application events within Neo4j server are processed with
- +http://download.oracle.com/javase/6/docs/technotes/guides/logging/overview.html[java.util.logging]+ and
- configured in the file 'conf/logging.properties'.
-
-By default it is setup to print +INFO+ level messages both on screen and in a rolling file in 'data/log'.
-Most deployments will choose to use their own configuration here to meet local standards.
-During development, much useful information can be found in the logs so some form of logging to disk is well worth keeping.
-On the other hand, if you want to completely silence the console output, set:
-
-[source,properties]
-----
-java.util.logging.ConsoleHandler.level=OFF
-----
-
-By default log files are rotated at approximately 10Mb and named consecutively neo4j.<id>.<rotation sequence #>.log
-To change the naming scheme, rotation frequency and backlog size modify
-
-[source,properties]
-----
-java.util.logging.FileHandler.pattern
-java.util.logging.FileHandler.limit
-java.util.logging.FileHandler.count
-----
-
-respectively to your needs. Details are available at the Javadoc for +http://download.oracle.com/javase/7/docs/api/java/util/logging/FileHandler.html[java.util.logging.FileHandler]+.
-
-Apart from log statements originating from the Neo4j server, other libraries report their messages
-through various frameworks.
-
 == HTTP logging configuration ==
 
 As well as logging events happening within the Neo4j server, it is possible to log the HTTP requests and responses that the server consumes and produces.

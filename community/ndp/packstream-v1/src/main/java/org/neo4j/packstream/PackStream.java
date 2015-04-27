@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -40,13 +40,14 @@ import static org.neo4j.packstream.PackValue.NullValue.NULL_VALUE;
  * PackStream is a messaging serialisation format heavily inspired by MessagePack.
  * The key differences are in the type system itself which (among other things) replaces extensions with structures.
  * The Packer and Unpacker implementations are also faster than their MessagePack counterparts.
- * 
+ * <p/>
  * Note that several marker byte values are RESERVED for future use.
- * Extra markers should <em>not</em> be added casually and such additions must be follow a strict process involving both client and server software.
- * 
+ * Extra markers should <em>not</em> be added casually and such additions must be follow a strict process involving both
+ * client and server software.
+ * <p/>
  * The table below shows all allocated marker byte values.
- *
- * <table> 
+ * <p/>
+ * <table>
  * <tr><th>Marker</th><th>Binary</th><th>Type</th><th>Description</th></tr>
  * <tr><td><code>00..7F</code></td><td><code>0xxxxxxx</code></td><td>+TINY_INT</td><td>Integer 0 to 127</td></tr>
  * <tr><td><code>80..8F</code></td><td><code>1000xxxx</code></td><td>TINY_TEXT</td><td></td></tr>
@@ -54,7 +55,8 @@ import static org.neo4j.packstream.PackValue.NullValue.NULL_VALUE;
  * <tr><td><code>A0..AF</code></td><td><code>1010xxxx</code></td><td>TINY_MAP</td><td></td></tr>
  * <tr><td><code>B0..BF</code></td><td><code>1011xxxx</code></td><td>TINY_STRUCT</td><td></td></tr>
  * <tr><td><code>C0</code></td><td><code>11000000</code></td><td>NULL</td><td></td></tr>
- * <tr><td><code>C1</code></td><td><code>11000001</code></td><td>FLOAT_64</td><td>64-bit floating point number (double)</td></tr>
+ * <tr><td><code>C1</code></td><td><code>11000001</code></td><td>FLOAT_64</td><td>64-bit floating point number
+ * (double)</td></tr>
  * <tr><td><code>C2</code></td><td><code>11000010</code></td><td>FALSE</td><td>Boolean false</td></tr>
  * <tr><td><code>C3</code></td><td><code>11000011</code></td><td>TRUE</td><td>Boolean true</td></tr>
  * <tr><td><code>C4..C7</code></td><td><code>110001xx</code></td><td><em>RESERVED</em></td><td></td></tr>
@@ -62,34 +64,48 @@ import static org.neo4j.packstream.PackValue.NullValue.NULL_VALUE;
  * <tr><td><code>C9</code></td><td><code>11001001</code></td><td>INT_8</td><td>16-bit signed integer</td></tr>
  * <tr><td><code>CA</code></td><td><code>11001010</code></td><td>INT_8</td><td>32-bit signed integer</td></tr>
  * <tr><td><code>CB</code></td><td><code>11001011</code></td><td>INT_8</td><td>64-bit signed integer</td></tr>
- * <tr><td><code>CC</code></td><td><code>11001100</code></td><td>BYTES_8</td><td>Byte string (fewer than 2<sup>8</sup> bytes)</td></tr>
- * <tr><td><code>CD</code></td><td><code>11001101</code></td><td>BYTES_16</td><td>Byte string (fewer than 2<sup>16</sup> bytes)</td></tr>
- * <tr><td><code>CE</code></td><td><code>11001110</code></td><td>BYTES_32</td><td>Byte string (fewer than 2<sup>32</sup> bytes)</td></tr>
+ * <tr><td><code>CC</code></td><td><code>11001100</code></td><td>BYTES_8</td><td>Byte string (fewer than 2<sup>8</sup>
+ * bytes)</td></tr>
+ * <tr><td><code>CD</code></td><td><code>11001101</code></td><td>BYTES_16</td><td>Byte string (fewer than 2<sup>16</sup>
+ * bytes)</td></tr>
+ * <tr><td><code>CE</code></td><td><code>11001110</code></td><td>BYTES_32</td><td>Byte string (fewer than 2<sup>32</sup>
+ * bytes)</td></tr>
  * <tr><td><code>CF</code></td><td><code>11001111</code></td><td><em>RESERVED</em></td><td></td></tr>
- * <tr><td><code>D0</code></td><td><code>11010000</code></td><td>TEXT_8</td><td>UTF-8 encoded text string (fewer than 2<sup>8</sup> bytes)</td></tr>
- * <tr><td><code>D1</code></td><td><code>11010001</code></td><td>TEXT_16</td><td>UTF-8 encoded text string (fewer than 2<sup>16</sup> bytes)</td></tr>
- * <tr><td><code>D2</code></td><td><code>11010010</code></td><td>TEXT_32</td><td>UTF-8 encoded text string (fewer than 2<sup>32</sup> bytes)</td></tr>
+ * <tr><td><code>D0</code></td><td><code>11010000</code></td><td>TEXT_8</td><td>UTF-8 encoded text string (fewer than
+ * 2<sup>8</sup> bytes)</td></tr>
+ * <tr><td><code>D1</code></td><td><code>11010001</code></td><td>TEXT_16</td><td>UTF-8 encoded text string (fewer than
+ * 2<sup>16</sup> bytes)</td></tr>
+ * <tr><td><code>D2</code></td><td><code>11010010</code></td><td>TEXT_32</td><td>UTF-8 encoded text string (fewer than
+ * 2<sup>32</sup> bytes)</td></tr>
  * <tr><td><code>D3</code></td><td><code>11010011</code></td><td><em>RESERVED</em></td><td></td></tr>
- * <tr><td><code>D4</code></td><td><code>11010100</code></td><td>LIST_8</td><td>List (fewer than 2<sup>8</sup> items)</td></tr>
- * <tr><td><code>D5</code></td><td><code>11010101</code></td><td>LIST_16</td><td>List (fewer than 2<sup>16</sup> items)</td></tr>
- * <tr><td><code>D6</code></td><td><code>11010110</code></td><td>LIST_32</td><td>List (fewer than 2<sup>32</sup> items)</td></tr>
+ * <tr><td><code>D4</code></td><td><code>11010100</code></td><td>LIST_8</td><td>List (fewer than 2<sup>8</sup>
+ * items)</td></tr>
+ * <tr><td><code>D5</code></td><td><code>11010101</code></td><td>LIST_16</td><td>List (fewer than 2<sup>16</sup>
+ * items)</td></tr>
+ * <tr><td><code>D6</code></td><td><code>11010110</code></td><td>LIST_32</td><td>List (fewer than 2<sup>32</sup>
+ * items)</td></tr>
  * <tr><td><code>D7</code></td><td><code>11010111</code></td><td><em>RESERVED</em></td><td></td></tr>
- * <tr><td><code>D8</code></td><td><code>11011000</code></td><td>MAP_8</td><td>Map (fewer than 2<sup>8</sup> key:value pairs)</td></tr>
- * <tr><td><code>D9</code></td><td><code>11011001</code></td><td>MAP_16</td><td>Map (fewer than 2<sup>16</sup> key:value pairs)</td></tr>
- * <tr><td><code>DA</code></td><td><code>11011010</code></td><td>MAP_32</td><td>Map (fewer than 2<sup>32</sup> key:value pairs)</td></tr>
+ * <tr><td><code>D8</code></td><td><code>11011000</code></td><td>MAP_8</td><td>Map (fewer than 2<sup>8</sup> key:value
+ * pairs)</td></tr>
+ * <tr><td><code>D9</code></td><td><code>11011001</code></td><td>MAP_16</td><td>Map (fewer than 2<sup>16</sup> key:value
+ * pairs)</td></tr>
+ * <tr><td><code>DA</code></td><td><code>11011010</code></td><td>MAP_32</td><td>Map (fewer than 2<sup>32</sup> key:value
+ * pairs)</td></tr>
  * <tr><td><code>DB</code></td><td><code>11011011</code></td><td><em>RESERVED</em></td><td></td></tr>
- * <tr><td><code>DC</code></td><td><code>11011100</code></td><td>STRUCT_8</td><td>Structure (fewer than 2<sup>8</sup> fields)</td></tr>
- * <tr><td><code>DD</code></td><td><code>11011101</code></td><td>STRUCT_16</td><td>Structure (fewer than 2<sup>16</sup> fields)</td></tr>
- * <tr><td><code>DE</code></td><td><code>11011110</code></td><td>STRUCT_32</td><td>Structure (fewer than 2<sup>32</sup> fields)</td></tr>
+ * <tr><td><code>DC</code></td><td><code>11011100</code></td><td>STRUCT_8</td><td>Structure (fewer than 2<sup>8</sup>
+ * fields)</td></tr>
+ * <tr><td><code>DD</code></td><td><code>11011101</code></td><td>STRUCT_16</td><td>Structure (fewer than 2<sup>16</sup>
+ * fields)</td></tr>
+ * <tr><td><code>DE</code></td><td><code>11011110</code></td><td>STRUCT_32</td><td>Structure (fewer than 2<sup>32</sup>
+ * fields)</td></tr>
  * <tr><td><code>DF</code></td><td><code>11011111</code></td><td><em>RESERVED</em></td><td></td></tr>
  * <tr><td><code>E0..EF</code></td><td><code>1110xxxx</code></td><td><em>RESERVED</em></td><td></td></tr>
  * <tr><td><code>F0..FF</code></td><td><code>1111xxxx</code></td><td>-TINY_INT</td><td>Integer -1 to -16</td></tr>
  * </table>
- *
  */
 public class PackStream
 {
-    
+
     public static final byte TINY_TEXT = (byte) 0x80;
     public static final byte TINY_LIST = (byte) 0x90;
     public static final byte TINY_MAP = (byte) 0xA0;
@@ -143,11 +159,11 @@ public class PackStream
     public static final byte RESERVED_EE = (byte) 0xEE;
     public static final byte RESERVED_EF = (byte) 0xEF;
 
-    private static final long PLUS_2_TO_THE_31  = 2147483648L;
-    private static final long PLUS_2_TO_THE_15  = 32768L;
-    private static final long PLUS_2_TO_THE_7   = 128L;
-    private static final long MINUS_2_TO_THE_4  = -16L;
-    private static final long MINUS_2_TO_THE_7  = -128L;
+    private static final long PLUS_2_TO_THE_31 = 2147483648L;
+    private static final long PLUS_2_TO_THE_15 = 32768L;
+    private static final long PLUS_2_TO_THE_7 = 128L;
+    private static final long MINUS_2_TO_THE_4 = -16L;
+    private static final long MINUS_2_TO_THE_7 = -128L;
     private static final long MINUS_2_TO_THE_15 = -32768L;
     private static final long MINUS_2_TO_THE_31 = -2147483648L;
 
@@ -155,7 +171,9 @@ public class PackStream
 
     private static final int DEFAULT_BUFFER_CAPACITY = 8192;
 
-    private PackStream() {}
+    private PackStream()
+    {
+    }
 
     public static class Packer
     {
@@ -189,53 +207,53 @@ public class PackStream
         public void packNull() throws IOException
         {
             out.ensure( 1 )
-               .put( NULL );
+                    .put( NULL );
         }
 
         public void pack( boolean value ) throws IOException
         {
             out.ensure( 1 )
-               .put( value ? TRUE : FALSE );
+                    .put( value ? TRUE : FALSE );
         }
 
         public void pack( long value ) throws IOException
         {
-            if ( value >= MINUS_2_TO_THE_4 && value < PLUS_2_TO_THE_7)
+            if ( value >= MINUS_2_TO_THE_4 && value < PLUS_2_TO_THE_7 )
             {
                 out.ensure( 1 )
-                   .put( (byte) value );
+                        .put( (byte) value );
             }
             else if ( value >= MINUS_2_TO_THE_7 && value < MINUS_2_TO_THE_4 )
             {
                 out.ensure( 2 )
-                   .put( INT_8 )
-                   .put( (byte) value );
+                        .put( INT_8 )
+                        .put( (byte) value );
             }
             else if ( value >= MINUS_2_TO_THE_15 && value < PLUS_2_TO_THE_15 )
             {
                 out.ensure( 3 )
-                   .put( INT_16 )
-                   .putShort( (short) value );
+                        .put( INT_16 )
+                        .putShort( (short) value );
             }
             else if ( value >= MINUS_2_TO_THE_31 && value < PLUS_2_TO_THE_31 )
             {
                 out.ensure( 5 )
-                   .put( INT_32 )
-                   .putInt( (int) value );
+                        .put( INT_32 )
+                        .putInt( (int) value );
             }
             else
             {
                 out.ensure( 9 )
-                   .put( INT_64 )
-                   .putLong( value );
+                        .put( INT_64 )
+                        .putLong( value );
             }
         }
 
         public void pack( double value ) throws IOException
         {
             out.ensure( 9 )
-               .put( FLOAT_64 )
-               .putDouble( value );
+                    .put( FLOAT_64 )
+                    .putDouble( value );
         }
 
         public void pack( byte[] values ) throws IOException
@@ -327,20 +345,20 @@ public class PackStream
             if ( size <= Byte.MAX_VALUE )
             {
                 out.ensure( 2 )
-                   .put( BYTES_8 )
-                   .put( (byte) size );
+                        .put( BYTES_8 )
+                        .put( (byte) size );
             }
             else if ( size <= Short.MAX_VALUE )
             {
                 out.ensure( 3 )
-                   .put( BYTES_16 )
-                   .putShort( (short) size );
+                        .put( BYTES_16 )
+                        .putShort( (short) size );
             }
             else
             {
                 out.ensure( 5 )
-                   .put( BYTES_32 )
-                   .putInt( size );
+                        .put( BYTES_32 )
+                        .putInt( size );
             }
         }
 
@@ -349,25 +367,25 @@ public class PackStream
             if ( size < 0x10 )
             {
                 out.ensure( 1 )
-                   .put( (byte) (TINY_TEXT | size) );
+                        .put( (byte) (TINY_TEXT | size) );
             }
             else if ( size <= Byte.MAX_VALUE )
             {
                 out.ensure( 2 )
-                   .put( TEXT_8 )
-                   .put( (byte) size );
+                        .put( TEXT_8 )
+                        .put( (byte) size );
             }
             else if ( size <= Short.MAX_VALUE )
             {
                 out.ensure( 3 )
-                   .put( TEXT_16 )
-                   .putShort( (short) size );
+                        .put( TEXT_16 )
+                        .putShort( (short) size );
             }
             else
             {
                 out.ensure( 5 )
-                   .put( TEXT_32 )
-                   .putInt( size );
+                        .put( TEXT_32 )
+                        .putInt( size );
             }
         }
 
@@ -376,25 +394,25 @@ public class PackStream
             if ( size < 0x10 )
             {
                 out.ensure( 1 )
-                   .put( (byte) (TINY_LIST | size) );
+                        .put( (byte) (TINY_LIST | size) );
             }
             else if ( size <= Byte.MAX_VALUE )
             {
                 out.ensure( 2 )
-                   .put( LIST_8 )
-                   .put( (byte) size );
+                        .put( LIST_8 )
+                        .put( (byte) size );
             }
             else if ( size <= Short.MAX_VALUE )
             {
                 out.ensure( 3 )
-                   .put( LIST_16 )
-                   .putShort( (short) size );
+                        .put( LIST_16 )
+                        .putShort( (short) size );
             }
             else
             {
                 out.ensure( 5 )
-                   .put( LIST_32 )
-                   .putInt( size );
+                        .put( LIST_32 )
+                        .putInt( size );
             }
         }
 
@@ -403,25 +421,25 @@ public class PackStream
             if ( size < 0x10 )
             {
                 out.ensure( 1 )
-                   .put( (byte) (TINY_MAP | size) );
+                        .put( (byte) (TINY_MAP | size) );
             }
             else if ( size <= Byte.MAX_VALUE )
             {
                 out.ensure( 2 )
-                   .put( MAP_8 )
-                   .put( (byte) size );
+                        .put( MAP_8 )
+                        .put( (byte) size );
             }
             else if ( size <= Short.MAX_VALUE )
             {
                 out.ensure( 3 )
-                   .put( MAP_16 )
-                   .putShort( (short) size );
+                        .put( MAP_16 )
+                        .putShort( (short) size );
             }
             else
             {
                 out.ensure( 5 )
-                   .put( MAP_32 )
-                   .putInt( size );
+                        .put( MAP_32 )
+                        .putInt( size );
             }
         }
 
@@ -430,22 +448,22 @@ public class PackStream
             if ( size < 0x10 )
             {
                 out.ensure( 2 )
-                   .put( (byte) (TINY_STRUCT | size) )
-                   .put( (byte) signature );
+                        .put( (byte) (TINY_STRUCT | size) )
+                        .put( (byte) signature );
             }
             else if ( size <= Byte.MAX_VALUE )
             {
                 out.ensure( 3 )
-                   .put( STRUCT_8 )
-                   .put( (byte) size )
-                   .put( (byte) signature );
+                        .put( STRUCT_8 )
+                        .put( (byte) size )
+                        .put( (byte) signature );
             }
             else if ( size <= Short.MAX_VALUE )
             {
                 out.ensure( 4 )
-                   .put( STRUCT_16 )
-                   .putShort( (short) size )
-                   .put( (byte) signature );
+                        .put( STRUCT_16 )
+                        .putShort( (short) size )
+                        .put( (byte) signature );
             }
             else
             {
@@ -479,7 +497,7 @@ public class PackStream
 
         public Unpacker reset( ReadableByteChannel ch )
         {
-            ((BufferedChannelInput)in).reset( ch );
+            ((BufferedChannelInput) in).reset( ch );
             return this;
         }
 
@@ -488,6 +506,9 @@ public class PackStream
             return in.remaining() > 0 || in.attempt( 1 );
         }
 
+        // TODO: This currently returns the number of fields in the struct. In 99% of cases we will look at the struct
+        // signature to determine how to read it, suggest we make that what we return here,
+        // and have the number of fields available through some alternate optional mechanism.
         public long unpackStructHeader() throws IOException
         {
             final byte markerByte = in.ensure( 1 ).get();
@@ -495,11 +516,14 @@ public class PackStream
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
             if ( markerHighNibble == TINY_STRUCT ) { return markerLowNibble; }
-            switch(markerByte)
+            switch ( markerByte )
             {
-            case STRUCT_8: return unpackUINT8();
-            case STRUCT_16: return unpackUINT16();
-            default: throw new Unexpected( "Expected a struct, but got: " + toHexString( markerByte ));
+            case STRUCT_8:
+                return unpackUINT8();
+            case STRUCT_16:
+                return unpackUINT16();
+            default:
+                throw new Unexpected( "Expected a struct, but got: " + toHexString( markerByte ) );
             }
         }
 
@@ -512,15 +536,19 @@ public class PackStream
         {
             final byte markerByte = in.ensure( 1 ).get();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
-            final byte markerLowNibble  = (byte) (markerByte & 0x0F);
+            final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
             if ( markerHighNibble == TINY_LIST ) { return markerLowNibble; }
-            switch(markerByte)
+            switch ( markerByte )
             {
-            case LIST_8: return unpackUINT8();
-            case LIST_16: return unpackUINT16();
-            case LIST_32: return unpackUINT32();
-            default: throw new Unexpected( "Expected a list, but got: " + toHexString( markerByte ));
+            case LIST_8:
+                return unpackUINT8();
+            case LIST_16:
+                return unpackUINT16();
+            case LIST_32:
+                return unpackUINT32();
+            default:
+                throw new Unexpected( "Expected a list, but got: " + toHexString( markerByte ) );
             }
         }
 
@@ -531,42 +559,51 @@ public class PackStream
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
             if ( markerHighNibble == TINY_MAP ) { return markerLowNibble; }
-            switch(markerByte)
+            switch ( markerByte )
             {
-            case MAP_8: return unpackUINT8();
-            case MAP_16: return unpackUINT16();
-            case MAP_32: return unpackUINT32();
-            default: throw new Unexpected( "Expected a map, but got: " + toHexString( markerByte ));
+            case MAP_8:
+                return unpackUINT8();
+            case MAP_16:
+                return unpackUINT16();
+            case MAP_32:
+                return unpackUINT32();
+            default:
+                throw new Unexpected( "Expected a map, but got: " + toHexString( markerByte ) );
             }
         }
 
         public long unpackLong() throws IOException
         {
             final byte markerByte = in.ensure( 1 ).get();
-            if ( markerByte >= MINUS_2_TO_THE_4) { return markerByte; }
-            switch(markerByte)
+            if ( markerByte >= MINUS_2_TO_THE_4 ) { return markerByte; }
+            switch ( markerByte )
             {
-            case INT_8:   return in.ensure( 1 ).get();
-            case INT_16:  return in.ensure( 2 ).getShort();
-            case INT_32:  return in.ensure( 4 ).getInt();
-            case INT_64:  return in.ensure( 8 ).getLong();
-            default: throw new Unexpected( "Expected an integer, but got: " + toHexString( markerByte ));
+            case INT_8:
+                return in.ensure( 1 ).get();
+            case INT_16:
+                return in.ensure( 2 ).getShort();
+            case INT_32:
+                return in.ensure( 4 ).getInt();
+            case INT_64:
+                return in.ensure( 8 ).getLong();
+            default:
+                throw new Unexpected( "Expected an integer, but got: " + toHexString( markerByte ) );
             }
         }
 
         public double unpackDouble() throws IOException
         {
             final byte markerByte = in.ensure( 1 ).get();
-            if(markerByte == FLOAT_64)
+            if ( markerByte == FLOAT_64 )
             {
                 return in.ensure( 8 ).getDouble();
             }
-            throw new Unexpected( "Expected a double, but got: " + toHexString( markerByte ));
+            throw new Unexpected( "Expected a double, but got: " + toHexString( markerByte ) );
         }
 
         public String unpackString() throws IOException
         {
-            return new String(unpackUtf8(), UTF_8);
+            return new String( unpackUtf8(), UTF_8 );
         }
 
         public byte[] unpackUtf8() throws IOException
@@ -576,10 +613,12 @@ public class PackStream
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
             if ( markerHighNibble == TINY_TEXT ) { return unpackBytes( markerLowNibble ); }
-            switch(markerByte)
+            switch ( markerByte )
             {
-            case TEXT_8: return unpackBytes( unpackUINT8() );
-            case TEXT_16: return unpackBytes( unpackUINT16() );
+            case TEXT_8:
+                return unpackBytes( unpackUINT8() );
+            case TEXT_16:
+                return unpackBytes( unpackUINT16() );
             case TEXT_32:
             {
                 long size = unpackUINT32();
@@ -592,18 +631,22 @@ public class PackStream
                     throw new Overflow( "TEXT_32 too long for Java" );
                 }
             }
-            default: throw new Unexpected( "Expected a string, but got: " + toHexString( markerByte & 0xFF ));
+            default:
+                throw new Unexpected( "Expected a string, but got: " + toHexString( markerByte & 0xFF ) );
             }
         }
 
         public boolean unpackBoolean() throws IOException
         {
             final byte markerByte = in.ensure( 1 ).get();
-            switch(markerByte)
+            switch ( markerByte )
             {
-            case TRUE: return true;
-            case FALSE: return false;
-            default: throw new Unexpected( "Expected a boolean, but got: " + toHexString( markerByte & 0xFF ));
+            case TRUE:
+                return true;
+            case FALSE:
+                return false;
+            default:
+                throw new Unexpected( "Expected a boolean, but got: " + toHexString( markerByte & 0xFF ) );
             }
         }
 
@@ -774,22 +817,25 @@ public class PackStream
 
         private byte[] unpackBytes( int size ) throws IOException
         {
-            if ( size == 0 ) return EMPTY_BYTE_ARRAY;
+            if ( size == 0 )
+            {
+                return EMPTY_BYTE_ARRAY;
+            }
             byte[] heapBuffer = new byte[size];
             int index = 0;
-            while(index < size)
+            while ( index < size )
             {
                 int toRead = Math.min( in.remaining(), size - index );
                 in.get( heapBuffer, index, toRead );
                 index += toRead;
 
-                if(in.remaining() == 0 && index < size)
+                if ( in.remaining() == 0 && index < size )
                 {
                     in.attemptUpTo( size - index );
-                    if(in.remaining() == 0)
+                    if ( in.remaining() == 0 )
                     {
                         throw new EndOfStream( "Expected " + (size - index) + " bytes available, " +
-                                                "but no more bytes accessible from underlying stream." );
+                                               "but no more bytes accessible from underlying stream." );
                     }
                 }
             }
@@ -798,7 +844,10 @@ public class PackStream
 
         private List<PackValue> unpackList( int size ) throws IOException
         {
-            if ( size == 0 ) return EMPTY_LIST_OF_VALUES;
+            if ( size == 0 )
+            {
+                return EMPTY_LIST_OF_VALUES;
+            }
             List<PackValue> list = new ArrayList<>( size );
             for ( int i = 0; i < size; i++ )
             {
@@ -809,7 +858,10 @@ public class PackStream
 
         private Map<String,PackValue> unpackMap( int size ) throws IOException
         {
-            if ( size == 0 ) return EMPTY_MAP_OF_VALUES;
+            if ( size == 0 )
+            {
+                return EMPTY_MAP_OF_VALUES;
+            }
             Map<String,PackValue> map = new LinkedHashMap<>( size );
             for ( int i = 0; i < size; i++ )
             {
@@ -828,15 +880,19 @@ public class PackStream
             final byte markerByte = in.ensure( 1 ).peek();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
 
-            switch(markerHighNibble)
+            switch ( markerHighNibble )
             {
-            case TINY_TEXT:   return PackType.TEXT;
-            case TINY_LIST:   return PackType.LIST;
-            case TINY_MAP:    return PackType.MAP;
-            case TINY_STRUCT: return PackType.STRUCT;
+            case TINY_TEXT:
+                return PackType.TEXT;
+            case TINY_LIST:
+                return PackType.LIST;
+            case TINY_MAP:
+                return PackType.MAP;
+            case TINY_STRUCT:
+                return PackType.STRUCT;
             }
 
-            switch(markerByte)
+            switch ( markerByte )
             {
             case NULL:
                 return PackType.NULL;

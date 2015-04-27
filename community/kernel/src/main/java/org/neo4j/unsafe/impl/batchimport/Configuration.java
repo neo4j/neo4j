@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.io.File;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
@@ -32,6 +30,12 @@ import static java.lang.Math.round;
  */
 public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging.Configuration
 {
+    /**
+     * File name in which bad entries from the import will end up. This file will be created in the
+     * database directory of the imported database, i.e. <into>/bad.log.
+     */
+    String BAD_FILE_NAME = "bad.log";
+
     /**
      * Memory dedicated to buffering data to be written to each store file.
      */
@@ -72,14 +76,6 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
      * of a processor.
      */
     int maxNumberOfProcessors();
-
-    /**
-     * File name of log accepting bad entries encountered during import. Can be relative (to where the
-     * store directory of the database that gets created) or absolute.
-     *
-     * @param the directory of the target database.
-     */
-    File badFile( File storeDirectory );
 
     class Default
             extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Default
@@ -145,12 +141,6 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         {
             return 100;
         }
-
-        @Override
-        public File badFile( File storeDirectory )
-        {
-            return new File( storeDirectory, "not-imported.bad" );
-        }
     }
 
     Configuration DEFAULT = new Default();
@@ -208,12 +198,6 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         public int movingAverageSize()
         {
             return defaults.movingAverageSize();
-        }
-
-        @Override
-        public File badFile( File storeDirectory )
-        {
-            return defaults.badFile( storeDirectory );
         }
     }
 }

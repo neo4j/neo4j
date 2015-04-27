@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -45,12 +45,12 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.logging.Log;
 import org.neo4j.kernel.monitoring.Monitors;
 
 //@Service.Implementation(BackupExtensionService.class)
@@ -62,11 +62,11 @@ public final class HaBackupProvider //extends BackupExtensionService
     }
 
 //    @Override
-    public URI resolve( String address, Args args, Logging logging )
+    public URI resolve( String address, Args args, LogService logService )
     {
         String master;
-        StringLogger logger = logging.getMessagesLog( HaBackupProvider.class );
-        logger.debug( "Asking cluster member(s) at '" + address + "' for master" );
+        Log log = logService.getInternalLog( HaBackupProvider.class );
+        log.debug( "Asking cluster member(s) at '" + address + "' for master" );
 
         String clusterName = args.get( ClusterSettings.cluster_name.name(), null );
         if ( clusterName == null )
@@ -77,9 +77,8 @@ public final class HaBackupProvider //extends BackupExtensionService
 
         try
         {
-            master = getMasterServerInCluster( normalizeAddress( address ), clusterName, logging );
-
-            logger.debug( "Found master '" + master + "' in cluster" );
+            master = getMasterServerInCluster( normalizeAddress( address ), clusterName, logService );
+            log.debug( "Found master '" + master + "' in cluster" );
             return URI.create( master );
         }
         catch ( Exception e )
@@ -98,7 +97,7 @@ public final class HaBackupProvider //extends BackupExtensionService
         return address;
     }
 
-    private String getMasterServerInCluster( String from, String clusterName, final Logging logging )
+    private String getMasterServerInCluster( String from, String clusterName, final LogService logService )
     {
         LifeSupport life = new LifeSupport();
         Map<String, String> params = new HashMap<>();
@@ -113,10 +112,10 @@ public final class HaBackupProvider //extends BackupExtensionService
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
         Monitors monitors = new Monitors();
         final ClusterClient clusterClient = life.add( new ClusterClient( monitors,
-                ClusterClient.adapt( config ), logging,
+                ClusterClient.adapt( config ), logService,
                 new NotElectableElectionCredentialsProvider(), objectStreamFactory, objectStreamFactory ) );
         ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
-                clusterClient, clusterClient, new SystemOutLogging(),
+                clusterClient, clusterClient, FormattedLogProvider.toOutputStream( System.out ),
                 Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>alwaysTrue(), new HANewSnapshotFunction(),
                 objectStreamFactory, objectStreamFactory, monitors.newMonitor( NamedThreadFactory.Monitor.class ) ) );
 

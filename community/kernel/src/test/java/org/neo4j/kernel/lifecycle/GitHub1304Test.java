@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -34,7 +34,7 @@ public class GitHub1304Test
     public TemporaryFolder folder = new TemporaryFolder();
 
     @Test
-    public void givenBatchInserterWhenArrayPropertyUpdated4TimesThenShouldNotFail()
+    public void givenBatchInserterWhenArrayPropertyUpdated4TimesThenShouldNotFail() throws Exception
     {
         BatchInserter batchInserter = BatchInserters.inserter( folder.getRoot().getAbsolutePath() );
 

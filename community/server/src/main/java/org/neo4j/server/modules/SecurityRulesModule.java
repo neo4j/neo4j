@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,8 +23,8 @@ import java.util.ArrayList;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.security.SecurityFilter;
 import org.neo4j.server.rest.security.SecurityRule;
@@ -34,15 +34,15 @@ public class SecurityRulesModule implements ServerModule
 {
     private final WebServer webServer;
     private final Config config;
-    private final ConsoleLogger log;
+    private final Log log;
 
     private SecurityFilter mountedFilter;
 
-    public SecurityRulesModule( WebServer webServer, Config config, Logging logging )
+    public SecurityRulesModule( WebServer webServer, Config config, LogProvider logProvider )
     {
         this.webServer = webServer;
         this.config = config;
-        this.log = logging.getConsoleLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -57,7 +57,7 @@ public class SecurityRulesModule implements ServerModule
 
             for ( SecurityRule rule : securityRules )
             {
-                log.log( "Security rule [%s] installed on server",
+                log.info( "Security rule [%s] installed on server",
                         rule.getClass().getCanonicalName() );
             }
         }

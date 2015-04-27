@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -20,14 +20,10 @@
 package org.neo4j.kernel.impl.transaction.state;
 
 import org.neo4j.function.Supplier;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.unsafe.batchinsert.BatchInserter;
 
 /**
- * A provider of a {@link NeoStore}. This interface exists as a bridge between dependency resolution of
- * both an {@link InternalAbstractGraphDatabase} and {@link BatchInserter}, since batch inserter doesn't
- * have an {@link XaDataSourceManager} which would normally serve as a provider if a {@link NeoStore}.
+ * A provider of a {@link NeoStore}. Main reason for this is to be able to look it up in a DependencyResolver.
  */
 public interface NeoStoreSupplier extends Supplier<NeoStore>
 {

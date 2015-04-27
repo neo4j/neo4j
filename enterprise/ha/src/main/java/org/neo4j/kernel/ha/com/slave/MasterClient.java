@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
+
+import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.com.ComExceptionHandler;
 import org.neo4j.com.Deserializer;
@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static java.lang.String.format;
+
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
 
@@ -83,13 +84,14 @@ public interface MasterClient extends Master
 
         private String beginningOfBufferAsHexString( ChannelBuffer buffer, int maxBytesToPrint )
         {
+            // read buffer from pos 0 - writeIndex
             int prevIndex = buffer.readerIndex();
             buffer.readerIndex( 0 );
             try
             {
                 ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream( buffer.readableBytes() );
                 PrintStream stream = new PrintStream( byteArrayStream );
-                HexPrinter printer = new HexPrinter( stream, 4, 8*4 );
+                HexPrinter printer = new HexPrinter( stream ).withLineNumberDigits( 4 );
                 for ( int i = 0; buffer.readable() && i < maxBytesToPrint; i++ )
                 {
                     printer.append( buffer.readByte() );

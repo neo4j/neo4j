@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -24,7 +24,8 @@ import java.io.IOException;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLongToPrimitiveLong;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Used on the master to verify that slaves are using the same logical database as the master is running. This is done
@@ -32,13 +33,13 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class BranchDetectingTxVerifier implements TxChecksumVerifier
 {
-    private final StringLogger logger;
+    private final Log log;
     private final FunctionFromPrimitiveLongToPrimitiveLong<IOException> txChecksumLookup;
 
-    public BranchDetectingTxVerifier( StringLogger logger,
+    public BranchDetectingTxVerifier( LogProvider logProvider,
             FunctionFromPrimitiveLongToPrimitiveLong<IOException> txChecksumLookup )
     {
-        this.logger = logger;
+        this.log = logProvider.getLog( getClass() );
         this.txChecksumLookup = txChecksumLookup;
     }
 
@@ -66,7 +67,7 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
         }
         catch ( IOException e )
         {
-            logger.logMessage( "Couldn't verify checksum for " + stringify( txId, checksum ), e );
+            log.error( "Couldn't verify checksum for " + stringify( txId, checksum ), e );
             throw new BranchedDataException( "Unable to perform a mandatory sanity check due to an IO error.", e );
         }
 

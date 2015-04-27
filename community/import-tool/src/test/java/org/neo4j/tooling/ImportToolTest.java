@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -49,13 +50,16 @@ import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.Mute;
 import org.neo4j.test.RandomRule;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -336,8 +340,8 @@ public class ImportToolTest
         catch ( Exception e )
         {
             // THEN
-            assertExceptionContains( e, nodeData1.getPath() + ":" + 1, InputException.class );
-            assertExceptionContains( e, nodeData2.getPath() + ":" + 3, InputException.class );
+            assertExceptionContains( e, nodeData1.getPath() + ":" + 1, DuplicateInputIdException.class );
+            assertExceptionContains( e, nodeData2.getPath() + ":" + 3, DuplicateInputIdException.class );
         }
     }
 
@@ -532,6 +536,28 @@ public class ImportToolTest
 
         // THEN
         verifyData();
+    }
+
+    @Test
+    public void shouldDisallowImportWithoutNodesInput() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.COMMAS;
+
+        // WHEN
+        try
+        {
+            importTool(
+                    "--into", dbRule.getStoreDir().getAbsolutePath(),
+                    "--relationships", relationshipData( true, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( "No node input" ) );
+        }
     }
 
     protected void assertNodeHasLabels( Node node, String[] names )
@@ -928,7 +954,7 @@ public class ImportToolTest
         };
     }
 
-    private void importTool( String... arguments )
+    private void importTool( String... arguments ) throws IOException
     {
         ImportTool.main( arguments, true );
     }

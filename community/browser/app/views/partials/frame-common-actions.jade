@@ -21,6 +21,8 @@
           a(exportable ng-click='exportJSON(frame.response.table._response)') Export JSON
           a(exportable ng-click='exportCSV(frame.response.table)') Export CSV
     li
+      a.button.fa.fa-thumb-tack(ng-click='pin(frame)', ng-class="{selected: pinned}", tooltip-placement='bottom', tooltip='Pin at top')
+    li
       a.button.fa.fa-expand(ng-click="toggleFullscreen(true)", tooltip-placement='bottom', tooltip='Fullscreen', ng-show='frame.fullscreenable')
     li
       a.button.fa.fa-times-circle(ng-click='frames.close(frame)', tooltip-placement='bottom', tooltip='Close')

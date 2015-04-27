@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -34,6 +34,8 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
+
 /**
  * Imports nodes and their properties, everything except
  * {@link NodeRecord#setNextRel(long) first relationship id pointer} is set for every node in this stage.
@@ -44,7 +46,7 @@ public class NodeStage extends Stage
             InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
             BatchingNeoStore neoStore, InputCache inputCache, StatsProvider memoryUsage ) throws IOException
     {
-        super( "Nodes", config, true );
+        super( "Nodes", config, ORDER_SEND_DOWNSTREAM );
         add( new InputIteratorBatcherStep<>( control(), config, nodes.iterator(), InputNode.class ) );
         if ( !nodes.supportsMultiplePasses() )
         {

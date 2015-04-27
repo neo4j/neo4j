@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -59,7 +59,6 @@ public class CombinedIndexHits extends PrimitiveLongCollections.PrimitiveLongCon
         {
             hits.close();
         }
-        allIndexHits.clear();
     }
 
     @Override

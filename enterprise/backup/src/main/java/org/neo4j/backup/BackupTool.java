@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -18,8 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.backup;
-
-import ch.qos.logback.classic.LoggerContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,18 +39,14 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.LogbackService;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SystemOutLogging;
-import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
@@ -328,7 +322,7 @@ public class BackupTool
 
         try
         {
-            return service.resolve( from, args, newLogging( config ) );
+            return service.resolve( from, args, new SimpleLogService( FormattedLogProvider.toOutputStream( System.out ), NullLogProvider.getInstance() ) );
         }
         catch ( Throwable t )
         {
@@ -349,28 +343,6 @@ public class BackupTool
             port = BackupServer.DEFAULT_PORT;
         }
         return new HostnamePort( host, port );
-    }
-
-    private static Logging newLogging( Config config )
-    {
-        Logging logging;
-        try
-        {
-            BackupTool.class.getClassLoader().loadClass( "ch.qos.logback.classic.LoggerContext" );
-            LifeSupport life = new LifeSupport();
-            LogbackService logbackService = life.add(
-                    new LogbackService(
-                            config,
-                            (LoggerContext) getSingleton().getLoggerFactory()
-                            , "neo4j-backup-logback.xml", new Monitors() ) );
-            life.start();
-            logging = logbackService;
-        }
-        catch ( Throwable e )
-        {
-            logging = new SystemOutLogging();
-        }
-        return logging;
     }
 
     private static void moveExistingDatabase( FileSystemAbstraction fs, String to ) throws IOException

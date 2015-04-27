@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -25,15 +25,15 @@ import java.util.Set;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.ConfigurationContext;
-import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
+import org.neo4j.kernel.impl.logging.LogService;
 
 /**
  * Context used by {@link ElectionState}.
  */
 public interface ElectionContext
-    extends TimeoutsContext, LoggingContext, ConfigurationContext
+    extends TimeoutsContext, LogService, ConfigurationContext
 {
 
     void created();

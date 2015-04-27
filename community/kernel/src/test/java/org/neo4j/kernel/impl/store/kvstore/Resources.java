@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -31,11 +31,12 @@ import org.junit.runners.model.Statement;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.ResourceRule;
 
@@ -187,9 +188,9 @@ public final class Resources implements TestRule
         return service;
     }
 
-    public StringLogger logger()
+    public LogProvider logProvider()
     {
-        return StringLogger.DEV_NULL;
+        return NullLogProvider.getInstance();
     }
 
     private static class Closer extends LifecycleAdapter

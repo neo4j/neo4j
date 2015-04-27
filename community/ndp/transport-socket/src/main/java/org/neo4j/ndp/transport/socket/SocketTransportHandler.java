@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -67,6 +67,8 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
             ctx.fireChannelRead( msg );
         }
     }
+
+    // TODO: Handle channelInactive (eg. close our session if we've opened one)
 
     private void chooseProtocolVersion( ChannelHandlerContext ctx, ByteBuf buffer ) throws Exception
     {

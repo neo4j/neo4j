@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -93,7 +93,7 @@ public class TestIdGeneratorRebuilding
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs ),
                 fs,
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 labelStore,
                 StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                 new Monitors() );
@@ -150,7 +150,7 @@ public class TestIdGeneratorRebuilding
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs ),
                 fs,
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 new Monitors() );
         storeFactory.createDynamicStringStore( storeFile, 30, IdType.STRING_BLOCK );
         DynamicStringStore store = storeFactory.newDynamicStringStore(
@@ -214,7 +214,7 @@ public class TestIdGeneratorRebuilding
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs ),
                 fs,
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 labelStore,
                 StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                 new Monitors() );

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -20,21 +20,29 @@
 package org.neo4j.tooling;
 
 import java.io.IOException;
+import java.io.StringReader;
 
+import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Extractors;
+import org.neo4j.csv.reader.Readables;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
+import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
 import static org.neo4j.tooling.CsvDataGenerator.bareboneNodeHeader;
 import static org.neo4j.tooling.CsvDataGenerator.bareboneRelationshipHeader;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.defaultVisible;
 
 /**
@@ -56,18 +64,52 @@ public class QuickImport
     public static void main( String[] arguments ) throws IOException
     {
         Args args = Args.parse( arguments );
-        long nodeCount = args.getNumber( "nodes", null ).longValue();
-        long relationshipCount = args.getNumber( "relationships", null ).longValue();
+        long nodeCount = parseLongWithUnit( args.get( "nodes", null ) );
+        long relationshipCount = parseLongWithUnit( args.get( "relationships", null ) );
         int labelCount = args.getNumber( "labels", 4 ).intValue();
         int relationshipTypeCount = args.getNumber( "relationship-types", 4 ).intValue();
         String dir = args.get( ImportTool.Options.STORE_DIR.key() );
 
         Extractors extractors = new Extractors( COMMAS.arrayDelimiter() );
         IdType idType = IdType.ACTUAL;
+
+        Header nodeHeader = parseNodeHeader( args, idType, extractors );
+        Header relationshipHeader = parseRelationshipHeader( args, idType, extractors );
+
         Input input = new CsvDataGeneratorInput(
-                bareboneNodeHeader( idType, extractors ), bareboneRelationshipHeader( idType, extractors ),
+                nodeHeader, relationshipHeader,
                 COMMAS, nodeCount, relationshipCount, new Groups(), idType, labelCount, relationshipTypeCount );
-        BatchImporter importer = new ParallelBatchImporter( dir, DEFAULT, new SystemOutLogging(), defaultVisible() );
+        BatchImporter importer = new ParallelBatchImporter( dir, DEFAULT, FormattedLogProvider.toOutputStream( System.out ), defaultVisible() );
         importer.doImport( input );
+    }
+
+    private static Header parseNodeHeader( Args args, IdType idType, Extractors extractors )
+    {
+        String definition = args.get( "node-header", null );
+        if ( definition == null )
+        {
+            return bareboneNodeHeader( idType, extractors );
+        }
+
+        Configuration config = Configuration.COMMAS;
+        return defaultFormatNodeFileHeader().create( seeker( definition, config ), config, idType );
+    }
+
+    private static Header parseRelationshipHeader( Args args, IdType idType, Extractors extractors )
+    {
+        String definition = args.get( "relationship-header", null );
+        if ( definition == null )
+        {
+            return bareboneRelationshipHeader( idType, extractors );
+        }
+
+        Configuration config = Configuration.COMMAS;
+        return defaultFormatRelationshipFileHeader().create( seeker( definition, config ), config, idType );
+    }
+
+    private static CharSeeker seeker( String definition, Configuration config )
+    {
+        return CharSeekers.charSeeker( Readables.wrap( new StringReader( definition ) ),
+                10_000, false, config.quotationCharacter() );
     }
 }

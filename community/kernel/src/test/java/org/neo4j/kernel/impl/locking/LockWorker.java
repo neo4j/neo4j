@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.locking;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
+import org.neo4j.logging.Logger;
 import org.neo4j.test.OtherThreadExecutor;
 
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
@@ -106,15 +106,14 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
     }
     
     @Override
-    public boolean visit( LineLogger logger )
+    public void dump( Logger logger )
     {
-        boolean result = super.visit( logger );
-        logger.logLine( "What have I done up until now?" );
+        super.dump( logger );
+        logger.log( "What have I done up until now?" );
         for ( String op : state.completedOperations )
-            logger.logLine( op );
-        logger.logLine( "Doing right now:" );
-        logger.logLine( state.doing );
-        return result;
+            logger.log( op );
+        logger.log( "Doing right now:" );
+        logger.log( state.doing );
     }
     
     public static ResourceObject newResourceObject( String name )

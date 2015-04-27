@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityByIdRhs => PipeEntityByIdRhs}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{SeekArgs => PipeEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
 
@@ -92,8 +92,14 @@ object InternalPlanDescription {
     case class Planner(value: String) extends Argument{
       override def name = "planner"
     }
+    case class PlannerImpl(value: String) extends Argument{
+      override def name = "planner-impl"
+    }
     case class Runtime(value: String) extends Argument{
       override def name = "runtime"
+    }
+    case class RuntimeImpl(value: String) extends Argument{
+      override def name = "runtime-impl"
     }
     case class ExpandExpression(from: String, relName: String, relTypes:Seq[String], to: String, direction: Direction, varLength: Boolean = false) extends Argument
   }

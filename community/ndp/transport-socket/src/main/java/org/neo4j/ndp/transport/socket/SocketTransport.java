@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -32,8 +32,8 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
 import org.neo4j.ndp.runtime.Sessions;
 
 /**
@@ -46,7 +46,7 @@ public class SocketTransport extends LifecycleAdapter
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
 
-    public SocketTransport( HostnamePort address, final StringLogger log, final Sessions sessions )
+    public SocketTransport( HostnamePort address, final Log log, final Sessions sessions )
     {
         this.address = address;
 

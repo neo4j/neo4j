@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -26,7 +26,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -39,7 +39,7 @@ public class ProduceUncleanStore
         GraphDatabaseService db = new EmbeddedGraphDatabase(
                 storeDir,
                 stringMap(),
-                GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL ) );
+                GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() ) );
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();

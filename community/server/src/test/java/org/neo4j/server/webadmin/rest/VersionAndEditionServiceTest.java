@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -29,7 +29,7 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ConfigurationBuilder;
@@ -157,7 +157,7 @@ public class VersionAndEditionServiceTest
     {
         public FakeAdvancedNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory )
         {
-            super( configurator, dbFactory, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL ));
+            super( configurator, dbFactory, GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() ), NullLogProvider.getInstance() );
         }
 
         @Override

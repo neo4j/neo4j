@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.commons.{TestableIterator, CypherFunSuite}
-import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.graphdb.Node
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.{CypherFunSuite, TestableIterator}
+import org.neo4j.graphdb.Node
 
 
 class NodeOuterHashJoinPipeTest extends CypherFunSuite {

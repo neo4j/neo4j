@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.store.format.TestCursor;
 import org.neo4j.kernel.impl.store.format.TestHeaderlessStoreFormat;
 import org.neo4j.kernel.impl.store.format.TestRecord;
 import org.neo4j.kernel.impl.store.impl.TestStoreIdGenerator;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
@@ -148,7 +148,7 @@ public class FindHighestInUseRebuilderFactoryTest
     {
         Store<TestRecord, TestCursor> store = new StandardStore<>( new TestHeaderlessStoreFormat(),
                 path, new TestStoreIdGenerator(), cache,
-                fs, StringLogger.DEV_NULL );
+                fs, NullLogProvider.getInstance() );
         store.init();
         store.start();
         return store;

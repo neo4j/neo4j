@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,7 +19,13 @@
  */
 package org.neo4j.graphdb.mockfs;
 
+import java.util.Map;
+
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 @SuppressWarnings("deprecation")
@@ -28,10 +34,25 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
     private LimitedFilesystemAbstraction fs;
 
     @Override
-    protected FileSystemAbstraction createFileSystemAbstraction()
+    protected void create( Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        return fs = new LimitedFilesystemAbstraction( super.createFileSystemAbstraction() );
+        new CommunityFacadeFactory()
+        {
+            @Override
+            protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            {
+                return new ImpermanentPlatformModule( params, dependencies, graphDatabaseFacade )
+                {
+                    @Override
+                    protected FileSystemAbstraction createFileSystemAbstraction()
+                    {
+                        return fs = new LimitedFilesystemAbstraction( super.createFileSystemAbstraction() );
+                    }
+                };
+            }
+        }.newFacade( params, dependencies, this );
     }
+
 
     public void runOutOfDiskSpaceNao()
     {

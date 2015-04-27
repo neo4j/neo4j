@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -33,6 +33,8 @@ import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 
 import static java.lang.System.currentTimeMillis;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 /**
  * Default implementation of {@link StageControl}
  */
@@ -43,14 +45,14 @@ public class StageExecution implements StageControl
     private final Collection<Step<?>> pipeline;
     private volatile Throwable panicCause;
     private long startTime;
-    private final boolean orderedTickets;
+    private final int orderingGuarantees;
 
-    public StageExecution( String stageName, Configuration config, Collection<Step<?>> pipeline, boolean orderedTickets )
+    public StageExecution( String stageName, Configuration config, Collection<Step<?>> pipeline, int orderingGuarantees )
     {
         this.stageName = stageName;
         this.config = config;
         this.pipeline = pipeline;
-        this.orderedTickets = orderedTickets;
+        this.orderingGuarantees = orderingGuarantees;
     }
 
     public boolean stillExecuting()
@@ -59,7 +61,7 @@ public class StageExecution implements StageControl
         if ( panic != null )
         {
             String message = panic.getMessage();
-            throw new RuntimeException( message == null? "Panic" : message, panic );
+            throw launderedException( message == null? "Panic" : message, panic );
         }
 
         for ( Step<?> step : pipeline )
@@ -77,7 +79,7 @@ public class StageExecution implements StageControl
         this.startTime = currentTimeMillis();
         for ( Step<?> step : pipeline )
         {
-            step.start( orderedTickets );
+            step.start( orderingGuarantees );
         }
     }
 

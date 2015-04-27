@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -33,7 +33,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.NeoServer;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -77,9 +77,9 @@ public class ServerHelper
         return createServer( CommunityServerBuilder.server(), false, null );
     }
 
-    public static NeoServer createNonPersistentServer( Logging logging ) throws IOException
+    public static NeoServer createNonPersistentServer( LogProvider logProvider ) throws IOException
     {
-        return createServer( CommunityServerBuilder.server( logging ), false, null );
+        return createServer( CommunityServerBuilder.server( logProvider ), false, null );
     }
 
     public static NeoServer createPersistentServer( File path ) throws IOException
@@ -87,9 +87,9 @@ public class ServerHelper
         return createServer( CommunityServerBuilder.server(), true, path );
     }
 
-    public static NeoServer createPersistentServer(File path, Logging logging) throws IOException
+    public static NeoServer createPersistentServer(File path, LogProvider logProvider) throws IOException
     {
-        return createServer( CommunityServerBuilder.server( logging ), true, path );
+        return createServer( CommunityServerBuilder.server( logProvider ), true, path );
     }
 
     private static NeoServer createServer( CommunityServerBuilder builder, boolean persistent, File path )

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -82,7 +82,7 @@ public class BiasedWinnerStrategy implements WinnerStrategy
         String electionOutcome =
                 String.format( "Election: received votes %s, eligible votes %s (Instance #%s has been %s)",
                         votes, eligibleVotes, biasedNode, nodePromoted ? "promoted" : "demoted" );
-        electionContext.getLogger( getClass() ).debug( electionOutcome );
+        electionContext.getInternalLog( getClass() ).debug( electionOutcome );
     }
 
     private boolean winnerIsBiasedInstance( Vote vote )

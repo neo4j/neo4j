@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.assu
 
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.LabelId
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{AstConstructionTestSupport, HasLabels, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.IndependenceCombiner
@@ -29,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, Pa
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanConstructionTestSupport, Predicate, Selections, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
 import scala.collection.mutable
@@ -50,5 +50,22 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
     result should equal(Selectivity.ONE)
+  }
+
+  test("should not consider label selectivity twice") {
+    val stats: GraphStatistics = mock[GraphStatistics]
+    when(stats.nodesWithLabelCardinality(any())).thenReturn(Cardinality(1))
+    when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
+
+    val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
+    val relationship = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+
+    val label = LabelName("L")(pos)
+
+    implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
+    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(ident("a"), Seq(label))(pos))))
+    val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
+
+    result should equal(Selectivity(42))
   }
 }

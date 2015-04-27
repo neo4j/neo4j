@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -30,8 +30,8 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstanceStore;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.CappedOperation;
-import org.neo4j.kernel.logging.Logging;
 
 class LearnerContextImpl
         extends AbstractContextImpl
@@ -49,7 +49,7 @@ class LearnerContextImpl
                 @Override
                 protected void triggered( InstanceId instanceId )
                 {
-                    getConsoleLogger( LearnerState.class ).warn( "Did not have learned value for Paxos instance "
+                    getInternalLog( LearnerState.class ).warn( "Did not have learned value for Paxos instance "
                             + instanceId + ". This generally indicates that this instance has missed too many " +
                             "cluster events and is failing to catch up. If this error does not resolve soon it " +
                             "may become necessary to restart this cluster member so normal operation can resume.");
@@ -63,14 +63,14 @@ class LearnerContextImpl
     private final PaxosInstanceStore paxosInstances;
 
     LearnerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-                        Logging logging,
+                        LogService logService,
                         Timeouts timeouts, PaxosInstanceStore paxosInstances,
                         AcceptorInstanceStore instanceStore,
                         ObjectInputStreamFactory objectInputStreamFactory,
                         ObjectOutputStreamFactory objectOutputStreamFactory,
                         HeartbeatContext heartbeatContext )
     {
-        super( me, commonState, logging, timeouts );
+        super( me, commonState, logService, timeouts );
         this.heartbeatContext = heartbeatContext;
         this.instanceStore = instanceStore;
         this.objectInputStreamFactory = objectInputStreamFactory;
@@ -78,13 +78,13 @@ class LearnerContextImpl
         this.paxosInstances = paxosInstances;
     }
 
-    private LearnerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, Logging logging,
+    private LearnerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, LogService logService,
                                 Timeouts timeouts, long lastDeliveredInstanceId, long lastLearnedInstanceId,
                                 HeartbeatContext heartbeatContext,
                         AcceptorInstanceStore instanceStore, ObjectInputStreamFactory objectInputStreamFactory,
                         ObjectOutputStreamFactory objectOutputStreamFactory, PaxosInstanceStore paxosInstances )
     {
-        super( me, commonState, logging, timeouts );
+        super( me, commonState, logService, timeouts );
         this.lastDeliveredInstanceId = lastDeliveredInstanceId;
         this.lastLearnedInstanceId = lastLearnedInstanceId;
         this.heartbeatContext = heartbeatContext;
@@ -186,12 +186,12 @@ class LearnerContextImpl
         learnMissLogging.event( instanceId );
     }
 
-    public LearnerContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,
+    public LearnerContextImpl snapshot( CommonContextState commonStateSnapshot, LogService logService, Timeouts timeouts,
                                         PaxosInstanceStore paxosInstancesSnapshot, AcceptorInstanceStore instanceStore,
                                         ObjectInputStreamFactory objectInputStreamFactory, ObjectOutputStreamFactory
             objectOutputStreamFactory, HeartbeatContextImpl snapshotHeartbeatContext )
     {
-        return new LearnerContextImpl( me, commonStateSnapshot, logging, timeouts, lastDeliveredInstanceId,
+        return new LearnerContextImpl( me, commonStateSnapshot, logService, timeouts, lastDeliveredInstanceId,
                 lastLearnedInstanceId, snapshotHeartbeatContext, instanceStore, objectInputStreamFactory,
                 objectOutputStreamFactory, paxosInstancesSnapshot );
     }

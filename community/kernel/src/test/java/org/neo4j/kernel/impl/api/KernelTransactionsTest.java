@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplie
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLog;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 
@@ -138,7 +138,7 @@ public class KernelTransactionsTest
                 mock( IntegrityValidator.class ), null, null, null, null, null, null, null,
                 TransactionHeaderInformationFactory.DEFAULT, null, commitProcess, null,
                 null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
-                new Tracers( "null", StringLogger.DEV_NULL ) );
+                new Tracers( "null", NullLog.getInstance() ) );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -20,9 +20,9 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.helpers.TxCounts
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.graphdb.Node
 import java.io.PrintWriter
-import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper.RichString
 
 class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite

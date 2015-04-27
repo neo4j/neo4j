@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,6 +19,7 @@
  */
 package org.neo4j.management.impl;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,7 +30,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.FormattedLog;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.management.Diagnostics;
@@ -85,17 +86,17 @@ public class DiagnosticsBean extends ManagementBeanProvider
         @Override
         public String dumpAll(  )
         {
-            StringBuffer result = new StringBuffer();
-            diagnostics.dumpAll(StringLogger.wrap( result ) );
-            return result.toString();
+            StringWriter stringWriter = new StringWriter();
+            diagnostics.dumpAll( FormattedLog.toWriter( stringWriter ) );
+            return stringWriter.toString();
         }
 
         @Override
         public String extract( String providerId )
         {
-            StringBuffer result = new StringBuffer();
-            diagnostics.extract( providerId, StringLogger.wrap( result ) );
-            return result.toString();
+            StringWriter stringWriter = new StringWriter();
+            diagnostics.extract( providerId, FormattedLog.toWriter( stringWriter ) );
+            return stringWriter.toString();
         }
     }
 }

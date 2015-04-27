@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
@@ -254,7 +255,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, null, null, null, null, null, null, null );
+            super( null, new Config(), null, null, null, NullLogProvider.getInstance(), null, null, null, null, null );
             this.currentRecording = currentRecording;
         }
 
@@ -286,7 +287,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, null, null, null, null, null );
+            super( null, new Config(), null, null, null, NullLogProvider.getInstance(), null, null, null );
             this.currentRecording = currentRecording;
         }
 
@@ -326,7 +327,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, null, null, null, null );
+            super( null, new Config(), null, null, null, NullLogProvider.getInstance(), null, null );
             this.currentRecording = currentRecording;
         }
 

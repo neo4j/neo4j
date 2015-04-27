@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.net.URI;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -35,26 +30,30 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.Test;
+import org.mockito.InOrder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.com.ComException;
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.function.Supplier;
 import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.NoSuchLogVersionException;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogService;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -63,8 +62,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.TO_SLAVE;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class HighAvailabilityModeSwitcherTest
 {
@@ -77,8 +78,9 @@ public class HighAvailabilityModeSwitcherTest
                 mock( SwitchToMaster.class ),
                 mock( Election.class ),
                 availability,
-                dependencyResolverMock(),
-                mock( InstanceId.class ), new DevNullLoggingService() );
+                mock( ClusterClient.class ),
+                storeSupplierMock(),
+                mock( InstanceId.class ), NullLogService.getInstance() );
 
         // When
         toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
@@ -102,8 +104,9 @@ public class HighAvailabilityModeSwitcherTest
                 mock( SwitchToMaster.class ),
                 mock( Election.class ),
                 availability,
-                dependencyResolverMock(),
-                mock( InstanceId.class ), new DevNullLoggingService() );
+                mock( ClusterClient.class ),
+                storeSupplierMock(),
+                mock( InstanceId.class ), NullLogService.getInstance() );
 
         // When
         toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.SLAVE,
@@ -127,8 +130,9 @@ public class HighAvailabilityModeSwitcherTest
                 mock( SwitchToMaster.class ),
                 mock( Election.class ),
                 availability,
-                dependencyResolverMock(),
-                mock( InstanceId.class ), new DevNullLoggingService() );
+                mock( ClusterClient.class ),
+                storeSupplierMock(),
+                mock( InstanceId.class ), NullLogService.getInstance() );
 
         // When
         toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.SLAVE,
@@ -152,8 +156,9 @@ public class HighAvailabilityModeSwitcherTest
                 mock( SwitchToMaster.class ),
                 mock( Election.class ),
                 availability,
-                dependencyResolverMock(),
-                mock( InstanceId.class ), new DevNullLoggingService() );
+                mock( ClusterClient.class ),
+                storeSupplierMock(),
+                mock( InstanceId.class ), NullLogService.getInstance() );
 
         // When
         toTest.slaveIsAvailable( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
@@ -199,16 +204,13 @@ public class HighAvailabilityModeSwitcherTest
             }
         } );
 
-        Logging logging = mock( Logging.class );
-        doReturn( new ConsoleLogger( StringLogger.DEV_NULL ) ).when( logging )
-                .getConsoleLog( HighAvailabilityModeSwitcher.class );
-
         HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( switchToSlave,
                 switchToMaster,
                 mock( Election.class ),
                 availability,
-                dependencyResolverMock(),
-                mock( InstanceId.class ), new DevNullLoggingService() );
+                mock( ClusterClient.class ),
+                storeSupplierMock(),
+                mock( InstanceId.class ), NullLogService.getInstance() );
         toTest.init();
         toTest.start();
         toTest.listeningAt( URI.create( "ha://server3?serverId=3" ) );
@@ -247,12 +249,9 @@ public class HighAvailabilityModeSwitcherTest
 
         SwitchToSlave switchToSlave = mock( SwitchToSlave.class );
 
-        Logging mock = mock( Logging.class );
-        when( mock.getMessagesLog( any( Class.class ) ) ).thenReturn( mock( StringLogger.class ) );
-        when( mock.getConsoleLog( any( Class.class ) ) ).thenReturn( mock( ConsoleLogger.class ) );
         HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( switchToSlave,
                 mock( SwitchToMaster.class ), mock( Election.class ), mock( ClusterMemberAvailability.class ),
-                mock( DependencyResolver.class ), new InstanceId( 4 ), mock )
+                mock( ClusterClient.class ), mock( Supplier.class ), new InstanceId( 4 ), NullLogService.getInstance() )
         {
             @Override
             ScheduledExecutorService createExecutor()
@@ -265,13 +264,14 @@ public class HighAvailabilityModeSwitcherTest
                     @Override
                     public Future<?> answer( final InvocationOnMock invocation ) throws Throwable
                     {
-                        return realExecutor.submit( new Runnable() {
+                        return realExecutor.submit( new Runnable()
+                        {
                             @Override
                             public void run()
                             {
                                 ((Runnable) invocation.getArguments()[0]).run();
                             }
-                        });
+                        } );
                     }
                 } );
 
@@ -288,12 +288,15 @@ public class HighAvailabilityModeSwitcherTest
                                     {
                                         firstMasterAvailableHandled.countDown();
 
-                                        // wait until the second masterIsAvailable comes and then call switchToSlave method
+                                        // wait until the second masterIsAvailable comes and then call switchToSlave
+                                        // method
                                         secondMasterAvailableComes.await();
                                         ((Runnable) invocation.getArguments()[0]).run();
                                         secondMasterAvailableHandled.countDown();
                                         return null;
-                                    };
+                                    }
+
+                                    ;
                                 } );
                                 return mock( ScheduledFuture.class );
                             }
@@ -312,17 +315,21 @@ public class HighAvailabilityModeSwitcherTest
         // The first masterIsAvailable should fail so that the slave instance stops at TO_SLAVE state
         doThrow( new ComException( "Fail to switch to slave and reschedule to retry" ) )
                 .when( switchToSlave )
-                .switchToSlave( any( LifeSupport.class ), any( URI.class ), eq( uri1 ), any( CancellationRequest.class ) );
+                .switchToSlave( any( LifeSupport.class ), any( URI.class ), eq( uri1 ), any( CancellationRequest
+                        .class ) );
 
-        toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 1 ), uri1 ) );
-        firstMasterAvailableHandled.await(); // wait until the first masterIsAvailable triggers the exception handling process
+        toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 1 ), uri1
+        ) );
+        firstMasterAvailableHandled.await(); // wait until the first masterIsAvailable triggers the exception
+        // handling process
         verify( switchToSlave ).switchToSlave( any( LifeSupport.class ), any( URI.class ), eq( uri1 ),
                 any( CancellationRequest.class ) );
 
 
         // masterIsAvailable for instance 2
         URI uri2 = URI.create( "ha://server2" );
-        toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( TO_SLAVE, TO_SLAVE, new InstanceId( 2 ), uri2 ) );
+        toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( TO_SLAVE, TO_SLAVE, new InstanceId( 2 ),
+                uri2 ) );
         secondMasterAvailableComes.countDown();
         secondMasterAvailableHandled.await(); // wait until switchToSlave method is invoked again
 
@@ -353,13 +360,16 @@ public class HighAvailabilityModeSwitcherTest
 
         HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( switchToSlave,
                 mock( SwitchToMaster.class ), mock( Election.class ), mock( ClusterMemberAvailability.class ),
-                dependencyResolverMock(), new InstanceId( 1 ), new DevNullLoggingService() );
+                mock( ClusterClient.class ),
+                storeSupplierMock(),
+                new InstanceId( 1 ), NullLogService.getInstance() );
         URI uri1 = URI.create( "ha://server1" );
         toTest.init();
         toTest.start();
         toTest.listeningAt( URI.create( "ha://server3?serverId=3" ) );
 
-        when( switchToSlave.switchToSlave( any( LifeSupport.class ), any( URI.class ), any( URI.class ), any( CancellationRequest.class ) ) ).thenAnswer( new Answer<URI>()
+        when( switchToSlave.switchToSlave( any( LifeSupport.class ), any( URI.class ), any( URI.class ), any(
+                CancellationRequest.class ) ) ).thenAnswer( new Answer<URI>()
 
         {
             // The first time around it must "fail" so as to cause a rerun, then wait for the mIE to come through
@@ -407,12 +417,14 @@ public class HighAvailabilityModeSwitcherTest
         // Given
         // A HAMS
         SwitchToSlave switchToSlave = mock( SwitchToSlave.class );
-        Logging logging = mock( Logging.class );
-        StringLogger msgLog = mock( StringLogger.class );
-        when( logging.getMessagesLog( HighAvailabilityModeSwitcher.class ) ).thenReturn( msgLog );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        SimpleLogService logService = new SimpleLogService( NullLogProvider.getInstance(), logProvider );
+
         HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( switchToSlave,
                 mock( SwitchToMaster.class ), mock( Election.class ), mock( ClusterMemberAvailability.class ),
-                dependencyResolverMock(), new InstanceId( 2 ), logging );
+                mock( ClusterClient.class ),
+                storeSupplierMock(),
+                new InstanceId( 2 ), logService );
         // That is properly started
         toTest.init();
         toTest.start();
@@ -421,6 +433,7 @@ public class HighAvailabilityModeSwitcherTest
          * there
          */
         URI serverHaUri = URI.create( "ha://server2?serverId=2" );
+        toTest.listeningAt( serverHaUri );
 
         // When
         // The HAMS tries to switch to slave for a master that is itself
@@ -431,7 +444,10 @@ public class HighAvailabilityModeSwitcherTest
         // No switching to slave must happen
         verifyZeroInteractions( switchToSlave );
         // And an error must be logged
-        verify( msgLog, times( 1 ) ).error( anyString() );
+        logProvider.assertAtLeastOnce(
+                inLog( HighAvailabilityModeSwitcher.class ).error( "I (ha://server2?serverId=2) tried to switch to " +
+                        "slave for myself as master (ha://server2?serverId=2)" )
+        );
     }
 
     @Test
@@ -442,8 +458,10 @@ public class HighAvailabilityModeSwitcherTest
         Election election = mock( Election.class );
 
         HighAvailabilityModeSwitcher modeSwitcher = new HighAvailabilityModeSwitcher( mock( SwitchToSlave.class ),
-                mock( SwitchToMaster.class ), election, memberAvailability, dependencyResolverMock(),
-                mock( InstanceId.class ), new DevNullLoggingService() );
+                mock( SwitchToMaster.class ), election, memberAvailability, mock( ClusterClient.class ),
+                storeSupplierMock(),
+
+                mock( InstanceId.class ), NullLogService.getInstance() );
 
         // When
         modeSwitcher.forceElections();
@@ -463,8 +481,9 @@ public class HighAvailabilityModeSwitcherTest
         Election election = mock( Election.class );
 
         HighAvailabilityModeSwitcher modeSwitcher = new HighAvailabilityModeSwitcher( mock( SwitchToSlave.class ),
-                mock( SwitchToMaster.class ), election, memberAvailability, dependencyResolverMock(),
-                mock( InstanceId.class ), new DevNullLoggingService() );
+                mock( SwitchToMaster.class ), election, memberAvailability, mock( ClusterClient.class ),
+                storeSupplierMock(),
+                mock( InstanceId.class ), NullLogService.getInstance() );
 
         // When: reelections are forced multiple times
         modeSwitcher.forceElections();
@@ -491,8 +510,10 @@ public class HighAvailabilityModeSwitcherTest
         final CountDownLatch modeSwitchHappened = new CountDownLatch( 1 );
 
         HighAvailabilityModeSwitcher modeSwitcher = new HighAvailabilityModeSwitcher( switchToSlave,
-                mock( SwitchToMaster.class ), election, memberAvailability, dependencyResolverMock(),
-                mock( InstanceId.class ), new DevNullLoggingService() )
+                mock( SwitchToMaster.class ), election, memberAvailability, mock( ClusterClient.class ),
+                storeSupplierMock(),
+
+                mock( InstanceId.class ), NullLogService.getInstance() )
         {
             @Override
             ScheduledExecutorService createExecutor()
@@ -547,21 +568,22 @@ public class HighAvailabilityModeSwitcherTest
         SwitchToSlave sts = mock( SwitchToSlave.class );
         SwitchToMaster stm = mock( SwitchToMaster.class );
         // this is necessary to trigger a revert which uses the serverId from the HAMS#me field
-        when ( stm.switchToMaster( any(LifeSupport.class), any(URI.class) ) ).thenThrow( new RuntimeException() );
+        when( stm.switchToMaster( any( LifeSupport.class ), any( URI.class ) ) ).thenThrow( new RuntimeException() );
         Election election = mock( Election.class );
         ClusterMemberAvailability cma = mock( ClusterMemberAvailability.class );
-        Logging logging = mock( Logging.class );
-        when( logging.getMessagesLog( any( Class.class ) ) ).thenReturn( mock( StringLogger.class ) );
         InstanceId instanceId = new InstanceId( 14 );
 
         HighAvailabilityModeSwitcher theSwitcher = new HighAvailabilityModeSwitcher( sts, stm, election, cma,
-                dependencyResolverMock(), instanceId, logging );
+                mock( ClusterClient.class ),
+                storeSupplierMock(),
+                instanceId, NullLogService.getInstance() );
 
         theSwitcher.init();
         theSwitcher.start();
 
         /*
-         * This is the trick, kind of. NetworkReceiver creates this and passes it on to NetworkReceiver#getURI() and that
+         * This is the trick, kind of. NetworkReceiver creates this and passes it on to NetworkReceiver#getURI() and
+         * that
          * is what HAMS uses as the HAMS#me field value. But we should not be using this to extract the instanceId.
          * Note the lack of a serverId argument
          */
@@ -587,10 +609,10 @@ public class HighAvailabilityModeSwitcherTest
         verify( election ).demote( instanceId );
     }
 
-    private static DependencyResolver dependencyResolverMock()
+    private static Supplier<StoreId> storeSupplierMock()
     {
-        DependencyResolver resolver = mock( DependencyResolver.class );
-        when( resolver.resolveDependency( eq( StoreId.class ) ) ).thenReturn( StoreId.DEFAULT );
-        return resolver;
+        Supplier<StoreId> supplier = mock( Supplier.class );
+        when( supplier.get() ).thenReturn( StoreId.DEFAULT );
+        return supplier;
     }
 }

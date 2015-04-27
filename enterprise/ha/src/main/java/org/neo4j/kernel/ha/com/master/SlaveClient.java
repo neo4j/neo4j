@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -39,7 +39,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static org.neo4j.com.Protocol.VOID_SERIALIZER;
@@ -52,11 +52,11 @@ public class SlaveClient extends Client<Slave> implements Slave
 {
     private final InstanceId machineId;
 
-    public SlaveClient( InstanceId machineId, String hostNameOrIp, int port, Logging logging,
+    public SlaveClient( InstanceId machineId, String hostNameOrIp, int port, LogProvider logProvider,
                         StoreId storeId, int maxConcurrentChannels, int chunkSize,
                         ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( hostNameOrIp, port, logging, storeId, Protocol.DEFAULT_FRAME_LENGTH,
+        super( hostNameOrIp, port, logProvider, storeId, Protocol.DEFAULT_FRAME_LENGTH,
                 new ProtocolVersion( SlaveServer.APPLICATION_PROTOCOL_VERSION, INTERNAL_PROTOCOL_VERSION ),
                 HaSettings.read_timeout.apply( Functions.<String, String>nullFunction() ),
                 maxConcurrentChannels, chunkSize, NO_OP_RESPONSE_UNPACKER, byteCounterMonitor, requestMonitor );

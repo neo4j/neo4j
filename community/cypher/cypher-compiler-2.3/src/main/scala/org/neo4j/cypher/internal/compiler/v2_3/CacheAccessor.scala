@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -18,8 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal.compiler.v2_3
-
-import org.neo4j.cypher.internal.LRUCache
 
 trait CacheAccessor[K, T] {
   def getOrElseUpdate(cache: LRUCache[K, T])(key: K, f: => T): T

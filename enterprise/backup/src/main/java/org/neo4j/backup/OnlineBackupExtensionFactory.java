@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -24,8 +24,8 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
 @Service.Implementation(KernelExtensionFactory.class)
@@ -40,7 +40,7 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
 
         GraphDatabaseAPI getGraphDatabaseAPI();
 
-        Logging logging();
+        LogService logService();
 
         KernelPanicEventGenerator kpeg();
 
@@ -62,6 +62,6 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
         return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
-                dependencies.kpeg(), dependencies.logging(), dependencies.monitors() );
+                dependencies.kpeg(), dependencies.logService().getInternalLogProvider(), dependencies.monitors() );
     }
 }

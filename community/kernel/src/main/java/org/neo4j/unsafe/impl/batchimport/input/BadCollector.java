@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -25,9 +25,12 @@ import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
 
 import static java.lang.String.format;
 import static java.util.Arrays.copyOf;
+
+import static org.neo4j.helpers.Exceptions.withMessage;
 
 public class BadCollector implements Collector
 {
@@ -55,15 +58,14 @@ public class BadCollector implements Collector
     @Override
     public void collectBadRelationship( InputRelationship relationship, Object specificValue )
     {
-        checkTolerance( BAD_RELATIONSHIPS, format( "%s refering to missing node %s", relationship, specificValue ) );
+        checkTolerance( BAD_RELATIONSHIPS,
+                new InputException( format( "%s refering to missing node %s", relationship, specificValue ) ) );
     }
 
     @Override
     public void collectDuplicateNode( Object id, long actualId, String group, String firstSource, String otherSource )
     {
-        checkTolerance( DUPLICATE_NODES, format(
-                "id '%s' is defined more than once in %s, at least at:%n    %s%n    %s",
-                id, group, firstSource, otherSource ) );
+        checkTolerance( DUPLICATE_NODES, new DuplicateInputIdException( id, group, firstSource, otherSource ) );
 
         if ( leftOverDuplicateNodeIdsCursor == leftOverDuplicateNodeIds.length )
         {
@@ -95,19 +97,21 @@ public class BadCollector implements Collector
         return (collect & bit) != 0;
     }
 
-    private void checkTolerance( int bit, String error )
+    private void checkTolerance( int bit, InputException exception )
     {
         boolean collect = collects( bit );
         if ( collect )
         {
-            out.println( error );
+            out.println( exception.getMessage() );
             badEntries++;
         }
 
         if ( !collect || badEntries > tolerance )
         {
-            String foreword = collect ? format( "Too many bad entries %d, where last one was: ", badEntries ) : "";
-            throw new InputException( foreword + error );
+            throw collect
+                    ? withMessage( exception, format( "Too many bad entries %d, where last one was: ", badEntries ) +
+                            exception.getMessage() )
+                    : exception;
         }
     }
 }

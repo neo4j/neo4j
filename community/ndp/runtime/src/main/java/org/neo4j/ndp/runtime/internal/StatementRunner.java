@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,8 +22,8 @@ package org.neo4j.ndp.runtime.internal;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.stream.RecordStream;
 import org.neo4j.ndp.runtime.internal.session.SessionState;
+import org.neo4j.stream.RecordStream;
 
 /**
  * A runtime handler can handle a textual input language, yielding results. Query engines are not expected to be
@@ -31,5 +31,5 @@ import org.neo4j.ndp.runtime.internal.session.SessionState;
  */
 public interface StatementRunner
 {
-    RecordStream run( SessionState ctx, String statement, Map<String, Object> params ) throws KernelException;
+    RecordStream run( SessionState ctx, String statement, Map<String,Object> params ) throws KernelException;
 }

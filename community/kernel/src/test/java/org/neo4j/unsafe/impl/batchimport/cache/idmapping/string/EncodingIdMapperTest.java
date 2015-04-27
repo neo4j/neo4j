@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,16 +22,20 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.RepeatRule.Repeat;
@@ -49,7 +53,9 @@ import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -63,6 +69,7 @@ import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.progress.ProgressListener.NONE;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
+import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
 import static org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper.wrap;
 
@@ -128,7 +135,7 @@ public class EncodingIdMapperTest
     public void shouldReturnExpectedValueForNotFound() throws Exception
     {
         // GIVEN
-        IdMapper idMapper = IdMappers.strings( NumberArrayFactory.AUTO );
+        IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
         idMapper.prepare( null, mock( Collector.class ), NONE );
 
         // WHEN
@@ -142,7 +149,7 @@ public class EncodingIdMapperTest
     public void shouldReportyProgressForSortAndDetect() throws Exception
     {
         // GIVEN
-        IdMapper idMapper = IdMappers.strings( NumberArrayFactory.AUTO );
+        IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
         ProgressListener progress = mock( ProgressListener.class );
         idMapper.prepare( null, mock( Collector.class ), progress );
 
@@ -159,7 +166,7 @@ public class EncodingIdMapperTest
     public void shouldEncodeShortStrings() throws Exception
     {
         // GIVEN
-        IdMapper mapper = IdMappers.strings( NumberArrayFactory.AUTO );
+        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
 
         // WHEN
         mapper.put( "123", 0, GLOBAL );
@@ -214,8 +221,7 @@ public class EncodingIdMapperTest
     public void shouldReportCollisionsForSameInputId() throws Exception
     {
         // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String(),
-                NO_MONITOR );
+        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9", "10" ) );
         try ( ResourceIterator<Object> iterator = ids.iterator() )
         {
@@ -235,13 +241,45 @@ public class EncodingIdMapperTest
     }
 
     @Test
+    public void shouldIncludeSourceLocationsOfCollisions() throws Exception
+    {
+        // GIVEN
+        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
+        final List<Object> idList = Arrays.<Object>asList( "10", "9", "10" );
+        InputIterable<Object> ids = wrap( "source", idList );
+
+        Group group = new Group.Adapter( GLOBAL.id(), "global" );
+        try ( ResourceIterator<Object> iterator = ids.iterator() )
+        {
+            for ( int i = 0; iterator.hasNext(); i++ )
+            {
+                mapper.put( iterator.next(), i, group );
+            }
+        }
+
+        // WHEN
+        try
+        {
+            mapper.prepare( ids, badCollector( new ByteArrayOutputStream(), 0 ), NONE );
+            fail( "Should have failed" );
+        }
+        catch ( DuplicateInputIdException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( "10" ) );
+            assertThat( e.getMessage(), containsString( "source:1" ) );
+            assertThat( e.getMessage(), containsString( "source:3" ) );
+        }
+    }
+
+    @Test
     public void shouldCopeWithCollisionsBasedOnDifferentInputIds() throws Exception
     {
         // GIVEN
         Monitor monitor = mock( Monitor.class );
         Encoder encoder = mock( Encoder.class );
         when( encoder.encode( any() ) ).thenReturn( 12345L );
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, new Radix.String(), monitor );
+        IdMapper mapper = mapper( encoder, Radix.STRING, monitor );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9" ) );
         try ( ResourceIterator<Object> iterator = ids.iterator() )
         {
@@ -285,7 +323,7 @@ public class EncodingIdMapperTest
         when( encoder.encode( a2 ) ).thenReturn( 1L );
         when( encoder.encode( e ) ).thenReturn( 2L );
         when( encoder.encode( f ) ).thenReturn( 1L );
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, new Radix.String(), monitor );
+        IdMapper mapper = mapper( encoder, Radix.STRING, monitor );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "a", "b", "c", "a", "e", "f" ) );
         Group.Adapter groupA = new Group.Adapter( 1, "A" );
         Group.Adapter groupB = new Group.Adapter( 2, "B" );
@@ -324,8 +362,7 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         Monitor monitor = mock( Monitor.class );
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String(),
-                monitor );
+        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, monitor );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9", "10" ) );
         Groups groups = new Groups();
         Group firstGroup = groups.getOrCreate( "first" ), secondGroup = groups.getOrCreate( "second" );
@@ -353,8 +390,7 @@ public class EncodingIdMapperTest
     public void shouldOnlyFindInputIdsInSpecificGroup() throws Exception
     {
         // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String(),
-                NO_MONITOR );
+        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "8", "9", "10" ) );
         Groups groups = new Groups();
         Group firstGroup, secondGroup, thirdGroup;
@@ -385,8 +421,7 @@ public class EncodingIdMapperTest
     public void shouldHandleManyGroups() throws Exception
     {
         // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new LongEncoder(), new Radix.String(),
-                NO_MONITOR );
+        IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, NO_MONITOR );
         int size = 100;
 
         // WHEN
@@ -402,6 +437,84 @@ public class EncodingIdMapperTest
         {
             assertEquals( i, mapper.get( i, new Group.Adapter( i, "" + i ) ) );
         }
+    }
+
+    @Test
+    public void shouldDetectCorrectDuplicateInputIdsWhereManyAccidentalInManyGroups() throws Exception
+    {
+        // GIVEN
+        final ControlledEncoder encoder = new ControlledEncoder( new LongEncoder() );
+        IdMapper mapper = mapper( encoder, Radix.LONG, NO_MONITOR );
+        final int idsPerGroup = 20, groups = 5;
+        final AtomicReference<Group> group = new AtomicReference<>();
+        InputIterable<Object> ids = SimpleInputIteratorWrapper.wrap( "source", new Iterable<Object>()
+        {
+            @Override
+            public Iterator<Object> iterator()
+            {
+                return new PrefetchingIterator<Object>()
+                {
+                    private int i;
+
+                    @Override
+                    protected Object fetchNextOrNull()
+                    {
+                        // Change group every <idsPerGroup> id
+                        if ( i % idsPerGroup == 0 )
+                        {
+                            int groupId = i / idsPerGroup;
+                            if ( groupId == groups )
+                            {
+                                return null;
+                            }
+                            group.set( new Group.Adapter( groupId, "Group " + groupId ) );
+                        }
+                        try
+                        {
+                            // Let the first 10% in each group be accidental collisions with each other
+                            // i.e. all first 10% in each group collides with all other first 10% in each group
+                            if ( i % idsPerGroup < 2 )
+                            {   // Let these colliding values encode into the same eId as well,
+                                // so that they are definitely marked as collisions
+                                encoder.useThisIdToEncodeNoMatterWhatComesIn( Long.valueOf( 1234567 ) );
+                                return Long.valueOf( i % idsPerGroup );
+                            }
+
+                            // The other 90% will be accidental collisions for something else
+                            encoder.useThisIdToEncodeNoMatterWhatComesIn( Long.valueOf( 123456-group.get().id() ) );
+                            return Long.valueOf( i );
+                        }
+                        finally
+                        {
+                            i++;
+                        }
+                    }
+                };
+            }
+        } );
+
+        // WHEN
+        long actualId = 0;
+        for ( Object id : ids )
+        {
+            mapper.put( id, actualId++, group.get() );
+        }
+        Collector collector = mock( Collector.class );
+        mapper.prepare( ids, collector, NONE );
+
+        // THEN
+        verifyNoMoreInteractions( collector );
+        actualId = 0;
+        for ( Object id : ids )
+        {
+            assertEquals( actualId++, mapper.get( id, group.get() ) );
+        }
+    }
+
+    private IdMapper mapper( Encoder encoder, Factory<Radix> radix, Monitor monitor )
+    {
+        return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, 1_000,
+                Runtime.getRuntime().availableProcessors()-1 );
     }
 
     private class ValueGenerator implements InputIterable<Object>
@@ -467,9 +580,9 @@ public class EncodingIdMapperTest
             }
 
             @Override
-            Radix radix()
+            Factory<Radix> radix()
             {
-                return new Radix.Long();
+                return Radix.LONG;
             }
 
             @Override
@@ -494,9 +607,9 @@ public class EncodingIdMapperTest
             }
 
             @Override
-            Radix radix()
+            Factory<Radix> radix()
             {
-                return new Radix.String();
+                return Radix.STRING;
             }
 
             @Override
@@ -523,9 +636,9 @@ public class EncodingIdMapperTest
             }
 
             @Override
-            Radix radix()
+            Factory<Radix> radix()
             {
-                return new Radix.String();
+                return Radix.STRING;
             }
 
             @Override
@@ -579,7 +692,7 @@ public class EncodingIdMapperTest
 
         abstract Encoder encoder();
 
-        abstract Radix radix();
+        abstract Factory<Radix> radix();
 
         abstract Factory<Object> data( Random random );
     }

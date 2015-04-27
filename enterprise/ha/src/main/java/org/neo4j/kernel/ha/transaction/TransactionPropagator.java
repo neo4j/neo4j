@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -44,8 +44,8 @@ import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.util.CappedOperation;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.Log;
 
 public class TransactionPropagator implements Lifecycle
 {
@@ -133,7 +133,7 @@ public class TransactionPropagator implements Lifecycle
     private int desiredReplicationFactor;
     private SlavePriority replicationStrategy;
     private ExecutorService slaveCommitters;
-    private final StringLogger log;
+    private final Log log;
     private final Configuration config;
     private final Slaves slaves;
     private final CommitPusher pusher;
@@ -151,7 +151,7 @@ public class TransactionPropagator implements Lifecycle
                 }
             };
 
-    public TransactionPropagator( Configuration config, StringLogger log, Slaves slaves, CommitPusher pusher )
+    public TransactionPropagator( Configuration config, Log log, Slaves slaves, CommitPusher pusher )
     {
         this.config = config;
         this.log = log;
@@ -267,13 +267,13 @@ public class TransactionPropagator implements Lifecycle
             // We did the best we could, have we committed successfully on enough slaves?
             if ( !(successfulReplications >= replicationFactor) )
             {
-                log.logMessage( "Transaction " + txId + " couldn't commit on enough slaves, desired " +
-                                replicationFactor + ", but could only commit at " + successfulReplications );
+                log.warn( "Transaction %s couldn't commit on enough slaves, desired %s, but could only commit at ",
+                        txId, replicationFactor, successfulReplications );
             }
         }
         catch ( Throwable t )
         {
-            log.logMessage( "Unknown error commit master transaction at slave", t );
+            log.error( "Unknown error commit master transaction at slave", t );
         }
         finally
         {

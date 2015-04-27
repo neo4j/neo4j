@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -33,15 +33,15 @@ import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.store.RecordStore.Scanner.scan;
 
 public class IncrementalDiffCheck extends DiffCheck
 {
-    public IncrementalDiffCheck( StringLogger logger )
+    public IncrementalDiffCheck( LogProvider logProvider )
     {
-        super( logger );
+        super( logProvider );
     }
 
     @Override
@@ -49,7 +49,7 @@ public class IncrementalDiffCheck extends DiffCheck
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
         ConsistencyReporter reporter = new ConsistencyReporter( new DirectDiffRecordAccess( diffs ),
-                new InconsistencyReport( new InconsistencyMessageLogger( logger ), summary ) );
+                new InconsistencyReport( new InconsistencyMessageLogger( log ), summary ) );
         StoreProcessor processor = new StoreProcessor( reporter );
         diffs.applyToAll( processor );
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -25,6 +25,8 @@ import symbols._
 
 case class Collection(expressions: Seq[Expression])(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) chain specifyType(possibleTypes)
+
+  def map(f: Expression => Expression) = copy(expressions = expressions.map(f))(position)
 
   private def possibleTypes: TypeGenerator = state => expressions match {
     case Seq() => CTCollection(CTAny).covariant

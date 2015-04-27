@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -38,6 +38,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -50,6 +52,9 @@ import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
+
+import static org.neo4j.collection.primitive.Primitive.longSet;
+import static org.neo4j.index.impl.lucene.DocToIdIterator.idFromDoc;
 
 public abstract class LuceneIndex implements LegacyIndex
 {
@@ -211,20 +216,20 @@ public abstract class LuceneIndex implements LegacyIndex
     protected LegacyIndexHits query( Query query, String keyForDirectLookup,
             Object valueForDirectLookup, QueryContext additionalParametersOrNull )
     {
-        List<Long> ids = new ArrayList<>();
-        Collection<Long> removedIds = Collections.emptySet();
-        IndexSearcher additionsSearcher = null;
+        List<Long> simpleTransactionStateIds = new ArrayList<>();
+        Collection<Long> removedIdsFromTransactionState = Collections.emptySet();
+        IndexSearcher fulltextTransactionStateSearcher = null;
         if ( transaction != null )
         {
             if ( keyForDirectLookup != null )
             {
-                ids.addAll( transaction.getAddedIds( this, keyForDirectLookup, valueForDirectLookup ) );
+                simpleTransactionStateIds.addAll( transaction.getAddedIds( this, keyForDirectLookup, valueForDirectLookup ) );
             }
             else
             {
-                additionsSearcher = transaction.getAdditionsAsSearcher( this, additionalParametersOrNull );
+                fulltextTransactionStateSearcher = transaction.getAdditionsAsSearcher( this, additionalParametersOrNull );
             }
-            removedIds = keyForDirectLookup != null ?
+            removedIdsFromTransactionState = keyForDirectLookup != null ?
                     transaction.getRemovedIds( this, keyForDirectLookup, valueForDirectLookup ) :
                     transaction.getRemovedIds( this, query );
         }
@@ -248,30 +253,75 @@ public abstract class LuceneIndex implements LegacyIndex
             {
                 cachedIdsMap = dataSource.getFromCache(
                         identifier, keyForDirectLookup );
-                foundInCache = fillFromCache( cachedIdsMap, ids,
-                        valueForDirectLookup.toString(), removedIds );
+                foundInCache = fillFromCache( cachedIdsMap, simpleTransactionStateIds,
+                        valueForDirectLookup.toString(), removedIdsFromTransactionState );
             }
 
             if ( !foundInCache )
             {
-                DocToIdIterator searchedIds = new DocToIdIterator( search( searcher,
-                        query, additionalParametersOrNull, additionsSearcher, removedIds ), removedIds, searcher );
-                if ( ids.isEmpty() )
+                try
                 {
-                    idIterator = searchedIds;
+                    // Gather all added ids from fulltextTransactionStateSearcher and simpleTransactionStateIds.
+                    PrimitiveLongSet idsModifiedInTransactionState = gatherIdsModifiedInTransactionState(
+                            simpleTransactionStateIds, fulltextTransactionStateSearcher, query );
+
+                    // Do the combined search from store and fulltext tx state
+                    DocToIdIterator hits = new DocToIdIterator( search( searcher, fulltextTransactionStateSearcher,
+                            query, additionalParametersOrNull, removedIdsFromTransactionState ),
+                            removedIdsFromTransactionState, searcher, idsModifiedInTransactionState );
+
+                    idIterator = simpleTransactionStateIds.isEmpty() ? hits : new CombinedIndexHits(
+                            Arrays.<LegacyIndexHits>asList( hits,
+                                    new ConstantScoreIterator( simpleTransactionStateIds, Float.NaN ) ) );
                 }
-                else
+                catch ( IOException e )
                 {
-                    Collection<LegacyIndexHits> iterators = new ArrayList<>();
-                    iterators.add( searchedIds );
-                    iterators.add( new ConstantScoreIterator( ids, Float.NaN ) );
-                    idIterator = new CombinedIndexHits( iterators );
+                    throw new RuntimeException( "Unable to query " + this + " with " + query, e );
                 }
             }
         }
 
-        idIterator = idIterator == null ? new ConstantScoreIterator( ids, 0 ) : idIterator;
+        // We've only got transaction state
+        idIterator = idIterator == null ? new ConstantScoreIterator( simpleTransactionStateIds, 0 ) : idIterator;
         return idIterator;
+    }
+
+    private PrimitiveLongSet gatherIdsModifiedInTransactionState( List<Long> simpleTransactionStateIds,
+            IndexSearcher fulltextTransactionStateSearcher, Query query ) throws IOException
+    {
+        // If there's no state them don't bother gathering it
+        if ( simpleTransactionStateIds.isEmpty() && fulltextTransactionStateSearcher == null )
+        {
+            return PrimitiveLongCollections.emptySet();
+        }
+        // There's potentially some state
+        Hits hits = null;
+        int fulltextSize = 0;
+        if ( fulltextTransactionStateSearcher != null )
+        {
+            hits = new Hits( fulltextTransactionStateSearcher, query, null, null, false );
+            fulltextSize = hits.length();
+            // Nah, no state
+            if ( simpleTransactionStateIds.isEmpty() && fulltextSize == 0 )
+            {
+                return PrimitiveLongCollections.emptySet();
+            }
+        }
+
+        PrimitiveLongSet set = longSet( simpleTransactionStateIds.size() + fulltextSize );
+
+        // Add from simple tx state
+        for ( Long id : simpleTransactionStateIds )
+        {
+            set.add( id );
+        }
+
+        // Add from fulltext tx state
+        for ( int i = 0; i < fulltextSize; i++ )
+        {
+            set.add( idFromDoc( hits.doc( i ) ) );
+        }
+        return set;
     }
 
     private boolean fillFromCache(
@@ -298,40 +348,32 @@ public abstract class LuceneIndex implements LegacyIndex
         return found;
     }
 
-    private IndexHits<Document> search( IndexReference searcherRef, Query query,
-            QueryContext additionalParametersOrNull, IndexSearcher additionsSearcher, Collection<Long> removed )
+    private IndexHits<Document> search( IndexReference searcherRef, IndexSearcher fulltextTransactionStateSearcher,
+            Query query, QueryContext additionalParametersOrNull, Collection<Long> removed ) throws IOException
     {
-        try
+        if ( fulltextTransactionStateSearcher != null && !removed.isEmpty() )
         {
-            if ( additionsSearcher != null && !removed.isEmpty() )
-            {
-                letThroughAdditions( additionsSearcher, query, removed );
-            }
+            letThroughAdditions( fulltextTransactionStateSearcher, query, removed );
+        }
 
-            IndexSearcher searcher = additionsSearcher == null ? searcherRef.getSearcher() :
-                    new IndexSearcher( new MultiReader( searcherRef.getSearcher().getIndexReader(),
-                            additionsSearcher.getIndexReader() ) );
-            IndexHits<Document> result;
-            if ( additionalParametersOrNull != null && additionalParametersOrNull.getTop() > 0 )
-            {
-                result = new TopDocsIterator( query, additionalParametersOrNull, searcher );
-            }
-            else
-            {
-                Sort sorting = additionalParametersOrNull != null ?
-                        additionalParametersOrNull.getSorting() : null;
-                boolean forceScore = additionalParametersOrNull == null ||
-                        !additionalParametersOrNull.getTradeCorrectnessForSpeed();
-                Hits hits = new Hits( searcher, query, null, sorting, forceScore );
-                result = new HitsIterator( hits );
-            }
-            return result;
-        }
-        catch ( IOException e )
+        IndexSearcher searcher = fulltextTransactionStateSearcher == null ? searcherRef.getSearcher() :
+                new IndexSearcher( new MultiReader( searcherRef.getSearcher().getIndexReader(),
+                        fulltextTransactionStateSearcher.getIndexReader() ) );
+        IndexHits<Document> result;
+        if ( additionalParametersOrNull != null && additionalParametersOrNull.getTop() > 0 )
         {
-            throw new RuntimeException( "Unable to query " + this + " with "
-                                        + query, e );
+            result = new TopDocsIterator( query, additionalParametersOrNull, searcher );
         }
+        else
+        {
+            Sort sorting = additionalParametersOrNull != null ?
+                    additionalParametersOrNull.getSorting() : null;
+            boolean forceScore = additionalParametersOrNull == null ||
+                    !additionalParametersOrNull.getTradeCorrectnessForSpeed();
+            Hits hits = new Hits( searcher, query, null, sorting, forceScore );
+            result = new HitsIterator( hits );
+        }
+        return result;
     }
 
     private void letThroughAdditions( IndexSearcher additionsSearcher, Query query, Collection<Long> removed )

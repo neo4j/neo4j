@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
@@ -141,7 +141,6 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans containing let select or semi apply and select or semi apply for two pattern predicates") {
     planFor("MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan should equal(
-      Projection(
         SelectOrAntiSemiApply(
           LetSelectOrSemiApply(
             AllNodesScan("a", Set.empty)(solved),
@@ -157,15 +156,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
             "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED61", "  UNNAMED54"
           )(solved),
           ident("  FRESHID30")
-        )(solved),
-        Map("a" -> ident("a"))
-      )(solved)
+        )(solved)
     )
   }
 
   test("should build plans containing let semi apply and select or semi apply for two pattern predicates") {
     planFor("MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan should equal(
-      Projection(
         SelectOrAntiSemiApply(
           LetSemiApply(
             AllNodesScan("a", Set.empty)(solved),
@@ -180,15 +176,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
             "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED47", "  UNNAMED40"
           )(solved),
           ident("  FRESHID16")
-        )(solved),
-        Map("a" -> ident("a"))
-      )(solved)
+        )(solved)
     )
   }
 
   test("should build plans containing let anti semi apply and select or semi apply for two pattern predicates") {
     planFor("MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan should equal(
-      Projection(
         SelectOrAntiSemiApply(
           LetAntiSemiApply(
             AllNodesScan("a", Set.empty)(solved),
@@ -203,9 +196,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
             "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED51", "  UNNAMED44"
           )(solved),
           ident("  FRESHID20")
-        )(solved),
-        Map("a" -> ident("a"))
-      )(solved)
+        )(solved)
     )
   }
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Query
 import org.neo4j.cypher.internal.compiler.v2_3.planner.AstRewritingTestSupport
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class RewriteEqualityToInCollectionTest extends CypherFunSuite with AstRewritingTestSupport {
 
@@ -59,22 +59,6 @@ class RewriteEqualityToInCollectionTest extends CypherFunSuite with AstRewriting
     shouldRewrite(
       "WITH 42 as x MATCH (a) WHERE a.prop = x",
       "WITH 42 as x MATCH (a) WHERE a.prop IN [x]")
-  }
-
-  test("MATCH a,b WHERE id(a) = b.prop (dependencies on the RHS)") {
-    shouldNotRewrite("MATCH a,b WHERE id(a) = b.prop")
-  }
-
-  test("MATCH a,b WHERE a.prop = id(b) (dependencies on the RHS)") {
-    shouldNotRewrite("MATCH a,b WHERE a.prop = id(b)")
-  }
-
-  test("MATCH a,b WHERE a.prop = b.prop (dependencies on the RHS)") {
-    shouldNotRewrite("MATCH a,b WHERE a.prop = b.prop")
-  }
-
-  test("MATCH a,b WHERE id(a) = id(b) (dependencies on the RHS)") {
-    shouldNotRewrite("MATCH a,b WHERE id(a) = id(b)")
   }
 
   private def shouldRewrite(from: String, to: String) {

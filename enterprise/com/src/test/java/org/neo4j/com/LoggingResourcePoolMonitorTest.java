@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -25,39 +25,39 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import org.junit.Test;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 public class LoggingResourcePoolMonitorTest
 {
     @Test
     public void testUpdatedCurrentPeakSizeLogsOnlyOnChange() throws Exception
     {
-        StringLogger logger = mock( StringLogger.class );
-        LoggingResourcePoolMonitor monitor = new LoggingResourcePoolMonitor( logger );
+        Log log = mock( Log.class );
+        LoggingResourcePoolMonitor monitor = new LoggingResourcePoolMonitor( log );
 
         monitor.updatedCurrentPeakSize( 10 );
-        verify( logger, times( 1 ) ).debug( anyString() );
+        verify( log, times( 1 ) ).debug( anyString() );
 
         monitor.updatedCurrentPeakSize( 10 );
-        verify( logger, times( 1 ) ).debug( anyString() );
+        verify( log, times( 1 ) ).debug( anyString() );
 
         monitor.updatedCurrentPeakSize( 11 );
-        verify( logger, times( 2 ) ).debug( anyString() );
+        verify( log, times( 2 ) ).debug( anyString() );
     }
 
     @Test
     public void testUpdatedTargetSizeOnlyOnChange() throws Exception
     {
-        StringLogger logger = mock( StringLogger.class );
-        LoggingResourcePoolMonitor monitor = new LoggingResourcePoolMonitor( logger );
+        Log log = mock( Log.class );
+        LoggingResourcePoolMonitor monitor = new LoggingResourcePoolMonitor( log );
 
         monitor.updatedTargetSize( 10 );
-        verify( logger, times( 1 ) ).debug( anyString() );
+        verify( log, times( 1 ) ).debug( anyString() );
 
         monitor.updatedTargetSize( 10 );
-        verify( logger, times( 1 ) ).debug( anyString() );
+        verify( log, times( 1 ) ).debug( anyString() );
 
         monitor.updatedTargetSize( 11 );
-        verify( logger, times( 2 ) ).debug( anyString() );
+        verify( log, times( 2 ) ).debug( anyString() );
     }
 }

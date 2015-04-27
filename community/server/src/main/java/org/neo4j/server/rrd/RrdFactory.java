@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -33,12 +33,12 @@ import org.rrd4j.core.RrdDef;
 import org.rrd4j.core.RrdToolkit;
 
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.RrdDbWrapper;
@@ -63,12 +63,12 @@ public class RrdFactory
     private static final String RRD_THREAD_NAME = "Statistics Gatherer";
 
     private final Config config;
-    private final ConsoleLogger log;
+    private final Log log;
 
-    public RrdFactory( Config config, Logging logging )
+    public RrdFactory( Config config, LogProvider logProvider )
     {
         this.config = config;
-        this.log = logging.getConsoleLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     public org.neo4j.server.database.RrdDbWrapper createRrdDbAndSampler( final Database db, JobScheduler scheduler ) throws IOException
@@ -154,7 +154,7 @@ public class RrdFactory
         }
         else
         {
-            Boolean ephemeral = config.get( InternalAbstractGraphDatabase.Configuration.ephemeral );
+            Boolean ephemeral = config.get( CommunityFacadeFactory.Configuration.ephemeral );
             return ephemeral != null && ephemeral;
         }
     }

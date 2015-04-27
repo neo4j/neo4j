@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -26,6 +26,7 @@ import org.apache.lucene.search.SearcherManager;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.concurrent.locks.Lock;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
@@ -40,7 +41,7 @@ public interface LabelScanStorageStrategy
 
     Iterator<Long> labelsForNode( IndexSearcher searcher, long nodeId );
 
-    LabelScanWriter acquireWriter( StorageService storage );
+    LabelScanWriter acquireWriter( StorageService storage, Lock heldLock );
 
     interface StorageService
     {

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -30,7 +30,7 @@ case class Projection(left: LogicalPlan, expressions: Map[String, Expression])
 
   def numExpressions = expressions.size
 
-  val availableSymbols = expressions.keySet.map(IdName(_))
+  val availableSymbols = left.availableSymbols ++ expressions.keySet.map(IdName(_))
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
     copy(expressions = Eagerly.immutableMapValues[String, Expression, Expression](expressions, f(left.availableSymbols, _)))(solved)

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -31,9 +31,9 @@ import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Paxos based implementation of {@link org.neo4j.cluster.member.ClusterMemberAvailability}
@@ -41,7 +41,7 @@ import org.neo4j.kernel.logging.Logging;
 public class PaxosClusterMemberAvailability implements ClusterMemberAvailability, Lifecycle
 {
     private volatile URI serverClusterId;
-    private StringLogger logger;
+    private Log log;
     protected AtomicBroadcastSerializer serializer;
     private final InstanceId myId;
     private BindingNotifier binding;
@@ -51,7 +51,7 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
     private ObjectOutputStreamFactory objectOutputStreamFactory;
 
     public PaxosClusterMemberAvailability( InstanceId myId, BindingNotifier binding, AtomicBroadcast atomicBroadcast,
-                                           Logging logging, ObjectInputStreamFactory objectInputStreamFactory,
+                                           LogProvider logProvider, ObjectInputStreamFactory objectInputStreamFactory,
                                            ObjectOutputStreamFactory objectOutputStreamFactory )
     {
         this.myId = myId;
@@ -59,7 +59,7 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
         this.atomicBroadcast = atomicBroadcast;
         this.objectInputStreamFactory = objectInputStreamFactory;
         this.objectOutputStreamFactory = objectOutputStreamFactory;
-        this.logger = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
 
         bindingListener = new BindingListener()
         {
@@ -67,7 +67,7 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
             public void listeningAt( URI me )
             {
                 serverClusterId = me;
-                PaxosClusterMemberAvailability.this.logger.logMessage( "Listening at:" + me );
+                PaxosClusterMemberAvailability.this.log.info( "Listening at:" + me );
             }
         };
     }
@@ -112,7 +112,7 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
         }
         catch ( Throwable e )
         {
-            logger.warn( "Could not distribute member availability", e );
+            log.warn( "Could not distribute member availability", e );
         }
     }
 
@@ -127,7 +127,7 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
         }
         catch ( Throwable e )
         {
-            logger.warn( "Could not distribute member unavailability", e );
+            log.warn( "Could not distribute member unavailability", e );
         }
     }
 }

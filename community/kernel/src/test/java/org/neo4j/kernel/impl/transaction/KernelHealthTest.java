@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,17 +23,17 @@ import org.junit.Test;
 
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.logging.SingleLoggingService;
-import org.neo4j.test.BufferingLogging;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLogProvider;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import static org.neo4j.graphdb.event.ErrorState.TX_MANAGER_NOT_OK;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class KernelHealthTest
 {
@@ -42,7 +42,7 @@ public class KernelHealthTest
     {
         // GIVEN
         KernelPanicEventGenerator generator = mock( KernelPanicEventGenerator.class );
-        KernelHealth kernelHealth = new KernelHealth( generator, new SingleLoggingService( DEV_NULL ) );
+        KernelHealth kernelHealth = new KernelHealth( generator, NullLogProvider.getInstance().getLog( KernelHealth.class ) );
         kernelHealth.healed();
 
         // WHEN
@@ -58,15 +58,21 @@ public class KernelHealthTest
     public void shouldLogKernelPanicEvent() throws Exception
     {
         // GIVEN
-        BufferingLogging logging = new BufferingLogging();
-        KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ), logging );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ), logProvider.getLog( KernelHealth.class ) );
         kernelHealth.healed();
 
         // WHEN
         String message = "Listen everybody... panic!";
-        kernelHealth.panic( new Exception( message ) );
+        Exception exception = new Exception( message );
+        kernelHealth.panic( exception );
 
         // THEN
-        assertThat( logging.toString(), containsString( message ) );
+        logProvider.assertAtLeastOnce(
+                inLog( KernelHealth.class ).error(
+                        is("setting TM not OK. Kernel has encountered some problem, please perform neccesary action (tx recovery/restart)" ),
+                        sameInstance( exception )
+                )
+        );
     }
 }

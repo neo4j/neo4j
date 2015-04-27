@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -229,14 +229,26 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private org.neo4j.ext.udc.Edition determineEdition( String classPath )
     {
-        if ( classPath.contains( "neo4j-ha" ) )
+        try
         {
-            return org.neo4j.ext.udc.Edition.enterprise;
+            getClass().getClassLoader().loadClass( "org.neo4j.kernel.ha.HighlyAvailableGraphDatabase" );
+            return Edition.enterprise;
         }
-        if ( classPath.contains( "neo4j-management" ) )
+        catch ( ClassNotFoundException e )
         {
-            return org.neo4j.ext.udc.Edition.advanced;
+            // Not Enterprise
         }
+
+        try
+        {
+            getClass().getClassLoader().loadClass( "org.neo4j.management.Neo4jManager" );
+            return Edition.advanced;
+        }
+        catch ( ClassNotFoundException e )
+        {
+            // Not Advanced
+        }
+
         return Edition.community;
     }
 
@@ -328,7 +340,26 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private long determineTotalMemory()
     {
-        return ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalPhysicalMemorySize();
+        java.lang.management.OperatingSystemMXBean operatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean();
+        try
+        {
+            return ((OperatingSystemMXBean) operatingSystemMXBean).getTotalPhysicalMemorySize();
+        }
+        catch ( NoClassDefFoundError e )
+        {
+            // If not running on Oracle JDK
+
+            // Try IBM JDK method
+            try
+            {
+                return (Long)operatingSystemMXBean.getClass().getMethod( "getTotalPhysicalMemory" ).invoke( operatingSystemMXBean );
+            }
+            catch ( Throwable e1 )
+            {
+                // Give up
+                return -1;
+            }
+        }
     }
 
     private long determineHeapSize()

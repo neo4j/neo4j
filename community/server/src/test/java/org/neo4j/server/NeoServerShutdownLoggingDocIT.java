@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -25,24 +25,20 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
 
 public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
 {
-    private Logging logging;
+    private AssertableLogProvider logProvider;
     private NeoServer server;
 
     @Before
     public void setupServer() throws IOException
     {
-        logging = new BufferingLogging();
-        server = ServerHelper.createPersistentServer(folder.cleanDirectory( name.getMethodName() ), logging);
+        logProvider = new AssertableLogProvider();
+        server = ServerHelper.createPersistentServer( folder.cleanDirectory( name.getMethodName() ), logProvider );
         ServerHelper.cleanTheDatabase( server );
     }
 
@@ -59,6 +55,6 @@ public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
     public void shouldLogShutdown() throws Exception
     {
         server.stop();
-        assertThat( logging.toString(), containsString( "Successfully shutdown database." ) );
+        logProvider.assertContainsMessageContaining( "Successfully shutdown database" );
     }
 }

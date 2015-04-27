@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -68,7 +68,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
@@ -168,20 +168,19 @@ public class MasterClientTest
 
     private MasterServer newMasterServer( MasterImpl.SPI masterImplSPI ) throws Throwable
     {
-        MasterImpl masterImpl = new MasterImpl( masterImplSPI, mock( Monitor.class ),
-                new DevNullLoggingService(), masterConfig() );
+        MasterImpl masterImpl = new MasterImpl( masterImplSPI, mock( Monitor.class ), masterConfig() );
 
         return newMasterServer( masterImpl );
     }
 
     private static MasterImpl newMasterImpl( MasterImpl.SPI masterImplSPI )
     {
-        return new MasterImpl( masterImplSPI, mock( Monitor.class ), new DevNullLoggingService(), masterConfig() );
+        return new MasterImpl( masterImplSPI, mock( Monitor.class ), masterConfig() );
     }
 
     private MasterServer newMasterServer( MasterImpl masterImpl ) throws Throwable
     {
-        return initAndStart( new MasterServer( masterImpl, new DevNullLoggingService(),
+        return initAndStart( new MasterServer( masterImpl, NullLogProvider.getInstance(),
                 masterServerConfiguration(),
                 mock( TxChecksumVerifier.class ),
                 monitors.newMonitor( ByteCounterMonitor.class, MasterClient.class ),
@@ -190,7 +189,7 @@ public class MasterClientTest
 
     private MasterClient214 newMasterClient214( StoreId storeId ) throws Throwable
     {
-        return initAndStart( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, new DevNullLoggingService(),
+        return initAndStart( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, NullLogProvider.getInstance(),
                 storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, NO_OP_RESPONSE_UNPACKER,
                 monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
                 monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );
@@ -198,7 +197,7 @@ public class MasterClientTest
 
     private MasterClient214 newMasterClient214( StoreId storeId, ResponseUnpacker responseUnpacker ) throws Throwable
     {
-        return initAndStart( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, new DevNullLoggingService(),
+        return initAndStart( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, NullLogProvider.getInstance(),
                 storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, responseUnpacker,
                 monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
                 monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );

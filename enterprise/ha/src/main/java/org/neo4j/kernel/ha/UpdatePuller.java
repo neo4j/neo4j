@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -43,9 +43,9 @@ import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CappedOperation;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -126,7 +126,7 @@ public class UpdatePuller implements Runnable, Lifecycle
     private final AtomicInteger targetTicket = new AtomicInteger(), currentTicket = new AtomicInteger();
     private final RequestContextFactory requestContextFactory;
     private final Master master;
-    private final StringLogger logger;
+    private final Log log;
     private final CappedOperation<Pair<String, ? extends Exception>> cappedLogger;
     private final LastUpdateTime lastUpdateTime;
     private final PauseListener listener;
@@ -135,9 +135,9 @@ public class UpdatePuller implements Runnable, Lifecycle
     private final InvalidEpochExceptionHandler invalidEpochHandler;
     private Thread me;
 
-    UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine,
-            RequestContextFactory requestContextFactory, Master master, LastUpdateTime lastUpdateTime,
-            Logging logging, InstanceId instanceId, InvalidEpochExceptionHandler invalidEpochHandler )
+    public UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine,
+                         RequestContextFactory requestContextFactory, Master master, LastUpdateTime lastUpdateTime,
+                         LogProvider logProvider, InstanceId instanceId, InvalidEpochExceptionHandler invalidEpochHandler )
     {
         this.memberStateMachine = memberStateMachine;
         this.requestContextFactory = requestContextFactory;
@@ -145,14 +145,14 @@ public class UpdatePuller implements Runnable, Lifecycle
         this.lastUpdateTime = lastUpdateTime;
         this.instanceId = instanceId;
         this.invalidEpochHandler = invalidEpochHandler;
-        this.logger = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
         this.cappedLogger = new CappedOperation<Pair<String, ? extends Exception>>(
                 CappedOperation.count( 10 ) )
         {
             @Override
             protected void triggered( Pair<String, ? extends Exception> event )
             {
-                logger.warn( event.first(), event.other() );
+                log.warn( event.first(), event.other() );
             }
         };
         this.listener = new PauseListener();
@@ -327,7 +327,7 @@ public class UpdatePuller implements Runnable, Lifecycle
         }
         catch ( Throwable e )
         {
-            logger.error( "Pull updates by " + this + " failed", e );
+            log.error( "Pull updates by " + this + " failed", e );
         }
         lastUpdateTime.setLastUpdateTime( currentTimeMillis() );
     }

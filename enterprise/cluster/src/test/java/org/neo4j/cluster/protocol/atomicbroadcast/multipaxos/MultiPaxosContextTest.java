@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -31,8 +31,8 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.impl.util.TestLogging;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.NullLogProvider;
 
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertFalse;
@@ -49,7 +49,7 @@ public class MultiPaxosContextTest
         MultiPaxosContext ctx = new MultiPaxosContext( new InstanceId( 1 ),
                 Collections.<ElectionRole>emptyList(),
                 mock( ClusterConfiguration.class ), mock( Executor.class ),
-                new TestLogging(), new ObjectStreamFactory(),
+                NullLogService.getInstance(), new ObjectStreamFactory(),
                 new ObjectStreamFactory(), mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class) );
 
@@ -73,18 +73,17 @@ public class MultiPaxosContextTest
         AcceptorInstanceStore acceptorInstances = mock( AcceptorInstanceStore.class );
         Executor executor = mock( Executor.class );
         Timeouts timeouts = mock( Timeouts.class );
-        TestLogging logging = new TestLogging();
-        ClusterConfiguration clusterConfig = new ClusterConfiguration( "myCluster", StringLogger.DEV_NULL );
+        ClusterConfiguration clusterConfig = new ClusterConfiguration( "myCluster", NullLogProvider.getInstance() );
         ElectionCredentialsProvider electionCredentials = mock( ElectionCredentialsProvider.class );
 
         MultiPaxosContext ctx = new MultiPaxosContext( new InstanceId( 1 ),
                 Collections.<ElectionRole>emptyList(),
                 clusterConfig, executor,
-                logging, objStream,
+                NullLogService.getInstance(), objStream,
                 objStream, acceptorInstances, timeouts, electionCredentials );
 
         // When
-        MultiPaxosContext snapshot = ctx.snapshot( logging, timeouts, executor, acceptorInstances, objStream, objStream,
+        MultiPaxosContext snapshot = ctx.snapshot( NullLogService.getInstance(), timeouts, executor, acceptorInstances, objStream, objStream,
                 electionCredentials );
 
         // Then

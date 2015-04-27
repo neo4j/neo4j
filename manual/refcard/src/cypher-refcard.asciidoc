@@ -93,6 +93,7 @@ include::{sources}/import.asciidoc[]
 | String             | `+`
 | Collection         | `+`, `IN`, `[x]`, `[x .. y]`
 | Regular Expression | `=~`
+| String pattern matching | `LIKE`, `ILIKE`, `NOT`
 |===
 
 ++++

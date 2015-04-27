@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -56,7 +56,7 @@ case class ExpandC(fromVar: String, relVar: String, dir: Direction, types: Map[S
        |}
        |${inner.generateCode()}""".stripMargin
 
-  override def _importedClasses() =  Set(
+  override def _importedClasses() = Set(
     "org.neo4j.graphdb.Direction",
     "org.neo4j.collection.primitive.PrimitiveLongIterator",
     "org.neo4j.kernel.api.exceptions.KernelException",

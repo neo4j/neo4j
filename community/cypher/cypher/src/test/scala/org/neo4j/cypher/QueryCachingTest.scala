@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.DynamicLabel
 import org.neo4j.kernel.api.Statement
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -66,9 +66,9 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         val actual = cacheListener.trace
         val expected = List(
           s"cacheFlushDetected",
-          s"cacheMiss: CYPHER 2.3 planner=CONSERVATIVE runtime=INTERPRETED $query",
-          s"cacheHit: CYPHER 2.3 planner=CONSERVATIVE runtime=INTERPRETED $query",
-          s"cacheHit: CYPHER 2.3 planner=CONSERVATIVE runtime=INTERPRETED $query")
+          s"cacheMiss: CYPHER 2.3 $query",
+          s"cacheHit: CYPHER 2.3 $query",
+          s"cacheHit: CYPHER 2.3 $query")
 
         actual should equal(expected)
     }

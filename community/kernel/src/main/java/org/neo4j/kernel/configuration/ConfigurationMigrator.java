@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,9 +21,9 @@ package org.neo4j.kernel.configuration;
 
 import java.util.Map;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 public interface ConfigurationMigrator
 {
-    Map<String, String> apply(Map<String, String> rawConfiguration, StringLogger log);
+    Map<String, String> apply(Map<String, String> rawConfiguration, Log log);
 }

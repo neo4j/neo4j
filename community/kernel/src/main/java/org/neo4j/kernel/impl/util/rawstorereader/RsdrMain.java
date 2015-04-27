@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 
 import static javax.transaction.xa.Xid.MAXBQUALSIZE;
 import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
@@ -99,9 +99,8 @@ public class RsdrMain
     private static StoreFactory openStore( Config config, PageCache pageCache )
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-        StringLogger logger = StringLogger.DEV_NULL;
         return new StoreFactory(
-                config, idGeneratorFactory, pageCache, files, logger, null );
+                config, idGeneratorFactory, pageCache, files, NullLogProvider.getInstance(), null );
     }
 
     private static void interact( NeoStore neoStore ) throws IOException

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,14 +19,17 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.advanced.AdvancedBootstrapper;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 
 public class EnterpriseBootstrapper extends AdvancedBootstrapper
 {
     @Override
-	protected NeoServer createNeoServer()
+	protected NeoServer createNeoServer( ConfigurationBuilder configurator, GraphDatabaseDependencies dependencies, LogProvider userLogProvider )
 	{
-		return new EnterpriseNeoServer( configurator, dependencies );
+		return new EnterpriseNeoServer( configurator, dependencies, userLogProvider );
 	}
 }

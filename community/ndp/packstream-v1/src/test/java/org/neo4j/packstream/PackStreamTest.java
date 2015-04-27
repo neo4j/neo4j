@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -42,9 +42,9 @@ import static org.junit.Assert.assertTrue;
 public class PackStreamTest
 {
 
-    public static Map<String, Object> asMap( Object... keysAndValues )
+    public static Map<String,Object> asMap( Object... keysAndValues )
     {
-        Map<String, Object> map = new LinkedHashMap<>( keysAndValues.length / 2 );
+        Map<String,Object> map = new LinkedHashMap<>( keysAndValues.length / 2 );
         String key = null;
         for ( Object keyOrValue : keysAndValues )
         {
@@ -79,7 +79,7 @@ public class PackStreamTest
         {
             this.output = new ByteArrayOutputStream();
             this.writable = Channels.newChannel( this.output );
-            this.packer = new PackStream.Packer( new BufferedChannelOutput( this.writable, bufferSize) );
+            this.packer = new PackStream.Packer( new BufferedChannelOutput( this.writable, bufferSize ) );
         }
 
         public void reset()
@@ -651,7 +651,7 @@ public class PackStreamTest
         // Given
         Machine machine = new Machine();
         PackStream.Packer packer = machine.packer();
-        packer.pack( asList(1,2,3,asList(4,5)) );
+        packer.pack( asList( 1, 2, 3, asList( 4, 5 ) ) );
         packer.flush();
 
         // When I unpack this value
@@ -687,7 +687,7 @@ public class PackStreamTest
         packer.pack( 1 );
         packer.pack( 2 );
         packer.pack( 3 );
-        packer.pack( asList( 4,5 ) );
+        packer.pack( asList( 4, 5 ) );
         packer.flush();
 
         // When I unpack this value
@@ -805,8 +805,8 @@ public class PackStreamTest
         long second = unpacker.unpackLong();
 
         // Then
-        assertEquals(Long.MAX_VALUE, first);
-        assertEquals(Long.MAX_VALUE, second);
+        assertEquals( Long.MAX_VALUE, first );
+        assertEquals( Long.MAX_VALUE, second );
     }
 
     @Test
@@ -817,8 +817,8 @@ public class PackStreamTest
         assertPeekType( PackType.INTEGER, 123 );
         assertPeekType( PackType.FLOAT, 123.123 );
         assertPeekType( PackType.BOOLEAN, true );
-        assertPeekType( PackType.LIST, asList( 1,2,3 ) );
-        assertPeekType( PackType.MAP, asMap( "l",3 ) );
+        assertPeekType( PackType.LIST, asList( 1, 2, 3 ) );
+        assertPeekType( PackType.MAP, asMap( "l", 3 ) );
     }
 
     void assertPeekType( PackType type, Object value ) throws IOException

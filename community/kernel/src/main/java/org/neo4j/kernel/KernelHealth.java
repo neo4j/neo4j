@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,8 +21,7 @@ package org.neo4j.kernel;
 
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.helpers.Exceptions.withCause;
 
@@ -34,13 +33,13 @@ public class KernelHealth
     // Keep that cozy name for legacy purposes
     private volatile boolean tmOk = true; // TODO rather skip volatile if possible here.
     private final KernelPanicEventGenerator kpe;
-    private final StringLogger log;
+    private final Log log;
     private Throwable causeOfPanic;
 
-    public KernelHealth( KernelPanicEventGenerator kpe, Logging logging )
+    public KernelHealth( KernelPanicEventGenerator kpe, Log log )
     {
         this.kpe = kpe;
-        this.log = logging.getMessagesLog( getClass() );
+        this.log = log;
     }
 
     /**

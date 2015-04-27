@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -28,20 +28,20 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => E
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Planner, Rows, Version}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory, CypherException => CypherException_v2_2, _}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.iteratorToVisitable
-import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{GraphDatabaseService, QueryExecutionType, ResourceIterator}
-import org.neo4j.helpers.{Assertion, Clock}
+import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
-import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.logging.Log
 
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -140,10 +140,10 @@ trait CompatibilityFor2_2 {
   val kernelAPI: KernelAPI
 
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
-    import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer._
+    import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer._
     import org.neo4j.helpers.Assertion._
 
-    if (assertionsEnabled()) newValidating else newPlain
+    if (assertionsEnabled()) newValidating _ else newPlain _
   }
 
   protected val compiler: v2_2.CypherCompiler
@@ -169,10 +169,15 @@ trait CompatibilityFor2_2 {
       new ExceptionTranslatingQueryContextFor2_2(ctx)
     }
 
-    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
       implicit val s = session
+      val internalMode = executionMode match {
+        case CypherExecutionMode.normal  => NormalMode
+        case CypherExecutionMode.profile => ProfileMode
+        case CypherExecutionMode.explain => ExplainMode
+      }
       exceptionHandlerFor2_2.runSafely {
-        ExecutionResultWrapperFor2_2(inner.run(queryContext(graph, txInfo), executionMode, params), inner.plannerUsed)
+        ExecutionResultWrapperFor2_2(inner.run(queryContext(graph, txInfo), internalMode, params), inner.plannerUsed)
       }
     }
 
@@ -325,9 +330,9 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
   }
 }
 
-case class StringInfoLogger2_2(stringLogger: StringLogger) extends InfoLogger {
+case class StringInfoLogger2_2(log: Log) extends InfoLogger {
   def info(message: String) {
-    stringLogger.info(message)
+    log.info(message)
   }
 }
 
@@ -338,13 +343,24 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI,
-                                   logger: StringLogger,
-                                   plannerName: CostBasedPlannerName) extends CompatibilityFor2_2 {
-  // TODO: just add inherited rewriterSequencer here once 2.2.1 has been released
+                                   log: Log,
+                                   planner: CypherPlanner) extends CompatibilityFor2_2 {
 
-  protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors), StringInfoLogger2_2(logger), plannerName
-  )
+  protected val compiler = {
+    val plannerName = planner match {
+      case CypherPlanner.default => ConservativePlannerName
+      case CypherPlanner.cost => CostPlannerName
+      case CypherPlanner.greedy => CostPlannerName
+      case CypherPlanner.idp => IDPPlannerName
+      case CypherPlanner.dp => DPPlannerName
+      case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
+    }
+
+    CypherCompilerFactory.costBasedCompiler(
+      graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors),
+      StringInfoLogger2_2(log), plannerName, rewriterSequencer
+    )
+  }
 }
 
 case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
@@ -354,9 +370,9 @@ case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
-  // TODO: just add inherited rewriterSequencer here once 2.2.1 has been released
 
   protected val compiler = CypherCompilerFactory.ruleBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors)
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors),
+    rewriterSequencer
   )
 }

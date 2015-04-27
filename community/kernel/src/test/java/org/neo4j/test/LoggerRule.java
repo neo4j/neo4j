@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,8 +22,9 @@ package org.neo4j.test;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Creates a logger for tests, and marks beginning and end of tests with log messages
@@ -31,8 +32,19 @@ import org.slf4j.LoggerFactory;
 public class LoggerRule
         extends ExternalResource
 {
+    private final Level level;
     private Logger logger;
     private String testName;
+
+    public LoggerRule()
+    {
+        this( Level.INFO );
+    }
+
+    public LoggerRule( Level level )
+    {
+        this.level = level;
+    }
 
     @Override
     protected void before()
@@ -53,7 +65,8 @@ public class LoggerRule
     public Statement apply( Statement base, Description description )
     {
         testName = description.getDisplayName();
-        logger = LoggerFactory.getLogger( description.getTestClass() );
+        logger = Logger.getLogger( description.getTestClass().getName() );
+        logger.setLevel( level );
         return super.apply( base, description );
     }
 

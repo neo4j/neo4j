@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.advanced.jmx;
 
-import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.Log;
 import org.neo4j.server.NeoServer;
 
 public final class ServerManagement implements ServerManagementMBean
@@ -34,14 +35,14 @@ public final class ServerManagement implements ServerManagementMBean
     @Override
     public synchronized void restartServer()
     {
-        final ConsoleLogger log = server.getDatabase().getLogging().getConsoleLog( getClass() );
+        final Log log = server.getDatabase().getGraph().getDependencyResolver().resolveDependency( LogService.class ).getUserLog( getClass() );
 
         Thread thread = new Thread( "Restart server thread" )
         {
             @Override
             public void run()
             {
-                log.log( "Restarting server" );
+                log.info( "Restarting server" );
                 server.stop();
                 server.start();
             }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -30,13 +30,20 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
+
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.NO_MONITOR;
@@ -48,36 +55,43 @@ import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.NO_MONITOR;
  */
 public class StoreMigrationTool
 {
-    public static void main( String[] args )
+    public static void main( String[] args ) throws IOException
     {
         String legacyStoreDirectory = args[0];
-        new StoreMigrationTool().run( legacyStoreDirectory, new Config(), new SystemOutLogging(), NO_MONITOR );
+        FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( System.out, false, true );
+        new StoreMigrationTool().run( new DefaultFileSystemAbstraction(), new File( legacyStoreDirectory ), new Config(), userLogProvider, NO_MONITOR );
     }
 
-    public void run( String legacyStoreDirectory, Config config, Logging logging, StoreUpgrader.Monitor monitor )
+    public void run( FileSystemAbstraction fs, File legacyStoreDirectory, Config config, LogProvider userLogProvider, StoreUpgrader.Monitor monitor ) throws IOException
     {
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         ConfigMapUpgradeConfiguration upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
-        StoreUpgrader migrationProcess = new StoreUpgrader( upgradeConfiguration, fs, monitor, logging );
+        StoreUpgrader migrationProcess = new StoreUpgrader( upgradeConfiguration, fs, monitor, userLogProvider );
 
         LifeSupport life = new LifeSupport();
 
         // Add participants from kernel extensions...
+        Dependencies deps = new Dependencies();
+        deps.satisfyDependencies( fs, config );
         KernelExtensions kernelExtensions = life.add( new KernelExtensions(
                 GraphDatabaseDependencies.newDependencies().kernelExtensions(),
-                kernelExtensionDependencyResolver( fs, config ), ignore() ) );
+                deps, ignore() ) );
+
+        JobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
+        LogService logService = new StoreLogService( userLogProvider, fs, legacyStoreDirectory, jobScheduler );
 
         // Add the kernel store migrator
-        config = StoreFactory.configForStoreDir( config, new File( legacyStoreDirectory ) );
+        config = StoreFactory.configForStoreDir( config, legacyStoreDirectory );
         life.start();
         SchemaIndexProvider schemaIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
                 SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
+
+        Log log = userLogProvider.getLog( StoreMigrationTool.class );
         try
         {
             UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fs ) );
             migrationProcess.addParticipant( new StoreMigrator(
-                    new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrationTool.class ), System.out ),
-                    fs, upgradableDatabase, config, logging ) );
+                    new VisibleMigrationProgressMonitor( logService.getInternalLog( StoreMigrationTool.class ) ),
+                    fs, upgradableDatabase, config, logService ) );
             migrationProcess.addParticipant( schemaIndexProvider.storeMigrationParticipant( fs, upgradableDatabase) );
         }
         catch ( IllegalArgumentException e )
@@ -88,10 +102,9 @@ public class StoreMigrationTool
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
             long startTime = System.currentTimeMillis();
-            migrationProcess.migrateIfNeeded( new File( legacyStoreDirectory ), schemaIndexProvider, pageCache );
+            migrationProcess.migrateIfNeeded( legacyStoreDirectory, schemaIndexProvider, pageCache );
             long duration = System.currentTimeMillis() - startTime;
-            logging.getMessagesLog( StoreMigrationTool.class )
-                    .info( format( "Migration completed in %d s%n", duration / 1000 ) );
+            log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
         }
         catch ( IOException e )
         {

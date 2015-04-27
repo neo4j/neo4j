@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -26,7 +26,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   test("should include version information in root plan description for queries of each legacy version") {
 
     //v2.2 and v2.3 must be handled separately since the resulting compiler is dependent on query
-    val versions = CypherVersion.allVersions.filter(v => !v.name.startsWith(CypherVersion.v2_3.name) && !v.name.startsWith(CypherVersion.v2_2.name))
+    val versions = CypherVersion.all.filter(v => !v.name.startsWith(CypherVersion.v2_3.name) && !v.name.startsWith(CypherVersion.v2_2.name))
     versions.foreach { v =>
       given("create() return 1")
         .withCypherVersion(v)
@@ -37,26 +37,25 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   test("should use Cost if it can by default in 2.3") {
     given("match n return n")
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlanner(CostPlannerName)
+      .shouldHavePlanner(GreedyPlannerName)
   }
   test("should use Rule for varlength in 2.3") {
     given("match (a)-[r:T1*]->(b) return a,r,b")
       .withCypherVersion(CypherVersion.v2_3)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlanner(CostPlannerName)
+      .shouldHavePlanner(GreedyPlannerName)
   }
 
   test("should use Cost for cycles in 2.3") {
     given("match (a)-[r]->(a) return a")
       .withCypherVersion(CypherVersion.v2_3)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlanner(CostPlannerName)
+      .shouldHavePlanner(GreedyPlannerName)
   }
 
   test("should fallback to Rule for updates in 2.3") {
     given("create() return 1")
       .withCypherVersion(CypherVersion.v2_3)
-      .withPlanner(CostPlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
       .shouldHavePlanner(RulePlannerName)
   }
@@ -78,27 +77,18 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
     given("match n return n")
       .withCypherVersion(CypherVersion.v2_3)
-      .withPlanner(CostPlannerName)
+      .withPlanner(GreedyPlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlanner(CostPlannerName)
+      .shouldHavePlanner(GreedyPlannerName)
 
   }
 
   test("should use cost if we really ask for it in 2.3") {
     given("match n return n")
       .withCypherVersion(CypherVersion.v2_3)
-      .withPlanner(CostPlannerName)
+      .withPlanner(GreedyPlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlanner(CostPlannerName)
-  }
-
-  test("should fail when using planner together with older versions") {
-    intercept[InvalidArgumentException] {
-      given("match n return n")
-        .withCypherVersion(CypherVersion.v2_1)
-        .withPlanner(CostPlannerName)
-        .planDescription
-    }
+      .shouldHavePlanner(GreedyPlannerName)
   }
 
   test("should report RULE if we ask it for UNION queries") {
@@ -120,7 +110,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
         |LIMIT 10""".stripMargin)
       .withCypherVersion(CypherVersion.v2_3)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlanner(CostPlannerName)
+      .shouldHavePlanner(GreedyPlannerName)
   }
 
   test("another troublesome query that should be run in cost") {
@@ -130,7 +120,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
         |MATCH (db1)<-[:CONNECTED_TO]-()-[:CONNECTED_TO]-(db2) RETURN s""".stripMargin)
       .withCypherVersion(CypherVersion.v2_3)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlanner(CostPlannerName)
+      .shouldHavePlanner(GreedyPlannerName)
   }
 
   test("simple query that should go through Birk") {
@@ -171,19 +161,36 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   test("query that lacks support from Birk") {
     given(
       "CREATE ()")
+    .withCypherVersion(CypherVersion.v2_3)
+    .withRuntime(CompiledRuntimeName)
+    .shouldHaveCypherVersion(CypherVersion.v2_3)
+    .shouldHaveRuntime(InterpretedRuntimeName)
+  }
+
+  test("query that should go through Birk") {
+    given(
+      "MATCH a-->b RETURN a")
       .withCypherVersion(CypherVersion.v2_3)
       .withRuntime(CompiledRuntimeName)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHaveRuntime(InterpretedRuntimeName)
-      .shouldHavePlanner(RulePlannerName)
+      .shouldHaveRuntime(CompiledRuntimeName)
+      .shouldHavePlanner(GreedyPlannerName)
   }
 
-  test("children should be empty") {
-    given("match n return n").planDescription.getChildren.size() should equal(0)
+  test("AllNodesScan should be the only child of the plan") {
+    val description = given("match n return n").planDescription
+    val children = description.getChildren
+    children should have size 1
+    children.get(0).getName should be("AllNodesScan")
   }
 
-  test("DbHits should be properly formatted") {
-    given("match n return n").planDescription.getArguments.get("DbHits") should equal(1)
+  test("DbHits should should contain proper values") {
+    val description = given("match n return n").planDescription
+    println(description)
+    val children = description.getChildren
+    children should have size 1
+    description.getArguments.get("DbHits") should equal(0) // ProduceResults has no hits
+    children.get(0).getArguments.get("DbHits") should equal(1) // AllNodesScan has 1 hit
   }
 
   test("Rows should be properly formatted") {
@@ -212,12 +219,14 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     }
 
     def shouldHavePlanner(planner: PlannerName) = {
-      planDescription.getArguments.get("planner") should equal(s"${planner.name}")
+      planDescription.getArguments.get("planner") should equal(s"${planner.toTextOutput}")
+      planDescription.getArguments.get("planner-impl") should equal(s"${planner.name}")
       this
     }
 
     def shouldHaveRuntime(runtime: RuntimeName) = {
-      planDescription.getArguments.get("runtime") should equal(s"${runtime.name}")
+      planDescription.getArguments.get("runtime") should equal(s"${runtime.toTextOutput}")
+      planDescription.getArguments.get("runtime-impl") should equal(s"${runtime.name}")
       this
     }
 

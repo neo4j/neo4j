@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.format.v2_2.NodeStoreFormat_v2_2.NodeRecordCu
 import org.neo4j.kernel.impl.store.impl.TestStoreIdGenerator;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.standard.StandardStore;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -67,7 +67,7 @@ public class NodeFormatComplianceTest
     {
         pageCache = pageCacheRule.getPageCache( fsRule.get() );
         storeFactory = new StoreFactory( StoreFactory.configForStoreDir( new Config(), storeDir ),
-                new DefaultIdGeneratorFactory(), pageCache, fsRule.get(), StringLogger.DEV_NULL, new Monitors() );
+                new DefaultIdGeneratorFactory(), pageCache, fsRule.get(), NullLogProvider.getInstance(), new Monitors() );
     }
 
     @Test
@@ -85,7 +85,7 @@ public class NodeFormatComplianceTest
         StandardStore<NodeRecord, NodeRecordCursor> store = new
                 StandardStore<>( new NodeStoreFormat_v2_2(), new File( storeDir, DEFAULT_NAME + NODE_STORE_NAME ),
                 new TestStoreIdGenerator(), pageCache, fsRule.get(),
-                StringLogger.DEV_NULL );
+                NullLogProvider.getInstance() );
         store.init();
         store.start();
 
@@ -104,7 +104,7 @@ public class NodeFormatComplianceTest
         StandardStore<NodeRecord, NodeRecordCursor> store = new
                 StandardStore<>( new NodeStoreFormat_v2_2(), new File( storeDir, DEFAULT_NAME + NODE_STORE_NAME ),
                 new TestStoreIdGenerator(), pageCache, fsRule.get(),
-                StringLogger.DEV_NULL );
+                NullLogProvider.getInstance() );
         store.init();
         store.start();
 
@@ -129,7 +129,7 @@ public class NodeFormatComplianceTest
         StandardStore<NodeRecord, NodeRecordCursor> store = new StandardStore<>( new NodeStoreFormat_v2_2(),
                 new File( storeDir, DEFAULT_NAME + NODE_STORE_NAME ),
                 new TestStoreIdGenerator(), pageCache, fsRule.get(),
-                StringLogger.DEV_NULL );
+                NullLogProvider.getInstance() );
         store.init();
         store.start();
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Relationship, Direction, Node}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
@@ -958,6 +958,24 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     single("a") should equal(startNode)
     single("r") should equal(Seq(relationship1, relationship2))
     single("b") should equal(endNode)
+  }
+
+  test("should correctly handle nulls from source pipe") {
+    // given
+    val query = mock[QueryContext]
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val source = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    when(source.createResults(queryState)).thenReturn(Iterator(row("a" -> null)))
+
+    // when
+    val result = VarLengthExpandPipe(source, "a", "r", "b", Direction.BOTH, Direction.INCOMING, LazyTypes.empty, 1, None, nodeInScope = false)().createResults(queryState).toList
+
+    // then
+    val (single :: Nil) = result
+    single("a").asInstanceOf[AnyRef] should be(null)
+    single("r").asInstanceOf[AnyRef] should be(null)
+    single("b").asInstanceOf[AnyRef] should be(null)
   }
 
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)

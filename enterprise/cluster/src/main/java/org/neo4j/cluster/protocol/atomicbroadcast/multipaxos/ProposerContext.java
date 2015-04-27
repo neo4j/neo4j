@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -24,15 +24,15 @@ import java.util.List;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.ConfigurationContext;
-import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
+import org.neo4j.kernel.impl.logging.LogService;
 
 /**
  * Context used by {@link ProposerState} state machine.
  */
 public interface ProposerContext
-    extends TimeoutsContext, LoggingContext, ConfigurationContext
+    extends TimeoutsContext, LogService, ConfigurationContext
 {
     InstanceId newInstanceId( );
 

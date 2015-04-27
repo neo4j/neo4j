@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,14 +23,12 @@ import java.lang.reflect.Method;
 import java.util.Map;
 
 import org.neo4j.function.Predicate;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Logger;
 import org.neo4j.kernel.monitoring.MonitorListenerInvocationHandler;
 
 public class LoggingListener implements MonitorListenerInvocationHandler
 {
-
-    private final Logging logging;
-    private final Map<Class<?>, LogLevel> classes;
+    private final Map<Class<?>, Logger> classes;
 
     public final Predicate<Method> predicate = new Predicate<Method>()
     {
@@ -42,11 +40,10 @@ public class LoggingListener implements MonitorListenerInvocationHandler
         }
     };
 
-    public LoggingListener( Logging logging, Map<Class<?>, LogLevel> classes )
+    public LoggingListener( Map<Class<?>, Logger> classes )
     {
         assert (classes != null);
         this.classes = classes;
-        this.logging = logging;
     }
 
     @Override
@@ -55,7 +52,7 @@ public class LoggingListener implements MonitorListenerInvocationHandler
         final Class<?> clazz = method.getDeclaringClass();
         final StringBuilder stringBuilder = new StringBuilder().append( method.getName() );
         formatArguments( stringBuilder, args, method.getParameterTypes() );
-        classes.get( clazz ).log( logging.getMessagesLog( clazz ), stringBuilder.toString() );
+        classes.get( clazz ).log( stringBuilder.toString() );
     }
 
     private void formatArguments( StringBuilder stringBuilder, Object[] args, Class<?>[] types )

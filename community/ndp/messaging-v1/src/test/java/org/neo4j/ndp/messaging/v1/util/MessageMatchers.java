@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
 import org.neo4j.ndp.messaging.v1.RecordingMessageHandler;
@@ -211,7 +212,7 @@ public class MessageMatchers
             throw new IOException( "Failed to deserialize response, '" + e.getMessage() + "'. Messages read so " +
                                    "far: \n" + consumer.asList() + "\n" +
                                    "Raw data: \n" +
-                                   BytePrinter.hex( bytes ) );
+                                   HexPrinter.hex( bytes ) );
         }
     }
 
@@ -230,14 +231,14 @@ public class MessageMatchers
                 return consumer.asList().get( 0 );
             }
 
-            throw new IllegalArgumentException( "Expected a message in " + BytePrinter.hex( bytes ) );
+            throw new IllegalArgumentException( "Expected a message in " + HexPrinter.hex( bytes ) );
         }
         catch ( Throwable e )
         {
             throw new IOException( "Failed to deserialize response, '" + e.getMessage() + "'. Messages read so " +
                                    "far: \n" + consumer.asList() + "\n" +
                                    "Raw data: \n" +
-                                   BytePrinter.hex( bytes ), e );
+                                   HexPrinter.hex( bytes ), e );
         }
     }
 

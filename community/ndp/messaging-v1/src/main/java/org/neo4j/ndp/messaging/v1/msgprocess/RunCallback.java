@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,14 +22,14 @@ package org.neo4j.ndp.messaging.v1.msgprocess;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 import org.neo4j.ndp.runtime.StatementMetadata;
 
 public class RunCallback extends MessageProcessingCallback<StatementMetadata>
 {
     private final Map<String,Object> successMetadata = new HashMap<>();
 
-    public RunCallback( StringLogger log )
+    public RunCallback( Log log )
     {
         super( log );
     }

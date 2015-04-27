@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -80,6 +80,11 @@ public class Converters
             @Override
             public File[] apply( String from )
             {
+                if ( from == null )
+                {
+                    return new File[0];
+                }
+
                 String[] names = from.split( delimiter );
                 File[] file = new File[names.length];
                 for ( int i = 0; i < names.length; i++ )

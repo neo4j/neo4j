@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -77,18 +77,23 @@ object Cost {
 
 case class Cardinality(amount: Double) extends Ordered[Cardinality] {
 
+  self =>
+
   def compare(that: Cardinality) = amount.compare(that.amount)
   def *(that: Multiplier): Cardinality = amount * that.coefficient
   def *(that: Selectivity): Cardinality = amount * that.factor
   def +(that: Cardinality): Cardinality = amount + that.amount
   def *(that: Cardinality): Cardinality = amount * that.amount
-  def /(that: Cardinality): Selectivity = amount / that.amount
+  def /(that: Cardinality): Option[Selectivity] = if (that.amount == 0) None else Some(amount / that.amount)
   def *(that: CostPerRow): Cost = amount * that.cost
   def *(that: Cost): Cost = amount * that.gummyBears
   def ^(a: Int): Cardinality = Math.pow(amount, a)
   def map(f: Double => Double): Cardinality = f(amount)
 
   def inverse = Multiplier(1.0d / amount)
+
+  def min(other: Cardinality) = if (amount < other.amount) self else other
+  def max(other: Cardinality) = if (amount > other.amount) self else other
 }
 
 object Cardinality {

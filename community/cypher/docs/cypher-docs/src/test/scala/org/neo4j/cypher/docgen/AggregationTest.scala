@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.visualization.graphviz.GraphStyle
-import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
+import org.junit.Test
+import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
-class AggregationTest extends DocumentingTestBase {
+class AggregationTest extends DocumentingTestBase with SoftReset {
   override def graphDescription = List("A:Person KNOWS B:Person", "A KNOWS C:Person", "A KNOWS D:Person")
 
   override val properties: Map[String, Map[String, Any]] = Map(
@@ -170,8 +169,7 @@ include::includes/aggregation-introduction.preparation-graph.asciidoc[]
 MATCH (b:Person {name: 'B'}), (c:Person {name: 'C'})
 CREATE (d:Person {name: 'D'}), (b)-[:KNOWS]->(d), (c)-[:KNOWS]->(d)
 """)),
-      queryText = "" +
-        "MATCH (me:Person)-->(friend:Person)-->(friend_of_friend:Person) " +
+      queryText = "MATCH (me:Person)-->(friend:Person)-->(friend_of_friend:Person) " +
         "WHERE me.name = 'A'" +
         "RETURN count(distinct friend_of_friend), count(friend_of_friend)",
       optionalResultExplanation = """
@@ -180,7 +178,7 @@ The first aggregate function, +count(DISTINCT friend_of_friend)+, will only see 
 The latter aggregate function, +count(friend_of_friend)+, might very well see the same `friend_of_friend` multiple times.
 In this case, both +B+ and +C+ know +D+ and thus +D+ will get counted twice, when not using ++DISTINCT++.
 """,
-      assertion = p => assertEquals(Map("count(distinct friend_of_friend)" -> 1, "count(friend_of_friend)" -> 2), p.toList.head))
+      assertions = p => assertEquals(Map("count(distinct friend_of_friend)" -> 1, "count(friend_of_friend)" -> 2), p.toList.head))
   }
 
   @Test def percentileDisc() {

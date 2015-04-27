@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -29,8 +29,8 @@ import java.util.Set;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExtensionInjector;
 import org.neo4j.server.rest.repr.ExtensionPointRepresentation;
@@ -40,15 +40,15 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
 {
     private final Map<String/*name*/, ServerExtender> extensions = new HashMap<String, ServerExtender>();
 
-    public PluginManager( Config serverConfig, Logging logging )
+    public PluginManager( Config serverConfig, LogProvider logProvider )
     {
-        this( serverConfig, ServerPlugin.load(), logging );
+        this( serverConfig, ServerPlugin.load(), logProvider );
     }
 
-    PluginManager( Config serverConfig, Iterable<ServerPlugin> plugins, Logging logging )
+    PluginManager( Config serverConfig, Iterable<ServerPlugin> plugins, LogProvider logProvider )
     {
         Map<String, Pair<ServerPlugin, ServerExtender>> extensions = new HashMap<String, Pair<ServerPlugin, ServerExtender>>();
-        ConsoleLogger log = logging.getConsoleLog( getClass() );
+        Log log = logProvider.getLog( getClass() );
         for ( ServerPlugin plugin : plugins )
         {
             PluginPointFactory factory = new PluginPointFactoryImpl();
@@ -76,10 +76,10 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
         }
         for ( Pair<ServerPlugin, ServerExtender> extension : extensions.values() )
         {
-            log.log( String.format( "Loaded server plugin \"%s\"", extension.first().name ) );
+            log.info( String.format( "Loaded server plugin \"%s\"", extension.first().name ) );
             for ( PluginPoint point : extension.other().all() )
             {
-                log.log( String.format( "  %s.%s: %s", point.forType().getSimpleName(), point.name(),
+                log.info( String.format( "  %s.%s: %s", point.forType().getSimpleName(), point.name(),
                         point.getDescription() ) );
             }
             this.extensions.put( extension.first().name, extension.other() );

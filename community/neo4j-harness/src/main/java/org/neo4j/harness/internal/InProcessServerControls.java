@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,6 +19,7 @@
  */
 package org.neo4j.harness.internal;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -26,20 +27,19 @@ import java.net.URI;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.AbstractNeoServer;
 
 public class InProcessServerControls implements ServerControls
 {
     private final File serverFolder;
     private final AbstractNeoServer server;
-    private final Lifecycle additionalLifeToManage;
+    private final Closeable additionalClosable;
 
-    public InProcessServerControls( File serverFolder, AbstractNeoServer server, Lifecycle additionalLifeToManage )
+    public InProcessServerControls( File serverFolder, AbstractNeoServer server, Closeable additionalClosable )
     {
         this.serverFolder = serverFolder;
         this.server = server;
-        this.additionalLifeToManage = additionalLifeToManage;
+        this.additionalClosable = additionalClosable;
     }
 
     @Override
@@ -65,7 +65,7 @@ public class InProcessServerControls implements ServerControls
         server.stop();
         try
         {
-            additionalLifeToManage.shutdown();
+            additionalClosable.close();
         }
         catch ( Throwable e )
         {

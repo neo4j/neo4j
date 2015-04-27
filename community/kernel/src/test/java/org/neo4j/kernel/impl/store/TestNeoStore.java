@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -66,7 +66,7 @@ import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.NeoStoreDataSourceRule;
@@ -116,7 +116,7 @@ public class TestNeoStore
                 new DefaultIdGeneratorFactory(),
                 pageCache,
                 fs.get(),
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 monitors );
         sf.createNeoStore().close();
     }
@@ -1069,7 +1069,7 @@ public class TestNeoStore
                 new DefaultIdGeneratorFactory(),
                 pageCache,
                 fileSystem,
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 monitors );
 
         NeoStore neoStore = sf.newNeoStore( false );
@@ -1088,7 +1088,7 @@ public class TestNeoStore
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 monitors );
 
         // when
@@ -1117,7 +1117,7 @@ public class TestNeoStore
     public void shouldInitializeTheTxIdToOne()
     {
         StoreFactory factory =
-                new StoreFactory( fs.get(), new File( "graph.db/neostore" ), pageCache, StringLogger.DEV_NULL,
+                new StoreFactory( fs.get(), new File( "graph.db/neostore" ), pageCache, NullLogProvider.getInstance(),
                         new Monitors() );
 
         NeoStore neoStore = factory.newNeoStore( true );
@@ -1136,7 +1136,7 @@ public class TestNeoStore
         FileSystemAbstraction fileSystem = fs.get();
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
         StoreFactory factory =
-                new StoreFactory( fileSystem, neoStoreDir, pageCache, StringLogger.DEV_NULL, new Monitors() );
+                new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance(), new Monitors() );
         NeoStore neoStore = factory.newNeoStore( true );
         neoStore.setCreationTime( 3 );
         neoStore.setRandomNumber( 4 );

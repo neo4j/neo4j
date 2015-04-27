@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLog;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.integration.RecordingCallback;
 import org.neo4j.ndp.runtime.internal.StatementRunner;
@@ -59,7 +59,7 @@ public class StateMachineErrorTest
     @Before
     public void setup()
     {
-        when(db.beginTx()).thenReturn( tx );
+        when( db.beginTx() ).thenReturn( tx );
     }
 
     @Test
@@ -68,17 +68,17 @@ public class StateMachineErrorTest
         // Given
         RecordingCallback responses = new RecordingCallback();
 
-        doThrow( new SyntaxException( "src/test" ) ).when( runner ).run( any(SessionState.class),
-                any(String.class), any(Map.class) );
+        doThrow( new SyntaxException( "src/test" ) ).when( runner ).run( any( SessionState.class ),
+                any( String.class ), any( Map.class ) );
 
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, StringLogger.DEV_NULL );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
         // When
         machine.run( "this is nonsense", EMPTY_MAP, null, responses );
 
         // Then
-        assertThat(responses.next(), failedWith( Status.Statement.InvalidSyntax ) );
-        assertThat(machine.state(), equalTo( ERROR ));
+        assertThat( responses.next(), failedWith( Status.Statement.InvalidSyntax ) );
+        assertThat( machine.state(), equalTo( ERROR ) );
     }
 
     @Test
@@ -93,10 +93,10 @@ public class StateMachineErrorTest
                 throw new RuntimeException( "Well, that didn't work out very well." );
             }
         };
-        when(runner.run( any(SessionState.class), any(String.class), any(Map.class) ))
+        when( runner.run( any( SessionState.class ), any( String.class ), any( Map.class ) ) )
                 .thenReturn( mock( RecordStream.class ) );
 
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, StringLogger.DEV_NULL );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
         // and Given there is a result ready to be retrieved
         machine.run( "something", null, null, Session.Callback.NO_OP );
@@ -105,27 +105,27 @@ public class StateMachineErrorTest
         machine.pullAll( null, failingCallback );
 
         // Then
-        assertThat(failingCallback.next(), failedWith( Status.General.UnknownFailure ));
-        assertThat(machine.state(), equalTo( ERROR ));
+        assertThat( failingCallback.next(), failedWith( Status.General.UnknownFailure ) );
+        assertThat( machine.state(), equalTo( ERROR ) );
     }
 
     @Test
     public void testRollbackError() throws Throwable
     {
         // Given
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, StringLogger.DEV_NULL );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
         // Given there is a running transaction
         machine.beginTransaction();
 
         // And given that transaction will fail to roll back
-        doThrow(new TransactionFailureException( "This just isn't going well for us." )).when( tx ).close();
+        doThrow( new TransactionFailureException( "This just isn't going well for us." ) ).when( tx ).close();
 
         // When
         machine.rollbackTransaction();
 
         // Then
-        assertThat(machine.state(), equalTo( ERROR ));
+        assertThat( machine.state(), equalTo( ERROR ) );
     }
 
     @Test
@@ -133,34 +133,34 @@ public class StateMachineErrorTest
     {
         // Given
         RecordingCallback messages = new RecordingCallback();
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, StringLogger.DEV_NULL );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
         // When I perform some action that causes an error state
         machine.commitTransaction(); // No tx to be committed!
 
         // Then it should be in an error state
-        assertThat(machine.state(), equalTo(ERROR));
+        assertThat( machine.state(), equalTo( ERROR ) );
 
         // and no action other than acknowledging the error should be possible
         machine.beginTransaction();
-        assertThat(machine.state(), equalTo(ERROR));
+        assertThat( machine.state(), equalTo( ERROR ) );
 
         machine.beginImplicitTransaction();
-        assertThat(machine.state(), equalTo(ERROR));
+        assertThat( machine.state(), equalTo( ERROR ) );
 
         machine.commitTransaction();
-        assertThat(machine.state(), equalTo(ERROR));
+        assertThat( machine.state(), equalTo( ERROR ) );
 
         machine.rollbackTransaction();
-        assertThat(machine.state(), equalTo(ERROR));
+        assertThat( machine.state(), equalTo( ERROR ) );
 
         // this includes externally triggered actions
         machine.run( "src/test", EMPTY_MAP, null, messages );
-        assertThat(machine.state(), equalTo(ERROR));
+        assertThat( machine.state(), equalTo( ERROR ) );
         assertThat( messages.next(), ignored() );
 
         machine.pullAll( null, messages );
-        assertThat(machine.state(), equalTo(ERROR));
+        assertThat( machine.state(), equalTo( ERROR ) );
         assertThat( messages.next(), ignored() );
 
         // And nothing at all should have been done
@@ -172,7 +172,7 @@ public class StateMachineErrorTest
     {
         // Given
         RecordingCallback messages = new RecordingCallback();
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, StringLogger.DEV_NULL );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
         // Given I've performed some action that causes an error state
         machine.commitTransaction(); // No tx to be committed!

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.cache.MonitorGc;
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
+import static org.neo4j.helpers.Settings.DEFAULT;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
@@ -50,7 +51,6 @@ import static org.neo4j.helpers.Settings.matches;
 import static org.neo4j.helpers.Settings.max;
 import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.options;
-import static org.neo4j.helpers.Settings.port;
 import static org.neo4j.helpers.Settings.setting;
 
 /**
@@ -84,20 +84,21 @@ public abstract class GraphDatabaseSettings
 
     // Cypher settings
     // TODO: These should live with cypher
-    @Description( "Set this to specify the default parser." )
+    @Description( "Set this to specify the default parser (language version)." )
     public static final Setting<String> cypher_parser_version = setting(
             "cypher_parser_version",
-            options( "1.9", "2.0", "2.1", "2.2", "2.3"), NO_DEFAULT );
+            options( "1.9", "2.2", "2.3", DEFAULT ), DEFAULT );
 
-    @Description( "Set this to specify the default planner." )
+    @Description( "Set this to specify the default planner for the default language version." )
     public static final Setting<String> cypher_planner = setting(
             "dbms.cypher.planner",
-            options( "COST", "RULE"), NO_DEFAULT );
+            options( "COST", "RULE", DEFAULT ), DEFAULT );
 
+    @Description( "Set this to specify the default runtime for the default language version." )
     @Internal
     public static final Setting<String> cypher_runtime = setting(
             "dbms.cypher.runtime",
-            options( "INTERPRETED", "COMPILED" ), NO_DEFAULT );
+            options( "INTERPRETED", "COMPILED", DEFAULT ), DEFAULT );
 
     @Description( "The number of Cypher query execution plans that are cached." )
     public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "1000", min( 0 ) );
@@ -126,15 +127,14 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<File> neo_store = setting("neo_store", PATH, "neostore", basePath(store_dir) );
 
-    // Remote logging
-    @Description("Whether to enable logging to a remote server or not.")
-    public static final Setting<Boolean> remote_logging_enabled = setting("remote_logging_enabled", BOOLEAN, FALSE );
+    @Description( "Threshold for rotation of the internal log." )
+    public static final Setting<Long> store_internal_log_rotation_threshold = setting("store.internal_log.rotation_threshold", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
 
-    @Description( "Host for remote logging using Logback SocketAppender." )
-    public static final Setting<String> remote_logging_host = setting("remote_logging_host", STRING, "127.0.0.1", illegalValueMessage( "must be a valid hostname", matches( ANY ) ) );
+    @Description( "Minimum time (in seconds) after last rotation of the internal log before it may be rotated again." )
+    public static final Setting<Integer> store_internal_log_rotation_delay = setting("store.internal_log.rotation_threshold", INTEGER, "300", min(0), max( Integer.MAX_VALUE ) );
 
-    @Description( "Port for remote logging using Logback SocketAppender." )
-    public static final Setting<Integer> remote_logging_port = setting("remote_logging_port", INTEGER, "4560", port );
+    @Description( "Maximum number of history files for the internal log." )
+    public static final Setting<Integer> store_internal_log_archive_count = setting("store.internal_log.archive_count", INTEGER, "7", min(1) );
 
     // Indexing
     @Description("Controls the auto indexing feature for nodes. Setting it to `false` shuts it down, " +
@@ -205,6 +205,7 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<Long> mapped_memory_page_size = setting( "dbms.pagecache.pagesize", BYTES, "8192" );
 
+    @SuppressWarnings( "unchecked" )
     @Description( "The amount of memory to use for mapping the store files, in bytes (or kilobytes with the 'k' " +
                   "suffix, megabytes with 'm' and gigabytes with 'g'). If Neo4j is running on a dedicated server, " +
                   "then it is generally recommended to leave about 2-4 gigabytes for the operating system, give the " +
@@ -212,7 +213,7 @@ public abstract class GraphDatabaseSettings
                   "the page cache. The default page cache memory assumes the machine is dedicated to running " +
                   "Neo4j, and is heuristically set to 75% of RAM minus the max Java heap size." )
     public static final Setting<Long> pagecache_memory =
-            setting( "dbms.pagecache.memory", BYTES, defaultPageCacheMemory() );
+            setting( "dbms.pagecache.memory", BYTES, defaultPageCacheMemory(), min( 8192 * 2L ) );
 
     private static String defaultPageCacheMemory()
     {

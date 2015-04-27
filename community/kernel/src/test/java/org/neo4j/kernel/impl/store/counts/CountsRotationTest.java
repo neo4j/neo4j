@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -43,8 +43,8 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -75,7 +75,7 @@ public class CountsRotationTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+            CountsTracker store = life.add( new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
                                                            new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID, store.txId() );
             assertEquals( INITIAL_MINOR_VERSION, store.minorVersion() );
@@ -85,7 +85,7 @@ public class CountsRotationTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+            CountsTracker store = life.add( new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
                                                            new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID, store.txId() );
             assertEquals( INITIAL_MINOR_VERSION, store.minorVersion() );
@@ -114,7 +114,7 @@ public class CountsRotationTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+            CountsTracker store = life.add( new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
                                                            new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
             // a transaction for creating the label and a transaction for the node
             assertEquals( BASE_TX_ID + 1 + 1, store.txId() );
@@ -153,7 +153,7 @@ public class CountsRotationTest
         final PageCache pageCache = db.getDependencyResolver().resolveDependency( PageCache.class );
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+            CountsTracker store = life.add( new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
                                                            new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
             // NOTE since the rotation happens before the second transaction is committed we do not see those changes
             // in the stats

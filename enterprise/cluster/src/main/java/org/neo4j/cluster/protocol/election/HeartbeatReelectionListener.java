@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,7 +21,8 @@ package org.neo4j.cluster.protocol.election;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * If an instance is considered failed, demote it from all its roles in the cluster.
@@ -31,19 +32,19 @@ public class HeartbeatReelectionListener
     implements HeartbeatListener
 {
     private final Election election;
-    private final StringLogger messagesLog;
+    private final Log log;
 
-    public HeartbeatReelectionListener( Election election, StringLogger messagesLog )
+    public HeartbeatReelectionListener( Election election, LogProvider logProvider )
     {
         this.election = election;
-        this.messagesLog = messagesLog;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     public void failed( InstanceId server )
     {
         // Suggest reelection for all roles of this node
-        messagesLog.warn( " instance " + server +" is being demoted since it failed" );
+        log.warn( " instance " + server +" is being demoted since it failed" );
         election.demote( server );
     }
 

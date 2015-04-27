@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -135,6 +135,19 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
       legacy.Property(legacy.LiteralMap(Map("inner1" -> legacy.LiteralMap(Map("inner2" -> legacy.Literal("Value"))))), PropertyKey("key"))
 
   }
+
+
+  test("escaping_wildcard_characters") {
+    parsing(
+      """'\_'""") shouldGive
+      legacy.Literal("_")
+
+    parsing(
+      """'\%'""") shouldGive
+      legacy.Literal("%")
+
+  }
+
 
   def convert(astNode: ast.Expression): legacy.Expression = astNode.asCommandExpression
 }

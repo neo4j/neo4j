@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -48,8 +48,8 @@ public abstract class AbstractStep<T> implements Step<T>
     private volatile boolean endOfUpstream;
     protected volatile Throwable panic;
     private volatile boolean completed;
-    protected boolean orderedTickets;
-    protected final PrimitiveLongPredicate rightTicket = new PrimitiveLongPredicate()
+    protected int orderingGuarantees;
+    protected final PrimitiveLongPredicate rightDoneTicket = new PrimitiveLongPredicate()
     {
         @Override
         public boolean accept( long ticket )
@@ -83,10 +83,15 @@ public abstract class AbstractStep<T> implements Step<T>
     }
 
     @Override
-    public void start( boolean orderedTickets )
+    public void start( int orderingGuarantees )
     {
-        this.orderedTickets = orderedTickets;
+        this.orderingGuarantees = orderingGuarantees;
         resetStats();
+    }
+
+    protected boolean guarantees( int orderingGuaranteeFlag )
+    {
+        return (orderingGuarantees & orderingGuaranteeFlag) != 0;
     }
 
     /**

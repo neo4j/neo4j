@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -37,7 +37,7 @@ public class NodeFirstRelationshipStage extends Stage
     public NodeFirstRelationshipStage( Configuration config, NodeStore nodeStore,
             RelationshipGroupStore relationshipGroupStore, NodeRelationshipCache cache, Collector collector )
     {
-        super( "Node --> Relationship", config, false );
+        super( "Node --> Relationship", config );
         add( new ReadNodeRecordsStep( control(), config, nodeStore ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
                 new NodeFirstRelationshipProcessor( relationshipGroupStore, cache ), false ) );

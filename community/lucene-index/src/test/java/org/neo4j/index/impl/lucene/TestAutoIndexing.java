@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,12 +19,12 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -35,8 +35,8 @@ import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -48,7 +48,7 @@ import static org.junit.Assert.fail;
 
 public class TestAutoIndexing
 {
-    private ImpermanentGraphDatabase graphDb;
+    private GraphDatabaseAPI graphDb;
     private Transaction tx;
     private Map<String, String> config;
 
@@ -74,7 +74,7 @@ public class TestAutoIndexing
     @Before
     public void startDb()
     {
-        graphDb = (ImpermanentGraphDatabase) new TestGraphDatabaseFactory().
+        graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
                 newImpermanentDatabaseBuilder().setConfig( getConfig() ).newGraphDatabase();
     }
 

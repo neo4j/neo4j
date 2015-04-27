@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,8 +21,8 @@ package org.neo4j.ext.monitorlogging;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import java.io.InputStream;
@@ -41,7 +41,7 @@ public class MonitorLoggingExtensionFactory  extends KernelExtensionFactory<Moni
 
     public interface Dependencies
     {
-        Logging getLogging();
+        LogService getLogService();
 
         Monitors getMonitors();
     }
@@ -49,12 +49,12 @@ public class MonitorLoggingExtensionFactory  extends KernelExtensionFactory<Moni
     @Override
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        Logging logging = dependencies.getLogging();
-        Properties props = loadProperties( logging );
-        return new MonitorLoggingExtension( props, logging, dependencies.getMonitors() );
+        LogService logService = dependencies.getLogService();
+        Properties props = loadProperties( logService );
+        return new MonitorLoggingExtension( props, logService, dependencies.getMonitors() );
     }
 
-    private Properties loadProperties( Logging logging )
+    private Properties loadProperties( LogService logService )
     {
         Properties props = new Properties();
         try
@@ -67,7 +67,7 @@ public class MonitorLoggingExtensionFactory  extends KernelExtensionFactory<Moni
         }
         catch ( Exception e )
         {
-            logging.getMessagesLog( getClass() ).warn( "Unable to read the log monitors property file: " + filename, e );
+            logService.getInternalLog( getClass() ).warn( "Unable to read the log monitors property file: " + filename, e );
         }
         return props;
     }

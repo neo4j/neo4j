@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 public class MeasureDoNothing extends Thread
 {
@@ -27,16 +27,16 @@ public class MeasureDoNothing extends Thread
     
     private final long TIME_TO_WAIT;
     private final long NOTIFICATION_THRESHOLD;
-    private final StringLogger logger;
+    private final Log log;
     
-    public MeasureDoNothing( String threadName, StringLogger logger, long timeToWait, long pauseNotificationThreshold )
+    public MeasureDoNothing( String threadName, Log log, long timeToWait, long pauseNotificationThreshold )
     {
         super( threadName );
-        if ( logger == null )
+        if ( log == null )
         {
             throw new IllegalArgumentException( "Null message log" );
         }
-        this.logger = logger;
+        this.log = log;
         this.TIME_TO_WAIT = timeToWait;
         this.NOTIFICATION_THRESHOLD = pauseNotificationThreshold + timeToWait;
         setDaemon( true );
@@ -45,7 +45,7 @@ public class MeasureDoNothing extends Thread
     @Override
     public synchronized void run()
     {
-        logger.debug( "GC Monitor started. " );
+        log.debug( "GC Monitor started. " );
         while ( measure )
         {
             long start = System.nanoTime();
@@ -61,10 +61,10 @@ public class MeasureDoNothing extends Thread
             if ( time > NOTIFICATION_THRESHOLD )
             {
                 long blockTime = time - TIME_TO_WAIT;
-                logger.warn( String.format( "GC Monitor: Application threads blocked for %dms.", blockTime ) );
+                log.warn( String.format( "GC Monitor: Application threads blocked for %dms.", blockTime ) );
             }
         }
-        logger.debug( "GC Monitor stopped. " );
+        log.debug( "GC Monitor stopped. " );
     }
     
     public synchronized void stopMeasuring()

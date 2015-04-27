@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,14 +19,15 @@
  */
 package org.neo4j.shell;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.junit.Ignore;
-import org.junit.Test;
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
@@ -1211,6 +1212,6 @@ public class TestApps extends AbstractShellTest
         });
         thread.start();
 
-        executeCommandExpectingException("CYPHER 2.1 FOREACH(i IN range(0, 10000) | CREATE ());", "has been terminated" );
+        executeCommandExpectingException("CYPHER 2.2 FOREACH(i IN range(0, 10000) | CREATE ());", "has been terminated" );
     }
 }

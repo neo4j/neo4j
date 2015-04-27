@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -43,7 +43,8 @@ import javax.tools.ToolProvider;
 
 import sun.tools.java.CompilerError;
 
-import org.neo4j.cypher.internal.ExecutionMode;
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompletionListener;
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult;
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException;
@@ -56,6 +57,13 @@ import static javax.tools.JavaCompiler.CompilationTask;
 //TODO this should be replaced, here for testing stuff out
 public class Javac
 {
+    public static class CompilationError extends Error
+    {
+        public CompilationError( String message )
+        {
+            super( message );
+        }
+    }
 
     public static Class<InternalExecutionResult> compile( String className, String classBody ) throws
             ClassNotFoundException
@@ -84,20 +92,20 @@ public class Javac
                 sb.append( format( " Line number : %d%s", diagnostic.getLineNumber(), System.lineSeparator() ) );
                 number++;
             }
-            throw new CompilerError( sb.toString() );
+            throw new CompilationError( sb.toString() );
         }
 
         Class<InternalExecutionResult> clazz = (Class<InternalExecutionResult>) manager.getClassLoader( null ).loadClass( className );
         return clazz;
     }
 
-    public static InternalExecutionResult newInstance( Class<InternalExecutionResult> clazz, Statement statement,
+    public static InternalExecutionResult newInstance( Class<InternalExecutionResult> clazz, CompletionListener completion, Statement statement,
                                                        GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException
     {
         Constructor<InternalExecutionResult> constructor =
-                clazz.getDeclaredConstructor( Statement.class, GraphDatabaseService.class, ExecutionMode.class, InternalPlanDescription.class , Map.class);
-        return constructor.newInstance( statement, db, executionMode, description, params );
+                clazz.getDeclaredConstructor( CompletionListener.class, Statement.class, GraphDatabaseService.class, ExecutionMode.class, InternalPlanDescription.class , Map.class);
+        return constructor.newInstance( completion, statement, db, executionMode, description, params );
     }
 
     private static class InMemSource extends SimpleJavaFileObject

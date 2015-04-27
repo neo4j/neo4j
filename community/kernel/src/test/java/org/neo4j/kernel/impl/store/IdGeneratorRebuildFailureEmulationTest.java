@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -43,11 +43,13 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Settings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.subprocess.BreakpointTrigger;
@@ -121,7 +123,7 @@ public class IdGeneratorRebuildFailureEmulationTest
     public void initialize()
     {
         fs = new FileSystem();
-        InternalAbstractGraphDatabase graphdb = new Database( storeDir );
+        GraphDatabaseService graphdb = new Database( storeDir );
         createInitialData( graphdb );
         graphdb.shutdown();
         Map<String, String> params = new HashMap<>();
@@ -133,14 +135,14 @@ public class IdGeneratorRebuildFailureEmulationTest
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs ),
                 fs,
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 monitors );
     }
 
     @After
     public void verifyAndDispose() throws Exception
     {
-        InternalAbstractGraphDatabase graphdb = null;
+        GraphDatabaseService graphdb = null;
         try
         {
             graphdb = new Database( storeDir );
@@ -243,16 +245,25 @@ public class IdGeneratorRebuildFailureEmulationTest
         }
 
         @Override
-        protected FileSystemAbstraction createFileSystemAbstraction()
+        protected void create( Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
-            return fs;
+            new CommunityFacadeFactory()
+            {
+                @Override
+                protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                {
+                    return new ImpermanentPlatformModule( params, dependencies, graphDatabaseFacade )
+                    {
+                        @Override
+                        protected FileSystemAbstraction createFileSystemAbstraction()
+                        {
+                            return fs;
+                        }
+                    };
+                }
+            }.newFacade( params, dependencies, this );
         }
 
-        @Override
-        protected IdGeneratorFactory createIdGeneratorFactory()
-        {
-            return new DefaultIdGeneratorFactory();
-        }
     }
 
     @EnabledBreakpoints("performTest")

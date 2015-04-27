@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,7 +23,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -31,10 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.core.joran.spi.JoranException;
-import org.slf4j.LoggerFactory;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.Log;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageType;
@@ -43,13 +40,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
 import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.LogbackService;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
@@ -67,22 +58,20 @@ public class NetworkMock
     private long tickDuration;
     private final MultipleFailureLatencyStrategy strategy;
     private MessageTimeoutStrategy timeoutStrategy;
-    private Logging logging;
-    protected final StringLogger logger;
+    private LogService logService;
+    protected final Log log;
     private final List<Pair<Future<?>, Runnable>> futureWaiter;
 
 
-    public NetworkMock( Monitors monitors, long tickDuration, MultipleFailureLatencyStrategy strategy,
+    public NetworkMock( LogService logService, Monitors monitors, long tickDuration, MultipleFailureLatencyStrategy strategy,
                         MessageTimeoutStrategy timeoutStrategy )
     {
         this.monitors = monitors;
         this.tickDuration = tickDuration;
         this.strategy = strategy;
         this.timeoutStrategy = timeoutStrategy;
-        this.logging = new LogbackService( new Config( Collections.<String, String>emptyMap(),
-                InternalAbstractGraphDatabase.Configuration.class, GraphDatabaseSettings.class ),
-                (LoggerContext) LoggerFactory.getILoggerFactory() );
-        logger = logging.getMessagesLog( NetworkMock.class );
+        this.logService = logService;
+        this.log = logService.getInternalLog( NetworkMock.class );
         futureWaiter = new LinkedList<Pair<Future<?>, Runnable>>();
     }
 
@@ -99,36 +88,19 @@ public class NetworkMock
 
     protected TestProtocolServer newTestProtocolServer( int serverId, URI serverUri )
     {
-        LoggerContext loggerContext = new LoggerContext();
-        loggerContext.putProperty( "host", serverUri.toString() );
-
-        JoranConfigurator configurator = new JoranConfigurator();
-        configurator.setContext( loggerContext );
-        try
-        {
-            configurator.doConfigure( getClass().getResource( "/test-logback.xml" ) );
-        }
-        catch ( JoranException e )
-        {
-            throw new IllegalStateException( "Failed to configure logging", e );
-        }
-
-        Logging logging = new LogbackService( new Config( Collections.<String, String>emptyMap(),
-                InternalAbstractGraphDatabase.Configuration.class, GraphDatabaseSettings.class ), loggerContext );
-
-        ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( "default", StringLogger.SYSTEM ), logging, monitors.newMonitor( StateMachines.Monitor.class ) );
+        ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( "default", logService.getInternalLogProvider() ), logService, monitors.newMonitor( StateMachines.Monitor.class ) );
 
         ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
         electionCredentialsProvider.listeningAt( serverUri );
-        TestProtocolServer protocolServer = new TestProtocolServer( timeoutStrategy, protocolServerFactory, serverUri,
+        TestProtocolServer protocolServer = new TestProtocolServer( logService.getInternalLogProvider(), timeoutStrategy, protocolServerFactory, serverUri,
                 new InstanceId( serverId ), new InMemoryAcceptorInstanceStore(), electionCredentialsProvider );
-        protocolServer.addStateTransitionListener( new StateTransitionLogger( logging ) );
+        protocolServer.addStateTransitionListener( new StateTransitionLogger( logService.getInternalLogProvider() ) );
         return protocolServer;
     }
 
     private void debug( String participant, String string )
     {
-        logger.debug( "=== " + participant + " " + string );
+        log.debug( "=== " + participant + " " + string );
     }
 
     public void removeServer( String serverId )
@@ -185,7 +157,7 @@ public class NetworkMock
             long delay = 0;
             if ( message.getHeader( Message.TO ).equals( message.getHeader( Message.FROM ) ) )
             {
-                logger.debug( "Sending message to itself; zero latency" );
+                log.debug( "Sending message to itself; zero latency" );
             }
             else
             {
@@ -194,12 +166,12 @@ public class NetworkMock
 
             if ( delay == NetworkLatencyStrategy.LOST )
             {
-                logger.debug( "Send message to " + to + " was lost" );
+                log.debug( "Send message to " + to + " was lost" );
             }
             else
             {
                 TestProtocolServer server = participants.get( to );
-                logger.debug( "Send to " + to + ": " + message );
+                log.debug( "Send to " + to + ": " + message );
                 messageDeliveries.add( new MessageDelivery( now + delay, message, server ) );
             }
         }

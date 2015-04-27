@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -20,8 +20,7 @@
 package org.neo4j.cypher.performance
 
 import java.io.File
-
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.DynamicRelationshipType
 import org.neo4j.index.impl.lucene.LuceneBatchInserterIndexProviderNewImpl
 import org.neo4j.unsafe.batchinsert.{BatchInserter, BatchInserterIndex, BatchInserters}

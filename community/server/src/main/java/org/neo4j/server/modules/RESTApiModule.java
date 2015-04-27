@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -25,8 +25,8 @@ import java.util.List;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.guard.GuardingRequestFilter;
@@ -53,16 +53,16 @@ public class RESTApiModule implements ServerModule
     private final WebServer webServer;
     private final Database database;
     private GuardingRequestFilter requestTimeLimitFilter;
-    private final ConsoleLogger log;
-    private final Logging logging;
+    private final LogProvider logProvider;
+    private final Log log;
 
-    public RESTApiModule( WebServer webServer, Database database, Config config, Logging logging )
+    public RESTApiModule( WebServer webServer, Database database, Config config, LogProvider logProvider )
     {
         this.webServer = webServer;
         this.config = config;
         this.database = database;
-        this.logging = logging;
-        this.log = logging.getConsoleLog( getClass() );
+        this.logProvider = logProvider;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -144,7 +144,7 @@ public class RESTApiModule implements ServerModule
 
     private void loadPlugins()
     {
-        plugins = new PluginManager( config, logging );
+        plugins = new PluginManager( config, logProvider );
     }
 
     private void unloadPlugins() {

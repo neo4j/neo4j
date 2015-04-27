@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -46,7 +46,9 @@ object renderDetails extends (InternalPlanDescription => String) {
               !x.isInstanceOf[DbHits] &&
               !x.isInstanceOf[EstimatedRows] &&
               !x.isInstanceOf[Planner] &&
+              !x.isInstanceOf[PlannerImpl] &&
               !x.isInstanceOf[Runtime] &&
+              !x.isInstanceOf[RuntimeImpl] &&
               !x.isInstanceOf[Version] => PlanDescriptionArgumentSerializer.serialize(x)
         }.mkString("; ")
           .replaceAll(UNNAMED_PATTERN, ""))

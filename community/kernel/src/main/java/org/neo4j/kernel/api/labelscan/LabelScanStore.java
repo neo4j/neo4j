@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.labelscan;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
@@ -48,16 +47,6 @@ public interface LabelScanStore extends Lifecycle
      * Acquire a writer for updating the store.
      */
     LabelScanWriter newWriter();
-
-    /**
-     * Recover updates the store with a stream of updates of label->node mappings. Done during the recovery
-     * phase of the database startup. Updates here may contain duplicates with what's already in the store
-     * so extra care needs to be taken to ensure correctness after these updates.
-     *
-     * @param updates the updates to store.
-     * @throws IOException if there was a problem updating the store.
-     */
-    void recover( Iterator<NodeLabelUpdate> updates ) throws IOException, IndexCapacityExceededException;
 
     /**
      * Forces all changes to disk. Called at certain points from within Neo4j for example when
@@ -92,5 +81,4 @@ public interface LabelScanStore extends Lifecycle
      */
     @Override
     void shutdown() throws IOException;
-
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -30,19 +30,19 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, CypherException => CypherException_v2_3, InfoLogger, InputPosition => CompilerInputPosition, Monitors, PlannerName, _}
+import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, CypherException => CypherException_v2_3, DPPlannerName, ExplainMode => ExplainModev2_3, GreedyPlannerName, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev2_3, PlannerName, ProfileMode => ProfileModev2_3, _}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.impl.notification.NotificationCode
 import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, QueryExecutionType, ResourceIterator}
-import org.neo4j.helpers.{Assertion, Clock}
+import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
-import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.logging.Log
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -151,8 +151,8 @@ trait CompatibilityFor2_3 {
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, offset: CompilerInputPosition) = new ParsedQuery {
-    val preparedQueryForV_2_3 = Try(compiler.prepareQuery(preParsedQuery.statement, preParsedQuery.notificationLogger, Some(offset)))
+  def produceParsedQuery(preParsedQuery: PreParsedQuery) = new ParsedQuery {
+    val preparedQueryForV_2_3 = Try(compiler.prepareQuery(preParsedQuery.statement, preParsedQuery.notificationLogger, Some(preParsedQuery.offset)))
 
     def isPeriodicCommit = preparedQueryForV_2_3.map(_.isPeriodicCommit).getOrElse(false)
 
@@ -170,10 +170,15 @@ trait CompatibilityFor2_3 {
       new ExceptionTranslatingQueryContextFor2_3(ctx)
     }
 
-    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
       implicit val s = session
+      val innerExecutionMode = executionMode match {
+        case CypherExecutionMode.explain => ExplainModev2_3
+        case CypherExecutionMode.profile => ProfileModev2_3
+        case CypherExecutionMode.normal => NormalModev2_3
+      }
       exceptionHandlerFor2_3.runSafely {
-        ExecutionResultWrapperFor2_3(inner.run(queryContext(graph, txInfo), txInfo.statement, executionMode, params), inner.plannerUsed, inner.runtimeUsed)
+        ExecutionResultWrapperFor2_3(inner.run(queryContext(graph, txInfo), txInfo.statement, innerExecutionMode, params), inner.plannerUsed, inner.runtimeUsed)
       }
     }
 
@@ -249,8 +254,10 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       convert(
         inner.executionPlanDescription().
           addArgument(Version("CYPHER 2.3")).
-          addArgument(Planner(planner.name)).
-          addArgument(Runtime(runtime.name))
+          addArgument(Planner(planner.toTextOutput)).
+          addArgument(PlannerImpl(planner.name)).
+          addArgument(Runtime(runtime.toTextOutput)).
+          addArgument(RuntimeImpl(runtime.name))
     )
   }
 
@@ -302,7 +309,9 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
 
   override def toString: String = {
     val NL = System.lineSeparator()
-    exceptionHandlerFor2_3.runSafely { s"Compiler CYPHER ${version.name}$NL${NL}Planner ${planner.name.toUpperCase}$NL${NL}Runtime ${runtime.name.toUpperCase}$NL$NL$inner" }
+    exceptionHandlerFor2_3.runSafely {
+      s"Compiler CYPHER ${version.name}$NL${NL}Planner ${planner.toTextOutput.toUpperCase}$NL${NL}Runtime ${runtime.toTextOutput.toUpperCase}$NL$NL$inner"
+    }
   }
 
   def asJava(in: ExtendedPlanDescription): javacompat.PlanDescription = new javacompat.PlanDescription {
@@ -329,9 +338,9 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
   }
 }
 
-class StringInfoLogger2_3(stringLogger: StringLogger) extends InfoLogger {
+class StringInfoLogger2_3(log: Log) extends InfoLogger {
   def info(message: String) {
-    stringLogger.info(message)
+    log.info(message)
   }
 }
 case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
@@ -341,13 +350,30 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
                                            clock: Clock,
                                            kernelMonitors: KernelMonitors,
                                            kernelAPI: KernelAPI,
-                                           logger: StringLogger,
-                                           plannerName: CostBasedPlannerName,
-                                           runtimeName: RuntimeName) extends CompatibilityFor2_3 {
-  protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ),
-    new StringInfoLogger2_3( logger ), rewriterSequencer, plannerName, runtimeName
-  )
+                                           log: Log,
+                                           planner: CypherPlanner,
+                                           runtime: CypherRuntime) extends CompatibilityFor2_3 {
+  protected val compiler = {
+    val plannerName = planner match {
+      case CypherPlanner.default => None
+      case CypherPlanner.cost => Some(IDPPlannerName)
+      case CypherPlanner.greedy => Some(GreedyPlannerName)
+      case CypherPlanner.idp => Some(IDPPlannerName)
+      case CypherPlanner.dp => Some(DPPlannerName)
+      case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
+    }
+
+    val runtimeName = runtime match {
+      case CypherRuntime.default => InterpretedRuntimeName
+      case CypherRuntime.interpreted => InterpretedRuntimeName
+      case CypherRuntime.compiled => CompiledRuntimeName
+    }
+
+    CypherCompilerFactory.costBasedCompiler(
+      graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ),
+      new StringInfoLogger2_3( log ), rewriterSequencer, plannerName, runtimeName
+    )
+  }
 }
 
 case class CompatibilityFor2_3Rule(graph: GraphDatabaseService,

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Test;
-
 import java.io.File;
+
+import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -36,6 +36,7 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
@@ -68,7 +69,7 @@ public class HACountsPropagationTest
 
             for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
             {
-                CountsTracker counts = db.dependencyResolver.resolveDependency( NeoStore.class ).getCounts();
+                CountsTracker counts = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
                 assertEquals( 2, counts.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
                 assertEquals( 1, counts.nodeCount( 0 /* A */, newDoubleLongRegister() ).readSecond() );
             }
@@ -105,7 +106,7 @@ public class HACountsPropagationTest
 
             for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
             {
-                CountsTracker counts = db.dependencyResolver.resolveDependency( NeoStore.class ).getCounts();
+                CountsTracker counts = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
                 assertEquals( 1, counts.relationshipCount( -1, -1, -1, newDoubleLongRegister() ).readSecond() );
                 assertEquals( 1, counts.relationshipCount( -1, -1, 0, newDoubleLongRegister() ).readSecond() );
                 assertEquals( 1, counts.relationshipCount( -1, 0, -1, newDoubleLongRegister() ).readSecond() );

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -153,7 +153,7 @@ public enum AtomicBroadcastState
                             }
                             else
                             {
-                                context.getLogger( AtomicBroadcastState.class )
+                                context.getInternalLog( AtomicBroadcastState.class )
                                        .warn( "No quorum and therefor dropping broadcast msg: " + message.getPayload() );
                             }
                             break;

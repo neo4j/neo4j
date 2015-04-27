@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,14 +19,23 @@
  */
 package org.neo4j.cypher
 
-import java.util
-
-import org.neo4j.cypher.internal.PathImpl
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
 import org.neo4j.graphdb._
 
 import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+
+  test("path query should return results in written order") {
+    val a = createLabeledNode("label1")
+    val b = createLabeledNode("label2")
+    val r = relate(b, a)
+
+    val query = "MATCH (a:label1) RETURN (a)<--(:label2) AS p"
+
+    val result = executeWithAllPlanners(query)
+    result.toList should equal(Seq(Map("p" -> List(PathImpl(a, r, b)))))
+  }
 
   test("Get node degree via length of pattern expression") {
     val node = createLabeledNode("X")
@@ -1285,7 +1294,6 @@ return b
     val n = createLabeledNode(Map("email" -> "me@mine"), "User")
     val m = createLabeledNode(Map("email" -> "you@yours"), "User")
     val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
-//    (1 to 100).foreach(e => createLabeledNode("User"))
     graph.createIndex("User", "email")
 
     // when
@@ -1294,6 +1302,36 @@ return b
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
     result.executionPlanDescription().toString should include("NodeIndexScan")
+  }
+
+  test("should use the index for property existance queries for rule when asked for it") {
+    // given
+    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
+    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
+    val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
+    graph.createIndex("User", "email")
+
+    // when
+    val result = eengine.execute("CYPHER planner=rule MATCH (n:User) USING INDEX n:User(email) WHERE has(n.email) RETURN n")
+
+    // then
+    result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
+    result.executionPlanDescription().toString should include("SchemaIndex")
+  }
+
+  test("should not use the index for property existance queries for rule when not asking for it") {
+    // given
+    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
+    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
+    val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
+    graph.createIndex("User", "email")
+
+    // when
+    val result = eengine.execute("CYPHER planner=rule MATCH (n:User) WHERE has(n.email) RETURN n")
+
+    // then
+    result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
+    result.executionPlanDescription().toString should not include("SchemaIndex")
   }
 
   test("should handle cyclic patterns") {
@@ -1949,7 +1987,7 @@ return b
     val node2 = createNode()
     val r = relate(node1, node2)
 
-    val query = """CYPHER planner=cost WITH [{0}, {1}] AS x, count(*) as y
+    val query = """WITH [{0}, {1}] AS x, count(*) as y
                   |MATCH (n) WHERE ID(n) IN x
                   |MATCH (m) WHERE ID(m) IN x
                   |MATCH paths = allShortestPaths((n)-[*..1]-(m))
@@ -1974,7 +2012,7 @@ return b
     relate(mid, other, "CONNECTED_TO")
 
     // when
-    val query = "PLANNER COST MATCH topRoute = (db1:Start)<-[:CONNECTED_TO]-()-[:CONNECTED_TO*3..3]-(db2:End) RETURN topRoute"
+    val query = "MATCH topRoute = (db1:Start)<-[:CONNECTED_TO]-()-[:CONNECTED_TO*3..3]-(db2:End) RETURN topRoute"
 
     executeWithAllPlanners(query).toList should have size 4
   }
@@ -2015,7 +2053,7 @@ return b
 
     val query = "MATCH a RETURN a.prop"
 
-    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableResult
     result should equal(List(asResult(props, "a")))
   }
 
@@ -2024,7 +2062,7 @@ return b
 
     val query = "MATCH a-[r]->b RETURN r.prop"
 
-    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableResult
     result should equal(List(asResult(Map("prop" -> 1), "r")))
   }
 
@@ -2034,7 +2072,7 @@ return b
 
     val query = "MATCH a-[r]->b RETURN a.nodeProp, r.relProp"
 
-    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableResult
     result should equal(List(asResult(Map("nodeProp" -> 1), "a") ++ asResult(Map("relProp" -> 2), "r")))
   }
 
@@ -2044,7 +2082,7 @@ return b
 
     val query = "MATCH a-[r]->b RETURN a AS FOO, r AS BAR"
 
-    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableResult
     result should equal(List(Map("FOO" -> a, "BAR" -> r)))
   }
 
@@ -2053,7 +2091,7 @@ return b
 
     val query = "MATCH a-[r]->b RETURN r.foo"
 
-    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableResult
     result should equal(List(Map("r.foo" -> null)))
   }
 
@@ -2067,14 +2105,14 @@ return b
 
     val query = "MATCH a RETURN a.name, a.age, a.seasons"
 
-    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableResult
     result should equal(List(asResult(props, "a")))
   }
 
   test("adding a property and a literal is supported in new runtime") {
     val props = Map("prop" -> 1)
     createNode(props)
-    val result = executeWithAllPlannersAndRuntimes("MATCH a RETURN a.prop + 1 AS FOO").toComparableList
+    val result = executeWithAllPlannersAndRuntimes("MATCH a RETURN a.prop + 1 AS FOO").toComparableResult
 
     result should equal(List(Map("FOO" -> 2)))
   }
@@ -2082,9 +2120,52 @@ return b
   test("adding arrays is supported in new runtime") {
     val props = Map("prop1" -> Array(1,2,3), "prop2" -> Array(4, 5))
     createNode(props)
-    val result = executeWithAllPlannersAndRuntimes("MATCH a RETURN a.prop1 + a.prop2 AS FOO").toComparableList
+    val result = executeWithAllPlannersAndRuntimes("MATCH a RETURN a.prop1 + a.prop2 AS FOO").toComparableResult
 
     result should equal(List(Map("FOO" -> List(1, 2, 3, 4, 5))))
+  }
+
+  test("should type var length identifiers correctly as collection of relationships") {
+    createNode()
+    val r = relate(createNode(), createNode())
+
+    val result = executeWithAllPlanners("match ()-[r*0..1]-() return last(r) as l").toList
+
+    result should equal(List(Map("l" -> null), Map("l" -> null), Map("l" -> r), Map("l" -> null), Map("l" -> r)))
+  }
+
+  test("should correctly handle nulls in var length expand") {
+    val node = createLabeledNode("A")
+    createLabeledNode("B")
+
+    val query =
+      """match (a:A)
+        |optional match (a)-[r1:FOO]->(b:B)
+        |optional match (b)<-[r2:BAR*]-(c:B)
+        |return a, b, c""".stripMargin
+
+    val result = executeWithAllPlanners(query).toList
+
+    result should equal(List(Map("a" -> node, "b" -> null, "c" -> null)))
+  }
+
+  test("should handle varlength paths of size 0..0") {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    relate(b, c)
+
+    val query =
+      """match (a)-[*0..0]->(b)
+        |return a, b""".stripMargin
+
+    val result = executeWithAllPlanners(query).toSet
+
+    result should equal(Set(
+      Map("a" -> a, "b" -> a),
+      Map("a" -> b, "b" -> b),
+      Map("a" -> c, "b" -> c)
+    ))
   }
 
   /**

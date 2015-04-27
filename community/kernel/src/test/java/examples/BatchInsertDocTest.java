@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -109,7 +109,7 @@ public class BatchInsertDocTest
     }
 
     @Test
-    public void insertWithConfig()
+    public void insertWithConfig() throws IOException
     {
         // START SNIPPET: configuredInsert
         Map<String, String> config = new HashMap<>();

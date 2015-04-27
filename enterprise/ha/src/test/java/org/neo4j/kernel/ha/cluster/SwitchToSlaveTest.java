@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import org.junit.Test;
-
 import java.io.File;
+
+import org.junit.Test;
 
 import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
@@ -31,7 +31,6 @@ import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
@@ -47,14 +46,16 @@ import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+
+import static java.util.Arrays.asList;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -65,8 +66,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
-
-import static java.util.Arrays.asList;
 
 public class SwitchToSlaveTest
 {
@@ -127,8 +126,8 @@ public class SwitchToSlaveTest
     @SuppressWarnings( "unchecked" )
     private static SwitchToSlave newSwitchToSlaveSpy()
     {
-        return spy( new SwitchToSlave( ConsoleLogger.DEV_NULL, configMock(), dependencyResolverMock(),
-                mock( HaIdGeneratorFactory.class ), new DevNullLoggingService(),
+        return spy( new SwitchToSlave( NullLogService.getInstance(), configMock(), dependencyResolverMock(),
+                mock( HaIdGeneratorFactory.class ),
                 mock( DelegateInvocationHandler.class ),
                 mock( ClusterMemberAvailability.class ), mock( RequestContextFactory.class ),
                 Iterables.<KernelExtensionFactory<?>>empty(), mock( MasterClientResolver.class ),
@@ -148,7 +147,7 @@ public class SwitchToSlaveTest
     {
         Config config = mock( Config.class );
         when( config.get( HaSettings.branched_data_policy ) ).thenReturn( mock( BranchedDataPolicy.class ) );
-        when( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) ).thenReturn( mock( File.class ) );
+        when( config.get( GraphDatabaseFacadeFactory.Configuration.store_dir ) ).thenReturn( mock( File.class ) );
         return config;
     }
 

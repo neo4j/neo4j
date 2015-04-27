@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -43,7 +43,7 @@ case class MethodInvocation(resultVariable: String, resultType: String, methodNa
          |return $resultVariable;
          |}""".
         stripMargin
-      }
+    }
 
     def name = methodName
 
@@ -51,5 +51,5 @@ case class MethodInvocation(resultVariable: String, resultType: String, methodNa
 
   def fields() = statements.map(_.fields()).reduce(_ + n + _)
 
-  override def _importedClasses() =  Set("org.neo4j.kernel.api.exceptions.KernelException")
+  override def _importedClasses() = Set("org.neo4j.kernel.api.exceptions.KernelException")
 }

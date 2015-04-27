@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -53,7 +53,8 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.TestLogger;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.test.mocking.GraphMock;
@@ -61,6 +62,8 @@ import org.neo4j.test.mocking.Link;
 
 import static java.util.Arrays.asList;
 
+import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -74,8 +77,6 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 import static org.neo4j.test.Property.property;
@@ -92,7 +93,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
@@ -108,7 +109,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -130,7 +131,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -151,7 +152,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -176,7 +177,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -200,7 +201,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
@@ -218,7 +219,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         // when
         serializer.errors( asList( new Neo4jError( Status.Request.InvalidFormat, new Exception( "cause1" ) ) ) );
@@ -236,7 +237,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         // when
         serializer.finish();
@@ -251,7 +252,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -275,7 +276,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult1 = mockExecutionResult( map(
                 "column1", "value1",
@@ -302,7 +303,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult = mockExecutionResult( map(
                 "node", node( 1, properties(
@@ -328,7 +329,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Node a = node( 1, properties( property( "foo", 12 ) ) );
         Node b = node( 2, properties( property( "bar", false ) ) );
@@ -356,7 +357,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult = mockExecutionResult( map(
                 "path", mockPath( map( "key1", "value1" ), map( "key2", "value2" ), map( "key3", "value3" ) ) ) );
@@ -377,7 +378,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Map<String, Object> data = map(
                 "column1", "value1",
@@ -413,7 +414,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Map<String, Object> data = map(
                 "column1", "value1",
@@ -460,7 +461,7 @@ public class ExecutionResultSerializerTest
                 relationship( 1, node[2], "LOVES", node[3], property( "name", "rel1" ) )};
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         // when
         serializer.statementResult( mockExecutionResult(
@@ -513,7 +514,7 @@ public class ExecutionResultSerializerTest
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
-                output, URI.create( "http://base.uri/" ), DEV_NULL );
+                output, URI.create( "http://base.uri/" ), NullLogProvider.getInstance() );
 
         // when
         serializer.statementResult( mockExecutionResult(
@@ -551,7 +552,7 @@ public class ExecutionResultSerializerTest
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
-                output, URI.create( "http://base.uri/" ), DEV_NULL );
+                output, URI.create( "http://base.uri/" ), NullLogProvider.getInstance() );
 
         // when
         serializer.statementResult( mockExecutionResult(
@@ -582,7 +583,7 @@ public class ExecutionResultSerializerTest
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
-                output, URI.create( "http://base.uri/" ), DEV_NULL );
+                output, URI.create( "http://base.uri/" ), NullLogProvider.getInstance() );
 
         String operatorType = "Ich habe einen Plan";
 
@@ -624,7 +625,7 @@ public class ExecutionResultSerializerTest
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
-                output, URI.create( "http://base.uri/" ), DEV_NULL );
+                output, URI.create( "http://base.uri/" ), NullLogProvider.getInstance() );
 
         String operatorType = "Ich habe einen Plan";
         String id1 = "id1";
@@ -656,7 +657,7 @@ public class ExecutionResultSerializerTest
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
-                output, URI.create( "http://base.uri/" ), DEV_NULL );
+                output, URI.create( "http://base.uri/" ), NullLogProvider.getInstance() );
 
         String leftId = "leftId";
         String rightId = "rightId";
@@ -747,14 +748,17 @@ public class ExecutionResultSerializerTest
         // given
         IOException failure = new IOException();
         OutputStream output = mock( OutputStream.class, new ThrowsException( failure ) );
-        TestLogger log = new TestLogger();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, log );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, logProvider );
 
         // when
         serializer.finish();
 
         // then
-        log.assertExactly( error( "Failed to generate JSON output.", failure ) );
+        logProvider.assertExactly(
+                AssertableLogProvider.inLog( ExecutionResultSerializer.class ).error(
+                        is( "Failed to generate JSON output." ), sameInstance( failure ) )
+        );
     }
 
     @Test
@@ -762,14 +766,16 @@ public class ExecutionResultSerializerTest
     {
         // given
         OutputStream output = mock( OutputStream.class, new ThrowsException( new IOException("Broken pipe") ) );
-        TestLogger log = new TestLogger();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, log );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, logProvider );
 
         // when
         serializer.finish();
 
         // then
-        log.assertExactly( error( "Unable to reply to request, because the client has closed the connection (Broken pipe)." ) );
+        logProvider.assertExactly(
+                AssertableLogProvider.inLog( ExecutionResultSerializer.class ).error( "Unable to reply to request, because the client has closed the connection (Broken pipe)." )
+        );
     }
 
     @SuppressWarnings({"unchecked"})
@@ -778,7 +784,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         OutputStream output = mock( OutputStream.class );
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, null );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
         RuntimeException onCloseException = new IllegalStateException("Iterator closed");
         Result result = mock( Result.class );
         mockAccept( result );
@@ -812,7 +818,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Notification notification = NotificationCode.CARTESIAN_PRODUCT.notification( new InputPosition( 1, 2, 3 ) );
         List<Notification> notifications = Arrays.asList( notification );
@@ -847,7 +853,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         List<Notification> notifications = Collections.emptyList();
         Result executionResult = mockExecutionResult( null, notifications, map(
@@ -873,7 +879,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Notification notification = NotificationCode.CARTESIAN_PRODUCT.notification( InputPosition.empty );
 

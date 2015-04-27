@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -41,6 +41,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
@@ -548,6 +549,63 @@ public class BufferedCharSeekerTest
             assertThat( e.getMessage(), containsString( ":0" ) );
             assertThat( e.getMessage(), containsString( "after that ending quote" ) );
         }
+    }
+
+    @Test
+    public void shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLineSingleCharNewline() throws Exception
+    {
+        shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLine( "\n" );
+    }
+
+    @Test
+    public void shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLinePlatformNewline() throws Exception
+    {
+        shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLine( "%n" );
+    }
+
+    private void shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLine( String newline ) throws Exception
+    {
+        // GIVEN
+        String data = lines( newline,
+                "1,\"Bar\"",
+                "2,\"Bar",
+                "",
+                "Quux",
+                "\"",
+                "3,\"Bar",
+                "",
+                "Quux\"",
+                "" );
+        seeker = seeker( data );
+
+        // THEN
+        assertNextValue( seeker, mark, COMMA, "1" );
+        assertNextValue( seeker, mark, COMMA, "Bar" );
+        assertNextValue( seeker, mark, COMMA, "2" );
+        assertNextValue( seeker, mark, COMMA, lines( newline,
+                "Bar",
+                "",
+                "Quux",
+                "" ) );
+        assertNextValue( seeker, mark, COMMA, "3" );
+        assertNextValue( seeker, mark, COMMA, lines( newline,
+                "Bar",
+                "",
+                "Quux" ) );
+    }
+
+    private String lines( String newline, String... lines )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( String line : lines )
+        {
+            if ( builder.length() > 0 )
+            {
+                builder.append( format( newline ) );
+            }
+            builder.append( line );
+        }
+        return builder.toString();
     }
 
     private String[][] randomWeirdValues( int cols, int rows, char... except )

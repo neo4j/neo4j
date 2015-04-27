@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -24,10 +24,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.impl.util.HexPrinter;
 
-public class NDPConn
+public class NDPConn implements AutoCloseable
 {
     private Socket socket;
     private InputStream in;
@@ -53,18 +55,45 @@ public class NDPConn
         long timeout = System.currentTimeMillis() + 1000 * 30;
         byte[] bytes = new byte[length];
         int left = length, read;
+
+        waitUntilAvailable( bytes, timeout, left );
+
         while ( (read = in.read( bytes, length - left, left )) != -1 && left > 0 )
         {
-            if ( System.currentTimeMillis() > timeout )
-            {
-                throw new IOException( "Waited 30 seconds for " + left + " bytes, recieved " + (length - left) );
-            }
             left -= read;
             if ( left > 0 )
             {
-                Thread.sleep( 10 );
+                waitUntilAvailable( bytes, timeout, left );
             }
         }
         return bytes;
+    }
+
+    private void waitUntilAvailable( byte[] recieved, long timeout, int left ) throws IOException
+    {
+        while ( in.available() == 0 )
+        {
+            if ( System.currentTimeMillis() > timeout )
+            {
+                throw new IOException( "Waited 30 seconds for " + left + " bytes, " +
+                                       "recieved " + (recieved.length - left) + ":\n" +
+                                       HexPrinter.hex(
+                                               ByteBuffer.wrap( recieved ), 0, recieved.length - left ) );
+            }
+        }
+    }
+
+    public void disconnect() throws IOException
+    {
+        if ( socket != null && socket.isConnected() )
+        {
+            socket.close();
+        }
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        disconnect();
     }
 }

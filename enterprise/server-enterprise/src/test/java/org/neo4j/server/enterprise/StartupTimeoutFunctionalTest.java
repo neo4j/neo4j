@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -33,7 +33,8 @@ import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.FormattedLog;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.ServerStartupException;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
@@ -83,7 +84,7 @@ public class StartupTimeoutFunctionalTest
     {
         ConfigurationBuilder configurator = buildProperties();
         setProperty( configurator.configuration(), Configurator.STARTUP_TIMEOUT, "20s" );
-        server = new EnterpriseNeoServer( configurator, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL ))
+        server = new EnterpriseNeoServer( configurator, GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() ), NullLogProvider.getInstance() )
         {
             @Override
             protected Iterable<ServerModule> createServerModules()
@@ -107,7 +108,7 @@ public class StartupTimeoutFunctionalTest
 
     private EnterpriseNeoServer createSlowServer( ConfigurationBuilder configurator )
     {
-        return new EnterpriseNeoServer( configurator, GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL ))
+        return new EnterpriseNeoServer( configurator, GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() ), NullLogProvider.getInstance() )
         {
             @Override
             protected Iterable<ServerModule> createServerModules()
@@ -156,7 +157,7 @@ public class StartupTimeoutFunctionalTest
         serverProperties.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, serverPropertiesFilename );
         serverProperties.store( new FileWriter( serverPropertiesFilename ), null );
 
-        return new PropertyFileConfigurator( new File( serverPropertiesFilename ) );
+        return new PropertyFileConfigurator( new File( serverPropertiesFilename ), FormattedLog.toOutputStream( System.err ) );
     }
     
     private void setProperty( Config config, String key, String value )

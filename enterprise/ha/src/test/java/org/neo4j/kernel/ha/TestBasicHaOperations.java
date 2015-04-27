@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -29,6 +29,8 @@ import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
+import java.util.logging.Level;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -40,7 +42,7 @@ import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 public class TestBasicHaOperations
 {
     @Rule
-    public LoggerRule logger = new LoggerRule();
+    public LoggerRule logger = new LoggerRule( Level.OFF );
 
     public TargetDirectory dir = TargetDirectory.forTest( getClass() );
     private ClusterManager clusterManager;
@@ -72,12 +74,12 @@ public class TestBasicHaOperations
         // When
         long start = System.nanoTime();
         cluster.shutdown( master );
-        logger.getLogger().warn( "Shut down master" );
+        logger.getLogger().warning( "Shut down master" );
 
         cluster.await( ClusterManager.masterAvailable() );
         long end = System.nanoTime();
 
-        logger.getLogger().warn( "Failover took:" + (end - start) / 1000000 + "ms" );
+        logger.getLogger().warning( "Failover took:" + (end - start) / 1000000 + "ms" );
 
         // Then
         boolean slave1Master = slave1.isMaster();

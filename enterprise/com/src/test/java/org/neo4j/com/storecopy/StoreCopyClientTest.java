@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,14 +19,14 @@
  */
 package org.neo4j.com.storecopy;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -47,11 +47,9 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.LogbackWeakDependency;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -85,8 +83,6 @@ public class StoreCopyClientTest
         final String originalDir = new File( testDir.directory(), "original" ).getAbsolutePath();
 
         Config config = new Config( MapUtil.stringMap( store_dir.name(), copyDir ) );
-        Logging logging = LogbackWeakDependency.tryLoadLogbackService( config, null, null );
-        ConsoleLogger console = new ConsoleLogger( StringLogger.SYSTEM );
 
         final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
         CancellationRequest cancellationRequest = new CancellationRequest()
@@ -110,7 +106,7 @@ public class StoreCopyClientTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreCopyClient copier =
-                new StoreCopyClient( config, loadKernelExtensions(), console, logging, fs, pageCache, storeCopyMonitor );
+                new StoreCopyClient( config, loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache, storeCopyMonitor );
 
         final GraphDatabaseAPI original =
                 (GraphDatabaseAPI) startDatabase( originalDir );
@@ -165,8 +161,6 @@ public class StoreCopyClientTest
         final String originalDir = new File( testDir.directory(), "original" ).getAbsolutePath();
 
         Config config = new Config( MapUtil.stringMap( store_dir.name(), copyDir ) );
-        Logging logging = LogbackWeakDependency.tryLoadLogbackService( config, null, null );
-        ConsoleLogger console = new ConsoleLogger( StringLogger.SYSTEM );
 
         final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
         CancellationRequest cancellationRequest = new CancellationRequest()
@@ -190,7 +184,7 @@ public class StoreCopyClientTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreCopyClient copier =
-                new StoreCopyClient( config, loadKernelExtensions(), console, logging, fs, pageCache, storeCopyMonitor );
+                new StoreCopyClient( config, loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache, storeCopyMonitor );
 
         final GraphDatabaseAPI original =
                 (GraphDatabaseAPI) startDatabase( originalDir );
@@ -254,7 +248,7 @@ public class StoreCopyClientTest
                             logRotationControl, fs, new File(originalDir), new Monitors().newMonitor( StoreCopyServer.Monitor.class ) )
                             .flushStoresAndStreamStoreFiles( writer, false );
 
-                    final StoreId storeId = original.getDependencyResolver().resolveDependency( StoreId.class );
+                    final StoreId storeId = original.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get().getStoreId();
 
                     ResponsePacker responsePacker = new ResponsePacker( logicalTransactionStore,
                             transactionIdStore, new Supplier<StoreId>()

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -41,6 +41,18 @@ public class Exceptions
         catch ( Exception failure )
         {
             // OK, we did our best, guess there will be no cause
+        }
+        return exception;
+    }
+
+    public static <T extends Throwable> T withSuppressed( T exception, Throwable... suppressed )
+    {
+        if ( suppressed != null )
+        {
+            for ( Throwable s : suppressed )
+            {
+                exception.addSuppressed( s );
+            }
         }
         return exception;
     }

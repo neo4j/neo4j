@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -20,6 +20,7 @@
 package org.neo4j.graphalgo.path;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -66,7 +67,7 @@ public class GeoDataGenerator
         return this;
     }
 
-    public void generate( File storeDir )
+    public void generate( File storeDir ) throws IOException
     {
         BatchInserter inserter = inserter( storeDir.getAbsolutePath() );
         Grid grid = new Grid();

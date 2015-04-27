@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -37,12 +37,12 @@ import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
@@ -116,9 +116,9 @@ public class NetworkSenderReceiverTest
         NetworkReceiver receiver = null;
         try
         {
-            Logging loggingMock = mock( Logging.class );
-            StringLogger loggerMock = mock( StringLogger.class );
-            when( loggingMock.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( loggerMock );
+            LogProvider logProviderMock = mock( LogProvider.class );
+            Log logMock = mock( Log.class );
+            when( logProviderMock.getLog( Matchers.<Class>any() ) ).thenReturn( logMock );
 
             final Semaphore sem = new Semaphore( 0 );
 
@@ -155,7 +155,7 @@ public class NetworkSenderReceiverTest
                     senderChannelClosed.set( true );
                     return null;
                 }
-            } ).when( loggerMock ).warn( anyString() );
+            } ).when( logMock ).warn( anyString() );
 
             receiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ), new NetworkReceiver.Configuration()
             {
@@ -176,7 +176,7 @@ public class NetworkSenderReceiverTest
                 {
                     return null;
                 }
-            }, new DevNullLoggingService() )
+            }, NullLogProvider.getInstance() )
             {
                 @Override
                 public void stop() throws Throwable
@@ -199,7 +199,7 @@ public class NetworkSenderReceiverTest
                 {
                     return 5001;
                 }
-            }, receiver, loggingMock );
+            }, receiver, logProviderMock );
 
             sender.init();
             sender.start();
@@ -334,7 +334,7 @@ public class NetworkSenderReceiverTest
                 {
                     return null;
                 }
-            }, new DevNullLoggingService() ) );
+            }, NullLogProvider.getInstance() ) );
 
             networkSender = life.add( new NetworkSender( mock( NetworkSender.Monitor.class ),
                     new NetworkSender.Configuration()
@@ -350,7 +350,7 @@ public class NetworkSenderReceiverTest
                 {
                     return conf.get( ClusterSettings.cluster_server ).getPort();
                 }
-            }, networkReceiver, new DevNullLoggingService() ) );
+            }, networkReceiver, NullLogProvider.getInstance() ) );
 
             life.add( new LifecycleAdapter()
             {

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.visualization.graphviz.GraphStyle
-import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
+import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
+import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
-class SetTest extends DocumentingTestBase with QueryStatisticsTestSupport {
+class SetTest extends DocumentingTestBase with QueryStatisticsTestSupport with SoftReset {
 
   override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
@@ -99,7 +98,7 @@ Use a parameter to give the value of a property.
       prepare = setParameters(Map("surname" -> "Taylor")),
       queryText = "match (n {name: 'Andres'}) set n.surname = {surname} return n",
       optionalResultExplanation = "The Andres node has got an surname added.",
-      assertion = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 1))
+      assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 1))
   }
 
   @Test def set_all_properties_using_a_parameter() {
@@ -111,7 +110,7 @@ This will replace all existing properties on the node with the new set provided 
       prepare = setParameters(Map("props" -> Map("name" -> "Andres", "position" -> "Developer"))),
       queryText = "match (n {name: 'Andres'}) set n = {props} return n",
       optionalResultExplanation = "The Andres node has had all it's properties replaced by the properties in the +props+ parameter.",
-      assertion = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 4))
+      assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 4))
   }
 
   @Test def set_multiple_properties_in_one_set_clause() {

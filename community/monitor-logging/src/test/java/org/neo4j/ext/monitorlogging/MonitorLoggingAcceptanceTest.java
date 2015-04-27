@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,25 +22,26 @@ package org.neo4j.ext.monitorlogging;
 import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.util.TestLogging;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.warn;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class MonitorLoggingAcceptanceTest
 {
-
     @Test
     public void shouldBeAbleToLoadPropertiesFromAFile() throws InterruptedException
     {
-        TestLogging logging = new TestLogging();
-        GraphDatabaseAPI dbAPI = (GraphDatabaseAPI) new TestGraphDatabaseFactory( logging ).newImpermanentDatabase();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        GraphDatabaseAPI dbAPI = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newImpermanentDatabase();
 
         Monitors monitors = dbAPI.getDependencyResolver().resolveDependency( Monitors.class );
         AMonitor aMonitor = monitors.newMonitor( AMonitor.class );
         aMonitor.doStuff();
 
-        logging.getMessagesLog( AMonitor.class ).assertExactly( warn( "doStuff()" ) );
+        logProvider.assertAtLeastOnce(
+                inLog( AMonitor.class ).warn( "doStuff()" )
+        );
     }
 }

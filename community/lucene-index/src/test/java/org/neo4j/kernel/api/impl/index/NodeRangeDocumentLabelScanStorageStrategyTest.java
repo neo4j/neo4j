@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.IndexSearcher;
@@ -35,6 +29,13 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.Lock;
 
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
@@ -84,7 +85,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         when( searcher.search( new TermQuery( format.rangeTerm( 0 ) ), 1 ) ).thenReturn( docs() );
         when( searcher.search( new TermQuery( format.rangeTerm( 1 ) ), 1 ) ).thenReturn( null );
 
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter(storage,  format );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 
         // when
         writer.write( labelChanges( 0, labels(), labels( 6, 7 ) ) );
@@ -118,7 +119,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                           format.labelField( 7, 0x70 ) )
         );
 
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter(storage, format );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 
         // when
         writer.write( labelChanges( 0, labels(), labels( 7, 8 ) ) );
@@ -141,7 +142,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                           format.labelField( 7, 0x1 ),
                           format.labelField( 8, 0x1 ) ) );
 
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter(storage, format );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 
         // when
         writer.write( labelChanges( 0, labels( 7, 8 ), labels( 8 ) ) );
@@ -162,7 +163,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                 document( format.rangeField( 0 ),
                           format.labelField( 7, 0x1 ) ) );
 
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter(storage, format );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 
         // when
         writer.write( labelChanges( 0, labels( 7 ), labels() ) );
@@ -181,7 +182,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                           format.labelField( 6, 0x1 ),
                           format.labelField( 7, 0x1 ) ) );
 
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter(storage, format );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 
         // when
         writer.write( labelChanges( 0, labels( 7 ), labels( 7, 8 ) ) );
@@ -204,7 +205,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
             // given
             LabelScanStorageStrategy.StorageService storage = storage();
 
-            LuceneLabelScanWriter writer = new LuceneLabelScanWriter(storage, format );
+            LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 
             // when
             writer.write( labelChanges( i, labels(), labels( 7 ) ) );
@@ -216,6 +217,21 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                                                                format.labelField( 7, 1L << i ),
                                                                format.labelSearchField( 7 ) ) ) );
         }
+    }
+
+    @Test
+    public void shouldUnlockInClose() throws Exception
+    {
+        // GIVEN
+        LabelScanStorageStrategy.StorageService storage = storage();
+        Lock lock = mock( Lock.class );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, lock );
+
+        // WHEN
+        writer.close();
+
+        // THEN
+        verify( lock ).unlock();
     }
 
     private LabelScanStorageStrategy.StorageService storage( Document... documents ) throws Exception

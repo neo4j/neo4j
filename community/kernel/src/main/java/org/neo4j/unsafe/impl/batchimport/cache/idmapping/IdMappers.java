@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -92,7 +92,7 @@ public class IdMappers
      */
     public static IdMapper strings( NumberArrayFactory cacheFactory )
     {
-        return new EncodingIdMapper( cacheFactory, new StringEncoder(), new Radix.String(), NO_MONITOR );
+        return new EncodingIdMapper( cacheFactory, new StringEncoder(), Radix.STRING, NO_MONITOR );
     }
 
     /**
@@ -104,6 +104,6 @@ public class IdMappers
      */
     public static IdMapper longs( NumberArrayFactory cacheFactory )
     {
-        return new EncodingIdMapper( cacheFactory, new LongEncoder(), new Radix.Long(), NO_MONITOR );
+        return new EncodingIdMapper( cacheFactory, new LongEncoder(), Radix.LONG, NO_MONITOR );
     }
 }

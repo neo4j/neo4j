@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -27,7 +27,7 @@ import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -40,7 +40,7 @@ public class MasterClientResolverTest
     public void shouldResolveMasterClientFactory() throws Exception
     {
         // Given
-        MasterClientResolver resolver = new MasterClientResolver( new DevNullLoggingService(),
+        MasterClientResolver resolver = new MasterClientResolver( NullLogProvider.getInstance(),
                 ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, mock( InvalidEpochExceptionHandler.class ), 1, 1, 1, 1024 );
 
         LifeSupport life = new LifeSupport();

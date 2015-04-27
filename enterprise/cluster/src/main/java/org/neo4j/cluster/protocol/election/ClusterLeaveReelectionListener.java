@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,7 +23,8 @@ import java.net.URI;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * When an instance leaves a cluster, demote it from all its current roles.
@@ -32,19 +33,19 @@ public class ClusterLeaveReelectionListener
         extends ClusterListener.Adapter
 {
     private final Election election;
-    private final StringLogger logger;
+    private final Log log;
 
-    public ClusterLeaveReelectionListener( Election election, StringLogger logger )
+    public ClusterLeaveReelectionListener( Election election, LogProvider logProvider )
     {
         this.election = election;
-        this.logger = logger;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     public void leftCluster( InstanceId instanceId, URI member )
     {
         String name = instanceId.instanceNameFromURI( member );
-        logger.warn( "Demoting member " + name + " because it left the cluster" );
+        log.warn( "Demoting member " + name + " because it left the cluster" );
         // Suggest reelection for all roles of this node
         election.demote( instanceId );
     }

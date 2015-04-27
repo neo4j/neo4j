@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -35,7 +35,7 @@ public class RelationshipCountsStage extends Stage
             int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater,
             NumberArrayFactory cacheFactory )
     {
-        super( "Relationship counts", config, false );
+        super( "Relationship counts", config );
         add( new ReadRelationshipCountsDataStep( control(), config, relationshipStore ) );
         add( new ProcessRelationshipCountsDataStep( control(), cache, config,
                 highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory ) );

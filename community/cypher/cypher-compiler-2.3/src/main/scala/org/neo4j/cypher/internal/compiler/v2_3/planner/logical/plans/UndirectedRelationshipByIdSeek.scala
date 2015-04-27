@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
 case class UndirectedRelationshipByIdSeek(idName: IdName,
-                                          relIds: EntityByIdRhs,
+                                          relIds: SeekableArgs,
                                           leftNode: IdName,
                                           rightNode: IdName,
                                           argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
@@ -32,5 +32,5 @@ case class UndirectedRelationshipByIdSeek(idName: IdName,
   def availableSymbols = argumentIds ++ Set(idName, leftNode, rightNode)
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(relIds = relIds.mapExpressions(f(argumentIds, _)))(solved)
+    copy(relIds = relIds.mapValues(f(argumentIds, _)))(solved)
 }

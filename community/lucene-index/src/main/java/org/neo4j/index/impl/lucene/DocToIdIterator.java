@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,23 +19,27 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.util.Collection;
-
 import org.apache.lucene.document.Document;
 
+import java.util.Collection;
+
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.index.IndexHits;
 
 public class DocToIdIterator extends AbstractLegacyIndexHits
 {
-    private final Collection<Long> exclude;
+    private final Collection<Long> removedInTransactionState;
     private IndexReference searcherOrNull;
     private final IndexHits<Document> source;
+    private final PrimitiveLongSet idsModifiedInTransactionState;
 
-    public DocToIdIterator( IndexHits<Document> source, Collection<Long> exclude, IndexReference searcherOrNull )
+    public DocToIdIterator( IndexHits<Document> source, Collection<Long> exclude, IndexReference searcherOrNull,
+            PrimitiveLongSet idsModifiedInTransactionState )
     {
         this.source = source;
-        this.exclude = exclude;
+        this.removedInTransactionState = exclude;
         this.searcherOrNull = searcherOrNull;
+        this.idsModifiedInTransactionState = idsModifiedInTransactionState;
         if ( source.size() == 0 )
         {
             close();
@@ -48,13 +52,23 @@ public class DocToIdIterator extends AbstractLegacyIndexHits
         while ( source.hasNext() )
         {
             Document doc = source.next();
-            long id = Long.parseLong( doc.get( LuceneIndex.KEY_DOC_ID ) );
-            if ( !exclude.contains( id ) )
+            long id = idFromDoc( doc );
+            boolean documentIsFromStore = doc.getFieldable( FullTxData.TX_STATE_KEY ) == null;
+            boolean idWillBeReturnedByTransactionStateInstead =
+                    documentIsFromStore && idsModifiedInTransactionState.contains( id );
+            if ( removedInTransactionState.contains( id ) || idWillBeReturnedByTransactionStateInstead )
             {
-                return next( id );
+                // Skip this one, continue to the next
+                continue;
             }
+            return next( id );
         }
         return endReached();
+    }
+
+    static long idFromDoc( Document doc )
+    {
+        return Long.parseLong( doc.get( LuceneIndex.KEY_DOC_ID ) );
     }
 
     protected boolean endReached()
@@ -81,7 +95,7 @@ public class DocToIdIterator extends AbstractLegacyIndexHits
          * issued, then it is possible to get negative size from the IndexHits result, if exclude is larger than source.
          * To avoid such weirdness, we return at least 0. Note that the iterator will return no results, as it should.
          */
-        return Math.max( 0, source.size() - exclude.size() );
+        return Math.max( 0, source.size() - removedInTransactionState.size() );
     }
 
     private boolean isClosed()

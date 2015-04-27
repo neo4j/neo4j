@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -49,7 +49,7 @@ object GreedyPlanTable {
              !(newSolved.graph.covers(solved.graph) &&
                solved.isCoveredByHints(newSolved))
          }
-         DefaultGreedyPlanTable(oldPlansNotCoveredByNewPlan + (newPlan.solved.lastQueryGraph -> newPlan))
+         DefaultGreedyPlanTable(oldPlansNotCoveredByNewPlan + (newSolved.lastQueryGraph -> newPlan))
        }
      }
 

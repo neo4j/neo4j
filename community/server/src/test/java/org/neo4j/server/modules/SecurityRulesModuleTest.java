@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,13 +21,13 @@ package org.neo4j.server.modules;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 
 public class SecurityRulesModuleTest
 {
     @Test
     public void shouldStopCleanlyEvenWhenItHasntBeenStarted()
     {
-        new SecurityRulesModule( null, null, DevNullLoggingService.DEV_NULL ).stop();
+        new SecurityRulesModule( null, null, NullLogProvider.getInstance() ).stop();
     }
 }

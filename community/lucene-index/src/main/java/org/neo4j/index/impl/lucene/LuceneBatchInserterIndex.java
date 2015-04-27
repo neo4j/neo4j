@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
 import static org.neo4j.index.impl.lucene.LuceneDataSource.getDirectory;
 
@@ -66,7 +67,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     private final boolean createdNow;
     private Map<String, LruCache<String, Collection<Long>>> cache;
     private int updateCount;
-    private int commitBatchSize = 500000;
+    private final int commitBatchSize = 500000;
     private final RelationshipLookup relationshipLookup;
 
     interface RelationshipLookup
@@ -284,7 +285,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             throw new RuntimeException( e );
         }
     }
-    
+
     private void closeSearcher()
     {
         try
@@ -331,11 +332,13 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             LegacyIndexHits primitiveHits = null;
             if ( key == null || this.cache == null || !this.cache.containsKey( key ) )
             {
-                primitiveHits = new DocToIdIterator( result, Collections.<Long>emptyList(), null );
+                primitiveHits = new DocToIdIterator( result, Collections.<Long>emptyList(), null,
+                        PrimitiveLongCollections.emptySet() );
             }
             else
             {
-                primitiveHits = new DocToIdIterator( result, Collections.<Long>emptyList(), null )
+                primitiveHits = new DocToIdIterator( result, Collections.<Long>emptyList(), null,
+                        PrimitiveLongCollections.emptySet() )
                 {
                     private final Collection<Long> ids = new ArrayList<>();
 

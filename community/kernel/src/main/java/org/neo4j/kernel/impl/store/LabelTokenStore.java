@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -28,7 +28,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
@@ -45,13 +45,13 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
+            LogProvider logProvider,
             DynamicStringStore nameStore,
             StoreVersionMismatchHandler versionMismatchHandler,
             Monitors monitors )
     {
         super(fileName, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
+                fileSystemAbstraction, logProvider, nameStore, versionMismatchHandler, monitors );
     }
 
     @Override

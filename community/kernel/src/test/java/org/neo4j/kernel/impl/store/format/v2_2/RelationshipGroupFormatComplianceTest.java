@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.impl.TestStoreIdGenerator;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.standard.StandardStore;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -64,7 +64,7 @@ public class RelationshipGroupFormatComplianceTest
         Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         storeFactory = new StoreFactory(
-                config, idGeneratorFactory, pageCache, fsRule.get(), StringLogger.DEV_NULL, new Monitors() );
+                config, idGeneratorFactory, pageCache, fsRule.get(), NullLogProvider.getInstance(), new Monitors() );
     }
 
     @Test
@@ -119,6 +119,6 @@ public class RelationshipGroupFormatComplianceTest
                 new File( storeDir, DEFAULT_NAME + RELATIONSHIP_GROUP_STORE_NAME ),
                 new TestStoreIdGenerator(), pageCache,
                 fsRule.get(),
-                StringLogger.DEV_NULL );
+                NullLogProvider.getInstance() );
     }
 }

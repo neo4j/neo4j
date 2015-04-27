@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -29,8 +29,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.format.Store;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
@@ -59,11 +59,11 @@ public class StandardStore<RECORD, CURSOR extends Store.RecordCursor> extends Li
     private StoreChannel channel;
 
     public StandardStore( StoreFormat<RECORD, CURSOR> format, File dbFileName, StoreIdGenerator idGenerator,
-                         PageCache pageCache, FileSystemAbstraction fs, StringLogger log )
+                         PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider )
     {
         this(format, dbFileName, idGenerator, pageCache, fs,
                 new IdGeneratorRebuilder.FindHighestInUseRebuilderFactory(),
-                new StoreOpenCloseCycle( log, dbFileName, format, fs ) );
+                new StoreOpenCloseCycle( logProvider.getLog( StandardStore.class ), dbFileName, format, fs ) );
     }
 
     public StandardStore( StoreFormat<RECORD, CURSOR> format, File dbFileName, StoreIdGenerator idGenerator,

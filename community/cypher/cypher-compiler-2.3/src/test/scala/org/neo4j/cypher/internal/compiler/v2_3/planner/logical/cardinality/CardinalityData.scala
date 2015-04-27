@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.helpers.RandomizedTestSupport
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.RandomizedTestSupport
 
 trait CardinalityData {
   def forQuery(testUnit: CardinalityTestHelper#TestUnit): CardinalityTestHelper#TestUnit

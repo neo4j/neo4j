@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest.transactional.integration;
 
+import org.codehaus.jackson.JsonNode;
+import org.junit.Test;
+
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -31,9 +34,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -52,7 +52,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
@@ -303,7 +302,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin_and_execute_cypher_21_periodic_commit_that_returns_data_and_commit() throws Exception
+    public void begin_and_execute_cypher_22_periodic_commit_that_returns_data_and_commit() throws Exception
     {
         ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
         {
@@ -315,7 +314,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                 // begin and execute and commit
                 Response response = http.POST(
                         "/db/data/transaction/commit",
-                        quotedJson( "{ 'statements': [ { 'statement': 'CYPHER 2.1 USING PERIODIC COMMIT LOAD CSV FROM" +
+                        quotedJson( "{ 'statements': [ { 'statement': 'CYPHER 2.2 USING PERIODIC COMMIT LOAD CSV FROM" +
                                 " \\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
                 );
 
@@ -809,7 +808,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         // given
         final String hostname = "dummy.example.org";
         final String scheme = "http";
-        
+
         // when
         Response rs = http.withHeaders( XForwardUtil.X_FORWARD_HOST_HEADER_KEY, hostname )
                 .POST( "/db/data/transaction/commit", quotedJson(

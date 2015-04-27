@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -28,7 +28,7 @@ import javax.ws.rs.core.UriInfo;
 import org.junit.Test;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ConfigurationBuilder;
@@ -53,7 +53,8 @@ public class RootServiceDocTest
         when(configBuilder.configuration()).thenReturn( new Config() );
 
         RootService svc = new RootService( new CommunityNeoServer( configBuilder,
-                GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL).monitors(new Monitors())) );
+                GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() ).monitors( new Monitors() ),
+                NullLogProvider.getInstance() ) );
 
         EntityOutputFormat output = new EntityOutputFormat( new JsonFormat(), null, null );
         Response serviceDefinition = svc.getServiceDefinition( uriInfo, output );

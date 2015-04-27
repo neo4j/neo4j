@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
@@ -44,14 +45,16 @@ public class LuceneLabelScanWriter implements LabelScanWriter
     private final BitmapDocumentFormat format;
     private final IndexSearcher searcher;
 
-    private List<NodeLabelUpdate> updates;
+    private final List<NodeLabelUpdate> updates;
     private long currentRange;
+    private final Lock heldLock;
 
     public LuceneLabelScanWriter( LabelScanStorageStrategy.StorageService storage,
-                                  BitmapDocumentFormat format )
+                                  BitmapDocumentFormat format, Lock heldLock )
     {
         this.storage = storage;
         this.format = format;
+        this.heldLock = heldLock;
         currentRange = -1;
         updates = new ArrayList<>( format.bitmapFormat().rangeSize() );
         searcher = storage.acquireSearcher();
@@ -89,8 +92,15 @@ public class LuceneLabelScanWriter implements LabelScanWriter
         }
         finally
         {
-            storage.releaseSearcher( searcher );
-            storage.refreshSearcher();
+            try
+            {
+                storage.releaseSearcher( searcher );
+                storage.refreshSearcher();
+            }
+            finally
+            {
+                heldLock.unlock();
+            }
         }
     }
 
@@ -113,7 +123,6 @@ public class LuceneLabelScanWriter implements LabelScanWriter
         }
         return fields;
     }
-
 
     private void flush() throws IOException, IndexCapacityExceededException
     {

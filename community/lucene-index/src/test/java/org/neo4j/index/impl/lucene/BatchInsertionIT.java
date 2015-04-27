@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -159,7 +159,7 @@ public class BatchInsertionIT
 
     @Ignore
     @Test
-    public void testInsertionSpeed()
+    public void testInsertionSpeed() throws Exception
     {
         BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDir().getAbsolutePath() );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );

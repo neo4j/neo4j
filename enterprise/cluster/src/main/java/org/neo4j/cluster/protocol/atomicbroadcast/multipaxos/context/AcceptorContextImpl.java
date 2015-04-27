@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -24,7 +24,8 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.LogProvider;
 
 class AcceptorContextImpl
         extends AbstractContextImpl
@@ -33,10 +34,10 @@ class AcceptorContextImpl
     private final AcceptorInstanceStore instanceStore;
 
     AcceptorContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-                         Logging logging,
+                         LogService logService,
                          Timeouts timeouts, AcceptorInstanceStore instanceStore )
     {
-        super( me, commonState, logging, timeouts );
+        super( me, commonState, logService, timeouts );
         this.instanceStore = instanceStore;
     }
 
@@ -64,10 +65,10 @@ class AcceptorContextImpl
         instanceStore.clear();
     }
 
-    public AcceptorContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,
+    public AcceptorContextImpl snapshot( CommonContextState commonStateSnapshot, LogService logService, Timeouts timeouts,
                                          AcceptorInstanceStore instanceStore )
     {
-        return new AcceptorContextImpl( me, commonStateSnapshot, logging, timeouts, instanceStore );
+        return new AcceptorContextImpl( me, commonStateSnapshot, logService, timeouts, instanceStore );
     }
 
     @Override

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.function.Factory;
 import org.neo4j.function.primitive.PrimitiveLongPredicate;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.executor.Task;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
@@ -53,6 +54,15 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
             return queuedBatches.get() <= queueSizeThreshold;
         }
     };
+    protected final AtomicLong begunBatches = new AtomicLong();
+    private final PrimitiveLongPredicate rightBeginTicket = new PrimitiveLongPredicate()
+    {
+        @Override
+        public boolean accept( long ticket )
+        {
+            return begunBatches.get() == ticket;
+        }
+    };
 
     // Time stamp for when we processed the last queued batch received from upstream.
     // Useful for tracking how much time we spend waiting for batches from upstream.
@@ -67,9 +77,9 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     }
 
     @Override
-    public void start( boolean orderedTickets )
+    public void start( int orderingGuarantees )
     {
-        super.start( orderedTickets );
+        super.start( orderingGuarantees );
         this.executor = new DynamicTaskExecutor<>( initialProcessorCount, maxProcessors, workAheadSize,
                 DEFAULT_PARK_STRATEGY, name(), new Factory<Sender>()
                 {
@@ -95,17 +105,28 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
             {
                 assertHealthy();
                 sender.initialize( ticket );
-                long startTime = currentTimeMillis();
                 try
                 {
-                    process( batch, sender );
-                    if ( downstream == null )
+                    // If we're ordering tickets we will force calls to #permit to be ordered by ticket
+                    // since grabbing a permit may include locking.
+                    if ( guarantees( ORDER_PROCESS ) )
                     {
-                        // No batches were emmitted so we couldn't track done batches in that way.
-                        // We can see that we're the last step so increment here instead
-                        doneBatches.incrementAndGet();
+                        await( rightBeginTicket, ticket );
                     }
-                    totalProcessingTime.add( currentTimeMillis()-startTime-sender.sendTime );
+                    try ( Resource precondition = permit( batch ) )
+                    {
+                        begunBatches.incrementAndGet();
+                        long startTime = currentTimeMillis();
+                        process( batch, sender );
+                        if ( downstream == null )
+                        {
+                            // No batches were emmitted so we couldn't track done batches in that way.
+                            // We can see that we're the last step so increment here instead
+                            doneBatches.incrementAndGet();
+                        }
+                        totalProcessingTime.add( currentTimeMillis()-startTime-sender.sendTime );
+                    }
+
                     decrementQueue();
                     checkNotifyEndDownstream();
                 }
@@ -117,6 +138,16 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
         } );
 
         return idleTime;
+    }
+
+    /**
+     * Called before {@link #process(Object, BatchSender) processing} and time measurement starts.
+     * Coordination with other processors should happen in here.
+     * If total ordering is enabled then calls will arrive in order of ticket.
+     */
+    protected Resource permit( T batch ) throws Throwable
+    {
+        return Resource.EMPTY;
     }
 
     private void decrementQueue()
@@ -186,9 +217,9 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     @SuppressWarnings( "unchecked" )
     private void sendDownstream( long ticket, Object batch )
     {
-        if ( orderedTickets )
+        if ( guarantees( ORDER_SEND_DOWNSTREAM ) )
         {
-            await( rightTicket, ticket );
+            await( rightDoneTicket, ticket );
         }
         downstreamIdleTime.addAndGet( downstream.receive( ticket, batch ) );
         doneBatches.incrementAndGet();

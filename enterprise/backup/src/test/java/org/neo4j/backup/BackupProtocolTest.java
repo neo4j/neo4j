@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -30,8 +30,8 @@ import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.jboss.netty.buffer.ChannelBuffers.EMPTY_BUFFER;
 import static org.junit.Assert.assertEquals;
@@ -68,15 +68,14 @@ public class BackupProtocolTest
         // GIVEN
         Response<Void> response = Response.EMPTY;
         StoreId storeId = response.getStoreId();
-        DevNullLoggingService logging = new DevNullLoggingService();
         String host = "localhost";
         int port = BackupServer.DEFAULT_PORT;
         LifeSupport life = new LifeSupport();
 
-        BackupClient client = life.add( new BackupClient( host, port, logging, storeId, 1000,
+        BackupClient client = life.add( new BackupClient( host, port, NullLogProvider.getInstance(), storeId, 1000,
                 mock( ResponseUnpacker.class ), mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ) ) );
         ControlledBackupInterface backup = new ControlledBackupInterface();
-        life.add( new BackupServer( backup, new HostnamePort( host, port ), logging, mock( ByteCounterMonitor.class ),
+        life.add( new BackupServer( backup, new HostnamePort( host, port ), NullLogProvider.getInstance(), mock( ByteCounterMonitor.class ),
                 mock( RequestMonitor.class )) );
         life.start();
 

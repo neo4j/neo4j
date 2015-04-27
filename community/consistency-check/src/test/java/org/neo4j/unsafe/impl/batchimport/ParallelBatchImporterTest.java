@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -57,8 +57,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.RandomRule;
@@ -121,7 +120,7 @@ public class ParallelBatchImporterTest
         public int maxNumberOfProcessors()
         {
             // Let's really crank up the number of threads to try and flush out all and any parallelization issues.
-            return random.nextIntBetween( Runtime.getRuntime().availableProcessors(), 100 );
+            return random.intBetween( Runtime.getRuntime().availableProcessors(), 100 );
         }
     };
     private final Function<Configuration,WriterFactory> writerFactory;
@@ -164,7 +163,7 @@ public class ParallelBatchImporterTest
         // GIVEN
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
         final BatchImporter inserter = new ParallelBatchImporter( directory.absolutePath(),
-                new DefaultFileSystemAbstraction(), config, new DevNullLoggingService(),
+                new DefaultFileSystemAbstraction(), config, NullLogProvider.getInstance(),
                 processorAssigner, writerFactory, EMPTY );
 
         boolean successful = false;
@@ -223,13 +222,13 @@ public class ParallelBatchImporterTest
         }
     }
 
-    private void assertConsistent( String storeDir ) throws ConsistencyCheckIncompleteException
+    private void assertConsistent( String storeDir ) throws ConsistencyCheckIncompleteException, IOException
     {
         ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
         Result result = consistencyChecker.runFullConsistencyCheck( storeDir,
                 new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) ),
                 ProgressMonitorFactory.NONE,
-                StringLogger.DEV_NULL );
+                NullLogProvider.getInstance() );
         assertTrue( "Database contains inconsistencies, there should be a report in " + storeDir,
                 result.isSuccessful() );
     }

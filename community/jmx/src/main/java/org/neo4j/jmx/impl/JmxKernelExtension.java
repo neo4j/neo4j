@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -31,23 +31,23 @@ import javax.management.remote.JMXServiceURL;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class JmxKernelExtension implements Lifecycle
 {
     private KernelData kernelData;
-    private StringLogger logger;
+    private Log log;
     private List<Neo4jMBean> beans;
     private MBeanServer mbs;
     private ManagementSupport support;
     private JMXServiceURL url;
 
-    public JmxKernelExtension( KernelData kernelData, Logging logging )
+    public JmxKernelExtension( KernelData kernelData, LogProvider logProvider )
     {
         this.kernelData = kernelData;
-        this.logger = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -65,7 +65,7 @@ public class JmxKernelExtension implements Lifecycle
         }
         catch ( Exception e )
         {
-            logger.info( "Failed to register Kernel JMX Bean" );
+            log.info( "Failed to register Kernel JMX Bean" );
         }
 
         for ( ManagementBeanProvider provider : Service.load( ManagementBeanProvider.class ) )
@@ -80,7 +80,7 @@ public class JmxKernelExtension implements Lifecycle
             }
             catch ( Exception e )
             { // Unexpected exception
-                logger.info( "Failed to register JMX Bean " + provider + " (" + e + ")" );
+                log.info( "Failed to register JMX Bean " + provider + " (" + e + ")" );
             }
         }
         try
@@ -91,7 +91,7 @@ public class JmxKernelExtension implements Lifecycle
         }
         catch ( Exception e )
         {
-            logger.info( "Failed to register Configuration JMX Bean" );
+            log.info( "Failed to register Configuration JMX Bean" );
         }
     }
 
@@ -116,7 +116,7 @@ public class JmxKernelExtension implements Lifecycle
             }
             catch ( Exception e )
             {
-                logger.warn( "Could not unregister MBean " + bean.objectName.toString(), e );
+                log.warn( "Could not unregister MBean " + bean.objectName.toString(), e );
             }
         }
     }

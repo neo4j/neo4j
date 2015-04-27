@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,17 +19,16 @@
  */
 package org.neo4j.server.database;
 
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
 
 public interface Database extends Lifecycle
 {
     interface Factory
     {
-        Database newDatabase(Config config, InternalAbstractGraphDatabase.Dependencies dependencies);
+        Database newDatabase(Config config, CommunityFacadeFactory.Dependencies dependencies);
     }
 
     public String getLocation();
@@ -37,6 +36,4 @@ public interface Database extends Lifecycle
     public GraphDatabaseAPI getGraph();
 
     public abstract boolean isRunning();
-
-    public Logging getLogging();
 }

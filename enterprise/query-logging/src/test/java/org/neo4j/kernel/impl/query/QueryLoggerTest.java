@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -22,77 +22,79 @@ package org.neo4j.kernel.impl.query;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-import org.mockito.InOrder;
 
-import org.neo4j.function.Factory;
 import org.neo4j.helpers.FakeClock;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.QueryLogger;
-import org.neo4j.kernel.impl.util.StringLogger;
 
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.core.Is.is;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class QueryLoggerTest
 {
+    public static final String SESSION_1_NAME = "{session one}";
+    public static final String SESSION_2_NAME = "{session two}";
+    public static final String SESSION_3_NAME = "{session three}";
+    public static final String QUERY_1 = "MATCH (n) RETURN n";
+    public static final String QUERY_2 = "MATCH (a)--(b) RETURN b.name";
+    public static final String QUERY_3 = "MATCH (c)-[:FOO]->(d) RETURN d.size";
+
     @Test
     public void shouldLogQuerySlowerThanThreshold() throws Exception
     {
         // given
-        StringLogger logger = mock( StringLogger.class );
-        QuerySession session = session( "{the session}" );
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
+        QuerySession session = session( SESSION_1_NAME );
         FakeClock clock = new FakeClock();
-        QueryLogger queryLogger = new QueryLogger( clock, new LoggerFactory( logger ), 10/*ms*/ );
-        queryLogger.init();
+        QueryLogger queryLogger = new QueryLogger( clock, logProvider.getLog( getClass() ), 10/*ms*/ );
 
         // when
-        queryLogger.startQueryExecution( session, "MATCH (n) RETURN n" );
+        queryLogger.startQueryExecution( session, QUERY_1 );
         clock.forward( 11, TimeUnit.MILLISECONDS );
         queryLogger.endSuccess( session );
 
         // then
-        verify( logger ).logMessage( "SUCCESS 11 ms: {the session} - MATCH (n) RETURN n" );
+        logProvider.assertExactly(
+                inLog( getClass() ).info( "%d ms: %s - %s", 11L, SESSION_1_NAME, QUERY_1 )
+        );
     }
 
     @Test
     public void shouldNotLogQueryFasterThanThreshold() throws Exception
     {
         // given
-        StringLogger logger = mock( StringLogger.class );
-        QuerySession session = session( "{the session}" );
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
+        QuerySession session = session( SESSION_1_NAME );
         FakeClock clock = new FakeClock();
-        QueryLogger queryLogger = new QueryLogger( clock, new LoggerFactory( logger ), 10/*ms*/ );
-        queryLogger.init();
+        QueryLogger queryLogger = new QueryLogger( clock, logProvider.getLog( getClass() ), 10/*ms*/ );
 
         // when
-        queryLogger.startQueryExecution( session, "MATCH (n) RETURN n" );
+        queryLogger.startQueryExecution( session, QUERY_1 );
         clock.forward( 9, TimeUnit.MILLISECONDS );
         queryLogger.endSuccess( session );
 
         // then
-        verifyZeroInteractions( logger );
+        logProvider.assertNoLoggingOccurred();
     }
 
     @Test
     public void shouldKeepTrackOfDifferentSessions() throws Exception
     {
         // given
-        StringLogger logger = mock( StringLogger.class );
-        QuerySession session1 = session( "{session one}" );
-        QuerySession session2 = session( "{session two}" );
-        QuerySession session3 = session( "{session three}" );
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
+        QuerySession session1 = session( SESSION_1_NAME );
+        QuerySession session2 = session( SESSION_2_NAME );
+        QuerySession session3 = session( SESSION_3_NAME );
         FakeClock clock = new FakeClock();
-        QueryLogger queryLogger = new QueryLogger( clock, new LoggerFactory( logger ), 10/*ms*/ );
-        queryLogger.init();
+        QueryLogger queryLogger = new QueryLogger( clock, logProvider.getLog( getClass() ), 10/*ms*/ );
 
         // when
-        queryLogger.startQueryExecution( session1, "MATCH (a) RETURN a" );
+        queryLogger.startQueryExecution( session1, QUERY_1 );
         clock.forward( 1, TimeUnit.MILLISECONDS );
-        queryLogger.startQueryExecution( session2, "MATCH (b) RETURN b" );
+        queryLogger.startQueryExecution( session2, QUERY_2 );
         clock.forward( 1, TimeUnit.MILLISECONDS );
-        queryLogger.startQueryExecution( session3, "MATCH (c) RETURN c" );
+        queryLogger.startQueryExecution( session3, QUERY_3 );
         clock.forward( 7, TimeUnit.MILLISECONDS );
         queryLogger.endSuccess( session3 );
         clock.forward( 7, TimeUnit.MILLISECONDS );
@@ -101,30 +103,31 @@ public class QueryLoggerTest
         queryLogger.endSuccess( session1 );
 
         // then
-        InOrder order = inOrder( logger );
-        order.verify( logger ).logMessage( "SUCCESS 15 ms: {session two} - MATCH (b) RETURN b" );
-        order.verify( logger ).logMessage( "SUCCESS 23 ms: {session one} - MATCH (a) RETURN a" );
-        verifyNoMoreInteractions( logger );
+        logProvider.assertExactly(
+                inLog( getClass() ).info( "%d ms: %s - %s", 15L, SESSION_2_NAME, QUERY_2 ),
+                inLog( getClass() ).info( "%d ms: %s - %s", 23L, SESSION_1_NAME, QUERY_1 )
+        );
     }
 
     @Test
     public void shouldLogQueryOnFailureEvenIfFasterThanThreshold() throws Exception
     {
         // given
-        StringLogger logger = mock( StringLogger.class );
-        QuerySession session = session( "{the session}" );
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
+        QuerySession session = session( SESSION_1_NAME );
         FakeClock clock = new FakeClock();
-        QueryLogger queryLogger = new QueryLogger( clock, new LoggerFactory( logger ), 10/*ms*/ );
-        queryLogger.init();
+        QueryLogger queryLogger = new QueryLogger( clock, logProvider.getLog( getClass() ), 10/*ms*/ );
         RuntimeException failure = new RuntimeException();
 
         // when
-        queryLogger.startQueryExecution( session, "MATCH (n) RETURN n" );
+        queryLogger.startQueryExecution( session, QUERY_1 );
         clock.forward( 1, TimeUnit.MILLISECONDS );
         queryLogger.endFailure( session, failure );
 
         // then
-        verify( logger ).logMessage( "FAILURE 1 ms: {the session} - MATCH (n) RETURN n", failure );
+        logProvider.assertExactly(
+                inLog( getClass() ).error( is( "1 ms: {session one} - MATCH (n) RETURN n" ), sameInstance( failure ) )
+        );
     }
 
     private static QuerySession session( final String data )
@@ -137,21 +140,5 @@ public class QueryLoggerTest
                 return data;
             }
         };
-    }
-
-    private static class LoggerFactory implements Factory<StringLogger>
-    {
-        private final StringLogger logger;
-
-        LoggerFactory( StringLogger logger )
-        {
-            this.logger = logger;
-        }
-
-        @Override
-        public StringLogger newInstance()
-        {
-            return logger;
-        }
     }
 }

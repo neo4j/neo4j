@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -44,8 +44,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterListener.Adapter;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.enterprise.functional.DumpPortListenerOnNettyBindFailure;
@@ -186,9 +185,8 @@ public class StandaloneClusterClientIT
             config.put( cluster_server.name(), ":" + (5000 + i) );
             config.put( server_id.name(), "" + i );
             config.put( initial_hosts.name(), ":5001" );
-            Logging logging = new DevNullLoggingService();
             ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-            final ClusterClient client = new ClusterClient( new Monitors(), adapt( new Config( config ) ), logging,
+            final ClusterClient client = new ClusterClient( new Monitors(), adapt( new Config( config ) ), NullLogService.getInstance(),
                     new ServerIdElectionCredentialsProvider(), objectStreamFactory, objectStreamFactory );
             final CountDownLatch latch = new CountDownLatch( 1 );
             client.addClusterListener( new ClusterListener.Adapter()

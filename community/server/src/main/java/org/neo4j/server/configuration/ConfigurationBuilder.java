@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -27,7 +27,6 @@ import java.util.Map;
 import org.apache.commons.configuration.Configuration;
 
 import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 
 /**
@@ -42,7 +41,7 @@ public interface ConfigurationBuilder
     public Config configuration();
 
     /**
-     * @return the properties that are used by {@link InternalAbstractGraphDatabase a graph database} to build database properties.
+     * @return the properties that are used by {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory a graph database} to build database properties.
      */
     public Map<String, String> getDatabaseTuningProperties();
 

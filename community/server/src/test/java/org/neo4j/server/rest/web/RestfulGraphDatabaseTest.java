@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -44,7 +44,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ConfigWrappingConfiguration;
 import org.neo4j.server.configuration.ServerSettings;
@@ -94,12 +94,12 @@ public class RestfulGraphDatabaseTest
     private static GraphDbHelper helper;
     private static EntityOutputFormat output;
     private static LeaseManager leaseManager;
-    private static InternalAbstractGraphDatabase graph;
+    private static GraphDatabaseAPI graph;
 
     @BeforeClass
     public static void doBefore() throws IOException
     {
-        graph = (InternalAbstractGraphDatabase)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graph = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase(graph);
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );

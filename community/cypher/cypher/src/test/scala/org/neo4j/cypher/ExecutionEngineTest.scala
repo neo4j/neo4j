@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,12 +21,11 @@ package org.neo4j.cypher
 
 import java.io.{File, PrintWriter}
 import java.util.concurrent.TimeUnit
-
-import org.neo4j.cypher.internal.PathImpl
-import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_3.planner.PlanningMonitor
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.fs.FileUtils
@@ -1016,7 +1015,7 @@ order by a.COL1""")
       writer.println("1,2,3")
       writer.println("4,5,6")
     }
-    val result = eengine.execute(s"cypher 2.1 using periodic commit load csv from '$url' as line create x return x")
+    val result = eengine.execute(s"cypher 2.2 using periodic commit load csv from '$url' as line create x return x")
     result should have size 2
   }
 

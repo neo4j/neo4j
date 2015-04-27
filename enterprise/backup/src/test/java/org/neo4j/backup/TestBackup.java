@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,16 +19,16 @@
  */
 package org.neo4j.backup;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,27 +38,32 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
+import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.subprocess.SubProcess;
 
 import static java.lang.Integer.parseInt;
+
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
@@ -509,7 +514,7 @@ public class TestBackup
 
     private static boolean checkLogFileExistence( String directory )
     {
-        return new File( directory, StringLogger.DEFAULT_NAME ).exists();
+        return new File( directory, StoreLogService.INTERNAL_LOG_NAME ).exists();
     }
 
     private long lastTxChecksumOf( File storeDir )
@@ -558,23 +563,33 @@ public class TestBackup
         {
             @Override
             protected GraphDatabaseService newDatabase( String path, Map<String,String> config,
-                    Dependencies dependencies )
+                    GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
-                return new EmbeddedGraphDatabase( path, config, dependencies )
+                config.put(GraphDatabaseSettings.store_dir.name(), path);
+                return new CommunityFacadeFactory()
                 {
+
                     @Override
-                    protected TransactionHeaderInformationFactory createHeaderInformationFactory()
+                    protected EditionModule createEdition( PlatformModule platformModule )
                     {
-                        return new TransactionHeaderInformationFactory.WithRandomBytes()
+                        return new CommunityEditionModule( platformModule )
                         {
+
                             @Override
-                            protected TransactionHeaderInformation createUsing( byte[] additionalHeader )
+                            protected TransactionHeaderInformationFactory createHeaderInformationFactory()
                             {
-                                return new TransactionHeaderInformation( 1, 2, additionalHeader );
+                                return new TransactionHeaderInformationFactory.WithRandomBytes()
+                                {
+                                    @Override
+                                    protected TransactionHeaderInformation createUsing( byte[] additionalHeader )
+                                    {
+                                        return new TransactionHeaderInformation( 1, 2, additionalHeader );
+                                    }
+                                };
                             }
                         };
                     }
-                };
+                }.newFacade( config, dependencies );
             }
         };
         return dbFactory.newEmbeddedDatabaseBuilder( path.getPath() ).

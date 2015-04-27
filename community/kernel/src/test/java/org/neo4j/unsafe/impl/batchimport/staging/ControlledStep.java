@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -167,7 +167,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     }
 
     @Override
-    public void start( boolean orderedTickets )
+    public void start( int orderingGuarantees )
     {
     }
 

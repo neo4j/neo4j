@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -42,20 +42,20 @@ import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 
 public class SwitchToMaster implements AutoCloseable
 {
-    private Logging logging;
-    private ConsoleLogger console;
+    private LogService logService;
+    private Log userLog;
     private GraphDatabaseAPI graphDb;
     private HaIdGeneratorFactory idGeneratorFactory;
     private Config config;
@@ -67,13 +67,13 @@ public class SwitchToMaster implements AutoCloseable
     private ByteCounterMonitor masterByteCounterMonitor;
     private RequestMonitor masterRequestMonitor;
 
-    public SwitchToMaster( Logging logging, ConsoleLogger console, GraphDatabaseAPI graphDb,
+    public SwitchToMaster( LogService logService, GraphDatabaseAPI graphDb,
             HaIdGeneratorFactory idGeneratorFactory, Config config, Supplier<SlaveFactory> slaveFactorySupplier,
             DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
             DataSourceManager dataSourceManager, ByteCounterMonitor masterByteCounterMonitor, RequestMonitor masterRequestMonitor, MasterImpl.Monitor masterImplMonitor)
     {
-        this.logging = logging;
-        this.console = console;
+        this.logService = logService;
+        this.userLog = logService.getUserLog( getClass() );
         this.graphDb = graphDb;
         this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
@@ -95,7 +95,7 @@ public class SwitchToMaster implements AutoCloseable
      */
     public URI switchToMaster( LifeSupport haCommunicationLife, URI me )
     {
-        console.log( "I am " + myId() + ", moving to master" );
+        userLog.info( "I am %s, moving to master", myId() );
 
         /*
          * Synchronizing on the xaDataSourceManager makes sense if you also look at HaKernelPanicHandler. In
@@ -112,15 +112,14 @@ public class SwitchToMaster implements AutoCloseable
 
             MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb );
 
-            MasterImpl masterImpl = new MasterImpl( spi, masterImplMonitor,
-                    logging, config );
+            MasterImpl masterImpl = new MasterImpl( spi, masterImplMonitor, config );
 
             DependencyResolver resolver = neoStoreXaDataSource.getDependencyResolver();
             TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup(
                     resolver.resolveDependency( TransactionIdStore.class ),
                     resolver.resolveDependency( LogicalTransactionStore.class ) );
-            MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
-                    new BranchDetectingTxVerifier( logging.getMessagesLog( BranchDetectingTxVerifier.class ),
+            MasterServer masterServer = new MasterServer( masterImpl, logService.getInternalLogProvider(), serverConfig(),
+                    new BranchDetectingTxVerifier( logService.getInternalLogProvider(),
                             txChecksumLookup ), masterByteCounterMonitor, masterRequestMonitor );
             haCommunicationLife.add( masterImpl );
             haCommunicationLife.add( masterServer );
@@ -130,7 +129,7 @@ public class SwitchToMaster implements AutoCloseable
 
             URI masterHaURI = getMasterUri( me, masterServer );
             clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, neoStoreXaDataSource.getStoreId() );
-            console.log( "I am " + myId() + ", successfully moved to master" );
+            userLog.info( "I am %s, successfully moved to master", myId() );
 
             slaveFactorySupplier.get().setStoreId( neoStoreXaDataSource.getStoreId() );
 
@@ -188,8 +187,8 @@ public class SwitchToMaster implements AutoCloseable
     @Override
     public void close() throws Exception
     {
-        logging = null;
-        console = null;
+        logService = null;
+        userLog = null;
         graphDb = null;
         idGeneratorFactory = null;
         config = null;

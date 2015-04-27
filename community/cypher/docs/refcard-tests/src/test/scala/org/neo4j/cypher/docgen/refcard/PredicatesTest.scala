@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -151,6 +151,16 @@ n.property =~ "Tob.*"
 RETURN n###
 
 Regular expression.
+
+###assertion=returns-one
+MATCH n
+WHERE HAS(n.property) AND
+
+n.property LIKE "Tob%"
+
+RETURN n###
+
+String pattern matching.
 
 ###assertion=returns-four
 MATCH n, m

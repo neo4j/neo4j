@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,17 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException
-import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, LONG, OBJECT, OBJECTARRAY, STRING}
-import org.neo4j.cypher.internal.compiler.v2_3.birk.{CodeGenerator, JavaSymbol, Namer}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, LONG, NUMBER, OBJECT, OBJECT_ARRAY, STRING, MAP}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.Namer
+import org.neo4j.cypher.internal.compiler.v2_3.birk.{CodeGenerator, JavaSymbol}
 
 sealed trait ProjectionInstruction extends Instruction {
   def projectedVariable: JavaSymbol
   def generateCode() = ""
 }
 
+object ProjectionInstruction {
+  def literal(value: Long): ProjectionInstruction = ProjectLiteral(JavaSymbol(value.toString + "L", LONG))
+  def literal(value: Double): ProjectionInstruction = ProjectLiteral(JavaSymbol(value.toString, DOUBLE))
+  def literal(value: String): ProjectionInstruction = ProjectLiteral(JavaSymbol( s""""$value"""", STRING))
+  def literal(value: Boolean): ProjectionInstruction = ???
+  def parameter(key: String): ProjectionInstruction = ProjectParameter(key)
+
+  def add(lhs: ProjectionInstruction, rhs: ProjectionInstruction): ProjectionInstruction = ProjectAddition(lhs, rhs)
+  def sub(lhs: ProjectionInstruction, rhs: ProjectionInstruction): ProjectionInstruction = ProjectSubtraction(lhs, rhs)
+}
+
 case class ProjectNodeProperty(token: Option[Int], propName: String, nodeIdVar: String, namer: Namer) extends ProjectionInstruction {
-  private val propKeyVar = token.map(_.toString).getOrElse(namer.next())
+  private val propKeyVar = token.map(_.toString).getOrElse(namer.newVarName())
 
   def generateInit() = if (token.isEmpty)
       s"""if ( $propKeyVar == -1 )
@@ -48,7 +59,7 @@ case class ProjectNodeProperty(token: Option[Int], propName: String, nodeIdVar: 
 }
 
 case class ProjectRelProperty(token: Option[Int], propName: String, relIdVar: String, namer: Namer) extends ProjectionInstruction {
-  private val propKeyVar = token.map(_.toString).getOrElse(namer.next())
+  private val propKeyVar = token.map(_.toString).getOrElse(namer.newVarName())
 
   def generateInit() =
     if (token.isEmpty)
@@ -119,13 +130,51 @@ case class ProjectAddition(lhs: ProjectionInstruction, rhs: ProjectionInstructio
   override def _importedClasses(): Set[String] = Set("org.neo4j.cypher.internal.compiler.v2_3.birk.CompiledMathHelper")
 }
 
+case class ProjectSubtraction(lhs: ProjectionInstruction, rhs: ProjectionInstruction) extends ProjectionInstruction {
+
+  def projectedVariable: JavaSymbol = {
+    val leftTerm = lhs.projectedVariable
+    val rightTerm = rhs.projectedVariable
+    (leftTerm.javaType, rightTerm.javaType) match {
+      case (LONG, LONG) => JavaSymbol(s"${leftTerm.name} - ${rightTerm.name}", LONG)
+      case (LONG, DOUBLE) => JavaSymbol(s"${leftTerm.name} - ${rightTerm.name}", DOUBLE)
+
+      case (DOUBLE, DOUBLE) => JavaSymbol(s"${leftTerm.name} - ${rightTerm.name}", DOUBLE)
+      case (DOUBLE, LONG) => JavaSymbol(s"${leftTerm.name} - ${rightTerm.name}", DOUBLE)
+
+      case (_, _) => JavaSymbol(s"CompiledMathHelper.subtract( ${leftTerm.name}, ${rightTerm.name} )", NUMBER)
+    }
+  }
+
+  def generateInit() = ""
+
+  def fields() = ""
+
+  override def _importedClasses(): Set[String] = Set("org.neo4j.cypher.internal.compiler.v2_3.birk.CompiledMathHelper")
+}
+
 case class ProjectCollection(instructions: Seq[ProjectionInstruction]) extends ProjectionInstruction {
 
   override def children: Seq[Instruction] = instructions
 
   def generateInit() = ""
 
-  def projectedVariable = JavaSymbol(instructions.map(_.projectedVariable.name).mkString("new Object[]{", ",", "}"), OBJECTARRAY)
+  def projectedVariable = JavaSymbol(instructions.map(_.projectedVariable.name).mkString("new Object[]{", ",", "}"), OBJECT_ARRAY)
+
+  def fields() = ""
+}
+
+case class ProjectMap(instructions: Map[String, ProjectionInstruction]) extends ProjectionInstruction {
+
+  override def children: Seq[Instruction] = instructions.values.toSeq
+
+  def generateInit() = ""
+
+  def projectedVariable = JavaSymbol(
+    instructions.map {
+      case (key, value) => s""""$key", ${value.projectedVariable.name}"""
+    }
+    .mkString("org.neo4j.helpers.collection.MapUtil.map(", ",", ")"), MAP)
 
   def fields() = ""
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -29,12 +29,18 @@ import org.neo4j.packstream.PackOutput;
 public class ChunkedOutput implements PackOutput
 {
     public static final int CHUNK_HEADER_SIZE = 2;
+    public static final int MESSAGE_BOUNDARY = 0;
+
     private final int bufferSize;
+    private final int maxChunkSize;
+
     private ByteBuf buffer;
     private ChannelHandlerContext channel;
     private int currentChunkHeaderOffset;
+
     /** Are currently in the middle of writing a chunk? */
     private boolean chunkOpen = false;
+
     private Runnable onMessageComplete = new Runnable()
     {
         @Override
@@ -42,11 +48,16 @@ public class ChunkedOutput implements PackOutput
         {
             try
             {
-                closeCurrentChunk();
+                closeChunkIfOpen();
+
+                // Ensure there's space to write the message boundary
+                if ( buffer.writableBytes() < CHUNK_HEADER_SIZE )
+                {
+                    flush();
+                }
 
                 // Write message boundary
-                ensure( CHUNK_HEADER_SIZE );
-                putShort( (short) 0 );
+                buffer.writeShort( MESSAGE_BOUNDARY );
 
                 // Mark us as not currently in a chunk
                 chunkOpen = false;
@@ -68,11 +79,13 @@ public class ChunkedOutput implements PackOutput
     public ChunkedOutput( int bufferSize )
     {
         this.bufferSize = bufferSize;
+        this.maxChunkSize = bufferSize - CHUNK_HEADER_SIZE;
     }
 
     @Override
     public PackOutput ensure( int size ) throws IOException
     {
+        assert size <= maxChunkSize : size + " > " + maxChunkSize;
         if ( buffer == null )
         {
             newBuffer();
@@ -95,14 +108,12 @@ public class ChunkedOutput implements PackOutput
     @Override
     public PackOutput flush() throws IOException
     {
-        if ( chunkOpen )
+        if ( buffer != null && buffer.readableBytes() > 0 )
         {
-            closeCurrentChunk();
+            closeChunkIfOpen();
+            channel.writeAndFlush( buffer );
+            newBuffer();
         }
-
-        channel.writeAndFlush( buffer );
-        newBuffer();
-
         return this;
     }
 
@@ -152,10 +163,11 @@ public class ChunkedOutput implements PackOutput
         int index = 0;
         while ( index < length )
         {
-            int amountToWrite = Math.min( buffer.writableBytes(), length - index );
+            int amountToWrite = Math.min( buffer == null ? maxChunkSize : buffer.writableBytes() - CHUNK_HEADER_SIZE,
+                    length - index );
             ensure( amountToWrite );
 
-            buffer.writeBytes( data, offset, amountToWrite );
+            buffer.writeBytes( data, offset + index, amountToWrite );
             index += amountToWrite;
 
             if ( buffer.writableBytes() == 0 )
@@ -166,10 +178,14 @@ public class ChunkedOutput implements PackOutput
         return this;
     }
 
-    private void closeCurrentChunk()
+    private void closeChunkIfOpen()
     {
-        int chunkSize = buffer.writerIndex() - (currentChunkHeaderOffset + CHUNK_HEADER_SIZE);
-        buffer.setShort( currentChunkHeaderOffset, chunkSize );
+        if ( chunkOpen )
+        {
+            int chunkSize = buffer.writerIndex() - (currentChunkHeaderOffset + CHUNK_HEADER_SIZE);
+            buffer.setShort( currentChunkHeaderOffset, chunkSize );
+            chunkOpen = false;
+        }
     }
 
     private void newBuffer()

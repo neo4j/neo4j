@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -30,8 +30,9 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.cluster.util.Quorums.isQuorum;
 
@@ -47,7 +48,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     private final HighAvailabilityMemberContext context;
     private final AvailabilityGuard availabilityGuard;
     private final ClusterMemberEvents events;
-    private StringLogger logger;
+    private Log log;
     private Iterable<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
     private volatile HighAvailabilityMemberState state;
     private StateMachineClusterEventListener eventsListener;
@@ -57,14 +58,14 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     public HighAvailabilityMemberStateMachine( HighAvailabilityMemberContext context,
                                                AvailabilityGuard availabilityGuard,
                                                ClusterMembers members, ClusterMemberEvents events, Election election,
-                                               StringLogger logger )
+                                               LogProvider logProvider )
     {
         this.context = context;
         this.availabilityGuard = availabilityGuard;
         this.members = members;
         this.events = events;
         this.election = election;
-        this.logger = logger;
+        this.log = logProvider.getLog( getClass() );
         state = HighAvailabilityMemberState.PENDING;
     }
 
@@ -119,6 +120,11 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         return state;
     }
 
+    public boolean isMaster()
+    {
+        return getCurrentState() == HighAvailabilityMemberState.MASTER;
+    }
+
     @Override
     public String description()
     {
@@ -161,7 +167,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                         availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
                     }
 
-                    logger.debug( "Got masterIsElected(" + coordinatorId + "), moved to " + state + " from " + oldState
+                    log.debug( "Got masterIsElected(" + coordinatorId + "), moved to " + state + " from " + oldState
                             + ". Previous elected master is " + previousElected );
                 }
             }
@@ -183,7 +189,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                         HighAvailabilityMemberState oldState = state;
                         context.setAvailableHaMasterId( roleUri );
                         state = state.masterIsAvailable( context, instanceId, roleUri );
-                        logger.debug( "Got masterIsAvailable(" + instanceId + "), moved to " + state + " from " +
+                        log.debug( "Got masterIsAvailable(" + instanceId + "), moved to " + state + " from " +
                                 oldState );
                         final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
                                 state, instanceId, roleUri );
@@ -208,7 +214,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 {
                     HighAvailabilityMemberState oldState = state;
                     state = state.slaveIsAvailable( context, instanceId, roleUri );
-                    logger.debug( "Got slaveIsAvailable(" + instanceId + "), " +
+                    log.debug( "Got slaveIsAvailable(" + instanceId + "), " +
                             "moved to " + state + " from " + oldState );
                     final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
                             state, instanceId, roleUri );
@@ -231,7 +237,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             }
             catch ( Throwable throwable )
             {
-                logger.warn( "Exception while receiving member availability notification", throwable );
+                log.warn( "Exception while receiving member availability notification", throwable );
             }
         }
 
@@ -244,11 +250,11 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             {
                 HighAvailabilityMemberState oldState = state;
                 changeStateToPending();
-                logger.debug( "Got memberIsUnavailable(" + unavailableId + "), moved to " + state + " from " + oldState );
+                log.debug( "Got memberIsUnavailable(" + unavailableId + "), moved to " + state + " from " + oldState );
             }
             else
             {
-                logger.debug( "Got memberIsUnavailable(" + unavailableId + ")" );
+                log.debug( "Got memberIsUnavailable(" + unavailableId + ")" );
             }
         }
 
@@ -259,12 +265,12 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             {
                 HighAvailabilityMemberState oldState = state;
                 changeStateToPending();
-                logger.debug( "Got memberIsFailed(" + instanceId + ") and cluster lost quorum to continue, moved to "
+                log.debug( "Got memberIsFailed(" + instanceId + ") and cluster lost quorum to continue, moved to "
                         + state + " from " + oldState );
             }
             else
             {
-                logger.debug( "Got memberIsFailed(" + instanceId + ")" );
+                log.debug( "Got memberIsFailed(" + instanceId + ")" );
             }
         }
 

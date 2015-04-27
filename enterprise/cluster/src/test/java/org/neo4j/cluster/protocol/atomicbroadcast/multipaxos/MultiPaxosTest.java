@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -36,6 +36,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
@@ -87,7 +88,7 @@ public class MultiPaxosTest
     public void testFailure() throws Exception
     {
         ScriptableNetworkFailureLatencyStrategy networkLatency = new ScriptableNetworkFailureLatencyStrategy();
-        NetworkMock network = new NetworkMock( new Monitors(), 50,
+        NetworkMock network = new NetworkMock( NullLogService.getInstance(), new Monitors(), 50,
                 new MultipleFailureLatencyStrategy( networkLatency ),
                 new MessageTimeoutStrategy( new FixedTimeoutStrategy( 1000 ) ) );
 

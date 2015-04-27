@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -27,5 +27,5 @@ case class Union(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols: Set[IdName] = left.availableSymbols
+  def availableSymbols = left.availableSymbols intersect right.availableSymbols
 }

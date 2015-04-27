@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -34,7 +34,6 @@ import java.util.Map.Entry;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
@@ -90,6 +89,7 @@ import org.neo4j.kernel.impl.coreapi.schema.PropertyUniqueConstraintDefinition;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
@@ -127,14 +127,17 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.RelationshipLocker;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Boolean.parseBoolean;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -156,9 +159,8 @@ public class BatchInserterImpl implements BatchInserter
     private final IdGeneratorFactory idGeneratorFactory;
     private final SchemaIndexProviderMap schemaIndexProviders;
     private final LabelScanStore labelScanStore;
-    // TODO use Logging instead
-    private final StringLogger msgLog;
-    private final Logging logging;
+    private final StoreLogService logService;
+    private final Log msgLog;
     private final FileSystemAbstraction fileSystem;
     private final SchemaCache schemaCache;
     private final Config config;
@@ -185,7 +187,7 @@ public class BatchInserterImpl implements BatchInserter
     private final PropertyDeleter propertyDeletor;
 
     BatchInserterImpl( String storeDir,
-                       Map<String, String> stringParams )
+                       Map<String, String> stringParams ) throws IOException
     {
         this( storeDir,
               new DefaultFileSystemAbstraction(),
@@ -195,7 +197,7 @@ public class BatchInserterImpl implements BatchInserter
     }
 
     BatchInserterImpl( String storeDir, FileSystemAbstraction fileSystem,
-                       Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions )
+                       Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
         rejectAutoUpgrade( stringParams );
         Map<String, String> params = getDefaultParams();
@@ -211,8 +213,9 @@ public class BatchInserterImpl implements BatchInserter
                 fileSystem, config, PageCacheTracer.NULL );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
-        msgLog = StringLogger.loggerDirectory( fileSystem, this.storeDir );
-        logging = new SingleLoggingService( msgLog );
+        JobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
+        logService = life.add( new StoreLogService( NullLogProvider.getInstance(), fileSystem, this.storeDir, jobScheduler ) );
+        msgLog = logService.getInternalLog( getClass() );
         storeLocker = new StoreLocker( fileSystem );
         storeLocker.checkLock( this.storeDir );
 
@@ -224,20 +227,17 @@ public class BatchInserterImpl implements BatchInserter
                 idGeneratorFactory,
                 pageCache,
                 fileSystem,
-                msgLog,
+                logService.getInternalLogProvider(),
                 monitors );
 
         if ( dump )
         {
             dumpConfiguration( params );
         }
-        msgLog.logMessage( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
+        msgLog.info( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
         life.start();
         neoStore = sf.newNeoStore( true );
-        if ( !neoStore.isStoreOk() )
-        {
-            throw new IllegalStateException( storeDir + " store is not cleanly shutdown." );
-        }
+        neoStore.verifyStoreOk();
         neoStore.makeStoreOk();
         Token[] indexes = getPropertyKeyTokenStore().getTokens( 10000 );
         propertyKeyTokens = new BatchTokenHolder( indexes );
@@ -247,8 +247,18 @@ public class BatchInserterImpl implements BatchInserter
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
         schemaCache = new SchemaCache( neoStore.getSchemaStore() );
 
+        Dependencies deps = new Dependencies();
+        deps.satisfyDependencies( fileSystem, config, logService, new NeoStoreSupplier()
+                        {
+                            @Override
+                            public NeoStore get()
+                            {
+                                return neoStore;
+                            }
+                        } );
+
         KernelExtensions extensions = life
-                .add( new KernelExtensions( kernelExtensions, new DependencyResolverImpl(),
+                .add( new KernelExtensions( kernelExtensions, deps,
                                             UnsatisfiedDependencyStrategies.ignore() ) );
 
         SchemaIndexProvider provider = extensions.resolveDependency( SchemaIndexProvider.class,
@@ -885,8 +895,7 @@ public class BatchInserterImpl implements BatchInserter
             throw new UnderlyingStorageException( "Could not release store lock", e );
         }
 
-        msgLog.logMessage( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
-        msgLog.close();
+        msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
         life.shutdown();
     }
 
@@ -1092,38 +1101,6 @@ public class BatchInserterImpl implements BatchInserter
         private UnsupportedOperationException unsupportedException()
         {
             return new UnsupportedOperationException( "Batch inserter doesn't support this" );
-        }
-    }
-
-    private class DependencyResolverImpl extends DependencyResolver.Adapter
-    {
-        @Override
-        public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
-        {
-            if ( type.isInstance( fileSystem ) )
-            {
-                return type.cast( fileSystem );
-            }
-            if ( type.isInstance( config ) )
-            {
-                return type.cast( config );
-            }
-            if ( type.isInstance( logging ) )
-            {
-                return type.cast( logging );
-            }
-            if ( NeoStoreSupplier.class.isAssignableFrom( type ) )
-            {
-                return type.cast( new NeoStoreSupplier()
-                {
-                    @Override
-                    public NeoStore get()
-                    {
-                        return neoStore;
-                    }
-                } );
-            }
-            throw new IllegalArgumentException( "Unknown dependency " + type );
         }
     }
 }

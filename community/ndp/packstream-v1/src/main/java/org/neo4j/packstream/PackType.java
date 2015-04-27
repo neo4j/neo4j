@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,5 +21,13 @@ package org.neo4j.packstream;
 
 public enum PackType
 {
-    NULL, BOOLEAN, INTEGER, FLOAT, BYTES, TEXT, LIST, MAP, STRUCT
+    NULL,
+    BOOLEAN,
+    INTEGER,
+    FLOAT,
+    BYTES,
+    TEXT,
+    LIST,
+    MAP,
+    STRUCT
 }

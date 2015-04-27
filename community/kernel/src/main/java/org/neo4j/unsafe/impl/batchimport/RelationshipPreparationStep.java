@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -18,6 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.unsafe.impl.batchimport;
+
+import java.util.Arrays;
 
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
@@ -52,6 +54,8 @@ public class RelationshipPreparationStep extends ProcessorStep<Batch<InputRelati
             ids[i*2] = idMapper.get( batchRelationship.startNode(), batchRelationship.startNodeGroup() );
             ids[i*2+1] = idMapper.get( batchRelationship.endNode(), batchRelationship.endNodeGroup() );
         }
+        batch.sortedIds = ids.clone();
+        Arrays.sort( batch.sortedIds );
         sender.send( batch );
     }
 }

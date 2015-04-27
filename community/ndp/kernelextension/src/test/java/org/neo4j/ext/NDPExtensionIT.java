@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -51,7 +51,7 @@ public class NDPExtensionIT
                 .newGraphDatabase();
 
         // Then
-        assertEventuallyServerResponds("localhost", 7687);
+        assertEventuallyServerResponds( "localhost", 7687 );
     }
 
     @Test
@@ -65,25 +65,25 @@ public class NDPExtensionIT
                 .newGraphDatabase();
 
         // Then
-        assertEventuallyServerResponds("localhost", 8776);
+        assertEventuallyServerResponds( "localhost", 8776 );
     }
 
-    private void assertEventuallyServerResponds(String host, int port) throws IOException, InterruptedException
+    private void assertEventuallyServerResponds( String host, int port ) throws IOException, InterruptedException
     {
         long timeout = System.currentTimeMillis() + 1000 * 30;
-        for(;;)
+        for (; ; )
         {
-            if ( serverResponds(host, port) )
+            if ( serverResponds( host, port ) )
             {
                 return;
             }
             else
             {
-                Thread.sleep(100);
+                Thread.sleep( 100 );
             }
 
             // Make sure process still is alive
-            if(System.currentTimeMillis() > timeout)
+            if ( System.currentTimeMillis() > timeout )
             {
                 throw new RuntimeException( "Waited for 30 seconds for server to respond to HTTP calls, " +
                                             "but no response, timing out to avoid blocking forever." );
@@ -95,7 +95,7 @@ public class NDPExtensionIT
     {
         try
         {
-            try(Socket socket = new Socket())
+            try ( Socket socket = new Socket() )
             {
                 // Ok, we can connect - can we perform the version handshake?
                 socket.connect( new InetSocketAddress( host, port ) );
@@ -103,15 +103,15 @@ public class NDPExtensionIT
                 InputStream in = socket.getInputStream();
 
                 // Hard-coded handshake, a general "test client" would be useful further on.
-                out.write( new byte[]{ 0,0,0,1, 0,0,0,0, 0,0,0,0, 0,0,0,0 } );
+                out.write( new byte[]{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} );
 
                 byte[] accepted = new byte[4];
                 in.read( accepted );
 
-                return Arrays.equals( accepted, new byte[]{0,0,0,1} );
+                return Arrays.equals( accepted, new byte[]{0, 0, 0, 1} );
             }
         }
-        catch(ConnectException e)
+        catch ( ConnectException e )
         {
             return false;
         }
@@ -120,7 +120,7 @@ public class NDPExtensionIT
     @After
     public void cleanup()
     {
-        if(db != null)
+        if ( db != null )
         {
             db.shutdown();
         }

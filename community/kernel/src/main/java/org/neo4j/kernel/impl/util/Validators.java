@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -47,7 +47,7 @@ public class Validators
         {
             if ( !file.exists() )
             {
-                throw new IllegalArgumentException( "'" + file + "' doesn't exist" );
+                throw new IllegalArgumentException( "File '" + file + "' doesn't exist" );
             }
         }
     };
@@ -90,7 +90,7 @@ public class Validators
         }
     };
 
-    public static <T> Validator<T[]> atLeast( final int length )
+    public static <T> Validator<T[]> atLeast( final String key, final int length )
     {
         return new Validator<T[]>()
         {
@@ -99,8 +99,9 @@ public class Validators
             {
                 if ( value.length < length )
                 {
-                    throw new IllegalArgumentException( "Expected " + Arrays.toString( value ) +
-                            " to have at least " + length + " items, but had only " + value.length );
+                    throw new IllegalArgumentException( "Expected '" + key + "' to have at least " +
+                            length + " item" + (length == 1 ? "" : "s") + ", but had " + value.length +
+                            " (" + Arrays.toString( value ) + ")" );
                 }
             }
         };

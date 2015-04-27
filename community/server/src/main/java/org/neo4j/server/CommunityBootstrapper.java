@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,6 +19,9 @@
  */
 package org.neo4j.server;
 
+import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.server.configuration.ConfigurationBuilder;
 /**
  * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
  * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
@@ -27,8 +30,8 @@ package org.neo4j.server;
 public class CommunityBootstrapper extends Bootstrapper
 {
     @Override
-    protected NeoServer createNeoServer()
+    protected NeoServer createNeoServer( ConfigurationBuilder configurator, GraphDatabaseDependencies dependencies, LogProvider logProvider )
     {
-        return new CommunityNeoServer( configurator, dependencies );
+        return new CommunityNeoServer( configurator, dependencies, logProvider );
     }
 }

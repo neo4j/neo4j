@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -117,6 +117,19 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   }
 
   val nodeByIndexHint: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
+    case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, AnyIndex, Some(ScanQueryExpression(_)))) =>
+
+      val indexGetter = planContext.getIndexRule(labelName, propertyName)
+
+      val index = indexGetter getOrElse
+        (throw new IndexHintException(identifier, labelName, propertyName, "No such index found."))
+
+      asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
+        val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
+        val resultNodes: Iterator[Node] = state.query.indexScan(index)
+        resultNodes
+      }
+
     case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, AnyIndex, valueExp)) =>
 
       val indexGetter = planContext.getIndexRule(labelName, propertyName)

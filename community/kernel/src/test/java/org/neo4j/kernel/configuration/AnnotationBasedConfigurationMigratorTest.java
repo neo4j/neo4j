@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 public class AnnotationBasedConfigurationMigratorTest
 {
@@ -41,7 +41,7 @@ public class AnnotationBasedConfigurationMigratorTest
         private static ConfigurationMigrator migrator = new ConfigurationMigrator()
         {
             @Override
-            public Map<String, String> apply( Map<String, String> rawConfiguration, StringLogger log )
+            public Map<String, String> apply( Map<String, String> rawConfiguration, Log log )
             {
                 wasCalled.set( true );
                 return rawConfiguration;

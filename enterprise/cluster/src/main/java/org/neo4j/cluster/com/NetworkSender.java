@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -18,9 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cluster.com;
-
-import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
-import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
@@ -50,21 +47,26 @@ import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.WriteCompletionEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
+import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
 /**
  * TCP version of sending messages. This handles sending messages from state machines to other instances
@@ -107,18 +109,18 @@ public class NetworkSender
     private final Monitor monitor;
     private Configuration config;
     private final NetworkReceiver receiver;
-    private StringLogger msgLog;
+    private Log msgLog;
     private URI me;
 
     private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
 
-    public NetworkSender( Monitor monitor, Configuration config, NetworkReceiver receiver, Logging logging )
+    public NetworkSender( Monitor monitor, Configuration config, NetworkReceiver receiver, LogProvider logProvider )
     {
         this.monitor = monitor;
         this.config = config;
         this.receiver = receiver;
-        this.msgLog = logging.getMessagesLog( getClass() );
+        this.msgLog = logProvider.getLog( getClass() );
         me = URI.create( CLUSTER_SCHEME + "://0.0.0.0:" + config.port() );
         receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
         {
@@ -424,6 +426,8 @@ public class NetworkSender
     private class NetworkMessageSender
             extends SimpleChannelHandler
     {
+        private Throwable lastException;
+
         @Override
         public void channelConnected( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
         {
@@ -445,8 +449,24 @@ public class NetworkSender
             Throwable cause = e.getCause();
             if ( !(cause instanceof ConnectException || cause instanceof RejectedExecutionException) )
             {
-                msgLog.error( "Receive exception:", cause );
+                // If we keep getting the same exception, only output the first one
+                if (lastException != null && !lastException.getClass().equals( cause.getClass() ))
+                {
+                    msgLog.error( "Receive exception:", cause );
+                    lastException = cause;
+                }
             }
+        }
+
+        @Override
+        public void writeComplete( ChannelHandlerContext ctx, WriteCompletionEvent e ) throws Exception
+        {
+            if (lastException != null)
+            {
+                msgLog.error( "Recovered from:", lastException);
+                lastException = null;
+            }
+            super.writeComplete( ctx, e );
         }
     }
 }

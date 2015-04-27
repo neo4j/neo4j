@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -28,8 +28,8 @@ import org.neo4j.cluster.statemachine.StateMachineProxyFactory;
 import org.neo4j.cluster.statemachine.StateTransitionListener;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * A ProtocolServer ties together the underlying StateMachines with an understanding of ones
@@ -42,13 +42,13 @@ public class ProtocolServer implements BindingNotifier
     protected StateMachineProxyFactory proxyFactory;
     protected final StateMachines stateMachines;
     private Iterable<BindingListener> bindingListeners = Listeners.newListeners();
-    private final StringLogger msgLog;
+    private final Log msgLog;
 
-    public ProtocolServer( InstanceId me, StateMachines stateMachines, Logging logging )
+    public ProtocolServer( InstanceId me, StateMachines stateMachines, LogProvider logProvider )
     {
         this.me = me;
         this.stateMachines = stateMachines;
-        this.msgLog = logging.getMessagesLog( getClass() );
+        this.msgLog = logProvider.getLog( getClass() );
 
         StateMachineConversations conversations = new StateMachineConversations(me);
         proxyFactory = new StateMachineProxyFactory( stateMachines, conversations, me );
@@ -68,7 +68,7 @@ public class ProtocolServer implements BindingNotifier
         }
         catch ( Throwable t )
         {
-            msgLog.logMessage( "Failed while adding BindingListener", t );
+            msgLog.error( "Failed while adding BindingListener", t );
         }
     }
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -40,15 +40,14 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -70,7 +69,7 @@ public class RelationshipGroupStoreTest
     private File directory;
     private int defaultThreshold;
     private FileSystemAbstraction fs;
-    private GraphDatabaseAPI db;
+    private ImpermanentGraphDatabase db;
 
     @Before
     public void before() throws Exception
@@ -130,14 +129,8 @@ public class RelationshipGroupStoreTest
 
     private void newDb( int denseNodeThreshold )
     {
-        db = new ImpermanentGraphDatabase( MapUtil.stringMap( "dense_node_threshold", "" + denseNodeThreshold ) )
-        {
-            @Override
-            protected FileSystemAbstraction createFileSystemAbstraction()
-            {
-                return (fs = super.createFileSystemAbstraction());
-            }
-        };
+        db = new ImpermanentGraphDatabase( MapUtil.stringMap( "dense_node_threshold", "" + denseNodeThreshold ) );
+        fs = db.platformModule.fileSystem;
     }
 
     private void createAndVerify( Integer customThreshold )
@@ -179,7 +172,7 @@ public class RelationshipGroupStoreTest
                 new DefaultIdGeneratorFactory(),
                 pageCache,
                 fs,
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 monitors );
     }
 

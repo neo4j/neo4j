@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,7 +21,8 @@ package org.neo4j.server;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.ConfigurationBuilder.ConfiguratorWrappingConfigurationBuilder;
@@ -56,15 +57,23 @@ public class WrappingNeoServer extends CommunityNeoServer
 
     public WrappingNeoServer( GraphDatabaseAPI db, ConfigurationBuilder configurator )
     {
-        super( configurator, wrappedDatabase( db ), GraphDatabaseDependencies.newDependencies().logging(db.getDependencyResolver().resolveDependency( Logging.class )).monitors(db.getDependencyResolver().resolveDependency(Monitors.class) ));
+        this( db, configurator, db.getDependencyResolver().resolveDependency( LogService.class ).getUserLogProvider() );
+    }
+
+    private WrappingNeoServer( GraphDatabaseAPI db, ConfigurationBuilder configurator, LogProvider logProvider )
+    {
+        super( configurator,
+                wrappedDatabase( db ),
+                GraphDatabaseDependencies.newDependencies().userLogProvider(
+                        logProvider
+                ).monitors( db.getDependencyResolver().resolveDependency( Monitors.class ) ), logProvider );
         this.db = db;
-        this.configurator = configurator;
         init();
     }
 
     @Override
     protected PreFlightTasks createPreflightTasks()
     {
-        return new PreFlightTasks( dependencies.logging() );
+        return new PreFlightTasks( logProvider );
     }
 }

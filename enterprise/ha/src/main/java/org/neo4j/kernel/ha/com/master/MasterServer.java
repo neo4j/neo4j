@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -38,7 +38,7 @@ import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.kernel.ha.HaRequestType210;
 import org.neo4j.kernel.ha.MasterClient214;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
@@ -51,11 +51,11 @@ public class MasterServer extends Server<Master, Void>
 {
     public static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
 
-    public MasterServer( Master requestTarget, Logging logging, Configuration config,
+    public MasterServer( Master requestTarget, LogProvider logProvider, Configuration config,
                          TxChecksumVerifier txVerifier, ByteCounterMonitor byteCounterMonitor,
                          RequestMonitor requestMonitor )
     {
-        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient214.PROTOCOL_VERSION, txVerifier,
+        super( requestTarget, config, logProvider, FRAME_LENGTH, MasterClient214.PROTOCOL_VERSION, txVerifier,
                 SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
     }
 

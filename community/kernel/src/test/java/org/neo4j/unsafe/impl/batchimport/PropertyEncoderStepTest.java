@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
@@ -44,7 +45,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 import static org.neo4j.unsafe.impl.batchimport.store.io.Monitor.NO_MONITOR;
@@ -60,7 +60,7 @@ public class PropertyEncoderStepTest
     {
         File storeDir = new File( "dir" );
         pageCache = new BatchingPageCache( fsRule.get(), 1_000, 1, SYNCHRONOUS, NO_MONITOR );
-        neoStore = new StoreFactory( fsRule.get(), storeDir, pageCache, DEV_NULL, new Monitors() ).createNeoStore();
+        neoStore = new StoreFactory( fsRule.get(), storeDir, pageCache, NullLogProvider.getInstance(), new Monitors() ).createNeoStore();
     }
 
     @After
@@ -85,7 +85,7 @@ public class PropertyEncoderStepTest
         step.setDownstream( downstream );
 
         // WHEN
-        step.start( false );
+        step.start( 0 );
         step.receive( 0, smallbatch() );
         step.endOfUpstream();
         awaitCompleted( step, control );

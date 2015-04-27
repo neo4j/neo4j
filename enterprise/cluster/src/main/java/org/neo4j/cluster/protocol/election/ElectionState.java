@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -32,7 +32,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.statemachine.State;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.helpers.collection.Iterables.first;
 
@@ -78,14 +78,14 @@ public enum ElectionState
                 )
                         throws Throwable
                 {
-                    StringLogger logger = context.getLogger( ElectionState.class );
+                    Log log = context.getInternalLog( ElectionState.class );
                     switch ( message.getMessageType() )
                     {
                         case demote:
                         {
                             if ( !context.electionOk() )
                             {
-                                logger.warn( "Context says election is not OK to proceed. " +
+                                log.warn( "Context says election is not OK to proceed. " +
                                         "Failed instances are: " +
                                         context.getFailed() +
                                         ", cluster members are: " +
@@ -105,7 +105,7 @@ public enum ElectionState
 
                                 if ( isElector )
                                 {
-                                    logger.debug( "I (" + context.getMyId() +
+                                    log.debug( "I (" + context.getMyId() +
                                             ") am the elector, executing the election" );
                                     // Start election process for all roles that are currently unassigned
                                     Iterable<String> rolesRequiringElection = context.getRolesRequiringElection();
@@ -113,7 +113,7 @@ public enum ElectionState
                                     {
                                         if ( !context.isElectionProcessInProgress( role ) )
                                         {
-                                            logger.debug( "Starting election process for role " + role );
+                                            log.debug( "Starting election process for role " + role );
 
                                             context.startDemotionProcess( role, demoteNode );
 
@@ -133,7 +133,7 @@ public enum ElectionState
                                         }
                                         else
                                         {
-                                            logger.debug( "Election already in progress for role " + role );
+                                            log.debug( "Election already in progress for role " + role );
                                         }
                                     }
                                 }
@@ -160,7 +160,7 @@ public enum ElectionState
                                         String roleName = role.getName();
                                         if ( !context.isElectionProcessInProgress( roleName ) )
                                         {
-                                            context.getLogger(ElectionState.class).debug(
+                                            context.getInternalLog(ElectionState.class).debug(
                                                     "Starting election process for role " + roleName );
 
                                             context.startElectionProcess( roleName );
@@ -205,7 +205,7 @@ public enum ElectionState
                                         }
                                         else
                                         {
-                                            logger.debug( "Election already in progress for role " + roleName );
+                                            log.debug( "Election already in progress for role " + roleName );
                                         }
                                     }
                                 }
@@ -273,7 +273,7 @@ public enum ElectionState
                                             version );
 
                             String voter = message.hasHeader( Message.FROM ) ? message.getHeader( Message.FROM ) : "I";
-                            logger.debug( voter + " voted " + data + " which i " +
+                            log.debug( voter + " voted " + data + " which i " +
                                     ( accepted ? "accepted" : "did not accept" ) );
 
                             if ( !accepted )
@@ -299,7 +299,7 @@ public enum ElectionState
 
                                 if ( winner != null )
                                 {
-                                    logger.debug( "Elected " + winner + " as " + data.getRole() );
+                                    log.debug( "Elected " + winner + " as " + data.getRole() );
 
                                     // Broadcast this
                                     ClusterMessage.VersionedConfigurationStateChange configurationChangeState =
@@ -311,7 +311,7 @@ public enum ElectionState
                                 }
                                 else
                                 {
-                                    logger.warn( "Election could not pick a winner" );
+                                    log.warn( "Election could not pick a winner" );
                                     if ( currentElected != null )
                                     {
                                         // Someone had the role and doesn't anymore. Broadcast this
@@ -339,7 +339,7 @@ public enum ElectionState
                         {
                             // Election failed - try again
                             ElectionTimeoutData electionTimeoutData = message.getPayload();
-                            logger.warn( String.format(
+                            log.warn( String.format(
                                     "Election timed out for '%s'- trying again", electionTimeoutData.getRole() ) );
                             context.forgetElection( electionTimeoutData.getRole() );
                             outgoing.offer( electionTimeoutData.getMessage() );

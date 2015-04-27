@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -27,45 +27,56 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.ConfigurationContext;
-import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.Iterables.limit;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
 class AbstractContextImpl
-        implements TimeoutsContext, LoggingContext, ConfigurationContext
+        implements TimeoutsContext, LogService, ConfigurationContext
 {
     protected final org.neo4j.cluster.InstanceId me;
     protected final CommonContextState commonState;
-    protected final Logging logging;
+    protected final LogService logService;
     protected final Timeouts timeouts;
 
     AbstractContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-                         Logging logging,
+                         LogService logService,
                          Timeouts timeouts )
     {
         this.me = me;
         this.commonState = commonState;
-        this.logging = logging;
+        this.logService = logService;
         this.timeouts = timeouts;
     }
 
     @Override
-    public StringLogger getLogger( Class loggingClass )
+    public LogProvider getUserLogProvider()
     {
-        return logging.getMessagesLog( loggingClass );
+        return logService.getUserLogProvider();
     }
 
     @Override
-    public ConsoleLogger getConsoleLogger( Class loggingClass )
+    public Log getUserLog( Class loggingClass )
     {
-        return logging.getConsoleLog( loggingClass );
+        return logService.getUserLog( loggingClass );
+    }
+
+    @Override
+    public LogProvider getInternalLogProvider()
+    {
+        return logService.getInternalLogProvider();
+    }
+
+    @Override
+    public Log getInternalLog( Class loggingClass )
+    {
+        return logService.getInternalLog( loggingClass );
     }
 
     // TimeoutsContext

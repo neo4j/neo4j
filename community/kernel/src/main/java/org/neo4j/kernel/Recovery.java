@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -49,8 +49,8 @@ public class Recovery extends LifecycleAdapter
         LogVersionedStoreChannel getLogFile( long recoveryVersion ) throws IOException;
     }
 
-    private SPI spi;
-    private Monitor monitor;
+    private final SPI spi;
+    private final Monitor monitor;
 
     private boolean recoveredLog = false;
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,15 +23,18 @@ import org.neo4j.consistency.checking.InconsistentStoreException;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.store.DiffStore;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public abstract class DiffCheck
 {
-    final StringLogger logger;
+    final LogProvider logProvider;
+    final Log log;
 
-    public DiffCheck( StringLogger logger )
+    public DiffCheck( LogProvider logProvider )
     {
-        this.logger = logger;
+        this.logProvider = logProvider;
+        this.log = logProvider.getLog( getClass() );
     }
 
     public final void check( DiffStore diffs ) throws InconsistentStoreException, ConsistencyCheckIncompleteException

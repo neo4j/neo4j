@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -26,6 +26,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -53,7 +54,7 @@ public class PullStormIT
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Rule
-    public LoggerRule logger = new LoggerRule();
+    public LoggerRule logger = new LoggerRule( Level.OFF );
 
     @Test
     public void testPullStorm() throws Throwable

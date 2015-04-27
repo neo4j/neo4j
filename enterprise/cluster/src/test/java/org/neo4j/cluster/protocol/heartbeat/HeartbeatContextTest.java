@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -30,7 +30,6 @@ import java.util.concurrent.Executor;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Matchers;
 import org.mockito.Mockito;
 
 import org.neo4j.cluster.InstanceId;
@@ -44,8 +43,8 @@ import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -83,7 +82,7 @@ public class HeartbeatContextTest
         {
             members.put( instanceIds[i], URI.create( initialHosts[i] ) );
         }
-        ClusterConfiguration config = new ClusterConfiguration( "clusterName", StringLogger.DEV_NULL, initialHosts );
+        ClusterConfiguration config = new ClusterConfiguration( "clusterName", NullLogProvider.getInstance(), initialHosts );
         config.setMembers( members );
 
         context = mock( ClusterContext.class );
@@ -91,12 +90,9 @@ public class HeartbeatContextTest
         when( context.getConfiguration() ).thenReturn( config );
         when( context.getMyId() ).thenReturn( instanceIds[0] );
 
-        Logging logging = Mockito.mock( Logging.class );
-        when( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class) );
-
         MultiPaxosContext context = new MultiPaxosContext( instanceIds[0], Iterables.<ElectionRole, ElectionRole>iterable(
                         new ElectionRole( "coordinator" ) ), config,
-                        Mockito.mock( Executor.class ), logging,
+                        Mockito.mock( Executor.class ), NullLogService.getInstance(),
                         Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
                         Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class),
                         mock( ElectionCredentialsProvider.class) );

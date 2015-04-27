@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.info;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Logger;
 
 public interface DiagnosticsProvider
 {
@@ -74,10 +74,10 @@ public interface DiagnosticsProvider
     /**
      * Dump the diagnostic information of this {@link DiagnosticsProvider} for
      * the specified {@link DiagnosticsPhase phase} to the provided
-     * {@link StringLogger log}.
+     * {@link Logger logger}.
      * 
      * @param phase the {@link DiagnosticsPhase phase} to dump information for.
-     * @param log the {@link StringLogger log} to dump information to.
+     * @param logger the {@link Logger logger} to dump information to.
      */
-    void dump( DiagnosticsPhase phase, StringLogger log );
+    void dump( DiagnosticsPhase phase, Logger logger );
 }

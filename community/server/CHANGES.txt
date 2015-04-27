@@ -1,3 +1,9 @@
+2.3.0-M01
+---------
+o User has ability to configure jettys max header sizes with added configuration options:
+    - org.neo4j.server.webserver.max.request.header
+    - org.neo4j.server.webserver.max.response.header
+
 2.2.1
 -----
 o Fixed issue with 4xx HTTP response codes not including proper ClientError status

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,6 +19,7 @@
  */
 package org.neo4j.server;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import com.sun.jersey.api.client.Client;
@@ -27,11 +28,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
-import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.greaterThan;
@@ -40,14 +40,14 @@ import static org.junit.Assert.assertThat;
 
 public class NeoServerStartupLoggingDocIT extends ExclusiveServerTestBase
 {
-    private static Logging logging;
+    private static ByteArrayOutputStream out;
     private static NeoServer server;
 
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        logging = new BufferingLogging();
-        server = ServerHelper.createNonPersistentServer( logging );
+        out = new ByteArrayOutputStream();
+        server = ServerHelper.createNonPersistentServer( FormattedLogProvider.toOutputStream( out ) );
     }
 
     @Before
@@ -66,7 +66,7 @@ public class NeoServerStartupLoggingDocIT extends ExclusiveServerTestBase
     public void shouldLogStartup() throws Exception
     {
         // Check the logs
-        assertThat( logging.toString().length(), is( greaterThan( 0 ) ) );
+        assertThat( out.toString().length(), is( greaterThan( 0 ) ) );
 
         // Check the server is alive
         Client nonRedirectingClient = Client.create();

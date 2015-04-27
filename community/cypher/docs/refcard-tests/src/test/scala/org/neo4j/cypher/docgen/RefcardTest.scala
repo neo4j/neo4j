@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,6 +21,7 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 import org.neo4j.graphdb.index.Index
 import org.junit.Test
 import scala.collection.JavaConverters._
@@ -30,12 +31,12 @@ import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher._
-import org.neo4j.test.{ ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription }
+import org.neo4j.test.{GraphDatabaseServiceCleaner, ImpermanentGraphDatabase, TestGraphDatabaseFactory,
+GraphDescription}
 import org.scalatest.Assertions
 import org.junit.Before
 import org.junit.After
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier
 
 /*
 Use this base class for refcard tests
@@ -221,7 +222,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
     allQueriesWriter = new OutputStreamWriter(new FileOutputStream(new File("target/all-queries.asciidoc"), true), "UTF-8")
     db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
 
-    db.asInstanceOf[ImpermanentGraphDatabase].cleanContent()
+    GraphDatabaseServiceCleaner.cleanDatabaseContent(db);
 
     db.inTx {
       nodeIndex = db.index().forNodes("nodeIndexName")

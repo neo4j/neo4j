@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -42,6 +42,13 @@ public class StubPageCursor implements PageCursor
         this.pageId = initialPageId;
         this.pageSize = pageSize;
         this.page = new ByteBufferPage( ByteBuffer.allocate(pageSize) );
+    }
+
+    public StubPageCursor( long initialPageId, ByteBuffer buffer )
+    {
+        this.pageId = initialPageId;
+        this.pageSize = buffer.capacity();
+        this.page = new ByteBufferPage( buffer );
     }
 
     @Override

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -20,9 +20,19 @@
 package org.neo4j.kernel.api.labelscan;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
 public class NodeLabelUpdate
 {
+    public static final Comparator<? super NodeLabelUpdate> SORT_BY_NODE_ID = new Comparator<NodeLabelUpdate>()
+    {
+        @Override
+        public int compare( NodeLabelUpdate o1, NodeLabelUpdate o2 )
+        {
+            return Long.compare( o1.getNodeId(), o2.getNodeId() );
+        }
+    };
+
     private final long nodeId;
     private final long[] labelsBefore;
     private final long[] labelsAfter;

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -30,8 +30,8 @@ import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.util.TestLogging;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Arrays.asList;
@@ -71,12 +71,11 @@ public class Prover
 
     private void bootstrapCluster() throws Exception
     {
-        Logging logging = new TestLogging();
         String instance1 = "cluster://localhost:5001";
         String instance2 = "cluster://localhost:5002";
         String instance3 = "cluster://localhost:5003";
         ClusterConfiguration config = new ClusterConfiguration( "default",
-                logging.getMessagesLog( ClusterConfiguration.class ),
+                NullLogProvider.getInstance(),
                 instance1,
                 instance2,
                 instance3 );
@@ -84,11 +83,11 @@ public class Prover
         ClusterState state = new ClusterState(
                 asList(
                         newClusterInstance( new InstanceId( 1 ), new URI( instance1 ), new Monitors(), config,
-                                logging ),
+                                NullLogService.getInstance() ),
                         newClusterInstance( new InstanceId( 2 ), new URI( instance2 ), new Monitors(), config,
-                                logging ),
+                                NullLogService.getInstance() ),
                         newClusterInstance( new InstanceId( 3 ), new URI( instance3 ), new Monitors(), config,
-                                logging ) ),
+                                NullLogService.getInstance() ) ),
                 emptySetOf( ClusterAction.class )
         );
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,15 +21,15 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 
 public class LuceneKernelExtensions
 {
     public static DirectoryFactory directoryFactory( Config config, FileSystemAbstraction fileSystem )
     {
-        if ( config.get( InternalAbstractGraphDatabase.Configuration.ephemeral ) )
+        if ( config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral ) )
         {
             return fileSystem.getOrCreateThirdPartyFileSystem( DirectoryFactory.class, IN_MEMORY_FACTORY );
         }

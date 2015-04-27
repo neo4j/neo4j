@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,9 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -29,11 +26,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -49,6 +56,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabel;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
@@ -672,13 +680,35 @@ public class LabelsAcceptanceTest
                     @Override
                     public GraphDatabaseService newDatabase( Map<String,String> config )
                     {
-                        return new ImpermanentGraphDatabase( storeDir, config, state.databaseDependencies() )
+                        return new ImpermanentGraphDatabase( storeDir, config, GraphDatabaseDependencies.newDependencies(state.databaseDependencies() ))
                         {
                             @Override
-                            protected IdGeneratorFactory createIdGeneratorFactory()
+                            protected void create( Map<String, String> params, GraphDatabaseFacadeFactory
+                                    .Dependencies dependencies )
                             {
-                                return idFactory;
+                                new CommunityFacadeFactory()
+                                {
+                                    @Override
+                                    protected EditionModule createEdition( PlatformModule platformModule )
+                                    {
+                                        return new CommunityEditionModule( platformModule )
+                                        {
+                                            @Override
+                                            protected IdGeneratorFactory createIdGeneratorFactory()
+                                            {
+                                                return idFactory;
+                                            }
+                                        };
+                                    }
+
+                                    @Override
+                                    protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                                    {
+                                        return new ImpermanentPlatformModule( params, dependencies, graphDatabaseFacade );
+                                    }
+                                }.newFacade( params, dependencies, this );
                             }
+
                         };
                     }
                 };

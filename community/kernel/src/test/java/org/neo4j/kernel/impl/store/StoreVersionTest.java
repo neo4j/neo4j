@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -35,7 +35,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -57,7 +57,7 @@ public class StoreVersionTest
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 monitors );
         NeoStore neoStore = sf.newNeoStore( true );
 
@@ -95,7 +95,7 @@ public class StoreVersionTest
                     new DefaultIdGeneratorFactory(),
                     pageCacheRule.getPageCache( fs.get() ),
                     fs.get(),
-                    StringLogger.DEV_NULL,
+                    NullLogProvider.getInstance(),
                     null,
                     StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                     monitors );
@@ -115,7 +115,7 @@ public class StoreVersionTest
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 monitors );
         NeoStore neoStore = sf.newNeoStore( true );
 

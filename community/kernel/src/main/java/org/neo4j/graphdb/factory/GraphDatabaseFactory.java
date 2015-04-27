@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -23,10 +23,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Arrays.asList;
@@ -90,7 +90,7 @@ public class GraphDatabaseFactory
             public GraphDatabaseService newDatabase( Map<String,String> config )
             {
                 config.put( "ephemeral", "false" );
-                Dependencies dependencies = state.databaseDependencies();
+                GraphDatabaseFacadeFactory.Dependencies dependencies = state.databaseDependencies();
                 return GraphDatabaseFactory.this.newDatabase( path, config, dependencies );
             }
         };
@@ -102,9 +102,11 @@ public class GraphDatabaseFactory
     }
 
     @SuppressWarnings( "deprecation" )
-    protected GraphDatabaseService newDatabase( String path, Map<String,String> config, Dependencies dependencies )
+    protected GraphDatabaseService newDatabase( String path, Map<String,String> config, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        return new EmbeddedGraphDatabase( path, config, dependencies );
+        config.put( GraphDatabaseFacadeFactory.Configuration.store_dir.name(), path );
+
+        return new CommunityFacadeFactory().newFacade( config, dependencies );
     }
 
     /**
@@ -147,9 +149,9 @@ public class GraphDatabaseFactory
         return this;
     }
 
-    public GraphDatabaseFactory setLogging( Logging logging )
+    public GraphDatabaseFactory setUserLogProvider( LogProvider userLogProvider )
     {
-        getCurrentState().setLogging( logging );
+        getCurrentState().setUserLogProvider( userLogProvider );
         return this;
     }
 

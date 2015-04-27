@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -85,6 +85,8 @@ case class VarLengthExpandPipe(source: Pipe,
                 row.newWith2(relName, rels, toName, node)
             }
 
+          case null => Iterator(row.newWith2(relName, null, toName, null))
+
           case value => throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
         }
       }
@@ -100,7 +102,7 @@ case class VarLengthExpandPipe(source: Pipe,
   def planDescriptionWithoutCardinality = source.planDescription.
     andThen(this.id, s"VarLengthExpand(${if (nodeInScope) "Into" else "All"})", identifiers, ExpandExpression(fromName, relName, types.names, toName, projectedDir, varLength = true))
 
-  def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
+  def symbols = source.symbols.add(toName, CTNode).add(relName, CTCollection(CTRelationship))
 
   override def localEffects = Effects(ReadsNodes, ReadsRelationships)
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -24,7 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.Recovery;
 import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 
@@ -33,17 +33,17 @@ public class LoggingLogFileMonitor implements PhysicalLogFile.Monitor, RecoveryV
 {
     private int numberOfRecoveredTransactions;
     private long firstTransactionRecovered, lastTransactionRecovered;
-    private final StringLogger logger;
+    private final Log log;
 
-    public LoggingLogFileMonitor( StringLogger logger )
+    public LoggingLogFileMonitor( Log log )
     {
-        this.logger = logger;
+        this.log = log;
     }
 
     @Override
     public void recoveryRequired( long recoveredLogVersion )
     {
-        logger.info( "Recovery required for log with version " + recoveredLogVersion );
+        log.info( "Recovery required for log with version " + recoveredLogVersion );
     }
 
     @Override
@@ -56,25 +56,25 @@ public class LoggingLogFileMonitor implements PhysicalLogFile.Monitor, RecoveryV
     {
         if ( numberOfRecoveredTransactions != 0 )
         {
-            logger.info( format( "Recovery completed. %d transactions, first:%d, last:%d recovered",
+            log.info( format( "Recovery completed. %d transactions, first:%d, last:%d recovered",
                     numberOfRecoveredTransactions, firstTransactionRecovered, lastTransactionRecovered ) );
         }
         else
         {
-            logger.info( "No recovery required" );
+            log.info( "No recovery required" );
         }
     }
 
     @Override
     public void startedRotating( long currentVersion )
     {
-        logger.info( format( "Rotating log version:%d", currentVersion ) );
+        log.info( format( "Rotating log version:%d", currentVersion ) );
     }
 
     @Override
     public void finishedRotating( long currentVersion )
     {
-        logger.info( format( "Finished rotating log version:%d", currentVersion ) );
+        log.info( format( "Finished rotating log version:%d", currentVersion ) );
     }
 
     @Override
@@ -91,13 +91,13 @@ public class LoggingLogFileMonitor implements PhysicalLogFile.Monitor, RecoveryV
     @Override
     public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
     {
-        logger.info( format( "Opened logical log [%s] version=%d, lastTxId=%d (%s)",
+        log.info( format( "Opened logical log [%s] version=%d, lastTxId=%d (%s)",
                 logFile, logVersion, lastTransactionId,  (clean ? "clean" : "recovered") ) );
     }
 
     @Override
     public void failureToTruncate( File logFile, IOException e )
     {
-        logger.warn( format( "Failed to truncate %s at correct size", logFile ), e );
+        log.warn( format( "Failed to truncate %s at correct size", logFile ), e );
     }
 }
