@@ -31,8 +31,8 @@ import scala.collection.mutable
 class Profiler extends PipeDecorator {
   outerProfiler =>
 
-  val dbHitsStats: mutable.Map[Object, ProfilingQueryContext] = IdentityMutableMap.empty
-  val rowStats: mutable.Map[Object, ProfilingIterator] = IdentityMutableMap.empty
+  val dbHitsStats: mutable.Map[Object, ProfilingQueryContext] = mutable.Map.empty
+  val rowStats: mutable.Map[Object, ProfilingIterator] = mutable.Map.empty
   private var parentPipe: Option[Pipe] = None
 
 
