@@ -143,19 +143,19 @@ trait DocumentationHelper extends GraphIcing {
 }
 
 abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper with GraphIcing with ResetStrategy {
-
-  def testQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, assertions: InternalExecutionResult => Unit) {
-    internalTestQuery(title, text, queryText, optionalResultExplanation, None, None, assertions)
+  def testQuery(title: String, text: String, queryText: String, optionalResultExplanation: String,
+                parameters: Map[String, Any] = Map.empty, assertions: InternalExecutionResult => Unit) {
+    internalTestQuery(title, text, queryText, optionalResultExplanation, None, None, parameters, assertions)
   }
 
   def testFailingQuery[T <: CypherException: ClassTag](title: String, text: String, queryText: String, optionalResultExplanation: String) {
     val classTag = implicitly[ClassTag[T]]
-    internalTestQuery(title, text, queryText, optionalResultExplanation, Some(classTag), None, _ => {})
+    internalTestQuery(title, text, queryText, optionalResultExplanation, Some(classTag), None, Map.empty, _ => {})
   }
 
   def prepareAndTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String,
                           prepare: GraphDatabaseAPI => Unit, assertions: InternalExecutionResult => Unit) {
-    internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(prepare), assertions)
+    internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(prepare), Map.empty, assertions)
   }
 
   def profileQuery(title: String, text: String, queryText: String, realQuery: Option[String] = None, assertion: InternalExecutionResult => Unit) {
@@ -169,7 +169,6 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
                                    expectedException: Option[ClassTag[_ <: CypherException]],
                                    prepare: Option[GraphDatabaseAPI => Unit],
                                    assertions: InternalExecutionResult => Unit) {
-    parameters = null
     preparationQueries = List()
 
     dumpSetupConstraintsQueries(setupConstraintQueries, dir)
@@ -188,7 +187,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     }
 
     try {
-      val results = if (parameters == null) engine.profile(query) else engine.profile(query, parameters)
+      val results = engine.profile(query)
       val result = RewindableExecutionResult(results)
 
       if (expectedException.isDefined) {
@@ -201,9 +200,6 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
       writer.println(text)
       writer.println()
 
-      if (parameters != null) {
-        writer.append(JavaExecutionEngineDocTest.parametersToAsciidoc(mapMapValue(parameters)))
-      }
       val output = new StringBuilder(2048)
       output.append(".Query\n")
       output.append(createCypherSnippet(query))
@@ -227,17 +223,22 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
         val expectedExceptionType = expectedException.get
         e match {
           case expectedExceptionType(typedE) =>
-            dumpToFile(dir, writer, title, query, "", text, typedE, consoleData)
+            dumpToFileWithException(dir, writer, title, query, "", text, typedE, consoleData, Map.empty)
           case _ => fail(s"Expected an exception of type $expectedException but got ${e.getClass}", e)
         }
     }
   }
 
 
-  private def internalTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String,
-                                expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[GraphDatabaseAPI => Unit],
-                                assertions: InternalExecutionResult => Unit) {
-    parameters = null
+  private def internalTestQuery(title: String,
+                                text: String,
+                                queryText: String,
+                                optionalResultExplanation: String,
+                                expectedException: Option[ClassTag[_ <: CypherException]],
+                                prepare: Option[GraphDatabaseAPI => Unit],
+                                parameters: Map[String, Any],
+                                assertions: InternalExecutionResult => Unit)
+  {
     preparationQueries = List()
     //dumpGraphViz(dir, graphvizOptions.trim)
     if (!graphvizExecutedAfter) {
@@ -274,9 +275,10 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     val docQuery = urls.foldLeft(query)( (acc, entry) => acc.replace(entry._1, entry._2))
 
     executeWithAllPlannersAndAssert(testQuery, assertions, expectedException,
-      dumpToFile(dir, writer, title, docQuery, optionalResultExplanation, text, _, consoleData), prepareForTest(title, prepare))
+      dumpToFileWithException(dir, writer, title, docQuery, optionalResultExplanation, text, _, consoleData, parameters), parameters,
+      prepareForTest(title, prepare))
     match {
-      case Some(result) => dumpToFile(dir, writer, title, docQuery, optionalResultExplanation, text, result, consoleData)
+      case Some(result) => dumpToFileWithResult(dir, writer, title, docQuery, optionalResultExplanation, text, result, consoleData, parameters)
       case  None =>
     }
 
@@ -299,15 +301,14 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
   private def executeWithAllPlannersAndAssert(query: String, assertions: InternalExecutionResult => Unit,
                                               expectedException: Option[ClassTag[_ <: CypherException]],
                                               expectedCaught: CypherException => Unit,
+                                              parameters: Map[String, Any],
                                               prepareFunction: => Unit) = {
-    val params = Option(parameters).getOrElse(Map.empty)
-
     // COST planner is default. Can't specify it without getting exception thrown if it's unavailable.
     val planners = Seq("", "CYPHER PLANNER=rule ")
 
     val results = planners.flatMap {
       case s if expectedException.isEmpty =>
-        val rewindable = RewindableExecutionResult(engine.execute(s"$s $query", params))
+        val rewindable = RewindableExecutionResult(engine.execute(s"$s $query", parameters))
         db.inTx(assertions(rewindable))
         val dump = rewindable.dumpToString()
         reset()
@@ -315,7 +316,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
         Some(dump)
 
       case s =>
-        val e = intercept[CypherException](engine.execute(s"$s $query", params))
+        val e = intercept[CypherException](engine.execute(s"$s $query", parameters))
         val expectedExceptionType = expectedException.get
         e match {
           case expectedExceptionType(typedE) => expectedCaught(typedE)
@@ -338,7 +339,6 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
   val graphvizOptions: String = ""
   val noTitle: Boolean = false
   val graphvizExecutedAfter: Boolean = false
-  var parameters: Map[String, Any] = null
   var preparationQueries: List[String] = List()
 
   protected val baseUrl = System.getProperty("remote-csv-upload")
@@ -355,27 +355,26 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
   def indexProps: List[String] = List()
 
-  def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, result: String, consoleData: String) {
-    dumpToFile(dir, writer, title, query, returns, text, Right(result), consoleData)
+  def dumpToFileWithResult(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String,
+                 result: String, consoleData: String, parameters: Map[String, Any]) {
+    dumpToFile(dir, writer, title, query, returns, text, Right(result), consoleData, parameters)
   }
 
-  def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, failure: CypherException, consoleData: String) {
-    dumpToFile(dir, writer, title, query, returns, text, Left(failure), consoleData)
+  def dumpToFileWithException(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String,
+                 failure: CypherException, consoleData: String, parameters: Map[String, Any]) {
+    dumpToFile(dir, writer, title, query, returns, text, Left(failure), consoleData, parameters)
   }
 
-  private def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, result: Either[CypherException, String], consoleData: String) {
+  private def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String,
+                         result: Either[CypherException, String], consoleData: String, parameters: Map[String, Any]) {
     val testId = niceify(section + " " + title)
     writer.println("[[" + testId + "]]")
     if (!noTitle) writer.println("== " + title + " ==")
     writer.println(text)
     writer.println()
-    dumpQuery(dir, writer, testId, query, returns, result, consoleData)
+    dumpQuery(dir, writer, testId, query, returns, result, consoleData, parameters)
     writer.flush()
     writer.close()
-  }
-
-  def setParameters(params: Map[String, Any]) {
-    parameters = params
   }
 
   def executePreparationQueries(queries: List[String]) {
@@ -479,7 +478,14 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     case v: Any       => v
   }
 
-  private def dumpQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: Either[CypherException, String], consoleData: String) {
+  private def dumpQuery(dir: File,
+                        writer: PrintWriter,
+                        testId: String,
+                        query: String,
+                        returns: String,
+                        result: Either[CypherException, String],
+                        consoleData: String,
+                        parameters: Map[String, Any]) {
     if (parameters != null) {
       writer.append(JavaExecutionEngineDocTest.parametersToAsciidoc(mapMapValue(parameters)))
     }

@@ -140,29 +140,30 @@ will be created. """,
   }
 
   @Test def create_single_node_from_map() {
-    prepareAndTestQuery(
+    testQuery(
       title = "Create node with a parameter for the properties",
       text = """
 You can also create a graph entity from a map.
 All the key/value pairs in the map will be set as properties on the created relationship or node.
 In this case we add a +Person+ label to the node as well.
 """,
-      prepare = _ => setParameters(Map("props" -> Map("name" -> "Andres", "position" -> "Developer"))),
+      parameters = Map("props" -> Map("name" -> "Andres", "position" -> "Developer")),
       queryText = "create (n:Person {props}) return n",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1))
   }
 
   @Test def create_multiple_nodes_from_maps() {
-    prepareAndTestQuery(
+    testQuery(
       title = "Create multiple nodes with a parameter for their properties",
       text = """
 By providing Cypher an array of maps, it will create a node for each map.
 
 NOTE: When you do this, you can't create anything else in the same +CREATE+ clause.
 """,
-      prepare = _ => setParameters(Map("props" -> List(Map("name" -> "Andres", "position" -> "Developer"),
-        Map("name" -> "Michael", "position" -> "Developer")))),
+      parameters = Map("props" -> List(
+        Map("name" -> "Andres", "position" -> "Developer"),
+        Map("name" -> "Michael", "position" -> "Developer"))),
       queryText = "create (n {props}) return n",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
