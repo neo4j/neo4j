@@ -36,7 +36,7 @@ import java.util.zip.ZipFile;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.IOFunction;
-import org.neo4j.function.RawFunction;
+import org.neo4j.function.ThrowingFunction;
 
 /**
  * Means of instantiating common {@link CharReadable} instances.
@@ -257,7 +257,7 @@ public class Readables
     }
 
     private static <IN,OUT> RawIterator<OUT,IOException> iterator( final IN[] items,
-            final RawFunction<IN,OUT,IOException> converter )
+            final ThrowingFunction<IN,OUT,IOException> converter )
     {
         if ( items.length == 0 )
         {

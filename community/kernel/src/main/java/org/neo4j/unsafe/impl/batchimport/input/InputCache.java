@@ -24,7 +24,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.function.IOFunction;
-import org.neo4j.function.RawFunction;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
@@ -176,7 +176,7 @@ public class InputCache implements Closeable
     }
 
     private <T extends InputEntity> InputIterable<T> entities(
-            final RawFunction<Void,InputIterator<T>,IOException> factory )
+            final ThrowingFunction<Void,InputIterator<T>,IOException> factory )
     {
         return new InputIterable<T>()
         {

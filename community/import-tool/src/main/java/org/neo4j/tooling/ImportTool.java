@@ -28,8 +28,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map.Entry;
 
+import org.neo4j.function.BiFunction;
 import org.neo4j.function.Function;
-import org.neo4j.function.Function2;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
 import org.neo4j.helpers.collection.IterableWrapper;
@@ -592,8 +592,8 @@ public class ImportTool
         }
     };
 
-    private static final Function2<Args,String,Collection<Option<File[]>>> INPUT_FILES_EXTRACTOR =
-            new Function2<Args,String,Collection<Option<File[]>>>()
+    private static final BiFunction<Args,String,Collection<Option<File[]>>> INPUT_FILES_EXTRACTOR =
+            new BiFunction<Args,String,Collection<Option<File[]>>>()
     {
         @Override
         public Collection<Option<File[]>> apply( Args args, String key )

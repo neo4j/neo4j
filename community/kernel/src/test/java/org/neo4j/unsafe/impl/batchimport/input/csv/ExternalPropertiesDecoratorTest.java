@@ -26,8 +26,8 @@ import java.util.Map;
 
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.Readables;
-import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
+import org.neo4j.function.Supplier;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.UpdateBehaviour;
@@ -124,12 +124,12 @@ public class ExternalPropertiesDecoratorTest
         return new InputNode( "source", 1, 0, id, props, null, InputEntity.NO_LABELS, null );
     }
 
-    private Factory<CharReadable> readable( final String data )
+    private Supplier<CharReadable> readable( final String data )
     {
-        return new Factory<CharReadable>()
+        return new Supplier<CharReadable>()
         {
             @Override
-            public CharReadable newInstance()
+            public CharReadable get()
             {
                 return Readables.wrap( new StringReader( data ) );
             }
