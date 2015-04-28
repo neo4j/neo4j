@@ -44,17 +44,17 @@ import static org.junit.Assert.assertThat;
         " must create their own test class extending IndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public class UniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
+public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
     private static final int PROPERTY_KEY_ID = 100;
 
-    public UniqueIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
+    public NonUniqueIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite, true );
+        super( testSuite, false );
     }
 
     @Ignore( "Invalid assumption since we currently must rely on close throwing exception for injected"
-            + "transactions that violate a constraint" )
+             + "transactions that violate a constraint" )
     @Test
     public void closingAnOnlineIndexUpdaterMustNotThrowEvenIfItHasBeenFedConflictingData() throws Exception
     {
@@ -76,10 +76,10 @@ public class UniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
     {
         updateAndCommit( asList(
                 NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
-                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "b", new long[]{1000} ),
-                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "c", new long[]{1000} ) ) );
+                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
+                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "b", new long[]{1000} ) ) );
 
-        assertThat( getAllNodes( "a" ), equalTo( asList( 1L ) ) );
+        assertThat( getAllNodes( "a" ), equalTo( asList( 1L, 2L ) ) );
         assertThat( getAllNodes(), equalTo( asList( 1L, 2L, 3L ) ) );
     }
 }
