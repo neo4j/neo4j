@@ -70,7 +70,7 @@ RETURN
 length(path)
 ###
 
-The length of the path.
+The number of relationships in the path.
 
 ###assertion=returns-one
 MATCH path=(n)-->(m)

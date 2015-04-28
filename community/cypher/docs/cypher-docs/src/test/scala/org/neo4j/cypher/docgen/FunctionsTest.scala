@@ -118,32 +118,44 @@ class FunctionsTest extends DocumentingTestBase {
       assertions = (p) => assertEquals("KNOWS", p.columnAs[String]("type(r)").toList.head))
   }
 
+  @Test def size() {
+    testThis(
+      title = "SIZE",
+      syntax = "SIZE( collection )",
+      arguments = List("collection" -> "An expression that returns a collection"),
+      text = """To return or filter on the size of a collection, use the `SIZE()` function.""",
+      queryText = """return size(['Alice', 'Bob']) as col""",
+      returns = """The number of items in the collection is returned by the query.""",
+      assertions = (col) => assertEquals(2, col.columnAs[Int]("col").toList.head))
+  }
+
+  @Test def size2() {
+    testThis(
+      title = "SIZE of pattern expression",
+      syntax = "SIZE( pattern expression )",
+      arguments = List("pattern expression" -> "A pattern expression that returns a collection"),
+      text = """
+               |This is the same `SIZE()` method described before,
+               |but instead of passing in a collection directly, you provide a pattern expression
+               |that can be used in a match query to provide a new set of results.
+               |The size of the result is calculated, not the length of the expression itself.
+               |""".stripMargin,
+      queryText = """match (a) where a.name='Alice' return size( (a)-->()-->() ) as fof""",
+      returns = """The number of sub-graphs matching the pattern expression is returned by the query.""",
+      assertions = (p) => assertEquals(3, p.columnAs[Int]("fof").toList.head))
+  }
+
   @Test def length() {
     testThis(
       title = "LENGTH",
-      syntax = "LENGTH( collection )",
-      arguments = List("collection" -> "An expression that returns a collection"),
-      text = """To return or filter on the length of a collection, use the `LENGTH()` function.""",
+      syntax = "LENGTH( path )",
+      arguments = List("path" -> "An expression that returns a path"),
+      text = """To return or filter on the length of a path, use the `LENGTH()` function.""",
       queryText = """match p=(a)-->(b)-->(c) where a.name='Alice' return length(p)""",
       returns = """The length of the path `p` is returned by the query.""",
       assertions = (p) => assertEquals(2, p.columnAs[Int]("length(p)").toList.head))
   }
 
-  @Test def length2() {
-    testThis(
-      title = "LENGTH of pattern expression",
-      syntax = "LENGTH( pattern expression )",
-      arguments = List("pattern expression" -> "A pattern expression that returns a collection"),
-      text = """
-          |This is the same `LENGTH()` method described before,
-          |but instead of passing in a collection directly, you provide a pattern expression
-          |that can be used in a match query to provide a new set of results.
-          |The length of the results is calculated, not the length of the expression itself.
-        |""".stripMargin,
-      queryText = """match (a) where a.name='Alice' return length( (a)-->()-->() ) as fof""",
-      returns = """The number of sub-graphs matching the pattern expression is returned by the query.""",
-      assertions = (p) => assertEquals(3, p.columnAs[Int]("fof").toList.head))
-  }
 
   @Test def labels() {
     testThis(
@@ -261,10 +273,10 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "FILTER(identifier in collection WHERE predicate)",
       arguments = common_arguments,
       text = "`FILTER` returns all the elements in a collection that comply to a predicate.",
-      queryText = """match (a) where a.name='Eskil' return a.array, filter(x in a.array WHERE length(x) = 3)""",
-      returns = "This returns the property named `array` and a list of values in it, which have the length `3`.",
+      queryText = """match (a) where a.name='Eskil' return a.array, filter(x in a.array WHERE size(x) = 3)""",
+      returns = "This returns the property named `array` and a list of values in it, which have size `3`.",
       assertions = (p) => {
-        val array = p.columnAs[Iterable[_]]("filter(x in a.array WHERE length(x) = 3)").toList.head
+        val array = p.columnAs[Iterable[_]]("filter(x in a.array WHERE size(x) = 3)").toList.head
         assert(List("one","two") === array.toList)
       })
   }

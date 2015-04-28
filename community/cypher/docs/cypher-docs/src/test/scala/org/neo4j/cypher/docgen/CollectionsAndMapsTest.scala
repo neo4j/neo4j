@@ -76,10 +76,10 @@ RETURN range(0,10)[15]###
 ###
 RETURN range(0,10)[5..15]###
 
-You can get the length of a collection like this:
+You can get the size of a collection like this:
 
 ###
-RETURN length(range(0,10)[0..3])###
+RETURN size(range(0,10)[0..3])###
 
 == List comprehension ==
 

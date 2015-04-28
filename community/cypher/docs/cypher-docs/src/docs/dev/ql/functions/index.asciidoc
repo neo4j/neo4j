@@ -42,9 +42,11 @@ include::includes/cypher-functions-graph.asciidoc[]
 
 :leveloffset: 2
 
-include::length.asciidoc[]
+include::size.asciidoc[]
 
-include::length-of-pattern-expression.asciidoc[]
+include::size-of-pattern-expression.asciidoc[]
+
+include::length.asciidoc[]
 
 include::type.asciidoc[]
 
