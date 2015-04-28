@@ -22,8 +22,8 @@
 
   <properties>
     <version-package>cypher.internal.compiler.v2_3</version-package>
-    <scala.version>2.10.5</scala.version>
-    <scala.binary.version>2.10</scala.binary.version>
+    <scala.version>2.11.6</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
   <licenses>
@@ -92,7 +92,7 @@
 
     <dependency>
       <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_2.10</artifactId>
+      <artifactId>scalatest_2.11</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -103,7 +103,7 @@
     </dependency>
     <dependency>
       <groupId>org.scalautils</groupId>
-      <artifactId>scalautils_2.10</artifactId>
+      <artifactId>scalautils_2.11</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -114,7 +114,7 @@
     </dependency>
     <dependency>
       <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck_2.10</artifactId>
+      <artifactId>scalacheck_2.11</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -165,7 +165,7 @@
 
     <dependency>
       <groupId>org.parboiled</groupId>
-      <artifactId>parboiled-scala_2.10</artifactId>
+      <artifactId>parboiled-scala_2.11</artifactId>
     </dependency>
 
     <dependency>

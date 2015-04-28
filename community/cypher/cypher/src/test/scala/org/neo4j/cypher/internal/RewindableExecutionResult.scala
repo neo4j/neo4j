@@ -19,20 +19,13 @@
  */
 package org.neo4j.cypher.internal
 
-import java.util
-
-import org.mockito.Mockito.mock
 import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, exceptionHandlerFor2_3}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionResult, InternalExecutionResult}
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.iteratorToVisitable
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
-import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode => ExecutionModev2_3, PipeExecutionResult, PlannerName, RuntimeName, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v2_3.{PipeExecutionResult, PlannerName, RuntimeName}
 import org.neo4j.cypher.{ExecutionResult, InternalException}
-import org.neo4j.function.Suppliers.singleton
 import org.neo4j.graphdb.QueryExecutionType.QueryType
-import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.kernel.api.Statement
 
 object RewindableExecutionResult {
   self =>
@@ -45,14 +38,16 @@ object RewindableExecutionResult {
         }
       }
     case other: CompiledExecutionResult  =>
-      exceptionHandlerFor2_3.runSafely {other.toEagerIterableResult(planner, runtime)}
+      exceptionHandlerFor2_3.runSafely {
+        other.toEagerIterableResult(planner, runtime)
+      }
+
     case _ =>
       inner
   }
 
   def apply(in: ExecutionResult): InternalExecutionResult = in match {
     case e@ExecutionResultWrapperFor2_3(inner, _, _) => exceptionHandlerFor2_3.runSafely(apply(inner, e.planner, e.runtime))
-
-    case _                                      => throw new InternalException("Can't get the internal execution result of an older compiler")
+    case _                                           => throw new InternalException("Can't get the internal execution result of an older compiler")
   }
 }

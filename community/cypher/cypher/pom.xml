@@ -43,8 +43,8 @@
 
   <properties>
     <version-package>cypher.internal</version-package>
-    <scala.version>2.10.5</scala.version>
-    <scala.binary.version>2.10</scala.binary.version>
+    <scala.version>2.11.6</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
   <build>
@@ -88,7 +88,7 @@
 
     <dependency>
       <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_2.10</artifactId>
+      <artifactId>scalatest_2.11</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -99,7 +99,7 @@
     </dependency>
     <dependency>
       <groupId>org.scalautils</groupId>
-      <artifactId>scalautils_2.10</artifactId>
+      <artifactId>scalautils_2.11</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -110,7 +110,7 @@
     </dependency>
     <dependency>
       <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck_2.10</artifactId>
+      <artifactId>scalacheck_2.11</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -169,8 +169,8 @@
     <!-- neo4j-cypher -->
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-1.9</artifactId>
-      <version>2.0.4</version>
+      <artifactId>neo4j-cypher-compiler-1.9_2.11</artifactId>
+      <version>2.0.5</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -200,7 +200,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-2.2</artifactId>
+      <artifactId>neo4j-cypher-compiler-2.2_2.11</artifactId>
       <version>2.2.1</version>
       <exclusions>
         <exclusion>
@@ -295,7 +295,7 @@
 
     <dependency>
       <groupId>org.parboiled</groupId>
-      <artifactId>parboiled-scala_2.10</artifactId>
+      <artifactId>parboiled-scala_2.11</artifactId>
     </dependency>
     <dependency>
       <groupId>net.sf.opencsv</groupId>
@@ -311,7 +311,7 @@
 
     <dependency>
         <groupId>com.novus</groupId>
-        <artifactId>salat-core_2.10</artifactId>
+        <artifactId>salat-core_2.11</artifactId>
         <version>1.9.8</version>
         <exclusions>
             <exclusion>

@@ -102,12 +102,14 @@ object CodeGenerator {
        |import org.neo4j.helpers.collection.Visitor;
        |import org.neo4j.function.Supplier;
        |import org.neo4j.graphdb.GraphDatabaseService;
-       |import org.neo4j.kernel.api.Statement;
        |import org.neo4j.kernel.api.exceptions.KernelException;
        |import org.neo4j.kernel.api.ReadOperations;
+       |import org.neo4j.kernel.api.Statement;
        |import org.neo4j.cypher.internal.compiler.v2_3.CypherException;
        |import org.neo4j.cypher.internal.compiler.v2_3.codegen.ResultRowImpl;
        |import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompiledExecutionResult;
+       |import org.neo4j.cypher.internal.compiler.v2_3.executionplan.GeneratedQueryExecution;
+       |import org.neo4j.cypher.internal.compiler.v2_3.executionplan.SuccessfulCloseable;
        |import org.neo4j.graphdb.Result.ResultRow;
        |import org.neo4j.graphdb.Result.ResultVisitor;
        |import org.neo4j.graphdb.Result;
@@ -123,25 +125,60 @@ object CodeGenerator {
        |
        |$imports
        |
-       |public class $className extends CompiledExecutionResult
+       |public class $className implements GeneratedQueryExecution, SuccessfulCloseable
        |{
+       |private final TaskCloser closer;
        |private final ReadOperations ro;
        |private final GraphDatabaseService db;
-       |private final Map<String, Object> params;
+       |private final ExecutionMode executionMode;
+       |private final Supplier<InternalPlanDescription> description;
        |private final QueryExecutionTracer tracer;
+       |private final Map<String, Object> params;
+       |
+       |private SuccessfulCloseable closeable;
        |
        |$opIds
        |
        |public $className( TaskCloser closer, Statement statement, GraphDatabaseService db, ExecutionMode executionMode, Supplier<InternalPlanDescription> description, QueryExecutionTracer tracer, Map<String, Object> params )
        |{
-       |  super( closer, statement, executionMode, description );
+       |  this.closer = closer;
        |  this.ro = statement.readOperations();
        |  this.db = db;
+       |  this.executionMode = executionMode;
+       |  this.description = description;
        |  this.tracer = tracer;
        |  this.params = params;
        |}
        |
        |$members
+       |
+       |@Override
+       |public void setSuccessfulCloseable( SuccessfulCloseable closeable )
+       |{
+       |  this.closeable = closeable;
+       |}
+       |
+       |@Override
+       |public ExecutionMode executionMode()
+       |{
+       |  return this.executionMode;
+       |}
+       |
+       |@Override
+       |public InternalPlanDescription executionPlanDescription()
+       |{
+       |  return this.description.get();
+       |}
+       |
+       |@Override
+       |public void success() {
+       |  closeable.success();
+       |}
+       |
+       |@Override
+       |public void close() {
+       |  closeable.close();
+       |}
        |
        |@Override
        |public <E extends Exception> void accept(final ResultVisitor<E> visitor) throws E

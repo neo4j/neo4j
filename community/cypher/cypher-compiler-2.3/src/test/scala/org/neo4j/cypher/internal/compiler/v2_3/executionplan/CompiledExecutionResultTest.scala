@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
 import java.util
 
+import org.neo4j.cypher.internal.compiler.v2_3.{NormalMode, ExecutionMode}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ResultRowImpl
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.helpers.collection.Iterables._
@@ -108,17 +110,21 @@ class CompiledExecutionResultTest extends CypherFunSuite {
     toList(result.javaIterator) should equal(javaList(javaMap("foo" -> javaMap("key" -> "value"))))
   }
 
-  private def newCompiledExecutionResult(row: util.Map[String, Any]) =
-    new CompiledExecutionResult(null, null, null, null) {
-
-      override def javaColumns: util.List[String] = new util.ArrayList(row.keySet())
-
-      override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {
+  private def newCompiledExecutionResult(row: util.Map[String, Any]) = {
+    val noCompiledCode: GeneratedQueryExecution = new GeneratedQueryExecution {
+      override def setSuccessfulCloseable(closeable: SuccessfulCloseable){}
+      override def javaColumns(): util.List[String] = new util.ArrayList(row.keySet())
+      override def executionMode(): ExecutionMode = NormalMode
+      override def accept[E <: Exception](visitor: ResultVisitor[E]): Unit = {
         val rowImpl = new ResultRowImpl()
         row.asScala.foreach { case (k, v) => rowImpl.set(k, v) }
         visitor.visit(rowImpl)
       }
+      override def executionPlanDescription(): InternalPlanDescription = ???
     }
+
+    new CompiledExecutionResult(null, null, noCompiledCode, null)
+  }
 
   private def javaList[T](elements: T*): util.List[T] = elements.toList.asJava
 

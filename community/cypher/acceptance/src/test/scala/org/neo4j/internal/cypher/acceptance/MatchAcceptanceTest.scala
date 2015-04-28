@@ -2050,7 +2050,7 @@ return b
   }
 
   test("should return multiple property values for matched node") {
-    val props = Map(
+    val props = Map[String, Any](
       "name" -> "Philip J. Fry",
       "age" -> 2046,
       "seasons" -> Array(1, 2, 3, 4, 5, 6, 7))

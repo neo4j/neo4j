@@ -22,8 +22,8 @@
     <docs-plugin.skip>false</docs-plugin.skip>
     <attach-docs-phase>prepare-package</attach-docs-phase>
     <remote-csv-upload>http://neo4j.com/docs/${project.version}/cypher-refcard/csv</remote-csv-upload>
-    <scala.version>2.10.5</scala.version>
-    <scala.binary.version>2.10</scala.binary.version>
+    <scala.version>2.11.6</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
   <licenses>
@@ -60,7 +60,7 @@
 
     <dependency>
       <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_2.10</artifactId>
+      <artifactId>scalatest_2.11</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -71,7 +71,7 @@
     </dependency>
     <dependency>
       <groupId>org.scalautils</groupId>
-      <artifactId>scalautils_2.10</artifactId>
+      <artifactId>scalautils_2.11</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -107,7 +107,7 @@
     </dependency>
 
     <!-- neo4j -->
-    
+
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>

@@ -43,6 +43,8 @@ import javax.tools.ToolProvider;
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
 import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser;
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompiledExecutionResult;
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.GeneratedQueryExecution;
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult;
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException;
@@ -64,8 +66,7 @@ public class Javac
         }
     }
 
-    public static Class<InternalExecutionResult> compile( String className, String classBody ) throws
-            ClassNotFoundException
+    public static Class<GeneratedQueryExecution> compile( String className, String classBody ) throws ClassNotFoundException
     {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if ( compiler == null )
@@ -94,17 +95,20 @@ public class Javac
             throw new CompilationError( sb.toString() );
         }
 
-        Class<InternalExecutionResult> clazz = (Class<InternalExecutionResult>) manager.getClassLoader( null ).loadClass( className );
-        return clazz;
+        return (Class<GeneratedQueryExecution>) manager.getClassLoader( null ).loadClass( className );
     }
 
-    public static InternalExecutionResult newInstance( Class<InternalExecutionResult> clazz, TaskCloser closer, Statement statement,
-            GraphDatabaseService db, ExecutionMode executionMode, Supplier<InternalPlanDescription> description, QueryExecutionTracer tracer, Map<String, Object> params)
+    // TODO: Depending on gdb and supplier is not exactly like going through the SPI
+    // TODO: Perhaps using a builder or at lesat a data carrier for all the arguments might be nice to have here
+    public static InternalExecutionResult newInstance( Class<GeneratedQueryExecution> clazz, TaskCloser closer, Statement statement,
+                                                       GraphDatabaseService db, ExecutionMode executionMode, Supplier<InternalPlanDescription> description,
+                                                       QueryExecutionTracer tracer, Map<String, Object> params)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException
     {
-        Constructor<InternalExecutionResult> constructor =
-                clazz.getDeclaredConstructor( TaskCloser.class, Statement.class, GraphDatabaseService.class, ExecutionMode.class, Supplier.class, QueryExecutionTracer.class, Map.class);
-        return constructor.newInstance( closer, statement, db, executionMode, description, tracer, params );
+        Constructor<GeneratedQueryExecution> constructor =
+                clazz.getDeclaredConstructor( TaskCloser.class, Statement.class, GraphDatabaseService.class, ExecutionMode.class, Supplier.class, QueryExecutionTracer.class, Map.class );
+        GeneratedQueryExecution compiledCode = constructor.newInstance( closer, statement, db, executionMode, description, tracer, params );
+        return new CompiledExecutionResult( closer, statement, compiledCode, description );
     }
 
     private static class InMemSource extends SimpleJavaFileObject

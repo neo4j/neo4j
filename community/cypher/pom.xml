@@ -235,7 +235,7 @@
 
       <dependency>
         <groupId>org.scalatest</groupId>
-        <artifactId>scalatest_2.10</artifactId>
+        <artifactId>scalatest_2.11</artifactId>
         <version>2.2.4</version>
         <scope>test</scope>
         <exclusions>
@@ -251,7 +251,7 @@
       </dependency>
       <dependency>
         <groupId>org.scalautils</groupId>
-        <artifactId>scalautils_2.10</artifactId>
+        <artifactId>scalautils_2.11</artifactId>
         <version>2.1.7</version>
         <scope>test</scope>
         <exclusions>
@@ -267,7 +267,7 @@
       </dependency>
       <dependency>
         <groupId>org.scalacheck</groupId>
-        <artifactId>scalacheck_2.10</artifactId>
+        <artifactId>scalacheck_2.11</artifactId>
         <version>1.12.2</version>
         <scope>test</scope>
       </dependency>
@@ -319,7 +319,7 @@
 
       <dependency>
         <groupId>org.parboiled</groupId>
-        <artifactId>parboiled-scala_2.10</artifactId>
+        <artifactId>parboiled-scala_2.11</artifactId>
         <version>1.1.7</version>
         <exclusions>
           <exclusion>

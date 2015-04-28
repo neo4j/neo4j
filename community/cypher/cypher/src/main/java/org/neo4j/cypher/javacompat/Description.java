@@ -69,7 +69,7 @@ class Description implements ExecutionPlanDescription
     @Override
     public Map<String, Object> getArguments()
     {
-        return JavaConversions.asJavaMap( description.arguments() );
+        return JavaConversions.mapAsJavaMap( description.arguments() );
     }
 
     @Override
@@ -77,7 +77,7 @@ class Description implements ExecutionPlanDescription
     {
         if ( description instanceof ExtendedPlanDescription )
         {
-            return JavaConversions.asJavaSet( ((ExtendedPlanDescription) description).identifiers() );
+            return JavaConversions.setAsJavaSet( ((ExtendedPlanDescription) description).identifiers() );
         }
         return Collections.emptySet();
     }

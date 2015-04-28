@@ -30,8 +30,8 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
-class TransactionBoundPlanContext(statement: Statement, val gdb: GraphDatabaseService)
-  extends TransactionBoundTokenContext(statement) with PlanContext {
+class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDatabaseService)
+  extends TransactionBoundTokenContext(initialStatement) with PlanContext {
 
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
