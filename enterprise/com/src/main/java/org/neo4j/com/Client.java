@@ -19,6 +19,16 @@
  */
 package org.neo4j.com;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -30,16 +40,6 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
-
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Exceptions;
@@ -86,7 +86,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private ResourceReleaser resourcePoolReleaser;
     private ComExceptionHandler comExceptionHandler;
 
-    private final RequestMonitor requestMonitor;
+    private RequestMonitor requestMonitor;
 
     public Client( String hostNameOrIp, int port, Logging logging, Monitors monitors,
                    StoreId storeId, int frameLength,
@@ -188,12 +188,17 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     @Override
     public void stop()
     {
-        channelPool.close( true );
-        bootstrap.releaseExternalResources();
-        bossExecutor.shutdownNow();
-        workerExecutor.shutdownNow();
-        comExceptionHandler = ComExceptionHandler.NO_OP;
-        msgLog.logMessage( toString() + " shutdown", true );
+        if ( channelPool != null )
+        {
+            channelPool.close( true );
+            bootstrap.releaseExternalResources();
+            comExceptionHandler = ComExceptionHandler.NO_OP;
+            msgLog.logMessage( toString() + " shutdown", true );
+            bootstrap = null;
+            channelPool = null;
+            resourcePoolReleaser = null;
+            requestMonitor = null;
+        }
     }
 
     protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,
@@ -274,7 +279,11 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             {
                 releaseChannel();
             }
-            requestMonitor.endRequest( failure );
+
+            if ( requestMonitor != null )
+            {
+                requestMonitor.endRequest( failure );
+            }
         }
     }
 
@@ -317,7 +326,10 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     private void releaseChannel()
     {
-        channelPool.release();
+        if ( channelPool != null )
+        {
+            channelPool.release();
+        }
     }
 
     private void closeChannel( Triplet<Channel, ChannelBuffer, ByteBuffer> channel )

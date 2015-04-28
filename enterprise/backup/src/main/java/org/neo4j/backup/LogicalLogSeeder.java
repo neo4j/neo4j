@@ -160,6 +160,10 @@ public class LogicalLogSeeder
             }
             finally
             {
+                if ( recoveryResponse != null )
+                {
+                    recoveryResponse.close();
+                }
                 try
                 {
                     recoveryClient.stop();
@@ -167,10 +171,6 @@ public class LogicalLogSeeder
                 catch ( Throwable throwable )
                 {
                     throw new RuntimeException( throwable );
-                }
-                if ( recoveryResponse != null )
-                {
-                    recoveryResponse.close();
                 }
                 targetDb.shutdown();
             }

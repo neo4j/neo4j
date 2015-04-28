@@ -23,6 +23,9 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
+
 /**
  * Record of an individual Paxos instance, from a proposer perspective
  */
@@ -66,6 +69,11 @@ public class PaxosInstance
         return state.equals( s );
     }
 
+    public long getBallot()
+    {
+        return ballot;
+    }
+
     public void propose( long ballot, List<URI> acceptors )
     {
         this.state = State.p1_pending;
@@ -82,7 +90,7 @@ public class PaxosInstance
     public void promise( ProposerMessage.PromiseState promiseState )
     {
         promises.add( promiseState );
-        if ( promiseState.getValue() != null && promiseState.getBallot() > phase1Ballot )
+        if ( promiseState.getValue() != null && promiseState.getBallot() >= phase1Ballot )
         {
             value_1 = promiseState.getValue();
             phase1Ballot = promiseState.getBallot();
@@ -191,10 +199,43 @@ public class PaxosInstance
     @Override
     public String toString()
     {
-        return "[id:" + id +
-               " state:" + state.name() +
-               " b:" + ballot +
-               " v1:" + value_1 +
-               " v2:" + value_2 + "]";
+        try
+        {
+            Object toStringValue1 = null;
+            if ( value_1 != null )
+            {
+                if ( value_1 instanceof Payload )
+                {
+                    toStringValue1 = new AtomicBroadcastSerializer().receive( (Payload) value_1 ).toString();
+                }
+                else
+                {
+                    toStringValue1 = value_1.toString();
+                }
+            }
+
+            Object toStringValue2 = null;
+            if ( value_2 != null )
+            {
+                if ( value_2 instanceof Payload )
+                {
+                    toStringValue2 = new AtomicBroadcastSerializer().receive( (Payload) value_2 ).toString();
+                }
+                else
+                {
+                    toStringValue2 = value_2.toString();
+                }
+            }
+
+            return "[id:" + id +
+                    " state:" + state.name() +
+                    " b:" + ballot +
+                    " v1:" + toStringValue1 +
+                    " v2:" + toStringValue2 + "]";
+        }
+        catch ( Throwable e )
+        {
+            return "";
+        }
     }
 }
