@@ -19,13 +19,19 @@
  */
 package org.neo4j.harness.internal;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.neo4j.function.Function;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.ServerControls;
@@ -55,13 +61,39 @@ public class InProcessServerBuilder implements TestServerBuilder
      */
     private final Map<String, String> config = new HashMap<>();
 
+    public InProcessServerBuilder()
+    {
+        this( new File( System.getProperty( "java.io.tmpdir" ) ) );
+    }
+
     public InProcessServerBuilder( File workingDir )
+    {
+        File storeDir = new File(workingDir, randomFolderName()).getAbsoluteFile();
+        init( storeDir );
+    }
+
+    private void init( File workingDir )
     {
         setDirectory( workingDir );
         withConfig( ServerSettings.auth_enabled, "false" );
         withConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         withConfig( WEBSERVER_PORT_PROPERTY_KEY, Integer.toString( freePort() ) );
     }
+
+
+    @Override
+    public InProcessServerBuilder copyFrom( File originalStoreDir ) {
+        try
+        {
+            FileUtils.copyDirectory( originalStoreDir, serverFolder );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return this;
+    }
+
 
     @Override
     public ServerControls newServer()
@@ -81,7 +113,7 @@ public class InProcessServerBuilder implements TestServerBuilder
         controls.start();
         try
         {
-            fixtures.applyTo( controls.httpURI() );
+            fixtures.applyTo( controls );
         }
         catch(RuntimeException e)
         {
@@ -113,7 +145,7 @@ public class InProcessServerBuilder implements TestServerBuilder
     @Override
     public TestServerBuilder withExtension( String mountPath, String packageName )
     {
-        extensions.add(mountPath, packageName);
+        extensions.add( mountPath, packageName );
         return this;
     }
 
@@ -131,9 +163,16 @@ public class InProcessServerBuilder implements TestServerBuilder
         return this;
     }
 
+    @Override
+    public TestServerBuilder withFixture( Function<GraphDatabaseService, Void> fixtureFunction )
+    {
+        fixtures.add( fixtureFunction );
+        return this;
+    }
+
     private TestServerBuilder setDirectory( File dir )
     {
-        this.serverFolder = new File(dir, randomFolderName()).getAbsoluteFile();
+        this.serverFolder = dir;
         config.put( DATABASE_LOCATION_PROPERTY_KEY, serverFolder.getAbsolutePath() );
         return this;
     }

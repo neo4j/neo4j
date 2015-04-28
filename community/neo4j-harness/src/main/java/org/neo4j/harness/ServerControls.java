@@ -21,6 +21,8 @@ package org.neo4j.harness;
 
 import java.net.URI;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+
 /**
  * Control panel for a Neo4j test instance.
  */
@@ -38,4 +40,8 @@ public interface ServerControls extends AutoCloseable
     /** Stop the test instance and delete all files related to it on disk. */
     @Override
     void close();
+
+    /** Access the {@link org.neo4j.graphdb.GraphDatabaseService} used by the server */
+    GraphDatabaseService graph();
+
 }
