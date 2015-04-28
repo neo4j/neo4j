@@ -45,12 +45,13 @@ public interface PageFaultEvent
         }
 
         @Override
-        public void setCachePageId( int cachePageId )
+        public EvictionEvent beginEviction()
         {
+            return EvictionEvent.NULL;
         }
 
         @Override
-        public void setParked( boolean parked )
+        public void setCachePageId( int cachePageId )
         {
         }
     };
@@ -58,26 +59,25 @@ public interface PageFaultEvent
     /**
      * Add up a number of bytes that has been read from the backing file into the free page being bound.
      */
-    public void addBytesRead( int bytes );
+    void addBytesRead( int bytes );
 
     /**
      * The id of the cache page that is being faulted into.
      */
-    public void setCachePageId( int cachePageId );
-
-    /**
-     * Set to 'true' if the page faulting thread ended up parking, while it waited for the eviction thread
-     * to free up a page that could be faulted into.
-     */
-    public void setParked( boolean parked );
+    void setCachePageId( int cachePageId );
 
     /**
      * The page fault completed successfully.
      */
-    public void done();
+    void done();
 
     /**
      * The page fault did not complete successfully, but instead caused the given Throwable to be thrown.
      */
-    public void done( Throwable throwable );
+    void done( Throwable throwable );
+
+    /**
+     * Begin an eviction event caused by this page fault event.
+     */
+    EvictionEvent beginEviction();
 }
