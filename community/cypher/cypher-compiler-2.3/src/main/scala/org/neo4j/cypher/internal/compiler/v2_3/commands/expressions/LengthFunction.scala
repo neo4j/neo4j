@@ -27,8 +27,8 @@ import org.neo4j.graphdb.Path
 
 case class LengthFunction(inner: Expression)
   extends NullInNullOutExpression(inner)
-  with CollectionSupport
-{
+  with CollectionSupport {
+  //NOTE all usage except for paths is deprecated
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = value match {
     case path: Path => path.length()
     case s: String  => s.length()
@@ -39,7 +39,7 @@ case class LengthFunction(inner: Expression)
 
   def arguments = Seq(inner)
 
-  def calculateType(symbols: SymbolTable): CypherType = CTInteger
+  def calculateType(symbols: SymbolTable) = CTInteger
 
   def symbolTableDependencies = inner.symbolTableDependencies
 

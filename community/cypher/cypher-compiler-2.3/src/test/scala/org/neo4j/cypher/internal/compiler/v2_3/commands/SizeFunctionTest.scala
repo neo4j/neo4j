@@ -20,19 +20,46 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{SizeFunction, ExtractFunction, Identifier, LengthFunction}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{PathImpl, Identifier, SizeFunction}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.{Relationship, Node, Path}
 
-class ExtractTest extends CypherFunSuite {
-  test("canReturnSomethingFromAnIterable") {
-    val l = Seq("x", "xxx", "xx")
-    val expression = SizeFunction(Identifier("n"))
-    val collection = Identifier("l")
+class SizeFunctionTest extends CypherFunSuite {
+
+  test("size can be used on collections") {
+    //given
+    val l = Seq("it", "was", "the")
     val m = ExecutionContext.from("l" -> l)
+    val sizeFunction = SizeFunction(Identifier("l"))
 
-    val extract = ExtractFunction(collection, "n", expression)
+    //when
+    val result = sizeFunction.apply(m)(QueryStateHelper.empty)
 
-    extract.apply(m)(QueryStateHelper.empty) should equal(Seq(1, 3, 2))
+    //then
+    result should equal(3)
+  }
+
+  test("size can be used on strings") {
+    //given
+    val s = "it was the"
+    val m = ExecutionContext.from("s" -> s)
+    val sizeFunction = SizeFunction(Identifier("s"))
+
+    //when
+    val result = sizeFunction.apply(m)(QueryStateHelper.empty)
+
+    //then
+    result should equal(10)
+  }
+
+  test("size cannot be used on paths") {
+    //given
+    val p = new PathImpl(mock[Node], mock[Relationship], mock[Node])
+    val m = ExecutionContext.from("p" -> p)
+    val sizeFunction = SizeFunction(Identifier("p"))
+
+    //when/then
+    intercept[CypherTypeException](sizeFunction.apply(m)(QueryStateHelper.empty))
   }
 }

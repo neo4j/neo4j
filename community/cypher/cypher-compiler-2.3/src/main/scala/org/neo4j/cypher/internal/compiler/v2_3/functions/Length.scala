@@ -20,14 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v2_3.functions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{PatternExpression, FunctionInvocation}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
 import ExpressionConverters._
 import commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_3.notification.LengthOnNonPathNotification
 import symbols._
 
 case object Length extends Function with SimpleTypedFunction {
   def name = "length"
 
+  //NOTE using CTString and CTCollection here is deprecated
   val signatures = Vector(
     Signature(Vector(CTString), CTInteger),
     Signature(Vector(CTCollection(CTAny)), CTInteger),
@@ -36,4 +40,17 @@ case object Length extends Function with SimpleTypedFunction {
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =
     commandexpressions.LengthFunction(invocation.arguments(0).asCommandExpression)
+
+  override def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation) =
+    super.semanticCheck(ctx, invocation) chain checkForInvalidUsage(ctx, invocation)
+
+  def checkForInvalidUsage(ctx: SemanticContext, invocation: FunctionInvocation) = (state: SemanticState) => {
+    invocation.args.foreach (expr =>
+      if(state.expressionType(expr).actual != CTPath.invariant) {
+        state.notificationLogger += LengthOnNonPathNotification(expr.position)
+      }
+    )
+
+    SemanticCheckResult(state, Seq.empty)
+  }
 }

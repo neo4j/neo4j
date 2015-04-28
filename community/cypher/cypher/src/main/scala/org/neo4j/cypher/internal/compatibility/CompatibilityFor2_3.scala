@@ -25,7 +25,7 @@ import java.util
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlan => ExecutionPlan_v2_3, InternalExecutionResult}
-import org.neo4j.cypher.internal.compiler.v2_3.notification.{CartesianProductNotification, InternalNotification, LegacyPlannerNotification}
+import org.neo4j.cypher.internal.compiler.v2_3.notification.{LengthOnNonPathNotification, CartesianProductNotification, InternalNotification, LegacyPlannerNotification}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.MapToPublicExceptions
@@ -280,6 +280,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
        NotificationCode.CARTESIAN_PRODUCT.notification(new InputPosition(pos.offset, pos.line, pos.column))
     case LegacyPlannerNotification =>
       NotificationCode.LEGACY_PLANNER.notification(InputPosition.empty)
+    case LengthOnNonPathNotification(pos) =>
+      NotificationCode.LENGTH_ON_NON_PATH.notification(new InputPosition(pos.offset, pos.line, pos.column))
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_3.runSafely {inner.accept(visitor)}

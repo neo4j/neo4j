@@ -39,7 +39,10 @@ public enum NotificationCode
                     "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH" ),
     LEGACY_PLANNER( SeverityLevel.WARNING,
                     Status.Statement.DeprecationWarning,
-                    "Using PLANNER for switching between planners has been deprecated, please use CYPHER planner=[rule,cost] instead");
+                    "Using PLANNER for switching between planners has been deprecated, please use CYPHER planner=[rule,cost] instead"),
+    LENGTH_ON_NON_PATH( SeverityLevel.WARNING,
+                    Status.Statement.DeprecationWarning,
+                    "Using 'length' on anything that is not a path is deprecated, please use 'size' instead");
     private final Status status;
     private final String description;
     private final SeverityLevel severity;
