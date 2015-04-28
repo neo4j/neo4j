@@ -46,10 +46,10 @@ class UnwindTest extends DocumentingTestBase {
   }
 
   @Test def create_data_from_collection_parameter() {
-    prepareAndTestQuery(
+    testQuery(
       title = "Create nodes from a collection parameter",
       text = "Create a number of nodes and relationships from a parameter-list without using +FOREACH+.",
-      prepare = setParameters(Map("events" -> List(Map("year" -> 2014, "id" -> 1), Map("year" -> 2014, "id" -> 2)))),
+      parameters = Map("events" -> List(Map("year" -> 2014, "id" -> 1), Map("year" -> 2014, "id" -> 2))),
       queryText =
         """UNWIND {events} as event
            MERGE (y:Year {year:event.year})

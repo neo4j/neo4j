@@ -178,12 +178,12 @@ return keanu""",
   }
 
   @Test def using_map_parameters_with_merge() {
-    prepareAndTestQuery(
+    testQuery(
       title = "Using map parameters with MERGE",
       text = """+MERGE+ does not support map parameters like for example +CREATE+ does.
 To use map parameters with +MERGE+, it is necessary to explicitly use the expected properties, like in the following example.
 For more information on parameters, see <<cypher-parameters>>.""",
-      prepare = setParameters(Map("param" -> Map("name" -> "Keanu Reeves", "role" -> "Neo"))),
+      parameters = Map("param" -> Map("name" -> "Keanu Reeves", "role" -> "Neo")),
       queryText = "merge (oliver:Person {name:{param}.name, role:{param}.role}) return oliver",
       optionalResultExplanation = "",
       assertions = p => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)

@@ -87,7 +87,7 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
         "Once the nodes are loaded, we simply create a relationship between them.",
       queryText = "match (a:Person), (b:Person) where a.name = 'Node A' and b.name = 'Node B' create (a)-[r:RELTYPE]->(b) return r",
       optionalResultExplanation = "The created relationship is returned by the query.",
-      dbPrepare = createTwoPersonNodesWithNames,
+      prepare = createTwoPersonNodesWithNames,
       assertions = (p) => assert(p.size === 1))
   }
 
@@ -104,7 +104,7 @@ Cypher will turn that into an array. All the elements in the collection must be 
 for this to work.""",
       queryText = "match (n) where has(n.name) with collect(n.name) as names create (new { name : names }) return new",
       optionalResultExplanation = "A node with an array property named name is returned.",
-      dbPrepare = createTwoNodesWithProperty,
+      prepare = createTwoNodesWithProperty,
       assertions = (p) => {
         val createdNode = p.toList.head("new").asInstanceOf[Node]
         assert(createdNode.getProperty("name") === Array("Andres", "Michael"))
@@ -130,7 +130,7 @@ will be created. """,
         "Note that the values can be any expression.",
       queryText = "match (a:Person), (b:Person) where a.name = 'Node A' and b.name = 'Node B' create (a)-[r:RELTYPE {name : a.name + '<->' + b.name }]->(b) return r",
       optionalResultExplanation = "The newly created relationship is returned by the example query.",
-      dbPrepare = createTwoPersonNodesWithNames,
+      prepare = createTwoPersonNodesWithNames,
       assertions = (p) => {
         val result = p.toList
         assert(result.size === 1)
@@ -140,29 +140,30 @@ will be created. """,
   }
 
   @Test def create_single_node_from_map() {
-    prepareAndTestQuery(
+    testQuery(
       title = "Create node with a parameter for the properties",
       text = """
 You can also create a graph entity from a map.
 All the key/value pairs in the map will be set as properties on the created relationship or node.
 In this case we add a +Person+ label to the node as well.
 """,
-      prepare = setParameters(Map("props" -> Map("name" -> "Andres", "position" -> "Developer"))),
+      parameters = Map("props" -> Map("name" -> "Andres", "position" -> "Developer")),
       queryText = "create (n:Person {props}) return n",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1))
   }
 
   @Test def create_multiple_nodes_from_maps() {
-    prepareAndTestQuery(
+    testQuery(
       title = "Create multiple nodes with a parameter for their properties",
       text = """
 By providing Cypher an array of maps, it will create a node for each map.
 
 NOTE: When you do this, you can't create anything else in the same +CREATE+ clause.
 """,
-      prepare = setParameters(Map("props" -> List(Map("name" -> "Andres", "position" -> "Developer"),
-        Map("name" -> "Michael", "position" -> "Developer")))),
+      parameters = Map("props" -> List(
+        Map("name" -> "Andres", "position" -> "Developer"),
+        Map("name" -> "Michael", "position" -> "Developer"))),
       queryText = "create (n {props}) return n",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))

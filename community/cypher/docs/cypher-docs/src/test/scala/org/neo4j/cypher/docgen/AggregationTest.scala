@@ -165,7 +165,7 @@ In this case, we are running the query against the following data:
 include::includes/aggregation-introduction.preparation-graph.asciidoc[]
 
 """,
-      prepare = executePreparationQueries(List("""
+      prepare = _ => executePreparationQueries(List("""
 MATCH (b:Person {name: 'B'}), (c:Person {name: 'C'})
 CREATE (d:Person {name: 'D'}), (b)-[:KNOWS]->(d), (c)-[:KNOWS]->(d)
 """)),

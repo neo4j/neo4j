@@ -64,7 +64,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     prepareAndTestQuery(
       title = "Drop index on a label",
       text = "To drop an index on all nodes that have a label, use the +DROP+ +INDEX+ clause.",
-      prepare = executePreparationQueries(List("create index on :Person(name)")),
+      prepare = _ => executePreparationQueries(List("create index on :Person(name)")),
       queryText = "drop index on :Person(name)",
       optionalResultExplanation = "",
       assertions = (p) => assertIndexesOnLabels("Person", List())

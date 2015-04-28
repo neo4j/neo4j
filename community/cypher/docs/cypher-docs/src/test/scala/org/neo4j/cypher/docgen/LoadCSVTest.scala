@@ -25,7 +25,7 @@ import org.junit.Test
 import java.io.File
 import org.junit.Assert._
 
-class LoadCSVTest extends DocumentingTestBase with QueryStatisticsTestSupport {
+class LoadCSVTest extends DocumentingTestBase with QueryStatisticsTestSupport with SoftReset {
   override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 

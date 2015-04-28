@@ -24,7 +24,7 @@ import org.junit.Test
 import org.neo4j.graphdb.Node
 import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
-class OrderByTest extends DocumentingTestBase {
+class OrderByTest extends DocumentingTestBase with SoftReset {
   override def graphDescription = List("A KNOWS B", "B KNOWS C")
 
   override protected def getGraphvizStyle: GraphStyle =
