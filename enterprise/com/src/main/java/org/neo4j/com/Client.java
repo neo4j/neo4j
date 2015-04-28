@@ -165,7 +165,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                 if ( channel.isConnected() )
                 {
                     msgLog.logMessage( threadInfo() + "Closing: " + context + ". " +
-                                       "Channel pool size is now " + currentSize(), true );
+                            "Channel pool size is now " + currentSize(), true );
                     channel.close();
                 }
             }
@@ -196,16 +196,19 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     @Override
     public void stop()
     {
-        channelPool.close( true );
-        bootstrap.releaseExternalResources();
-        comExceptionHandler = ComExceptionHandler.NO_OP;
-        msgLog.logMessage( toString() + " shutdown", true );
-        bootstrap = null;
-        channelPool = null;
-        resourcePoolReleaser = null;
-        responseUnpacker = null;
-        requestMonitor = null;
-        byteCounterMonitor = null;
+        if ( channelPool != null )
+        {
+            channelPool.close( true );
+            bootstrap.releaseExternalResources();
+            comExceptionHandler = ComExceptionHandler.NO_OP;
+            msgLog.logMessage( toString() + " shutdown", true );
+            bootstrap = null;
+            channelPool = null;
+            resourcePoolReleaser = null;
+            responseUnpacker = null;
+            requestMonitor = null;
+            byteCounterMonitor = null;
+        }
     }
 
     protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,
@@ -272,7 +275,11 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             {
                 dispose( channelContext );
             }
-            requestMonitor.endRequest( failure );
+
+            if ( requestMonitor != null )
+            {
+                requestMonitor.endRequest( failure );
+            }
         }
     }
 
@@ -303,6 +310,11 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     {
         try
         {
+            if ( channelPool == null )
+            {
+                throw new ComException( "Client is stopped" );
+            }
+
             // Calling acquire is dangerous since it may be a blocking call... and if this
             // thread holds a lock which others may want to be able to communicate with
             // the server things go stiff.
@@ -323,7 +335,11 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private void dispose( ChannelContext channelContext )
     {
         channelContext.channel().close().awaitUninterruptibly();
-        channelPool.release();
+
+        if ( channelPool != null )
+        {
+            channelPool.release();
+        }
     }
 
     @Override
@@ -348,7 +364,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         return Server.INTERNAL_PROTOCOL_VERSION;
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     private static BlockingReadHandler<ChannelBuffer> extractBlockingReadHandler( ChannelContext channelContext )
     {
         ChannelPipeline pipeline = channelContext.channel().getPipeline();

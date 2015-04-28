@@ -19,15 +19,20 @@
  */
 package org.neo4j.ha;
 
+import java.io.File;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.util.concurrent.Future;
-
+import org.neo4j.com.ComException;
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Predicates;
+import org.neo4j.helpers.TransactionTemplate;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.OtherThreadRule;
@@ -38,6 +43,7 @@ import org.neo4j.test.ha.ClusterManager;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.kernel.impl.api.integrationtest.UniquenessConstraintValidationConcurrencyIT.createNode;
 import static org.neo4j.test.OtherThreadRule.isWaiting;
@@ -93,26 +99,33 @@ public class UniquenessConstraintValidationHAIT
         ClusterManager.ManagedCluster cluster = startClusterSeededWith(
                 databaseWithUniquenessConstraint( "Label1", "key1" ) );
 
-        HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
-        HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( /*except:*/slave1 );
+        final HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
+        final HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( /*except:*/slave1 );
 
         // when
-        Future<Boolean> created;
-        Transaction tx = slave1.beginTx();
-        try
+        TransactionTemplate template = new TransactionTemplate().
+                retries( 3 ).
+                backoff( 10, TimeUnit.SECONDS ).
+                retryOn( Predicates.<Throwable>instanceOf( ComException.class ) ).
+                with( slave1 );
+
+        Future<Boolean> created = template.execute( new Function<Transaction, Future<Boolean>>()
         {
-            slave1.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+            @Override
+            public Future<Boolean> apply( Transaction transaction ) throws RuntimeException
+            {
+                slave1.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
 
-            created = otherThread.execute( createNode( slave2, "Label1", "key1", "value1" ) );
-
-            assertThat( otherThread, isWaiting() );
-
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
+                try
+                {
+                    return otherThread.execute( createNode( slave2, "Label1", "key1", "value1" ) );
+                }
+                finally
+                {
+                    assertThat( otherThread, isWaiting() );
+                }
+            }
+        } );
 
         // then
         assertFalse( "creating violating data should fail", created.get() );

@@ -83,7 +83,8 @@ public enum ProposerState
                                     + " rejected from " + message.getHeader( Message.FROM ) + " with ballot "
                                     + rejectPropose.getBallot() );
 
-                            if ( instance.isState( PaxosInstance.State.p1_pending ) )
+                            if ( instance.isState( PaxosInstance.State.p1_pending ) &&
+                                    instance.getBallot() < rejectPropose.getBallot()) // Ignore multiple rejects on same prepare
                             {
                                 long ballot = instance.ballot;
                                 while ( ballot <= rejectPropose.getBallot() )

@@ -19,14 +19,14 @@
  */
 package org.neo4j.cluster.statemachine;
 
-import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
-import static org.neo4j.cluster.com.message.Message.FROM;
-import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE;
-
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatState;
 import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
+import static org.neo4j.cluster.com.message.Message.FROM;
+import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE;
 
 /**
  * Logs state transitions in {@link StateMachine}s. Use this for debugging mainly.

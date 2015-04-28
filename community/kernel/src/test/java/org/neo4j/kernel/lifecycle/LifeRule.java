@@ -25,7 +25,7 @@ import org.junit.runners.model.Statement;
 
 public class LifeRule implements TestRule
 {
-    private LifeSupport life = new LifeSupport(  );
+    private LifeSupport life = new LifeSupport();
     private final boolean autoStart;
 
     public LifeRule()
@@ -66,9 +66,10 @@ public class LifeRule implements TestRule
                         failure.addSuppressed( suppressed );
                     }
                     throw failure;
-                } finally
+                }
+                finally
                 {
-                    life = new LifeSupport(  );
+                    life = new LifeSupport();
                 }
             }
         };
@@ -76,7 +77,7 @@ public class LifeRule implements TestRule
 
     public <T> T add( T instance )
     {
-        return life.add(instance);
+        return life.add( instance );
     }
 
 
