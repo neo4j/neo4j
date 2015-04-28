@@ -116,6 +116,6 @@ END as result""",
 *Arguments:*
 
 %s""", text, syntax, argsText)
-    testQuery(title, fullText, queryText, returns, assertions)
+    testQuery(title, fullText, queryText, returns, assertions = assertions)
   }
 }
