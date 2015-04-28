@@ -20,6 +20,7 @@
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import java.io.Serializable;
+import java.net.URI;
 
 import org.junit.Test;
 import org.mockito.Matchers;
@@ -31,6 +32,7 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.com.message.TrackingMessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstance.State;
 import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.lang.Integer.parseInt;
@@ -87,6 +89,36 @@ public class ProposerStateTest
                         new MessageArgumentMatcher().onMessageType( ProposerMessage.propose ).withPayload( theTimedoutPayload )
                 ) );
         verify( context, times(1) ).unbookInstance( instanceId );
+    }
+
+    @Test
+    public void something() throws Throwable
+    {
+        Object acceptorValue = new Object();
+        Object bookedValue = new Object();
+
+        org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 42 );
+
+        PaxosInstanceStore paxosInstanceStore = new PaxosInstanceStore();
+
+        ProposerContext context = Mockito.mock(ProposerContext.class);
+        when(context.getPaxosInstance( instanceId )).thenReturn( paxosInstanceStore.getPaxosInstance( instanceId ) );
+        when(context.getMinimumQuorumSize( Mockito.anyList() )).thenReturn( 2 );
+
+        // The instance is closed
+        PaxosInstance paxosInstance = new PaxosInstance( paxosInstanceStore, instanceId ); // the instance
+        paxosInstance.propose( 2001, Iterables.toList(
+                Iterables.<URI, URI>iterable( create( "http://something1" ), create( "http://something2" ),
+                        create( "http://something3" ) ) ) );
+
+        Message message = Message.to( ProposerMessage.promise, create( "http://something1" ), new ProposerMessage.PromiseState( 2001, acceptorValue ) );
+        message.setHeader( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE, instanceId.toString() );
+
+        MessageHolder mockHolder = mock( MessageHolder.class );
+        ProposerState.proposer.handle(context, message, mockHolder);
+
+
+
     }
 
     @Test

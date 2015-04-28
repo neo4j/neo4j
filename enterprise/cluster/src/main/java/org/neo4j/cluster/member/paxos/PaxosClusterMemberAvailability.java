@@ -104,8 +104,8 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
     {
         try
         {
-            Payload payload = serializer.broadcast( new MemberIsAvailable( role, myId, serverClusterId, roleUri ) );
-            serializer.receive( payload );
+            MemberIsAvailable message = new MemberIsAvailable( role, myId, serverClusterId, roleUri );
+            Payload payload = serializer.broadcast( message );
             atomicBroadcast.broadcast( payload );
         }
         catch ( Throwable e )
@@ -120,7 +120,6 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
         try
         {
             Payload payload = serializer.broadcast( new MemberIsUnavailable( role, myId, serverClusterId ) );
-            serializer.receive( payload );
             atomicBroadcast.broadcast( payload );
         }
         catch ( Throwable e )

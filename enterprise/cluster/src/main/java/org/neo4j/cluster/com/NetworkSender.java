@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -47,6 +48,7 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.WriteCompletionEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
@@ -57,6 +59,7 @@ import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -102,6 +105,8 @@ public class NetworkSender
 
     private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
+
+    private volatile boolean paused;
 
     public NetworkSender( Configuration config, NetworkReceiver receiver, Logging logging )
     {
@@ -196,6 +201,11 @@ public class NetworkSender
     @Override
     public boolean process( Message<? extends MessageType> message )
     {
+        if ( paused )
+        {
+            return true;
+        }
+
         if ( message.hasHeader( Message.TO ) )
         {
             send( message );
@@ -206,6 +216,11 @@ public class NetworkSender
             receiver.receive( message );
         }
         return true;
+    }
+
+    public void setPaused( boolean paused )
+    {
+        this.paused = paused;
     }
 
 
@@ -279,7 +294,14 @@ public class NetworkSender
                 }
                 catch ( Exception e )
                 {
-                    msgLog.warn( "Could not send message", e );
+                    if ( Exceptions.contains( e, ClosedChannelException.class ) )
+                    {
+                        msgLog.warn( "Could not send message, because the connection has been closed." );
+                    }
+                    else
+                    {
+                        msgLog.warn( "Could not send message", e );
+                    }
                     channel.close();
                 }
             }
@@ -395,6 +417,8 @@ public class NetworkSender
     private class NetworkMessageSender
             extends SimpleChannelHandler
     {
+        private Throwable lastException;
+
         @Override
         public void channelConnected( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
         {
@@ -424,8 +448,24 @@ public class NetworkSender
             Throwable cause = e.getCause();
             if ( ! ( cause instanceof ConnectException || cause instanceof RejectedExecutionException ) )
             {
-                msgLog.error( "Receive exception:", cause );
+                // If we keep getting the same exception, only output the first one
+                if ( lastException != null && !lastException.getClass().equals( cause.getClass() ) )
+                {
+                    msgLog.error( "Receive exception:", cause );
+                    lastException = cause;
+                }
             }
+        }
+
+        @Override
+        public void writeComplete( ChannelHandlerContext ctx, WriteCompletionEvent e ) throws Exception
+        {
+            if ( lastException != null )
+            {
+                msgLog.error( "Recovered from:", lastException );
+                lastException = null;
+            }
+            super.writeComplete( ctx, e );
         }
     }
 }

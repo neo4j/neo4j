@@ -32,6 +32,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.yield;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -40,6 +41,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+
 import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
 import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
