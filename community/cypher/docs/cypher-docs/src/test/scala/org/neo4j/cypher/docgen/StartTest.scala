@@ -56,7 +56,7 @@ class StartTest extends DocumentingTestBase {
       queryText = """start r=relationship:rels(name = "Andrés") return r""",
       optionalResultExplanation = """The relationship indexed with the +name+ property set to "+Andrés+" is returned by the query.""",
       assertions = (p) => assertEquals(List(Map("r" -> rel(0))), p.toList),
-      dbPrepare = setPropertyAndUpdateLegacyIndex)
+      prepare = setPropertyAndUpdateLegacyIndex)
   }
 
   @Test def nodes_by_index_query() {

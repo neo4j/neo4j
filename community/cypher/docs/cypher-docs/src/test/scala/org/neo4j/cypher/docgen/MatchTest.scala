@@ -336,7 +336,7 @@ Cypher will try to match the relationship in both directions.""",
       CREATE (charlie)-[:X {blocked:true}]->(:Blocked)<-[:X {blocked:false}]-(martin)"""
 
     prepareAndTestQuery(
-      prepare = executePreparationQueries(List(preparationQuery)),
+      prepare = _ => executePreparationQueries(List(preparationQuery)),
       title = "Match with properties on a variable length path",
       text = """A variable length relationship with properties defined on in it means that all relationships in the path
 must have the property set to the given value. In this query, there are two paths between Charile Sheen and his
