@@ -40,8 +40,9 @@ object ProjectionInstruction {
   def sub(lhs: ProjectionInstruction, rhs: ProjectionInstruction): ProjectionInstruction = ProjectSubtraction(lhs, rhs)
 }
 
-case class ProjectNodeProperty(token: Option[Int], propName: String, nodeIdVar: String, namer: Namer) extends ProjectionInstruction {
+case class ProjectNodeProperty(id: String, token: Option[Int], propName: String, nodeIdVar: String, namer: Namer) extends ProjectionInstruction {
   private val propKeyVar = token.map(_.toString).getOrElse(namer.newVarName())
+  private val methodName = namer.newMethodName()
 
   def generateInit() = if (token.isEmpty)
       s"""if ( $propKeyVar == -1 )
@@ -52,11 +53,32 @@ case class ProjectNodeProperty(token: Option[Int], propName: String, nodeIdVar: 
       else ""
 
   override def _importedClasses() =
-    Set("org.neo4j.kernel.api.properties.Property")
+    Set("org.neo4j.kernel.api.properties.Property","org.neo4j.kernel.api.exceptions.EntityNotFoundException")
 
   override def fields() = if (token.isEmpty) s"private int $propKeyVar = -1;" else ""
 
-  def projectedVariable = JavaSymbol(s"ro.nodeGetProperty( $nodeIdVar, $propKeyVar ).value( null )", OBJECT)
+  def projectedVariable = JavaSymbol(s"$methodName( $nodeIdVar )", OBJECT)
+
+
+  override def operatorId: Some[String] = Some(id)
+
+  override protected def _method: Option[Method] = Some(new Method() {
+    override def name: String = methodName
+    override def generateCode: String = {
+      val eventVar = "event_" + id
+      s"""
+        |private Object $methodName( long nodeId ) throws EntityNotFoundException
+        |{
+        |try ( QueryExecutionEvent $eventVar = tracer.executeOperator( $id ) )
+        |{
+        |$eventVar.dbHit();
+        |$eventVar.row();
+        |return ro.nodeGetProperty( nodeId, $propKeyVar ).value( null );
+        |}
+        |}
+      """.stripMargin
+    }
+  })
 }
 
 case class ProjectRelProperty(token: Option[Int], propName: String, relIdVar: String, namer: Namer) extends ProjectionInstruction {
@@ -183,7 +205,7 @@ case class ProjectMap(instructions: Map[String, ProjectionInstruction]) extends 
 case class ProjectProperties(projections:Seq[ProjectionInstruction], parent:Instruction) extends Instruction {
   override def generateCode()= generate(_.generateCode())
 
-  override protected def children: Seq[Instruction] = projections :+ parent
+  override def children: Seq[Instruction] = projections :+ parent
 
   override def fields() = generate(_.fields())
 

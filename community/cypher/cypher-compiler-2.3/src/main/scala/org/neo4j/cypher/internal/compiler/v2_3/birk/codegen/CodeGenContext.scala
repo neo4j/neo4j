@@ -61,8 +61,6 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: immutable.Map[Logi
   def popParent(): CodeGenPlan = parents.pop()
 
   def registerOperator(plan: LogicalPlan) = {
-    val name = namer.newOpName()
-    operatorIds.put(idMap(plan), name)
-    name
+    operatorIds.getOrElseUpdate(idMap(plan), namer.newOpName(plan.getClass.getSimpleName))
   }
 }

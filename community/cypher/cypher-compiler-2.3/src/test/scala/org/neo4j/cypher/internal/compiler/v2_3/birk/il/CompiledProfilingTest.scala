@@ -19,29 +19,37 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
+import org.mockito.Mockito._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Rows, DbHits}
+import org.neo4j.cypher.internal.compiler.v2_3.{ProfileMode, NormalMode}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.JavaSymbol
 import org.neo4j.cypher.internal.compiler.v2_3.birk.profiling.ProfilingTracer
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{InternalExecutionResult, CompiledPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{PlannerQuery, CardinalityEstimation}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{ProduceResult, NodeHashJoin, IdName, AllNodesScan}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.function.Supplier
+import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.api._
-
-import org.mockito.Mockito._
+import org.neo4j.test.ImpermanentGraphDatabase
 
 class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
-  test("foo") {
+  test("should count db hits and rows") {
+    // given
     val id1 = new Id()
     val id2 = new Id()
 
     val compiled = compile(WhileLoop(JavaSymbol("name", "Object"),
-        ScanAllNodes("OP1"), AcceptVisitor("OP2", Map.empty, Map.empty, Map.empty)))
+      ScanAllNodes("OP1"), AcceptVisitor("OP2", Map.empty, Map.empty, Map.empty)))
 
     val statement = mock[Statement]
     val readOps = mock[ReadOperations]
     when(statement.readOperations()).thenReturn(readOps)
-
     when(readOps.nodesGetAll()).thenReturn(new PrimitiveLongIterator {
       private var counter = 0
 
@@ -54,21 +62,49 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     })
 
     val supplier = new Supplier[InternalPlanDescription] {
-      override def get(): InternalPlanDescription = PlanDescriptionImpl(id2, "accept", SingleChild(PlanDescriptionImpl(id1, "scanallnodes", NoChildren, Seq.empty, Set.empty)), Seq.empty, Set.empty)
+      override def get(): InternalPlanDescription =
+        PlanDescriptionImpl(id2, "accept", SingleChild(PlanDescriptionImpl(id1, "scanallnodes", NoChildren, Seq.empty, Set.empty)), Seq.empty, Set.empty)
     }
 
+    insertStatic(compiled, "OP1" -> id1, "OP2" -> id2)
+
+    // when
     val tracer = new ProfilingTracer()
+    newInstance(compiled, statement = statement, supplier = supplier, queryExecutionTracer = tracer).size
 
-    val instance = newInstance(compiled, statement = statement, supplier = supplier, queryExecutionTracer = tracer)
-    instance.size
-
-    tracer.dbHitsOf(id2) should equal(3)
-//
-    val list = evaluate(instance)
-    println(instance.executionPlanDescription())
-
-//    list.foreach(l => println(l))
+    // then
+    tracer.dbHitsOf(id1) should equal(3)
+    tracer.rowsOf(id2) should equal(2)
   }
 
+  def single[T](seq: Seq[T]): T = {
+    seq.size should equal(1)
+    seq.head
+  }
 
+  test("should profile hash join") {
+    //given
+    val graphDb = new ImpermanentGraphDatabase()
+    val tx = graphDb.beginTx()
+    graphDb.createNode()
+    graphDb.createNode()
+    tx.success()
+    tx.close()
+
+    val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
+    val lhs = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val rhs = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val join = NodeHashJoin(Set(IdName("a")), lhs, rhs)(solved)
+    val plan = ProduceResult(List("a"), List.empty, List.empty, join)
+
+    // when
+    val result = compileAndExecute(plan, graphDb, mode = ProfileMode)
+    val description = result.executionPlanDescription()
+
+    // then
+    val hashJoin = single(description.find("NodeHashJoin"))
+    hashJoin.arguments should contain(DbHits(0))
+    hashJoin.arguments should contain(Rows(2))
+    println(description)
+  }
 }

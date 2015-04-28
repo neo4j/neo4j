@@ -59,7 +59,6 @@ object LogicalPlanConverter {
       val variable = JavaSymbol(context.namer.newVarName(), LONG)
       context.addVariable(logicalPlan.idName.name, variable)
       val (methodHandle, actions) = context.popParent().consume(context, this)
-//      context.namer.newOpName() -> context.idMap(logicalPlan)
       val opName = context.registerOperator(logicalPlan)
       (methodHandle, Seq(WhileLoop(variable, ScanAllNodes(opName), actions)))
     }
@@ -82,7 +81,8 @@ object LogicalPlanConverter {
     override def produce(context: CodeGenContext): (Option[JavaSymbol], Seq[Instruction]) = {
       context.pushParent(this)
       val (Some(symbol), leftInstructions) = logicalPlan.lhs.get.asCodeGenPlan.produce(context)
-      val lhsMethod = MethodInvocation(symbol.name, symbol.javaType, context.namer.newMethodName(), leftInstructions)
+      val lhsMethod = MethodInvocation(Some(context.registerOperator(logicalPlan)),
+        symbol.name, symbol.javaType, context.namer.newMethodName(), leftInstructions)
 
       context.pushParent(this)
       val (otherSymbol, rightInstructions) = logicalPlan.rhs.get.asCodeGenPlan.produce(context)
@@ -100,7 +100,7 @@ object LogicalPlanConverter {
         val notNodeSymbols = lhsSymbols intersect context.variableNames() diff nodeNames
         val symbols = notNodeSymbols.map(s => s -> context.getVariable(s)).toMap
 
-        val probeTable = BuildProbeTable(probeTableName, nodeId.name, symbols, context.namer)
+        val probeTable = BuildProbeTable(context.registerOperator(logicalPlan), probeTableName, nodeId.name, symbols, context.namer)
         val probeTableSymbol = JavaSymbol(probeTableName, probeTable.producedType)
 
         context.addProbeTable(this, probeTable.generateFetchCode)
@@ -177,7 +177,7 @@ object LogicalPlanConverter {
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JavaSymbol], Instruction) = {
       val projectionInstructions = logicalPlan.expressions.map {
         case (identifier, expression) =>
-          val instruction = createProjectionInstruction(expression, context)
+          val instruction = createProjectionInstruction(logicalPlan, expression, context)
           context.addVariable(identifier, instruction.projectedVariable)
           instruction
       }.toSeq
@@ -187,7 +187,7 @@ object LogicalPlanConverter {
       (methodHandle, ProjectProperties(projectionInstructions, action))
     }
 
-    private def createProjectionInstruction(expression: Expression, context: CodeGenContext): ProjectionInstruction =
+    private def createProjectionInstruction(logicalPlan: Projection, expression: Expression, context: CodeGenContext): ProjectionInstruction =
       expression match {
         case nodeOrRel@Identifier(name)
           if context.semanticTable.isNode(nodeOrRel) || context.semanticTable.isRelationship(nodeOrRel) =>
@@ -195,7 +195,8 @@ object LogicalPlanConverter {
 
         case Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
           val token = propKey.id(context.semanticTable).map(_.id)
-          ProjectNodeProperty(token, propKey.name, context.getVariable(name).name, context.namer)
+          val idName = context.registerOperator(logicalPlan)
+          ProjectNodeProperty(idName, token, propKey.name, context.getVariable(name).name, context.namer)
 
         case Property(rel@Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
           val token = propKey.id(context.semanticTable).map(_.id)
@@ -216,21 +217,21 @@ object LogicalPlanConverter {
           ProjectLiteral(JavaSymbol(lit.value.toString, OBJECT))
 
         case Collection(exprs) =>
-          ProjectCollection(exprs.map(e => createProjectionInstruction(e, context)))
+          ProjectCollection(exprs.map(e => createProjectionInstruction(logicalPlan, e, context)))
 
         case Add(lhs, rhs) =>
-          val leftOp = createProjectionInstruction(lhs, context)
-          val rightOp = createProjectionInstruction(rhs, context)
+          val leftOp = createProjectionInstruction(logicalPlan, lhs, context)
+          val rightOp = createProjectionInstruction(logicalPlan, rhs, context)
           ProjectAddition(leftOp, rightOp)
 
         case Subtract(lhs, rhs) =>
-          val leftOp = createProjectionInstruction(lhs, context)
-          val rightOp = createProjectionInstruction(rhs, context)
+          val leftOp = createProjectionInstruction(logicalPlan, lhs, context)
+          val rightOp = createProjectionInstruction(logicalPlan, rhs, context)
           ProjectSubtraction(leftOp, rightOp)
 
         case MapExpression(items: Seq[(PropertyKeyName, Expression)]) =>
           val map = items.map {
-            case (key, expr) => (key.name, createProjectionInstruction(expr, context))
+            case (key, expr) => (key.name, createProjectionInstruction(logicalPlan, expr, context))
           }.toMap
           ProjectMap(map)
 

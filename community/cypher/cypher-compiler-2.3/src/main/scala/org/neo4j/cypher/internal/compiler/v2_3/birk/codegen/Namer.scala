@@ -39,9 +39,9 @@ class Namer(classNameCounter: AtomicInteger) {
     s"v$varNameCounter"
   }
 
-  def newOpName(): String = {
+  def newOpName(planName: String): String = {
     opNameCounter += 1
-    s"OP$opNameCounter"
+    s"OP${opNameCounter}_$planName"
   }
 
   def newVarName(typ: String): JavaSymbol = JavaSymbol(newVarName(), typ)

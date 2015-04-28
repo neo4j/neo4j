@@ -21,9 +21,18 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
 import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.n
 
-case class MethodInvocation(resultVariable: String, resultType: String, methodName: String, statements: Seq[Instruction])
+case class MethodInvocation(override val operatorId:Option[String], resultVariable: String, resultType: String, methodName: String, statements: Seq[Instruction])
   extends Instruction {
-  def generateCode() = s"""final $resultType $resultVariable = $methodName(ro);"""
+  def generateCode() = operatorId match {
+    case Some(id) =>
+      s"""final $resultType $resultVariable;
+         |try ( QueryExecutionEvent event_$id = tracer.executeOperator( $id ) )
+         |{
+         |$resultVariable = $methodName();
+         |}
+       """.stripMargin
+    case None => s"final $resultType $resultVariable = $methodName();"
+  }
 
   override def methods = super.methods
 
@@ -36,7 +45,7 @@ case class MethodInvocation(resultVariable: String, resultType: String, methodNa
       val init = statements.map(_.generateInit()).reduce(_ + n + _)
       val methodBody = statements.map(_.generateCode()).reduce(_ + n + _)
 
-      s"""private $resultType $methodName(ReadOperations ro) throws KernelException
+      s"""private $resultType $methodName() throws KernelException
          |{
          |$init
          |$methodBody

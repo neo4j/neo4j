@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.{setStaticField, CodeGenContext, Namer}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.{CodeGenContext, Namer, setStaticField}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
@@ -37,14 +37,13 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
 
-import scala.Predef
-import scala.collection.{mutable, Map, immutable}
+import scala.collection.{Map, immutable, mutable}
 
 object CodeGenerator {
   def generateClass(instructions: Seq[Instruction]) = {
     val className = Namer.newClassName()
     val source = generateCodeFromInstructions(className, instructions)
-//    println(source)
+    println(indentNicely(source))
     Javac.compile(s"$packageName.$className", source)
   }
 
@@ -94,6 +93,10 @@ object CodeGenerator {
         reduceOption(_ ++ _).
         getOrElse(Set.empty)
 
+    def flatten[T](seq:Seq[Instruction], mapper:(Instruction=>Option[T])) : Seq[T] = {
+      seq.flatMap( x => mapper(x) ++ flatten(x.children, mapper))
+    }
+
     val imports = if (importLines.nonEmpty)
       importLines.toSeq.sorted.mkString("import ", s";${n}import ", ";")
     else
@@ -103,7 +106,7 @@ object CodeGenerator {
     val methodBody = instructions.map(_.generateCode().trim).reduce(_ + n + _)
     val privateMethods = instructions.flatMap(_.methods).distinct.sortBy(_.name)
     val privateMethodText = privateMethods.map(_.generateCode.trim).reduceOption(_ + n + _).getOrElse("")
-    val opIds = "public static Id OP1;\npublic static Id OP2;"
+    val opIds = flatten(instructions, _.operatorId.map(x => s"public static Id $x;")).toSet.mkString("\n")
 
     s"""package $packageName;
        |
@@ -199,7 +202,7 @@ class CodeGenerator {
         val (instructions, operatorMap) = createInstructions(plan, semanticTable, idMap)
         val clazz = generateClass(instructions)
         operatorMap.foreach {
-          case (k, v) => setStaticField(clazz, "", v)
+          case (id, name) => setStaticField(clazz, name, id)
         }
 
         val fp = planContext.statistics match {

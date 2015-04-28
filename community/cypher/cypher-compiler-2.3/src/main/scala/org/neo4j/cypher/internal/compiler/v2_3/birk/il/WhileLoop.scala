@@ -25,14 +25,16 @@ import org.neo4j.cypher.internal.compiler.v2_3.birk.JavaSymbol
 case class WhileLoop(id: JavaSymbol, producer: LoopDataGenerator, action: Instruction) extends Instruction {
   def generateCode(): String = {
     val iterator = s"${id.name}Iter"
+    val eventVar = s"event_${producer.id}"
 
-    s"""${producer.javaType} $iterator = ${producer.generateCode()};
-       |try ( QueryExecutionEvent event_op1 = tracer.executeOperator( ${producer.id} ) )
+    s"""try ( QueryExecutionEvent $eventVar = tracer.executeOperator( ${producer.id} ) )
        |{
-       |event_op1.dbHit();
+       |${producer.javaType} $iterator = ${producer.generateCode()};
+       |$eventVar.dbHit();
        |while ( $iterator.hasNext() )
        |{
-       |event_op1.dbHit();
+       |$eventVar.dbHit();
+       |$eventVar.row();
        |final ${id.javaType} ${id.name} = $iterator.next();
        |${producer.generateVariablesAndAssignment()}
        |${action.generateCode()}

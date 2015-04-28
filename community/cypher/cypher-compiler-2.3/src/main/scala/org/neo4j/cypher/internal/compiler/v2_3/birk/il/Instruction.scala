@@ -38,7 +38,9 @@ trait Instruction {
   // Generates import list for class - implement this!
   protected def _importedClasses(): Set[String]
 
-  protected def children: Seq[Instruction] = Seq.empty
+  def children: Seq[Instruction] = Seq.empty
+
+  def operatorId: Option[String] = None
 
   protected def _method: Option[Method] = None
 
