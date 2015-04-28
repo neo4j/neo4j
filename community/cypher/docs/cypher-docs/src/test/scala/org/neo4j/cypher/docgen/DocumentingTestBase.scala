@@ -154,8 +154,8 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
   }
 
   def prepareAndTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String,
-                          prepare: => Unit = executePreparationQueries(List.empty), assertions: InternalExecutionResult => Unit, dbPrepare: GraphDatabaseAPI => Any = _ => ()) {
-    internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(() => prepare), assertions, dbPrepare)
+                          prepare: GraphDatabaseAPI => Unit, assertions: InternalExecutionResult => Unit) {
+    internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(prepare), assertions)
   }
 
   def profileQuery(title: String, text: String, queryText: String, realQuery: Option[String] = None, assertion: InternalExecutionResult => Unit) {
@@ -167,7 +167,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
                                    queryText: String,
                                    realQuery: Option[String],
                                    expectedException: Option[ClassTag[_ <: CypherException]],
-                                   prepare: Option[() => Any],
+                                   prepare: Option[GraphDatabaseAPI => Unit],
                                    assertions: InternalExecutionResult => Unit) {
     parameters = null
     preparationQueries = List()
@@ -179,13 +179,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
     val keySet = nodeMap.keySet
     val writer: PrintWriter = createWriter(title, dir)
-    prepare.foreach {
-      (prepareStep: () => Any) => prepareStep()
-    }
-
-    if (preparationQueries.nonEmpty) {
-      dumpPreparationQueries(preparationQueries, dir, title)
-    }
+    prepareForTest(title, prepare)
 
     val query = db.inTx {
       keySet.foldLeft(realQuery.getOrElse(queryText)) {
@@ -241,8 +235,8 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
 
   private def internalTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String,
-                                expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any],
-                                assertions: InternalExecutionResult => Unit, dbPrepare: GraphDatabaseAPI => Any = _ => Unit) {
+                                expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[GraphDatabaseAPI => Unit],
+                                assertions: InternalExecutionResult => Unit) {
     parameters = null
     preparationQueries = List()
     //dumpGraphViz(dir, graphvizOptions.trim)
@@ -268,7 +262,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
     val keySet = nodeMap.keySet
     val writer: PrintWriter = createWriter(title, dir)
-    prepareForTest(title, prepare, dbPrepare)
+    prepareForTest(title, prepare)
 
     val query = db.inTx {
       keySet.foldLeft(queryText)((acc, key) => acc.replace("%" + key + "%", node(key).getId.toString))
@@ -280,7 +274,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     val docQuery = urls.foldLeft(query)( (acc, entry) => acc.replace(entry._1, entry._2))
 
     executeWithAllPlannersAndAssert(testQuery, assertions, expectedException,
-      dumpToFile(dir, writer, title, docQuery, optionalResultExplanation, text, _, consoleData), prepareForTest(title, prepare, dbPrepare))
+      dumpToFile(dir, writer, title, docQuery, optionalResultExplanation, text, _, consoleData), prepareForTest(title, prepare))
     match {
       case Some(result) => dumpToFile(dir, writer, title, docQuery, optionalResultExplanation, text, result, consoleData)
       case  None =>
@@ -291,15 +285,14 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     }
   }
 
-  def prepareForTest(title: String, prepare: Option[() => Any], dbPrepare: GraphDatabaseAPI => Any): Unit = {
+  def prepareForTest(title: String, prepare: Option[GraphDatabaseAPI => Unit]) {
     prepare.foreach {
-      (prepareStep: () => Any) => prepareStep()
+      (prepareStep: GraphDatabaseAPI => Any) => prepareStep(db)
     }
     if (preparationQueries.nonEmpty) {
       dumpPreparationQueries(preparationQueries, dir, title)
       dumpPreparationGraphviz(dir, title, graphvizOptions)
     }
-    dbPrepare(db)
     db.inTx { db.schema().awaitIndexesOnline(2, TimeUnit.SECONDS) }
   }
 
@@ -525,7 +518,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 }
 
 trait ResetStrategy {
-  def reset()
+  def reset() {}
   def hardReset()
   def softReset()
 }

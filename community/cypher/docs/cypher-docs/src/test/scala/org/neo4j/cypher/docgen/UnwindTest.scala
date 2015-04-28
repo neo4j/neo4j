@@ -49,7 +49,7 @@ class UnwindTest extends DocumentingTestBase {
     prepareAndTestQuery(
       title = "Create nodes from a collection parameter",
       text = "Create a number of nodes and relationships from a parameter-list without using +FOREACH+.",
-      prepare = setParameters(Map("events" -> List(Map("year" -> 2014, "id" -> 1), Map("year" -> 2014, "id" -> 2)))),
+      prepare = _ => setParameters(Map("events" -> List(Map("year" -> 2014, "id" -> 1), Map("year" -> 2014, "id" -> 2)))),
       queryText =
         """UNWIND {events} as event
            MERGE (y:Year {year:event.year})

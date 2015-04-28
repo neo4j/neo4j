@@ -25,10 +25,10 @@ import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
-class ForeachTest extends DocumentingTestBase with QueryStatisticsTestSupport {
+class ForeachTest extends DocumentingTestBase with QueryStatisticsTestSupport with SoftReset {
   override def graphDescription = List("A KNOWS B", "B KNOWS C", "C KNOWS D")
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   def section = "Foreach"

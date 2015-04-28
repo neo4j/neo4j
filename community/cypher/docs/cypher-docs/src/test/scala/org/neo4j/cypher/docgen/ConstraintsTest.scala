@@ -48,7 +48,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
       text = "By using +DROP+ +CONSTRAINT+, you remove a constraint from the database.",
       queryText = "DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE",
       optionalResultExplanation = "",
-      prepare = executePreparationQueries(List("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")),
+      prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")),
       assertions = (p) => assertConstraintDoesNotExist("Book", "isbn")
     )
   }
@@ -61,7 +61,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
       text = "Create a `Book` node with an `isbn` that isn't already in the database.",
       queryText = "CREATE (book:Book {isbn: '1449356265', title: 'Graph Databases'})",
       optionalResultExplanation = "",
-      prepare = executePreparationQueries(List("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")),
+      prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")),
       assertions = (p) => assertConstraintExist("Book", "isbn")
     )
   }
@@ -94,7 +94,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
         "constraint."
     )
   }
-  
+
   private def assertConstraintDoesNotExist(labelName: String, propName: String) {
     assert(getConstraintIterator(labelName, propName).isEmpty, "Expected constraint iterator to be empty")
   }

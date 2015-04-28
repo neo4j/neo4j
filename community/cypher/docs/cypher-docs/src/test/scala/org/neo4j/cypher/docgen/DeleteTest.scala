@@ -40,17 +40,13 @@ class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
   def section = "Delete"
 
   @Test def delete_single_node() {
-    val createLabeledNode = (db: GraphDatabaseAPI) => db.inTx {
-      db.createNode(DynamicLabel.label("Useless"))
-    }
-
     prepareAndTestQuery(
       title = "Delete single node",
       text = "To delete a node, use the +DELETE+ clause.",
       queryText = "match (n:Useless) delete n",
       optionalResultExplanation = "Nothing is returned from this query, except the count of affected nodes.",
-      dbPrepare = createLabeledNode,
-      assertions = (p) => assertStats(p, nodesDeleted = 1))
+      prepare = db => db.inTx(db.createNode(DynamicLabel.label("Useless"))),
+      assertions = p => assertStats(p, nodesDeleted = 1))
   }
 
   @Test def delete_single_node_with_all_relationships() {
