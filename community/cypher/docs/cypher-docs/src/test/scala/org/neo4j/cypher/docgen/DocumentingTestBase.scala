@@ -317,7 +317,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
         val rewindable = RewindableExecutionResult(engine.execute(s"$s $query", params))
         db.inTx(assertions(rewindable))
         val dump = rewindable.dumpToString()
-        reset
+        reset()
         prepareFunction
         Some(dump)
 
@@ -426,27 +426,27 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
   def rel(id: Long): Relationship = db.getRelationshipById(id)
 
   @After
-  def teardown() {
+  def tearDown() {
     if (db != null) db.shutdown()
   }
 
   @Before
   def init() {
-    hardReset
+    hardReset()
   }
 
-  override def hardReset = {
-    teardown()
+  override def hardReset() {
+    tearDown()
     db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
       setConfig(GraphDatabaseSettings.node_keys_indexable, "name").
       setConfig(GraphDatabaseSettings.node_auto_indexing, Settings.TRUE).
       newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
     engine = new ServerExecutionEngine(db)
 
-    softReset
+    softReset()
   }
 
-  override def softReset = {
+  override def softReset() {
     cleanDatabaseContent(db)
 
     setupConstraintQueries.foreach(engine.execute)
@@ -525,15 +525,19 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 }
 
 trait ResetStrategy {
-  def reset = ()
-  def hardReset = ()
-  def softReset = ()
+  def reset()
+  def hardReset()
+  def softReset()
 }
 
 trait HardReset extends ResetStrategy {
-  override def reset = hardReset
+  override def reset() {
+    hardReset()
+  }
 }
 
 trait SoftReset extends ResetStrategy {
-  override def reset = softReset
+  override def reset() {
+    softReset()
+  }
 }
