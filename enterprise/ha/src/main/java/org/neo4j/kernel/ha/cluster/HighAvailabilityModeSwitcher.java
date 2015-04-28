@@ -351,6 +351,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     ClusterClient clusterClient = HighAvailabilityModeSwitcher.this.clusterClient;
                     try
                     {
+                        // TODO I doubt this actually works
                         clusterClient.leave();
                         clusterClient.stop();
                         haCommunicationLife.shutdown();
@@ -361,7 +362,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     }
 
                     modeSwitcherExecutor.schedule( this, 5, TimeUnit.SECONDS );
-                    throw e;
                 }
                 catch ( MismatchingStoreIdException e )
                 {

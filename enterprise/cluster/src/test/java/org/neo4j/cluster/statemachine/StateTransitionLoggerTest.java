@@ -21,6 +21,8 @@ package org.neo4j.cluster.statemachine;
 
 import org.junit.Test;
 import org.neo4j.cluster.com.message.Message;
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.logging.AssertableLogProvider;
 
 import static org.neo4j.cluster.protocol.cluster.ClusterMessage.join;
@@ -36,7 +38,8 @@ public class StateTransitionLoggerTest
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
-        StateTransitionLogger stateLogger = new StateTransitionLogger( logProvider );
+        StateTransitionLogger stateLogger = new StateTransitionLogger( logProvider,
+                new AtomicBroadcastSerializer( new ObjectStreamFactory(), new ObjectStreamFactory() ) );
 
         // When
         stateLogger.stateTransition( new StateTransition( entered, Message.internal( join), joining ) );

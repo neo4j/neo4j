@@ -63,7 +63,7 @@ public class LearnerStateTest
 
         // When
         Message<LearnerMessage> message = Message.to( LearnerMessage.catchUp, new URI( "c:/2" ), 2l )
-                .setHeader( Message.FROM, "c:/2" );
+                .setHeader( Message.FROM, "c:/2" ).setHeader( Message.INSTANCE_ID, "2" );
         State newState = state.handle( ctx, message, outgoing );
 
         // Then

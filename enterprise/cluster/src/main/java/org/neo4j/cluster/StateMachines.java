@@ -190,6 +190,8 @@ public class StateMachines
                                 }
                                 else
                                 {
+//                                    message.copyHeadersTo( outgoingMessage, Message.INSTANCE_ID );
+
                                     // Deliver internally if possible
                                     StateMachine internalStatemachine = stateMachines.get( outgoingMessage
                                             .getMessageType()

@@ -114,7 +114,9 @@ public enum LearnerState
                             {
                                 instance.delivered();
                                 outgoing.offer( Message.internal( AtomicBroadcastMessage.broadcastResponse,
-                                        learnState.getValue() ) );
+                                        learnState.getValue() )
+                                        .setHeader( InstanceId.INSTANCE, instance.id.toString() )
+                                        .setHeader( Message.CONVERSATION_ID, instance.conversationIdHeader ));
                                 context.setLastDeliveredInstanceId( instanceId.getId() );
 
                                 long checkInstanceId = instanceId.getId() + 1;
@@ -252,7 +254,7 @@ public enum LearnerState
 
                                 context.setLastKnownLearnedInstanceInCluster(
                                         catchUpTo,
-                                        context.getIdForUri( new URI( message.getHeader( Message.FROM ) ) ) );
+                                        new org.neo4j.cluster.InstanceId( Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) )));
                             }
                             break;
                         }
@@ -271,12 +273,13 @@ public enum LearnerState
                         throws URISyntaxException
                 {
                     org.neo4j.cluster.InstanceId lastKnownAliveInstance = context.getLastKnownAliveUpToDateInstance();
-                    if ( lastKnownAliveInstance == null )
+                    if ( lastKnownAliveInstance != null )
                     {
-                        lastKnownAliveInstance =
-                                context.getIdForUri( new URI( message.getHeader( Message.FROM ) ) );
+                        return context.getUriForId( lastKnownAliveInstance );
+                    } else
+                    {
+                        return new URI(message.getHeader( Message.FROM ));
                     }
-                    return context.getUriForId( lastKnownAliveInstance );
                 }
             }
 }

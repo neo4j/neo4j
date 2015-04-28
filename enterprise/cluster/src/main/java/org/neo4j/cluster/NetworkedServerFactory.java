@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
@@ -140,7 +141,8 @@ public class NetworkedServerFactory
                 protocolServer.listeningAt( me );
                 if ( logger == null )
                 {
-                    logger = new StateTransitionLogger( logProvider );
+                    logger = new StateTransitionLogger(  logProvider,
+                            new AtomicBroadcastSerializer(objectInputStreamFactory, objectOutputStreamFactory));
                     protocolServer.addStateTransitionListener( logger );
                 }
             }

@@ -128,7 +128,7 @@ public class PlatformModule
         monitors = externalDependencies.monitors() == null ? new Monitors() : externalDependencies.monitors();
         dependencies.satisfyDependency( monitors );
 
-        jobScheduler = life.add( dependencies.satisfyDependency(createJobScheduler() ));
+        jobScheduler = life.add( dependencies.satisfyDependency( createJobScheduler() ) );
 
         // If no logging was passed in from the outside then create logging and register
         // with this life
@@ -138,10 +138,12 @@ public class PlatformModule
 
         life.add( dependencies.satisfyDependency( new StoreLockerLifecycleAdapter( new StoreLocker( fileSystem ), storeDir ) ));
 
-        new JvmChecker( logging.getInternalLog( JvmChecker.class ), new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
+        new JvmChecker( logging.getInternalLog( JvmChecker.class ),
+                new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
         String desiredImplementationName = config.get( GraphDatabaseFacadeFactory.Configuration.tracer );
-        tracers = dependencies.satisfyDependency( new Tracers( desiredImplementationName, logging.getInternalLog( Tracers.class ) ) );
+        tracers = dependencies.satisfyDependency(
+                new Tracers( desiredImplementationName, logging.getInternalLog( Tracers.class ) ) );
         dependencies.satisfyDependency( tracers.pageCacheTracer );
 
         pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers ) );
@@ -154,7 +156,7 @@ public class PlatformModule
         // this was the place of the XaDataSourceManager. NeoStoreXaDataSource is create further down than
         // (specifically) KernelExtensions, which creates an interesting out-of-order issue with #doAfterRecovery().
         // Anyways please fix this.
-        dataSourceManager = life.add( dependencies.satisfyDependency(new DataSourceManager() ));
+        dataSourceManager = life.add( dependencies.satisfyDependency( new DataSourceManager() ) );
 
         availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK );
 
@@ -247,10 +249,13 @@ public class PlatformModule
 
     protected Neo4jJobScheduler createJobScheduler()
     {
-        return new Neo4jJobScheduler( config.get( GraphDatabaseFacadeFactory.Configuration.editionName ));
+        return new Neo4jJobScheduler( config.get( GraphDatabaseFacadeFactory.Configuration.editionName ) );
     }
 
-    protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers)
+    protected PageCache createPageCache( FileSystemAbstraction fileSystem,
+            Config config,
+            LogService logging,
+            Tracers tracers )
     {
         Log pageCacheLog = logging.getInternalLog( PageCache.class );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
@@ -270,7 +275,7 @@ public class PlatformModule
     }
 
     private Iterable<Class<?>> getSettingsClasses( Iterable<Class<?>> settingsClasses,
-                                                   Iterable<KernelExtensionFactory<?>> kernelExtensions)
+            Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         List<Class<?>> totalSettingsClasses = Iterables.toList( settingsClasses );
 

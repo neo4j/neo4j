@@ -19,12 +19,6 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
-import static org.neo4j.cluster.com.message.Message.internal;
-import static org.neo4j.cluster.com.message.Message.respond;
-import static org.neo4j.cluster.com.message.Message.timeout;
-import static org.neo4j.cluster.com.message.Message.to;
-import static org.neo4j.helpers.collection.Iterables.count;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,6 +33,12 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMess
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.statemachine.State;
 import org.neo4j.helpers.collection.Iterables;
+
+import static org.neo4j.cluster.com.message.Message.internal;
+import static org.neo4j.cluster.com.message.Message.respond;
+import static org.neo4j.cluster.com.message.Message.timeout;
+import static org.neo4j.cluster.com.message.Message.to;
+import static org.neo4j.helpers.collection.Iterables.count;
 
 /**
  * State machine for the Cluster API
@@ -155,8 +155,7 @@ public enum ClusterState
                                         context.getConfiguration().toString(),
                                         state.getLatestReceivedInstanceId().getId() ) );
 
-                                ClusterMessage.ConfigurationChangeState newState = new ClusterMessage
-                                        .ConfigurationChangeState();
+                                ClusterMessage.ConfigurationChangeState newState = new ClusterMessage.ConfigurationChangeState();
                                 newState.join(context.getMyId(), context.boundAt());
 
                                 // Let the coordinator propose this if possible

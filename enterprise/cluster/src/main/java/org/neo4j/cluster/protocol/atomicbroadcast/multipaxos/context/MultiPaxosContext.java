@@ -75,7 +75,7 @@ public class MultiPaxosContext
         clusterContext = new ClusterContextImpl(me, commonState, logService, timeouts, executor, objectOutputStreamFactory, objectInputStreamFactory, learnerContext, heartbeatContext );
         electionContext = new ElectionContextImpl( me, commonState, logService, timeouts, roles, clusterContext, heartbeatContext, electionCredentialsProvider );
         proposerContext = new ProposerContextImpl(me, commonState, logService, timeouts, paxosInstances );
-        acceptorContext = new AcceptorContextImpl(me, commonState, logService, timeouts, instanceStore);
+        acceptorContext = new AcceptorContextImpl(me, commonState, logService, timeouts, instanceStore );
         atomicBroadcastContext = new AtomicBroadcastContextImpl(me, commonState, logService, timeouts, executor, heartbeatContext );
 
         heartbeatContext.setCircularDependencies( clusterContext, learnerContext );

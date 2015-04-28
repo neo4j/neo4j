@@ -112,6 +112,8 @@ public class NetworkReceiver
 
     volatile boolean bindingDetected = false;
 
+    private volatile boolean paused;
+
     public NetworkReceiver( Monitor monitor, Configuration config, LogProvider logProvider )
     {
         this.monitor = monitor;
@@ -166,6 +168,11 @@ public class NetworkReceiver
     {
     }
 
+    public void setPaused(boolean paused)
+    {
+        this.paused = paused;
+    }
+
     private void listen( int minPort, int maxPort )
             throws URISyntaxException, ChannelException, UnknownHostException
     {
@@ -212,22 +219,25 @@ public class NetworkReceiver
 
     public void receive( Message message )
     {
-        for ( MessageProcessor processor : processors )
+        if (!paused)
         {
-            try
+            for ( MessageProcessor processor : processors )
             {
-                if ( !processor.process( message ) )
+                try
                 {
-                    break;
+                    if ( !processor.process( message ) )
+                    {
+                        break;
+                    }
+                }
+                catch ( Exception e )
+                {
+                    // Ignore
                 }
             }
-            catch ( Exception e )
-            {
-                // Ignore
-            }
-        }
 
-        monitor.processedMessage( message );
+            monitor.processedMessage( message );
+        }
     }
 
     private URI getURI( InetSocketAddress address ) throws URISyntaxException

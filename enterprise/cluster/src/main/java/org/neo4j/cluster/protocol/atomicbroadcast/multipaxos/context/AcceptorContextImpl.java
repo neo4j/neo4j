@@ -33,8 +33,8 @@ class AcceptorContextImpl
     private final AcceptorInstanceStore instanceStore;
 
     AcceptorContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-                         LogService logService,
-                         Timeouts timeouts, AcceptorInstanceStore instanceStore )
+            LogService logService,
+            Timeouts timeouts, AcceptorInstanceStore instanceStore)
     {
         super( me, commonState, logService, timeouts );
         this.instanceStore = instanceStore;
