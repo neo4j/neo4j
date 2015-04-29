@@ -399,7 +399,7 @@ return coalesce(a.title, a.name)""")
   test("map output") {
     val result = executeWithAllPlannersAndRuntimes("return {a:1, b:'foo'}").dumpToString()
 
-    result should include ("""{b -> "foo", a -> 1}""")
+    result should ( include ("""{a -> 1, b -> "foo"}""") or include ("""{b -> "foo", a -> 1}""") )
   }
 
   test("should be able to return predicate result") {
