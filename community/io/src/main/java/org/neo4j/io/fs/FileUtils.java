@@ -27,19 +27,31 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.DSYNC;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.SYNC;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 public class FileUtils
 {
@@ -63,7 +75,13 @@ public class FileUtils
         {
             return;
         }
-        Files.walkFileTree( directory.toPath(), new SimpleFileVisitor<Path>()
+        Path path = directory.toPath();
+        deletePathRecursively( path );
+    }
+
+    public static void deletePathRecursively( Path path ) throws IOException
+    {
+        Files.walkFileTree( path, new SimpleFileVisitor<Path>()
         {
             @Override
             public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
@@ -386,42 +404,6 @@ public class FileUtils
         throw storedIoe;
     }
 
-    /**
-     * Move the contents of one directory into another directory. Allows moving the contents of a directory into a
-     * sub-directory of itself.
-     */
-    public static void moveDirectoryContents( File baseDir, File targetDir ) throws IOException
-    {
-        if(!baseDir.isDirectory())
-        {
-            throw new IllegalArgumentException( baseDir.getAbsolutePath() + " must be a directory." );
-        }
-
-        if(!targetDir.exists())
-        {
-            targetDir.mkdirs();
-        }
-
-        for ( File file : baseDir.listFiles() )
-        {
-            if(!file.equals( targetDir ))
-            {
-                moveFileToDirectory( file, targetDir );
-            }
-        }
-    }
-
-    /** Gives the recursive size of all files in a directory. */
-    public static long directorySize( File directory )
-    {
-        long length = 0;
-        for (File file : directory.listFiles())
-        {
-            length += file.isFile() ? file.length() : directorySize( file );
-        }
-        return length;
-    }
-
     public interface LineListener
     {
         void line( String line );
@@ -537,5 +519,70 @@ public class FileUtils
         {
             return file.getAbsoluteFile();
         }
+    }
+
+    public static void writeAll( FileChannel channel, ByteBuffer src, long position ) throws IOException
+    {
+        long filePosition = position;
+        long expectedEndPosition = filePosition + src.limit() - src.position();
+        int bytesWritten;
+        while((filePosition += (bytesWritten = channel.write( src, filePosition ))) < expectedEndPosition)
+        {
+            if( bytesWritten <= 0 )
+            {
+                throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
+            }
+        }
+    }
+
+    public static void writeAll( FileChannel channel, ByteBuffer src ) throws IOException
+    {
+        long bytesToWrite = src.limit() - src.position();
+        int bytesWritten;
+        while((bytesToWrite -= (bytesWritten = channel.write( src ))) > 0)
+        {
+            if( bytesWritten <= 0 )
+            {
+                throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
+            }
+        }
+    }
+
+    public static OpenOption[] convertOpenMode( String mode )
+    {
+        OpenOption[] options;
+        switch ( mode )
+        {
+        case "r": options = new OpenOption[]{READ}; break;
+        case "rw": options = new OpenOption[] {CREATE, READ, WRITE}; break;
+        case "rws": options = new OpenOption[] {CREATE, READ, WRITE, SYNC}; break;
+        case "rwd": options = new OpenOption[] {CREATE, READ, WRITE, DSYNC}; break;
+        default: throw new IllegalArgumentException( "Unsupported mode: " + mode );
+        }
+        return options;
+    }
+
+    public static FileChannel open( Path path, String mode ) throws IOException
+    {
+        return FileChannel.open( path, convertOpenMode( mode ) );
+    }
+
+    public static InputStream openAsInputStream( Path path ) throws IOException
+    {
+        return Files.newInputStream( path, READ );
+    }
+
+    public static OutputStream openAsOutputStream( Path path, boolean append ) throws IOException
+    {
+        OpenOption[] options;
+        if ( append )
+        {
+            options = new OpenOption[] {CREATE, WRITE, APPEND};
+        }
+        else
+        {
+            options = new OpenOption[] {CREATE, WRITE};
+        }
+        return Files.newOutputStream( path, options );
     }
 }
