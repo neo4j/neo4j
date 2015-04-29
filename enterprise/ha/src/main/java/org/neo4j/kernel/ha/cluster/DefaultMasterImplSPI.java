@@ -29,7 +29,6 @@ import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.function.Supplier;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -51,35 +50,62 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 
-class DefaultMasterImplSPI implements MasterImpl.SPI
+public class DefaultMasterImplSPI implements MasterImpl.SPI
 {
     private static final int ID_GRAB_SIZE = 1000;
-    private final DependencyResolver dependencyResolver;
     private final GraphDatabaseAPI graphDb;
-    private final LogicalTransactionStore txStore;
-    private final TransactionIdStore transactionIdStore;
     private final TransactionChecksumLookup txChecksumLookup;
     private final FileSystemAbstraction fileSystem;
+    private final LabelTokenHolder labels;
+    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
+    private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
+    private final IdGeneratorFactory idGeneratorFactory;
+    private final Locks locks;
+    private final NeoStoreDataSource neoStoreDataSource;
+    private final JobScheduler jobScheduler;
     private final File storeDir;
     private final ResponsePacker responsePacker;
     private final Monitors monitors;
 
-    public DefaultMasterImplSPI( final GraphDatabaseAPI graphDb )
+    private final TransactionCommitProcess transactionCommitProcess;
+    private final LogRotationControl logRotationControlSupplier;
+    private final LogicalTransactionStore txStore;
+    private final TransactionIdStore transactionIdStore;
+
+    public DefaultMasterImplSPI( final GraphDatabaseAPI graphDb,
+                                 FileSystemAbstraction fileSystemAbstraction,
+                                 Monitors monitors,
+                                 LabelTokenHolder labels, PropertyKeyTokenHolder propertyKeyTokenHolder,
+                                 RelationshipTypeTokenHolder relationshipTypeTokenHolder,
+                                 IdGeneratorFactory idGeneratorFactory, Locks locks,
+                                 TransactionCommitProcess transactionCommitProcess,
+                                 LogRotationControl logRotationControlSupplier,
+                                 TransactionIdStore transactionIdStore,
+                                 LogicalTransactionStore logicalTransactionStore,
+                                 NeoStoreDataSource neoStoreDataSource,
+                                 JobScheduler jobScheduler)
     {
         this.graphDb = graphDb;
-        this.dependencyResolver = graphDb.getDependencyResolver();
 
         // Hmm, fetching the dependencies here instead of handing them in the constructor directly feels bad,
         // but it seems like there's some intricate usage and need for the db's dependency resolver.
-        this.transactionIdStore = dependencyResolver.resolveDependency( TransactionIdStore.class );
-        this.fileSystem = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
+        this.transactionIdStore = transactionIdStore;
+        this.fileSystem = fileSystemAbstraction;
+        this.labels = labels;
+        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
+        this.idGeneratorFactory = idGeneratorFactory;
+        this.locks = locks;
+        this.transactionCommitProcess = transactionCommitProcess;
+        this.logRotationControlSupplier = logRotationControlSupplier;
+        this.neoStoreDataSource = neoStoreDataSource;
+        this.jobScheduler = jobScheduler;
         this.storeDir = new File( graphDb.getStoreDir() );
-        this.txStore = dependencyResolver.resolveDependency( LogicalTransactionStore.class );
+        this.txStore = logicalTransactionStore;
         this.txChecksumLookup = new TransactionChecksumLookup( transactionIdStore, txStore );
         this.responsePacker = new ResponsePacker( txStore, transactionIdStore, new Supplier<StoreId>()
         {
@@ -89,7 +115,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
                 return graphDb.storeId();
             }
         } );
-        this.monitors = dependencyResolver.resolveDependency( Monitors.class );
+        this.monitors = monitors;
     }
 
     @Override
@@ -102,27 +128,25 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public int getOrCreateLabel( String name )
     {
-        LabelTokenHolder labels = resolve( LabelTokenHolder.class );
         return labels.getOrCreateId( name );
     }
 
     @Override
     public int getOrCreateProperty( String name )
     {
-        PropertyKeyTokenHolder propertyKeyHolder = resolve( PropertyKeyTokenHolder.class );
-        return propertyKeyHolder.getOrCreateId( name );
+        return propertyKeyTokenHolder.getOrCreateId( name );
     }
 
     @Override
     public Locks.Client acquireClient()
     {
-        return resolve( Locks.class ).newClient();
+        return locks.newClient();
     }
 
     @Override
     public IdAllocation allocateIds( IdType idType )
     {
-        IdGenerator generator = resolve( IdGeneratorFactory.class ).get(idType);
+        IdGenerator generator = idGeneratorFactory.get( idType );
         return new IdAllocation( generator.nextIdBatch( ID_GRAB_SIZE ), generator.getHighId(),
                 generator.getDefragCount() );
     }
@@ -139,17 +163,14 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     {
         try ( LockGroup locks = new LockGroup() )
         {
-            TransactionCommitProcess txCommitProcess = dependencyResolver
-                    .resolveDependency( NeoStoreDataSource.class )
-                    .getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
-            return txCommitProcess.commit( preparedTransaction, locks, CommitEvent.NULL );
+            return transactionCommitProcess.commit( preparedTransaction, locks, CommitEvent.NULL );
         }
     }
 
     @Override
     public Integer createRelationshipType( String name )
     {
-        return resolve(RelationshipTypeTokenHolder.class).getOrCreateId( name );
+        return relationshipTypeTokenHolder.getOrCreateId( name );
     }
 
     @Override
@@ -161,9 +182,8 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
     {
-        NeoStoreDataSource dataSource = dependencyResolver.resolveDependency( DataSourceManager.class ).getDataSource();
-        StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, dataSource,
-                dependencyResolver.resolveDependency( LogRotationControl.class ), fileSystem, storeDir,
+        StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, neoStoreDataSource,
+                logRotationControlSupplier, fileSystem, storeDir,
                 monitors.newMonitor( StoreCopyServer.Monitor.class ) );
         return streamer.flushStoresAndStreamStoreFiles( writer, false );
     }
@@ -183,17 +203,12 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public JobScheduler.JobHandle scheduleRecurringJob( JobScheduler.Group group, long interval, Runnable job )
     {
-        return resolve( JobScheduler.class ).scheduleRecurring( group, job, interval, TimeUnit.MILLISECONDS);
+        return jobScheduler.scheduleRecurring( group, job, interval, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public <T> Response<T> packEmptyResponse( T response )
     {
         return responsePacker.packEmptyResponse( response );
-    }
-
-    private <T> T resolve( Class<T> dependencyType )
-    {
-        return dependencyResolver.resolveDependency( dependencyType );
     }
 }

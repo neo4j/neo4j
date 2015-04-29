@@ -19,12 +19,18 @@
  */
 package org.neo4j.backup;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -37,14 +43,23 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     {
         Config getConfig();
 
-
         GraphDatabaseAPI getGraphDatabaseAPI();
 
         LogService logService();
 
-        KernelPanicEventGenerator kpeg();
-
         Monitors monitors();
+
+        NeoStoreDataSource neoStoreDataSource();
+
+        Supplier<LogRotationControl> logRotationControlSupplier();
+
+        Supplier<TransactionIdStore> transactionIdStoreSupplier();
+
+        Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier();
+
+        Supplier<LogFileInformation> logFileInformationSupplier();
+
+        FileSystemAbstraction fileSystemAbstraction();
     }
 
     public OnlineBackupExtensionFactory()
@@ -62,6 +77,12 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
         return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
-                dependencies.kpeg(), dependencies.logService().getInternalLogProvider(), dependencies.monitors() );
+                dependencies.logService().getInternalLogProvider(), dependencies.monitors(),
+                dependencies.neoStoreDataSource(),
+                dependencies.logRotationControlSupplier(),
+                dependencies.transactionIdStoreSupplier(),
+                dependencies.logicalTransactionStoreSupplier(),
+                dependencies.logFileInformationSupplier(),
+                dependencies.fileSystemAbstraction());
     }
 }

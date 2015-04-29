@@ -130,8 +130,7 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             long time = System.currentTimeMillis();
             try
             {
-                kernelData.graphDatabase().getDependencyResolver().resolveDependency(
-                        UpdatePullerClient.class ).pullUpdates();
+                kernelData.graphDatabase().getDependencyResolver().resolveDependency(UpdatePullerClient.class ).pullUpdates();
             }
             catch ( Exception e )
             {

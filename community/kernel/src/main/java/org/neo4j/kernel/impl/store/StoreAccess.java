@@ -37,9 +37,8 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 /**
  * Not thread safe (since DiffRecordStore is not thread safe), intended for
@@ -75,7 +74,7 @@ public class StoreAccess
     @SuppressWarnings( "deprecation" )
     private static NeoStore getNeoStoreFrom( GraphDatabaseAPI graphdb )
     {
-        return graphdb.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
+        return graphdb.getDependencyResolver().resolveDependency( NeoStore.class );
     }
 
     public StoreAccess( NeoStore store )

@@ -36,9 +36,9 @@ import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
@@ -60,19 +60,22 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.CleanupRule;
 
+import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
@@ -81,9 +84,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -125,27 +125,29 @@ public class MasterClientTest
 
         cleanupRule.add( newMasterServer( master ) );
 
-        DependencyResolver resolver = mock( DependencyResolver.class );
-        LogicalTransactionStore txStore = mock( LogicalTransactionStore.class );
-        TransactionRepresentationStoreApplier txApplier = mock( TransactionRepresentationStoreApplier.class );
-        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         TransactionAppender txAppender = mock( TransactionAppender.class );
         when( txAppender.append( any( TransactionRepresentation.class ), anyLong() ) )
                 .thenReturn( mock( Commitment.class ) );
-        LogFile logFile = mock( LogFile.class );
-
-        when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( txStore );
-        when( resolver.resolveDependency( TransactionAppender.class ) ).thenReturn( txAppender );
-        when( resolver.resolveDependency( TransactionRepresentationStoreApplier.class ) ).thenReturn( txApplier );
-        when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
-        when( resolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
-        when( resolver.resolveDependency( LogRotation.class ) ).thenReturn( mock(LogRotation.class) );
+        TransactionRepresentationStoreApplier txApplier = mock( TransactionRepresentationStoreApplier.class );
+        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
                 any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );
-        when( resolver.resolveDependency( IndexUpdatesValidator.class ) ).thenReturn( indexUpdatesValidator );
 
-        ResponseUnpacker unpacker = initAndStart( new TransactionCommittingResponseUnpacker( resolver ) );
+        final Dependencies deps = new Dependencies();
+        deps.satisfyDependencies(
+                mock( LogicalTransactionStore.class ),
+                mock( LogFile.class ),
+                mock( LogRotation.class),
+                mock( KernelHealth.class ),
+                txAppender,
+                txApplier,
+                txIdStore,
+                indexUpdatesValidator
+        );
+
+        ResponseUnpacker unpacker = initAndStart( new TransactionCommittingResponseUnpacker(
+                DependenciesProxy.dependencies( deps, TransactionCommittingResponseUnpacker.Dependencies.class ) ) );
 
         MasterClient masterClient = cleanupRule.add( newMasterClient214( StoreId.DEFAULT, unpacker ) );
 

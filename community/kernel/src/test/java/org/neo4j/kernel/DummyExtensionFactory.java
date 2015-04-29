@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -30,6 +31,8 @@ public class DummyExtensionFactory extends KernelExtensionFactory<DummyExtension
         Config getConfig();
 
         KernelData getKernel();
+
+        Supplier<NeoStoreDataSource> getNeoStoreDataSource();
     }
 
     static final String EXTENSION_ID = "dummy";

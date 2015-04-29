@@ -20,8 +20,7 @@
 package org.neo4j.kernel.ha.com;
 
 import org.neo4j.com.RequestContext;
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.function.Supplier;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -29,15 +28,15 @@ public class RequestContextFactory extends LifecycleAdapter
 {
     private long epoch;
     private final int serverId;
-    private final DependencyResolver resolver;
+    private final Supplier<TransactionIdStore> txIdStoreSupplier;
     private TransactionIdStore txIdStore;
 
     public static final int VOID_EVENT_IDENTIFIER = -3;
     public static final int DEFAULT_EVENT_IDENTIFIER = -1;
 
-    public RequestContextFactory( int serverId, DependencyResolver resolver )
+    public RequestContextFactory( int serverId, Supplier<TransactionIdStore> txIdStoreSupplier)
     {
-        this.resolver = resolver;
+        this.txIdStoreSupplier = txIdStoreSupplier;
         this.epoch = -1;
         this.serverId = serverId;
     }
@@ -45,7 +44,7 @@ public class RequestContextFactory extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        this.txIdStore = resolver.resolveDependency( NeoStoreDataSource.class ).getDependencyResolver().resolveDependency( TransactionIdStore.class );
+        this.txIdStore = txIdStoreSupplier.get();
     }
 
     @Override
