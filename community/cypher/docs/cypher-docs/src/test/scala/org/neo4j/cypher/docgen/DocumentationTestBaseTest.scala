@@ -69,16 +69,16 @@ class DocumentationTestBaseTest extends DocumentingTestBase with QueryStatistics
   }
 
   @Test def create_mutiple_nodes_from_maps() {
-    prepareAndTestQuery(
+    testQuery(
       title = "Create multiple nodes with parameters for properties",
       text = """
 By providing Cypher an array of maps, it will create a node for each map.
 _When you do this, you can't create anything else in the same +CREATE+ statement_.
 """,
-      prepare =
-        setParameters(
-          Map("props" -> List(Map("name" -> "Andres", "position" -> "Developer"),
-          Map("name" -> "Michael", "position" -> "Developer"))))
+      parameters =
+        Map("props" -> List(
+          Map("name" -> "Andres", "position" -> "Developer"),
+          Map("name" -> "Michael", "position" -> "Developer")))
       ,
       queryText = "create ({props})",
       optionalResultExplanation = "",

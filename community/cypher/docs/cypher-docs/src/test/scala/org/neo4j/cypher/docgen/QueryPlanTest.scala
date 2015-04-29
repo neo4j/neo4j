@@ -24,7 +24,7 @@ import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
 import org.scalatest.Ignore
 
-class QueryPlanTest extends DocumentingTestBase {
+class QueryPlanTest extends DocumentingTestBase with SoftReset {
   override val setupQueries = List(
     """CREATE (me:Person {name:'me'})
        CREATE (andres:Person {name:'Andres'})

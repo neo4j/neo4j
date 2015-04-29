@@ -24,9 +24,9 @@ import org.junit.Assert._
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
-class RemoveTest extends DocumentingTestBase {
+class RemoveTest extends DocumentingTestBase with SoftReset {
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   override def graphDescription = List(

@@ -24,7 +24,7 @@ import org.junit.Test
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
-class OptionalMatchTest extends DocumentingTestBase {
+class OptionalMatchTest extends DocumentingTestBase with SoftReset {
 
   override def graphDescription = List(
     "Charlie:Person ACTED_IN WallStreet:Movie",
@@ -46,7 +46,7 @@ class OptionalMatchTest extends DocumentingTestBase {
     "TheAmericanPresident" -> Map("title" -> "The American President")
   )
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   def section: String = "OPTIONAL MATCH"
