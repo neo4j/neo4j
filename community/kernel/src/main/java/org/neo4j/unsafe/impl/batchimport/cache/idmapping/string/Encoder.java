@@ -20,7 +20,9 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 /**
- * Encodes a {@link Object} into a long.
+ * Encodes a {@link Object} into a long. The implementation should be designed to return as few collisions
+ * as possible, i.e. different incoming values being encoded into the same long.
+ * The returned encoded value must not be {@code 0} since that is a reserved value for {@link EncodingIdMapper}.
  */
 public interface Encoder
 {

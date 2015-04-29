@@ -86,13 +86,17 @@ public class EncodingIdMapper implements IdMapper
 {
     public interface Monitor
     {
-        void numberOfCollisions( int numberOfCollisions );
+        /**
+         * Number of eIds that have been marked as collisions.
+         * @param count
+         */
+        void numberOfCollisions( int count );
     }
 
     public static final Monitor NO_MONITOR = new Monitor()
     {
         @Override
-        public void numberOfCollisions( int numberOfCollisions )
+        public void numberOfCollisions( int count )
         {   // Do nothing.
         }
     };
@@ -104,12 +108,16 @@ public class EncodingIdMapper implements IdMapper
     // See StringEncoder.
     private static LongBitsManipulator COLLISION_BIT = new LongBitsManipulator( 56, 1 );
     private static int DEFAULT_CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
+    // Using 0 as gap value, i.e. value for a node not having an id, i.e. not present in dataCache is safe
+    // because the current set of Encoder implementations will always set some amount of bits higher up in
+    // the long value representing the length of the id.
+    private static final long GAP_VALUE = 0;
 
     private final NumberArrayFactory cacheFactory;
     // Encoded values added in #put, in the order in which they are put. Indexes in the array are the actual node ids,
     // values are the encoded versions of the input ids.
     private LongArray dataCache;
-    private final NumberArrayStats dataCacheStats = new NumberArrayStats();
+    private long highestSetIndex = -1;
 
     // Ordering information about values in dataCache; the ordering of values in dataCache remains unchanged.
     // in prepare() this array is populated and changed along with how dataCache items "move around" so that
@@ -117,7 +125,6 @@ public class EncodingIdMapper implements IdMapper
     // Each index in trackerCache points to a dataCache index, where the value in dataCache contains the
     // encoded input id, used to match against the input id that is looked up during binary search.
     private IntArray trackerCache;
-    private final NumberArrayStats trackerStats = new NumberArrayStats();
     private final Encoder encoder;
     private final Radix radix;
     private final int processorsForSorting;
@@ -150,16 +157,11 @@ public class EncodingIdMapper implements IdMapper
         this.cacheFactory = cacheFactory;
         this.chunkSize = chunkSize;
         this.processorsForSorting = max( processorsForSorting, 1 );
-        this.dataCache = newLongArray( cacheFactory, chunkSize );
+        this.dataCache = cacheFactory.newDynamicLongArray( chunkSize, GAP_VALUE );
         this.encoder = encoder;
         this.radixFactory = radixFactory;
         this.radix = radixFactory.newInstance();
-        this.collisionNodeIdCache = newLongArray( cacheFactory, chunkSize );
-    }
-
-    private static LongArray newLongArray( NumberArrayFactory cacheFactory, int chunkSize )
-    {
-        return cacheFactory.newDynamicLongArray( chunkSize, -1 );
+        this.collisionNodeIdCache = cacheFactory.newDynamicLongArray( chunkSize, -1 );
     }
 
     /**
@@ -175,6 +177,12 @@ public class EncodingIdMapper implements IdMapper
     @Override
     public void put( Object inputId, long id, Group group )
     {
+        // Fill any gap to the previously highest set id
+        for ( long gapId = highestSetIndex+1; gapId < id; gapId++ )
+        {
+            radix.registerRadixOf( GAP_VALUE );
+        }
+
         // Check if we're now venturing into a new group. If so then end the previous group.
         int groupId = group.id();
         boolean newGroup = false;
@@ -197,9 +205,9 @@ public class EncodingIdMapper implements IdMapper
         }
 
         // Encode and add the input id
-        long eId = encoder.encode( inputId );
+        long eId = encode( inputId );
         dataCache.set( id, eId );
-        dataCacheStats.register( id );
+        highestSetIndex = id;
         radix.registerRadixOf( eId );
 
         // Create the new group
@@ -209,15 +217,25 @@ public class EncodingIdMapper implements IdMapper
             {
                 idGroups = Arrays.copyOf( idGroups, max( groupId+1, idGroups.length*2 ) );
             }
-            idGroups[groupId] = currentIdGroup = new IdGroup( group, dataCacheStats.highestIndex() );
+            idGroups[groupId] = currentIdGroup = new IdGroup( group, id );
         }
+    }
+
+    private long encode( Object inputId )
+    {
+        long eId = encoder.encode( inputId );
+        if ( eId == GAP_VALUE )
+        {
+            throw new IllegalStateException( "Encoder " + encoder + " returned an illegal encoded value " + GAP_VALUE );
+        }
+        return eId;
     }
 
     private void endPreviousGroup()
     {
         if ( currentIdGroup != null )
         {
-            idGroups[currentIdGroup.id()].setHighDataIndex( dataCacheStats.highestIndex() );
+            idGroups[currentIdGroup.id()].setHighDataIndex( highestSetIndex );
         }
     }
 
@@ -241,33 +259,29 @@ public class EncodingIdMapper implements IdMapper
     public void prepare( InputIterable<Object> ids, Collector collector, ProgressListener progress )
     {
         endPreviousGroup();
-        synchronized ( this )
+        dataCache = dataCache.fixate();
+        trackerCache = cacheFactory.newIntArray( highestSetIndex+1, -1 );
+
+        try
         {
-            dataCache = dataCache.fixate();
-            trackerCache = cacheFactory.newIntArray( dataCacheStats.highestIndex()+1, -1 );
+            sortBuckets = new ParallelSort( radix, dataCache, highestSetIndex, trackerCache,
+                    processorsForSorting, progress, DEFAULT ).run();
 
-            // Synchronized since there's this concern that a couple of other threads are changing trackerCache
-            // and it's nice to go through a memory barrier afterwards to ensure this CPU see correct data.
-            try
+            int numberOfCollisions = detectAndMarkCollisions( progress );
+            if ( numberOfCollisions > 0 )
             {
-                sortBuckets = new ParallelSort( radix, dataCache, dataCacheStats, trackerCache, trackerStats,
-                        processorsForSorting, progress, DEFAULT ).run();
-
-                if ( detectAndMarkCollisions( progress ) > 0 )
+                try ( InputIterator<Object> idIterator = ids.iterator() )
                 {
-                    try ( InputIterator<Object> idIterator = ids.iterator() )
-                    {
-                        buildCollisionInfo( idIterator, collector, progress );
-                    }
+                    buildCollisionInfo( idIterator, numberOfCollisions, collector, progress );
                 }
             }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-                throw new RuntimeException( "Got interrupted while preparing the index. Throwing this exception "
-                        + "onwards will cause a chain reaction which will cause a panic in the whole import, "
-                        + "so mission accomplished" );
-            }
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new RuntimeException( "Got interrupted while preparing the index. Throwing this exception "
+                    + "onwards will cause a chain reaction which will cause a panic in the whole import, "
+                    + "so mission accomplished" );
         }
         readyForUse = true;
     }
@@ -280,15 +294,15 @@ public class EncodingIdMapper implements IdMapper
     private long binarySearch( Object inputId, int groupId )
     {
         long low = 0;
-        long high = trackerStats.highestIndex();
-        long x = encoder.encode( inputId );
+        long high = highestSetIndex;
+        long x = encode( inputId );
         int rIndex = radixOf( x );
         for ( int k = 0; k < sortBuckets.length; k++ )
         {
             if ( rIndex <= sortBuckets[k][0] )//bucketRange[k] > rIndex )
             {
                 low = sortBuckets[k][1];
-                high = (k == sortBuckets.length - 1) ? trackerStats.size() - 1 : sortBuckets[k + 1][1];
+                high = (k == sortBuckets.length - 1) ? highestSetIndex : sortBuckets[k + 1][1];
                 break;
             }
         }
@@ -297,7 +311,7 @@ public class EncodingIdMapper implements IdMapper
         if ( returnVal == -1 )
         {
             low = 0;
-            high = trackerStats.size() - 1;
+            high = highestSetIndex;
             returnVal = binarySearch( x, inputId, low, high, groupId );
         }
         return returnVal;
@@ -338,8 +352,8 @@ public class EncodingIdMapper implements IdMapper
     private int detectAndMarkCollisions( ProgressListener progress )
     {
         progress.started( "DETECT" );
-        int numCollisions = 0;
-        long max = trackerStats.size() - 1;
+        long max = highestSetIndex; // excluding the last one because we compare i w/ i+1
+        int numberOfCollisions = 0;
         SameGroupDetector sameGroupDetector = new SameGroupDetector();
         for ( int i = 0; i < max; )
         {
@@ -356,6 +370,11 @@ public class EncodingIdMapper implements IdMapper
 
                 long eIdA = clearCollision( dataCache.get( dataIndexA ) );
                 long eIdB = clearCollision( dataCache.get( dataIndexB ) );
+                if ( eIdA == GAP_VALUE || eIdB == GAP_VALUE )
+                {
+                    sameGroupDetector.reset();
+                    continue;
+                }
 
                 switch ( unsignedDifference( eIdA, eIdB ) )
                 {
@@ -376,9 +395,14 @@ public class EncodingIdMapper implements IdMapper
 
                     if ( collision != -1 )
                     {
-                        markAsCollision( collision );
-                        markAsCollision( dataIndexB );
-                        numCollisions++;
+                        if ( markAsCollision( collision ) )
+                        {
+                            numberOfCollisions++;
+                        }
+                        if ( markAsCollision( dataIndexB ) )
+                        {
+                            numberOfCollisions++;
+                        }
                     }
                     break;
                 default:
@@ -388,24 +412,36 @@ public class EncodingIdMapper implements IdMapper
             progress.add( batch );
         }
         progress.done();
-        monitor.numberOfCollisions( numCollisions );
-        return numCollisions;
+        monitor.numberOfCollisions( numberOfCollisions );
+        return numberOfCollisions;
     }
 
-    private void markAsCollision( int dataIndex )
+    /**
+     * @return {@code true} if marked as collision in this call, {@code false} if it was already marked as collision.
+     */
+    private boolean markAsCollision( int dataIndex )
     {
-        dataCache.set( dataIndex, setCollision( dataCache.get( dataIndex ) ) );
+        long eId = dataCache.get( dataIndex );
+        boolean isAlreadyMarked = isCollision( eId );
+        if ( isAlreadyMarked )
+        {
+            return false;
+        }
+
+        dataCache.set( dataIndex, setCollision( eId ) );
+        return true;
     }
 
-    private void buildCollisionInfo( InputIterator<Object> ids, Collector collector, ProgressListener progress )
+    private void buildCollisionInfo( InputIterator<Object> ids, int numberOfCollisions,
+            Collector collector, ProgressListener progress )
             throws InterruptedException
     {
         progress.started( "RESOLVE" );
         Radix radix = radixFactory.newInstance();
-        NumberArrayStats collisionDataCacheStats = new NumberArrayStats();
         List<String> sourceDescriptions = new ArrayList<>();
         String lastSourceDescription = null;
-        collisionSourceDataCache = newLongArray( cacheFactory, chunkSize );
+        collisionSourceDataCache = cacheFactory.newLongArray( numberOfCollisions, -1 );
+        collisionTrackerCache = cacheFactory.newIntArray( numberOfCollisions, -1 );
         for ( long i = 0; ids.hasNext(); )
         {
             long j = 0;
@@ -416,7 +452,7 @@ public class EncodingIdMapper implements IdMapper
                 if ( isCollision( eId ) )
                 {
                     // Store this collision input id for matching later in get()
-                    long eIdFromInputId = encoder.encode( id );
+                    long eIdFromInputId = encode( id );
                     assert eIdFromInputId == clearCollision( eId ) : format( "Encoding mismatch during building of " +
                             "collision info. input id %s (a %s) marked as collision where this id was encoded into " +
                             "%d when put, but was now encoded into %d",
@@ -425,7 +461,6 @@ public class EncodingIdMapper implements IdMapper
                     collisionValues.add( id );
                     collisionNodeIdCache.set( collisionIndex, i );
                     radix.registerRadixOf( eId );
-                    collisionDataCacheStats.register( collisionIndex );
                     String currentSourceDescription = ids.sourceDescription();
                     if ( lastSourceDescription == null || !currentSourceDescription.equals( lastSourceDescription ) )
                     {
@@ -441,15 +476,14 @@ public class EncodingIdMapper implements IdMapper
         progress.done();
 
         // Detect input id duplicates within the same group, with source information, line number and the works
-        collisionTrackerCache = cacheFactory.newIntArray( collisionDataCacheStats.highestIndex()+1, -1 );
-        detectDuplicateInputIds( radix, collisionDataCacheStats, sourceDescriptions, collector );
+        detectDuplicateInputIds( radix, numberOfCollisions, sourceDescriptions, collector );
 
         // We won't be needing these anymore
         collisionSourceDataCache = null;
         collisionTrackerCache = null;
     }
 
-    private void detectDuplicateInputIds( Radix radix, NumberArrayStats collisionDataCacheStats,
+    private void detectDuplicateInputIds( Radix radix, int numberOfCollisions,
             List<String> sourceDescriptions, Collector collector ) throws InterruptedException
     {
         // We do this collision sort using ParallelSort which has the data cache and the tracker cache,
@@ -492,17 +526,15 @@ public class EncodingIdMapper implements IdMapper
             }
         };
 
-        NumberArrayStats collisionTrackerCacheStats = new NumberArrayStats();
-        new ParallelSort( radix, collisionNodeIdCache, collisionDataCacheStats,
-                collisionTrackerCache, collisionTrackerCacheStats, processorsForSorting,
-                ProgressListener.NONE, comparator ).run();
+        new ParallelSort( radix, collisionNodeIdCache, numberOfCollisions-1,
+                collisionTrackerCache, processorsForSorting, ProgressListener.NONE, comparator ).run();
         // Here we have a populated C
         // We want to detect duplicate input ids within the
         long previousEid = 0;
         int previousGroupId = 0;
         SourceInformation source = new SourceInformation();
         SameInputIdDetector detector = new SameInputIdDetector();
-        for ( int i = 0; i < collisionTrackerCacheStats.size(); i++ )
+        for ( int i = 0; i < numberOfCollisions; i++ )
         {
             int collisionIndex = collisionTrackerCache.get( i );
             long dataIndex = collisionNodeIdCache.get( collisionIndex );
@@ -601,7 +633,7 @@ public class EncodingIdMapper implements IdMapper
                 // read more in detectAndMarkCollisions(). So regardless we need to check previous/next
                 // if they are the same value.
                 if ( (mid > 0 && unsignedCompare( x, dataValue( mid - 1 ), CompareType.EQ )) ||
-                     (mid < trackerStats.highestIndex() && unsignedCompare( x, dataValue( mid + 1 ), CompareType.EQ ) ) )
+                     (mid < highestSetIndex && unsignedCompare( x, dataValue( mid + 1 ), CompareType.EQ ) ) )
                 {   // OK so there are actually multiple equal data values here, we need to go through them all
                     // to be sure we find the correct one.
                     return findFromEIdRange( mid, midValue, inputId, x, groupId );
@@ -628,7 +660,7 @@ public class EncodingIdMapper implements IdMapper
     {
         // can't be done on unsorted data
         long low = 0 + 0;
-        long high = dataCacheStats.size() - 1;
+        long high = highestSetIndex;
         while ( low <= high )
         {
             long mid = (low + high) / 2;
@@ -657,7 +689,7 @@ public class EncodingIdMapper implements IdMapper
             index--;
         }
         long fromIndex = index;
-        while ( index < trackerStats.highestIndex() && unsignedCompare( val, dataValue( index + 1 ), CompareType.EQ ) )
+        while ( index < highestSetIndex && unsignedCompare( val, dataValue( index + 1 ), CompareType.EQ ) )
         {
             index++;
         }

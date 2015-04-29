@@ -19,6 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
+import static java.lang.Math.log10;
+import static java.lang.Math.max;
+
 /**
  * {@link Encoder} that assumes that the entered strings can be parsed to {@link Long} directly.
  */
@@ -36,7 +39,7 @@ public class LongEncoder implements Encoder
 
     private int numberOfDigits( long value )
     {
-        return (int)(Math.log10( value ) + 1);
+        return max( 1, (int)(log10( value ) + 1) );
     }
 
     @Override
