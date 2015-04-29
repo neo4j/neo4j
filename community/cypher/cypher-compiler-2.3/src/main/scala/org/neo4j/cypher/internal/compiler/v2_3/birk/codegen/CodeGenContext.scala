@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.birk.JavaSymbol
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il.CodeThunk
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 
 import scala.collection.{immutable, mutable}
 
@@ -60,7 +60,7 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: immutable.Map[Logi
 
   def popParent(): CodeGenPlan = parents.pop()
 
-  def registerOperator(plan: LogicalPlan) = {
+  def registerOperator(plan: LogicalPlan): String = {
     operatorIds.getOrElseUpdate(idMap(plan), namer.newOpName(plan.getClass.getSimpleName))
   }
 }

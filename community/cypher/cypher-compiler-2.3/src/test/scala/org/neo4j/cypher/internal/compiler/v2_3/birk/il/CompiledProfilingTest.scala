@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.{PlannerQuery, Cardinalit
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{ProduceResult, NodeHashJoin, IdName, AllNodesScan}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.function.Supplier
-import org.neo4j.graphdb.Transaction
+import org.neo4j.graphdb.{Direction, Transaction}
 import org.neo4j.kernel.api._
 import org.neo4j.test.ImpermanentGraphDatabase
 
@@ -105,6 +105,19 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val hashJoin = single(description.find("NodeHashJoin"))
     hashJoin.arguments should contain(DbHits(0))
     hashJoin.arguments should contain(Rows(2))
-    println(description)
+  }
+
+  test("should generate operator id fields") {
+    // given
+    val instruction = WhileLoop(JavaSymbol("name", "Object"),
+      ScanAllNodes("foo"),
+      AcceptVisitor("bar", Map.empty, Map.empty, Map.empty))
+
+    // when
+    val source = generateSource(instruction)
+
+    // then
+    source should include("public static Id foo;")
+    source should include("public static Id bar;")
   }
 }

@@ -26,7 +26,7 @@ trait Instruction {
   final def importedClasses() = allLeafs.flatMap(_._importedClasses()).toSet
 
   //generate class level members
-  def fields(): String
+  def members(): String
 
   // Initialises necessary data-structures. Is inserted at the top of the generated method
   def generateInit(): String
@@ -38,7 +38,7 @@ trait Instruction {
   // Generates import list for class - implement this!
   protected def _importedClasses(): Set[String]
 
-  def children: Seq[Instruction] = Seq.empty
+  protected def children: Seq[Instruction] = Seq.empty
 
   def operatorId: Option[String] = None
 
@@ -51,17 +51,20 @@ trait Instruction {
 
     children ++ grandKids
   }
+
+  def operatorIds: Set[String] = {
+    (operatorId.getOrElse("") +: children.flatMap(_.operatorIds)).toSet.filter(_.nonEmpty)
+  }
 }
 
 object Instruction {
   val empty = new Instruction {
-    override def generateCode(): String = ""
+    override def generateCode() = ""
 
-    override def fields(): String = ""
+    override def members() = ""
 
-    override def generateInit(): String = ""
+    override def generateInit() = ""
 
-    // Generates import list for class - implement this!
-    override protected def _importedClasses(): Set[String] = Set.empty
+    override protected def _importedClasses() = Set.empty
   }
 }

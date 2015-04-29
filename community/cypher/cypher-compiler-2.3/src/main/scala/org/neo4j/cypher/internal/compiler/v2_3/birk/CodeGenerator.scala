@@ -43,8 +43,7 @@ object CodeGenerator {
   def generateClass(instructions: Seq[Instruction]) = {
     val className = Namer.newClassName()
     val source = generateCodeFromInstructions(className, instructions)
-    println(indentNicely(source))
-    Javac.compile(s"$packageName.$className", source)
+    (Javac.compile(s"$packageName.$className", source), source)
   }
 
   object JavaTypes {
@@ -93,20 +92,18 @@ object CodeGenerator {
         reduceOption(_ ++ _).
         getOrElse(Set.empty)
 
-    def flatten[T](seq:Seq[Instruction], mapper:(Instruction=>Option[T])) : Seq[T] = {
-      seq.flatMap( x => mapper(x) ++ flatten(x.children, mapper))
-    }
+
 
     val imports = if (importLines.nonEmpty)
       importLines.toSeq.sorted.mkString("import ", s";${n}import ", ";")
     else
       ""
-    val fields = instructions.map(_.fields().trim).reduce(_ + n + _)
-    val init = instructions.map(_.generateInit().trim).reduce(_ + n + _)
+    val members = instructions.map(_.members().trim).mkString(n)
+    val init = instructions.map(_.generateInit().trim).mkString(n)
     val methodBody = instructions.map(_.generateCode().trim).reduce(_ + n + _)
     val privateMethods = instructions.flatMap(_.methods).distinct.sortBy(_.name)
     val privateMethodText = privateMethods.map(_.generateCode.trim).reduceOption(_ + n + _).getOrElse("")
-    val opIds = flatten(instructions, _.operatorId.map(x => s"public static Id $x;")).toSet.mkString("\n")
+    val opIds = instructions.flatMap(_.operatorIds).map(s => s"public static Id $s;").mkString(n)
 
     s"""package $packageName;
        |
@@ -151,7 +148,7 @@ object CodeGenerator {
        |  this.params = params;
        |}
        |
-       |$fields
+       |$members
        |
        |@Override
        |public <E extends Exception> void accept(final ResultVisitor<E> visitor)
@@ -166,7 +163,6 @@ object CodeGenerator {
        |catch (Exception e)
        |{
        |//TODO proper error handling
-       |e.printStackTrace();
        |throw new RuntimeException( e );
        |}
        |finally
@@ -200,7 +196,7 @@ class CodeGenerator {
       case _: ProduceResult =>
         val idMap = LogicalPlanIdentificationBuilder(plan)
         val (instructions, operatorMap) = createInstructions(plan, semanticTable, idMap)
-        val clazz = generateClass(instructions)
+        val clazz = generateClass(instructions)._1
         operatorMap.foreach {
           case (id, name) => setStaticField(clazz, name, id)
         }
@@ -221,7 +217,6 @@ class CodeGenerator {
             val (supplier, tracer) = descriptionProvider(description)
             Javac.newInstance(clazz, completionListener, statement, db, execMode, supplier, tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
           }
-
         }
 
         CompiledPlan(updating = false, None, fp, GreedyPlannerName, builder)

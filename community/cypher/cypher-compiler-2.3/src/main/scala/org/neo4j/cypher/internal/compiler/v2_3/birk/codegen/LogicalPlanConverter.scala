@@ -72,7 +72,7 @@ object LogicalPlanConverter {
       context.addVariable(logicalPlan.idName.name, nodeVar)
       val (methodHandle, actions) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
-      (methodHandle, Seq(WhileLoop(nodeVar, ScanForLabel(logicalPlan.label.name, labelVar, opName), actions)))
+      (methodHandle, Seq(WhileLoop(nodeVar, ScanForLabel(opName, logicalPlan.label.name, labelVar), actions)))
     }
   }
 
@@ -81,7 +81,8 @@ object LogicalPlanConverter {
     override def produce(context: CodeGenContext): (Option[JavaSymbol], Seq[Instruction]) = {
       context.pushParent(this)
       val (Some(symbol), leftInstructions) = logicalPlan.lhs.get.asCodeGenPlan.produce(context)
-      val lhsMethod = MethodInvocation(Some(context.registerOperator(logicalPlan)),
+      val opName = context.registerOperator(logicalPlan)
+      val lhsMethod = MethodInvocation(Some(opName),
         symbol.name, symbol.javaType, context.namer.newMethodName(), leftInstructions)
 
       context.pushParent(this)
@@ -100,7 +101,8 @@ object LogicalPlanConverter {
         val notNodeSymbols = lhsSymbols intersect context.variableNames() diff nodeNames
         val symbols = notNodeSymbols.map(s => s -> context.getVariable(s)).toMap
 
-        val probeTable = BuildProbeTable(context.registerOperator(logicalPlan), probeTableName, nodeId.name, symbols, context.namer)
+        val opName = context.registerOperator(logicalPlan)
+        val probeTable = BuildProbeTable(opName, probeTableName, nodeId.name, symbols, context.namer)
         val probeTableSymbol = JavaSymbol(probeTableName, probeTable.producedType)
 
         context.addProbeTable(this, probeTable.generateFetchCode)
@@ -162,7 +164,7 @@ object LogicalPlanConverter {
       val fromNodeVar = context.getVariable(logicalPlan.from.name)
       val typeVar2TypeName = logicalPlan.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(logicalPlan)
-      val expand = ExpandC(fromNodeVar.name, relVar.name, logicalPlan.dir, typeVar2TypeName, toNodeVar.name, action, opName)
+      val expand = ExpandC(opName, fromNodeVar.name, relVar.name, logicalPlan.dir, typeVar2TypeName, toNodeVar.name, action)
       (methodHandle, WhileLoop(relVar, expand, Instruction.empty))
     }
   }
@@ -195,8 +197,8 @@ object LogicalPlanConverter {
 
         case Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
           val token = propKey.id(context.semanticTable).map(_.id)
-          val idName = context.registerOperator(logicalPlan)
-          ProjectNodeProperty(idName, token, propKey.name, context.getVariable(name).name, context.namer)
+          val opName = context.registerOperator(logicalPlan)
+          ProjectNodeProperty(opName, token, propKey.name, context.getVariable(name).name, context.namer)
 
         case Property(rel@Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
           val token = propKey.id(context.semanticTable).map(_.id)

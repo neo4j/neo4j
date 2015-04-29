@@ -45,7 +45,7 @@ case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Ma
         |${valueSymbols.map {case (k, v) => s"${v.javaType} $k;"}.mkString(n)}
         |}""".stripMargin
 
-  def fields() = innerClassDeclaration
+  def members() = innerClassDeclaration
 
   def generateInit() = s"final $producedType $name = Primitive.longObjectMap( );"
 
@@ -112,10 +112,9 @@ case class BuildCountingProbeTable(id: String, name: String, node: String, namer
 
   def producedType: String = "PrimitiveLongIntMap"
 
-  def fields() = ""
+  def members() = ""
 
   def valueType = "int"
-
 
   override def operatorId: Some[String] = Some(id)
 

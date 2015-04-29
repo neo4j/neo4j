@@ -47,7 +47,7 @@ case class AcceptVisitor(id: String, nodes: Map[String, String],
   def generateInit() = ""
 
 
-  def fields() = {
+  def members() = {
     val columnsList = columns.toList match {
       case Nil => "Collections.emptyList()"
       case lst => s"Arrays.asList( ${lst.mkString("\"", "\", \"", "\"")} )"

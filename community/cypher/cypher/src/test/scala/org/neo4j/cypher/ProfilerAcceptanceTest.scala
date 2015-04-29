@@ -26,21 +26,19 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.helpers.TxCounts
-import org.neo4j.graphdb.Node
 
 class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport with NewPlannerTestSupport {
 
-//  test("profile with all runtimes") {
-//    createNode()
-//    createNode()
-//    createNode()
-//
-//    val result = profileWithAllPlannersAndRuntimes("MATCH (n) RETURN n")
-//    result.size
-//    val executionPlanDescription = result.executionPlanDescription()
-//    assertRows(3)(result)("AllNodesScan")
-//    assertDbHits(4)(result)("AllNodesScan")
-//  }
+  test("profile simple query") {
+    createNode()
+    createNode()
+    createNode()
+
+    val result = profileWithAllPlannersAndRuntimes("MATCH (n) RETURN n")
+
+    assertRows(3)(result)("AllNodesScan")
+    assertDbHits(4)(result)("AllNodesScan")
+  }
 
   test("match n where n-[:FOO]->() return *") {
     //GIVEN
@@ -97,17 +95,9 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("tracks number of rows") {
     //GIVEN
-    createNode("foo" -> "bar")
-    // the cost model is shite, so we need to add a bunch of nodes for the planner to pick a plan that does lookup by id
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
+    // due to the cost model, we need a bunch of nodes for the planner to pick a plan that does lookup by id
+    (1 to 10).foreach(_ => createNode())
+
     val result = profileWithAllPlannersAndRuntimes("match (n) where id(n) = 0 RETURN n")
 
     //WHEN THEN
@@ -116,18 +106,12 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("tracks number of graph accesses") {
     //GIVEN
-    createNode("foo" -> "bar")
-    // the cost model is shite, so we need to add a bunch of nodes for the planner to pick a plan that does lookup by id
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
-    createNode("foo" -> "baz")
+    // due to the cost model, we need a bunch of nodes for the planner to pick a plan that does lookup by id
+    (1 to 10).foreach(_ => createNode("foo" -> "bar"))
+
     val result = profileWithAllPlannersAndRuntimes("match (n) where id(n) = 0 RETURN n.foo")
+
+    println(result.executionPlanDescription())
 
     //WHEN THEN
     assertRows(1)(result)("ProduceResults", "Projection", "NodeByIdSeek")
@@ -135,7 +119,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(2)(result)("Projection")
     assertDbHits(1)(result)("NodeByIdSeek")
   }
-
 
   test("no problem measuring creation") {
     //GIVEN
@@ -338,9 +321,31 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = profileWithAllPlannersAndRuntimes("match (n)-->(x) return x")
 
     // then
-    println(result.executionPlanDescription())
     assertDbHits(3)(result)("Expand(All)")
     assertRows(1)(result)("Expand(All)")
+  }
+
+  test("should report correct dbhits and rows for literal addition") {
+    // when
+    val result = profileWithAllPlannersAndRuntimes("return 5 + 3")
+
+    // then
+    assertDbHits(0)(result)("Argument")
+    assertDbHits(0)(result)("Projection")
+    assertDbHits(0)(result)("Results")
+    assertRows(1)(result)("Results")
+  }
+
+  test("should report correct dbhits and rows for property addition") {
+    // given
+    createNode("name" -> "foo")
+
+    // when
+    val result = profileWithAllPlannersAndRuntimes("match n return n.name + 3")
+
+    // then
+    assertDbHits(1)(result)("Projection")
+    assertRows(1)(result)("Projection")
   }
 
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {

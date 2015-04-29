@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il.ProjectionInstruction.{add, parameter, sub}
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id
 import org.scalatest._
 
 class ProjectionInstructionCompilationTest extends FunSuite with Matchers with CodeGenSugar {

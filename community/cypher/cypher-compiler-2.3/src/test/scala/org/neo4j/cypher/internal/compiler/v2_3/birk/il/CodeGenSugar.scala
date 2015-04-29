@@ -91,7 +91,10 @@ trait CodeGenSugar extends MockitoSugar {
   }
 
   def compile(instructions: Instruction*): Class[InternalExecutionResult] =
-    CodeGenerator.generateClass(instructions.toSeq)
+    CodeGenerator.generateClass(instructions.toSeq)._1
+
+  def generateSource(instructions: Instruction*): String =
+    CodeGenerator.generateClass(instructions.toSeq)._2
 
   def newInstance(clazz: Class[InternalExecutionResult],
                   completion: CompletionListener = NOOP,

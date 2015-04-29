@@ -39,7 +39,6 @@ public interface QueryExecutionEvent extends AutoCloseable
         @Override
         public void row()
         {
-            throw new UnsupportedOperationException( "not implemented" );
         }
 
         @Override

@@ -21,8 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
 import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.n
 
-case class MethodInvocation(override val operatorId:Option[String], resultVariable: String, resultType: String, methodName: String, statements: Seq[Instruction])
-  extends Instruction {
+case class MethodInvocation(override val operatorId: Option[String],
+                            resultVariable: String,
+                            resultType: String,
+                            methodName: String,
+                            statements: Seq[Instruction]) extends Instruction {
+
   def generateCode() = operatorId match {
     case Some(id) =>
       s"""final $resultType $resultVariable;
@@ -40,7 +44,7 @@ case class MethodInvocation(override val operatorId:Option[String], resultVariab
 
   def generateInit() = ""
 
-  override def _method = Some(new Method {
+  override protected def _method = Some(new Method {
     def generateCode = {
       val init = statements.map(_.generateInit()).reduce(_ + n + _)
       val methodBody = statements.map(_.generateCode()).reduce(_ + n + _)
@@ -55,10 +59,9 @@ case class MethodInvocation(override val operatorId:Option[String], resultVariab
     }
 
     def name = methodName
-
   })
 
-  def fields() = statements.map(_.fields()).reduce(_ + n + _)
+  def members() = statements.map(_.members()).reduce(_ + n + _)
 
   override def _importedClasses() = Set("org.neo4j.kernel.api.exceptions.KernelException")
 }

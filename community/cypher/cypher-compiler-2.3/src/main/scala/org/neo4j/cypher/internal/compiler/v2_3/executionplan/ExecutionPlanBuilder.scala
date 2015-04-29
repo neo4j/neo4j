@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.birk.QueryExecutionTracer
 import org.neo4j.cypher.internal.compiler.v2_3.birk.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.tracer
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.{DescriptionProvider, tracer}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
@@ -45,7 +45,7 @@ trait RunnablePlan {
   def apply(statement: KernelStatement,
             db: GraphDatabaseService,
             execMode: ExecutionMode,
-            descriptionProvider: (InternalPlanDescription => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer])),
+            descriptionProvider: DescriptionProvider,
             params: Map[String, Any],
             completionListener: CompletionListener): InternalExecutionResult
 }
@@ -183,17 +183,20 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
 }
 
 object ExecutionPlanBuilder {
-  def tracer( mode: ExecutionMode ) = mode match {
+  type DescriptionProvider = (InternalPlanDescription => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer]))
+
+  def tracer( mode: ExecutionMode ) : DescriptionProvider = mode match {
     case ProfileMode =>
       val tracer = new ProfilingTracer()
-      ( description: InternalPlanDescription ) => (new Supplier[InternalPlanDescription] {
-        override def get(): InternalPlanDescription = description map {
+      (description: InternalPlanDescription) => (new Supplier[InternalPlanDescription] {
+
+        override def get(): InternalPlanDescription = description.map {
           plan: InternalPlanDescription =>
             val data = tracer.get(plan.id)
             plan.
-              addArgument( Arguments.DbHits( data.dbHits() ) ).
-              addArgument( Arguments.Rows( data.rows() ) ).
-              addArgument( Arguments.Time( data.time() ) )
+              addArgument(Arguments.DbHits(data.dbHits())).
+              addArgument(Arguments.Rows(data.rows())).
+              addArgument(Arguments.Time(data.time()))
         }
       }, Some(tracer))
     case _ => (description: InternalPlanDescription) => (singleton(description), None)

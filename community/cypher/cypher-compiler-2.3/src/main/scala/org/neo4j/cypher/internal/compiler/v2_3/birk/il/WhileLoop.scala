@@ -52,5 +52,5 @@ case class WhileLoop(id: JavaSymbol, producer: LoopDataGenerator, action: Instru
   // Initialises necessary data-structures. Is inserted at the top of the generated method
   def generateInit() = producer.generateInit() + n + action.generateInit()
 
-  def fields() = producer.fields() + n + action.fields()
+  def members() = producer.members() + n + action.members()
 }

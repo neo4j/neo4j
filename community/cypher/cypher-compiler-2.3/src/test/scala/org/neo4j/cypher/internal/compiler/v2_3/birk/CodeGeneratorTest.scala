@@ -24,7 +24,7 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compiler.v2_3.{DummyPosition, NormalMode}
+import org.neo4j.cypher.internal.compiler.v2_3.NormalMode
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompletionListener.NOOP
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.tracer
@@ -45,17 +45,6 @@ import scala.collection.JavaConverters
 class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private val generator = new CodeGenerator()
-
-  test("all operator ids exist") {
-    // given
-    val plan = ProduceResult(List("a"), List.empty, List.empty, AllNodesScan(IdName("a"), Set.empty)(solved))
-
-    // when
-    val compiled = compile(plan)
-
-    // then
-
-  }
 
   test("all nodes scan") { // MATCH a RETURN a
     //given

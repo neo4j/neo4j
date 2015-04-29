@@ -25,7 +25,7 @@ trait LoopDataGenerator extends Instruction {
 
   def javaType: String
 
-  def fields() = ""
+  def members() = ""
 
   def id: String
 
