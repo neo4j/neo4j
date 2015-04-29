@@ -21,6 +21,9 @@ package org.neo4j.function;
 
 import java.util.Map;
 
+/**
+ * Constructors for basic {@link Function} and {@link BiFunction} types
+ */
 public class Functions
 {
     public static <From, To> Function<From, To> map( final Map<From, To> map )
@@ -89,7 +92,7 @@ public class Functions
     private static Function IDENTITY = new Function()
     {
         @Override
-        public Object apply( Object value ) throws Exception
+        public Object apply( Object value )
         {
             return value;
         }
@@ -101,7 +104,7 @@ public class Functions
         return IDENTITY;
     }
 
-    public static <From, From2, To> Function2<Function<From, From2>, Function<From2, To>, Function<From, To>> compose()
+    public static <From, From2, To> Function2<? super Function<From, From2>, ? super Function<From2, To>, Function<From, To>> compose()
     {
         return new Function2<Function<From, From2>, Function<From2, To>, Function<From, To>>()
         {
@@ -120,12 +123,12 @@ public class Functions
         };
     }
 
-    public static <T1, T2> Function2<Function2<T1, T2, T1>, Function2<T1, T2, T1>, Function2<T1, T2, T1>> compose2()
+    public static <T1, T2> Function2<? super BiFunction<T1, T2, T1>, ? super BiFunction<T1, T2, T1>, Function2<T1, T2, T1>> compose2()
     {
-        return new Function2<Function2<T1, T2, T1>, Function2<T1, T2, T1>, Function2<T1, T2, T1>>()
+        return new Function2<BiFunction<T1, T2, T1>, BiFunction<T1, T2, T1>, Function2<T1, T2, T1>>()
         {
             @Override
-            public Function2<T1, T2, T1> apply( final Function2<T1, T2, T1> function1, final Function2<T1, T2,
+            public Function2<T1, T2, T1> apply( final BiFunction<T1, T2, T1> function1, final BiFunction<T1, T2,
                     T1> function2 )
             {
                 return new Function2<T1, T2, T1>()
@@ -174,21 +177,20 @@ public class Functions
         };
     }
 
+    /**
+     * @deprecated use {@link Consumers#noop()}
+     */
+    @Deprecated
     @SuppressWarnings( "unchecked" )
     public static <TYPE> Consumer<TYPE> swallow( @SuppressWarnings( "UnusedParameters" ) Class<TYPE> type )
     {
-        return SWALLOWER;
+        return Consumers.noop();
     }
 
-    private static Consumer SWALLOWER = new Consumer()
-    {
-        @Override
-        public void accept( Object value )
-        {
-            // yum, yum
-        }
-    };
-
+    /**
+     * @deprecated use {@link Suppliers#singleton(Object)}
+     */
+    @Deprecated
     public static <T> Factory<T> constantly( final T item )
     {
         return new Factory<T>()

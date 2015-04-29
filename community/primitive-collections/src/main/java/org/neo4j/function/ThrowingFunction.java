@@ -20,11 +20,20 @@
 package org.neo4j.function;
 
 /**
- * Represents a function that accepts one argument and produces a result.
+ * Represents a function that accepts one argument and produces a result, or throws an exception.
+ *
  * @param <T> the type of the input to the function
  * @param <R> the type of the result of the function
+ * @param <E> the type of exception that may be thrown from the function
  */
-public interface Function<T, R> extends RawFunction<T, R, RuntimeException>
+public interface ThrowingFunction<T, R, E extends Exception>
 {
-    R apply( T t );
+    /**
+     * Apply a value to this function
+     *
+     * @param t the input item
+     * @return the mapped item
+     * @throws E an exception if the function fails
+     */
+    R apply( T t ) throws E;
 }

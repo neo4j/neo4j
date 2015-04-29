@@ -22,7 +22,7 @@ package org.neo4j.helpers;
 /**
  * Generic function interface with 2 input parameters.
  *
- * This is deprecated, use {@link org.neo4j.function.Function2} instead.
+ * This is deprecated, use {@link org.neo4j.function.BiFunction} instead.
  *
  * @param <T1>
  * @param <T2>

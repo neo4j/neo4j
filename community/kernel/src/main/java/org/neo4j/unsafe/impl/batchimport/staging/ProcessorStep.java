@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.function.Factory;
+import org.neo4j.function.Supplier;
 import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
@@ -81,10 +81,10 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     {
         super.start( orderingGuarantees );
         this.executor = new DynamicTaskExecutor<>( initialProcessorCount, maxProcessors, workAheadSize,
-                DEFAULT_PARK_STRATEGY, name(), new Factory<Sender>()
+                DEFAULT_PARK_STRATEGY, name(), new Supplier<Sender>()
                 {
                     @Override
-                    public ProcessorStep<T>.Sender newInstance()
+                    public ProcessorStep<T>.Sender get()
                     {
                         return new Sender();
                     }

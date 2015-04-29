@@ -34,6 +34,7 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
+import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
@@ -103,7 +104,7 @@ public class DataFactories
      * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code readable}
      */
     public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
-            final Factory<CharReadable> readable )
+            final Supplier<CharReadable> readable )
     {
         return new DataFactory<ENTITY>()
         {
@@ -115,7 +116,7 @@ public class DataFactories
                     @Override
                     public CharSeeker stream()
                     {
-                        return charSeeker( readable.newInstance(), config.bufferSize(),
+                        return charSeeker( readable.get(), config.bufferSize(),
                                            true, config.quotationCharacter() );
                     }
 

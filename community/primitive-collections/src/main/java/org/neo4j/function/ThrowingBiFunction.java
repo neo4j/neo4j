@@ -20,11 +20,22 @@
 package org.neo4j.function;
 
 /**
- * Represents a function that accepts one argument and produces a result.
- * @param <T> the type of the input to the function
+ * Represents a function that accepts two arguments and produces a result. This is the two-arity specialization of Function.
+ *
+ * @param <T> the type of the first argument to the function
+ * @param <U> the type of the second argument to the function
  * @param <R> the type of the result of the function
+ * @param <E> the type of exception that may be thrown from the function
  */
-public interface Function<T, R> extends RawFunction<T, R, RuntimeException>
+public interface ThrowingBiFunction<T, U, R, E extends Exception>
 {
-    R apply( T t );
+    /**
+     * Map a single item from one type to another
+     *
+     * @param t the first input item
+     * @param u the second input item
+     * @return the mapped item
+     * @throws E an exception if the function fails
+     */
+    R apply( T t, U u ) throws E;
 }

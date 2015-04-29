@@ -25,8 +25,8 @@ import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-import org.neo4j.function.Factory;
-import org.neo4j.function.Functions;
+import org.neo4j.function.Supplier;
+import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.impl.transaction.log.ParkStrategy;
 
 import static java.lang.Math.min;
@@ -48,18 +48,18 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     private volatile Processor[] processors = (Processor[]) Array.newInstance( Processor.class, 0 );
     private volatile boolean shutDown;
     private volatile Throwable panic;
-    private final Factory<LOCAL> initialLocalState;
+    private final Supplier<LOCAL> initialLocalState;
     private final int maxProcessorCount;
 
     public DynamicTaskExecutor( int initialProcessorCount, int maxProcessorCount, int maxQueueSize,
             ParkStrategy parkStrategy, String processorThreadNamePrefix )
     {
         this( initialProcessorCount, maxProcessorCount, maxQueueSize, parkStrategy, processorThreadNamePrefix,
-                Functions.<LOCAL>constantly( null ) );
+                Suppliers.<LOCAL>singleton( null ) );
     }
 
     public DynamicTaskExecutor( int initialProcessorCount, int maxProcessorCount, int maxQueueSize,
-            ParkStrategy parkStrategy, String processorThreadNamePrefix, Factory<LOCAL> initialLocalState )
+            ParkStrategy parkStrategy, String processorThreadNamePrefix, Supplier<LOCAL> initialLocalState )
     {
         this.maxProcessorCount = maxProcessorCount == 0 ? Integer.MAX_VALUE : maxProcessorCount;
 
@@ -215,7 +215,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     private class Processor extends Thread
     {
         private volatile boolean shutDown;
-        private final LOCAL threadLocalState = initialLocalState.newInstance();
+        private final LOCAL threadLocalState = initialLocalState.get();
 
         Processor( String name )
         {

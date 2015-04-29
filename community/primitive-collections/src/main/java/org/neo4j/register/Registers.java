@@ -19,7 +19,7 @@
  */
 package org.neo4j.register;
 
-import org.neo4j.function.Function2;
+import org.neo4j.function.BiFunction;
 
 public class Registers
 {
@@ -56,7 +56,7 @@ public class Registers
             }
 
             @Override
-            public boolean satisfies( Function2<Long, Long, Boolean> condition )
+            public boolean satisfies( BiFunction<Long, Long, Boolean> condition )
             {
                 return condition.apply( first, second );
             }
