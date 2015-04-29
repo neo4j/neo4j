@@ -75,6 +75,7 @@ import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.helpers.Exceptions.withMessage;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
@@ -558,6 +559,55 @@ public class ImportToolTest
             // THEN
             assertThat( e.getMessage(), containsString( "No node input" ) );
         }
+    }
+
+    @Test
+    public void shouldBeAbleToImportAnonymousNodes() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = asList( "1", "", "", "", "3", "", "", "", "", "", "5" );
+        Configuration config = Configuration.COMMAS;
+        List<RelationshipDataLine> relationshipData = asList( relationship( "1", "3", "KNOWS" ) );
+
+        // WHEN
+        importTool(
+                "--into",          dbRule.getStoreDir().getAbsolutePath(),
+                "--nodes",         nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
+                "--relationships", relationshipData( true, config, relationshipData.iterator(),
+                                   alwaysTrue(), true ).getAbsolutePath() );
+
+        // THEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Iterable<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes();
+            int anonymousCount = 0;
+            for ( final String id : nodeIds )
+            {
+                if ( id.isEmpty() )
+                {
+                    anonymousCount++;
+                }
+                else
+                {
+                    assertNotNull( single( filter( nodeFilter( id ), allNodes.iterator() ) ) );
+                }
+            }
+            assertEquals( anonymousCount, count( filter( nodeFilter( "" ), allNodes.iterator() ) ) );
+            tx.success();
+        }
+    }
+
+    private Predicate<Node> nodeFilter( final String id )
+    {
+        return new Predicate<Node>()
+        {
+            @Override
+            public boolean accept( Node node )
+            {
+                return node.getProperty( "id", "" ).equals( id );
+            }
+        };
     }
 
     protected void assertNodeHasLabels( Node node, String[] names )

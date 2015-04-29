@@ -30,8 +30,6 @@ import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 
-import static java.lang.Math.max;
-
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.clearCollision;
 
@@ -44,30 +42,27 @@ public class ParallelSort
     private final int[] radixIndexCount;
     private final RadixCalculator radixCalculator;
     private final LongArray dataCache;
-    private final NumberArrayStats dataStats;
+    private final long highestSetIndex;
     private final IntArray tracker;
-    private final NumberArrayStats trackerStats;
     private final int threads;
     private long[][] sortBuckets;
     private final ProgressListener progress;
     private final Comparator comparator;
 
-    public ParallelSort( Radix radix, LongArray dataCache, NumberArrayStats dataStats,
-            IntArray tracker, NumberArrayStats trackerStats, int threads, ProgressListener progress,
-            Comparator comparator )
+    public ParallelSort( Radix radix, LongArray dataCache, long highestSetIndex,
+            IntArray tracker, int threads, ProgressListener progress, Comparator comparator )
     {
         this.progress = progress;
         this.comparator = comparator;
         this.radixIndexCount = radix.getRadixIndexCounts();
         this.radixCalculator = radix.calculator();
         this.dataCache = dataCache;
-        this.dataStats = dataStats;
+        this.highestSetIndex = highestSetIndex;
         this.tracker = tracker;
-        this.trackerStats = trackerStats;
         this.threads = threads;
     }
 
-    public long[][] run() throws InterruptedException
+    public synchronized long[][] run() throws InterruptedException
     {
         int[][] sortParams = sortRadix();
         int threadsNeeded = 0;
@@ -80,8 +75,7 @@ public class ParallelSort
             threadsNeeded++;
         }
         CountDownLatch waitSignal = new CountDownLatch( 1 );
-        CountDownLatch doneSignal = new CountDownLatch( threadsNeeded );
-        SortWorker[] sortWorker = new SortWorker[threadsNeeded];
+        Workers<SortWorker> sortWorkers = new Workers<>( "SortWorker" );
         progress.started( "SORT" );
         for ( int i = 0; i < threadsNeeded; i++ )
         {
@@ -89,13 +83,12 @@ public class ParallelSort
             {
                 break;
             }
-            sortWorker[i] = new SortWorker( i, sortParams[i][0], sortParams[i][1], waitSignal, doneSignal );
-            sortWorker[i].start();
+            sortWorkers.start( new SortWorker( sortParams[i][0], sortParams[i][1], waitSignal ) );
         }
         waitSignal.countDown();
         try
         {
-            doneSignal.await();
+            sortWorkers.awaitAndThrowOnError();
         }
         finally
         {
@@ -108,12 +101,11 @@ public class ParallelSort
     {
         int[][] rangeParams = new int[threads][2];
         int[] bucketRange = new int[threads];
-        TrackerInitializer[] initializers = new TrackerInitializer[threads];
+        Workers<TrackerInitializer> initializers = new Workers<>( "TrackerInitializer" );
         sortBuckets = new long[threads][2];
-        int bucketSize = safeCastLongToInt( dataStats.size() / threads );
-        int count = 0, fullCount = 0 + 0;
-        rangeParams[0][0] = 0;
-        bucketRange[0] = 0;
+        long dataSize = highestSetIndex+1;
+        int bucketSize = safeCastLongToInt( dataSize / threads );
+        int count = 0, fullCount = 0;
         progress.started( "SPLIT" );
         for ( int i = 0, threadIndex = 0; i < radixIndexCount.length && threadIndex < threads; i++ )
         {
@@ -134,9 +126,9 @@ public class ParallelSort
                     fullCount += radixIndexCount[i];
                     progress.add( radixIndexCount[i] );
                 }
-                initializers[threadIndex] = new TrackerInitializer( threadIndex, rangeParams[threadIndex],
+                initializers.start( new TrackerInitializer( threadIndex, rangeParams[threadIndex],
                         threadIndex > 0 ? bucketRange[threadIndex-1] : -1, bucketRange[threadIndex],
-                        sortBuckets[threadIndex] );
+                        sortBuckets[threadIndex] ) );
                 threadIndex++;
             }
             else
@@ -147,10 +139,10 @@ public class ParallelSort
             {
                 bucketRange[threadIndex] = radixIndexCount.length;
                 rangeParams[threadIndex][0] = fullCount;
-                rangeParams[threadIndex][1] = safeCastLongToInt( dataStats.size() - fullCount );
-                initializers[threadIndex] = new TrackerInitializer( threadIndex, rangeParams[threadIndex],
+                rangeParams[threadIndex][1] = safeCastLongToInt( dataSize - fullCount );
+                initializers.start( new TrackerInitializer( threadIndex, rangeParams[threadIndex],
                         threadIndex > 0 ? bucketRange[threadIndex-1] : -1, bucketRange[threadIndex],
-                        sortBuckets[threadIndex] );
+                        sortBuckets[threadIndex] ) );
                 break;
             }
         }
@@ -159,28 +151,17 @@ public class ParallelSort
         // In the loop above where we split up radixes into buckets, we start one thread per bucket whose
         // job is to populate trackerCache and sortBuckets where each thread will not touch the same
         // data indexes as any other thread. Here we wait for them all to finish.
+        Throwable error = initializers.await();
         int[] bucketIndex = new int[threads];
-        Throwable error = null;
-        long highestIndex = -1, size = 0;
-        for ( int i = 0; i < initializers.length; i++ )
+        int i = 0;
+        for ( TrackerInitializer initializer : initializers )
         {
-            TrackerInitializer initializer = initializers[i];
-            if ( initializer != null )
-            {
-                Throwable initializerError = initializer.await();
-                if ( initializerError != null )
-                {
-                    error = initializerError;
-                }
-                bucketIndex[i] = initializer.bucketIndex;
-                highestIndex = max( highestIndex, initializer.highestIndex );
-                size += initializer.size;
-            }
+            bucketIndex[i++] = initializer.bucketIndex;
         }
-        trackerStats.set( size, highestIndex );
         if ( error != null )
         {
-            throw new AssertionError( error.getMessage() + "\n" + dumpBuckets( rangeParams, bucketRange, bucketIndex ) );
+            throw new AssertionError( error.getMessage() + "\n" + dumpBuckets( rangeParams, bucketRange, bucketIndex ),
+                    error );
         }
         return rangeParams;
     }
@@ -301,20 +282,17 @@ public class ParallelSort
      * instead trackerCache is updated to point to the right indexes. Only touches a designated part of trackerCache
      * so that many can run in parallel on their own part without synchronization.
      */
-    private class SortWorker extends Thread
+    private class SortWorker implements Runnable
     {
         private final int start, size;
-        private final CountDownLatch doneSignal, waitSignal;
-        private int workerId = -1;
+        private final CountDownLatch waitSignal;
         private int threadLocalProgress;
 
-        SortWorker( int workerId, int startRange, int size, CountDownLatch wait, CountDownLatch done )
+        SortWorker( int startRange, int size, CountDownLatch wait )
         {
             this.start = startRange;
             this.size = size;
-            this.doneSignal = done;
             this.waitSignal = wait;
-            this.workerId = workerId;
         }
 
         void incrementProgress( int diff )
@@ -336,7 +314,6 @@ public class ParallelSort
         public void run()
         {
             Random random = ThreadLocalRandom.current();
-            this.setName( "SortWorker-" + workerId );
             try
             {
                 waitSignal.await();
@@ -347,7 +324,6 @@ public class ParallelSort
             }
             recursiveQsort( start, start + size, random, this );
             reportProgress();
-            doneSignal.countDown();
         }
     }
 
@@ -355,65 +331,43 @@ public class ParallelSort
      * Sets the initial tracker indexes pointing to data indexes. Only touches a designated part of trackerCache
      * so that many can run in parallel on their own part without synchronization.
      */
-    private class TrackerInitializer extends Thread
+    private class TrackerInitializer implements Runnable
     {
         private final int[] rangeParams;
-        private final int lowBucketRange;
-        private final int highBucketRange;
+        private final int lowRadixRange;
+        private final int highRadixRange;
         private final int threadIndex;
         private int bucketIndex;
         private final long[] result;
-        private volatile Throwable error;
-        private long highestIndex = -1;
-        private long size;
 
-        TrackerInitializer( int threadIndex, int[] rangeParams, int lowBucketRange, int highBucketRange, long[] result )
+        TrackerInitializer( int threadIndex, int[] rangeParams, int lowRadixRange, int highRadixRange, long[] result )
         {
             this.threadIndex = threadIndex;
             this.rangeParams = rangeParams;
-            this.lowBucketRange = lowBucketRange;
-            this.highBucketRange = highBucketRange;
+            this.lowRadixRange = lowRadixRange;
+            this.highRadixRange = highRadixRange;
             this.result = result;
-            start();
         }
 
         @Override
         public void run()
         {
-            try
+            for ( long i = 0; i <= highestSetIndex; i++ )
             {
-                long dataSize = dataStats.size();
-                for ( long i = 0; i < dataSize; i++ )
+                int rIndex = radixCalculator.radixOf( dataCache.get( i ) );
+                if ( rIndex > lowRadixRange && rIndex <= highRadixRange )
                 {
-                    int rIndex = radixCalculator.radixOf( dataCache.get( i ) );
-                    if ( rIndex > lowBucketRange && rIndex <= highBucketRange )
+                    long trackerIndex = (rangeParams[0] + bucketIndex++);
+                    assert tracker.get( trackerIndex ) == -1 :
+                            "Overlapping buckets i:" + i + ", k:" + threadIndex + ", index:" + trackerIndex;
+                    tracker.set( trackerIndex, (int) i );
+                    if ( bucketIndex == rangeParams[1] )
                     {
-                        long temp = (rangeParams[0] + bucketIndex++);
-                        assert tracker.get( temp ) == -1 : "Overlapping buckets i:" + i + ", k:" + threadIndex;
-                        tracker.set( temp, (int) i );
-                        if ( bucketIndex == rangeParams[1] )
-                        {
-                            result[0] = highBucketRange;
-                            result[1] = rangeParams[0];
-                        }
+                        result[0] = highRadixRange;
+                        result[1] = rangeParams[0];
                     }
                 }
-                if ( bucketIndex > 0 )
-                {
-                    highestIndex = rangeParams[0] + bucketIndex - 1;
-                }
-                size = bucketIndex;
             }
-            catch ( Throwable t )
-            {
-                error = t;
-            }
-        }
-
-        private synchronized Throwable await() throws InterruptedException
-        {
-            join();
-            return error;
         }
     }
 }
