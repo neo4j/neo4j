@@ -81,10 +81,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.execution_guard_enabled;
 
 /**
- * Datasource module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. This implements all the
- * remaining
- * services not yet created by either the {@link org.neo4j.kernel.impl.factory.PlatformModule} or {@link org.neo4j
- * .kernel.impl.factory.EditionModule}.
+ * Datasource module for {@link GraphDatabaseFacadeFactory}. This implements all the
+ * remaining services not yet created by either the {@link PlatformModule} or {@link EditionModule}.
  * <p/>
  * When creating new services, this would be the default place to put them, unless they need to go into the other
  * modules for any reason.
@@ -139,8 +137,7 @@ public class DataSourceModule
         transactionEventHandlers = new TransactionEventHandlers( nodeActions, relationshipActions,
                 threadToTransactionBridge );
 
-        IndexConfigStore indexStore = life.add(
-                deps.satisfyDependency( new IndexConfigStore( storeDir, fileSystem ) ) );
+        IndexConfigStore indexStore = life.add( deps.satisfyDependency( new IndexConfigStore( storeDir, fileSystem ) ) );
 
         diagnosticsManager.prependProvider( config );
 
@@ -274,13 +271,10 @@ public class DataSourceModule
         };
     }
 
-    protected RelationshipProxy.RelationshipActions createRelationshipActions( final GraphDatabaseService
-                                                                                       graphDatabaseService,
-                                                                               final ThreadToStatementContextBridge
-                                                                                       threadToStatementContextBridge,
+    protected RelationshipProxy.RelationshipActions createRelationshipActions( final GraphDatabaseService graphDatabaseService,
+                                                                               final ThreadToStatementContextBridge threadToStatementContextBridge,
                                                                                final NodeManager nodeManager,
-                                                                               final RelationshipTypeTokenHolder
-                                                                                       relationshipTypeTokenHolder )
+                                                                               final RelationshipTypeTokenHolder relationshipTypeTokenHolder )
     {
         return new RelationshipProxy.RelationshipActions()
         {
@@ -331,8 +325,7 @@ public class DataSourceModule
     }
 
     protected NodeProxy.NodeActions createNodeActions( final GraphDatabaseService graphDatabaseService,
-                                                       final ThreadToStatementContextBridge
-                                                               threadToStatementContextBridge,
+                                                       final ThreadToStatementContextBridge threadToStatementContextBridge,
                                                        final NodeManager nodeManager )
     {
         return new NodeProxy.NodeActions()

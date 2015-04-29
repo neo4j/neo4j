@@ -25,7 +25,7 @@ import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
@@ -58,8 +58,26 @@ import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
  */
 public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, Lifecycle
 {
+    public interface Dependencies
+    {
+        LogicalTransactionStore logicalTransactionStore();
+
+        TransactionRepresentationStoreApplier transactionRepresentationStoreApplier();
+
+        IndexUpdatesValidator indexUpdatesValidator();
+
+        TransactionIdStore transactionIdStore();
+
+        Supplier<TransactionObligationFulfiller> transactionObligationFulfiller();
+
+        LogFile logFile();
+
+        LogRotation logRotation();
+
+        KernelHealth kernelHealth();
+    }
+
     private static final int DEFAULT_BATCH_SIZE = 100;
-    private final DependencyResolver resolver;
     private final TransactionQueue transactionQueue;
     // Visits all queued transactions, committing them
     private final TransactionVisitor batchCommitter = new TransactionVisitor()
@@ -100,6 +118,8 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             }
         }
     };
+
+    private final Dependencies dependencies;
     private TransactionAppender appender;
     private TransactionRepresentationStoreApplier storeApplier;
     private IndexUpdatesValidator indexUpdatesValidator;
@@ -110,22 +130,22 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     private volatile boolean stopped = false;
     private KernelHealth kernelHealth;
 
-    public TransactionCommittingResponseUnpacker( DependencyResolver resolver )
+    public TransactionCommittingResponseUnpacker( Dependencies dependencies )
     {
-        this( resolver, DEFAULT_BATCH_SIZE );
+        this( dependencies, DEFAULT_BATCH_SIZE );
     }
 
-    public TransactionCommittingResponseUnpacker( DependencyResolver resolver, int maxBatchSize )
+    public TransactionCommittingResponseUnpacker( Dependencies dependencies, int maxBatchSize )
     {
-        this.resolver = resolver;
+        this.dependencies = dependencies;
         this.transactionQueue = new TransactionQueue( maxBatchSize );
     }
 
-    private static TransactionObligationFulfiller resolveTransactionObligationFulfiller( DependencyResolver resolver )
+    private static TransactionObligationFulfiller resolveTransactionObligationFulfiller( Supplier<TransactionObligationFulfiller> supplier)
     {
         try
         {
-            return resolver.resolveDependency( TransactionObligationFulfiller.class );
+            return supplier.get();
         }
         catch ( IllegalArgumentException e )
         {
@@ -203,14 +223,14 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     @Override
     public void start() throws Throwable
     {
-        this.appender = resolver.resolveDependency( LogicalTransactionStore.class ).getAppender();
-        this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class );
-        this.indexUpdatesValidator = resolver.resolveDependency( IndexUpdatesValidator.class );
-        this.transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
-        this.obligationFulfiller = resolveTransactionObligationFulfiller( resolver );
-        this.logFile = resolver.resolveDependency( LogFile.class );
-        this.logRotation = resolver.resolveDependency( LogRotation.class );
-        this.kernelHealth = resolver.resolveDependency( KernelHealth.class );
+        this.appender = dependencies.logicalTransactionStore().getAppender();
+        this.storeApplier = dependencies.transactionRepresentationStoreApplier();
+        this.indexUpdatesValidator = dependencies.indexUpdatesValidator();
+        this.transactionIdStore = dependencies.transactionIdStore();
+        this.obligationFulfiller = resolveTransactionObligationFulfiller( dependencies.transactionObligationFulfiller() );
+        this.logFile = dependencies.logFile();
+        this.logRotation = dependencies.logRotation();
+        this.kernelHealth = dependencies.kernelHealth();
         this.stopped = false;
     }
 

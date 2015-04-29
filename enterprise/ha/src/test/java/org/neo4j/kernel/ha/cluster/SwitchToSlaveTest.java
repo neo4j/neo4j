@@ -26,11 +26,15 @@ import org.junit.Test;
 import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
-import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
+import org.neo4j.function.Factory;
+import org.neo4j.function.Function;
+import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
@@ -39,12 +43,15 @@ import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
+import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
+import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -53,7 +60,7 @@ import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Arrays.asList;
 
@@ -81,13 +88,16 @@ public class SwitchToSlaveTest
         when( response.response() ).thenReturn( new HandshakeResult( 1, 2 ) );
         when( masterClient.handshake( anyLong(), any( StoreId.class ) ) ).thenReturn( response );
 
-        NeoStoreDataSource dataSource = dataSourceMock();
-        when( dataSource.getStoreId() ).thenReturn( new StoreId( 1, 2, 3, 4 ) );
+        StoreId storeId = new StoreId( 1, 2, 3, 4 );
+
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new long[]{42, 42} );
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( TransactionIdStore.BASE_TX_ID );
 
         // When
         try
         {
-            switchToSlave.checkDataConsistency( masterClient, dataSource, null, false );
+            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId, null, false );
             fail( "Should have thrown " + MismatchingStoreIdException.class.getSimpleName() + " exception" );
         }
         catch ( MismatchingStoreIdException e )
@@ -108,10 +118,14 @@ public class SwitchToSlaveTest
         MasterClient masterClient = mock( MasterClient.class );
         when( masterClient.handshake( anyLong(), any( StoreId.class ) ) ).thenThrow( new BranchedDataException( "" ) );
 
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new long[]{42, 42} );
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( TransactionIdStore.BASE_TX_ID );
+
         // When
         try
         {
-            switchToSlave.checkDataConsistency( masterClient, dataSourceMock(), null, true );
+            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, null, null, true );
             fail( "Should have thrown " + BranchedDataException.class.getSimpleName() + " exception" );
         }
         catch ( BranchedDataException e )
@@ -126,21 +140,45 @@ public class SwitchToSlaveTest
     @SuppressWarnings( "unchecked" )
     private static SwitchToSlave newSwitchToSlaveSpy()
     {
-        return spy( new SwitchToSlave( NullLogService.getInstance(), configMock(), dependencyResolverMock(),
+        ClusterMembers clusterMembers = mock( ClusterMembers.class );
+        ClusterMember master = mock( ClusterMember.class );
+        when( master.getStoreId() ).thenReturn( new StoreId( 42, 42, 42, 42 ) );
+        when( master.getHARole() ).thenReturn( HighAvailabilityModeSwitcher.MASTER );
+        when( master.hasRole( eq( HighAvailabilityModeSwitcher.MASTER ) ) ).thenReturn( true );
+        when( clusterMembers.getMembers() ).thenReturn( asList( master ) );
+
+        DependencyResolver resolver = mock(DependencyResolver.class);
+        when(resolver.resolveDependency( any( Class.class ) )).thenReturn( mock( Lifecycle.class ) );
+
+        NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
+        when(dataSource.getStoreId()).thenReturn( new StoreId( 42, 42, 42, 42 ) );
+
+        return spy( new SwitchToSlave( NullLogService.getInstance(), mock( FileSystemAbstraction.class ),
+                clusterMembers,
+                configMock(), resolver,
                 mock( HaIdGeneratorFactory.class ),
                 mock( DelegateInvocationHandler.class ),
                 mock( ClusterMemberAvailability.class ), mock( RequestContextFactory.class ),
                 Iterables.<KernelExtensionFactory<?>>empty(), mock( MasterClientResolver.class ),
-                ByteCounterMonitor.NULL, mock( RequestMonitor.class ), mock( SwitchToSlave.Monitor.class ),
-                new StoreCopyClient.Monitor.Adapter() ) );
-    }
-
-    private static NeoStoreDataSource dataSourceMock()
-    {
-        NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
-        DependencyResolver dependencyResolver = dependencyResolverMock();
-        when( dataSource.getDependencyResolver() ).thenReturn( dependencyResolver );
-        return dataSource;
+                mock( SwitchToSlave.Monitor.class ),
+                new StoreCopyClient.Monitor.Adapter(),
+                Suppliers.singleton( dataSource ),
+                Suppliers.singleton( mock(TransactionIdStore.class) ),
+                new Factory<Slave>()
+        {
+            @Override
+            public Slave newInstance()
+            {
+                return mock( Slave.class );
+            }
+        }, new Function<Slave, SlaveServer>()
+        {
+            @Override
+            public SlaveServer apply( Slave slave ) throws RuntimeException
+            {
+                return mock(SlaveServer.class);
+            }
+        }, mock(UpdatePuller.class), mock(PageCache.class), mock(Monitors.class) ) );
     }
 
     private static Config configMock()

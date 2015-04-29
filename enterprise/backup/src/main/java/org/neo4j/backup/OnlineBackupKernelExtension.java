@@ -33,21 +33,19 @@ import org.neo4j.com.ServerUtil;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.function.Supplier;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
 
@@ -75,26 +73,29 @@ public class OnlineBackupKernelExtension implements Lifecycle
     private final BackupProvider backupProvider;
     private volatile URI me;
 
-    public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI,
-                                        final KernelPanicEventGenerator kpeg, final LogProvider logProvider,
-                                        final Monitors monitors )
+    public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI, final LogProvider logProvider,
+                                        final Monitors monitors, final NeoStoreDataSource neoStoreDataSource,
+                                        final Supplier<LogRotationControl> logRotationControlSupplier,
+                                        final Supplier<TransactionIdStore> transactionIdStoreSupplier,
+                                        final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
+                                        final Supplier<LogFileInformation> logFileInformationSupplier,
+                                        final FileSystemAbstraction fileSystemAbstraction)
     {
         this( config, graphDatabaseAPI, new BackupProvider()
         {
             @Override
             public TheBackupInterface newBackup()
             {
-                DependencyResolver resolver = graphDatabaseAPI.getDependencyResolver();
-                TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+                TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
                 StoreCopyServer copier = new StoreCopyServer(
                         transactionIdStore,
-                        resolver.resolveDependency( DataSourceManager.class ).getDataSource(),
-                        resolver.resolveDependency( LogRotationControl.class ),
-                        resolver.resolveDependency( FileSystemAbstraction.class ),
+                        neoStoreDataSource,
+                        logRotationControlSupplier.get(),
+                        fileSystemAbstraction,
                         new File( graphDatabaseAPI.getStoreDir() ),
                         monitors.newMonitor( StoreCopyServer.Monitor.class ) );
-                LogicalTransactionStore logicalTransactionStore = resolver.resolveDependency( LogicalTransactionStore.class );
-                LogFileInformation logFileInformation = resolver.resolveDependency( LogFileInformation.class );
+                LogicalTransactionStore logicalTransactionStore = logicalTransactionStoreSupplier.get();
+                LogFileInformation logFileInformation = logFileInformationSupplier.get();
                 return new BackupImpl( copier, monitors,
                         logicalTransactionStore, transactionIdStore, logFileInformation, new Supplier<StoreId>()
                         {
