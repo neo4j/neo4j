@@ -29,7 +29,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
+import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -44,10 +44,10 @@ public class NeoStoreFileListing
     private final File storeDir;
     private final LabelScanStore labelScanStore;
     private final IndexingService indexingService;
-    private final ProviderLookup legacyIndexProviders;
+    private final LegacyIndexProviderLookup legacyIndexProviders;
 
     public NeoStoreFileListing( File storeDir, LabelScanStore labelScanStore,
-            IndexingService indexingService, ProviderLookup legacyIndexProviders )
+            IndexingService indexingService, LegacyIndexProviderLookup legacyIndexProviders )
     {
         this.storeDir = storeDir;
         this.labelScanStore = labelScanStore;
@@ -70,7 +70,7 @@ public class NeoStoreFileListing
     private Resource gatherLegacyIndexFiles( Collection<File> files ) throws IOException
     {
         final Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
-        for ( IndexImplementation indexProvider : legacyIndexProviders.providers() )
+        for ( IndexImplementation indexProvider : legacyIndexProviders.all() )
         {
             ResourceIterator<File> snapshot = indexProvider.listStoreFiles();
             snapshots.add( snapshot );

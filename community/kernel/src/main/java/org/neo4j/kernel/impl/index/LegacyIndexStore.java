@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -35,8 +36,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.LegacyIndexApplier;
-import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 
@@ -47,11 +46,11 @@ public class LegacyIndexStore
 {
     private final IndexConfigStore indexStore;
     private final Config config;
-    private final ProviderLookup indexProviders;
+    private final Function<String,IndexImplementation> indexProviders;
     private final Provider<KernelAPI> kernel;
 
     public LegacyIndexStore( Config config, IndexConfigStore indexStore, Provider<KernelAPI> kernel,
-            LegacyIndexApplier.ProviderLookup indexProviders )
+            Function<String,IndexImplementation> indexProviders )
     {
         this.config = config;
         this.indexStore = indexStore;
@@ -102,7 +101,7 @@ public class LegacyIndexStore
             provider = configToUse.get( PROVIDER );
             provider = provider == null ? getDefaultProvider( indexName, dbConfig ) : provider;
         }
-        indexProvider = indexProviders.lookup( provider );
+        indexProvider = indexProviders.apply( provider );
         configToUse = indexProvider.fillInDefaults( configToUse );
         configToUse = injectDefaultProviderIfMissing( indexName, dbConfig, configToUse );
 
@@ -179,7 +178,7 @@ public class LegacyIndexStore
                 {
                     // No, someone else made it before us, cool
                     assertConfigMatches(
-                            indexProviders.lookup( existing.get( PROVIDER ) ), indexName, existing, config );
+                            indexProviders.apply( existing.get( PROVIDER ) ), indexName, existing, config );
                     return config;
                 }
 

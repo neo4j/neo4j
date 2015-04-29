@@ -19,13 +19,13 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexWriter;
 
 /**
  * This presents a context for each {@link LuceneCommand} when they are
@@ -105,12 +105,12 @@ class CommitContext implements Closeable
             }
         }
     }
-    
+
     @Override
     public void close() throws IOException
     {
         applyDocuments( writer, indexType, documents );
-        if ( writer != null )
+        if ( writer != null && !recovery )
         {
             dataSource.invalidateIndexSearcher( identifier );
         }

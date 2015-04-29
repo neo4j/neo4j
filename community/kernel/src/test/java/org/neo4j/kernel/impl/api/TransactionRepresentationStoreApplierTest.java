@@ -64,8 +64,8 @@ public class TransactionRepresentationStoreApplierTest
     private final NeoStore neoStore = mock( NeoStore.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
     private final LockService lockService = new ReentrantLockService();
-    private final LegacyIndexApplier.ProviderLookup legacyIndexProviderLookup =
-            mock( LegacyIndexApplier.ProviderLookup.class );
+    private final LegacyIndexApplierLookup legacyIndexProviderLookup =
+            mock( LegacyIndexApplierLookup.class );
     private final IndexConfigStore indexConfigStore = mock( IndexConfigStore.class );
     private final IdOrderingQueue queue = mock( IdOrderingQueue.class );
     private final int transactionId = 12;

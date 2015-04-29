@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
@@ -40,27 +39,20 @@ import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 
 public class LegacyIndexApplier extends NeoCommandHandler.Adapter
 {
-    public interface ProviderLookup
-    {
-        IndexImplementation lookup( String name );
-
-        Iterable<IndexImplementation> providers();
-    }
-
-    private final ProviderLookup providerLookup;
-    private final Map<String,NeoCommandHandler> providerAppliers = new HashMap<>();
+    private final LegacyIndexApplierLookup applierLookup;
+    private final Map<String,NeoCommandHandler> appliers = new HashMap<>();
     private final IndexConfigStore indexConfigStore;
     private final IdOrderingQueue transactionOrdering;
     private final long transactionId;
     private final TransactionApplicationMode mode;
     private IndexDefineCommand defineCommand;
 
-    public LegacyIndexApplier( IndexConfigStore indexConfigStore, ProviderLookup providerLookup,
+    public LegacyIndexApplier( IndexConfigStore indexConfigStore, LegacyIndexApplierLookup applierLookup,
                                IdOrderingQueue transactionOrdering, long transactionId,
                                TransactionApplicationMode mode )
     {
         this.indexConfigStore = indexConfigStore;
-        this.providerLookup = providerLookup;
+        this.applierLookup = applierLookup;
         this.transactionOrdering = transactionOrdering;
         this.transactionId = transactionId;
         this.mode = mode;
@@ -70,7 +62,7 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     {
         byte nameId = command.getIndexNameId();
         String indexName = defineCommand.getIndexName( nameId );
-        NeoCommandHandler applier = providerAppliers.get( indexName );
+        NeoCommandHandler applier = appliers.get( indexName );
         if ( applier == null )
         {
             IndexEntityType entityType = IndexEntityType.byId( command.getEntityType() );
@@ -80,9 +72,9 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
                 return NeoCommandHandler.EMPTY;
             }
             String providerName = config.get( PROVIDER );
-            applier = providerLookup.lookup( providerName ).newApplier( mode.needsIdempotencyChecks() );
+            applier = applierLookup.newApplier( providerName, mode.needsIdempotencyChecks() );
             applier.visitIndexDefineCommand( defineCommand );
-            providerAppliers.put( indexName, applier );
+            appliers.put( indexName, applier );
         }
         return applier;
     }
@@ -129,7 +121,7 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     @Override
     public void apply()
     {
-        for ( NeoCommandHandler applier : providerAppliers.values() )
+        for ( NeoCommandHandler applier : appliers.values() )
         {
             applier.apply();
         }
@@ -140,7 +132,7 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     {
         try
         {
-            for ( NeoCommandHandler applier : providerAppliers.values() )
+            for ( NeoCommandHandler applier : appliers.values() )
             {
                 applier.close();
             }

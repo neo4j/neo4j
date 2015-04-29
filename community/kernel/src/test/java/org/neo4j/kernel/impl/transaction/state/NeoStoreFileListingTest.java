@@ -32,7 +32,7 @@ import java.util.Set;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
+import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 
@@ -42,6 +42,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
@@ -51,7 +52,7 @@ public class NeoStoreFileListingTest
     private LabelScanStore labelScanStore;
     private IndexingService indexingService;
     private File storeDir;
-    private ProviderLookup legacyIndexes;
+    private LegacyIndexProviderLookup legacyIndexes;
 
     private final static String[] STANDARD_STORE_DIR_FILES = new String[]{
             "lock",
@@ -99,8 +100,8 @@ public class NeoStoreFileListingTest
     {
         labelScanStore = mock( LabelScanStore.class );
         indexingService = mock( IndexingService.class );
-        legacyIndexes = mock( ProviderLookup.class );
-        when( legacyIndexes.providers() ).thenReturn( Collections.<IndexImplementation>emptyList() );
+        legacyIndexes = mock( LegacyIndexProviderLookup.class );
+        when( legacyIndexes.all() ).thenReturn( Collections.<IndexImplementation>emptyList() );
         storeDir = mock( File.class );
     }
 
