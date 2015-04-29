@@ -189,7 +189,7 @@ public abstract class GraphAlgoFactory
      */
     public static PathFinder<Path> pathsWithLength( RelationshipExpander expander, int length )
     {
-        return new ExactDepthPathFinder( expander, length, Integer.MAX_VALUE );
+        return new ExactDepthPathFinder( expander, length, Integer.MAX_VALUE, false );
     }
 
     /**
@@ -205,7 +205,7 @@ public abstract class GraphAlgoFactory
      */
     public static PathFinder<Path> pathsWithLength( PathExpander expander, int length )
     {
-        return new ExactDepthPathFinder( expander, length, Integer.MAX_VALUE );
+        return new ExactDepthPathFinder( expander, length, Integer.MAX_VALUE, false );
     }
     
     /**
