@@ -49,7 +49,7 @@ angular.module('neo4jApp.settings', ['neo4jApp.utils'])
     initCmd: ":play start"
     refreshInterval: 10 # in seconds
     userName: "Graph Friend"
-    theme: "dark"
+    theme: "normal"
   })
 
 angular.module('neo4jApp.settings')
