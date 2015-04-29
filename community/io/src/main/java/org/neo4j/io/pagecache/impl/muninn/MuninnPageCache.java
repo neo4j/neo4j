@@ -684,7 +684,7 @@ public class MuninnPageCache implements PageCache
         evictionThread = Thread.currentThread();
         int clockArm = 0;
 
-        while ( !Thread.interrupted() )
+        while ( !closed )
         {
             int pageCountToEvict = parkUntilEvictionRequired( keepFree );
             try ( EvictionRunEvent evictionRunEvent = tracer.beginPageEvictions( pageCountToEvict ) )
@@ -730,8 +730,7 @@ public class MuninnPageCache implements PageCache
 
     int evictPages( int pageCountToEvict, int clockArm, EvictionRunEvent evictionRunEvent )
     {
-        Thread currentThread = Thread.currentThread();
-        while ( pageCountToEvict > 0 && !currentThread.isInterrupted() ) {
+        while ( pageCountToEvict > 0 && !closed ) {
             if ( clockArm == pages.length )
             {
                 clockArm = 0;
@@ -741,7 +740,6 @@ public class MuninnPageCache implements PageCache
             if ( page == null )
             {
                 // The page cache has been shut down.
-                currentThread.interrupt();
                 return 0;
             }
 

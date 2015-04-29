@@ -3452,27 +3452,27 @@ public abstract class PageCacheTest<T extends PageCache>
 
                 assertTrue( caughtExceptions.isEmpty() );
             }
-
-            // Once the page caches has been closed and all references presumably set to null, then the only thing that
-            // could possibly strongly reference the cache is any lingering background thread. If we do a couple of
-            // GCs, then we should observe that the WeakReference has been cleared by the garbage collector. If it
-            // hasn't, then something must be keeping it alive, even though it has been closed.
-            System.gc();
-            Thread.sleep( 100 );
-            System.gc();
-            Thread.sleep( 100 );
-            System.gc();
-            Thread.sleep( 100 );
-            System.gc();
-
-            for ( WeakReference<PageCache> ref : refs )
-            {
-                assertNull( ref.get() );
-            }
         }
         finally
         {
             Thread.setDefaultUncaughtExceptionHandler( defaultUncaughtExceptionHandler );
+        }
+
+        // Once the page caches has been closed and all references presumably set to null, then the only thing that
+        // could possibly strongly reference the cache is any lingering background thread. If we do a couple of
+        // GCs, then we should observe that the WeakReference has been cleared by the garbage collector. If it
+        // hasn't, then something must be keeping it alive, even though it has been closed.
+        System.gc();
+        Thread.sleep( 100 );
+        System.gc();
+        Thread.sleep( 100 );
+        System.gc();
+        Thread.sleep( 100 );
+        System.gc();
+
+        for ( WeakReference<PageCache> ref : refs )
+        {
+            assertNull( ref.get() );
         }
     }
 
