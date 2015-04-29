@@ -17,17 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.birk.il
+package org.neo4j.cypher.internal.compiler.v2_3.birk.codegen;
 
-case class ScanAllNodes(id: String) extends Instruction with LoopDataGenerator {
-  def generateCode() = "ro.nodesGetAll()"
+import org.junit.Test;
 
-  def generateVariablesAndAssignment() = ""
+import static org.junit.Assert.assertEquals;
 
-  def generateInit() = ""
+public class SetStaticFieldTest
+{
+    @Test
+    public void shouldAssignFields()
+    {
+        // when
+        setStaticField.apply( Apa.class, "X", "HELLO WORLD!" );
 
-  override def _importedClasses() =
-    Set("org.neo4j.collection.primitive.PrimitiveLongIterator")
+        // then
+        assertEquals( Apa.X, "HELLO WORLD!" );
+    }
 
-  def javaType = "PrimitiveLongIterator"
+    public static class Apa
+    {
+        public static String X;
+    }
 }

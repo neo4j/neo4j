@@ -21,26 +21,34 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
 import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.{n, JavaString}
 
-case class ProduceResults(nodes: Map[String, String],
+case class AcceptVisitor(id: String, nodes: Map[String, String],
                           relationships: Map[String, String],
                           other: Map[String, String]) extends Instruction {
 
   val columns = nodes.keySet ++ relationships.keySet ++ other.keySet
 
-  def generateCode() =
+  def generateCode() = {
+    val eventVar = "event_" + id
     s"""${nodes.toSeq.map { case (k, v) => s"""row.setNode("${k.toJava}", $v);"""}.mkString(n)}
        |${relationships.toSeq.map { case (k, v) => s"""row.setRelationship("${k.toJava}", $v);"""}.mkString(n)}
        |${other.toSeq.map { case (k, v) => s"""row.set("${k.toJava}", $v);"""}.mkString(n)}
+       |try ( QueryExecutionEvent $eventVar = tracer.executeOperator( $id ) )
+       |{
        |if ( !visitor.visit(row) )
        |{
        |success();
        |return;
+       |}
+       |$eventVar.row();
        |}""".stripMargin
+  }
+
+  override def operatorId: Some[String] = Some(id)
 
   def generateInit() = ""
 
 
-  def fields() = {
+  def members() = {
     val columnsList = columns.toList.map(_.toJava) match {
       case Nil => "Collections.emptyList()"
       case lst => s"Arrays.asList( ${lst.mkString("\"", "\", \"", "\"")} )"

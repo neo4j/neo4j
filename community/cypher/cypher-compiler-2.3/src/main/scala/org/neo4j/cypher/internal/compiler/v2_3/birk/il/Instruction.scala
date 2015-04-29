@@ -25,10 +25,10 @@ trait Instruction {
   // Actual code produced by element
   def generateCode(): String
 
-  def importedClasses() = allLeafs.flatMap(_._importedClasses()).toSet
+  final def importedClasses() = allLeafs.flatMap(_._importedClasses()).toSet
 
   //generate class level members
-  def fields(): String
+  def members(): String
 
   //Initialises necessary data-structures. Is inserted at the top of the generated method
   def generateInit(): String
@@ -39,12 +39,14 @@ trait Instruction {
 
   def exceptions: Set[ExceptionCodeGen] = allLeafs.flatMap(_._exceptions()).toSet
 
-  // Generates import list for class
-  protected def _importedClasses(): Set[String] = Set.empty
+  // Generates import list for class - implement this!
+  protected def _importedClasses(): Set[String]
 
   protected def _exceptions(): Set[ExceptionCodeGen] = Set.empty
 
   protected def children: Seq[Instruction] = Seq.empty
+
+  def operatorId: Option[String] = None
 
   protected def _method: Option[Method] = None
 
@@ -55,16 +57,22 @@ trait Instruction {
 
     children ++ grandKids
   }
+
+  def operatorIds: Set[String] = {
+    (operatorId.getOrElse("") +: children.flatMap(_.operatorIds)).toSet.filter(_.nonEmpty)
+  }
 }
 
 object Instruction {
   val empty = new Instruction {
-    override def generateCode(): String = ""
+    override def generateCode() = ""
 
-    override def fields(): String = ""
+    override def members() = ""
 
-    override def generateInit(): String = ""
+    override def generateInit() = ""
 
     override def exceptions: Set[ExceptionCodeGen] = Set.empty
+
+    override protected def _importedClasses() = Set.empty
   }
 }

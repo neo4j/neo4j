@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id;
 
 public interface QueryExecutionTracer
 {
-    QueryExecutionEvent executeQuery( Id queryId );
+    QueryExecutionEvent executeOperator( Id queryId );
 
     QueryExecutionTracer NONE = new QueryExecutionTracer()
     {
         @Override
-        public QueryExecutionEvent executeQuery( Id queryId )
+        public QueryExecutionEvent executeOperator( Id queryId )
         {
             return QueryExecutionEvent.NONE;
         }

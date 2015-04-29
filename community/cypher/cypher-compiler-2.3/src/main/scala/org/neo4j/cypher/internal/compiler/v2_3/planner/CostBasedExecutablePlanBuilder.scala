@@ -92,21 +92,10 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     //only return compiled plans if asked for
     runtimeName match {
       case InterpretedRuntimeName => Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
-      case CompiledRuntimeName    =>
+      case CompiledRuntimeName =>
         monitor.newPlanSeen(logicalPlan)
-        val returnIdentifiers = inputQuery.statement.treeFold(Seq.empty[Identifier]) {
-          case Return(_, returnItems, _, _, _) =>
-            val identifiers = returnItems.items.collect {
-              case AliasedReturnItem(_, identifier) => identifier
-            }
-            (acc, children) => children(acc ++ identifiers)
-        }
-        val nodes = returnIdentifiers.filter(semanticTable.isNode).map(_.name)
-        val relationships = returnIdentifiers.filter(semanticTable.isRelationship).map(_.name)
-        val others = returnIdentifiers.map(_.name).filterNot(x => nodes.contains(x) || relationships.contains(x))
-        val finalPlan = ProduceResult(nodes, relationships, others, logicalPlan)
         val codeGen = new CodeGenerator
-        Left(codeGen.generate(finalPlan, planContext, clock, semanticTable))
+        Left(codeGen.generate(logicalPlan, planContext, clock, semanticTable))
     }
   }
 

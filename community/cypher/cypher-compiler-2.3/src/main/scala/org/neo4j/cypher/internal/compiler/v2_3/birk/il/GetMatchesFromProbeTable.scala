@@ -24,7 +24,9 @@ case class GetMatchesFromProbeTable(key: String, code: CodeThunk, action: Instru
 
   def generateInit() = action.generateInit()
 
-  def fields() = action.fields()
+  def members() = action.members()
 
   override def children = Seq(action)
+
+  override protected def _importedClasses() = Set.empty
 }

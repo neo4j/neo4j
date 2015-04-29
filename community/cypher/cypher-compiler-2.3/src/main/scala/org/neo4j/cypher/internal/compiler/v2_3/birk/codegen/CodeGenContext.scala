@@ -21,29 +21,37 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk.codegen
 
 import org.neo4j.cypher.internal.compiler.v2_3.birk.JavaSymbol
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il.CodeThunk
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 
-import scala.collection.mutable
+import scala.collection.{immutable, mutable}
 
-case class CodeGenContext(semanticTable: SemanticTable) {
+// STATEFUL!
+class CodeGenContext(val semanticTable: SemanticTable, idMap: immutable.Map[LogicalPlan, Id]) {
 
   private val variables: mutable.Map[String, JavaSymbol] = mutable.Map()
   private val probeTables: mutable.Map[CodeGenPlan, CodeThunk] = mutable.Map()
   private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
+  val operatorIds: mutable.Map[Id, String] = mutable.Map()
 
   val namer = Namer()
 
-  def addVariable(name: String, symbol: JavaSymbol): Unit = variables.put(name, symbol)
+  def addVariable(name: String, symbol: JavaSymbol) {
+    variables.put(name, symbol)
+  }
 
   def getVariable(name: String): JavaSymbol = variables(name)
 
   def variableNames(): Set[String] = variables.keySet.toSet
 
-  def addProbeTable(plan: CodeGenPlan, codeThunk: CodeThunk): Unit = probeTables.put(plan, codeThunk)
+  def addProbeTable(plan: CodeGenPlan, codeThunk: CodeThunk) {
+    probeTables.put(plan, codeThunk)
+  }
 
   def getProbeTable(plan: CodeGenPlan): CodeThunk = probeTables(plan)
 
-  def pushParent(plan: CodeGenPlan): Unit = {
+  def pushParent(plan: CodeGenPlan) {
     if (plan.isInstanceOf[LeafCodeGenPlan]) {
       throw new IllegalArgumentException(s"Leafs can't be parents: $plan")
     }
@@ -51,4 +59,8 @@ case class CodeGenContext(semanticTable: SemanticTable) {
   }
 
   def popParent(): CodeGenPlan = parents.pop()
+
+  def registerOperator(plan: LogicalPlan): String = {
+    operatorIds.getOrElseUpdate(idMap(plan), namer.newOpName(plan.getClass.getSimpleName))
+  }
 }

@@ -20,10 +20,24 @@
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
 import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.n
+import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.{KernelExceptionCodeGen, ExceptionCodeGen}
 
-case class MethodInvocation(resultVariable: String, resultType: String, methodName: String, statements: Seq[Instruction])
-  extends Instruction {
-  def generateCode() = s"""final $resultType $resultVariable = $methodName(ro);"""
+case class MethodInvocation(override val operatorId: Option[String],
+                            resultVariable: String,
+                            resultType: String,
+                            methodName: String,
+                            statements: Seq[Instruction]) extends Instruction {
+
+  def generateCode() = operatorId match {
+    case Some(id) =>
+      s"""final $resultType $resultVariable;
+         |try ( QueryExecutionEvent event_$id = tracer.executeOperator( $id ) )
+         |{
+         |$resultVariable = $methodName();
+         |}
+       """.stripMargin
+    case None => s"final $resultType $resultVariable = $methodName();"
+  }
 
   override def methods = super.methods
 
@@ -31,14 +45,14 @@ case class MethodInvocation(resultVariable: String, resultType: String, methodNa
 
   def generateInit() = ""
 
-  override def _method = Some(new Method {
+  override protected def _method = Some(new Method {
     def generateCode = {
       val init = statements.map(_.generateInit()).reduce(_ + n + _)
       val methodBody = statements.map(_.generateCode()).reduce(_ + n + _)
       val exceptions = statements.flatMap(_.exceptions).map(_.throwClause)
       val throwClause = if (exceptions.isEmpty) "" else exceptions.mkString("throws ", ",", "")
 
-      s"""private $resultType $methodName(ReadOperations ro) $throwClause
+      s"""private $resultType $methodName() throws KernelException
          |{
          |$init
          |$methodBody
@@ -48,8 +62,11 @@ case class MethodInvocation(resultVariable: String, resultType: String, methodNa
     }
 
     def name = methodName
-
   })
 
-  def fields() = statements.map(_.fields()).reduce(_ + n + _)
+  override def exceptions(): Set[ExceptionCodeGen] = Set(KernelExceptionCodeGen)
+
+  def members() = statements.map(_.members()).reduce(_ + n + _)
+
+  override def _importedClasses() = Set("org.neo4j.kernel.api.exceptions.KernelException")
 }

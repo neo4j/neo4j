@@ -41,7 +41,9 @@ import scala.collection.{Map, mutable}
  * Base class for compiled execution results, implements everything in InternalExecutionResult
  * except `javaColumns` and `accept` which should be implemented by the generated classes.
  */
-abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Statement, executionMode:ExecutionMode, description:Supplier[InternalPlanDescription]) extends InternalExecutionResult {
+abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Statement,
+                                       executionMode:ExecutionMode, description:Supplier[InternalPlanDescription])
+  extends InternalExecutionResult {
   self =>
 
   import scala.collection.JavaConverters._
@@ -121,7 +123,7 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
 
   override def executionPlanDescription() = description.get()
 
-  def mode = executionMode
+  val mode = executionMode
 
   override def planDescriptionRequested: Boolean =  executionMode == ExplainMode || executionMode == ProfileMode
 

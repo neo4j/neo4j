@@ -19,21 +19,25 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper.RichString
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.helpers.TxCounts
 
 class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport with NewPlannerTestSupport {
 
-  test("profile with all runtimes") {
+  test("profile simple query") {
+    createNode()
+    createNode()
+    createNode()
+
     val result = profileWithAllPlannersAndRuntimes("MATCH (n) RETURN n")
-    val executionPlanDescription = result.executionPlanDescription()
-    println(executionPlanDescription)
+
+    assertRows(3)(result)("AllNodesScan")
+    assertDbHits(4)(result)("AllNodesScan")
   }
 
   test("match n where n-[:FOO]->() return *") {
@@ -41,7 +45,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     relate( createNode(), createNode(), "FOO")
 
     //WHEN
-    val result = RewindableExecutionResult(eengine.profile("CYPHER 2.3 planner=cost match n where n-[:FOO]->() return *"))
+    val result = profileWithAllPlanners("match n where n-[:FOO]->() return *")
 
     //THEN
     assertRows(1)(result)("SemiApply")
@@ -50,8 +54,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertRows(2)(result)("AllNodesScan")
     assertDbHits(3)(result)("AllNodesScan")
 
-    assertRows(0)(result)("Expand")
-    assertDbHits(2)(result)("Expand")
+    assertRows(0)(result)("Expand(All)")
+    assertDbHits(2)(result)("Expand(All)")
   }
 
   test("PROFILE for Cypher 2.2") {
@@ -59,14 +63,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
     result.executionPlanDescription().toString should include("DbHits")
-  }
-
-  test("EXPLAIN for Cypher 2.3") {
-    val result = eengine.execute("explain match n return n")
-    result.toList
-    assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
-    result.executionPlanDescription().toString should include("EstimatedRows")
-    result.executionPlanDescription().asJava.toString should include("EstimatedRows")
   }
 
   test("match n where not n-[:FOO]->() return *") {
@@ -83,8 +79,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertRows(2)(result)("AllNodesScan")
     assertDbHits(3)(result)("AllNodesScan")
 
-    assertRows(0)(result)("Expand")
-    assertDbHits(2)(result)("Expand")
+    assertRows(0)(result)("Expand(All)")
+    assertDbHits(2)(result)("Expand(All)")
   }
 
   test("unfinished profiler complains") {
@@ -99,25 +95,30 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("tracks number of rows") {
     //GIVEN
-    createNode("foo" -> "bar")
+    // due to the cost model, we need a bunch of nodes for the planner to pick a plan that does lookup by id
+    (1 to 10).foreach(_ => createNode())
+
     val result = profileWithAllPlanners("match (n) where id(n) = 0 RETURN n")
 
     //WHEN THEN
-    assertRows(1)(result)("NodeById")
+    assertRows(1)(result)("NodeByIdSeek")
   }
 
   test("tracks number of graph accesses") {
     //GIVEN
-    createNode("foo" -> "bar")
+    // due to the cost model, we need a bunch of nodes for the planner to pick a plan that does lookup by id
+    (1 to 10).foreach(_ => createNode("foo" -> "bar"))
+
     val result = profileWithAllPlanners("match (n) where id(n) = 0 RETURN n.foo")
 
-    //WHEN THEN
-    assertRows(1)(result)("ColumnFilter", "Extract", "NodeById")
-    assertDbHits(0)(result)("ColumnFilter")
-    assertDbHits(2)(result)("Extract")
-    assertDbHits(1)(result)("NodeById")
-  }
+    println(result.executionPlanDescription())
 
+    //WHEN THEN
+    assertRows(1)(result)("ProduceResults", "Projection", "NodeByIdSeek")
+    assertDbHits(0)(result)("ProduceResults")
+    assertDbHits(2)(result)("Projection")
+    assertDbHits(1)(result)("NodeByIdSeek")
+  }
 
   test("no problem measuring creation") {
     //GIVEN
@@ -134,32 +135,35 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = profileWithAllPlannersAndRuntimes("MATCH n RETURN n.foo")
 
     //WHEN THEN
-    assertRows(1)(result)("ColumnFilter")
-    assertDbHits(0)(result)("ColumnFilter")
+    assertRows(1)(result)("Results")
+    assertDbHits(0)(result)("Results")
 
-    assertRows(1)(result)("Extract")
-    assertDbHits(1)(result)("Extract")
+    assertRows(1)(result)("Projection")
+    assertDbHits(1)(result)("Projection")
 
-    assertRows(1)(result)("AllNodes")
-    assertDbHits(2)(result)("AllNodes")
+    assertRows(1)(result)("AllNodesScan")
+    assertDbHits(2)(result)("AllNodesScan")
   }
 
 
   test("tracks optional matches") {
     //GIVEN
     createNode()
-    val result = legacyProfile("MATCH n optional match (n)-->(x) return x")
 
-    //WHEN THEN
-    assertDbHits(0)(result)("ColumnFilter", "NullableMatch")
-    assertDbHits(0)(result)("ColumnFilter", "NullableMatch", "SimplePatternMatcher")
+    // WHEN
+    val result = profileWithAllPlanners("MATCH n optional match (n)-->(x) return x")
+
+    // THEN
+    assertDbHits(0)(result)("ProduceResults")
+    assertDbHits(1)(result)("OptionalExpand(All)")
+    assertDbHits(2)(result)("AllNodesScan")
   }
 
   test("allows optional match to start a query") {
-    //GIVEN
-    val result = RewindableExecutionResult(eengine.profile("CYPHER 2.3 planner=cost optional match (n) return n"))
+    // WHEN
+    val result = profileWithAllPlanners("optional match (n) return n")
 
-    //WHEN THEN
+    // THEN
     assertRows(1)(result)("Optional")
   }
 
@@ -226,20 +230,21 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("should not have a problem profiling empty results") {
-    val result = eengine.profile("CYPHER 2.3 planner=cost MATCH n WHERE (n)-->() RETURN n")
+    val result = profileWithAllPlanners("MATCH n WHERE (n)-->() RETURN n")
 
     result shouldBe empty
     result.executionPlanDescription().toString should include("AllNodes")
   }
 
   test("reports COST planner when showing plan description") {
-    val executionPlanDescription = eengine.execute("CYPHER 2.2 planner=cost match n return n").executionPlanDescription()
+    val executionPlanDescription = eengine.execute("CYPHER planner=cost match n return n").executionPlanDescription()
     executionPlanDescription.toString should include("Planner COST" + System.lineSeparator())
   }
 
   test("reports RULE planner when showing plan description") {
-    val executionPlanDescription = eengine.execute("CYPHER 2.2 create ()").executionPlanDescription()
+    val executionPlanDescription = eengine.execute("CYPHER planner=rule create ()").executionPlanDescription()
 
+    println(executionPlanDescription)
     executionPlanDescription.toString should not include "Planner COST"
     executionPlanDescription.toString should include("Planner RULE" + System.lineSeparator())
   }
@@ -257,10 +262,10 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("should not show  EstimatedRows in legacy profiling") {
     val result = legacyProfile("create()")
-    result.executionPlanDescription().toString should not include("EstimatedRows")
+    result.executionPlanDescription().toString should not include "EstimatedRows"
   }
 
-  test("CYPHER planner=cost match (p:Person {name:'Seymour'}) return (p)-[:RELATED_TO]->()") {
+  test("match (p:Person {name:'Seymour'}) return (p)-[:RELATED_TO]->()") {
     //GIVEN
     val seymour = createLabeledNode(Map("name" -> "Seymour"), "Person")
     relate(seymour, createLabeledNode(Map("name" -> "Buddy"), "Person"), "RELATED_TO")
@@ -269,11 +274,15 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     relate(seymour, createLabeledNode(Map("name" -> "Waker"), "Person"), "RELATED_TO")
     relate(seymour, createLabeledNode(Map("name" -> "Zooey"), "Person"), "RELATED_TO")
     relate(seymour, createLabeledNode(Map("name" -> "Franny"), "Person"), "RELATED_TO")
+    // pad with enough nodes to make index seek considered more efficient than label scan
+    createLabeledNode(Map("name" -> "Dummy1"), "Person")
+    createLabeledNode(Map("name" -> "Dummy2"), "Person")
+    createLabeledNode(Map("name" -> "Dummy3"), "Person")
 
     graph.createConstraint("Person", "name")
 
     //WHEN
-    val result = RewindableExecutionResult(eengine.profile("CYPHER planner=cost match (p:Person {name:'Seymour'}) return (p)-[:RELATED_TO]->()"))
+    val result = profileWithAllPlanners("match (p:Person {name:'Seymour'}) return (p)-[:RELATED_TO]->()")
 
     //THEN
     assertDbHits(7)(result)("Projection")
@@ -287,10 +296,83 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("should show expand with types in a simple form") {
-    val result = RewindableExecutionResult(eengine.profile("CYPHER planner=cost match n-[r:T]->() return *"))
+    val result = profileWithAllPlannersAndRuntimes("match n-[r:T]->() return *")
 
     result.executionPlanDescription().toString should include("()<-[r:T]-(n)")
   }
+
+  test("should report correct dbhits and rows for label scan") {
+    // given
+    createLabeledNode("Label1")
+
+    // when
+    val result = profileWithAllPlannersAndRuntimes("match (n:Label1) return n")
+
+    // then
+    assertDbHits(2)(result)("NodeByLabelScan")
+    assertRows(1)(result)("NodeByLabelScan")
+  }
+
+  test("should report correct dbhits and rows for expand") {
+    // given
+    relate(createNode(), createNode())
+
+    // when
+    val result = profileWithAllPlannersAndRuntimes("match (n)-->(x) return x")
+
+    // then
+    assertDbHits(3)(result)("Expand(All)")
+    assertRows(1)(result)("Expand(All)")
+  }
+
+  test("should report correct dbhits and rows for literal addition") {
+    // when
+    val result = profileWithAllPlannersAndRuntimes("return 5 + 3")
+
+    // then
+    assertDbHits(0)(result)("Argument")
+    assertDbHits(0)(result)("Projection")
+    assertDbHits(0)(result)("Results")
+    assertRows(1)(result)("Results")
+  }
+
+  test("should report correct dbhits and rows for property addition") {
+    // given
+    createNode("name" -> "foo")
+
+    // when
+    val result = profileWithAllPlannersAndRuntimes("match n return n.name + 3")
+
+    // then
+    assertDbHits(1)(result)("Projection")
+    assertRows(1)(result)("Projection")
+  }
+
+  test("should report correct dbhits and rows for property subtraction") {
+    // given
+    createNode("name" -> 10)
+
+    // when
+    val result = profileWithAllPlannersAndRuntimes("match n return n.name - 3")
+
+    // then
+    assertDbHits(1)(result)("Projection")
+    assertRows(1)(result)("Projection")
+  }
+
+  // TODO: collections of nodes/rels not supported; add this back when they are
+//  test("should report correct dbhits and rows for project collection") {
+//    // given
+//    relate(createNode(), createNode())
+//
+//    // when
+//    val result = profileWithAllPlannersAndRuntimes("MATCH (n)--(m) RETURN [ n, m ]")
+//
+//    // then
+//    println(result.executionPlanDescription())
+//    assertDbHits(1)(result)("Projection")
+//    assertRows(1)(result)("Projection")
+//  }
 
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
@@ -339,7 +421,12 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
       description.flatten
     else {
       names.flatMap {
-        name => description.find(name)
+        name =>
+          val descriptions: Seq[InternalPlanDescription] = description.find(name)
+          withClue(name + " is missing; ") {
+            assert(descriptions.nonEmpty)
+          }
+          descriptions
       }
     }
   }
