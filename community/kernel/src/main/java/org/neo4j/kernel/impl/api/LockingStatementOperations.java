@@ -177,6 +177,13 @@ public class LockingStatementOperations implements
     }
 
     @Override
+    public long indexSize( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
+        return schemaReadDelegate.indexSize( state, descriptor );
+    }
+
+    @Override
     public double indexUniqueValuesPercentage( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );

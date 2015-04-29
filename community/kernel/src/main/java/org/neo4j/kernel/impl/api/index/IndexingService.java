@@ -326,6 +326,14 @@ public class IndexingService extends LifecycleAdapter
         return output;
     }
 
+    public long indexSize( long indexId ) throws IndexNotFoundKernelException
+    {
+        final IndexProxy indexProxy = indexMapRef.getOnlineIndexProxy( indexId );
+        final DoubleLongRegister output = Registers.newDoubleLongRegister();
+        storeView.indexSample( indexProxy.getDescriptor(), output );
+        return output.readSecond();
+    }
+
     public double indexUniqueValuesPercentage( long indexId ) throws IndexNotFoundKernelException
     {
         final IndexProxy indexProxy = indexMapRef.getOnlineIndexProxy( indexId );

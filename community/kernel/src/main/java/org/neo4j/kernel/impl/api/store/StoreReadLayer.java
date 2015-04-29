@@ -194,5 +194,7 @@ public interface StoreReadLayer
 
     long countsForRelationship( int startLabelId, int typeId, int endLabelId );
 
+    long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+
     double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 }

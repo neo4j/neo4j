@@ -1289,8 +1289,7 @@ return b
     ))
   }
 
-  // todo: broken for rule planner
-  test("should use the index for property existance queries") {
+  test("should use the index for property existence queries for cost when asked for it") {
     // given
     val n = createLabeledNode(Map("email" -> "me@mine"), "User")
     val m = createLabeledNode(Map("email" -> "you@yours"), "User")
@@ -1305,7 +1304,56 @@ return b
     result.executionPlanDescription().toString should include("NodeIndexScan")
   }
 
-  test("should use the index for property existance queries for rule when asked for it") {
+  private def setupIndexScanTest(): Seq[Node] = {
+    for (i <- 1 to 100) {
+      createLabeledNode(Map("name" -> ("Joe Soap " + i)), "User")
+    }
+    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
+    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
+    val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
+    graph.createIndex("User", "email")
+    graph.createIndex("User", "name")
+    return Seq(n, m, p)
+  }
+
+  test("should use the index for property existence queries when cardinality prefers it") {
+    // given
+    val nodes = setupIndexScanTest()
+
+    // when
+    val result = executeWithCostPlannerOnly("MATCH (n:User) WHERE has(n.email) RETURN n")
+
+    // then
+    result.toList should equal(List(Map("n" -> nodes(0)), Map("n" -> nodes(1))))
+    result.executionPlanDescription().toString should include("NodeIndexScan")
+  }
+
+  test("should not use the index for property existence queries when cardinality does not prefer it") {
+    // given
+    val nodes = setupIndexScanTest()
+
+    // when
+    val result = executeWithCostPlannerOnly("MATCH (n:User) WHERE has(n.name) RETURN n")
+
+    // then
+    result.toList.length should equal(100)
+    result.executionPlanDescription().toString should include("NodeByLabelScan")
+  }
+
+  test("should not use the index for property existence queries when property value predicate exists") {
+    // given
+    val nodes = setupIndexScanTest()
+
+    // when
+    val result = executeWithCostPlannerOnly("MATCH (n:User) WHERE has(n.email) AND n.email = 'me@mine' RETURN n")
+
+    // then
+    result.toList should equal(List(Map("n" -> nodes(0))))
+    result.executionPlanDescription().toString should include("NodeIndexSeek")
+    result.executionPlanDescription().toString should not include("NodeIndexScan")
+  }
+
+  test("should use the index for property existence queries for rule when asked for it") {
     // given
     val n = createLabeledNode(Map("email" -> "me@mine"), "User")
     val m = createLabeledNode(Map("email" -> "you@yours"), "User")
@@ -1320,7 +1368,7 @@ return b
     result.executionPlanDescription().toString should include("SchemaIndex")
   }
 
-  test("should not use the index for property existance queries for rule when not asking for it") {
+  test("should not use the index for property existence queries for rule when not asking for it") {
     // given
     val n = createLabeledNode(Map("email" -> "me@mine"), "User")
     val m = createLabeledNode(Map("email" -> "you@yours"), "User")

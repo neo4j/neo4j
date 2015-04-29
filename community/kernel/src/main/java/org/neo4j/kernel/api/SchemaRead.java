@@ -52,6 +52,9 @@ interface SchemaRead
     /** Retrieve the state of an index. */
     InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
+    /** Get the index size. */
+    long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+
     /** Calculate the index unique values percentage (range: {@code 0.0} exclusive to {@code 1.0} inclusive). */
     double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 

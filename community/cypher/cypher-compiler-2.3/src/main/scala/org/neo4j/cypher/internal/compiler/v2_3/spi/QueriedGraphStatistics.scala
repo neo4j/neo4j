@@ -102,7 +102,28 @@ class QueriedGraphStatistics(graph: GraphDatabaseService, queryContext: QueryCon
       if (values.isEmpty)
         Some(Selectivity(0)) // Avoids division by zero
       else
+        // TODO: Review this, because this does not match the equation in TransactionBoundGraphStatistics
         Some(Selectivity(1.0 / values.size))
+    }
+  }
+
+  def indexPropertyExistsSelectivity(labelId: LabelId, propertyKeyId: PropertyKeyId): Option[Selectivity] = {
+    // TODO: This class appears to only be used by tests. Determine the point of this class and whether we need a different implementation below.
+    val labelName = queryContext.getLabelName(labelId.id)
+    val propertyKeyName = queryContext.getPropertyKeyName(propertyKeyId.id)
+
+    if (!indexExistsOnLabelAndProp(labelName, propertyKeyName))
+      None
+    else {
+      val labeledNodes = queryContext.getNodesByLabel(labelId.id)
+      val indexedNodes = labeledNodes.filter {
+        _.hasProperty(propertyKeyName)
+      }
+
+      if (labeledNodes.isEmpty)
+        Some(Selectivity(0)) // Avoids division by zero
+      else
+        Some(Selectivity(indexedNodes.length / labeledNodes.length))
     }
   }
 

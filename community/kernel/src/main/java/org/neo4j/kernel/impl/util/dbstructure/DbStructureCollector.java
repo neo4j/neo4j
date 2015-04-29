@@ -79,7 +79,7 @@ public class DbStructureCollector implements DbStructureVisitor
             public Iterator<Pair<String, String>> knownUniqueConstraints()
             {
                 return Iterables.map( new Function<UniquenessConstraint, Pair<String, String>>()
-                    {
+                {
                     @Override
                     public Pair<String, String> apply( UniquenessConstraint uniquenessConstraint ) throws RuntimeException
                     {
@@ -111,6 +111,13 @@ public class DbStructureCollector implements DbStructureVisitor
                 Double result1 = regularIndices.getIndex( labelId, propertyKeyId );
                 Double result2 = result1 == null ? uniqueIndices.getIndex( labelId, propertyKeyId ) : result1;
                 return result2 == null ? Double.NaN : result2;
+            }
+
+            @Override
+            public double indexPropertyExistsSelectivity( int labelId, int propertyKeyId )
+            {
+                // TODO: Find out how to differentiate the propertyexisis map from the propertyvalue map
+                return Double.NaN;
             }
         };
     }

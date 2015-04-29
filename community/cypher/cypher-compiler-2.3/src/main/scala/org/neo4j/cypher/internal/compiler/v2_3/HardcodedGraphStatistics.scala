@@ -31,9 +31,13 @@ class HardcodedGraphStatisticsValues extends GraphStatistics {
   val NODES_WITH_LABEL_CARDINALITY = NODES_CARDINALITY * NODES_WITH_LABEL_SELECTIVITY
   val RELATIONSHIPS_CARDINALITY = Cardinality(50000)
   val INDEX_SELECTIVITY = Selectivity(.02)
+  val INDEX_PROPERTY_EXISTS_SELECTIVITY = Selectivity(.5)
 
   def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
     Some(INDEX_SELECTIVITY)
+
+  def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
+    Some(INDEX_PROPERTY_EXISTS_SELECTIVITY)
 
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
     labelId.map(_ => NODES_WITH_LABEL_CARDINALITY).getOrElse(NODES_CARDINALITY)
