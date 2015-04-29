@@ -27,6 +27,7 @@ class Namer(classNameCounter: AtomicInteger) {
 
   private var methodNameCounter = 0
   private var varNameCounter = 0
+  private var opNameCounter = 0
 
   def newMethodName(): String = {
     methodNameCounter += 1
@@ -36,6 +37,11 @@ class Namer(classNameCounter: AtomicInteger) {
   def newVarName(): String = {
     varNameCounter += 1
     s"v$varNameCounter"
+  }
+
+  def newOpName(planName: String): String = {
+    opNameCounter += 1
+    s"OP${opNameCounter}_$planName"
   }
 
   def newVarName(typ: String): JavaSymbol = JavaSymbol(newVarName(), typ)

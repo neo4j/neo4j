@@ -25,13 +25,20 @@ import org.neo4j.cypher.internal.compiler.v2_3.birk.JavaSymbol
 case class WhileLoop(id: JavaSymbol, producer: LoopDataGenerator, action: Instruction) extends Instruction {
   def generateCode(): String = {
     val iterator = s"${id.name}Iter"
+    val eventVar = s"event_${producer.id}"
 
-    s"""${producer.javaType} $iterator = ${producer.generateCode()};
+    s"""try ( QueryExecutionEvent $eventVar = tracer.executeOperator( ${producer.id} ) )
+       |{
+       |${producer.javaType} $iterator = ${producer.generateCode()};
+       |$eventVar.dbHit();
        |while ( $iterator.hasNext() )
        |{
+       |$eventVar.dbHit();
+       |$eventVar.row();
        |final ${id.javaType} ${id.name} = $iterator.next();
        |${producer.generateVariablesAndAssignment()}
        |${action.generateCode()}
+       |}
        |}
        |""".stripMargin
   }
@@ -45,5 +52,5 @@ case class WhileLoop(id: JavaSymbol, producer: LoopDataGenerator, action: Instru
   // Initialises necessary data-structures. Is inserted at the top of the generated method
   def generateInit() = producer.generateInit() + n + action.generateInit()
 
-  def fields() = producer.fields() + n + action.fields()
+  def members() = producer.members() + n + action.members()
 }

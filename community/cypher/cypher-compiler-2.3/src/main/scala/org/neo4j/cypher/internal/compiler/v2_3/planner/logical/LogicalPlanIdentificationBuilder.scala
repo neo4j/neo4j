@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_3.IdentityMap
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 
@@ -35,6 +36,6 @@ object LogicalPlanIdentificationBuilder extends (LogicalPlan => Map[LogicalPlan,
       r + (plan -> new Id)
     }
 
-    build(Map.empty, plan)
+    build(IdentityMap.empty, plan)
   }
 }

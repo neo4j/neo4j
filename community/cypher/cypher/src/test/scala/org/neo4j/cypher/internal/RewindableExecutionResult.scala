@@ -27,8 +27,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionR
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.iteratorToVisitable
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
-import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode => ExecutionModev2_3, PipeExecutionResult, PlannerName, RuntimeName}
+import org.neo4j.cypher.internal.compiler.v2_3.{PipeExecutionResult, PlannerName, RuntimeName}
 import org.neo4j.cypher.{ExecutionResult, InternalException}
+import org.neo4j.function.Suppliers.singleton
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.api.Statement
@@ -46,15 +47,13 @@ object RewindableExecutionResult {
     case other: CompiledExecutionResult  =>
       exceptionHandlerFor2_3.runSafely {
         val data = other.toList
-        new CompiledExecutionResult(CompletionListener.NOOP, mock(classOf[Statement])) {
+        new CompiledExecutionResult(CompletionListener.NOOP, mock(classOf[Statement]), other.mode, singleton(other.executionPlanDescription())) {
           override def javaColumns: util.List[String] = other.javaColumns
           override val toList = data
           override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {
             iteratorToVisitable.accept(data.iterator, visitor)
           }
           override def executionPlanDescription() = other.executionPlanDescription().addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
-
-          override def executionMode: ExecutionModev2_3 = other.executionMode
         }
       }
     case _ =>

@@ -25,7 +25,9 @@ import java.util.Collections
 
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ExplainMode, ProfileMode, _}
+import org.neo4j.function.Supplier
 import org.neo4j.graphdb.QueryExecutionType._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
@@ -37,7 +39,9 @@ import scala.collection.{Map, mutable}
  * Base class for compiled execution results, implements everything in InternalExecutionResult
  * except `javaColumns` and `accept` which should be implemented by the generated classes.
  */
-abstract class CompiledExecutionResult(completion: CompletionListener, statement:Statement) extends InternalExecutionResult {
+abstract class CompiledExecutionResult(completion: CompletionListener, statement: Statement,
+                                       executionMode: ExecutionMode, description: Supplier[InternalPlanDescription])
+  extends InternalExecutionResult {
   self =>
 
   import scala.collection.JavaConverters._
@@ -77,11 +81,15 @@ abstract class CompiledExecutionResult(completion: CompletionListener, statement
 
   override def close(): Unit = {
     if (innerIterator != null) {
-      innerIterator.close( )
+      innerIterator.close()
     }
     statement.close()
     completion.complete(success=successful)
   }
+
+  override def executionPlanDescription() = description.get()
+
+  val mode = executionMode
 
   override def planDescriptionRequested: Boolean =  executionMode == ExplainMode || executionMode == ProfileMode
 
@@ -98,8 +106,6 @@ abstract class CompiledExecutionResult(completion: CompletionListener, statement
     ensureIterator()
     innerIterator.next()
   }
-
-  def executionMode: ExecutionMode
 
   //TODO when allowing writes this should be moved to the generated class
   protected def queryType: QueryType = QueryType.READ_ONLY

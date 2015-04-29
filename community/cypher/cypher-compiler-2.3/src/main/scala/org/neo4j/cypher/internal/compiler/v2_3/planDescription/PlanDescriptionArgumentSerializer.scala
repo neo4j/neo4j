@@ -42,6 +42,7 @@ object PlanDescriptionArgumentSerializer {
       case DbHits(value) => Long.box(value)
       case _: EntityByIdRhs => arg.toString
       case Rows(value) => Long.box(value)
+      case Time(value) => Long.box(value)
       case EstimatedRows(value) => Double.box(value)
       case Version(version) => version
       case Planner(planner) => planner

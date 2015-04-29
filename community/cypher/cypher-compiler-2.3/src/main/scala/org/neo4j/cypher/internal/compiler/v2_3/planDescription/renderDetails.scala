@@ -32,13 +32,14 @@ object renderDetails extends (InternalPlanDescription => String) {
     val names = renderAsTree.createUniqueNames(plan)
 
 
-    val headers = Seq("Operator", "EstimatedRows", "Rows", "DbHits", "Identifiers", "Other")
+    val headers = Seq("Operator", "EstimatedRows", "Rows", "DbHits", "Time (ms)", "Identifiers", "Other")
     val rows: Seq[Seq[(String, Option[String])]] = plans.map {
       p =>
         val name = Some(names(p))
         val rows = p.arguments.collectFirst { case Rows(count) => count.toString}
         val estimatedRows = p.arguments.collectFirst { case EstimatedRows(count) => format(count) }
         val dbHits = p.arguments.collectFirst { case DbHits(count) => count.toString}
+        val times = p.arguments.collectFirst { case Time(nanos) => (nanos/1000000.0).toString}
         val ids = Some(p.orderedIdentifiers.map(PlanDescriptionArgumentSerializer.removeGeneratedNames).mkString(", "))
         val other = Some(p.arguments.collect {
           case x
@@ -48,13 +49,14 @@ object renderDetails extends (InternalPlanDescription => String) {
               !x.isInstanceOf[Planner] &&
               !x.isInstanceOf[PlannerImpl] &&
               !x.isInstanceOf[Runtime] &&
+              !x.isInstanceOf[Time] &&
               !x.isInstanceOf[RuntimeImpl] &&
               !x.isInstanceOf[Version] => PlanDescriptionArgumentSerializer.serialize(x)
         }.mkString("; ")
           .replaceAll(UNNAMED_PATTERN, ""))
 
         Seq("Operator" -> name, "EstimatedRows" -> estimatedRows, "Rows" -> rows,
-          "DbHits" -> dbHits, "Identifiers" -> ids, "Other" -> other)
+          "DbHits" -> dbHits, "Time (ms)" -> times, "Identifiers" -> ids, "Other" -> other)
     }
 
     //Remove headers where no values are available
