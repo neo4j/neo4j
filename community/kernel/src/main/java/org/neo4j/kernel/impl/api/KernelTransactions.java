@@ -79,7 +79,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     private final StoreReadLayer storeLayer;
     private final TransactionCommitProcess transactionCommitProcess;
     private final IndexConfigStore indexConfigStore;
-    private final LegacyIndexApplier.ProviderLookup legacyIndexProviderLookup;
+    private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final TransactionHooks hooks;
     private final TransactionMonitor transactionMonitor;
     private final LifeSupport dataSourceLife;
@@ -111,7 +111,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                                StoreReadLayer storeLayer,
                                TransactionCommitProcess transactionCommitProcess,
                                IndexConfigStore indexConfigStore,
-                               LegacyIndexApplier.ProviderLookup legacyIndexProviderLookup,
+                               LegacyIndexProviderLookup legacyIndexProviderLookup,
                                TransactionHooks hooks, TransactionMonitor transactionMonitor,
                                LifeSupport dataSourceLife,
                                Tracers tracers )

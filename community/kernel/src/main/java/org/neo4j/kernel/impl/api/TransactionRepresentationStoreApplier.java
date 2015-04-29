@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import java.io.IOException;
 
 import org.neo4j.helpers.Provider;
-import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -53,12 +52,12 @@ public class TransactionRepresentationStoreApplier
     private final LockService lockService;
     private final Provider<LabelScanWriter> labelScanWriters;
     private final IndexConfigStore indexConfigStore;
-    private final ProviderLookup legacyIndexProviderLookup;
+    private final LegacyIndexApplierLookup legacyIndexProviderLookup;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
 
     public TransactionRepresentationStoreApplier(
             IndexingService indexingService, Provider<LabelScanWriter> labelScanWriters, NeoStore neoStore,
-            CacheAccessBackDoor cacheAccess, LockService lockService, ProviderLookup legacyIndexProviderLookup,
+            CacheAccessBackDoor cacheAccess, LockService lockService, LegacyIndexApplierLookup legacyIndexProviderLookup,
             IndexConfigStore indexConfigStore, IdOrderingQueue legacyIndexTransactionOrdering )
     {
         this.indexingService = indexingService;

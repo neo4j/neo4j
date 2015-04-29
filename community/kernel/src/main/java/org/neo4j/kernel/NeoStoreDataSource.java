@@ -55,10 +55,11 @@ import org.neo4j.kernel.impl.api.GuardingStatementOperations;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.KernelTransactions;
-import org.neo4j.kernel.impl.api.LegacyIndexApplier;
-import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
+import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
+import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.LockingStatementOperations;
+import org.neo4j.kernel.impl.api.RecoveryLegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.SchemaStateConcern;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
@@ -292,7 +293,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     private final AtomicInteger recoveredCount = new AtomicInteger();
     private final Guard guard;
     private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
-    private final ProviderLookup legacyIndexProviderLookup;
+    private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final IndexConfigStore indexConfigStore;
 
     private Dependencies dependencies;
@@ -372,10 +373,10 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         msgLog = logProvider.getLog( getClass() );
         this.storeFactory = sf;
         this.lockService = new ReentrantLockService();
-        this.legacyIndexProviderLookup = new LegacyIndexApplier.ProviderLookup()
+        this.legacyIndexProviderLookup = new LegacyIndexProviderLookup()
         {
             @Override
-            public IndexImplementation lookup( String name )
+            public IndexImplementation apply( String name )
             {
                 assert name != null : "Null provider name supplied";
                 IndexImplementation provider = indexProviders.get( name );
@@ -390,7 +391,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             }
 
             @Override
-            public Iterable<IndexImplementation> providers()
+            public Iterable<IndexImplementation> all()
             {
                 return indexProviders.values();
             }
@@ -726,8 +727,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         final TransactionRepresentationStoreApplier storeApplier = dependencies.satisfyDependency(
                 new TransactionRepresentationStoreApplier(
                         indexingService, alwaysCreateNewWriter( labelScanStore ), neoStore,
-                        cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore,
-                        legacyIndexTransactionOrdering ) );
+                        cacheAccess, lockService, new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ),
+                        indexConfigStore, legacyIndexTransactionOrdering ) );
 
         final PhysicalLogFile logFile = new PhysicalLogFile( fileSystemAbstraction, logFiles,
                 config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), neoStore,
@@ -843,10 +844,12 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     {
         final RecoveryLabelScanWriterProvider labelScanWriters =
                 new RecoveryLabelScanWriterProvider( labelScanStore, 1000 );
+        final RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup = new RecoveryLegacyIndexApplierLookup(
+                new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ), 1000 );
         final TransactionRepresentationStoreApplier storeRecoverer =
                 new TransactionRepresentationStoreApplier(
                         indexingService, labelScanWriters, neoStore, cacheAccess, lockService,
-                        legacyIndexProviderLookup, indexConfigStore, IdOrderingQueue.BYPASS );
+                        legacyIndexApplierLookup, indexConfigStore, IdOrderingQueue.BYPASS );
 
         RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeRecoverer, indexUpdatesValidator,
                 recoveryVisitorMonitor );
@@ -863,6 +866,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 try
                 {
                     labelScanWriters.close();
+                    legacyIndexApplierLookup.close();
                 }
                 catch ( IOException e )
                 {
