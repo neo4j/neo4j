@@ -211,19 +211,20 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     newPlannerMonitor.clear()
     newRuntimeMonitor.clear()
     //if action fails we must wait to throw until after test has run
-    val result = Try(action) match {
-      case f@Failure(ex: CantHandleQueryException) =>
-        testPlanner(newPlannerMonitor.trace)
-        testRuntime(newRuntimeMonitor.trace)
-        // this should never happen, but make the thing to compile:
-        throw ex
+    val result = Try(action)
 
+    //check for unexpected exceptions
+    result match {
+      case f@Failure(ex: CantHandleQueryException) => //do nothing
+      case f@Failure(ex: CantCompileQueryException) => //do nothing
       case Failure(ex) => throw ex
-      case Success(r) => r
+      case Success(r) => //do nothing
     }
 
+    testPlanner(newPlannerMonitor.trace)
+    testRuntime(newRuntimeMonitor.trace)
     //now it is safe to throw
-    result
+    result.get
   }
 
   /**
