@@ -65,8 +65,7 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     @Test
     public void testSingle()
     {
-    	createGraph();
-    	
+        createGraph();
         PathFinder<Path> finder = newFinder();
         Path path = finder.findSinglePath( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) );
         assertNotNull( path );
@@ -76,60 +75,57 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     @Test
     public void testAll()
     {
-    	createGraph();
-    	
+        createGraph();
         assertPaths( newFinder().findAllPaths( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) ),
                 "SOURCE,z,9,0,TARGET", "SOURCE,SUPER,r,SPIDER,TARGET" );
     }
 
-	@Test
-	public void testExactDepthFinder()
-	{
+    @Test
+    public void testExactDepthFinder()
+    {
+        // Layout (a to k):
+        //
+        //     (a)--(c)--(g)--(k)
+        //    /                /
+        //  (b)-----(d)------(j)
+        //   |        \      /
+        //  (e)--(f)--(h)--(i)
+        // 
+        graph.makeEdgeChain( "a,c,g,k" );
+        graph.makeEdgeChain( "a,b,d,j,k" );
+        graph.makeEdgeChain( "b,e,f,h,i,j" );
+        graph.makeEdgeChain( "d,h" );
+        RelationshipExpander expander = Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING );
+        Node a = graph.getNode( "a" );
+        Node k = graph.getNode( "k" );
+        assertPaths( GraphAlgoFactory.pathsWithLength( expander, 3 ).findAllPaths( a, k ), "a,c,g,k" );
+        assertPaths( GraphAlgoFactory.pathsWithLength( expander, 4 ).findAllPaths( a, k ), "a,b,d,j,k" );
+        assertPaths( GraphAlgoFactory.pathsWithLength( expander, 5 ).findAllPaths( a, k ) );
+        assertPaths( GraphAlgoFactory.pathsWithLength( expander, 6 ).findAllPaths( a, k ), "a,b,d,h,i,j,k" );
+        assertPaths( GraphAlgoFactory.pathsWithLength( expander, 7 ).findAllPaths( a, k ), "a,b,e,f,h,i,j,k" );
+        assertPaths( GraphAlgoFactory.pathsWithLength( expander, 8 ).findAllPaths( a, k ) );
+    }
 
-		// Layout (a to k):
-		//
-		//     (a)--(c)--(g)--(k)
-		//    /                /
-		//  (b)-----(d)------(j)
-		//   |        \      /
-		//  (e)--(f)--(h)--(i)
-		// 
-		graph.makeEdgeChain( "a,c,g,k" );
-		graph.makeEdgeChain( "a,b,d,j,k" );
-		graph.makeEdgeChain( "b,e,f,h,i,j" );
-		graph.makeEdgeChain( "d,h" );
-
-		RelationshipExpander expander = Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING );
-		Node a = graph.getNode( "a" );
-		Node k = graph.getNode( "k" );
-		assertPaths( GraphAlgoFactory.pathsWithLength( expander, 3 ).findAllPaths( a, k ), "a,c,g,k" );
-		assertPaths( GraphAlgoFactory.pathsWithLength( expander, 4 ).findAllPaths( a, k ), "a,b,d,j,k" );
-		assertPaths( GraphAlgoFactory.pathsWithLength( expander, 5 ).findAllPaths( a, k ) );
-		assertPaths( GraphAlgoFactory.pathsWithLength( expander, 6 ).findAllPaths( a, k ), "a,b,d,h,i,j,k" );
-		assertPaths( GraphAlgoFactory.pathsWithLength( expander, 7 ).findAllPaths( a, k ), "a,b,e,f,h,i,j,k" );
-		assertPaths( GraphAlgoFactory.pathsWithLength( expander, 8 ).findAllPaths( a, k ) );
-	}
-
-	@Test
-	public void testExactDepthPathsReturnsNoLoops()
-	{
-		// Layout:
-		//
-		// (a)-->(b)==>(c)-->(e)
-		//        ^    /
-		//         \  v
-		//         (d)
-		//
-		graph.makeEdgeChain( "a,b,c,d,b,c,e" );
-
-		Node a = graph.getNode( "a" );
-		Node e = graph.getNode( "e" );
-		assertPaths( GraphAlgoFactory.pathsWithLength(
-				Traversal.expanderForTypes( MyRelTypes.R1 ), 3 ).findAllPaths( a, e ), "a,b,c,e", "a,b,c,e" );
-		assertPaths( GraphAlgoFactory.pathsWithLength(
-				Traversal.expanderForTypes( MyRelTypes.R1 ), 4 ).findAllPaths( a, e ), "a,b,d,c,e" );
-		assertPaths( GraphAlgoFactory.pathsWithLength(
-				Traversal.expanderForTypes( MyRelTypes.R1 ), 6 ).findAllPaths( a, e ) );
-	}
-
+    @Test
+    public void testExactDepthPathsReturnsNoLoops()
+    {
+        // Layout:
+        //
+        // (a)-->(b)==>(c)-->(e)
+        //        ^    /
+        //         \  v
+        //         (d)
+        //
+        graph.makeEdgeChain( "a,b,c,d,b,c,e" );
+        Node a = graph.getNode( "a" );
+        Node e = graph.getNode( "e" );
+        assertPaths(
+                GraphAlgoFactory.pathsWithLength( Traversal.expanderForTypes( MyRelTypes.R1 ), 3 ).findAllPaths( a, e ),
+                "a,b,c,e", "a,b,c,e" );
+        assertPaths(
+                GraphAlgoFactory.pathsWithLength( Traversal.expanderForTypes( MyRelTypes.R1 ), 4 ).findAllPaths( a, e ),
+                "a,b,d,c,e" );
+        assertPaths( GraphAlgoFactory.pathsWithLength( Traversal.expanderForTypes( MyRelTypes.R1 ), 6 ).findAllPaths(
+                a, e ) );
+    }
 }
