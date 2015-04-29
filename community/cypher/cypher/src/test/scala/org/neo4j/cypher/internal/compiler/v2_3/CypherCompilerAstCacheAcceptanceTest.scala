@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.{Clock, FrozenClock}
-import org.neo4j.logging.{NullLog, Log, AssertableLogProvider}
+import org.neo4j.kernel.impl.logging.NullLog
+import org.neo4j.logging.{Log, AssertableLogProvider}
 import AssertableLogProvider.inLog
 
 import scala.collection.Map

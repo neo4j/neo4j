@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.logging;
+package org.neo4j.kernel.impl.logging;
 
 import org.junit.Test;
 
@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.IllegalFormatException;
 
 import org.neo4j.function.Suppliers;
+import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;

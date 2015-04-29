@@ -28,7 +28,7 @@ import java.util.LinkedList;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLog;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.Sessions;
 import org.neo4j.ndp.runtime.internal.StandardSessions;

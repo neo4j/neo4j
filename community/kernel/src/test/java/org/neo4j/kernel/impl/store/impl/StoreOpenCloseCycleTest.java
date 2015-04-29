@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.store.format.TestHeaderlessStoreFormat;
 import org.neo4j.kernel.impl.store.standard.IdGeneratorRebuilder;
 import org.neo4j.kernel.impl.store.standard.StoreFormat;
 import org.neo4j.kernel.impl.store.standard.StoreOpenCloseCycle;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLog;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 public class StoreOpenCloseCycleTest

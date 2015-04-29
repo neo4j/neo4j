@@ -31,7 +31,7 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.com.message.TrackingMessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstance.State;
 import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLog;
 
 import static java.lang.Integer.parseInt;
 import static java.net.URI.create;

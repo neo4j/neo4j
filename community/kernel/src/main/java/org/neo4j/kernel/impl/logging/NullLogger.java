@@ -17,22 +17,48 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.logging;
+package org.neo4j.kernel.impl.logging;
+
+import org.neo4j.function.Consumer;
+import org.neo4j.logging.Logger;
 
 /**
- * Logging provider this is used to obtain a {@link Log} with a given {@link Class} as context
+ * A {@link Logger} implementation that discards all messages
  */
-public interface LogProvider
+public final class NullLogger implements Logger
 {
-    /**
-     * @param loggingClass the context for the returned {@link Log}
-     * @return a {@link Log} that logs messages with the {@code loggingClass} as context
-     */
-    Log getLog( Class loggingClass );
+    private static final NullLogger INSTANCE = new NullLogger();
+
+    private NullLogger()
+    {
+    }
 
     /**
-     * @param context the named context for the returned {@link Log}
-     * @return a {@link Log} that logs messages with the given {@code context}
+     * @return A singleton {@link NullLogger} instance
      */
-    Log getLog( String context );
+    public static NullLogger getInstance()
+    {
+        return INSTANCE;
+    }
+
+    @Override
+    public void log( String message )
+    {
+    }
+
+    @Override
+    public void log( String message, Throwable throwable )
+    {
+    }
+
+    @Override
+    public void log( String format, Object... arguments )
+    {
+    }
+
+    @Override
+    public void bulk( Consumer<Logger> consumer )
+    {
+        consumer.accept( this );
+    }
 }

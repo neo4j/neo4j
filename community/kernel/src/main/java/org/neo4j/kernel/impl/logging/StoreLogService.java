@@ -25,9 +25,7 @@ import org.neo4j.function.Consumers;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 
 import java.io.Closeable;
 import java.io.File;

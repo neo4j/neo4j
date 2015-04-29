@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLog;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.integration.RecordingCallback;
 import org.neo4j.ndp.runtime.internal.StatementRunner;

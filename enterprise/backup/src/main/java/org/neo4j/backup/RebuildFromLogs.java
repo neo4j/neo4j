@@ -59,7 +59,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
-import org.neo4j.logging.FormattedLog;
+import org.neo4j.kernel.impl.logging.FormattedLog;
 
 import static java.lang.String.format;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;

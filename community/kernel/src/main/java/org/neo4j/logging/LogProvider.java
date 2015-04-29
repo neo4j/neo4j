@@ -19,45 +19,20 @@
  */
 package org.neo4j.logging;
 
-import org.neo4j.function.Consumer;
-
 /**
- * A {@link Logger} implementation that discards all messages
+ * Used to obtain a {@link Log} for a specified context
  */
-public final class NullLogger implements Logger
+public interface LogProvider
 {
-    private static final NullLogger INSTANCE = new NullLogger();
-
-    private NullLogger()
-    {
-    }
+    /**
+     * @param loggingClass the context for the returned {@link Log}
+     * @return a {@link Log} that logs messages with the {@code loggingClass} as context
+     */
+    Log getLog( Class loggingClass );
 
     /**
-     * @return A singleton {@link NullLogger} instance
+     * @param context the named context for the returned {@link Log}
+     * @return a {@link Log} that logs messages with the given context
      */
-    public static NullLogger getInstance()
-    {
-        return INSTANCE;
-    }
-
-    @Override
-    public void log( String message )
-    {
-    }
-
-    @Override
-    public void log( String message, Throwable throwable )
-    {
-    }
-
-    @Override
-    public void log( String format, Object... arguments )
-    {
-    }
-
-    @Override
-    public void bulk( Consumer<Logger> consumer )
-    {
-        consumer.accept( this );
-    }
+    Log getLog( String context );
 }

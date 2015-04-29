@@ -26,7 +26,7 @@ import java.util.logging.Logger;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.kernel.impl.logging.FormattedLogProvider;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;

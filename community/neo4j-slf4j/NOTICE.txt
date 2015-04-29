@@ -25,6 +25,3 @@ Full license texts are found in LICENSES.txt.
 Third-party licenses
 --------------------
 
-MIT License
-  SLF4J API Module
-

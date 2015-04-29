@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.ExecutionEngine
-import org.neo4j.logging.{NullLogProvider, LogProvider}
+import org.neo4j.kernel.impl.logging.NullLogProvider
+import org.neo4j.logging.LogProvider
 
 /**
  * This is used by {@link org.neo4j.cypher.javacompat.internal.ServerExecutionEngine} to provide additional

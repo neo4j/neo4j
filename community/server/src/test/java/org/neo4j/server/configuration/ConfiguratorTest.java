@@ -32,7 +32,7 @@ import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLog;
 import org.neo4j.server.ServerTestUtils;
 
 import static org.junit.Assert.assertEquals;

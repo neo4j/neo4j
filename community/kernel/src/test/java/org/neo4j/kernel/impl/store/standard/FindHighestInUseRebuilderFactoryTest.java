@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.store.format.TestCursor;
 import org.neo4j.kernel.impl.store.format.TestHeaderlessStoreFormat;
 import org.neo4j.kernel.impl.store.format.TestRecord;
 import org.neo4j.kernel.impl.store.impl.TestStoreIdGenerator;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 

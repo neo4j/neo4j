@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.neo4j.logging.FormattedLog;
+import org.neo4j.kernel.impl.logging.FormattedLog;
 import org.neo4j.logging.Log;
 
 import static java.util.Arrays.asList;

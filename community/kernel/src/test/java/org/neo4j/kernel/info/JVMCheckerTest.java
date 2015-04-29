@@ -26,7 +26,7 @@ import static org.neo4j.kernel.info.JvmChecker.INCOMPATIBLE_JVM_VERSION_WARNING;
 import static org.neo4j.kernel.info.JvmChecker.INCOMPATIBLE_JVM_WARNING;
 
 import org.junit.Test;
-import org.neo4j.logging.BufferingLog;
+import org.neo4j.kernel.impl.logging.BufferingLog;
 
 public class JVMCheckerTest
 {

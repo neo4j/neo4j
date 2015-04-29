@@ -43,8 +43,8 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.com.message.TrackingMessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationRequestState;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseState;
-import org.neo4j.logging.NullLog;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 public class ClusterStateTest
 {

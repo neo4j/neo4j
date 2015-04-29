@@ -39,7 +39,7 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.statemachine.State;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;

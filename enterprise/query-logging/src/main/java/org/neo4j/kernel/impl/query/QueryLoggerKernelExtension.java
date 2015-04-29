@@ -28,7 +28,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.logging.FormattedLog;
+import org.neo4j.kernel.impl.logging.FormattedLog;
 import org.neo4j.kernel.impl.query.QuerySession.MetadataKey;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;

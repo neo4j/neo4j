@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;

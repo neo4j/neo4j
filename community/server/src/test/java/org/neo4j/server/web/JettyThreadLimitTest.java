@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.test.Mute;
 
 import static org.junit.Assert.assertEquals;
