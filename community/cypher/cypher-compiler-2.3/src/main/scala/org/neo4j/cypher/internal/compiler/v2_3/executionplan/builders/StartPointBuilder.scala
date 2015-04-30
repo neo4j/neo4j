@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInPro
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 /*
 This class is responsible for taking unsolved StartItems and transforming them into StartPipes
@@ -76,15 +75,14 @@ class StartPointBuilder extends PlanBuilder {
         (p: Pipe) =>
           new NodeStartPipe(p, item.identifierName, nodeStart.apply((planContext, item)), item.effects)()
 
-      case (planContext, Unsolved(item)) if relationshipStart.isDefinedAt((planContext, item)) =>
-        (p: Pipe) => p match {
-          case (tmPipe: TraversalMatchPipe) if tmPipe.symbols.checkType(item.identifierName, CTRelationship) =>
-            val compKey: String = s"  --rel-${item.identifierName}--"
-            val relationshipByIndex = new RelationshipStartPipe(tmPipe, compKey, relationshipStart.apply((planContext, item)))()
-            val relEqualPred = Equals(Identifier(item.identifierName), Identifier(compKey))
-            new FilterPipe(relationshipByIndex, relEqualPred)()
-          case _ => new RelationshipStartPipe(p, item.identifierName, relationshipStart.apply((planContext, item)))()
-        }
+      case (planContext, Unsolved(item)) if relationshipStart.isDefinedAt((planContext, item)) => {
+        case (p: Pipe) if p.symbols.hasIdentifierNamed(item.identifierName) =>
+          val compKey: String = s"  --rel-${item.identifierName}--"
+          val relationshipByIndex = new RelationshipStartPipe(p, compKey, relationshipStart.apply((planContext, item)))()
+          val relEqualPred = Equals(Identifier(item.identifierName), Identifier(compKey))
+          new FilterPipe(relationshipByIndex, relEqualPred)()
+        case (p: Pipe) => new RelationshipStartPipe(p, item.identifierName, relationshipStart.apply((planContext, item)))()
+      }
     }
     result
   }
