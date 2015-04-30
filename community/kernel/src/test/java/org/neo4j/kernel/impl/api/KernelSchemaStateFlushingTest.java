@@ -25,7 +25,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.helpers.Function;
+import org.neo4j.function.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;

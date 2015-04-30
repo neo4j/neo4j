@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.function.Consumer;
-import org.neo4j.helpers.Function;
+import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Logger;
 

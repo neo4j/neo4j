@@ -33,6 +33,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -45,7 +46,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.FakeClock;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;

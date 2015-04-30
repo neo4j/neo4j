@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import org.neo4j.helpers.Function;
+import org.neo4j.function.Function;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -38,7 +38,7 @@ import java.util.Iterator;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.*;
 
-import static org.neo4j.helpers.Functions.*;
+import static org.neo4j.function.Functions.constant;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
 public class LockingStatementOperationsTest

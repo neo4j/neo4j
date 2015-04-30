@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.helpers.Function;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.server.rest.repr.RepresentationType.CONSTRAINT_DEFINITION;

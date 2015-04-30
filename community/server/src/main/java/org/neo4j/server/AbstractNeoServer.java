@@ -31,11 +31,11 @@ import javax.servlet.Filter;
 
 import org.apache.commons.configuration.Configuration;
 
+import org.neo4j.function.Function;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.RunCarefully;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;

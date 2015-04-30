@@ -49,7 +49,7 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.protocol.snapshot.SnapshotContext;
 import org.neo4j.cluster.protocol.snapshot.SnapshotMessage;
 import org.neo4j.cluster.statemachine.StateMachine;
-import org.neo4j.helpers.Function;
+import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.HighAvailabilityMemberInfoProvider;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;

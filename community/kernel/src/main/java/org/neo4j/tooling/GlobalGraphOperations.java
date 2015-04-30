@@ -20,6 +20,7 @@
 package org.neo4j.tooling;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.function.Function;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -29,7 +30,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.GraphDatabaseAPI;

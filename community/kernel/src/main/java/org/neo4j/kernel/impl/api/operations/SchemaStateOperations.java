@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
-import org.neo4j.helpers.Function;
+import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.api.KernelStatement;
 
 public interface SchemaStateOperations

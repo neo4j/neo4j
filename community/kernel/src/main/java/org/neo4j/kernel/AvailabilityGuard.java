@@ -23,9 +23,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.function.Function;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Format;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 

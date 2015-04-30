@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.helpers.Function;
+import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.command.LogHandler;
 

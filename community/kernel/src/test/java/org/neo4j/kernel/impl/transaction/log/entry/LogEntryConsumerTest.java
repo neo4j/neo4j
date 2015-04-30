@@ -21,13 +21,9 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.junit.Test;
 
-import org.neo4j.helpers.Function;
+import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.transaction.command.LogHandler;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
-import org.neo4j.kernel.impl.transaction.log.entry.TranslatingEntryVisitor;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;

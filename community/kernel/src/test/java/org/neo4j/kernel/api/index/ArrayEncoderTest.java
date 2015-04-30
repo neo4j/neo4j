@@ -27,8 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.Function;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.Function;
 import org.neo4j.test.ThreadingRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;

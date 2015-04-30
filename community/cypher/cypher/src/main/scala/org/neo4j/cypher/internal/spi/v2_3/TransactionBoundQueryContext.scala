@@ -264,7 +264,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V) = {
-    val javaCreator = new org.neo4j.helpers.Function[K, V]() {
+    val javaCreator = new org.neo4j.function.Function[K, V]() {
       def apply(key: K) = creator
     }
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)

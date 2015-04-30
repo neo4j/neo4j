@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.Function;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 

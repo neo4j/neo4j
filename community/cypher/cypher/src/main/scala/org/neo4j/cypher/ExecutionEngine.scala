@@ -21,7 +21,6 @@ package org.neo4j.cypher
 
 import java.util.{Map => JavaMap}
 
-import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserMonitor
 import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.v2_3.{LRUCache => LRUCachev2_3, _}
@@ -29,7 +28,6 @@ import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
@@ -194,7 +192,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
     .resolveDependency(classOf[ThreadToStatementContextBridge])
 
   private def getOrCreateFromSchemaState[V](statement: api.Statement, creator: => V) = {
-    val javaCreator = new org.neo4j.helpers.Function[ExecutionEngine, V]() {
+    val javaCreator = new org.neo4j.function.Function[ExecutionEngine, V]() {
       def apply(key: ExecutionEngine) = creator
     }
     statement.readOperations().schemaStateGetOrCreate(this, javaCreator)

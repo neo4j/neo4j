@@ -30,12 +30,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ObjectUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
 

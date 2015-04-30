@@ -26,8 +26,8 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.Node;
-import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.PropertyValueException;

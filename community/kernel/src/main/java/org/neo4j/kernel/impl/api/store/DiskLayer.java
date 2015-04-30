@@ -31,13 +31,12 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -69,7 +68,6 @@ import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -126,22 +124,6 @@ public class DiskLayer implements StoreReadLayer
     private final SchemaStorage schemaStorage;
     private final CountsAccessor counts;
     private final PropertyLoader propertyLoader;
-
-    private static class PropertyStoreProvider implements Provider<PropertyStore>
-    {
-        private final Supplier<NeoStore> neoStoreProvider;
-
-        public PropertyStoreProvider( Supplier<NeoStore> neoStoreProvider )
-        {
-            this.neoStoreProvider = neoStoreProvider;
-        }
-
-        @Override
-        public PropertyStore instance()
-        {
-            return neoStoreProvider.get().getPropertyStore();
-        }
-    }
 
     /**
      * A note on this taking Supplier<NeoStore> rather than just neo store: This is a workaround until the cache is

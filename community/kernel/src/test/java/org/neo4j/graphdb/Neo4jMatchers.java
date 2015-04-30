@@ -30,10 +30,10 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.helpers.Function;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;

@@ -29,8 +29,9 @@ import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.Consumer;
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.helpers.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -93,37 +94,34 @@ public class LabelsAcceptanceTest
             }
         } );
         // POST "FOOBAR"
-        dbRule.executeAndCommit( new Function<GraphDatabaseService, Void>()
+        dbRule.executeAndCommit( new Consumer<GraphDatabaseService>()
         {
             @Override
-            public Void apply( GraphDatabaseService db )
+            public void accept( GraphDatabaseService db )
             {
                 node.addLabel( label( "FOOBAR" ) );
-                return null;
             }
         } );
         // POST ["BAZQUX"]
-        dbRule.executeAndCommit( new Function<GraphDatabaseService, Void>()
+        dbRule.executeAndCommit( new Consumer<GraphDatabaseService>()
         {
             @Override
-            public Void apply( GraphDatabaseService db )
+            public void accept( GraphDatabaseService db )
             {
                 node.addLabel( label( "BAZQUX" ) );
-                return null;
             }
         } );
         // PUT ["BAZQUX"]
-        dbRule.executeAndCommit( new Function<GraphDatabaseService, Void>()
+        dbRule.executeAndCommit( new Consumer<GraphDatabaseService>()
         {
             @Override
-            public Void apply( GraphDatabaseService db )
+            public void accept( GraphDatabaseService db )
             {
                 for ( Label label : node.getLabels() )
                 {
                     node.removeLabel( label );
                 }
                 node.addLabel( label( "BAZQUX" ) );
-                return null;
             }
         } );
         // GET

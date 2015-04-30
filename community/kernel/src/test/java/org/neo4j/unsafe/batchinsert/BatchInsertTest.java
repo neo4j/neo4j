@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
@@ -52,7 +53,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.pagecache.PageCache;

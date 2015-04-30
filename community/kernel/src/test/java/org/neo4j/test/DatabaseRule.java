@@ -23,6 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.function.Consumer;
+import org.neo4j.function.Function;
+import org.neo4j.function.Functions;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -35,7 +38,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilderTestTools;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.helpers.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
@@ -52,6 +54,11 @@ public abstract class DatabaseRule extends ExternalResource
     public <T> T when( Function<GraphDatabaseService, T> function )
     {
         return function.apply( getGraphDatabaseService() );
+    }
+
+    public void executeAndCommit( Consumer<? super GraphDatabaseService> consumer )
+    {
+        transaction( Functions.fromConsumer( consumer ), true );
     }
 
     public <T> T executeAndCommit( Function<? super GraphDatabaseService, T> function )
