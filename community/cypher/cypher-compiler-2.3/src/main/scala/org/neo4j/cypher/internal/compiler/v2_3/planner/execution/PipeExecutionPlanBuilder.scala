@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConve
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementConverters
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, Identifier, NodeStartItem, RelTypeName}
-import org.neo4j.cypher.internal.compiler.v2_3.birk.il.AcceptVisitor
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{EntityProducerFactory, Predicate => CommandPredicate, True}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.prepare.KeyTokenResolver

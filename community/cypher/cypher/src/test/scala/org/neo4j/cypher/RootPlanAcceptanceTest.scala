@@ -123,7 +123,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHavePlanner(GreedyPlannerName)
   }
 
-  test("simple query that should go through Birk") {
+  test("simple query that should go through the compiled runtime") {
     given(
       "MATCH n RETURN n")
       .withCypherVersion(CypherVersion.v2_3)
@@ -132,7 +132,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHaveRuntime(CompiledRuntimeName)
   }
 
-  test("simple query that should not go through Birk") {
+  test("simple query that should not go through the compiled runtime") {
     given(
       "MATCH n RETURN n")
       .withCypherVersion(CypherVersion.v2_3)
@@ -141,7 +141,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHaveRuntime(InterpretedRuntimeName)
   }
 
-  test("query that does not go through Birk") {
+  test("query that does not go through the compiled runtime") {
     given(
       "MATCH n RETURN n, count(*)")
       .withCypherVersion(CypherVersion.v2_3)
@@ -149,7 +149,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHaveRuntime(InterpretedRuntimeName)
   }
 
-  test("query that does not go through Birk nor Cost") {
+  test("query that does not go through the compiled runtime nor Cost") {
     given(
       "CREATE ()")
       .withCypherVersion(CypherVersion.v2_3)
@@ -158,7 +158,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHavePlanner(RulePlannerName)
   }
 
-  test("query that lacks support from Birk") {
+  test("query that lacks support from the compiled runtime") {
     given(
       "CREATE ()")
     .withCypherVersion(CypherVersion.v2_3)
@@ -167,7 +167,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     .shouldHaveRuntime(InterpretedRuntimeName)
   }
 
-  test("query that should go through Birk") {
+  test("query that should go through the compiled runtime") {
     given(
       "MATCH a-->b RETURN a")
       .withCypherVersion(CypherVersion.v2_3)

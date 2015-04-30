@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_3.birk.QueryExecutionTracer
-import org.neo4j.cypher.internal.compiler.v2_3.birk.profiling.ProfilingTracer
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.QueryExecutionTracer
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.{DescriptionProvider, tracer}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders._
