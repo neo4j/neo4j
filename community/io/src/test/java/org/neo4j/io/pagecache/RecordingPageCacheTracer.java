@@ -75,46 +75,7 @@ public class RecordingPageCacheTracer implements PageCacheTracer
             @Override
             public EvictionEvent beginEviction()
             {
-                return new EvictionEvent()
-                {
-                    private long filePageId;
-                    private PageSwapper swapper;
-
-                    @Override
-                    public void setFilePageId( long filePageId )
-                    {
-
-                        this.filePageId = filePageId;
-                    }
-
-                    @Override
-                    public void setSwapper( PageSwapper swapper )
-                    {
-                        this.swapper = swapper;
-                    }
-
-                    @Override
-                    public FlushEventOpportunity flushEventOpportunity()
-                    {
-                        return FlushEventOpportunity.NULL;
-                    }
-
-                    @Override
-                    public void threwException( IOException exception )
-                    {
-                    }
-
-                    @Override
-                    public void setCachePageId( int cachePageId )
-                    {
-                    }
-
-                    @Override
-                    public void close()
-                    {
-                        evicted( filePageId, swapper );
-                    }
-                };
+                return new RecordingEvictionEvent();
             }
 
             @Override
@@ -156,12 +117,13 @@ public class RecordingPageCacheTracer implements PageCacheTracer
                     }
 
                     @Override
-                    public void setCachePageId( int cachePageId )
+                    public EvictionEvent beginEviction()
                     {
+                        return new RecordingEvictionEvent();
                     }
 
                     @Override
-                    public void setParked( boolean parked )
+                    public void setCachePageId( int cachePageId )
                     {
                     }
                 };
@@ -354,6 +316,47 @@ public class RecordingPageCacheTracer implements PageCacheTracer
         public Evict( PageSwapper io, long pageId )
         {
             super( io, pageId );
+        }
+    }
+
+    private class RecordingEvictionEvent implements EvictionEvent
+    {
+        private long filePageId;
+        private PageSwapper swapper;
+
+        @Override
+        public void setFilePageId( long filePageId )
+        {
+
+            this.filePageId = filePageId;
+        }
+
+        @Override
+        public void setSwapper( PageSwapper swapper )
+        {
+            this.swapper = swapper;
+        }
+
+        @Override
+        public FlushEventOpportunity flushEventOpportunity()
+        {
+            return FlushEventOpportunity.NULL;
+        }
+
+        @Override
+        public void threwException( IOException exception )
+        {
+        }
+
+        @Override
+        public void setCachePageId( int cachePageId )
+        {
+        }
+
+        @Override
+        public void close()
+        {
+            evicted( filePageId, swapper );
         }
     }
 }

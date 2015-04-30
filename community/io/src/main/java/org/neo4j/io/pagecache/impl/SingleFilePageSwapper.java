@@ -40,14 +40,34 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
  */
 public class SingleFilePageSwapper implements PageSwapper
 {
+    private static int defaultChannelStripePower()
+    {
+        int vcores = Runtime.getRuntime().availableProcessors();
+        // Find the lowest 2's exponent that can accommodate 'vcores'
+        int stripePower = 32 - Integer.numberOfLeadingZeros( vcores - 1 );
+        return Math.min( 64, Math.max( 1, stripePower ) );
+    }
+
+    // Exponent of 2 of how many channels we open per file:
+    private static final int channelStripePower = Integer.getInteger(
+            "org.neo4j.io.pagecache.implSingleFilePageSwapper.channelStripePower",
+            defaultChannelStripePower() );
+
+    // Exponent of 2 of how many consecutive pages go to the same stripe
+    private static final int channelStripeShift = Integer.getInteger(
+            "org.neo4j.io.pagecache.implSingleFilePageSwapper.channelStripeShift", 4 );
+
+    private static final int channelStripeCount = 1 << channelStripePower;
+    private static final int channelStripeMask = channelStripeCount - 1;
+
     private static final long fileSizeOffset =
             UnsafeUtil.getFieldOffset( SingleFilePageSwapper.class, "fileSize" );
 
     private final FileSystemAbstraction fs;
     private final File file;
     private final int filePageSize;
-    private PageEvictionCallback onEviction;
-    private volatile StoreChannel channel;
+    private volatile PageEvictionCallback onEviction;
+    private final StoreChannel[] channels;
 
     // Guarded by synchronized(this). See tryReopen() and close().
     private boolean closed;
@@ -63,10 +83,14 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         this.fs = fs;
         this.file = file;
-        this.channel = fs.open( file, "rw" );
+        this.channels = new StoreChannel[channelStripeCount];
+        for ( int i = 0; i < channelStripeCount; i++ )
+        {
+            channels[i] = fs.open( file, "rw" );
+        }
         this.filePageSize = filePageSize;
         this.onEviction = onEviction;
-        increaseFileSizeTo( channel.size() );
+        increaseFileSizeTo( channels[0].size() );
     }
 
     private void increaseFileSizeTo( long newFileSize )
@@ -85,6 +109,17 @@ public class SingleFilePageSwapper implements PageSwapper
         return UnsafeUtil.getLongVolatile( this, fileSizeOffset );
     }
 
+    private StoreChannel channel( long filePageId )
+    {
+        int stripe = channelStripe( filePageId );
+        return channels[stripe];
+    }
+
+    private static int channelStripe( long filePageId )
+    {
+        return (int) (filePageId >>> channelStripeShift) & channelStripeMask;
+    }
+
     @Override
     public int read( long filePageId, Page page ) throws IOException
     {
@@ -93,7 +128,7 @@ public class SingleFilePageSwapper implements PageSwapper
         {
             if ( offset < getCurrentFileSize() )
             {
-                return page.swapIn( channel, offset, filePageSize );
+                return page.swapIn( channel( filePageId ), offset, filePageSize );
             }
             else
             {
@@ -105,7 +140,7 @@ public class SingleFilePageSwapper implements PageSwapper
             // AsynchronousCloseException is a subclass of
             // ClosedChannelException, and ClosedByInterruptException is in
             // turn a subclass of AsynchronousCloseException.
-            tryReopen( e );
+            tryReopen( filePageId, e );
             boolean interrupted = Thread.interrupted();
             // Recurse because this is hopefully a very rare occurrence.
             int bytesRead = read( filePageId, page );
@@ -125,7 +160,7 @@ public class SingleFilePageSwapper implements PageSwapper
         increaseFileSizeTo( offset + filePageSize );
         try
         {
-            page.swapOut( channel, offset, filePageSize );
+            page.swapOut( channel( filePageId ), offset, filePageSize );
             return filePageSize;
         }
         catch ( ClosedChannelException e )
@@ -133,7 +168,7 @@ public class SingleFilePageSwapper implements PageSwapper
             // AsynchronousCloseException is a subclass of
             // ClosedChannelException, and ClosedByInterruptException is in
             // turn a subclass of AsynchronousCloseException.
-            tryReopen( e );
+            tryReopen( filePageId, e );
             boolean interrupted = Thread.interrupted();
             // Recurse because this is hopefully a very rare occurrence.
             int bytesWritten = write( filePageId, page );
@@ -148,9 +183,10 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public void evicted( long filePageId, Page page )
     {
-        if ( onEviction != null )
+        PageEvictionCallback callback = this.onEviction;
+        if ( callback != null )
         {
-            onEviction.onEvict( filePageId, page );
+            callback.onEvict( filePageId, page );
         }
     }
 
@@ -169,23 +205,20 @@ public class SingleFilePageSwapper implements PageSwapper
     public boolean equals( Object o )
     {
         if ( this == o )
-        {
-            return true;
-        }
+        { return true; }
         if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
+        { return false; }
 
         SingleFilePageSwapper that = (SingleFilePageSwapper) o;
 
-        return !(channel != null ? !channel.equals( that.channel ) : that.channel != null);
+        return file.equals( that.file );
+
     }
 
     @Override
     public int hashCode()
     {
-        return channel != null ? channel.hashCode() : 0;
+        return file.hashCode();
     }
 
     /**
@@ -200,8 +233,10 @@ public class SingleFilePageSwapper implements PageSwapper
      * then that exception is added as a suppressed exception to the passed in
      * ClosedChannelException, and the CCE is then rethrown.
      */
-    private synchronized void tryReopen( ClosedChannelException closedException ) throws ClosedChannelException
+    private synchronized void tryReopen( long filePageId, ClosedChannelException closedException ) throws ClosedChannelException
     {
+        int stripe = channelStripe( filePageId );
+        StoreChannel channel = channels[stripe];
         if ( channel.isOpen() )
         {
             // Someone got ahead of us, presumably. Nothing to do.
@@ -217,7 +252,7 @@ public class SingleFilePageSwapper implements PageSwapper
 
         try
         {
-            channel = fs.open( file, "rw" );
+            channels[stripe] = fs.open( file, "rw" );
         }
         catch ( IOException e )
         {
@@ -230,7 +265,10 @@ public class SingleFilePageSwapper implements PageSwapper
     public synchronized void close() throws IOException
     {
         closed = true;
-        channel.close();
+        for ( StoreChannel channel : channels )
+        {
+            channel.close();
+        }
 
         // Eagerly relinquish our reference to the onEviction callback, because even though
         // we've closed the PagedFile at this point, there are likely still pages in the cache that are bound to this
@@ -243,16 +281,17 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public void force() throws IOException
     {
+        int tokenFilePageId = 0;
         try
         {
-            channel.force( false );
+            channel( tokenFilePageId ).force( false );
         }
         catch ( ClosedChannelException e )
         {
             // AsynchronousCloseException is a subclass of
             // ClosedChannelException, and ClosedByInterruptException is in
             // turn a subclass of AsynchronousCloseException.
-            tryReopen( e );
+            tryReopen( tokenFilePageId, e );
             boolean interrupted = Thread.interrupted();
             // Recurse because this is hopefully a very rare occurrence.
             force();

@@ -192,12 +192,13 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         }
 
         @Override
-        public void setCachePageId( int cachePageId )
+        public EvictionEvent beginEviction()
         {
+            return evictionEvent;
         }
 
         @Override
-        public void setParked( boolean parked )
+        public void setCachePageId( int cachePageId )
         {
         }
     };

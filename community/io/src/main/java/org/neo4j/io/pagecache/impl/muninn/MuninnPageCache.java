@@ -22,11 +22,11 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
@@ -89,13 +89,6 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
  */
 public class MuninnPageCache implements PageCache
 {
-    // The number of times we will spin, during page faulting, on checking the
-    // freelist and LockSupport.unpark'ing the eviction thread, before blocking
-    // and waiting for the eviction thread to do something.
-    private static final int pageFaultSpinCount = Integer.getInteger(
-            "org.neo4j.io.pagecache.impl.muninn.pageFaultSpinCount",
-            FileUtils.OS_IS_WINDOWS? 10 : 1000 );
-
     // Keep this many pages free and ready for use in faulting.
     // This will be truncated to be no more than half of the number of pages
     // in the cache.
@@ -146,7 +139,7 @@ public class MuninnPageCache implements PageCache
     // page faulting thread that it is now no longer possible to queue up and
     // wait for more pages to be evicted, because the page cache has been shut
     // down.
-    private static final FreePageWaiter shutdownSignal = new FreePageWaiter();
+    private static final FreePage shutdownSignal = new FreePage( null );
 
     // A counter used to identify which background threads belong to which page cache.
     private static final AtomicInteger pageCacheIdCounter = new AtomicInteger();
@@ -168,24 +161,18 @@ public class MuninnPageCache implements PageCache
     private final MuninnPage[] pages;
     private final AtomicInteger backgroundFlushPauseRequests;
 
-    // The freelist takes a bit of explanation. It is a thread-safe linked-list
-    // of 3 types of objects. A link can either be a MuninnPage, a FreePage or
-    // a FreePageWaiter.
+    // The freelist is a thread-safe linked-list of 2 types of objects. A link
+    // can either be a MuninnPage or a FreePage.
     // Initially, most of the links are MuninnPages that are ready for the
     // taking. Then towards the end, we have the last bunch of pages linked
     // through FreePage objects. We make this transition because, once a
     // MuninnPage has been removed from the list, it cannot be added back. The
     // reason is that the MuninnPages are reused, and adding them back into the
     // freelist would expose us to the ABA-problem, which can cause cycles to
-    // form. The FreePage and FreePageWaiter objects, however, are single-use
-    // such that they don't exhibit the ABA-problem. In other words, eviction
-    // will never add MuninnPages to the freelist; it will only add free pages
-    // through a new FreePage object, or with direct transfer through a
-    // FreePageWaiter. FreePageWaiters are added to the list by threads that
-    // want a free page, but have discovered that the freelist is either empty,
-    // or has another FreePageWaiter at the head.
-    // This contraption basically gives us a "transfer stack" with some space
-    // optimisations for the initial bulk of contents.
+    // form. The FreePage objects, however, are single-use such that they don't
+    // exhibit the ABA-problem. In other words, eviction will never add
+    // MuninnPages to the freelist; it will only add free pages through a new
+    // FreePage object.
     @SuppressWarnings( "unused" ) // This field is accessed via Unsafe.
     private volatile Object freelist;
 
@@ -195,6 +182,12 @@ public class MuninnPageCache implements PageCache
     // The thread that runs the eviction algorithm. We unpark this when we've run out of
     // free pages to grab.
     private volatile Thread evictionThread;
+    // True if the eviction thread is currently parked, without someone having
+    // signalled it to wake up. This is used as a weak guard for unparking the
+    // eviction thread, because calling unpark too much (from many page
+    // faulting threads) can cause contention on the locks protecting that
+    // threads scheduling meta-data in the OS kernel.
+    private volatile boolean evictorParked;
     private volatile IOException evictorException;
     // The thread that does background flushing.
     private volatile Thread flushThread;
@@ -559,51 +552,24 @@ public class MuninnPageCache implements PageCache
         // dance by attempting to CAS the freelist to the FreePage objects next
         // pointer, and again, if we succeed then we've grabbed the MuninnPage
         // given by the FreePage object.
-        // We can discover a FreePageWaiter object, which means that other
-        // threads have already given up spinning on the freelist waiting for
-        // free pages, so we might as well just get in line right away.
         // We can discover a null-pointer, in which case the freelist has just
-        // been emptied for whatever it contained before. Either new FreePage
-        // objects are going to be added to it, or another thread is going to
-        // get tired of waiting and add a FreePageWaiter to it, or we are going
-        // to get tired of waiting and add our own FreePageWaiter to it.
-        // Importantly, this FreePageWaiter could be the shutdownSignal
-        // instance, so we need to check for that and throw the appropriate
-        // exception if that turns out to be the case.
-
+        // been emptied for whatever it contained before. New FreePage objects
+        // are eventually going to be added to the freelist, but we are not
+        // going to wait around for that to happen. If the freelist is empty,
+        // then we do our own eviction to get a free page.
+        // If we find a FreePage object on the freelist, then it is important
+        // to check and see if it is the shutdownSignal instance. If that's the
+        // case, then the page cache has been shut down, and we should throw an
+        // exception from our page fault routine.
         Object current;
-        FreePageWaiter waiter = null;
-        int iterationCount = 0;
-        boolean shouldUnparkInSpin = true;
         for (;;)
         {
             assertHealthy();
-            iterationCount++;
             current = getFreelistHead();
-            if ( current == null && iterationCount > pageFaultSpinCount )
+            if ( current == null )
             {
-                waiter = waiter == null? new FreePageWaiter() : waiter;
-                // Make sure to null out the next pointer, in case the waiter
-                // was created at a time where the current object was another
-                // waiter.
-                waiter.next = null;
-                if ( compareAndSetFreelistHead( null, waiter ) )
-                {
-                    unparkEvictor();
-                    faultEvent.setParked( true );
-                    return waiter.park( this );
-                }
-            }
-            else if ( current == null )
-            {
-                // Short-circuit the checks bellow for performance, because we
-                // know that they will always fail when 'current' is null.
-                if ( shouldUnparkInSpin )
-                {
-                    unparkEvictor();
-                    shouldUnparkInSpin = false;
-                }
-                continue;
+                unparkEvictor();
+                return cooperativelyEvict( faultEvent );
             }
             else if ( current instanceof MuninnPage )
             {
@@ -616,35 +582,77 @@ public class MuninnPageCache implements PageCache
             else if ( current instanceof FreePage )
             {
                 FreePage freePage = (FreePage) current;
+                if ( freePage == shutdownSignal )
+                {
+                    throw new IllegalStateException( "The PageCache has been shut down." );
+                }
+
                 if ( compareAndSetFreelistHead( freePage, freePage.next ) )
                 {
                     return freePage.page;
                 }
             }
-            else if ( current instanceof FreePageWaiter )
-            {
-                if ( current == shutdownSignal )
-                {
-                    throw new IllegalStateException(
-                            "The PageCache has been shut down" );
-                }
+        }
+    }
 
-                waiter = waiter == null? new FreePageWaiter() : waiter;
-                waiter.next = (FreePageWaiter) current;
-                if ( compareAndSetFreelistHead( current, waiter ) )
+    private MuninnPage cooperativelyEvict( PageFaultEvent faultEvent ) throws IOException
+    {
+        int clockArm = ThreadLocalRandom.current().nextInt( pages.length );
+        MuninnPage page;
+        boolean evicted = false;
+        do
+        {
+            assertHealthy();
+
+            if ( clockArm == pages.length )
+            {
+                clockArm = 0;
+            }
+
+            page = pages[clockArm];
+            if ( page == null )
+            {
+                throw new IllegalStateException(
+                        "The PageCache has been shut down" );
+            }
+
+            if ( page.isLoaded() && page.decrementUsage() )
+            {
+                long stamp = page.tryWriteLock();
+                if ( stamp != 0 )
                 {
-                    unparkEvictor();
-                    faultEvent.setParked( true );
-                    return waiter.park( this );
+                    // We got the write lock. Time to evict the page!
+                    try ( EvictionEvent evictionEvent = faultEvent.beginEviction() )
+                    {
+                        evicted = page.isLoaded() && evictPage( page, evictionEvent );
+                    }
+                    finally
+                    {
+                        page.unlockWrite( stamp );
+                    }
                 }
             }
-            unparkEvictor();
+            clockArm++;
         }
+        while ( !evicted );
+        return page;
     }
 
     private void unparkEvictor()
     {
-        LockSupport.unpark( evictionThread );
+        if ( evictorParked )
+        {
+            evictorParked = false;
+            LockSupport.unpark( evictionThread );
+        }
+    }
+
+    private void parkEvictor( long parkNanos )
+    {
+        // Only called from the background eviction thread!
+        evictorParked = true;
+        LockSupport.parkNanos( this, parkNanos );
+        evictorParked = false;
     }
 
     private Object getFreelistHead()
@@ -676,7 +684,7 @@ public class MuninnPageCache implements PageCache
         evictionThread = Thread.currentThread();
         int clockArm = 0;
 
-        while ( !Thread.interrupted() )
+        while ( !closed )
         {
             int pageCountToEvict = parkUntilEvictionRequired( keepFree );
             try ( EvictionRunEvent evictionRunEvent = tracer.beginPageEvictions( pageCountToEvict ) )
@@ -685,25 +693,9 @@ public class MuninnPageCache implements PageCache
             }
         }
 
-        // The last thing we do, is unparking any thread that might be waiting
-        // for free pages in a page fault.
-        // This can happen because files can be unmapped while their cursors
-        // are in use.
-        Object freelistHead = getAndSetFreelistHead( shutdownSignal );
-        if ( freelistHead instanceof FreePageWaiter )
-        {
-            FreePageWaiter waiters = (FreePageWaiter) freelistHead;
-            interruptAllWaiters( waiters );
-        }
-    }
-
-    private void interruptAllWaiters( FreePageWaiter waiters )
-    {
-        while ( waiters != null )
-        {
-            waiters.unparkInterrupt();
-            waiters = waiters.next;
-        }
+        // The last thing we do, is signalling the shutdown of the cache via
+        // the freelist. This signal is looked out for in grabFreePage.
+        getAndSetFreelistHead( shutdownSignal );
     }
 
     private int parkUntilEvictionRequired( int keepFree )
@@ -713,7 +705,7 @@ public class MuninnPageCache implements PageCache
         long parkNanos = TimeUnit.MILLISECONDS.toNanos( 10 );
         for (;;)
         {
-            LockSupport.parkNanos( parkNanos );
+            parkEvictor( parkNanos );
             if ( Thread.currentThread().isInterrupted() || closed )
             {
                 return 0;
@@ -721,7 +713,11 @@ public class MuninnPageCache implements PageCache
 
             Object freelistHead = getFreelistHead();
 
-            if ( freelistHead instanceof FreePage )
+            if ( freelistHead == null )
+            {
+                return keepFree;
+            }
+            else if ( freelistHead.getClass() == FreePage.class )
             {
                 int availablePages = ((FreePage) freelistHead).count;
                 if ( availablePages < keepFree )
@@ -729,19 +725,12 @@ public class MuninnPageCache implements PageCache
                     return keepFree - availablePages;
                 }
             }
-            else if ( freelistHead instanceof FreePageWaiter )
-            {
-                return keepFree;
-            }
         }
     }
 
     int evictPages( int pageCountToEvict, int clockArm, EvictionRunEvent evictionRunEvent )
     {
-        FreePageWaiter waiters = grabFreePageWaitersIfAny();
-
-        Thread currentThread = Thread.currentThread();
-        while ( (pageCountToEvict > 0 || waiters != null) && !currentThread.isInterrupted() ) {
+        while ( pageCountToEvict > 0 && !closed ) {
             if ( clockArm == pages.length )
             {
                 clockArm = 0;
@@ -751,8 +740,6 @@ public class MuninnPageCache implements PageCache
             if ( page == null )
             {
                 // The page cache has been shut down.
-                currentThread.interrupt();
-                interruptAllWaiters( waiters );
                 return 0;
             }
 
@@ -776,7 +763,7 @@ public class MuninnPageCache implements PageCache
 
                     try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction() )
                     {
-                        pageEvicted = evictPage( page, evictionEvent );
+                        pageEvicted = page.isLoaded() && evictPage( page, evictionEvent );
                     }
                     finally
                     {
@@ -785,64 +772,25 @@ public class MuninnPageCache implements PageCache
 
                     if ( pageEvicted )
                     {
-                        if ( waiters != null )
+                        Object current;
+                        Object nextListHead;
+                        FreePage freePage = null;
+                        do
                         {
-                            waiters.unpark( page );
-                            waiters = waiters.next;
+                            current = getFreelistHead();
+                            freePage = freePage == null?
+                                       new FreePage( page ) : freePage;
+                            freePage.setNext( (FreePage) current );
+                            nextListHead = freePage;
                         }
-                        else
-                        {
-                            Object current;
-                            Object nextListHead;
-                            FreePage freePage = null;
-                            FreePageWaiter waiter;
-                            do
-                            {
-                                waiter = null;
-                                current = getFreelistHead();
-                                if ( current == null || current instanceof FreePage )
-                                {
-                                    freePage = freePage == null?
-                                            new FreePage( page ) : freePage;
-                                    freePage.setNext( (FreePage) current );
-                                    nextListHead = freePage;
-                                }
-                                else
-                                {
-                                    assert current instanceof FreePageWaiter :
-                                            "Unexpected link type: " + current;
-                                    waiter = (FreePageWaiter) current;
-                                    nextListHead = waiter.next;
-                                }
-                            }
-                            while ( !compareAndSetFreelistHead(
-                                    current, nextListHead ) );
-                            if ( waiter != null )
-                            {
-                                waiter.unpark( page );
-                            }
-                        }
-                    }
-                    else if ( waiters != null && evictorException != null )
-                    {
-                        waiters.unparkException( evictorException );
-                        waiters = waiters.next;
+                        while ( !compareAndSetFreelistHead(
+                                current, nextListHead ) );
                     }
                 }
             }
 
             clockArm++;
         }
-
-        // If we still have waiters left, then it means our eviction loop was
-        // interrupted and that we are about to shut down.
-        // We first have to unblock our waiters and let them know what's going
-        // on, though.
-        // New waiters can queue up while we are doing this, however, so we
-        // must also take care of those waiters as the last thing we do before
-        // the eviction thread finally terminates. And we must prevent new
-        // waiters from queueing up.
-        interruptAllWaiters( waiters );
 
         return clockArm;
     }
@@ -874,34 +822,12 @@ public class MuninnPageCache implements PageCache
         return false;
     }
 
-    private FreePageWaiter grabFreePageWaitersIfAny()
-    {
-        Object freelistHead = getFreelistHead();
-        if ( freelistHead instanceof FreePageWaiter )
-        {
-            FreePageWaiter waiters =
-                    (FreePageWaiter) getAndSetFreelistHead( null );
-            return reverse( waiters );
-        }
-        return null;
-    }
-
-    private FreePageWaiter reverse( FreePageWaiter waiters )
-    {
-        FreePageWaiter result = null;
-        while ( waiters != null )
-        {
-            FreePageWaiter tail = waiters.next;
-            waiters.next = result;
-            result = waiters;
-            waiters = tail;
-        }
-        return result;
-    }
-
     private void clearEvictorException()
     {
-        evictorException = null;
+        if ( evictorException != null )
+        {
+            evictorException = null;
+        }
     }
 
     void pauseBackgroundFlushTask()

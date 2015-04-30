@@ -19,29 +19,26 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import org.junit.Rule;
+import com.google.common.jimfs.Jimfs;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.DelegateFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
 
 public class StandalonePageCacheFactoryTest
 {
-    @Rule
-    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-
     @Test( timeout = 10000 )
     public void mustAutomaticallyStartEvictionThread() throws IOException
     {
-        EphemeralFileSystemAbstraction fs = fsRule.get();
+        FileSystemAbstraction fs = new DelegateFileSystemAbstraction( Jimfs.newFileSystem() );
         File file = new File( "a" );
         fs.create( file );
 

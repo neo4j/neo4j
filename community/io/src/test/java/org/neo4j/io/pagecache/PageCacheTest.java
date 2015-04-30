@@ -54,7 +54,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
@@ -3128,80 +3127,6 @@ public abstract class PageCacheTest<T extends PageCache>
         pagedFile.close();
     }
 
-    @Test( timeout = 10000 )
-    public void blockedPageFaultersMustWakeUpWhenEvictionThreadCatchesException() throws Exception
-    {
-        final AtomicBoolean shouldBlock = new AtomicBoolean( true );
-        final AtomicBoolean shouldThrow = new AtomicBoolean( true );
-        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
-        {
-            @Override
-            public StoreChannel open( File fileName, String mode ) throws IOException
-            {
-                return new DelegatingStoreChannel( super.open( fileName, mode ) )
-                {
-                    @Override
-                    public void writeAll( ByteBuffer src, long position ) throws IOException
-                    {
-                        while ( shouldBlock.get() )
-                        {
-                            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
-                        }
-                        if ( shouldThrow.get() )
-                        {
-                            throw new IOException( "uh-oh..." );
-                        }
-                    }
-                };
-            }
-        };
-
-        fs.create( file ).close();
-
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-        final PagedFile pagedFile = pageCache.map( file, filePageSize );
-        final AtomicReference<Thread> taskThreadRef = new AtomicReference<>();
-
-        Future<Boolean> task = executor.submit( new Callable<Boolean>()
-        {
-            @Override
-            public Boolean call() throws Exception
-            {
-                taskThreadRef.set( Thread.currentThread() );
-                try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
-                {
-                    for (;;) // Keep writing until we get an exception
-                    {
-                        assertTrue( cursor.next() );
-                        writeRecords( cursor );
-                    }
-                }
-                catch ( IOException exception )
-                {
-                    return true;
-                }
-            }
-        } );
-
-        // Wait until the page faulting thread gets blocked
-        Thread taskThread;
-        do
-        {
-            taskThread = taskThreadRef.get();
-        }
-        while ( taskThread == null || taskThread.getState() != Thread.State.WAITING );
-
-        // Then let the evictor proceed to throw an exception
-        shouldBlock.set( false );
-
-        // Then we wait for the task to complete
-        assertTrue( task.get() );
-
-        shouldThrow.set( false );
-        pageCache.flushAndForce();
-        pagedFile.close();
-    }
-
     @Test( timeout = 1000 )
     public void dataFromDifferentFilesMustNotBleedIntoEachOther() throws IOException
     {
@@ -3527,27 +3452,27 @@ public abstract class PageCacheTest<T extends PageCache>
 
                 assertTrue( caughtExceptions.isEmpty() );
             }
-
-            // Once the page caches has been closed and all references presumably set to null, then the only thing that
-            // could possibly strongly reference the cache is any lingering background thread. If we do a couple of
-            // GCs, then we should observe that the WeakReference has been cleared by the garbage collector. If it
-            // hasn't, then something must be keeping it alive, even though it has been closed.
-            System.gc();
-            Thread.sleep( 100 );
-            System.gc();
-            Thread.sleep( 100 );
-            System.gc();
-            Thread.sleep( 100 );
-            System.gc();
-
-            for ( WeakReference<PageCache> ref : refs )
-            {
-                assertNull( ref.get() );
-            }
         }
         finally
         {
             Thread.setDefaultUncaughtExceptionHandler( defaultUncaughtExceptionHandler );
+        }
+
+        // Once the page caches has been closed and all references presumably set to null, then the only thing that
+        // could possibly strongly reference the cache is any lingering background thread. If we do a couple of
+        // GCs, then we should observe that the WeakReference has been cleared by the garbage collector. If it
+        // hasn't, then something must be keeping it alive, even though it has been closed.
+        System.gc();
+        Thread.sleep( 100 );
+        System.gc();
+        Thread.sleep( 100 );
+        System.gc();
+        Thread.sleep( 100 );
+        System.gc();
+
+        for ( WeakReference<PageCache> ref : refs )
+        {
+            assertNull( ref.get() );
         }
     }
 
