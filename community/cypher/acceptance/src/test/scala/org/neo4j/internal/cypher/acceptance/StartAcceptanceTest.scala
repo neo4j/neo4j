@@ -158,7 +158,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |return b
       """.stripMargin)
 
-    result.toList should equal(List(Map("b" -> c), Map("b" -> b)))
+    result.toSet should equal(Set(Map("b" -> c), Map("b" -> b)))
   }
 
   test("should return correct results on combined node and relationship index starts") {
