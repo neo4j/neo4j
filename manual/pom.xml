@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.0.5-SNAPSHOT</version>
+    <version>2.0.6-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-manual</artifactId>
-  <version>2.0.5-SNAPSHOT</version>
+  <version>2.0.6-SNAPSHOT</version>
 
   <name>Neo4j - Reference Manual</name>
   <description>Neo4j Reference Manual.</description>
@@ -31,7 +31,7 @@
     <maven.site.skip>true</maven.site.skip>
     <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
-  
+
   <modules>
     <module>cypherdoc</module>
     <module>javadocs</module>
@@ -750,7 +750,7 @@
       </plugin>
     </plugins>
   </build>
-  
+
   <profiles>
     <profile>
       <id>debug-asciidoc</id>

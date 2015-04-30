@@ -23,14 +23,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.0.5-SNAPSHOT</version>
+    <version>2.0.6-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.neo4j.app</groupId>
     <artifactId>neo4j-server</artifactId>
-    <version>2.0.5-SNAPSHOT</version>
+    <version>2.0.6-SNAPSHOT</version>
     <name>Neo4j Server</name>
     <description>Standalone Neo4j server application.</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -45,7 +45,7 @@
         <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
         <docs.url>http://docs.neo4j.org/chunked/${project.version}/server.html</docs.url>
         <docs-plugin.filter>true</docs-plugin.filter>
-        
+
         <neo4j.version>${project.version}</neo4j.version>
 
         <neo4j-server.mainClass>org.neo4j.server.Bootstrapper</neo4j-server.mainClass>
@@ -67,7 +67,7 @@
         <webdriver.chrome.driver>webdriver-binaries/chromedriver</webdriver.chrome.driver>
         <webdriver.chrome.driver.download.url>http://chromedriver.googlecode.com/files/chromedriver_mac_23.0.1240.0.zip</webdriver.chrome.driver.download.url>
         <webdriver.sauce.labs.url>**Needs to provided externally by the CI job for security reasons**</webdriver.sauce.labs.url>
-        
+
         <!-- Don't write new code using this, use neo-server.external instead -->
         <webdriver.override.neo-server.baseuri />
 
@@ -97,7 +97,7 @@
             </comments>
         </license>
     </licenses>
-    
+
     <dependencyManagement>
       <dependencies>
         <dependency>
@@ -178,7 +178,7 @@
             <artifactId>jetty-server</artifactId>
             <version>${jetty.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-webapp</artifactId>
@@ -601,7 +601,7 @@
               <jsTestSrcDir>${project.build.outputDirectory}/webadmin-html/js/test</jsTestSrcDir>
               <customRunnerTemplate>src/test/resources/SpecRunner.htmlTemplate</customRunnerTemplate>
               <specRunnerTemplate>REQUIRE_JS</specRunnerTemplate>
-              <!-- *Must* be relative to jasmine dir -->              
+              <!-- *Must* be relative to jasmine dir -->
               <junitXmlReportFileName>../surefire-reports/TEST-Webadmin.xml</junitXmlReportFileName>
             </configuration>
           </plugin>
@@ -676,11 +676,11 @@
                     <taskdef
                       resource="net/sf/antcontrib/antcontrib.properties"
                       classpathref="maven.plugin.classpath"/>
-                      
+
                     <!-- Inject version-specific things (codename, version etc.)
                          into webadmin -->
                     <ant antfile="src/build/webadmin-branding.ant.xml" />
-                    
+
                   </target>
                 </configuration>
                 <goals>
@@ -727,7 +727,7 @@
           </plugin>
 
         </plugins>
-        
+
         <pluginManagement>
           <plugins>
             <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->

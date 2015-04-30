@@ -4,13 +4,13 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.0.5-SNAPSHOT</version>
+    <version>2.0.6-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-installer-debian</artifactId>
-  <version>2.0.5-SNAPSHOT</version>
+  <version>2.0.6-SNAPSHOT</version>
 
   <packaging>pom</packaging>
 
@@ -31,7 +31,7 @@
     <license-text.header>GPL-3-header.txt</license-text.header>
 
     <buildnumber>0</buildnumber>
-    
+
     <neo4j.debian.maintainer>Admins &lt;admins@neotechnology.com&gt;</neo4j.debian.maintainer>
     <licensing.phase>none</licensing.phase>
     <maven.site.skip>true</maven.site.skip>
@@ -159,7 +159,7 @@
       </plugin>
     </plugins>
   </build>
-  
+
   <profiles>
     <profile>
       <!-- This project expects standalone neo4j

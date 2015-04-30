@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j.assembly</groupId>
     <artifactId>neo4j-standalone</artifactId>
-    <version>2.0.5-SNAPSHOT</version>
+    <version>2.0.6-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
@@ -14,10 +14,10 @@
 
   <name>Neo4j Community - Server Assembler</name>
 
-  <version>2.0.5-SNAPSHOT</version>
+  <version>2.0.6-SNAPSHOT</version>
 
   <description>This project assembles the Neo4j Community stand-alone distribution,
-    pulling together all the deliverable artifacts and packaging them 
+    pulling together all the deliverable artifacts and packaging them
       into a downloadable installer.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
@@ -168,7 +168,7 @@ terms of the relevant Commercial Agreement.
         </exclusion>
       </exclusions>
     </dependency>
-    
+
 
   </dependencies>
 
