@@ -108,13 +108,11 @@ public abstract class Bootstrapper
 
         log = userLogProvider.getLog( getClass() );
 
-        serverPort = (configurator == null)
-                ? "unknown port"
-                : String.valueOf( configurator.configuration().get( ServerSettings.webserver_port ) );
-
+        serverPort = "unknown port";
         try
         {
             configurator = createConfigurationBuilder( log );
+            serverPort = String.valueOf( configurator.configuration().get( ServerSettings.webserver_port ) );
             dependencies = dependencies.userLogProvider( userLogProvider );
 
             life.start();
