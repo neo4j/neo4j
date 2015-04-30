@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.CodeThunk
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable

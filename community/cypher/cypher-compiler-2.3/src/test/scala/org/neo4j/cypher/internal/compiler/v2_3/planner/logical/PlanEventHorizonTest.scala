@@ -32,18 +32,6 @@ class PlanEventHorizonTest extends CypherFunSuite {
   val pos = DummyPosition(1)
   implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel]), mock[Metrics], SemanticTable(), mock[QueryGraphSolver])
 
-  test("should not do projection if not necessary") {
-    // Given
-    val pq = PlannerQuery(horizon = RegularQueryProjection(Map("a" -> Identifier("a")(pos))))
-    val inputPlan = AllNodesScan(IdName("a"), Set.empty)(CardinalityEstimation.lift(PlannerQuery(), Cardinality(1)))
-
-    // When
-    val producedPlan = PlanEventHorizon()(pq, inputPlan)
-
-    // Then
-    inputPlan should equal(producedPlan)
-  }
-
   test("should do projection if necessary") {
     // Given
     val literal: SignedDecimalIntegerLiteral = SignedDecimalIntegerLiteral("42")(pos)

@@ -94,6 +94,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
       case InterpretedRuntimeName => Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
       case CompiledRuntimeName =>
         monitor.newPlanSeen(logicalPlan)
+
         val codeGen = new CodeGenerator
         Left(codeGen.generate(logicalPlan, planContext, clock, semanticTable))
     }

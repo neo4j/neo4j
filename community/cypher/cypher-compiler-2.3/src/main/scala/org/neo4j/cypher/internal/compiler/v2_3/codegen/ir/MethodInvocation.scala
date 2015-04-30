@@ -64,7 +64,7 @@ case class MethodInvocation(override val operatorId: Option[String],
     def name = methodName
   })
 
-  override def exceptions(): Set[ExceptionCodeGen] = Set(KernelExceptionCodeGen)
+  override def exceptions: Set[ExceptionCodeGen] = Set(KernelExceptionCodeGen)
 
   def members() = statements.map(_.members()).reduce(_ + n + _)
 

@@ -27,22 +27,10 @@ import org.neo4j.graphdb.*;
 
 public class ResultRowImpl implements Result.ResultRow
 {
-    private final GraphDatabaseService db;
     private Map<String, Object> results = new HashMap<>();
 
-    public ResultRowImpl( GraphDatabaseService db )
+    public ResultRowImpl( )
     {
-        this.db = db;
-    }
-
-    public void setNode( String k, long id )
-    {
-        results.put( k, db.getNodeById(id) );
-    }
-
-    public void setRelationship( String k, long id )
-    {
-        results.put( k, db.getRelationshipById(id) );
     }
 
     public void set( String k, Object value)

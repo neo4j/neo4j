@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.JavaString
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaSymbol
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaString
+
 
 case class ScanForLabel(id: String, labelName: String, labelVar: JavaSymbol) extends Instruction with LoopDataGenerator {
   def generateCode() = s"""ro.nodesGetForLabel( ${labelVar.name} )"""

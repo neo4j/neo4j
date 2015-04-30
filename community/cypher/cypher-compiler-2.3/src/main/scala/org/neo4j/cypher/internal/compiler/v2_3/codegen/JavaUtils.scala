@@ -19,41 +19,32 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
-import java.util.concurrent.atomic.AtomicInteger
+import org.apache.commons.lang3.StringEscapeUtils
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
+object JavaUtils {
 
-class Namer(classNameCounter: AtomicInteger) {
-
-  private var methodNameCounter = 0
-  private var varNameCounter = 0
-  private var opNameCounter = 0
-
-  def newMethodName(): String = {
-    methodNameCounter += 1
-    s"m$methodNameCounter"
+  implicit class JavaString(name: String) {
+    def toJava = s"""${StringEscapeUtils.escapeJava(name)}"""
   }
 
-  def newVarName(): String = {
-    varNameCounter += 1
-    s"v$varNameCounter"
+  object JavaTypes {
+    val LONG = "long"
+    val INT = "int"
+    val OBJECT = "Object"
+    val LIST = "java.util.List"
+    val MAP = "java.util.Map"
+    val DOUBLE = "double"
+    val STRING = "String"
+    val NUMBER = "Number"
+    val NODE = "org.neo4j.graph.Node"
+    val RELATIONSHIP = "org.neo4j.graph.Relationship"
   }
 
-  def newOpName(planName: String): String = {
-    opNameCounter += 1
-    s"OP${opNameCounter}_$planName"
-  }
+  case class JavaSymbol(name: String, javaType: String, materializedSymbol: Option[JavaSymbol] = None) {
+    self =>
 
-  def newVarName(typ: String): JavaSymbol = JavaSymbol(newVarName(), typ)
-}
+    def materialize = materializedSymbol.getOrElse(self)
 
-object Namer {
-
-  private val classNameCounter = new AtomicInteger()
-
-  def apply(): Namer = new Namer(classNameCounter)
-
-  def newClassName() = {
-    s"GeneratedExecutionPlan${classNameCounter.incrementAndGet()}"
+    def withProjectedSymbol(symbol: JavaSymbol) = copy(materializedSymbol = Some(symbol))
   }
 }

@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.JavaTypes._
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaTypes._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
@@ -134,11 +135,11 @@ object LogicalPlanConverter {
     }
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JavaSymbol], Instruction) = {
-      val nodeVars = logicalPlan.nodes.map(n => n -> context.getVariable(n).name)
-      val relVars = logicalPlan.relationships.map(r => r -> context.getVariable(r).name)
-      val otherVars = logicalPlan.other.map(o => o -> context.getVariable(o).name)
+      val nodeVars = logicalPlan.nodes.map(n => n -> context.getVariable(n))
+      val relVars = logicalPlan.relationships.map(r => r -> context.getVariable(r))
+      val otherVars = logicalPlan.other.map(o => o -> context.getVariable(o))
       val opName = context.registerOperator(logicalPlan)
-      (None, AcceptVisitor(opName, nodeVars.toMap, relVars.toMap, otherVars.toMap))
+      (None, AcceptVisitor(opName, nodeVars.toMap ++ relVars.toMap ++ otherVars.toMap))
     }
   }
 
@@ -185,7 +186,7 @@ object LogicalPlanConverter {
 
       val (methodHandle, action) = context.popParent().consume(context, this)
 
-      (methodHandle, ProjectProperties(projectionInstructions, action))
+      (methodHandle, Project(projectionInstructions, action))
     }
 
     private def createProjectionInstruction(logicalPlan: Projection, expression: Expression, context: CodeGenContext): ProjectionInstruction = {
@@ -193,9 +194,11 @@ object LogicalPlanConverter {
       def safeToString(a: Any) = if (a != null) a.toString else "null"
 
       expression match {
-        case nodeOrRel@Identifier(name)
-          if context.semanticTable.isNode(nodeOrRel) || context.semanticTable.isRelationship(nodeOrRel) =>
-          ProjectNodeOrRelationship(context.getVariable(name))
+        case node@Identifier(name) if context.semanticTable.isNode(node) =>
+          ProjectNode(context.getVariable(name))
+
+        case rel@Identifier(name) if context.semanticTable.isRelationship(rel) =>
+          ProjectRelationship(context.getVariable(name))
 
         case Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
           val token = propKey.id(context.semanticTable).map(_.id)

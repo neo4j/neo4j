@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.profiling
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 

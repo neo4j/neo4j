@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.JavaString
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.JavaTypes.{DOUBLE, LIST, LONG, MAP, NUMBER, OBJECT, STRING}
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenerator, JavaSymbol, KernelExceptionCodeGen, Namer}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.{JavaSymbol, JavaString}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaTypes.{DOUBLE, LIST, LONG, MAP, NUMBER, OBJECT, STRING}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenerator, KernelExceptionCodeGen, Namer}
 
 sealed trait ProjectionInstruction extends Instruction {
   def projectedVariable: JavaSymbol
@@ -113,7 +113,6 @@ case class ProjectParameter(key: String) extends ProjectionInstruction {
       |}
     """.stripMargin
 
-
   def projectedVariable = JavaSymbol(s"""params.get( "${key.toJava}" )""", OBJECT)
 
   def members() = ""
@@ -128,7 +127,18 @@ case class ProjectLiteral(projectedVariable: JavaSymbol) extends ProjectionInstr
   def members() = ""
 }
 
-case class ProjectNodeOrRelationship(projectedVariable: JavaSymbol) extends ProjectionInstruction {
+case class ProjectNode(nodeIdVar: JavaSymbol) extends ProjectionInstruction {
+
+  def projectedVariable = nodeIdVar.withProjectedSymbol(CodeGenerator.getNodeById(nodeIdVar.name))
+
+  def generateInit() = ""
+
+  def members() = ""
+}
+
+case class ProjectRelationship(relId: JavaSymbol) extends ProjectionInstruction {
+
+  def projectedVariable = relId.withProjectedSymbol(CodeGenerator.getRelationshipById(relId.name))
 
   def generateInit() = ""
 
@@ -197,11 +207,15 @@ case class ProjectCollection(instructions: Seq[ProjectionInstruction]) extends P
 
   def generateInit() = ""
 
-  def projectedVariable = JavaSymbol(instructions.map(_.projectedVariable.name).mkString("Arrays.asList(", ",", ")"), LIST)
+  def projectedVariable = asJavaList(_.projectedVariable.name)
+    .withProjectedSymbol(asJavaList(_.projectedVariable.materialize.name))
 
   def members() = ""
 
   override def _importedClasses() = Set( "java.util.Arrays")
+
+  private def asJavaList(f: ProjectionInstruction => String) =
+    JavaSymbol(instructions.map(f).mkString("Arrays.asList(", ",", ")"), LIST)
 }
 
 case class ProjectMap(instructions: Map[String, ProjectionInstruction]) extends ProjectionInstruction {
@@ -210,16 +224,18 @@ case class ProjectMap(instructions: Map[String, ProjectionInstruction]) extends 
 
   def generateInit() = ""
 
-  def projectedVariable = JavaSymbol(
-    instructions.map {
-      case (key, value) => s""""$key", ${value.projectedVariable.name}"""
-    }
-    .mkString("org.neo4j.helpers.collection.MapUtil.map(", ",", ")"), MAP)
+  def projectedVariable = asJavaMap(_.projectedVariable.name)
+    .withProjectedSymbol(asJavaMap(_.projectedVariable.materialize.name))
 
   def members() = ""
+
+  private def asJavaMap(f: ProjectionInstruction => String) = JavaSymbol(
+    instructions.map {
+      case (key, value) => s""""$key", ${f(value)}"""
+    }.mkString("org.neo4j.helpers.collection.MapUtil.map(", ",", ")"), MAP)
 }
 
-case class ProjectProperties(projections:Seq[ProjectionInstruction], parent:Instruction) extends Instruction {
+case class Project(projections:Seq[ProjectionInstruction], parent:Instruction) extends Instruction {
   override def generateCode()= generate(_.generateCode())
 
   override protected def children = projections :+ parent

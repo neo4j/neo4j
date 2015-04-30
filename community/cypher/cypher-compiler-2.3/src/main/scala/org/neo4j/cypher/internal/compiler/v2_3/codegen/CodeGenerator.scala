@@ -23,6 +23,7 @@ import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.apache.commons.lang3.StringEscapeUtils
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.{JavaSymbol, JavaTypes}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, PlanFingerprint, _}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
@@ -47,22 +48,12 @@ object CodeGenerator {
     (Javac.compile(s"$packageName.$className", source), source)
   }
 
-  implicit class JavaString(name: String) {
-    def toJava = s"""${StringEscapeUtils.escapeJava(name)}"""
-  }
-
-  object JavaTypes {
-    val LONG = "long"
-    val INT = "int"
-    val OBJECT = "Object"
-    val LIST = "java.util.List"
-    val MAP = "java.util.Map"
-    val DOUBLE = "double"
-    val STRING = "String"
-    val NUMBER = "Number"
-  }
-
   private val packageName = "org.neo4j.cypher.internal.compiler.v2_3.generated"
+
+  //TODO these methods should be move out of 2.3 together with everyting that touches Statement
+  def getNodeById(v: String) = JavaSymbol(s"""db.getNodeById( $v )""", JavaTypes.NODE)
+  def getRelationshipById(v: String) = JavaSymbol(s"""db.getRelationshipById( $v )""", JavaTypes.RELATIONSHIP)
+
   private val nameCounter = new AtomicInteger(0)
 
   def indentNicely(in: String): String = {
@@ -160,7 +151,8 @@ object CodeGenerator {
        |@Override
        |public <E extends Exception> void accept(final ResultVisitor<E> visitor) throws E
        |{
-       |final ResultRowImpl row = new ResultRowImpl(db);
+       |final ResultRowImpl row = new ResultRowImpl();
+       |$init
        |try
        |{
        |$init
@@ -186,7 +178,7 @@ object CodeGenerator {
   }
 }
 
-case class JavaSymbol(name: String, javaType: String)
+
 
 class CodeGenerator {
 
