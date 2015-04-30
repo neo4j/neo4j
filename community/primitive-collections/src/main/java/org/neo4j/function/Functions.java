@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * Constructors for basic {@link Function} and {@link BiFunction} types
  */
-public class Functions
+public final class Functions
 {
     public static <From, To> Function<From, To> map( final Map<From, To> map )
     {
@@ -84,12 +84,7 @@ public class Functions
         };
     }
 
-    public static <T> Function<T, T> identity()
-    {
-        return covariantIdentity();
-    }
-
-    private static Function IDENTITY = new Function()
+    private static UnaryOperator IDENTITY = new UnaryOperator()
     {
         @Override
         public Object apply( Object value )
@@ -99,7 +94,7 @@ public class Functions
     };
 
     @SuppressWarnings("unchecked")
-    public static <To, From extends To> Function<From, To> covariantIdentity()
+    public static <T> UnaryOperator<T> identity()
     {
         return IDENTITY;
     }
@@ -173,6 +168,31 @@ public class Functions
             public String toString()
             {
                 return "cast(to=" + to.getName() + ")";
+            }
+        };
+    }
+
+    public static <T> Function<T, Void> fromConsumer( final Consumer<T> consumer )
+    {
+        return new Function<T, Void>()
+        {
+            @Override
+            public Void apply( T t )
+            {
+                consumer.accept( t );
+                return null;
+            }
+        };
+    }
+
+    public static <T> Function<Void, T> fromSupplier( final Supplier<T> supplier )
+    {
+        return new Function<Void, T>()
+        {
+            @Override
+            public T apply( Void t )
+            {
+                return supplier.get();
             }
         };
     }

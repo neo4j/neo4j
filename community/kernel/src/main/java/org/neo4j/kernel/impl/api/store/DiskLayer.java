@@ -84,9 +84,10 @@ import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.util.register.NeoRegister;
 import org.neo4j.register.Register;
 
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.alwaysTrue;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.inSet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
+import static org.neo4j.function.IntPredicates.alwaysTrue;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
@@ -238,7 +239,7 @@ public class DiskLayer implements StoreReadLayer
     {
         // TODO Instead of having a PrimitiveIntSet here we can (in the dense case) have a sorted relTypes array
         // and use a predicate that knows that the types coming from accept will be sorted as well.
-        return StoreRelationshipIterable.iterator( neoStore, nodeId, asSet( relTypes ), direction );
+        return StoreRelationshipIterable.iterator( neoStore, nodeId, inSet( asSet( relTypes ) ), direction );
     }
 
     @Override

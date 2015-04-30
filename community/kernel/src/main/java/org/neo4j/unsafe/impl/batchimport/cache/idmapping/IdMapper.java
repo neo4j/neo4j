@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
-import org.neo4j.function.primitive.PrimitiveIntPredicate;
+import org.neo4j.function.IntPredicate;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
@@ -40,7 +40,7 @@ public interface IdMapper extends MemoryStatsVisitor.Home
      * @param actualId the actual node id that the inputId will represent.
      * @param group {@link Group} this input id will be added to. Used for handling input ids collisions
      * where multiple equal input ids might be added, as long as all input ids within a single group is unique.
-     * Group ids are also passed into {@link #get(Object, PrimitiveIntPredicate)}.
+     * Group ids are also passed into {@link #get(Object, IntPredicate)}.
      * It is required that all input ids belonging to a specific group are put in sequence before putting any
      * input ids for another group.
      */

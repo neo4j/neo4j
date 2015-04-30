@@ -36,6 +36,7 @@ import java.util.zip.ZipFile;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.IOFunction;
+import org.neo4j.function.IOFunctions;
 import org.neo4j.function.ThrowingFunction;
 
 /**
@@ -226,15 +227,6 @@ public class Readables
                name.contains( "/." );
     }
 
-    private static final IOFunction<Reader, Reader> IDENTITY = new IOFunction<Reader, Reader>()
-    {
-        @Override
-        public Reader apply( Reader in )
-        {
-            return in;
-        }
-    };
-
     public static CharReadable files( Charset charset, File... files ) throws IOException
     {
         IOFunction<File,Reader> opener = new FromFile( charset );
@@ -248,7 +240,7 @@ public class Readables
 
     public static CharReadable sources( Reader... sources ) throws IOException
     {
-        return new MultiReadable( iterator( sources, IDENTITY ) );
+        return new MultiReadable( iterator( sources, IOFunctions.<Reader>identity() ) );
     }
 
     public static CharReadable sources( RawIterator<Reader,IOException> sources ) throws IOException

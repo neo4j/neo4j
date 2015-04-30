@@ -19,6 +19,10 @@
  */
 package org.neo4j.function.primitive;
 
+/**
+ * @deprecated use {@link org.neo4j.function.IntPredicate} instead
+ */
+@Deprecated
 public interface PrimitiveIntPredicate
 {
     boolean accept( int value );

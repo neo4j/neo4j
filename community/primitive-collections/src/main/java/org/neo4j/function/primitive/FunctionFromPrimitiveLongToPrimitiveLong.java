@@ -19,6 +19,10 @@
  */
 package org.neo4j.function.primitive;
 
+/**
+ * @deprecated use {@link org.neo4j.function.ThrowingLongUnaryOperator} instead
+ */
+@Deprecated
 public interface FunctionFromPrimitiveLongToPrimitiveLong<EXCEPTION extends Exception>
 {
     long apply( long value ) throws EXCEPTION;

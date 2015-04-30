@@ -20,7 +20,7 @@
 package org.neo4j.function;
 
 /**
- * Represents a function that accepts two arguments and produces a result. This is the two-arity specialization of Function.
+ * Represents a function that accepts two arguments and produces a result. This is the two-arity specialization of {@link ThrowingFunction}.
  *
  * @param <T> the type of the first argument to the function
  * @param <U> the type of the second argument to the function

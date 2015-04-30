@@ -17,28 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.store;
+package org.neo4j.function;
 
-import org.neo4j.function.primitive.PrimitiveIntPredicate;
-
-public class SortedTypesPredicate implements PrimitiveIntPredicate
+/**
+ * Represents an operation on a single operand that produces a result of the same type as its operand. This is a specialization of {@link BiFunction} for the case where the operand and result are of the same type.
+ *
+ * @param <T> the type of the operand and result of the operator
+ */
+public interface BinaryOperator<T> extends BiFunction<T, T, T>, ThrowingBinaryOperator<T, RuntimeException>
 {
-    private final int[] relTypes;
-    private int cursor;
-
-    public SortedTypesPredicate( int[] relTypes )
-    {
-        this.relTypes = relTypes;
-    }
-
-    @Override
-    public boolean accept( int value )
-    {
-        if ( cursor < relTypes.length && relTypes[cursor] == value )
-        {
-            cursor++;
-            return true;
-        }
-        return false;
-    }
 }

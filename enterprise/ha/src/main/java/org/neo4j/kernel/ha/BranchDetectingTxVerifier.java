@@ -22,7 +22,7 @@ package org.neo4j.kernel.ha;
 import java.io.IOException;
 
 import org.neo4j.com.TxChecksumVerifier;
-import org.neo4j.function.primitive.FunctionFromPrimitiveLongToPrimitiveLong;
+import org.neo4j.function.ThrowingLongUnaryOperator;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -34,10 +34,10 @@ import org.neo4j.logging.LogProvider;
 public class BranchDetectingTxVerifier implements TxChecksumVerifier
 {
     private final Log log;
-    private final FunctionFromPrimitiveLongToPrimitiveLong<IOException> txChecksumLookup;
+    private final ThrowingLongUnaryOperator<IOException> txChecksumLookup;
 
     public BranchDetectingTxVerifier( LogProvider logProvider,
-            FunctionFromPrimitiveLongToPrimitiveLong<IOException> txChecksumLookup )
+                                      ThrowingLongUnaryOperator<IOException> txChecksumLookup )
     {
         this.log = logProvider.getLog( getClass() );
         this.txChecksumLookup = txChecksumLookup;
@@ -53,7 +53,7 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
         long readChecksum;
         try
         {
-            readChecksum = txChecksumLookup.apply( txId );
+            readChecksum = txChecksumLookup.applyAsLong( txId );
         }
         catch ( NoSuchTransactionException e )
         {

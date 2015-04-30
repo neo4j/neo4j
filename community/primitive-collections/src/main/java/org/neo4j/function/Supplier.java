@@ -20,14 +20,16 @@
 package org.neo4j.function;
 
 /**
- * A supplier of results.
+ * Represents a supplier of results.
+ *
  * @param <T> the type of results supplied by this supplier
  */
-public interface Supplier<T>
+public interface Supplier<T> extends ThrowingSupplier<T, RuntimeException>
 {
     /**
      * Gets a result.
-     * @return An result
+     *
+     * @return A result
      */
     T get();
 }

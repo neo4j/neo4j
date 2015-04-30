@@ -21,10 +21,17 @@ package org.neo4j.function;
 
 /**
  * Represents a function that accepts one argument and produces a result.
+ *
  * @param <T> the type of the input to the function
  * @param <R> the type of the result of the function
  */
-public interface Function<T, R> extends RawFunction<T, R, RuntimeException>
+public interface Function<T, R> extends ThrowingFunction<T, R, RuntimeException>, RawFunction<T, R, RuntimeException>
 {
+    /**
+     * Apply a value to this function
+     *
+     * @param t the function argument
+     * @return the function result
+     */
     R apply( T t );
 }

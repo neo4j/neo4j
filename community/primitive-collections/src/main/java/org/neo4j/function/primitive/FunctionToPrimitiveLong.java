@@ -19,6 +19,10 @@
  */
 package org.neo4j.function.primitive;
 
+/**
+ * @deprecated use {@link org.neo4j.function.ToLongFunction} instead
+ */
+@Deprecated
 public interface FunctionToPrimitiveLong<T>
 {
     long apply( T value );

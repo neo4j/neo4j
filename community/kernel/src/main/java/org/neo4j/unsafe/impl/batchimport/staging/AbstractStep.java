@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.function.primitive.PrimitiveLongPredicate;
+import org.neo4j.function.LongPredicate;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.util.MovingAverage;
 import org.neo4j.unsafe.impl.batchimport.stats.ProcessingStats;
@@ -49,10 +49,10 @@ public abstract class AbstractStep<T> implements Step<T>
     protected volatile Throwable panic;
     private volatile boolean completed;
     protected int orderingGuarantees;
-    protected final PrimitiveLongPredicate rightDoneTicket = new PrimitiveLongPredicate()
+    protected final LongPredicate rightDoneTicket = new LongPredicate()
     {
         @Override
-        public boolean accept( long ticket )
+        public boolean test( long ticket )
         {
             return doneBatches.get() == ticket;
         }
@@ -164,19 +164,19 @@ public abstract class AbstractStep<T> implements Step<T>
         }
     }
 
-    protected long await( PrimitiveLongPredicate predicate, long value )
+    protected long await( LongPredicate predicate, long value )
     {
-        if ( predicate.accept( value ) )
+        if ( predicate.test( value ) )
         {
             return 0;
         }
 
         long startTime = currentTimeMillis();
-        for ( int i = 0; i < 1_000_000 && !predicate.accept( value ); i++ )
+        for ( int i = 0; i < 1_000_000 && !predicate.test( value ); i++ )
         {   // Busy loop a while
         }
 
-        while ( !predicate.accept( value ) )
+        while ( !predicate.test( value ) )
         {
             // Sleeping wait
             try

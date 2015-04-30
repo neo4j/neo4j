@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.neo4j.function.primitive.PrimitiveIntPredicate;
+import org.neo4j.function.IntPredicate;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -67,7 +67,7 @@ import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.alwaysTrue;
+import static org.neo4j.function.IntPredicates.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.join;
@@ -723,13 +723,13 @@ public class ImportToolTest
     }
 
     private File nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
-            PrimitiveIntPredicate linePredicate ) throws Exception
+                           IntPredicate linePredicate ) throws Exception
     {
         return nodeData( includeHeader, config, nodeIds, linePredicate, Charset.defaultCharset() );
     }
 
     private File nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
-            PrimitiveIntPredicate linePredicate, Charset encoding ) throws Exception
+                           IntPredicate linePredicate, Charset encoding ) throws Exception
     {
         File file = file( fileName( "nodes.csv" ) );
         try ( PrintStream writer = writer( file, encoding ) )
@@ -780,13 +780,13 @@ public class ImportToolTest
     }
 
     private void writeNodeData( PrintStream writer, Configuration config, List<String> nodeIds,
-                                PrimitiveIntPredicate linePredicate )
+                                IntPredicate linePredicate )
     {
         char delimiter = config.delimiter();
         char arrayDelimiter = config.arrayDelimiter();
         for ( int i = 0; i < nodeIds.size(); i++ )
         {
-            if ( linePredicate.accept( i ) )
+            if ( linePredicate.test( i ) )
             {
                 writer.println( nodeIds.get( i ) + delimiter + randomName() +
                                 delimiter + randomLabels( arrayDelimiter ) );
@@ -821,27 +821,27 @@ public class ImportToolTest
     }
 
     private File relationshipData( boolean includeHeader, Configuration config, List<String> nodeIds,
-            PrimitiveIntPredicate linePredicate, boolean specifyType ) throws Exception
+                                   IntPredicate linePredicate, boolean specifyType ) throws Exception
     {
         return relationshipData( includeHeader, config, nodeIds, linePredicate, specifyType, Charset.defaultCharset() );
     }
 
     private File relationshipData( boolean includeHeader, Configuration config, List<String> nodeIds,
-            PrimitiveIntPredicate linePredicate, boolean specifyType, Charset encoding ) throws Exception
+                                   IntPredicate linePredicate, boolean specifyType, Charset encoding ) throws Exception
     {
         return relationshipData( includeHeader, config, randomRelationships( nodeIds ), linePredicate,
                 specifyType, encoding );
     }
 
     private File relationshipData( boolean includeHeader, Configuration config,
-            Iterator<RelationshipDataLine> data, PrimitiveIntPredicate linePredicate,
+            Iterator<RelationshipDataLine> data, IntPredicate linePredicate,
             boolean specifyType ) throws Exception
     {
         return relationshipData( includeHeader, config, data, linePredicate, specifyType, Charset.defaultCharset() );
     }
 
     private File relationshipData( boolean includeHeader, Configuration config,
-            Iterator<RelationshipDataLine> data, PrimitiveIntPredicate linePredicate,
+            Iterator<RelationshipDataLine> data, IntPredicate linePredicate,
             boolean specifyType, Charset encoding ) throws Exception
     {
         File file = file( fileName( "relationships.csv" ) );
@@ -939,7 +939,7 @@ public class ImportToolTest
     }
 
     private void writeRelationshipData( PrintStream writer, Configuration config,
-            Iterator<RelationshipDataLine> data, PrimitiveIntPredicate linePredicate, boolean specifyType )
+            Iterator<RelationshipDataLine> data, IntPredicate linePredicate, boolean specifyType )
     {
         char delimiter = config.delimiter();
         for ( int i = 0; i < RELATIONSHIP_COUNT; i++ )
@@ -949,7 +949,7 @@ public class ImportToolTest
                 break;
             }
             RelationshipDataLine entry = data.next();
-            if ( linePredicate.accept( i ) )
+            if ( linePredicate.test( i ) )
             {
                 writer.println( entry.startNodeId +
                         delimiter + entry.endNodeId +
@@ -992,12 +992,12 @@ public class ImportToolTest
         return "TYPE_" + random.nextInt( 4 );
     }
 
-    private PrimitiveIntPredicate lines( final int startingAt, final int endingAt /*excluded*/ )
+    private IntPredicate lines( final int startingAt, final int endingAt /*excluded*/ )
     {
-        return new PrimitiveIntPredicate()
+        return new IntPredicate()
         {
             @Override
-            public boolean accept( int line )
+            public boolean test( int line )
             {
                 return line >= startingAt && line < endingAt;
             }

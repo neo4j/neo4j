@@ -31,8 +31,8 @@ public interface ThrowingFunction<T, R, E extends Exception>
     /**
      * Apply a value to this function
      *
-     * @param t the input item
-     * @return the mapped item
+     * @param t the function argument
+     * @return the function result
      * @throws E an exception if the function fails
      */
     R apply( T t ) throws E;

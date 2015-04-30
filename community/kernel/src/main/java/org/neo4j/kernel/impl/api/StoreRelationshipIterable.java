@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterable;
-import org.neo4j.function.primitive.PrimitiveIntPredicate;
+import org.neo4j.function.IntPredicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.api.EntityType;
@@ -57,10 +57,10 @@ public class StoreRelationshipIterable implements PrimitiveLongIterable
 {
     private final NeoStore neoStore;
     private final NodeRecord node;
-    private final PrimitiveIntPredicate type;
+    private final IntPredicate type;
     private final Direction direction;
 
-    public StoreRelationshipIterable( NeoStore neoStore, long nodeId, PrimitiveIntPredicate type, Direction direction )
+    public StoreRelationshipIterable( NeoStore neoStore, long nodeId, IntPredicate type, Direction direction )
             throws EntityNotFoundException
     {
         this.neoStore = neoStore;
@@ -70,7 +70,7 @@ public class StoreRelationshipIterable implements PrimitiveLongIterable
     }
 
     public static RelationshipIterator iterator( NeoStore neoStore, long nodeId,
-            PrimitiveIntPredicate type, Direction direction ) throws EntityNotFoundException
+                                                 IntPredicate type, Direction direction ) throws EntityNotFoundException
     {
         NodeRecord node = nodeRecord( neoStore, nodeId );
         return iterator( neoStore, node, type, direction );
@@ -87,7 +87,7 @@ public class StoreRelationshipIterable implements PrimitiveLongIterable
     }
 
     public static RelationshipIterator iterator( NeoStore neoStore, NodeRecord node,
-            PrimitiveIntPredicate type, Direction direction )
+                                                 IntPredicate type, Direction direction )
     {
         RelationshipGroupStore groupStore = neoStore.getRelationshipGroupStore();
         RelationshipStore relationshipStore = neoStore.getRelationshipStore();
@@ -126,12 +126,12 @@ public class StoreRelationshipIterable implements PrimitiveLongIterable
             implements RelationshipIterator
     {
         protected final RelationshipStore relationshipStore;
-        protected final PrimitiveIntPredicate type;
+        protected final IntPredicate type;
         protected final Direction direction;
         protected final RelationshipRecord relationship = new RelationshipRecord( -1 );
 
         private StoreRelationshipIterator( RelationshipStore relationshipStore,
-            PrimitiveIntPredicate type, Direction direction )
+                                           IntPredicate type, Direction direction )
         {
             this.relationshipStore = relationshipStore;
             this.type = type;
@@ -165,7 +165,7 @@ public class StoreRelationshipIterable implements PrimitiveLongIterable
         private long nextRelId;
 
         SparseIterator( NodeRecord nodeRecord, RelationshipStore relationshipStore,
-                PrimitiveIntPredicate type, Direction direction )
+                        IntPredicate type, Direction direction )
         {
             super( relationshipStore, type, direction );
             this.nodeId = nodeRecord.getId();
@@ -181,7 +181,7 @@ public class StoreRelationshipIterable implements PrimitiveLongIterable
                 try
                 {
                     // Filter by type and direction
-                    if ( type.accept( relationship.getType() ) && directionMatches( nodeId, relationship ) )
+                    if ( type.test( relationship.getType() ) && directionMatches( nodeId, relationship ) )
                     {
                         return next( nextRelId );
                     }
@@ -205,7 +205,7 @@ public class StoreRelationshipIterable implements PrimitiveLongIterable
         private long nextRelId;
 
         DenseIterator( NodeRecord nodeRecord, RelationshipGroupStore groupStore,
-                RelationshipStore relationshipStore, PrimitiveIntPredicate type, Direction direction )
+                       RelationshipStore relationshipStore, IntPredicate type, Direction direction )
         {
             super( relationshipStore, type, direction );
             this.groupStore = groupStore;
@@ -219,7 +219,7 @@ public class StoreRelationshipIterable implements PrimitiveLongIterable
         {
             while ( groupRecord != null )
             {
-                if ( type.accept( groupRecord.getType() ) )
+                if ( type.test( groupRecord.getType() ) )
                 {
                     // Go to the next chain (direction) within this group
                     while ( groupChainIndex < GROUP_CHAINS.length )

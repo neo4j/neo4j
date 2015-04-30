@@ -19,6 +19,10 @@
  */
 package org.neo4j.function.primitive;
 
+/**
+ * @deprecated use {@link org.neo4j.function.LongSupplier} instead
+ */
+@Deprecated
 public interface LongSupplier
 {
     long getAsLong();

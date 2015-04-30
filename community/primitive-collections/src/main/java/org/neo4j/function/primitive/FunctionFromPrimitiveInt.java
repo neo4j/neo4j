@@ -19,6 +19,10 @@
  */
 package org.neo4j.function.primitive;
 
+/**
+ * @deprecated use {@link org.neo4j.function.IntFunction} instead
+ */
+@Deprecated
 public interface FunctionFromPrimitiveInt<T>
 {
     T apply( int value );

@@ -25,7 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.function.primitive.FunctionFromPrimitiveInt;
+import org.neo4j.function.IntFunction;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -723,7 +723,7 @@ public class NodeProxy implements Node
 
     private Iterable<RelationshipType> map2relTypes( final Statement statement, PrimitiveIntIterator input )
     {
-        return asList( map( new FunctionFromPrimitiveInt<RelationshipType>()
+        return asList( map( new IntFunction<RelationshipType>()
         {
             @Override
             public RelationshipType apply( int id )

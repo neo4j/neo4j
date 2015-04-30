@@ -19,6 +19,10 @@
  */
 package org.neo4j.function.primitive;
 
+/**
+ * @deprecated use {@link org.neo4j.function.LongPredicate} instead
+ */
+@Deprecated
 public interface PrimitiveLongPredicate
 {
     boolean accept( long value );

@@ -21,13 +21,16 @@ package org.neo4j.function;
 
 /**
  * Represents a predicate (boolean-valued function) of one argument.
- * @param <T> type of items
+ *
+ * @param <T> the type of the input to the predicate
  */
-public interface Predicate<T>
+public interface Predicate<T> extends ThrowingPredicate<T, RuntimeException>
 {
     /**
      * Evaluates this predicate on the given argument.
+     *
+     * @param t the input argument
      * @return true if the input argument matches the predicate, otherwise false
      */
-    boolean test( T item );
+    boolean test( T t );
 }
