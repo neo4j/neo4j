@@ -80,6 +80,10 @@ the relevant Commercial Agreement.
               <outputDirectory>${project.build.directory}/javadoc-sources</outputDirectory>
               <resources>
                 <resource>
+                  <directory>${project.build.directory}/../../../community/function/src/main/java/</directory>
+                  <filtering>false</filtering>
+                </resource>
+                <resource>
                   <directory>${project.build.directory}/../../../enterprise/backup/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>

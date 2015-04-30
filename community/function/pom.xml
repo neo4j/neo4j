@@ -8,23 +8,23 @@
   </parent>
 
   <properties>
-    <short-name>primitive-collections</short-name>
-    <bundle.namespace>org.neo4j.collection.primitive</bundle.namespace>
+    <short-name>function</short-name>
+    <bundle.namespace>org.neo4j.function</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-primitive-collections</artifactId>
+  <artifactId>neo4j-function</artifactId>
   <version>2.3-SNAPSHOT</version>
 
   <packaging>jar</packaging>
-  <name>Neo4j - Primitive Collections</name>
-  <description>Efficient collections for sets and maps that has primitive types as keys.</description>
+  <name>Neo4j - Logging</name>
+  <description>Logging interfaces and basic logger implementations.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
-    <url>https://github.com/neo4j/neo4j/tree/master/community/primitive-collections</url>
+    <url>https://github.com/neo4j/neo4j/tree/master/community/function</url>
   </scm>
 
   <licenses>
@@ -48,17 +48,6 @@ the relevant Commercial Agreement.
   </licenses>
 
   <dependencies>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-unsafe</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-function</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
