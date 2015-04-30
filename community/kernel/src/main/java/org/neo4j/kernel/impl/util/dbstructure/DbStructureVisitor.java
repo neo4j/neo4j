@@ -28,8 +28,8 @@ public interface DbStructureVisitor
     void visitPropertyKey( int propertyKeyId, String propertyKeyName );
     void visitRelationshipType( int relTypeId, String relTypeName );
 
-    void visitIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage );
-    void visitUniqueIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage );
+    void visitIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size );
+    void visitUniqueIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size );
     void visitUniqueConstraint( UniquenessConstraint constraint, String userDescription );
 
     void visitAllNodesCount( long nodeCount );

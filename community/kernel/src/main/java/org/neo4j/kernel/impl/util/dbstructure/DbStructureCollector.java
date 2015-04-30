@@ -108,16 +108,17 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public double indexSelectivity( int labelId, int propertyKeyId )
             {
-                Double result1 = regularIndices.getIndex( labelId, propertyKeyId );
-                Double result2 = result1 == null ? uniqueIndices.getIndex( labelId, propertyKeyId ) : result1;
-                return result2 == null ? Double.NaN : result2;
+                IndexStatistics result1 = regularIndices.getIndex( labelId, propertyKeyId );
+                IndexStatistics result2 = result1 == null ? uniqueIndices.getIndex( labelId, propertyKeyId ) : result1;
+                return result2 == null ? Double.NaN : result2.uniqueValuesPercentage;
             }
 
             @Override
             public double indexPropertyExistsSelectivity( int labelId, int propertyKeyId )
             {
-                // TODO: Find out how to differentiate the propertyexisis map from the propertyvalue map
-                return Double.NaN;
+                IndexStatistics result1 = regularIndices.getIndex( labelId, propertyKeyId );
+                IndexStatistics result2 = result1 == null ? uniqueIndices.getIndex( labelId, propertyKeyId ) : result1;
+                return result2 == null ? Double.NaN : result2.size;
             }
         };
     }
@@ -141,15 +142,15 @@ public class DbStructureCollector implements DbStructureVisitor
     }
 
     @Override
-    public void visitIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage )
+    public void visitIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size )
     {
-        regularIndices.putIndex( descriptor, userDescription, uniqueValuesPercentage );
+        regularIndices.putIndex( descriptor, userDescription, uniqueValuesPercentage, size );
     }
 
     @Override
-    public void visitUniqueIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage )
+    public void visitUniqueIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size )
     {
-        uniqueIndices.putIndex( descriptor, userDescription, uniqueValuesPercentage );
+        uniqueIndices.putIndex( descriptor, userDescription, uniqueValuesPercentage, size );
     }
 
     @Override
@@ -248,17 +249,29 @@ public class DbStructureCollector implements DbStructureVisitor
         }
     }
 
+    private class IndexStatistics
+    {
+        private final double uniqueValuesPercentage;
+        private final long size;
+
+        private IndexStatistics(double uniqueValuesPercentage, long size)
+        {
+            this.uniqueValuesPercentage = uniqueValuesPercentage;
+            this.size = size;
+        }
+    }
+
     private class IndexDescriptorMap implements Iterable<Pair<String, String>>
     {
         private final String indexType;
-        private final Map<IndexDescriptor, Double> indexMap = new HashMap<>();
+        private final Map<IndexDescriptor, IndexStatistics> indexMap = new HashMap<>();
 
         public IndexDescriptorMap( String indexType )
         {
             this.indexType = indexType;
         }
 
-        public void putIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage )
+        public void putIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size )
         {
             if ( indexMap.containsKey( descriptor ) )
             {
@@ -268,10 +281,10 @@ public class DbStructureCollector implements DbStructureVisitor
                 );
             }
 
-            indexMap.put( descriptor, uniqueValuesPercentage );
+            indexMap.put( descriptor, new IndexStatistics(uniqueValuesPercentage, size) );
         }
 
-        public Double getIndex( int labelId, int propertyKeyId )
+        public IndexStatistics getIndex( int labelId, int propertyKeyId )
         {
             return indexMap.get( new IndexDescriptor( labelId, propertyKeyId ) );
         }

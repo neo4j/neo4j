@@ -146,7 +146,8 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
             IndexDescriptor descriptor = indexDescriptors.next();
             String userDescription = descriptor.userDescription( nameLookup );
             double uniqueValuesPercentage = read.indexUniqueValuesSelectivity( descriptor );
-            visitor.visitIndex( descriptor, userDescription , uniqueValuesPercentage);
+            long size = read.indexSize( descriptor );
+            visitor.visitIndex( descriptor, userDescription , uniqueValuesPercentage, size );
         }
     }
 
@@ -159,7 +160,8 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
             IndexDescriptor descriptor = indexDescriptors.next();
             String userDescription = descriptor.userDescription( nameLookup );
             double uniqueValuesPercentage = read.indexUniqueValuesSelectivity( descriptor );
-            visitor.visitUniqueIndex( descriptor, userDescription, uniqueValuesPercentage );
+            long size = read.indexSize( descriptor );
+            visitor.visitUniqueIndex( descriptor, userDescription, uniqueValuesPercentage, size );
         }
     }
 

@@ -117,7 +117,7 @@ public class GraphDbStructureGuideTest
         accept( visitor );
 
         // THEN
-        verify( visitor ).visitIndex( descriptor, ":Person(name)", 1.0d );
+        verify( visitor ).visitIndex( descriptor, ":Person(name)", 1.0d, 0l );
     }
 
     @Test
@@ -136,7 +136,7 @@ public class GraphDbStructureGuideTest
         accept( visitor );
 
         // THEN
-        verify( visitor ).visitUniqueIndex( descriptor, ":Person(name)", 1.0d );
+        verify( visitor ).visitUniqueIndex( descriptor, ":Person(name)", 1.0d, 0l );
         verify( visitor ).visitUniqueConstraint( constraint, "CONSTRAINT ON ( person:Person ) ASSERT person.name IS " +
                 "UNIQUE" );
     }
