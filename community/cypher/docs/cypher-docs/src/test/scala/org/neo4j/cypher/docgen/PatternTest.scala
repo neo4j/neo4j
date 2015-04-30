@@ -156,6 +156,13 @@ As with nodes, the name of the relationship can always be omitted, in this case 
 
 === Variable length ===
 
+[CAUTION]
+Variable length pattern matching in versions prior to 2.2.x behaves in a way that does not respect the rule of relationship uniqueness in single `MATCH` clause.
+This means that a query such as: `MATCH (a)-[r]->(b), (a)-[rs*]->(c) RETURN *` permits `r` to be part of the `rs` set.
+Such behaviour might result in a query returning more results than expected.
+A query in 2.2.x with equivalent behaviour to earlier versions might look like this: `MATCH (a)-[r]->(b) MATCH (a)-[rs*]->(c) RETURN *`.
+Here different `MATCH` clauses are used, so `r` is permitted to be part of the `rs` set.
+
 Rather than describing a long path using a sequence of many node and relationship descriptions in a pattern, many relationships (and the intermediate nodes) can be described by specifying a length in the relationship description of a pattern.
 For example:
 
