@@ -465,6 +465,11 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "integer, 10508455564958384115, is too large")
   }
 
+  test("Should fail when calling size on a path") {
+    executeAndEnsureError("match p=(a)-[*]->(b) return size(p)",
+      "Type mismatch: expected String or Collection<T> but was Path (line 1, column 34 (offset: 33))")
+  }
+
   def executeAndEnsureError(query: String, expected: String) {
     import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper._
 

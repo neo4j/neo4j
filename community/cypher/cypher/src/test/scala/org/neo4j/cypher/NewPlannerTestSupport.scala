@@ -153,7 +153,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     val costResult = executeWithCostPlannerOnly(queryText, params: _*)
 
     assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")
-
+    ruleResult.close()
     costResult
   }
 
@@ -177,7 +177,8 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
     assertResultsAreSame(interpretedResult, compiledResult, queryText, "Diverging results between interpreted and compiled runtime")
     assertResultsAreSame(ruleResult, interpretedResult, queryText, "Diverging results between rule planner and interpreted runtime")
-
+    ruleResult.close()
+    interpretedResult.close()
     compiledResult
   }
 

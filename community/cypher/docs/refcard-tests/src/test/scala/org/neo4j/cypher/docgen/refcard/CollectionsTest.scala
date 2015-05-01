@@ -76,7 +76,7 @@ Literal collections are declared in square brackets.
 ###assertion=returns-one parameters=coll
 RETURN
 
-length({coll}) AS len, {coll}[0] AS value
+size({coll}) AS len, {coll}[0] AS value
 
 ###
 
@@ -106,7 +106,7 @@ Relationship identifiers of a variable length path contain a collection of relat
 MATCH (matchedNode)
 
 RETURN matchedNode.coll[0] AS value,
-       length(matchedNode.coll) AS len
+       size(matchedNode.coll) AS len
 
 ###
 

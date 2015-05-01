@@ -832,12 +832,20 @@ class CypherParserTest extends CypherFunSuite {
         returns(ReturnItem(Equals(LengthFunction(Literal("foo")), Literal(10.0)), "n")))
   }
 
+  test("string size") {
+    expectQuery(
+      "return SIZE('foo') = 10 as n",
+      Query.
+        matches().
+        returns(ReturnItem(Equals(SizeFunction(Literal("foo")), Literal(10.0)), "n")))
+  }
+
   test("collectionSize") {
     expectQuery(
       "return SIZE([1, 2]) = 10 as n",
       Query.
         matches().
-        returns(ReturnItem(Equals(LengthFunction(Collection(Literal(1), Literal(2))), Literal(10.0)), "n")))
+        returns(ReturnItem(Equals(SizeFunction(Collection(Literal(1), Literal(2))), Literal(10.0)), "n")))
   }
 
   test("relationshipTypeOut") {

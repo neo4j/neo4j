@@ -20,10 +20,10 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
-import org.neo4j.cypher.internal.compiler.v2_3.notification.CartesianProductNotification
+import org.neo4j.cypher.internal.compiler.v2_3.notification.{LengthOnNonPathNotification, CartesianProductNotification}
 
 
-class NotificationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("Warn for cartesian product") {
     val result = executeWithAllPlanners("explain match (a)-->(b), (c)-->(d) return *")
@@ -34,6 +34,40 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
   test("Don't warn for cartesian product when not using explain") {
     val result = executeWithAllPlanners("match (a)-->(b), (c)-->(d) return *")
 
+    result.notifications shouldBe empty
+  }
+
+  test("warn when using length on collection") {
+    val result = executeWithAllPlanners("explain return length([1, 2, 3])")
+
+    result.notifications should equal(List(LengthOnNonPathNotification(InputPosition(14, 1, 15))))
+  }
+
+  test("do not warn when using length on a path") {
+    val result = executeWithAllPlanners("explain match p=(a)-[*]->(b) return length(p)")
+
+    result.notifications shouldBe empty
+  }
+
+  test("do warn when using length on a pattern expression") {
+    val result = executeWithAllPlanners("explain match (a) where a.name='Alice' return length((a)-->()-->())")
+
+    result.notifications should equal(List(LengthOnNonPathNotification(InputPosition(45, 1, 46))))
+  }
+
+  test("do warn when using length on a string") {
+    val result = executeWithAllPlanners("explain return length('a string')")
+
+    result.notifications should equal(List(LengthOnNonPathNotification(InputPosition(14, 1, 15))))
+  }
+
+  test("do not warn when using size on a collection") {
+    val result = executeWithAllPlanners("explain return size([1, 2, 3])")
+    result.notifications shouldBe empty
+  }
+
+  test("do not warn when using size on a string") {
+    val result = executeWithAllPlanners("explain return size('a string')")
     result.notifications shouldBe empty
   }
 }

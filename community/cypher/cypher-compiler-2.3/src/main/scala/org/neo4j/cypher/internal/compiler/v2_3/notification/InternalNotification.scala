@@ -28,4 +28,6 @@ sealed trait InternalNotification
 
 case class CartesianProductNotification(position: InputPosition) extends InternalNotification
 
+case class LengthOnNonPathNotification(position: InputPosition) extends InternalNotification
+
 case object LegacyPlannerNotification extends InternalNotification

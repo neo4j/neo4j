@@ -17,22 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.functions
+package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
-import ExpressionConverters._
-import commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
+import pipes.QueryState
 import symbols._
+import org.neo4j.graphdb.Path
 
-case object Size extends Function with SimpleTypedFunction {
-  def name = "size"
+case class SizeFunction(inner: Expression)
+  extends NullInNullOutExpression(inner)
+  with CollectionSupport {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = value match {
+    case _: Path    => throw new CypherTypeException("SIZE cannot be used on paths")
+    case s: String  => s.length()
+    case x          => makeTraversable(x).toSeq.length
+  }
 
-  val signatures = Vector(
-    Signature(argumentTypes = Vector(CTCollection(CTAny)), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTString), outputType = CTInteger)
-  )
+  def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))
 
-  def asCommandExpression(invocation: ast.FunctionInvocation) =
-    commandexpressions.SizeFunction(invocation.arguments(0).asCommandExpression)
+  def arguments = Seq(inner)
+
+  def calculateType(symbols: SymbolTable) = CTInteger
+
+  def symbolTableDependencies = inner.symbolTableDependencies
+
+  override def toString = s"size($inner)"
 }

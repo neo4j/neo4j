@@ -65,10 +65,10 @@ class CollectionFunctionsTest extends RefcardTest with QueryStatisticsTestSuppor
 ###assertion=returns-one parameters=coll
 RETURN
 
-length({coll})
+size({coll})
 ###
 
-Length of the collection.
+Number of elements in the collection.
 
 ###assertion=returns-one parameters=coll
 RETURN
