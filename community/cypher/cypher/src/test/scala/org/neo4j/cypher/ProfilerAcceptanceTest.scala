@@ -314,7 +314,9 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result
   }
 
-  def profileWithAllPlanners(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithAllPlanners(_,_:_*), q, params:_*)
+  //TODO change to executeWithAllPlanners when PROFILING is supported in compiled plans
+  def profileWithAllPlanners(q: String, params: (String, Any)*): InternalExecutionResult =
+    profileWithPlanner(executeWithAllPlannersOnInterpretedRuntime(_,_:_*), q, params:_*)
 
   override def profile(q: String, params: (String, Any)*): InternalExecutionResult = fail("Don't use profile together in ProfilerAcceptanceTest")
 

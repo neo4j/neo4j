@@ -24,14 +24,13 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compiler.v2_3.{DummyPosition, NormalMode}
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompletionListener.NOOP
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompletionListener, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.{ParameterNotFoundException, NormalMode, TaskCloser}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Direction, GraphDatabaseService, Node}
 import org.neo4j.helpers.Clock
@@ -79,7 +78,6 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Map("a" -> cNode)
     ))
   }
-
 
   test("hash join of all nodes scans") { // MATCH a RETURN a
     //given
@@ -390,15 +388,15 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
 
     // when
-    val completion = mock[CompletionListener]
-    val compiled = compile(plan, completion = completion)
+    val closer = mock[TaskCloser]
+    val compiled = compile( plan, taskCloser = closer )
 
     // then
-    verifyZeroInteractions(completion)
+    verifyZeroInteractions(closer)
     val visitor = mock[ResultVisitor[RuntimeException]]
     when(visitor.visit(any[ResultRow])).thenReturn(true)
     compiled.accept(visitor)
-    verify(completion).complete(success = true)
+    verify(closer).close(success = true)
   }
 
   test("close transaction after prematurely terminating result exhaustion") {
@@ -406,15 +404,15 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
 
     // when
-    val completion = mock[CompletionListener]
-    val compiled = compile(plan, completion = completion)
+    val closer = mock[TaskCloser]
+    val compiled = compile(plan, taskCloser = closer)
 
     // then
-    verifyZeroInteractions(completion)
+    verifyZeroInteractions(closer)
     val visitor = mock[ResultVisitor[RuntimeException]]
     when(visitor.visit(any[ResultRow])).thenReturn(false)
     compiled.accept(visitor)
-    verify(completion).complete(success = false)
+    verify(closer).close(success = true)
   }
 
   test("close transaction after failure while handling results") {
@@ -422,23 +420,75 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
 
     // when
-    val completion = mock[CompletionListener]
-    val compiled = compile(plan, completion = completion)
+    val closer = mock[TaskCloser]
+    val compiled = compile( plan, taskCloser = closer )
 
     // then
-    verifyZeroInteractions(completion)
+    verifyZeroInteractions(closer)
     val visitor = mock[ResultVisitor[RuntimeException]]
     val exception = new scala.RuntimeException()
     when(visitor.visit(any[ResultRow])).thenThrow(exception)
     intercept[RuntimeException] {
       compiled.accept(visitor)
-    } // should be(exception) -- TODO: this verification fails, but that failure is unrelated to the current fix...
-    verify(completion).complete(success = false)
+
+    }
+    verify(closer).close(success = false)
   }
 
-  private def compile(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, completion: CompletionListener = NOOP) = {
+  test("should throw the same error as the user provides") {
+    // given
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
+
+    // when
+    val closer = mock[TaskCloser]
+    val compiled = compile( plan, taskCloser = closer )
+
+    // then
+    val visitor = mock[ResultVisitor[RuntimeException]]
+    val exception = new scala.RuntimeException()
+    when(visitor.visit(any[ResultRow])).thenThrow(exception)
+      try {
+        compiled.accept(visitor)
+        fail("should have thrown error")
+      }
+      catch {
+        case e: Throwable => e should equal(exception)
+      }
+
+  }
+
+  test("throw error when parameter is missing") {
+    //given
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> Parameter("FOO")(pos)))(solved))
+
+    //when
+    val compiled = compile(plan)
+
+    //then
+    intercept[ParameterNotFoundException](getResult(compiled, "a"))
+  }
+
+  test("handle line breaks and double quotes in names") {
+    //given
+    val name = """{"a":
+              |1
+              |}
+            """.stripMargin
+    val plan = ProduceResult(List.empty, List.empty, List(name), Projection(SingleRow()(solved),
+      Map(name -> SignedDecimalIntegerLiteral("1")(pos)))(solved))
+
+    //when
+    val compiled = compile(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
+
+    //then
+    val result = getResult(compiled, name)
+    result.toSet should equal(Set(Map(name -> 1)))
+  }
+
+
+  private def compile(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, taskCloser: TaskCloser = new TaskCloser) = {
     val compiled = generator.generate(plan, newMockedPlanContext, Clock.SYSTEM_CLOCK, mock[SemanticTable])
-    compiled.executionResultBuilder(statement, graphDatabaseService, NormalMode, params, completion)
+    compiled.executionResultBuilder(statement, graphDatabaseService, NormalMode, params, taskCloser)
   }
 
   /*
@@ -606,6 +656,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     def asComparableResult: Seq[Map[String, Any]] = res.map((map: Map[String, Any]) =>
       map.map {
         case (k, a: Array[_]) => k -> a.toList
+        case (k, a: java.util.List[_]) => k -> a.asScala
         case (k, m: java.util.Map[_,_]) => k -> m.asScala
         case m => m
       }

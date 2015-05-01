@@ -96,7 +96,7 @@ public class FixturesTest
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
                     quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
 
-            assertThat( response.get( "results" ).get(0).get("data").size(), equalTo(3));
+            assertThat( response.toString(), response.get( "results" ).get(0).get("data").size(), equalTo(3) );
         }
     }
 

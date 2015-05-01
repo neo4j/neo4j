@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, LONG, NUMBER, OBJECT, OBJECT_ARRAY, STRING, MAP}
-import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.Namer
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, LONG, NUMBER, OBJECT, LIST, STRING, MAP}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.{KernelExceptionCodeGen, ExceptionCodeGen, Namer}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.{CodeGenerator, JavaSymbol}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaString
 
 sealed trait ProjectionInstruction extends Instruction {
   def projectedVariable: JavaSymbol
@@ -56,6 +57,8 @@ case class ProjectNodeProperty(token: Option[Int], propName: String, nodeIdVar: 
   override def fields() = if (token.isEmpty) s"private int $propKeyVar = -1;" else ""
 
   def projectedVariable = JavaSymbol(s"ro.nodeGetProperty( $nodeIdVar, $propKeyVar ).value( null )", OBJECT)
+
+  override protected def _exceptions() = Set(KernelExceptionCodeGen)
 }
 
 case class ProjectRelProperty(token: Option[Int], propName: String, relIdVar: String, namer: Namer) extends ProjectionInstruction {
@@ -75,16 +78,24 @@ case class ProjectRelProperty(token: Option[Int], propName: String, relIdVar: St
   override def fields() = if (token.isEmpty) s"private int $propKeyVar = -1;" else ""
 
   def projectedVariable = JavaSymbol(s"ro.relationshipGetProperty( $relIdVar, $propKeyVar ).value( null )", OBJECT)
+
+  override protected def _exceptions() = Set(KernelExceptionCodeGen)
 }
 
 case class ProjectParameter(key: String) extends ProjectionInstruction {
 
-  def generateInit() = ""
+  def generateInit() =
+    s"""if( !params.containsKey( "${key.toJava}" ) )
+      |{
+      |throw new ParameterNotFoundException( "Expected a parameter named ${key.toJava}" );
+      |}
+    """.stripMargin
 
 
-  def projectedVariable = JavaSymbol(s"""params.get( "$key" )""", OBJECT)
+  def projectedVariable = JavaSymbol(s"""params.get( "${key.toJava}" )""", OBJECT)
 
   def fields() = ""
+  override def _importedClasses(): Set[String] = Set("org.neo4j.cypher.internal.compiler.v2_3.ParameterNotFoundException")
 }
 
 case class ProjectLiteral(projectedVariable: JavaSymbol) extends ProjectionInstruction {
@@ -127,6 +138,8 @@ case class ProjectAddition(lhs: ProjectionInstruction, rhs: ProjectionInstructio
 
   def fields() = ""
 
+  override def children = Seq(lhs, rhs)
+
   override def _importedClasses(): Set[String] = Set("org.neo4j.cypher.internal.compiler.v2_3.birk.CompiledMathHelper")
 }
 
@@ -150,6 +163,8 @@ case class ProjectSubtraction(lhs: ProjectionInstruction, rhs: ProjectionInstruc
 
   def fields() = ""
 
+  override def children = Seq(lhs, rhs)
+
   override def _importedClasses(): Set[String] = Set("org.neo4j.cypher.internal.compiler.v2_3.birk.CompiledMathHelper")
 }
 
@@ -159,9 +174,11 @@ case class ProjectCollection(instructions: Seq[ProjectionInstruction]) extends P
 
   def generateInit() = ""
 
-  def projectedVariable = JavaSymbol(instructions.map(_.projectedVariable.name).mkString("new Object[]{", ",", "}"), OBJECT_ARRAY)
+  def projectedVariable = JavaSymbol(instructions.map(_.projectedVariable.name).mkString("Arrays.asList(", ",", ")"), LIST)
 
   def fields() = ""
+
+  override def _importedClasses() = Set( "java.util.Arrays")
 }
 
 case class ProjectMap(instructions: Map[String, ProjectionInstruction]) extends ProjectionInstruction {

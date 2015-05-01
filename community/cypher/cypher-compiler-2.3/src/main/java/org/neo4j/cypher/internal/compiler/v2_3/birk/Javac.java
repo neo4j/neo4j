@@ -41,10 +41,9 @@ import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
-import sun.tools.java.CompilerError;
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompletionListener;
+import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser;
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult;
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException;
@@ -99,13 +98,13 @@ public class Javac
         return clazz;
     }
 
-    public static InternalExecutionResult newInstance( Class<InternalExecutionResult> clazz, CompletionListener completion, Statement statement,
+    public static InternalExecutionResult newInstance( Class<InternalExecutionResult> clazz, TaskCloser closer, Statement statement,
                                                        GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException
     {
         Constructor<InternalExecutionResult> constructor =
-                clazz.getDeclaredConstructor( CompletionListener.class, Statement.class, GraphDatabaseService.class, ExecutionMode.class, InternalPlanDescription.class , Map.class);
-        return constructor.newInstance( completion, statement, db, executionMode, description, params );
+                clazz.getDeclaredConstructor( TaskCloser.class, Statement.class, GraphDatabaseService.class, ExecutionMode.class, InternalPlanDescription.class , Map.class);
+        return constructor.newInstance( closer, statement, db, executionMode, description, params );
     }
 
     private static class InMemSource extends SimpleJavaFileObject

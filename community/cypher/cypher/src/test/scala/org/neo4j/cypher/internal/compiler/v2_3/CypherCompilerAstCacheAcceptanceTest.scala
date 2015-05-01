@@ -40,7 +40,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       new WrappedMonitors2_3(kernelMonitors),
       new StringInfoLogger2_3(log),
       plannerName = Some(GreedyPlannerName),
-      runtimeName = InterpretedRuntimeName,
+      runtimeName = Some(CompiledRuntimeName),
       rewriterSequencer = RewriterStepSequencer.newValidating)
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {

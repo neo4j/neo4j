@@ -22,52 +22,16 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 import java.io.PrintWriter
 
 import org.neo4j.cypher.internal.compiler.v2_3.InternalQueryStatistics
-import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsCollection
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
-import org.neo4j.kernel.api.ReadOperations
 
 import scala.collection.Map
 
 /**
  * Creates formatted tabular output.
  */
-object formatOutput extends ((ReadOperations, PrintWriter, List[String], Seq[Map[String, Any]], InternalQueryStatistics) => Unit) {
-  import scala.collection.JavaConverters._
+object formatOutput extends ((PrintWriter, List[String], Seq[Map[String, String]], InternalQueryStatistics) => Unit) {
 
-  def apply(readOperations: ReadOperations, writer: PrintWriter, columns: List[String],
-            result: Seq[Map[String, Any]], queryStatistics: InternalQueryStatistics) {
-
-    def props(x: PropertyContainer): String = {
-      val (properties, propFcn, id) = x match {
-        case n: Node => (readOperations.nodeGetAllProperties(n.getId).asScala.map(_.propertyKeyId()), readOperations.nodeGetProperty _, n.getId )
-        case r: Relationship => (readOperations.relationshipGetAllProperties(r.getId).asScala.map(_.propertyKeyId()), readOperations.relationshipGetProperty _, r.getId)
-      }
-
-      val keyValStrings = properties.
-        map(pkId => readOperations.propertyKeyGetName(pkId) + ":" + text(propFcn(id, pkId).value(null)))
-
-      keyValStrings.mkString("{", ",", "}")
-    }
-
-      def text(a: Any): String = a match {
-      case x: Node            => x.toString + props(x)
-      case x: Relationship    => ":" + x.getType.name() + "[" + x.getId + "]" + props(x)
-      case x if x.isInstanceOf[Map[_, _]] => makeString(x.asInstanceOf[Map[String, Any]])
-      case x if x.isInstanceOf[java.util.Map[_, _]] => makeString(x.asInstanceOf[java.util.Map[String, Any]].asScala)
-      case IsCollection(coll) => coll.map(elem => text(elem)).mkString("[", ",", "]")
-      case x: String          => "\"" + x + "\""
-      case v: KeyToken        => v.name
-      case Some(x)            => x.toString
-      case null               => "<null>"
-      case x                  => x.toString
-    }
-
-    def textWithType(x: Any) = s"${text(x)} (${x.getClass.getSimpleName})"
-
-    def makeString(m: Map[String, Any]) = m.map {
-      case (k, v) => k + " -> " + text(v)
-    }.mkString("{", ", ", "}")
+  def apply(writer: PrintWriter, columns: List[String],
+            result: Seq[Map[String, String]], queryStatistics: InternalQueryStatistics) {
 
     def makeSize(txt: String, wantedSize: Int): String = {
       val actualSize = txt.length()
@@ -80,21 +44,21 @@ object formatOutput extends ((ReadOperations, PrintWriter, List[String], Seq[Map
 
     def repeat(x: String, size: Int): String = (1 to size).map((i) => x).mkString
 
-    def createString(columnSizes: Map[String, Int], m: Map[String, Any]): String = {
+    def createString(columnSizes: Map[String, Int], m: Map[String, String]) = {
       columns.map(c => {
         val length = columnSizes.get(c).get
-        val txt = text(m.get(c).get)
+        val txt = m.get(c).get
         val value = makeSize(txt, length)
         value
       }).mkString("| ", " | ", " |")
     }
 
-    def calculateColumnSizes(result: Seq[Map[String, Any]]): Map[String, Int] = {
+    def calculateColumnSizes(result: Seq[Map[String, String]]) = {
       val columnSizes = new scala.collection.mutable.OpenHashMap[String, Int] ++ columns.map(name => name -> name.length)
 
       result.foreach((m) => {
         m.foreach((kv) => {
-          val length = text(kv._2).length
+          val length = kv._2.length
           if (!columnSizes.contains(kv._1) || columnSizes.get(kv._1).get < length) {
             columnSizes.put(kv._1, length)
           }
@@ -104,7 +68,7 @@ object formatOutput extends ((ReadOperations, PrintWriter, List[String], Seq[Map
     }
 
     if (columns.nonEmpty) {
-      val headers = columns.map((c) => Map[String, Any](c -> Some(c))).reduceLeft(_ ++ _)
+      val headers = columns.map((c) => Map(c -> c)).reduceLeft(_ ++ _)
       val columnSizes = calculateColumnSizes(result)
       val headerLine = createString(columnSizes, headers)
       val lineWidth = headerLine.length - 2

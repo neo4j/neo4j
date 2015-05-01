@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.birk;
 
 import java.lang.reflect.Array;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException;
 
@@ -51,12 +52,39 @@ public final class CompiledMathHelper
             return String.valueOf( lhs ) + String.valueOf( rhs );
         }
 
+        //List addition
+        if ( lhs instanceof List<?> && rhs instanceof List<?> )
+        {
+            List<?> lhsList = (List<?>) lhs;
+            List<?> rhsList = (List<?>) rhs;
+            List<Object> result = new ArrayList<>( lhsList.size() + rhsList.size() );
+            result.addAll( lhsList );
+            result.addAll( rhsList );
+            return result;
+        }
+        else if ( lhs instanceof List<?> )
+        {
+            List<?> lhsList = (List<?>) lhs;
+            List<Object> result = new ArrayList<>( lhsList.size() + 1 );
+            result.addAll( lhsList );
+            result.add( rhs );
+            return result;
+        }
+        else if ( rhs instanceof List<?> )
+        {
+            List<?> rhsList = (List<?>) rhs;
+            List<Object> result = new ArrayList<>( rhsList.size() + 1 );
+            result.add( lhs );
+            result.addAll( rhsList );
+            return result;
+        }
+
         // array addition
         Class<?> lhsClass = lhs.getClass();
         Class<?> rhsClass = rhs.getClass();
         if ( lhsClass.isArray() && rhsClass.isArray())
         {
-            return addArrays(lhs, rhs);
+            return addArrays( lhs, rhs );
         }
         else if ( lhsClass.isArray() )
         {

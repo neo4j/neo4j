@@ -890,7 +890,6 @@ RETURN a.name""")
     result.toSet should equal (Set(Map("id(n)" -> 0, "id(b)" -> 1)))
   }
 
-
   test("should get all nodes") {
     val a = createNode()
     val b = createNode()

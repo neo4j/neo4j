@@ -389,9 +389,7 @@ return coalesce(a.title, a.name)""")
   test("array prop output") {
     createNode("foo" -> Array(1, 2, 3))
 
-    //cannot use executeWithAllPlannersAndRuntimes since we use the statement to look up n
-    //and executeWithAllPlannersAndRuntimes uses a mocked statement
-    val result = eengine.execute("match n return n").dumpToString()
+    val result = executeWithAllPlannersAndRuntimes("match n return n").dumpToString()
 
     result should include ("[1,2,3]")
   }

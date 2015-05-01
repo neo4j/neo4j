@@ -50,13 +50,14 @@ public class ExecutionResultTest
         engine = new ExecutionEngine( db );
     }
 
+    //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
     @Test
     public void shouldCloseTransactionsWhenIteratingResults() throws Exception
     {
         // Given an execution result that has been started but not exhausted
         createNode();
         createNode();
-        ExecutionResult executionResult = engine.execute( "MATCH (n) RETURN n" );
+        ExecutionResult executionResult = engine.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" );
         ResourceIterator<Map<String, Object>> resultIterator = executionResult.iterator();
         resultIterator.next();
         assertThat( activeTransaction(), is( notNullValue() ) );
@@ -68,13 +69,14 @@ public class ExecutionResultTest
         assertThat( activeTransaction(), is( nullValue() ) );
     }
 
+    //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
     @Test
     public void shouldCloseTransactionsWhenIteratingOverSingleColumn() throws Exception
     {
         // Given an execution result that has been started but not exhausted
         createNode();
         createNode();
-        ExecutionResult executionResult = engine.execute( "MATCH (n) RETURN n" );
+        ExecutionResult executionResult = engine.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" );
         ResourceIterator<Node> resultIterator = executionResult.columnAs( "n" );
         resultIterator.next();
         assertThat( activeTransaction(), is( notNullValue() ) );

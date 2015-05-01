@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
+import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.KernelExceptionCodeGen
 import org.neo4j.graphdb.Direction
 
 case class ExpandC(fromVar: String, relVar: String, dir: Direction, types: Map[String, String], toVar: String, inner: Instruction) extends LoopDataGenerator {
@@ -59,8 +60,9 @@ case class ExpandC(fromVar: String, relVar: String, dir: Direction, types: Map[S
   override def _importedClasses() = Set(
     "org.neo4j.graphdb.Direction",
     "org.neo4j.collection.primitive.PrimitiveLongIterator",
-    "org.neo4j.kernel.api.exceptions.KernelException",
     "org.neo4j.kernel.impl.api.RelationshipDataExtractor")
+
+  override def _exceptions() = Set(KernelExceptionCodeGen)
 
   def javaType = "org.neo4j.kernel.impl.api.store.RelationshipIterator"
 
@@ -70,14 +72,12 @@ case class ExpandC(fromVar: String, relVar: String, dir: Direction, types: Map[S
       s"""if ( ${s._1} == -1 )
          |{
          |${s._1} = ro.relationshipTypeGetForName( "${s._2}" );
-         |}
-       """.stripMargin).mkString("\n")}
+         |}""".stripMargin).mkString("\n")}
        |${inner.generateInit()}""".stripMargin
 
   override def fields() =
     s"""${types.map(s => s"int ${s._1} = -1;").mkString("\n")}
-       |${inner.fields()}
-     """.stripMargin
+       |${inner.fields()}""".stripMargin
 
   override def children = Seq(inner)
 

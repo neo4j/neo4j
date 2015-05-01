@@ -35,8 +35,10 @@ case class MethodInvocation(resultVariable: String, resultType: String, methodNa
     def generateCode = {
       val init = statements.map(_.generateInit()).reduce(_ + n + _)
       val methodBody = statements.map(_.generateCode()).reduce(_ + n + _)
+      val exceptions = statements.flatMap(_.exceptions).map(_.throwClause)
+      val throwClause = if (exceptions.isEmpty) "" else exceptions.mkString("throws ", ",", "")
 
-      s"""private $resultType $methodName(ReadOperations ro) throws KernelException
+      s"""private $resultType $methodName(ReadOperations ro) $throwClause
          |{
          |$init
          |$methodBody
@@ -50,6 +52,4 @@ case class MethodInvocation(resultVariable: String, resultType: String, methodNa
   })
 
   def fields() = statements.map(_.fields()).reduce(_ + n + _)
-
-  override def _importedClasses() = Set("org.neo4j.kernel.api.exceptions.KernelException")
 }

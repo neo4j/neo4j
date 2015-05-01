@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.{ExplainMode, NormalMode}
-
 class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
   test("normal query is marked as such") {
     createNode()

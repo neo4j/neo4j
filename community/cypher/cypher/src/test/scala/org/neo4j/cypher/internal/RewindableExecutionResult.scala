@@ -23,11 +23,11 @@ import java.util
 
 import org.mockito.Mockito.mock
 import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, exceptionHandlerFor2_3}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionResult, CompletionListener, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionResult, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.iteratorToVisitable
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
-import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode => ExecutionModev2_3, PipeExecutionResult, PlannerName, RuntimeName}
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode => ExecutionModev2_3, PipeExecutionResult, PlannerName, RuntimeName, TaskCloser}
 import org.neo4j.cypher.{ExecutionResult, InternalException}
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.graphdb.Result.ResultVisitor
@@ -44,19 +44,8 @@ object RewindableExecutionResult {
         }
       }
     case other: CompiledExecutionResult  =>
-      exceptionHandlerFor2_3.runSafely {
-        val data = other.toList
-        new CompiledExecutionResult(CompletionListener.NOOP, mock(classOf[Statement])) {
-          override def javaColumns: util.List[String] = other.javaColumns
-          override val toList = data
-          override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {
-            iteratorToVisitable.accept(data.iterator, visitor)
-          }
-          override def executionPlanDescription() = other.executionPlanDescription().addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
+      exceptionHandlerFor2_3.runSafely {other.toEagerIterableResult}
 
-          override def executionMode: ExecutionModev2_3 = other.executionMode
-        }
-      }
     case _ =>
       inner
   }

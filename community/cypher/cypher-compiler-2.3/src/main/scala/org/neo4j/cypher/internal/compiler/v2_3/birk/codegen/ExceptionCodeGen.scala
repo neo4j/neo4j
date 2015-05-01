@@ -17,16 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.internal.compiler.v2_3.birk.codegen
 
-package org.neo4j.cypher.internal.compiler.v2_3.executionplan
-
-abstract class CompletionListener
-{
-  def complete( success: Boolean ): Unit
+sealed trait ExceptionCodeGen {
+  def throwClause: String
+  def catchClause: String
 }
 
-object CompletionListener{
-  val NOOP = new CompletionListener {
-    override def complete( success: Boolean ) = {}
-  }
+case object KernelExceptionCodeGen extends ExceptionCodeGen {
+  val throwClause = "org.neo4j.kernel.api.exceptions.KernelException"
+  val catchClause =
+    """catch( org.neo4j.kernel.api.exceptions.KernelException e)
+      |{
+      |throw new org.neo4j.cypher.internal.compiler.v2_3.CypherExecutionException(
+      |e.getUserMessage( new org.neo4j.kernel.api.StatementTokenNameLookup( ro ) ), e);
+      |}""".stripMargin
 }

@@ -23,7 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders._
+import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_3.profiler.Profiler
@@ -31,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ProfileMode}
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.{Statement => KernelStatement}
 
@@ -39,7 +42,9 @@ case class CompiledPlan(updating: Boolean,
                         periodicCommit: Option[PeriodicCommitInfo] = None,
                         fingerprint: Option[PlanFingerprint] = None,
                         plannerUsed: PlannerName,
-                        executionResultBuilder: (KernelStatement, GraphDatabaseService, ExecutionMode, Map[String, Any], CompletionListener) => InternalExecutionResult)
+                        planDescription: InternalPlanDescription,
+                        columns: Seq[String],
+                        executionResultBuilder: (KernelStatement, GraphDatabaseService, ExecutionMode, Map[String, Any], TaskCloser) => InternalExecutionResult)
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
@@ -82,16 +87,40 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
       def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
 
       def run(queryContext: QueryContext, kernelStatement: KernelStatement,
-                       planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult =
-        compiledPlan.executionResultBuilder(kernelStatement, graph, planType, params, new CompletionListener {
-          override def complete(success: Boolean) = queryContext.close(success)
-        })
+              executionMode: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
+        val taskCloser = new TaskCloser
+        taskCloser.addTask(queryContext.close)
+        try {
+          if (executionMode == ExplainMode) {
+            new ExplainExecutionResult(taskCloser, compiledPlan.columns.toList,
+              compiledPlan.planDescription, QueryType.READ_ONLY, inputQuery.notificationLogger.notifications)
+          } else
+            compiledPlan.executionResultBuilder(kernelStatement, graph, executionMode, params, taskCloser)
+        } catch {
+          case (t: Throwable) =>
+            taskCloser.close(success = false)
+            throw t
+        }
+      }
 
       def plannerUsed: PlannerName = GreedyPlannerName
 
       def isPeriodicCommit: Boolean = compiledPlan.periodicCommit.isDefined
 
       def runtimeUsed = CompiledRuntimeName
+    }
+  }
+
+  private def explainResult(queryContext: QueryContext, compiledPlan: CompiledPlan, notifications: Seq[InternalNotification]) = {
+    val taskCloser = new TaskCloser
+    taskCloser.addTask(queryContext.close)
+    try {
+      new ExplainExecutionResult(taskCloser, compiledPlan.columns.toList,
+        compiledPlan.planDescription, QueryType.READ_ONLY, notifications)
+    } catch {
+      case (t: Throwable) =>
+        taskCloser.close(success = false)
+        throw t
     }
   }
 

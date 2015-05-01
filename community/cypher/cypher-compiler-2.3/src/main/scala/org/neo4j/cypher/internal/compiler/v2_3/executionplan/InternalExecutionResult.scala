@@ -42,5 +42,6 @@ trait InternalExecutionResult extends Iterator[Map[String, Any]] {
   def executionType: QueryExecutionType
   def notifications: Iterable[InternalNotification]
   //todo this should not depend on external visitor
+  @throws(classOf[Exception])
   def accept[EX <: Exception](visitor: ResultVisitor[EX])
 }

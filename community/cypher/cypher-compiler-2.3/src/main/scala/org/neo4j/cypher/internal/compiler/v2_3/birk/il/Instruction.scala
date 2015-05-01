@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
+import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.ExceptionCodeGen
+
 trait Instruction {
   // Actual code produced by element
   def generateCode(): String
@@ -28,15 +30,19 @@ trait Instruction {
   //generate class level members
   def fields(): String
 
-  // Initialises necessary data-structures. Is inserted at the top of the generated method
+  //Initialises necessary data-structures. Is inserted at the top of the generated method
   def generateInit(): String
 
   def methods: Seq[Method] = {
     (allLeafs :+ this).flatMap(_._method)
   }
 
+  def exceptions: Set[ExceptionCodeGen] = allLeafs.flatMap(_._exceptions()).toSet
+
   // Generates import list for class
   protected def _importedClasses(): Set[String] = Set.empty
+
+  protected def _exceptions(): Set[ExceptionCodeGen] = Set.empty
 
   protected def children: Seq[Instruction] = Seq.empty
 
@@ -58,5 +64,7 @@ object Instruction {
     override def fields(): String = ""
 
     override def generateInit(): String = ""
+
+    override def exceptions: Set[ExceptionCodeGen] = Set.empty
   }
 }
