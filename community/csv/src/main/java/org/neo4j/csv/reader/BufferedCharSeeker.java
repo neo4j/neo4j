@@ -326,7 +326,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceTraceability
     @Override
     public String toString()
     {
-        return format( "%s[buffer:%s, seekPos:%d, line:%d]", getClass().getSimpleName(),
-                charBuffer, seekStartPos, lineNumber );
+        return format( "%s[source:%s, position:%d, line:%d]", getClass().getSimpleName(),
+                sourceDescription(), position(), lineNumber() );
     }
 }
