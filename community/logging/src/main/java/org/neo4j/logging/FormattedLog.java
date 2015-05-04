@@ -73,10 +73,33 @@ public class FormattedLog extends AbstractLog
      */
     public static class Builder
     {
+        private TimeZone timezone = TimeZone.getDefault();
         private Object lock = this;
         private String category = null;
         private Level level = Level.INFO;
         private boolean autoFlush = true;
+
+        /**
+         * Set the timezone for datestamps in the log
+         *
+         * @return this builder
+         */
+        public Builder withUTCTimeZone()
+        {
+            return withTimeZone( UTC );
+        }
+
+        /**
+         * Set the timezone for datestamps in the log
+         *
+         * @param timezone the timezone to use for datestamps
+         * @return this builder
+         */
+        public Builder withTimeZone( TimeZone timezone )
+        {
+            this.timezone = timezone;
+            return this;
+        }
 
         /**
          * Use the specified object to synchronize on.
@@ -179,12 +202,13 @@ public class FormattedLog extends AbstractLog
          */
         public FormattedLog toPrintWriter( Supplier<PrintWriter> writerSupplier )
         {
-            return new FormattedLog( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier, lock, category, level, autoFlush );
+            return new FormattedLog( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier, timezone, lock, category, level, autoFlush );
         }
     }
 
     private final Supplier<Date> currentDateSupplier;
     private final Supplier<PrintWriter> writerSupplier;
+    private final TimeZone timezone;
     private final Object lock;
     private final String category;
     private final AtomicReference<Level> levelRef;
@@ -193,6 +217,27 @@ public class FormattedLog extends AbstractLog
     private final Logger infoLogger;
     private final Logger warnLogger;
     private final Logger errorLogger;
+
+    /**
+     * Start creating a {@link FormattedLog} with UTC timezone for datestamps in the log
+     *
+     * @return a builder for a {@link FormattedLog}
+     */
+    public static Builder withUTCTimeZone()
+    {
+        return new Builder().withUTCTimeZone();
+    }
+
+    /**
+     * Start creating a {@link FormattedLog} with the specified timezone for datestamps in the log
+     *
+     * @param timezone the timezone to use for datestamps
+     * @return a builder for a {@link FormattedLog}
+     */
+    public static Builder withTimeZone( TimeZone timezone )
+    {
+        return new Builder().withTimeZone( timezone );
+    }
 
     /**
      * Start creating a {@link FormattedLog} using the specified object to synchronize on.
@@ -300,6 +345,7 @@ public class FormattedLog extends AbstractLog
     protected FormattedLog(
             Supplier<Date> currentDateSupplier,
             Supplier<PrintWriter> writerSupplier,
+            TimeZone timezone,
             Object maybeLock,
             String category,
             Level level,
@@ -307,6 +353,7 @@ public class FormattedLog extends AbstractLog
     {
         this.currentDateSupplier = currentDateSupplier;
         this.writerSupplier = writerSupplier;
+        this.timezone = timezone;
         this.lock = ( maybeLock != null ) ? maybeLock : this;
         this.category = category;
         this.levelRef = new AtomicReference<>( level );
@@ -320,7 +367,7 @@ public class FormattedLog extends AbstractLog
         this.debugLogger = new FormattedLogger( writerSupplier, debugPrefix );
         this.infoLogger = new FormattedLogger( writerSupplier, infoPrefix );
         this.warnLogger = new FormattedLogger( writerSupplier, warnPrefix );
-        this.errorLogger = new FormattedLogger(  writerSupplier, errorPrefix );
+        this.errorLogger = new FormattedLogger( writerSupplier, errorPrefix );
     }
 
     /**
@@ -405,7 +452,7 @@ public class FormattedLog extends AbstractLog
         synchronized (lock)
         {
             writer = writerSupplier.get();
-            consumer.accept( new FormattedLog( currentDateSupplier, Suppliers.singleton( writer ), lock, category, levelRef.get(), false ) );
+            consumer.accept( new FormattedLog( currentDateSupplier, Suppliers.singleton( writer ), timezone, lock, category, levelRef.get(), false ) );
         }
         if ( autoFlush )
         {
@@ -422,8 +469,8 @@ public class FormattedLog extends AbstractLog
         {
             super( writerSupplier, lock, autoFlush );
             this.prefix = prefix;
-            format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSS" );
-            format.setTimeZone( UTC );
+            format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSSZ" );
+            format.setTimeZone( timezone );
         }
 
         @Override

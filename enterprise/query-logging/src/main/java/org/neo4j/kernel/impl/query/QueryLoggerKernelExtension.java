@@ -75,7 +75,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
 
                 QueryLogger logger = new QueryLogger(
                         Clock.SYSTEM_CLOCK,
-                        FormattedLog.toOutputStream( logOutputStream ),
+                        FormattedLog.withUTCTimeZone().toOutputStream( logOutputStream ),
                         thresholdMillis
                 );
                 deps.monitoring().addMonitorListener( logger );

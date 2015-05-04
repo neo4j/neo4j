@@ -87,7 +87,7 @@ public class DiagnosticsBean extends ManagementBeanProvider
         public String dumpAll(  )
         {
             StringWriter stringWriter = new StringWriter();
-            diagnostics.dumpAll( FormattedLog.toWriter( stringWriter ) );
+            diagnostics.dumpAll( FormattedLog.withUTCTimeZone().toWriter( stringWriter ) );
             return stringWriter.toString();
         }
 
@@ -95,7 +95,7 @@ public class DiagnosticsBean extends ManagementBeanProvider
         public String extract( String providerId )
         {
             StringWriter stringWriter = new StringWriter();
-            diagnostics.extract( providerId, FormattedLog.toWriter( stringWriter ) );
+            diagnostics.extract( providerId, FormattedLog.withUTCTimeZone().toWriter( stringWriter ) );
             return stringWriter.toString();
         }
     }

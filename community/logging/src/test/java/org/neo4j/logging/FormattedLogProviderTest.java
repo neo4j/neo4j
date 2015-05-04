@@ -71,13 +71,13 @@ public class FormattedLogProviderTest
         log.info( "Terminator 2" );
 
         // Then
-        assertThat( writer.toString(), equalTo( format( "1984-10-26 04:23:24.343 INFO  [j.i.StringWriter] Terminator 2%n" ) ) );
+        assertThat( writer.toString(), equalTo( format( "1984-10-26 04:23:24.343+0000 INFO  [j.i.StringWriter] Terminator 2%n" ) ) );
     }
 
     private static FormattedLogProvider newFormattedLogProvider( StringWriter writer )
     {
         return new FormattedLogProvider(
                 Suppliers.singleton( FIXED_DATE ), Suppliers.singleton( new PrintWriter( writer ) ),
-                true, Level.DEBUG, true );
+                FormattedLog.UTC, true, Level.DEBUG, true );
     }
 }

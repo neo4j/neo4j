@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.Date;
+import java.util.TimeZone;
 import java.util.regex.Pattern;
 
 import static org.neo4j.logging.FormattedLog.DEFAULT_CURRENT_DATE_SUPPLIER;
@@ -45,6 +46,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     public static class Builder
     {
         private boolean renderContext = true;
+        private TimeZone timezone = TimeZone.getDefault();
         private Level level = Level.INFO;
         private boolean autoFlush = true;
 
@@ -56,6 +58,28 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         public Builder withoutRenderingContext()
         {
             this.renderContext = false;
+            return this;
+        }
+
+        /**
+         * Set the timezone for datestamps in the log
+         *
+         * @return this builder
+         */
+        public Builder withUTCTimeZone()
+        {
+            return withTimeZone( FormattedLog.UTC );
+        }
+
+        /**
+         * Set the timezone for datestamps in the log
+         *
+         * @param timezone the timezone to use for datestamps
+         * @return this builder
+         */
+        public Builder withTimeZone( TimeZone timezone )
+        {
+            this.timezone = timezone;
             return this;
         }
 
@@ -136,12 +160,13 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
          */
         public FormattedLogProvider toPrintWriter( Supplier<PrintWriter> writerSupplier )
         {
-            return new FormattedLogProvider( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier, renderContext, level, autoFlush );
+            return new FormattedLogProvider( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier, timezone, renderContext, level, autoFlush );
         }
     }
 
     private final Supplier<Date> currentDateSupplier;
     private final Supplier<PrintWriter> writerSupplier;
+    private final TimeZone timezone;
     private final boolean renderContext;
     private final Level level;
     private final boolean autoFlush;
@@ -155,6 +180,27 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     public static Builder withoutRenderingContext()
     {
         return new Builder().withoutRenderingContext();
+    }
+
+    /**
+     * Start creating a {@link FormattedLogProvider} with UTC timezone for datestamps in the log
+     *
+     * @return a builder for a {@link FormattedLogProvider}
+     */
+    public static Builder withUTCTimeZone()
+    {
+        return new Builder().withUTCTimeZone();
+    }
+
+    /**
+     * Start creating a {@link FormattedLogProvider} with the specified timezone for datestamps in the log
+     *
+     * @param timezone the timezone to use for datestamps
+     * @return a builder for a {@link FormattedLogProvider}
+     */
+    public static Builder withTimeZone( TimeZone timezone )
+    {
+        return new Builder().withTimeZone( timezone );
     }
 
     /**
@@ -237,10 +283,11 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         return new Builder().toPrintWriter( writerSupplier );
     }
 
-    FormattedLogProvider( Supplier<Date> currentDateSupplier, Supplier<PrintWriter> writerSupplier, boolean renderContext, Level level, boolean autoFlush )
+    FormattedLogProvider( Supplier<Date> currentDateSupplier, Supplier<PrintWriter> writerSupplier, TimeZone timezone, boolean renderContext, Level level, boolean autoFlush )
     {
         this.currentDateSupplier = currentDateSupplier;
         this.writerSupplier = writerSupplier;
+        this.timezone = timezone;
         this.renderContext = renderContext;
         this.level = level;
         this.autoFlush = autoFlush;
@@ -256,6 +303,6 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     @Override
     protected FormattedLog buildLog( String context )
     {
-        return new FormattedLog( currentDateSupplier, writerSupplier, this, renderContext ? context : null, level, autoFlush );
+        return new FormattedLog( currentDateSupplier, writerSupplier, timezone, this, renderContext ? context : null, level, autoFlush );
     }
 }
