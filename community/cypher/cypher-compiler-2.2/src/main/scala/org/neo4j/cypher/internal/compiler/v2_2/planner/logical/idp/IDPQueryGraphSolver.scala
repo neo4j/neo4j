@@ -57,39 +57,39 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
   import org.neo4j.cypher.internal.compiler.v2_2.helpers.IteratorSupport.RichIterator
 
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
-    implicit val kitFactory = (qg: QueryGraph) => kitWithShortestPathSupport(config.toKit(qg))
+    implicit val kit = kitWithShortestPathSupport(config.toKit())
     val components = queryGraph.connectedComponents
     val plans = if (components.isEmpty) planEmptyComponent(queryGraph) else planComponents(components)
 
-    implicit val kit = kitFactory.apply(queryGraph)
     val plansWithRemainingOptionalMatches = plans.map { (plan: LogicalPlan) => (plan, queryGraph.optionalMatches) }
     monitor.startConnectingComponents(queryGraph)
-    val result = connectComponents(plansWithRemainingOptionalMatches)
+    val result = connectComponents(plansWithRemainingOptionalMatches, queryGraph)
     monitor.endConnectingComponents(queryGraph, result)
     result
   }
 
   private def kitWithShortestPathSupport(kit: QueryPlannerKit)(implicit context: LogicalPlanningContext) =
-    kit.copy(select = selectShortestPath(kit, _))
+    kit.copy(select = (plan: LogicalPlan, qg: QueryGraph) => selectShortestPath(kit, plan, qg))
 
-  private def selectShortestPath(kit: QueryPlannerKit, initialPlan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
-    kit.qg.shortestPathPatterns.foldLeft(kit.select(initialPlan)) {
-      case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) => kit.select(context.logicalPlanProducer.planShortestPaths(plan, sp))
+  private def selectShortestPath(kit: QueryPlannerKit, initialPlan: LogicalPlan, qg: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan =
+    qg.shortestPathPatterns.foldLeft(kit.select(initialPlan, qg)) {
+      case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) =>
+        val shortestPath = context.logicalPlanProducer.planShortestPaths(plan, sp)
+        kit.select(shortestPath, qg)
       case (plan, _) => plan
     }
 
-  private def planComponents(components: Seq[QueryGraph])(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kitFactory: (QueryGraph) => QueryPlannerKit): Seq[LogicalPlan] =
+  private def planComponents(components: Seq[QueryGraph])(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kit: QueryPlannerKit): Seq[LogicalPlan] =
     components.zipWithIndex.map { case (qg, component) =>
-      implicit val kit = kitFactory(qg)
       planComponent(qg, component)
     }
 
-  private def planEmptyComponent(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kitFactory: (QueryGraph) => QueryPlannerKit): Seq[LogicalPlan] = {
+  private def planEmptyComponent(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kit: QueryPlannerKit): Seq[LogicalPlan] = {
     val plan = if (queryGraph.argumentIds.isEmpty)
       context.logicalPlanProducer.planSingleRow()
     else
       context.logicalPlanProducer.planQueryArgumentRow(queryGraph)
-    val result: LogicalPlan = kitFactory(queryGraph).select(plan)
+    val result: LogicalPlan = kit.select(plan, queryGraph)
     monitor.emptyComponentPlanned(queryGraph, result)
     Seq(result)
   }
@@ -102,7 +102,7 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
     if (qg.patternRelationships.size > 0) {
 
       val generators = solvers.map(_(qg))
-      val selectingGenerators = generators.map(_.map(kit.select))
+      val selectingGenerators = generators.map(_.map( plan => kit.select(plan, qg) ))
       val generator = selectingGenerators.foldLeft(IDPSolverStep.empty[PatternRelationship, LogicalPlan, LogicalPlanningContext])(_ ++ _)
 
       val solver = new IDPSolver[PatternRelationship, LogicalPlan, LogicalPlanningContext](
@@ -130,7 +130,7 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
   private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan])(implicit context: LogicalPlanningContext) = {
     for (pattern <- qg.patternRelationships)
     yield {
-      val accessPlans = planSinglePattern(qg, pattern, leaves).map(kit.select)
+      val accessPlans = planSinglePattern(qg, pattern, leaves).map(plan => kit.select(plan, qg))
       val bestAccessor = kit.pickBest(accessPlans).getOrElse(throw new InternalException("Found no access plan for a pattern relationship in a connected component. This must not happen."))
       Set(pattern) -> bestAccessor
     }
@@ -155,7 +155,7 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
   }
 
   // TODO: Consider replacing with IDP loop
-  private def connectComponents(plans: Seq[(LogicalPlan, Seq[QueryGraph])])(implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
+  private def connectComponents(plans: Seq[(LogicalPlan, Seq[QueryGraph])], queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
     @tailrec
     def recurse(plans: Seq[(LogicalPlan, Seq[QueryGraph])]): LogicalPlan = {
       if (plans.size == 1) {
@@ -165,14 +165,15 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
         resultPlan
       } else {
         val candidates = plans.map(applyApplicableOptionalMatches)
-        val cartesianProducts: Map[LogicalPlan, (Set[(LogicalPlan, Seq[QueryGraph])], Seq[QueryGraph])] = (for (
-          lhs @ (left, leftRemaining) <- candidates.iterator;
-          rhs @ (right, rightRemaining) <- candidates.iterator if left ne right;
-          remaining = if (leftRemaining.size < rightRemaining.size) leftRemaining else rightRemaining;
-          oldPlans = Set(lhs, rhs);
-          newPlan = kit.select(context.logicalPlanProducer.planCartesianProduct(left, right))
-        )
-        yield newPlan -> (oldPlans -> remaining)).toMap
+        val cartesianProducts: Map[LogicalPlan, (Set[(LogicalPlan, Seq[QueryGraph])], Seq[QueryGraph])] =
+          (for (
+            lhs@(left, leftRemaining) <- candidates.iterator;
+            rhs@(right, rightRemaining) <- candidates.iterator if left ne right;
+            remaining = if (leftRemaining.size < rightRemaining.size) leftRemaining else rightRemaining;
+            oldPlans = Set(lhs, rhs);
+            newPlan = kit.select(context.logicalPlanProducer.planCartesianProduct(left, right), queryGraph)
+          )
+            yield newPlan -> (oldPlans -> remaining)).toMap
         val bestCartesian = kit.pickBest(cartesianProducts.keys).get
         val (oldPlans, remaining) = cartesianProducts(bestCartesian)
         val newPlans = plans.filterNot(oldPlans.contains) :+ (bestCartesian -> remaining)
@@ -195,7 +196,10 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
 
     def withOptionalMatch(plan: LogicalPlan, optionalMatch: QueryGraph): Option[LogicalPlan] =
       if ((optionalMatch.argumentIds -- plan.availableSymbols).isEmpty) {
-        val candidates = config.optionalSolvers.flatMap { solver => solver(optionalMatch, plan) }
+        val candidates = config.optionalSolvers.flatMap {
+          solver =>
+            solver(optionalMatch, plan)
+        }
         val best = kit.pickBest(candidates)
         best
       } else {
