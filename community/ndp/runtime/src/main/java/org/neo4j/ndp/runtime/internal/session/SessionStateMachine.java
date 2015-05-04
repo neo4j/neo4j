@@ -492,7 +492,6 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     /** Signal to the currently attached client callback that the request has been processed */
-    @SuppressWarnings("unchecked")
     private void after()
     {
         try

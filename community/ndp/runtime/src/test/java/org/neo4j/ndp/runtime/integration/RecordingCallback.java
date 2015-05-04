@@ -33,7 +33,7 @@ import org.neo4j.ndp.runtime.internal.Neo4jError;
 import org.neo4j.stream.Record;
 import org.neo4j.stream.RecordStream;
 
-public class RecordingCallback implements Session.Callback
+public class RecordingCallback<V, A> implements Session.Callback<V, A>
 {
     private final BlockingQueue<Call> calls = new ArrayBlockingQueue<>( 64 );
 
@@ -52,7 +52,7 @@ public class RecordingCallback implements Session.Callback
     private boolean ignored;
 
     @Override
-    public void result( Object result, Object attachment )
+    public void result( V result, A attachment )
     {
         if ( result instanceof RecordStream )
         {
@@ -77,13 +77,13 @@ public class RecordingCallback implements Session.Callback
     }
 
     @Override
-    public void failure( Neo4jError err, Object attachment )
+    public void failure( Neo4jError err, A attachment )
     {
         errors.add( err );
     }
 
     @Override
-    public void completed( Object attachment )
+    public void completed( A attachment )
     {
         try
         {
@@ -117,7 +117,7 @@ public class RecordingCallback implements Session.Callback
     }
 
     @Override
-    public void ignored( Object attachment )
+    public void ignored( A attachment )
     {
         this.ignored = true;
     }
@@ -152,14 +152,14 @@ public class RecordingCallback implements Session.Callback
 
     public static class Result extends Success
     {
-        private final Object[] streamValues;
+        private final Record[] streamValues;
 
-        public Result( Object[] streamValues )
+        public Result( Record[] streamValues )
         {
             this.streamValues = streamValues;
         }
 
-        public Object[] records()
+        public Record[] records()
         {
             return streamValues;
         }
@@ -219,9 +219,9 @@ public class RecordingCallback implements Session.Callback
         }
     }
 
-    private Object[] unwind( RecordStream result ) throws Exception
+    private Record[] unwind( RecordStream result ) throws Exception
     {
-        final List<Object> values = new ArrayList<>();
+        final List<Record> values = new ArrayList<>();
         result.visitAll( new RecordStream.Visitor()
         {
             @Override
@@ -230,6 +230,6 @@ public class RecordingCallback implements Session.Callback
                 values.add( record.copy() );
             }
         } );
-        return values.toArray();
+        return values.toArray(new Record[values.size()]);
     }
 }

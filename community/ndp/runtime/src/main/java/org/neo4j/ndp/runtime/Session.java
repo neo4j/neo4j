@@ -49,7 +49,7 @@ public interface Session extends AutoCloseable
      */
     interface Callback<V, A>
     {
-        public static final Callback NO_OP = new Adapter()
+        Callback NO_OP = new Adapter()
         {
         };
 
@@ -90,6 +90,19 @@ public interface Session extends AutoCloseable
             {
                 // this page intentionally left blank
             }
+        }
+    }
+
+    public static class Callbacks
+    {
+        private Callbacks()
+        {
+        }
+
+        @SuppressWarnings( "unchecked" )
+        public static <V, A> Callback<V,A> noop()
+        {
+            return (Callback<V,A>) Callback.NO_OP;
         }
     }
 

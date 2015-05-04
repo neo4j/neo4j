@@ -42,6 +42,8 @@ public interface RecordStream extends AutoCloseable
 
     public static RecordStream EMPTY = new RecordStream()
     {
+        private final String[] nothing = new String[0];
+
         @Override
         public void close()
         {
@@ -51,7 +53,7 @@ public interface RecordStream extends AutoCloseable
         @Override
         public String[] fieldNames()
         {
-            return new String[0];
+            return nothing;
         }
 
         @Override

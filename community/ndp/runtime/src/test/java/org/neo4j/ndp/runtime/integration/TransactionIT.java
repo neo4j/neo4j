@@ -22,34 +22,38 @@ package org.neo4j.ndp.runtime.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.ndp.runtime.Session;
+import java.util.Collections;
+import java.util.Map;
 
-import static java.util.Collections.EMPTY_MAP;
+import org.neo4j.ndp.runtime.Session;
+import org.neo4j.ndp.runtime.StatementMetadata;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.ndp.runtime.integration.SessionMatchers.success;
 
 public class TransactionIT
 {
+    private static final Map<String, Object> EMPTY_PARAMS = Collections.emptyMap();
+
     @Rule
     public TestSessions env = new TestSessions();
 
     @Test
-    @SuppressWarnings("unchecked")
     public void shouldHandleBeginCommit() throws Throwable
     {
         // Given
-        RecordingCallback responses = new RecordingCallback();
+        RecordingCallback<StatementMetadata, ?> responses = new RecordingCallback<>();
         Session session = env.newSession();
 
         // When
-        session.run( "BEGIN", EMPTY_MAP, null, responses );
-        session.discardAll( null, Session.Callback.NO_OP );
+        session.run( "BEGIN", EMPTY_PARAMS, null, responses );
+        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
 
-        session.run( "CREATE (n:InTx)", EMPTY_MAP, null, responses );
-        session.discardAll( null, Session.Callback.NO_OP );
+        session.run( "CREATE (n:InTx)", EMPTY_PARAMS, null, responses );
+        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
 
-        session.run( "COMMIT", EMPTY_MAP, null, responses );
-        session.discardAll( null, Session.Callback.NO_OP );
+        session.run( "COMMIT", EMPTY_PARAMS, null, responses );
+        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
 
         // Then
         assertThat( responses.next(), success() );
@@ -58,22 +62,21 @@ public class TransactionIT
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void shouldHandleBeginRollback() throws Throwable
     {
         // Given
-        RecordingCallback responses = new RecordingCallback();
+        RecordingCallback<StatementMetadata, ?> responses = new RecordingCallback<>();
         Session session = env.newSession();
 
         // When
-        session.run( "BEGIN", EMPTY_MAP, null, responses );
-        session.discardAll( null, Session.Callback.NO_OP );
+        session.run( "BEGIN", EMPTY_PARAMS, null, responses );
+        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
 
-        session.run( "CREATE (n:InTx)", EMPTY_MAP, null, responses );
-        session.discardAll( null, Session.Callback.NO_OP );
+        session.run( "CREATE (n:InTx)", EMPTY_PARAMS, null, responses );
+        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
 
-        session.run( "ROLLBACK", EMPTY_MAP, null, responses );
-        session.discardAll( null, Session.Callback.NO_OP );
+        session.run( "ROLLBACK", EMPTY_PARAMS, null, responses );
+        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
 
         // Then
         assertThat( responses.next(), success() );
