@@ -360,20 +360,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertRows(1)(result)("Projection")
   }
 
-  // TODO: collections of nodes/rels not supported; add this back when they are
-//  test("should report correct dbhits and rows for project collection") {
-//    // given
-//    relate(createNode(), createNode())
-//
-//    // when
-//    val result = profileWithAllPlannersAndRuntimes("MATCH (n)--(m) RETURN [ n, m ]")
-//
-//    // then
-//    println(result.executionPlanDescription())
-//    assertDbHits(1)(result)("Projection")
-//    assertRows(1)(result)("Projection")
-//  }
-
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
       plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")
