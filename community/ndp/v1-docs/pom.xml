@@ -4,10 +4,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.neo4j</groupId>
-    <artifactId>parent</artifactId>
+    <groupId>org.neo4j.ndp</groupId>
+    <artifactId>neo4j-data-protocol-parent</artifactId>
     <version>2.3-SNAPSHOT</version>
-    <relativePath>../../..</relativePath>
+    <relativePath>../</relativePath>
   </parent>
 
   <properties>
@@ -15,7 +15,6 @@
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
-  <groupId>org.neo4j.ndp</groupId>
   <artifactId>neo4j-ndp-v1-docs</artifactId>
 
   <packaging>jar</packaging>
@@ -103,39 +102,19 @@
     <dependency>
       <groupId>org.asciidoctor</groupId>
       <artifactId>asciidoctorj</artifactId>
-      <version>1.5.2</version>
+      <version>${ascii.doctor.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jsoup</groupId>
       <artifactId>jsoup</artifactId>
-      <version>1.8.1</version>
+      <version>${jsoup.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
 
   <build>
     <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.3.2</version>
-        <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>2.2</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
       <!-- Disable the ComponentVersion generation -->
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>

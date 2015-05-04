@@ -14,9 +14,11 @@
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
     <componentversion.skip>true</componentversion.skip>
+    <ascii.doctor.version>1.5.2</ascii.doctor.version>
+    <jsoup.version>1.8.1</jsoup.version>
   </properties>
 
-  <groupId>org.neo4j.build</groupId>
+  <groupId>org.neo4j.ndp</groupId>
   <artifactId>neo4j-data-protocol-parent</artifactId>
   <version>2.3-SNAPSHOT</version>
 

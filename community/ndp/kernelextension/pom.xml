@@ -5,10 +5,10 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.neo4j</groupId>
-    <artifactId>parent</artifactId>
+    <groupId>org.neo4j.ndp</groupId>
+    <artifactId>neo4j-data-protocol-parent</artifactId>
     <version>2.3-SNAPSHOT</version>
-    <relativePath>../../..</relativePath>
+    <relativePath>../</relativePath>
   </parent>
 
   <properties>
@@ -16,7 +16,6 @@
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
-  <groupId>org.neo4j.ndp</groupId>
   <artifactId>neo4j-ndp-kernelextension</artifactId>
   <version>2.3-SNAPSHOT</version>
 
@@ -66,7 +65,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.11</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -83,7 +81,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>2.3</version>
         <configuration>
           <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
           <createDependencyReducedPom>false</createDependencyReducedPom>
@@ -100,7 +97,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.18.1</version>
         <executions>
           <execution>
             <goals>
