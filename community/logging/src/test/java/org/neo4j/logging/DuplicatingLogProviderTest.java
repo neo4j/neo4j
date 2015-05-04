@@ -19,34 +19,32 @@
  */
 package org.neo4j.logging;
 
-/**
- * A {@link LogProvider} implementation that discards all messages
- */
-public class NullLogProvider implements LogProvider
+import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.sameInstance;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+public class DuplicatingLogProviderTest
 {
-    private static final NullLogProvider INSTANCE = new NullLogProvider();
-
-    private NullLogProvider()
+    @Test
+    public void shouldReturnSameLoggerForSameClass()
     {
+        // Given
+        DuplicatingLogProvider logProvider = new DuplicatingLogProvider();
+
+        // Then
+        DuplicatingLog log = logProvider.getLog( getClass() );
+        assertThat( logProvider.getLog( DuplicatingLogProviderTest.class ), sameInstance( log ) );
     }
 
-    /**
-     * @return A singleton {@link NullLogProvider} instance
-     */
-    public static NullLogProvider getInstance()
+    @Test
+    public void shouldReturnSameLoggerForSameContext()
     {
-        return INSTANCE;
-    }
+        // Given
+        DuplicatingLogProvider logProvider = new DuplicatingLogProvider();
 
-    @Override
-    public Log getLog( Class loggingClass )
-    {
-        return NullLog.getInstance();
-    }
-
-    @Override
-    public Log getLog( String context )
-    {
-        return NullLog.getInstance();
+        // Then
+        DuplicatingLog log = logProvider.getLog( "test context" );
+        assertThat( logProvider.getLog( "test context" ), sameInstance( log ) );
     }
 }

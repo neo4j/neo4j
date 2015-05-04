@@ -58,7 +58,7 @@ public class StoreMigrationTool
     public static void main( String[] args ) throws IOException
     {
         String legacyStoreDirectory = args[0];
-        FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( System.out, false, true );
+        FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( System.out );
         new StoreMigrationTool().run( new DefaultFileSystemAbstraction(), new File( legacyStoreDirectory ), new Config(), userLogProvider, NO_MONITOR );
     }
 

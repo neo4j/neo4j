@@ -27,9 +27,11 @@ import java.util.Date;
 import java.util.IllegalFormatException;
 
 import org.neo4j.function.Suppliers;
+import org.neo4j.logging.FormattedLog.Level;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 
 public class FormattedLogTest
@@ -47,7 +49,7 @@ public class FormattedLogTest
         log.info( "Terminator 2" );
 
         // Then
-        assertEquals( format( "1984-10-26 04:23:24.343 INFO  [test] Terminator 2%n" ), writer.toString() );
+        assertThat( writer.toString(), equalTo( format( "1984-10-26 04:23:24.343 INFO  [test] Terminator 2%n" ) ) );
     }
 
     @Test
@@ -65,7 +67,7 @@ public class FormattedLogTest
         } catch ( NullPointerException npe )
         {
             // Then
-            assertEquals( "", writer.toString() );
+            assertThat( writer.toString(), equalTo( "" ) );
         }
     }
 
@@ -80,9 +82,10 @@ public class FormattedLogTest
         log.info( "Hasta la vista, baby", newThrowable( "<message>", "<stacktrace>" ) );
 
         // Then
-        assertEquals(
-                format( "1984-10-26 04:23:24.343 INFO  [test] Hasta la vista, baby <message>%n<stacktrace>" ),
-                writer.toString() );
+        assertThat(
+                writer.toString(),
+                equalTo( format( "1984-10-26 04:23:24.343 INFO  [test] Hasta la vista, baby <message>%n<stacktrace>" ) )
+        );
     }
 
     @Test
@@ -100,7 +103,7 @@ public class FormattedLogTest
         } catch ( NullPointerException npe )
         {
             // Then
-            assertEquals( "", writer.toString() );
+            assertThat( writer.toString(), equalTo( "" ) );
         }
     }
 
@@ -115,7 +118,10 @@ public class FormattedLogTest
         log.info( "I'll take care of the police", (Throwable) null );
 
         // Then
-        assertEquals( format( "1984-10-26 04:23:24.343 INFO  [test] I'll take care of the police%n" ), writer.toString() );
+        assertThat(
+                writer.toString(),
+                equalTo( format( "1984-10-26 04:23:24.343 INFO  [test] I'll take care of the police%n" ) )
+        );
     }
 
     @Test
@@ -129,7 +135,10 @@ public class FormattedLogTest
         log.info( "Hasta la vista, baby", newThrowable( null, "<stacktrace>" ) );
 
         // Then
-        assertEquals( format( "1984-10-26 04:23:24.343 INFO  [test] Hasta la vista, baby%n<stacktrace>" ), writer.toString() );
+        assertThat(
+                writer.toString(),
+                equalTo( format( "1984-10-26 04:23:24.343 INFO  [test] Hasta la vista, baby%n<stacktrace>" ) )
+        );
     }
 
     @Test
@@ -143,9 +152,10 @@ public class FormattedLogTest
         log.info( "I need your %s, your %s and your %s", "clothes", "boots", "motorcycle" );
 
         // Then
-        assertEquals(
-                format( "1984-10-26 04:23:24.343 INFO  [test] I need your clothes, your boots and your motorcycle%n" ),
-                writer.toString() );
+        assertThat(
+                writer.toString(),
+                equalTo( format( "1984-10-26 04:23:24.343 INFO  [test] I need your clothes, your boots and your motorcycle%n" ) )
+        );
     }
 
     @Test
@@ -163,7 +173,7 @@ public class FormattedLogTest
         } catch ( NullPointerException npe )
         {
             // Then
-            assertEquals( "", writer.toString() );
+            assertThat( writer.toString(), equalTo( "" ) );
         }
     }
 
@@ -178,7 +188,10 @@ public class FormattedLogTest
         log.info( "Come with me if you %s to live!", new Object[]{} );
 
         // Then
-        assertEquals( format( "1984-10-26 04:23:24.343 INFO  [test] Come with me if you %%s to live!%n" ), writer.toString() );
+        assertThat(
+                writer.toString(),
+                equalTo( format( "1984-10-26 04:23:24.343 INFO  [test] Come with me if you %%s to live!%n" ) )
+        );
     }
 
     @Test
@@ -192,7 +205,10 @@ public class FormattedLogTest
         log.info( "Come with me if you %s to live!", (Object[]) null );
 
         // Then
-        assertEquals( format( "1984-10-26 04:23:24.343 INFO  [test] Come with me if you %%s to live!%n" ), writer.toString() );
+        assertThat(
+                writer.toString(),
+                equalTo( format( "1984-10-26 04:23:24.343 INFO  [test] Come with me if you %%s to live!%n" ) )
+        );
     }
 
     @Test
@@ -210,14 +226,34 @@ public class FormattedLogTest
         } catch ( IllegalFormatException ife )
         {
             // Then
-            assertEquals( "", writer.toString() );
+            assertThat( writer.toString(), equalTo( "" ) );
         }
+    }
+
+    @Test
+    public void shouldNotWriteLogIfLevelIsHigherThanWritten()
+    {
+        // Given
+        StringWriter writer = new StringWriter();
+        Log log = newFormattedLog( writer, Level.WARN );
+
+        // When
+        log.info( "I know now why you cry. But it's something I can never do." );
+
+        // Then
+        assertThat( writer.toString(), equalTo( "" ) );
     }
 
     private static FormattedLog newFormattedLog( StringWriter writer )
     {
-        return new FormattedLog( Suppliers.singleton( FIXED_DATE ), Suppliers.singleton( new PrintWriter( writer ) ),
-                null, "test", true, true );
+        return newFormattedLog( writer, Level.DEBUG );
+    }
+
+    private static FormattedLog newFormattedLog( StringWriter writer, Level level )
+    {
+        return new FormattedLog(
+                Suppliers.singleton( FIXED_DATE ), Suppliers.singleton( new PrintWriter( writer ) ),
+                null, "test", level, true );
     }
 
     private static Throwable newThrowable( final String message, final String stackTrace )

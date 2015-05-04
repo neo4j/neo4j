@@ -24,7 +24,7 @@ import java.util.ArrayList;
 /**
  * A {@link LogProvider} implementation that duplicates all messages to other LogProvider instances
  */
-public class DuplicatingLogProvider implements LogProvider
+public class DuplicatingLogProvider extends AbstractLogProvider<DuplicatingLog>
 {
     private final LogProvider[] logProviders;
 
@@ -37,7 +37,7 @@ public class DuplicatingLogProvider implements LogProvider
     }
 
     @Override
-    public Log getLog( Class loggingClass )
+    protected DuplicatingLog buildLog( Class loggingClass )
     {
         ArrayList<Log> logs = new ArrayList<>();
         for ( LogProvider logProvider : logProviders )
@@ -48,12 +48,12 @@ public class DuplicatingLogProvider implements LogProvider
     }
 
     @Override
-    public Log getLog( String category )
+    protected DuplicatingLog buildLog( String context )
     {
         ArrayList<Log> logs = new ArrayList<>();
         for ( LogProvider logProvider : logProviders )
         {
-            logs.add( logProvider.getLog( category ) );
+            logs.add( logProvider.getLog( context ) );
         }
         return new DuplicatingLog( logs );
     }

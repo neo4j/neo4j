@@ -20,14 +20,13 @@
 package org.neo4j.logging;
 
 import org.neo4j.function.Consumer;
+
 /**
  * A {@link Log} implementation that discards all messages
  */
 public final class NullLog implements Log
 {
     private static final NullLog INSTANCE = new NullLog();
-
-    private Logger nullLogger = NullLogger.getInstance();
 
     private NullLog()
     {
@@ -50,7 +49,7 @@ public final class NullLog implements Log
     @Override
     public Logger debugLogger()
     {
-        return nullLogger;
+        return NullLogger.getInstance();
     }
 
     @Override
@@ -71,7 +70,7 @@ public final class NullLog implements Log
     @Override
     public Logger infoLogger()
     {
-        return nullLogger;
+        return NullLogger.getInstance();
     }
 
     @Override
@@ -92,7 +91,7 @@ public final class NullLog implements Log
     @Override
     public Logger warnLogger()
     {
-        return nullLogger;
+        return NullLogger.getInstance();
     }
 
     @Override
@@ -113,7 +112,7 @@ public final class NullLog implements Log
     @Override
     public Logger errorLogger()
     {
-        return nullLogger;
+        return NullLogger.getInstance();
     }
 
     @Override

@@ -131,4 +131,73 @@ public class DuplicatingLog extends AbstractLog
             finalConsumer.accept( log );
         }
     }
+
+    private static class DuplicatingLogger implements Logger
+    {
+        private final Logger[] loggers;
+
+        public DuplicatingLogger( List<Logger> loggers )
+        {
+            this( loggers.toArray( new Logger[loggers.size()] ) );
+        }
+
+        public DuplicatingLogger( Logger... loggers )
+        {
+            this.loggers = loggers;
+        }
+
+        @Override
+        public void log( String message )
+        {
+            for ( Logger logger : loggers )
+            {
+                logger.log( message );
+            }
+        }
+
+        @Override
+        public void log( String message, Throwable throwable )
+        {
+            for ( Logger logger : loggers )
+            {
+                logger.log( message, throwable );
+            }
+        }
+
+        @Override
+        public void log( String format, Object... arguments )
+        {
+            for ( Logger logger : loggers )
+            {
+                logger.log( format, arguments );
+            }
+        }
+
+        @Override
+        public void bulk( Consumer<Logger> consumer )
+        {
+            bulk( 0, new Logger[loggers.length], consumer );
+        }
+
+        private void bulk( final int loggerIdx, final Logger[] bulkLoggers, final Consumer<Logger> finalConsumer )
+        {
+            if ( loggerIdx < loggers.length )
+            {
+                Logger logger = loggers[loggerIdx];
+                logger.bulk( new Consumer<Logger>()
+                {
+                    @Override
+                    public void accept( Logger bulkLogger )
+                    {
+                        bulkLoggers[loggerIdx] = bulkLogger;
+                        bulk( loggerIdx + 1, bulkLoggers, finalConsumer );
+                    }
+                } );
+            } else
+            {
+                Logger logger = new DuplicatingLogger( bulkLoggers );
+                finalConsumer.accept( logger );
+            }
+        }
+    }
 }

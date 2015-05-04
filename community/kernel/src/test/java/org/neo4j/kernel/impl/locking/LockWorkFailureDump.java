@@ -42,7 +42,7 @@ public class LockWorkFailureDump
     {
         File file = forTest( testClass ).file( "failure-dump-" + currentTimeMillis() );
         FileOutputStream out = new FileOutputStream( file, false );
-        FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( out, false, false );
+        FormattedLogProvider logProvider = FormattedLogProvider.withoutAutoFlush().toOutputStream( out );
 
         try
         {

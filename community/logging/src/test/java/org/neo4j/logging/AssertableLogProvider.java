@@ -41,7 +41,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.fail;
 
-public class AssertableLogProvider implements LogProvider
+public class AssertableLogProvider extends AbstractLogProvider<Log>
 {
     private final boolean debugEnabled;
     private final List<LogCall> logCalls = Collections.synchronizedList( new ArrayList<LogCall>() );
@@ -217,13 +217,13 @@ public class AssertableLogProvider implements LogProvider
     }
 
     @Override
-    public Log getLog( Class logClass )
+    protected Log buildLog( Class loggingClass )
     {
-        return new AssertableLog( logClass.getName() );
+        return new AssertableLog( loggingClass.getName() );
     }
 
     @Override
-    public Log getLog( String context )
+    protected Log buildLog( String context )
     {
         return new AssertableLog( context );
     }

@@ -58,7 +58,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
         {
         }
 
-        public void rotationError( Exception e, OutputStream out )
+        public void rotationError( @SuppressWarnings("unused") Exception e, @SuppressWarnings("unused") OutputStream out )
         {
         }
     }
@@ -82,17 +82,17 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
     private final Executor rotationExecutor;
     private final AtomicBoolean closed = new AtomicBoolean( false );
     private final AtomicBoolean rotating = new AtomicBoolean( false );
-    private final AtomicLong earliestRotationTimeRef = new AtomicLong(0);
+    private final AtomicLong earliestRotationTimeRef = new AtomicLong( 0 );
     private final AtomicReference<OutputStream> outRef = new AtomicReference<>();
     private final List<WeakReference<OutputStream>> archivedStreams = new LinkedList<>();
 
     /**
-     * @param fileSystem The filesystem to use
-     * @param outputFile The file that the latest {@link OutputStream} should output to
+     * @param fileSystem             The filesystem to use
+     * @param outputFile             The file that the latest {@link OutputStream} should output to
      * @param rotationThresholdBytes The size above which the file should be rotated
-     * @param rotationDelaySeconds The minimum time (in seconds) after last rotation before the file may be rotated again
-     * @param maxArchives The maximum number of archived output files to keep
-     * @param rotationExecutor An {@link Executor} for performing the rotation
+     * @param rotationDelaySeconds   The minimum time (in seconds) after last rotation before the file may be rotated again
+     * @param maxArchives            The maximum number of archived output files to keep
+     * @param rotationExecutor       An {@link Executor} for performing the rotation
      * @throws IOException If the output file cannot be created
      */
     public RotatingFileOutputStreamSupplier( FileSystemAbstraction fileSystem, File outputFile, long rotationThresholdBytes, int rotationDelaySeconds, int maxArchives, Executor rotationExecutor ) throws IOException
@@ -101,13 +101,13 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
     }
 
     /**
-     * @param fileSystem The filesystem to use
-     * @param outputFile The file that the latest {@link OutputStream} should output to
+     * @param fileSystem             The filesystem to use
+     * @param outputFile             The file that the latest {@link OutputStream} should output to
      * @param rotationThresholdBytes The size above which the file should be rotated
-     * @param rotationDelaySeconds The minimum time (in seconds) after last rotation before the file may be rotated again
-     * @param maxArchives The maximum number of archived output files to keep
-     * @param rotationExecutor An {@link Executor} for performing the rotation
-     * @param rotationListener A {@link org.neo4j.logging.RotatingFileOutputStreamSupplier.RotationListener} that can observe the rotation process and be notified of errors
+     * @param rotationDelaySeconds   The minimum time (in seconds) after last rotation before the file may be rotated again
+     * @param maxArchives            The maximum number of archived output files to keep
+     * @param rotationExecutor       An {@link Executor} for performing the rotation
+     * @param rotationListener       A {@link org.neo4j.logging.RotatingFileOutputStreamSupplier.RotationListener} that can observe the rotation process and be notified of errors
      * @throws IOException If the output file cannot be created
      */
     public RotatingFileOutputStreamSupplier( FileSystemAbstraction fileSystem, File outputFile, long rotationThresholdBytes, int rotationDelaySeconds, int maxArchives, Executor rotationExecutor, RotationListener rotationListener ) throws IOException

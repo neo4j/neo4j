@@ -40,3 +40,6 @@ BSD - Scala License
 BSD License
   Scala Compiler
 
+MIT License
+  SLF4J API Module
+
