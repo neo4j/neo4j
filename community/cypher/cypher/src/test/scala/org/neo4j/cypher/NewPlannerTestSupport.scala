@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor2_3
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{Eagerly, JavaConversionSupport}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherTestSupport
 import org.neo4j.helpers.Exceptions
 
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object NewPlannerMonitor {
 
@@ -92,7 +92,7 @@ class NewRuntimeMonitor extends NewRuntimeSuccessRateMonitor {
 trait NewPlannerTestSupport extends CypherTestSupport {
   self: ExecutionEngineFunSuite =>
 
-  //todo once birk handles dumpToString and plan descriptions, we should enable it by default here
+  //todo once the compiled runtime handles dumpToString and plan descriptions, we should enable it by default here
   //in that way we will notice when we support new queries
   override def databaseConfig(): Map[String, String] = Map("cypher_parser_version" -> CypherVersion.v2_3.name)
 
