@@ -106,7 +106,9 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
         taskCloser.addTask(queryContext.close)
         try {
           if (executionMode == ExplainMode) {
-            new ExplainExecutionResult(taskCloser, compiledPlan.columns.toList,
+            //close all statements
+            taskCloser.close(success = true)
+            new ExplainExecutionResult(compiledPlan.columns.toList,
               compiledPlan.planDescription, QueryType.READ_ONLY, inputQuery.notificationLogger.notifications)
           } else
             compiledPlan.executionResultBuilder(kernelStatement, graph, executionMode, tracer(executionMode), params, taskCloser)
@@ -122,19 +124,6 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
       def isPeriodicCommit: Boolean = compiledPlan.periodicCommit.isDefined
 
       def runtimeUsed = CompiledRuntimeName
-    }
-  }
-
-  private def explainResult(queryContext: QueryContext, compiledPlan: CompiledPlan, notifications: Seq[InternalNotification]) = {
-    val taskCloser = new TaskCloser
-    taskCloser.addTask(queryContext.close)
-    try {
-      new ExplainExecutionResult(taskCloser, compiledPlan.columns.toList,
-        compiledPlan.planDescription, QueryType.READ_ONLY, notifications)
-    } catch {
-      case (t: Throwable) =>
-        taskCloser.close(success = false)
-        throw t
     }
   }
 

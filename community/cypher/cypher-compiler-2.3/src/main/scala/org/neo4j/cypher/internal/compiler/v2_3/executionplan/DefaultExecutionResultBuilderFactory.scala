@@ -87,7 +87,9 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
         } else
           QueryType.READ_ONLY
       if (planType == ExplainMode) {
-        new ExplainExecutionResult(taskCloser, columns, pipeInfo.pipe.planDescription, queryType, notificationLogger.notifications)
+        //close all statements
+        taskCloser.close(success = true)
+        new ExplainExecutionResult(columns, pipeInfo.pipe.planDescription, queryType, notificationLogger.notifications)
       } else {
         val results = pipeInfo.pipe.createResults(state)
         val resultIterator = buildResultIterator(results, pipeInfo.updating)
