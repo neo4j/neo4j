@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
-import org.neo4j.function.primitive.PrimitiveLongPredicate;
+import org.neo4j.function.LongPredicate;
 
 import static java.util.Arrays.asList;
 
@@ -113,10 +113,10 @@ public class PrimitiveLongCollectionsTest
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
 
         // WHEN
-        PrimitiveLongIterator filtered = PrimitiveLongCollections.filter( items, new PrimitiveLongPredicate()
+        PrimitiveLongIterator filtered = PrimitiveLongCollections.filter( items, new LongPredicate()
         {
             @Override
-            public boolean accept( long item )
+            public boolean test( long item )
             {
                 return item != 2;
             }

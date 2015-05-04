@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.neo4j.function.Function;
 import org.w3c.dom.Document;
 
 import org.neo4j.backup.OnlineBackupSettings;
@@ -63,7 +64,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;

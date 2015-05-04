@@ -30,4 +30,11 @@ public interface PrimitiveIntSet extends PrimitiveIntCollection, PrimitiveIntPre
     boolean contains( int value );
 
     boolean remove( int value );
+
+    /**
+     * @deprecated use {@link #contains(int)} instead, or {@link PrimitiveIntCollections#inSet(PrimitiveIntSet)} if a predicate is required
+     */
+    @Deprecated
+    @Override
+    boolean accept( int value );
 }

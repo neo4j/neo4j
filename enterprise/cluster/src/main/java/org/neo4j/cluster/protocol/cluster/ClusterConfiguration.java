@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

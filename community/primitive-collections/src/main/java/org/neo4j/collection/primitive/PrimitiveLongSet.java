@@ -30,4 +30,11 @@ public interface PrimitiveLongSet extends PrimitiveLongCollection, PrimitiveLong
     boolean contains( long value );
 
     boolean remove( long value );
+
+    /**
+     * @deprecated use {@link #contains(long)} instead, or {@link PrimitiveLongCollections#inSet(PrimitiveLongSet)} if a predicate is required
+     */
+    @Deprecated
+    @Override
+    boolean accept( long value );
 }

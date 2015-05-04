@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
-import org.neo4j.helpers.Function;
+import org.neo4j.function.Function;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;

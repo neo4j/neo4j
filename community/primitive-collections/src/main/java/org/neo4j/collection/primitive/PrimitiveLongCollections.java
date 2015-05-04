@@ -24,6 +24,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import org.neo4j.collection.primitive.base.Empty;
+import org.neo4j.function.LongPredicate;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.function.primitive.PrimitiveLongPredicate;
 
@@ -241,7 +242,10 @@ public class PrimitiveLongCollections
         }
     }
 
-    // Filtering
+    /**
+     * @deprecated use {@link #filter(PrimitiveLongIterator, LongPredicate)} instead
+     */
+    @Deprecated
     public static PrimitiveLongIterator filter( PrimitiveLongIterator source, final PrimitiveLongPredicate filter )
     {
         return new PrimitiveLongFilteringIterator( source )
@@ -250,6 +254,18 @@ public class PrimitiveLongCollections
             public boolean accept( long item )
             {
                 return filter.accept( item );
+            }
+        };
+    }
+
+    public static PrimitiveLongIterator filter( PrimitiveLongIterator source, final LongPredicate filter )
+    {
+        return new PrimitiveLongFilteringIterator( source )
+        {
+            @Override
+            public boolean accept( long item )
+            {
+                return filter.test( item );
             }
         };
     }
@@ -323,6 +339,10 @@ public class PrimitiveLongCollections
             return false;
         }
 
+        /**
+         * @deprecated use {@link LongPredicate} instead
+         */
+        @Deprecated
         @Override
         public abstract boolean accept( long testItem );
     }
@@ -597,6 +617,19 @@ public class PrimitiveLongCollections
             }
         }
         return set;
+    }
+
+
+    public static LongPredicate inSet( final PrimitiveLongSet set )
+    {
+        return new LongPredicate()
+        {
+            @Override
+            public boolean test( long value )
+            {
+                return set.contains( value );
+            }
+        };
     }
 
     public static PrimitiveLongSet asSetAllowDuplicates( PrimitiveLongIterator iterator )

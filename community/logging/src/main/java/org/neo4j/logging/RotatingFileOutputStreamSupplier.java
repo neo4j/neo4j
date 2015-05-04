@@ -19,8 +19,8 @@
  */
 package org.neo4j.logging;
 
+import org.neo4j.function.LongSupplier;
 import org.neo4j.function.Supplier;
-import org.neo4j.function.primitive.LongSupplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 import java.io.Closeable;

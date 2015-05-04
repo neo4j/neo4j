@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.function.LongFunction;
 import org.neo4j.function.Supplier;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -485,7 +486,7 @@ public class GraphDatabaseFacade
         }
 
         final PrimitiveLongIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
-        return ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong<Node>()
+        return ResourceClosingIterator.newResourceIterator( statement, map( new LongFunction<Node>()
         {
             @Override
             public Node apply( long nodeId )
@@ -497,7 +498,7 @@ public class GraphDatabaseFacade
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Statement statement )
     {
-        return ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong<Node>()
+        return ResourceClosingIterator.newResourceIterator( statement, map( new LongFunction<Node>()
         {
             @Override
             public Node apply( long id )

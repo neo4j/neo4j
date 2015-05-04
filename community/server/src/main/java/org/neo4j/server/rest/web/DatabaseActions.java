@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.apache.lucene.search.Sort;
 
+import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphalgo.CommonEvaluators;
@@ -60,7 +61,6 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;

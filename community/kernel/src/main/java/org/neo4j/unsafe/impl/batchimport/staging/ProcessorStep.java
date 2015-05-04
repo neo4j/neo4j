@@ -21,8 +21,8 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.function.LongPredicate;
 import org.neo4j.function.Supplier;
-import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.executor.Task;
@@ -46,19 +46,19 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     private final int initialProcessorCount = 1;
     // zero for unlimited
     private final int maxProcessors;
-    private final PrimitiveLongPredicate catchUp = new PrimitiveLongPredicate()
+    private final LongPredicate catchUp = new LongPredicate()
     {
         @Override
-        public boolean accept( long queueSizeThreshold )
+        public boolean test( long queueSizeThreshold )
         {
             return queuedBatches.get() <= queueSizeThreshold;
         }
     };
     protected final AtomicLong begunBatches = new AtomicLong();
-    private final PrimitiveLongPredicate rightBeginTicket = new PrimitiveLongPredicate()
+    private final LongPredicate rightBeginTicket = new LongPredicate()
     {
         @Override
-        public boolean accept( long ticket )
+        public boolean test( long ticket )
         {
             return begunBatches.get() == ticket;
         }

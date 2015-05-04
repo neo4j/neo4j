@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.primitive.PrimitiveLongPredicate;
+import org.neo4j.function.LongPredicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
@@ -67,7 +67,7 @@ public class LookupFilter
         return value instanceof Number || value.getClass().isArray();
     }
 
-    private static abstract class BaseExactMatchPredicate implements PrimitiveLongPredicate
+    private static abstract class BaseExactMatchPredicate implements LongPredicate
     {
         private final int propertyKeyId;
         private final Object value;
@@ -79,7 +79,7 @@ public class LookupFilter
         }
 
         @Override
-        public boolean accept( long nodeId )
+        public boolean test( long nodeId )
         {
             try
             {

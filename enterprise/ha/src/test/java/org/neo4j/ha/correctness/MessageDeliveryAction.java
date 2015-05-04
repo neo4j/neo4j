@@ -24,7 +24,7 @@ import java.net.URISyntaxException;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageType;
-import org.neo4j.helpers.Function;
+import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Iterables;
 
 class MessageDeliveryAction implements ClusterAction

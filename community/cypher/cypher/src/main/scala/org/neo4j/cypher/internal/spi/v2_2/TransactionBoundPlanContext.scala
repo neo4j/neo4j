@@ -80,7 +80,7 @@ class TransactionBoundPlanContext(someStatement: Statement, val gdb: GraphDataba
   }
 
   def getOrCreateFromSchemaState[T](key: Any, f: => T): T = {
-    val javaCreator = new org.neo4j.helpers.Function[Any, T]() {
+    val javaCreator = new org.neo4j.function.Function[Any, T]() {
       def apply(key: Any) = f
     }
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)

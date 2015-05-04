@@ -45,8 +45,8 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentials;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
-import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.logging.LogService;
 
 public class ElectionContextImpl

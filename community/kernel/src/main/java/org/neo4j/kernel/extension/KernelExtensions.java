@@ -27,9 +27,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;

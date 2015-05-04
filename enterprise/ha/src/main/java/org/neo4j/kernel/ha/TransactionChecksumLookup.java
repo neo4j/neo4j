@@ -22,7 +22,7 @@ package org.neo4j.kernel.ha;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.neo4j.function.primitive.FunctionFromPrimitiveLongToPrimitiveLong;
+import org.neo4j.function.ThrowingLongUnaryOperator;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -36,7 +36,7 @@ import static org.neo4j.helpers.Exceptions.withMessage;
  * extract that checksum directly from {@link TransactionIdStore}, since it's not in any transaction log,
  * at least not at the time of writing this class.
  */
-public class TransactionChecksumLookup implements FunctionFromPrimitiveLongToPrimitiveLong<IOException>
+public class TransactionChecksumLookup implements ThrowingLongUnaryOperator<IOException>
 {
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
@@ -49,7 +49,7 @@ public class TransactionChecksumLookup implements FunctionFromPrimitiveLongToPri
     }
 
     @Override
-    public long apply( long txId ) throws IOException
+    public long applyAsLong( long txId ) throws IOException
     {
         // First off see if the requested txId is in fact the last committed transaction.
         // If so then we can extract the checksum directly from the transaction id store.

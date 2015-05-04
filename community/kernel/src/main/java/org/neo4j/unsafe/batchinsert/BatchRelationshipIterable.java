@@ -21,7 +21,7 @@ package org.neo4j.unsafe.batchinsert;
 
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.function.IntPredicates;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -40,7 +40,7 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>, Relationship
     {
         try
         {
-            this.storeIterable = new StoreRelationshipIterable( neoStore, nodeId, PrimitiveIntCollections.alwaysTrue(), BOTH );
+            this.storeIterable = new StoreRelationshipIterable( neoStore, nodeId, IntPredicates.alwaysTrue(), BOTH );
         }
         catch ( EntityNotFoundException e )
         {

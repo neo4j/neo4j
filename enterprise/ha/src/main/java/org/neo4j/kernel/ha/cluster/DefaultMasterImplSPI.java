@@ -155,7 +155,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public long getTransactionChecksum( long txId ) throws IOException
     {
-        return txChecksumLookup.apply( txId );
+        return txChecksumLookup.applyAsLong( txId );
     }
 
     @Override

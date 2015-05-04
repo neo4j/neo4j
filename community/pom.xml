@@ -32,6 +32,7 @@
 
   <modules>
     <module>unsafe</module>
+    <module>function</module>
     <module>primitive-collections</module>
     <module>io</module>
     <module>csv</module>

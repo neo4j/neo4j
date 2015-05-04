@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Functions;
+import org.neo4j.function.Function;
+import org.neo4j.function.Functions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;

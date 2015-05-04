@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
+import org.neo4j.function.LongFunction;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
@@ -168,7 +168,7 @@ public class BatchInserterImpl implements BatchInserter
     private final StoreLocker storeLocker;
     private boolean labelsTouched;
 
-    private final FunctionFromPrimitiveLong<Label> labelIdToLabelFunction = new FunctionFromPrimitiveLong<Label>()
+    private final LongFunction<Label> labelIdToLabelFunction = new LongFunction<Label>()
     {
         @Override
         public Label apply( long from )

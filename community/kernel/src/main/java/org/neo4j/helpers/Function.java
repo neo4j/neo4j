@@ -24,7 +24,7 @@ package org.neo4j.helpers;
  * <p/>
  * This can be used with the Iterables methods to transform lists of objects.
  *
- * This is deprecated, use {@link org.neo4j.function.Function} instead.
+ * @deprecated use {@link org.neo4j.function.Function} instead
  */
 @Deprecated
 public interface Function<FROM, TO> extends org.neo4j.function.Function<FROM, TO>

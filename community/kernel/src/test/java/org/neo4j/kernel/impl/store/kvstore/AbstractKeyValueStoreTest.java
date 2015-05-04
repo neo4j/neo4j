@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.Predicate;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -300,23 +301,22 @@ public class AbstractKeyValueStoreTest
                 return Long.compare( lhs.get( TX_ID ), rhs.get( TX_ID ) );
             }
         } );
-        IOFunction<Long, Void> update = new IOFunction<Long, Void>()
+        ThrowingConsumer<Long, IOException> update = new ThrowingConsumer<Long, IOException>()
         {
             @Override
-            public Void apply( Long update ) throws IOException
+            public void accept( Long update ) throws IOException
             {
                 try ( EntryUpdater<String> updater = store.updater( update ).get() )
                 {
                     updater.apply( "key " + update, store.value( "value " + update ) );
                 }
-                return null;
             }
         };
 
         // when
-        update.apply( 1l );
+        update.accept( 1l );
         PreparedRotation rotation = store.prepareRotation( 2 );
-        update.apply( 2l );
+        update.accept( 2l );
         rotation.rotate();
 
         // then
@@ -357,21 +357,20 @@ public class AbstractKeyValueStoreTest
                 return Long.compare( lhs.get( TX_ID ), rhs.get( TX_ID ) );
             }
         } );
-        IOFunction<Long, Void> update = new IOFunction<Long, Void>()
+        ThrowingConsumer<Long, IOException> update = new ThrowingConsumer<Long, IOException>()
         {
             @Override
-            public Void apply( Long update ) throws IOException
+            public void accept( Long update ) throws IOException
             {
                 try ( EntryUpdater<String> updater = store.updater( update ).get() )
                 {
                     updater.apply( "key " + update, store.value( "value " + update ) );
                 }
-                return null;
             }
         };
 
         // when
-        update.apply( 1l );
+        update.accept( 1l );
         Future<Long> rotation = threading.executeAndAwait( store.rotation, 3l, new Predicate<Thread>()
         {
             @Override
@@ -394,19 +393,19 @@ public class AbstractKeyValueStoreTest
         SECONDS.sleep( 1 );
         assertFalse( rotation.isDone() );
         // apply update
-        update.apply( 3l );
+        update.accept( 3l );
         // rotation should still wait...
         assertFalse( rotation.isDone() );
         SECONDS.sleep( 1 );
         assertFalse( rotation.isDone() );
         // apply update
-        update.apply( 4l );
+        update.accept( 4l );
         // rotation should still wait...
         assertFalse( rotation.isDone() );
         SECONDS.sleep( 1 );
         assertFalse( rotation.isDone() );
         // apply update
-        update.apply( 2l );
+        update.accept( 2l );
 
         // then
         assertEquals( 3, rotation.get().longValue() );
