@@ -17,17 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.birk.il
+package org.neo4j.cypher.internal.compiler.v2_3.birk.codegen
 
-case class ScanAllNodes(id: String) extends Instruction with LoopDataGenerator {
-  def generateCode() = "ro.nodesGetAll()"
 
-  def generateVariablesAndAssignment() = ""
-
-  def generateInit() = ""
-
-  override def _importedClasses() =
-    Set("org.neo4j.collection.primitive.PrimitiveLongIterator")
-
-  def javaType = "PrimitiveLongIterator"
+case object setStaticField {
+  def apply(clazz: Class[_], name: String, value: AnyRef) = {
+    clazz.getDeclaredField(name).set(null, value)
+  }
 }

@@ -22,7 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.KernelExceptionCodeGen
 import org.neo4j.graphdb.Direction
 
-case class ExpandC(fromVar: String, relVar: String, dir: Direction, types: Map[String, String], toVar: String, inner: Instruction) extends LoopDataGenerator {
+case class ExpandC(id: String, fromVar: String, relVar: String, dir: Direction,
+                   types: Map[String, String], toVar: String, inner: Instruction)
+  extends LoopDataGenerator {
+
   private val theBody =
     if (dir == Direction.OUTGOING)
       s"""$toVar = rel.endNode();
@@ -75,9 +78,9 @@ case class ExpandC(fromVar: String, relVar: String, dir: Direction, types: Map[S
          |}""".stripMargin).mkString("\n")}
        |${inner.generateInit()}""".stripMargin
 
-  override def fields() =
+  override def members() =
     s"""${types.map(s => s"int ${s._1} = -1;").mkString("\n")}
-       |${inner.fields()}""".stripMargin
+       |${inner.members()}""".stripMargin
 
   override def children = Seq(inner)
 

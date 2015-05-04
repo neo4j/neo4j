@@ -74,6 +74,7 @@ sealed abstract class Argument extends Product {
 
 object InternalPlanDescription {
   object Arguments {
+    case class Time(value: Long) extends Argument
     case class Rows(value: Long) extends Argument
     case class DbHits(value: Long) extends Argument
     case class ColumnsLeft(value: Seq[String]) extends Argument
@@ -151,10 +152,11 @@ final case class PlanDescriptionImpl(id: Id,
   def toSeq: Seq[InternalPlanDescription] = this +: children.toSeq
 
   override def toString = {
+    val planAndRuntime = renderPlanAndRuntime(this)
     val treeString = renderAsTree(this)
     val details = renderDetails(this)
     val summary = renderSummary(this)
-    "%s%n%n%s%n%s".format(treeString, details, summary)
+    "%s%n%s%n%n%s%n%s".format(planAndRuntime, treeString, details, summary)
   }
 
   def render( builder: StringBuilder, separator: String, levelSuffix: String ) { ??? }

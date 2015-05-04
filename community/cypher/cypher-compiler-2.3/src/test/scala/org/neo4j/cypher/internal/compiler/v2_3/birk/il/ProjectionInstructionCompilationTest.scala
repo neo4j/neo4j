@@ -27,7 +27,7 @@ class ProjectionInstructionCompilationTest extends FunSuite with Matchers with C
 
   { // literal + literal
     def adding(lhs: ProjectionInstruction, rhs: ProjectionInstruction) = evaluate(
-      ProjectProperties(Seq.empty, ProduceResults(Map.empty, Map.empty,
+      ProjectProperties(Seq.empty, AcceptVisitor("id", Map.empty, Map.empty,
         Map("result" -> add(lhs, rhs).projectedVariable.name))))
 
     verifyAddition(adding, new SimpleOperands[ProjectionInstruction]("literal") {
@@ -37,7 +37,7 @@ class ProjectionInstructionCompilationTest extends FunSuite with Matchers with C
 
   { // parameter + parameter
     val addition: ProjectionInstruction = add(parameter("lhs"), parameter("rhs"))
-    val clazz = compile(ProjectProperties(Seq(addition), ProduceResults(Map.empty, Map.empty,
+    val clazz = compile(ProjectProperties(Seq(addition), AcceptVisitor("id", Map.empty, Map.empty,
       Map("result" -> addition.projectedVariable.name))))
     def adding(lhs: Any, rhs: Any) = evaluate(newInstance(clazz, params = Map("lhs" -> lhs, "rhs" -> rhs)))
 
@@ -49,7 +49,7 @@ class ProjectionInstructionCompilationTest extends FunSuite with Matchers with C
   { // literal + parameter
     def adding(lhs: ProjectionInstruction, rhs: Any) = {
       val addition: ProjectionInstruction = add(lhs, parameter("rhs"))
-      evaluate(newInstance(compile(ProjectProperties(Seq(addition), ProduceResults(Map.empty, Map.empty,
+      evaluate(newInstance(compile(ProjectProperties(Seq(addition), AcceptVisitor("id", Map.empty, Map.empty,
         Map("result" -> addition.projectedVariable.name)))), params = Map("rhs" -> rhs)))
     }
 
@@ -63,7 +63,7 @@ class ProjectionInstructionCompilationTest extends FunSuite with Matchers with C
   { // parameter + literal
     def adding(lhs: Any, rhs: ProjectionInstruction) = {
       val addition: ProjectionInstruction = add(parameter("lhs"), rhs)
-      evaluate(newInstance(compile(ProjectProperties(Seq(addition), ProduceResults(Map.empty, Map.empty,
+      evaluate(newInstance(compile(ProjectProperties(Seq(addition), AcceptVisitor("id", Map.empty, Map.empty,
         Map("result" -> addition.projectedVariable.name)))), params = Map("lhs" -> lhs)))
     }
 
@@ -78,7 +78,7 @@ class ProjectionInstructionCompilationTest extends FunSuite with Matchers with C
 
   { // literal - literal
     def subtracting(lhs: ProjectionInstruction, rhs: ProjectionInstruction) = evaluate(
-      ProjectProperties(Seq.empty, ProduceResults(Map.empty, Map.empty,
+      ProjectProperties(Seq.empty, AcceptVisitor("id", Map.empty, Map.empty,
         Map("result" -> sub(lhs, rhs).projectedVariable.name))))
 
     verifySubtraction(subtracting, new SimpleOperands[ProjectionInstruction]("literal") {
@@ -88,7 +88,7 @@ class ProjectionInstructionCompilationTest extends FunSuite with Matchers with C
 
   { // parameter - parameter
     val subtraction: ProjectionInstruction = sub(parameter("lhs"), parameter("rhs"))
-    val clazz = compile(ProjectProperties(Seq(subtraction), ProduceResults(Map.empty, Map.empty,
+    val clazz = compile(ProjectProperties(Seq(subtraction), AcceptVisitor("id", Map.empty, Map.empty,
       Map("result" -> subtraction.projectedVariable.name))))
     def subtracting(lhs: Any, rhs: Any) = evaluate(newInstance(clazz, params = Map("lhs" -> lhs, "rhs" -> rhs)))
 
@@ -100,7 +100,7 @@ class ProjectionInstructionCompilationTest extends FunSuite with Matchers with C
   { // literal - parameter
     def subtracting(lhs: ProjectionInstruction, rhs: Any) = {
       val subtraction: ProjectionInstruction = sub(lhs, parameter("rhs"))
-      evaluate(newInstance(compile(ProjectProperties(Seq(subtraction), ProduceResults(Map.empty, Map.empty,
+      evaluate(newInstance(compile(ProjectProperties(Seq(subtraction), AcceptVisitor("id", Map.empty, Map.empty,
         Map("result" -> subtraction.projectedVariable.name)))), params = Map("rhs" -> rhs)))
     }
 
@@ -114,7 +114,7 @@ class ProjectionInstructionCompilationTest extends FunSuite with Matchers with C
   { // parameter - literal
     def subtracting(lhs: Any, rhs: ProjectionInstruction) = {
       val subtraction: ProjectionInstruction = sub(parameter("lhs"), rhs)
-      evaluate(newInstance(compile(ProjectProperties(Seq(subtraction), ProduceResults(Map.empty, Map.empty,
+      evaluate(newInstance(compile(ProjectProperties(Seq(subtraction), AcceptVisitor("id", Map.empty, Map.empty,
         Map("result" -> subtraction.projectedVariable.name)))), params = Map("lhs" -> lhs)))
     }
 

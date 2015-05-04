@@ -27,6 +27,18 @@ import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  // TODO: collections of nodes/rels not supported; add this back when they are
+//  test("collection expression works with all runtimes") {
+//    // given
+//    relate(createNode(), createNode())
+//
+//    // when
+//    val result = executeWithAllPlannersAndRuntimes("MATCH n RETURN [ n ]")
+//
+//    // then
+//    println(result.executionPlanDescription())
+//  }
+
   test("path query should return results in written order") {
     val a = createLabeledNode("label1")
     val b = createLabeledNode("label2")

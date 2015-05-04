@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 import org.neo4j.cypher.internal.compiler.v2_3.birk.JavaSymbol
 import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaString
 
-case class ScanForLabel(labelName: String, labelVar: JavaSymbol) extends Instruction with LoopDataGenerator {
+case class ScanForLabel(id: String, labelName: String, labelVar: JavaSymbol) extends Instruction with LoopDataGenerator {
   def generateCode() = s"""ro.nodesGetForLabel( ${labelVar.name} )"""
 
   def generateVariablesAndAssignment() = ""
@@ -34,7 +34,8 @@ case class ScanForLabel(labelName: String, labelVar: JavaSymbol) extends Instruc
        |${labelVar.name} = ro.labelGetForName( "${labelName.toJava}" );
        |}""".stripMargin
 
-  override def fields() = s"private ${labelVar.javaType} ${labelVar.name} = -1;"
+  override def members() = s"private ${labelVar.javaType} ${labelVar.name} = -1;"
+
   override def _importedClasses() =
     Set("org.neo4j.collection.primitive.PrimitiveLongIterator")
 

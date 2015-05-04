@@ -28,25 +28,29 @@ import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser
 import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.{CodeGenContext, Namer}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, PlanFingerprint}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.{CodeGenContext, Namer, setStaticField}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, GreedyPlannerName}
+import org.neo4j.function.Supplier
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
 
-import scala.collection.Map
+import scala.collection.{Map, immutable, mutable}
 
 object CodeGenerator {
   def generateClass(instructions: Seq[Instruction]) = {
     val className = Namer.newClassName()
     val source = generateCodeFromInstructions(className, instructions)
-
-    Javac.compile(s"$packageName.$className",source )
+    //println(indentNicely(source))
+    (Javac.compile(s"$packageName.$className", source), source)
   }
 
   implicit class JavaString(name: String) {
@@ -99,21 +103,24 @@ object CodeGenerator {
         reduceOption(_ ++ _).
         getOrElse(Set.empty)
 
+
+
     val imports = if (importLines.nonEmpty)
       importLines.toSeq.sorted.mkString("import ", s";${n}import ", ";")
     else
       ""
-    val fields = instructions.map(_.fields().trim).reduce(_ + n + _).trim
-    val init = instructions.map(_.generateInit().trim).reduce(_ + n + _).trim
+    val members = instructions.map(_.members().trim).mkString(n).trim
+    val init = instructions.map(_.generateInit().trim).mkString(n).trim
     val methodBody = instructions.map(_.generateCode().trim).reduce(_ + n + _).trim
     val privateMethods = instructions.flatMap(_.methods).distinct.sortBy(_.name)
     val privateMethodText = privateMethods.map(_.generateCode.trim).reduceOption(_ + n + _).getOrElse("").trim
     val exceptions = instructions.flatMap(_.exceptions).toSet
+    val opIds = instructions.flatMap(_.operatorIds).map(s => s"public static Id $s;").mkString(n)
 
-    //TODO move imports to set and merge with the other imports, or use full paths
     s"""package $packageName;
        |
        |import org.neo4j.helpers.collection.Visitor;
+       |import org.neo4j.function.Supplier;
        |import org.neo4j.graphdb.GraphDatabaseService;
        |import org.neo4j.kernel.api.Statement;
        |import org.neo4j.kernel.api.exceptions.KernelException;
@@ -125,10 +132,14 @@ object CodeGenerator {
        |import org.neo4j.graphdb.Result.ResultVisitor;
        |import org.neo4j.graphdb.Result;
        |import org.neo4j.graphdb.Transaction;
+       |import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id;
        |import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
        |import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
        |import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser;
+       |import org.neo4j.cypher.internal.compiler.v2_3.birk.QueryExecutionTracer;
+       |import org.neo4j.cypher.internal.compiler.v2_3.birk.QueryExecutionEvent;
        |import java.util.Map;
+       |import java.util.List;
        |
        |$imports
        |
@@ -136,31 +147,21 @@ object CodeGenerator {
        |{
        |private final ReadOperations ro;
        |private final GraphDatabaseService db;
-       |private final InternalPlanDescription description;
-       |private final ExecutionMode executionMode;
        |private final Map<String, Object> params;
+       |private final QueryExecutionTracer tracer;
        |
-       |public $className( TaskCloser closer, Statement statement, GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params )
+       |$opIds
+       |
+       |public $className( TaskCloser closer, Statement statement, GraphDatabaseService db, ExecutionMode executionMode, Supplier<InternalPlanDescription> description, QueryExecutionTracer tracer, Map<String, Object> params )
        |{
-       |  super( closer, statement );
+       |  super( closer, statement, executionMode, description );
        |  this.ro = statement.readOperations();
        |  this.db = db;
-       |  this.executionMode = executionMode;
-       |  this.description = description;
+       |  this.tracer = tracer;
        |  this.params = params;
        |}
        |
-       |public ExecutionMode executionMode()
-       |{
-       |  return this.executionMode;
-       |}
-       |
-       |public InternalPlanDescription executionPlanDescription()
-       |{
-       |  return this.description;
-       |}
-       |
-       |$fields
+       |$members
        |
        |@Override
        |public <E extends Exception> void accept(final ResultVisitor<E> visitor) throws E
@@ -182,11 +183,12 @@ object CodeGenerator {
        |}""".stripMargin
   }
 
-  private def createInstructions(plan: LogicalPlan, semanticTable: SemanticTable): Seq[Instruction] = {
+  private def createInstructions(plan: LogicalPlan, semanticTable: SemanticTable, idMap: immutable.Map[LogicalPlan, Id]): (Seq[Instruction], mutable.Map[Id, String]) = {
     import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.LogicalPlanConverter._
 
-    val (_, result) = plan.asCodeGenPlan.produce(CodeGenContext(semanticTable))
-    result
+    val context = new CodeGenContext(semanticTable, idMap)
+    val (_, result) = plan.asCodeGenPlan.produce(context)
+    (result, context.operatorIds)
   }
 }
 
@@ -201,7 +203,12 @@ class CodeGenerator {
   def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable) = {
     plan match {
       case res: ProduceResult =>
-        val clazz = generateClass(createInstructions(plan, semanticTable))
+        val idMap = LogicalPlanIdentificationBuilder(plan)
+        val (instructions, operatorMap) = createInstructions(plan, semanticTable, idMap)
+        val clazz = generateClass(instructions)._1
+        operatorMap.foreach {
+          case (id, name) => setStaticField(clazz, name, id)
+        }
 
         val fp = planContext.statistics match {
           case igs: InstrumentedGraphStatistics =>
@@ -210,11 +217,16 @@ class CodeGenerator {
             None
         }
 
-        val idMap = LogicalPlanIdentificationBuilder(plan)
         val description: InternalPlanDescription = LogicalPlan2PlanDescription(plan, idMap)
 
-        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, params: Map[String, Any], closer: TaskCloser) =>
-          Javac.newInstance(clazz, closer, st, db,  mode, description, asJavaHashMap(params))
+        val builder = new RunnablePlan {
+          def apply(statement: Statement, db: GraphDatabaseService, execMode: ExecutionMode,
+                    descriptionProvider: (InternalPlanDescription) => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer]),
+                    params: immutable.Map[String, Any], closer: TaskCloser): InternalExecutionResult = {
+            val (supplier, tracer) = descriptionProvider(description)
+            Javac.newInstance(clazz, closer, statement, db, execMode, supplier, tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
+          }
+        }
 
         val columns = res.nodes ++ res.relationships ++ res.other
         CompiledPlan(updating = false, None, fp, GreedyPlannerName, description, columns, builder)

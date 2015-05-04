@@ -17,17 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.birk.il
+package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 
-case class ScanAllNodes(id: String) extends Instruction with LoopDataGenerator {
-  def generateCode() = "ro.nodesGetAll()"
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 
-  def generateVariablesAndAssignment() = ""
+object renderPlanAndRuntime extends (InternalPlanDescription => String) {
+  def apply(plan: InternalPlanDescription): String = {
+    val runtime = plan.arguments.collectFirst { case Runtime(r) => r.toString }.getOrElse("UNKNOWN")
+    val planner = plan.arguments.collectFirst { case Planner(p) => p.toString }.getOrElse("UNKNOWN")
 
-  def generateInit() = ""
-
-  override def _importedClasses() =
-    Set("org.neo4j.collection.primitive.PrimitiveLongIterator")
-
-  def javaType = "PrimitiveLongIterator"
+    s"PLANNER $planner\nRUNTIME $runtime"
+  }
 }
+

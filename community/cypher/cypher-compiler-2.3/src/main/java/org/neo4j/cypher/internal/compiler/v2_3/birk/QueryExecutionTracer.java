@@ -17,17 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.birk.il
+package org.neo4j.cypher.internal.compiler.v2_3.birk;
 
-case class ScanAllNodes(id: String) extends Instruction with LoopDataGenerator {
-  def generateCode() = "ro.nodesGetAll()"
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id;
 
-  def generateVariablesAndAssignment() = ""
+public interface QueryExecutionTracer
+{
+    QueryExecutionEvent executeOperator( Id queryId );
 
-  def generateInit() = ""
-
-  override def _importedClasses() =
-    Set("org.neo4j.collection.primitive.PrimitiveLongIterator")
-
-  def javaType = "PrimitiveLongIterator"
+    QueryExecutionTracer NONE = new QueryExecutionTracer()
+    {
+        @Override
+        public QueryExecutionEvent executeOperator( Id queryId )
+        {
+            return QueryExecutionEvent.NONE;
+        }
+    };
 }
