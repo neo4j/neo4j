@@ -134,7 +134,7 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Integer> store_internal_log_rotation_delay = setting("store.internal_log.rotation_threshold", INTEGER, "300", min(0), max( Integer.MAX_VALUE ) );
 
     @Description( "Maximum number of history files for the internal log." )
-    public static final Setting<Integer> store_internal_log_archive_count = setting("store.internal_log.archive_count", INTEGER, "7", min(1) );
+    public static final Setting<Integer> store_internal_log_max_archives = setting("store.internal_log.max_archives", INTEGER, "7", min(1) );
 
     // Indexing
     @Description("Controls the auto indexing feature for nodes. Setting it to `false` shuts it down, " +
