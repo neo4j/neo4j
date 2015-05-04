@@ -51,6 +51,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
                       allNodes: Option[Double] = None,
                       knownLabelCardinality: Map[String, Double] = Map.empty,
                       knownIndexSelectivity: Map[(String, String), Double] = Map.empty,
+                      knownIndexPropertyExistsSelectivity: Map[(String, String), Double] = Map.empty,
                       knownProperties: Set[String] = Set.empty,
                       knownRelationshipCardinality: Map[(String, String, String), Double] = Map.empty,
                       knownNodeNames: Set[String] = Set.empty,
@@ -101,12 +102,23 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
     }
 
     def withIndexSelectivity(v: ((Symbol, Symbol), Double)) = {
-      val ((Symbol(labelName), Symbol(propertyName)), cardinality) = v
+      val ((Symbol(labelName), Symbol(propertyName)), selectivity) = v
       if (!knownLabelCardinality.contains(labelName))
         fail("Label not known. Add it with withLabel")
 
       copy(
-        knownIndexSelectivity = knownIndexSelectivity + ((labelName, propertyName) -> cardinality),
+        knownIndexSelectivity = knownIndexSelectivity + ((labelName, propertyName) -> selectivity),
+        knownProperties = knownProperties + propertyName
+      )
+    }
+
+    def withIndexPropertyExistsSelectivity(v: ((Symbol, Symbol), Double)) = {
+      val ((Symbol(labelName), Symbol(propertyName)), selectivity) = v
+      if (!knownLabelCardinality.contains(labelName))
+        fail("Label not known. Add it with withLabel")
+
+      copy(
+        knownIndexPropertyExistsSelectivity = knownIndexPropertyExistsSelectivity + ((labelName, propertyName) -> selectivity),
         knownProperties = knownProperties + propertyName
       )
     }
@@ -139,6 +151,18 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
           (labelName, propertyName) match {
             case (Some(lName), Some(pName)) =>
               val selectivity = knownIndexSelectivity.get((lName, pName))
+              selectivity.map(Selectivity.apply)
+
+            case _ => Some(Selectivity(0))
+          }
+        }
+
+        def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] = {
+          val labelName: Option[String] = getLabelName(label)
+          val propertyName: Option[String] = getPropertyName(property)
+          (labelName, propertyName) match {
+            case (Some(lName), Some(pName)) =>
+              val selectivity = knownIndexPropertyExistsSelectivity.get((lName, pName))
               selectivity.map(Selectivity.apply)
 
             case _ => Some(Selectivity(0))

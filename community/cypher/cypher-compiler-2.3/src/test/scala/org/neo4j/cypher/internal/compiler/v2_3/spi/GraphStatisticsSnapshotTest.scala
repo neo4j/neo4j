@@ -36,6 +36,9 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
 
     def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
       Some(1.0 / ((property.id + 1) * FACTOR))
+
+    def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
+      Some(1.0 / ((property.id + 1) * FACTOR))
   }
 
   test("records queries and its observed values") {

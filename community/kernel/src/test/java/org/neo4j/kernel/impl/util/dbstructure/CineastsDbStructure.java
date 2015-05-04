@@ -79,11 +79,11 @@ implements Visitable<DbStructureVisitor>
         visitor.visitRelationshipType( 2, "ACTS_IN" );
         visitor.visitRelationshipType( 3, "RATED" );
         visitor.visitRelationshipType( 4, "ROOT" );
-        visitor.visitIndex( new IndexDescriptor( 0, 9 ), ":Movie(title)", 1.0d );
-        visitor.visitIndex( new IndexDescriptor( 1, 5 ), ":Person(name)", 1.0d );
-        visitor.visitIndex( new IndexDescriptor( 3, 5 ), ":Actor(name)", 1.0d );
-        visitor.visitIndex( new IndexDescriptor( 4, 5 ), ":Director(name)", 1.0d );
-        visitor.visitUniqueIndex( new IndexDescriptor( 2, 3 ), ":User(login)", 1.0d );
+        visitor.visitIndex( new IndexDescriptor( 0, 9 ), ":Movie(title)", 1.0d, 12462l );
+        visitor.visitIndex( new IndexDescriptor( 1, 5 ), ":Person(name)", 1.0d, 49845l );
+        visitor.visitIndex( new IndexDescriptor( 3, 5 ), ":Actor(name)", 1.0d, 44689l );
+        visitor.visitIndex( new IndexDescriptor( 4, 5 ), ":Director(name)", 1.0d, 6010l );
+        visitor.visitUniqueIndex( new IndexDescriptor( 2, 3 ), ":User(login)", 1.0d, 45l );
         visitor.visitUniqueConstraint( new UniquenessConstraint( 2, 3 ), "CONSTRAINT ON ( user:User ) ASSERT user.login IS UNIQUE" );
         visitor.visitAllNodesCount( 63042l );
         visitor.visitNodeCount( 0, "Movie", 12862l );

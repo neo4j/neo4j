@@ -103,6 +103,7 @@ trait ForumPostsCardinalityData {
         addWithLabels(RootForums, 'Forum, 'Root).
         addWithLabels(LeafForums, 'Forum, 'Leaf).
         withIndexSelectivity(('Person, 'id) -> PersonIdSel).
+        withIndexPropertyExistsSelectivity(('Person, 'id) -> 1.0).
         withRelationshipCardinality(('Person -> 'KNOWS -> 'Person) -> Persons_KNOWS_Persons).
         withRelationshipCardinality(('Post -> 'POSTED_IN -> 'Forum) -> Posts_POSTED_IN_Forums).
         withRelationshipCardinality(('Forum -> 'MEMBER_IN -> 'Person) -> Forums_MEMBER_IN_Persons).
@@ -203,6 +204,9 @@ trait ABCDCardinalityData {
         withIndexSelectivity(('A, 'prop) -> Aprop).
         withIndexSelectivity(('B, 'prop) -> Bprop).
         withIndexSelectivity(('A, 'bar) -> Abar).
+        withIndexPropertyExistsSelectivity(('A, 'prop) -> 1.0).
+        withIndexPropertyExistsSelectivity(('B, 'prop) -> 1.0).
+        withIndexPropertyExistsSelectivity(('A, 'bar) -> 1.0).
         withRelationshipCardinality(('A -> 'T1 -> 'A) -> A_T1_A).
         withRelationshipCardinality(('A -> 'T1 -> 'B) -> A_T1_B).
         withRelationshipCardinality(('A -> 'T1 -> 'C) -> A_T1_C).

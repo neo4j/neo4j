@@ -35,12 +35,22 @@ class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatist
     Cardinality(lookup.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel))
 
   /*
-      Probability of any node with the given label, to have a property with a given value
+      Probability of any node with the given label, to have a given property with a particular value
 
-      indexSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE x.prop = *|
+      indexSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE x.prop = '*'|
    */
   override def indexSelectivity( label: LabelId, property: PropertyKeyId ): Option[Selectivity] = {
     val result = lookup.indexSelectivity( label.id, property.id )
+    if (result.isNaN) None else Some(Selectivity(result))
+  }
+
+  /*
+      Probability of any node with the given label, to have a particular property
+
+      indexPropertyExistsSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE has(x.prop)|
+   */
+  override def indexPropertyExistsSelectivity( label: LabelId, property: PropertyKeyId ): Option[Selectivity] = {
+    val result = lookup.indexPropertyExistsSelectivity( label.id, property.id )
     if (result.isNaN) None else Some(Selectivity(result))
   }
 }

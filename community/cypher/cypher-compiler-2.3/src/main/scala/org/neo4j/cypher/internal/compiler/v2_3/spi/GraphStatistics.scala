@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, PropertyKeyId, RelTypeI
 object GraphStatistics {
   val DEFAULT_RANGE_SELECTIVITY          = Selectivity(0.3)
   val DEFAULT_PREDICATE_SELECTIVITY      = Selectivity(0.75)
+  val DEFAULT_PROPERTY_SELECTIVITY       = Selectivity(0.5)
   val DEFAULT_EQUALITY_SELECTIVITY       = Selectivity(0.1)
   val DEFAULT_NUMBER_OF_ID_LOOKUPS       = Cardinality(25)
   val DEFAULT_NUMBER_OF_INDEX_LOOKUPS    = Cardinality(25)
@@ -37,11 +38,18 @@ trait GraphStatistics {
   def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality
 
   /*
-      Probability of any node with the given label, to have a property with a given value
+      Probability of any node with the given label, to have a given property with a particular value
 
-      indexSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE x.prop = *|
+      indexSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE x.prop = '*'|
    */
   def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity]
+
+  /*
+      Probability of any node with the given label, to have a particular property
+
+      indexPropertyExistsSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE has(x.prop)|
+   */
+  def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity]
 }
 
 class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatistics {
@@ -51,13 +59,11 @@ class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatisti
   override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
     delegate.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel)
 
-  /*
-      Probability of any node with the given label, to have a property with a given value
-
-      indexSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE x.prop = *|
-   */
   override def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
     delegate.indexSelectivity(label, property)
+
+  override def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
+    delegate.indexPropertyExistsSelectivity(label, property)
 }
 
 class StatisticsCompletingGraphStatistics(delegate: GraphStatistics)

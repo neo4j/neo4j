@@ -327,6 +327,12 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
+    public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return indexingService.indexSize( schemaCache.indexId( descriptor ) );
+    }
+
+    @Override
     public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexingService.indexUniqueValuesPercentage( schemaCache.indexId( descriptor ) );

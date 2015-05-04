@@ -36,4 +36,5 @@ public interface DbStructureLookup
     long nodesWithLabelCardinality( int labelId );
     long cardinalityByLabelsAndRelationshipType( int fromLabelId, int relTypeId, int toLabelId );
     double indexSelectivity( int labelId, int propertyKeyId );
+    double indexPropertyExistsSelectivity( int labelId, int propertyKeyId );
 }

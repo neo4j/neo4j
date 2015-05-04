@@ -46,6 +46,10 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case AsPropertySeekable(seekable) =>
       calculateSelectivityForPropertyEquality(seekable.name, seekable.args, selections, seekable.propertyKey)
 
+    // WHERE has(x.prop)
+    case AsPropertyScannable(scannable) =>
+      calculateSelectivityForPropertyExistence(scannable.name, selections, scannable.propertyKey)
+
     // Implicit relation uniqueness predicates
     case Not(Equals(lhs: Identifier, rhs: Identifier))
       if areRelationships(semanticTable, lhs, rhs) =>
@@ -108,5 +112,24 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val selectivity = combiner.orTogetherSelectivities(1.to(size).map(_ => itemSelectivity)).getOrElse(DEFAULT_EQUALITY_SELECTIVITY)
 
     selectivity
+  }
+
+  private def calculateSelectivityForPropertyExistence(identifier: String,
+                                                      selections: Selections,
+                                                      propertyKey: PropertyKeyName)
+                                                     (implicit semanticTable: SemanticTable): Selectivity = {
+    val labels = selections.labelsOnNode(IdName(identifier))
+    val indexPropertyExistsSelectivities = labels.toSeq.flatMap {
+      labelName =>
+        (labelName.id, propertyKey.id) match {
+          case (Some(labelId), Some(propertyKeyId)) =>
+            stats.indexPropertyExistsSelectivity(labelId, propertyKeyId)
+
+          case _ =>
+            Some(Selectivity.ZERO)
+        }
+    }
+
+    combiner.orTogetherSelectivities(indexPropertyExistsSelectivities).getOrElse(DEFAULT_PROPERTY_SELECTIVITY)
   }
 }

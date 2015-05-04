@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.LogicalPlanRewriter
-import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, PlanContext, QueriedGraphStatistics}
+import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
@@ -514,18 +514,6 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     writer.write(output.toString())
     writer.close()
     println(s"report written to ${report.getAbsolutePath}")
-  }
-
-  trait RealStatistics extends PlanContext {
-    def gdb: GraphDatabaseService
-
-    lazy val _statistics: GraphStatistics = {
-      val db = gdb.asInstanceOf[GraphDatabaseAPI]
-      val queryCtx = new TransactionBoundQueryContext(db, null, true, db.statement)
-      new QueriedGraphStatistics(gdb, queryCtx)
-    }
-
-    override def statistics: GraphStatistics = _statistics
   }
 
   private def runQueryWith(query: String, compiler: CypherCompiler, db: GraphDatabaseAPI): (List[Map[String, Any]], InternalExecutionResult) = {

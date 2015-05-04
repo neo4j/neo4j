@@ -28,6 +28,7 @@ sealed trait StatisticsKey
 case class NodesWithLabelCardinality(labelId: Option[LabelId]) extends StatisticsKey
 case class CardinalityByLabelsAndRelationshipType(lhs: Option[LabelId], relType: Option[RelTypeId], rhs: Option[LabelId]) extends StatisticsKey
 case class IndexSelectivity(labelId: LabelId, propertyKeyId: PropertyKeyId) extends StatisticsKey
+case class IndexPropertyExistsSelectivity(labelId: LabelId, propertyKeyId: PropertyKeyId) extends StatisticsKey
 
 case class MutableGraphStatisticsSnapshot(map: mutable.Map[StatisticsKey, Double] = mutable.Map.empty) {
   def freeze: GraphStatisticsSnapshot = GraphStatisticsSnapshot(map.toMap)
@@ -44,6 +45,8 @@ case class GraphStatisticsSnapshot(map: Map[StatisticsKey, Double] = Map.empty) 
         instrumented.cardinalityByLabelsAndRelationshipType(lhs, relType, rhs)
       case IndexSelectivity(labelId, propertyKeyId) =>
         instrumented.indexSelectivity(labelId, propertyKeyId)
+      case IndexPropertyExistsSelectivity(labelId, propertyKeyId) =>
+        instrumented.indexPropertyExistsSelectivity(labelId, propertyKeyId)
     }
     snapshot.freeze
   }
@@ -95,6 +98,12 @@ case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: Mutable
   def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] = {
     val selectivity = inner.indexSelectivity(label, property)
     snapshot.map.getOrElseUpdate(IndexSelectivity(label, property), selectivity.fold(0.0)(_.factor))
+    selectivity
+  }
+
+  def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] = {
+    val selectivity = inner.indexPropertyExistsSelectivity(label, property)
+    snapshot.map.getOrElseUpdate(IndexPropertyExistsSelectivity(label, property), selectivity.fold(0.0)(_.factor))
     selectivity
   }
 }

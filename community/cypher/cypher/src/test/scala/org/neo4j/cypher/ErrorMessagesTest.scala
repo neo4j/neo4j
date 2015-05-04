@@ -380,8 +380,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     graph.createConstraint("Person", "id")
     expectError(
       "MATCH (n:Person) USING INDEX n:Person(id) WHERE n.id = 12 OR n.id = 14 RETURN n",
-
-      "Cannot use index hint in this context. Index hints require using an equality comparison or IN condition in WHERE (either directly or as part of a top-level AND). The comparison cannot be between two property values. Note that the label and property comparison must be specified on a non-optional node"
+      "Cannot use index hint in this context. Index hints require using an equality comparison or IN condition or checking property existence on a node in WHERE (either directly or as part of a top-level AND). The comparison cannot be between two property values. Note that the label and property comparison must be specified on a non-optional node"
     )
   }
 
