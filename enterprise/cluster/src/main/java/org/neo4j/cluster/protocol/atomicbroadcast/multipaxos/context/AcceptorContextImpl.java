@@ -25,7 +25,6 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceSto
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.logging.LogProvider;
 
 class AcceptorContextImpl
         extends AbstractContextImpl

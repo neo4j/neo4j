@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -47,8 +48,9 @@ public class IndexTransactionApplierTest
         // GIVEN
         IndexingService indexing = mock( IndexingService.class );
         LabelScanWriter writer = new OrderVerifyingLabelScanWriter( 10, 15, 20 );
-        try ( IndexTransactionApplier applier = new IndexTransactionApplier( indexing, NONE,
-                singletonProvider( writer ) ) )
+        WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanSync =
+                new WorkSync<>( singletonProvider( writer ) );
+        try ( IndexTransactionApplier applier = new IndexTransactionApplier( indexing, NONE, labelScanSync ) )
         {
             // WHEN
             applier.visitNodeCommand( node( 15 ) );

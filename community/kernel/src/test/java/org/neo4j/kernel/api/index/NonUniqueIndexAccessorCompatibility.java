@@ -19,21 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;

@@ -30,7 +30,6 @@ import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseState;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.logging.LogProvider;
 
 /**
  * Represents the context necessary for cluster operations. Includes instance membership calls, election

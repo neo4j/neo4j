@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
 
+import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -55,6 +56,8 @@ public class TransactionRepresentationStoreApplier
     private final LegacyIndexApplierLookup legacyIndexProviderLookup;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
 
+    private final WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanStoreSync;
+
     public TransactionRepresentationStoreApplier(
             IndexingService indexingService, Provider<LabelScanWriter> labelScanWriters, NeoStore neoStore,
             CacheAccessBackDoor cacheAccess, LockService lockService, LegacyIndexApplierLookup legacyIndexProviderLookup,
@@ -68,6 +71,7 @@ public class TransactionRepresentationStoreApplier
         this.legacyIndexProviderLookup = legacyIndexProviderLookup;
         this.indexConfigStore = indexConfigStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
+        labelScanStoreSync = new WorkSync<>( labelScanWriters );
     }
 
     public void apply( TransactionRepresentation representation, ValidatedIndexUpdates indexUpdates, LockGroup locks,
@@ -88,7 +92,7 @@ public class TransactionRepresentationStoreApplier
 
         // Schema index application
         IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexingService, indexUpdates,
-                labelScanWriters );
+                labelScanStoreSync );
 
         // Legacy index application
         LegacyIndexApplier legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,

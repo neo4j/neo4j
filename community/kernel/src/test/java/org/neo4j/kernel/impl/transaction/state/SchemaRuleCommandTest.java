@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -210,8 +211,10 @@ public class SchemaRuleCommandTest
     private final Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
     private final NeoStoreTransactionApplier storeApplier = new NeoStoreTransactionApplier( neoStore,
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, new LockGroup(), txId );
+    private final WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanStoreSynchronizer =
+            new WorkSync<>( labelScanStore );
     private final IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexes,
-            ValidatedIndexUpdates.NONE, labelScanStore );
+            ValidatedIndexUpdates.NONE, labelScanStoreSynchronizer );
     private final PhysicalLogNeoCommandReaderV2 reader = new PhysicalLogNeoCommandReaderV2();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 
@@ -235,7 +238,7 @@ public class SchemaRuleCommandTest
     private void assertSchemaRule( SchemaRuleCommand readSchemaCommand )
     {
         assertEquals( id, readSchemaCommand.getKey() );
-        assertEquals( labelId, ((IndexRule)readSchemaCommand.getSchemaRule()).getLabel() );
+        assertEquals( labelId, readSchemaCommand.getSchemaRule().getLabel() );
         assertEquals( propertyKey, ((IndexRule)readSchemaCommand.getSchemaRule()).getPropertyKey() );
     }
 

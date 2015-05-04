@@ -26,6 +26,7 @@ import java.util.List;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.progress.ProgressListener;
@@ -80,13 +81,14 @@ class RebuildFromLogs
 
     RebuildFromLogs( GraphDatabaseAPI graphdb )
     {
+        DependencyResolver resolver = graphdb.getDependencyResolver();
         this.stores = new StoreAccess( graphdb );
-        this.dataSource = graphdb.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource();
-        this.storeApplier = graphdb.getDependencyResolver().resolveDependency(
-                TransactionRepresentationStoreApplier.class ).withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS);
+        this.dataSource = resolver.resolveDependency( DataSourceManager.class ).getDataSource();
+        this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class )
+                                    .withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS );
         PropertyLoader propertyLoader = new PropertyLoader( stores.getRawNeoStore() );
         this.indexUpdatesValidator = new IndexUpdatesValidator( stores.getRawNeoStore(), propertyLoader,
-                graphdb.getDependencyResolver().resolveDependency( IndexingService.class ) );
+                resolver.resolveDependency( IndexingService.class ) );
     }
 
     RebuildFromLogs applyTransactionsFrom( ProgressListener progress, File sourceDir ) throws IOException
