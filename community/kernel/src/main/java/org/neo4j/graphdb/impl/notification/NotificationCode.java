@@ -40,6 +40,12 @@ public enum NotificationCode
     LEGACY_PLANNER( SeverityLevel.WARNING,
                     Status.Statement.DeprecationWarning,
                     "Using PLANNER for switching between planners has been deprecated, please use CYPHER planner=[rule,cost] instead"),
+    PLANNER_UNSUPPORTED( SeverityLevel.WARNING,
+                    Status.Statement.PlannerUnsupportedWarning,
+                    "Using COST planner is unsupported for this query, please use RULE planner instead"),
+    RUNTIME_UNSUPPORTED( SeverityLevel.WARNING,
+                    Status.Statement.RuntimeUnsupportedWarning,
+                    "Using COMPILED runtime is unsupported for this query, please use interpreted runtime instead"),
     LENGTH_ON_NON_PATH( SeverityLevel.WARNING,
                     Status.Statement.DeprecationWarning,
                     "Using 'length' on anything that is not a path is deprecated, please use 'size' instead");

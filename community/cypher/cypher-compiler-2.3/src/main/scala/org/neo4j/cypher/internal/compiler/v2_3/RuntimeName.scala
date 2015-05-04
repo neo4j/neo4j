@@ -32,15 +32,19 @@ case object CompiledRuntimeName extends RuntimeName {
   override val name = "COMPILED"
 }
 
-object RuntimeName {
+case object FallbackRuntimeName extends RuntimeName {
+  override val name = "FALLBACK"
+}
 
-  val default = InterpretedRuntimeName
+object RuntimeName {
+  val default = FallbackRuntimeName
 
   def apply(name: String): RuntimeName = name.toUpperCase match {
     case InterpretedRuntimeName.name => InterpretedRuntimeName
     case CompiledRuntimeName.name => CompiledRuntimeName
+    case FallbackRuntimeName.name => FallbackRuntimeName
 
     case n => throw new IllegalArgumentException(
-      s"$n is not a a valid runtime, valid options are ${InterpretedRuntimeName.name} and ${CompiledRuntimeName.name}")
+      s"$n is not a valid runtime, valid options are ${InterpretedRuntimeName.name}, ${CompiledRuntimeName.name} and ${FallbackRuntimeName.name}")
   }
 }

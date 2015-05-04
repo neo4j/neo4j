@@ -94,6 +94,10 @@ public abstract class GraphDatabaseSettings
             "dbms.cypher.planner",
             options( "COST", "RULE", DEFAULT ), DEFAULT );
 
+    @Description( "Set this to specify the behavior when Cypher planner or runtime hints cannot be fulfilled. "
+            + "If true, then non-conformance will result in an error, otherwise only a warning is generated." )
+    public static final Setting<Boolean> cypher_hints_error = setting( "dbms.cypher.hints.error", BOOLEAN, FALSE );
+
     @Description( "Set this to specify the default runtime for the default language version." )
     @Internal
     public static final Setting<String> cypher_runtime = setting(

@@ -41,7 +41,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       new StringInfoLogger2_3(log),
       plannerName = Some(GreedyPlannerName),
       runtimeName = Some(CompiledRuntimeName),
-      rewriterSequencer = RewriterStepSequencer.newValidating)
+      rewriterSequencer = RewriterStepSequencer.newValidating,
+      useErrorsOverWarnings = false)
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"

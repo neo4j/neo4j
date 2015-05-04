@@ -21,12 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
 import org.neo4j.cypher.internal.compiler.v2_3.{CompilationPhaseTracer, PreparedQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.compiler.v2_3.notification.PlannerUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 
 class LegacyVsNewExecutablePlanBuilder(oldBuilder: ExecutablePlanBuilder,
                              newBuilder: ExecutablePlanBuilder,
-                             monitor: NewLogicalPlanSuccessRateMonitor) extends ExecutablePlanBuilder {
+                             monitor: NewLogicalPlanSuccessRateMonitor,
+                             showWarning: Boolean) extends ExecutablePlanBuilder {
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer): Either[CompiledPlan, PipeInfo] = {
     val queryText = inputQuery.queryText
     val statement = inputQuery.statement
@@ -42,7 +44,8 @@ class LegacyVsNewExecutablePlanBuilder(oldBuilder: ExecutablePlanBuilder,
     } catch {
       case e: CantHandleQueryException =>
         monitor.unableToHandleQuery(queryText, statement, e)
-        oldBuilder.producePlan(inputQuery, planContext, tracer)
+        if (showWarning) inputQuery.notificationLogger.log(PlannerUnsupportedNotification)
+          oldBuilder.producePlan(inputQuery, planContext, tracer)
     }
   }
 

@@ -90,6 +90,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       new StringInfoLogger2_3(NullLog.getInstance),
       plannerName = Some(GreedyPlannerName),
       runtimeName = Some(CompiledRuntimeName),
-      rewriterSequencer = RewriterStepSequencer.newValidating
+      rewriterSequencer = RewriterStepSequencer.newValidating,
+      useErrorsOverWarnings = false
     )
 }

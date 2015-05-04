@@ -20,13 +20,25 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
-import org.neo4j.cypher.internal.compiler.v2_3.notification.{LengthOnNonPathNotification, CartesianProductNotification}
+import org.neo4j.cypher.internal.compiler.v2_3.notification.{RuntimeUnsupportedNotification, PlannerUnsupportedNotification, LengthOnNonPathNotification, CartesianProductNotification}
 
 
 class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("Warn for cartesian product") {
     val result = executeWithAllPlanners("explain match (a)-->(b), (c)-->(d) return *")
+
+    result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(7, 1, 8))))
+  }
+
+  test("Warn for cartesian product with runtime=compiled") {
+    val result = innerExecute("explain cypher runtime=compiled match (a)-->(b), (c)-->(d) return *")
+
+    result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(7, 1, 8)), RuntimeUnsupportedNotification))
+  }
+
+  test("Warn for cartesian product with runtime=interpreted") {
+    val result = executeWithAllPlanners("explain cypher runtime=interpreted match (a)-->(b), (c)-->(d) return *")
 
     result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(7, 1, 8))))
   }
@@ -69,5 +81,25 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("do not warn when using size on a string") {
     val result = executeWithAllPlanners("explain return size('a string')")
     result.notifications shouldBe empty
+  }
+
+  test("do not warn for cost unsupported on update query if planner not explicitly requested") {
+    val result = innerExecute("EXPLAIN MATCH (n:Movie) SET n.title = 'The Movie'")
+    result.notifications shouldBe empty
+  }
+
+  test("warn when requesting COST on an update query") {
+    val result = innerExecute("EXPLAIN CYPHER planner=COST MATCH (n:Movie) SET n.title = 'The Movie'")
+    result.notifications should equal(List(PlannerUnsupportedNotification))
+  }
+
+  test("do not warn when requesting RULE on an update query") {
+    val result = innerExecute("EXPLAIN CYPHER planner=RULE MATCH (n:Movie) SET n.title = 'The Movie'")
+    result.notifications shouldBe empty
+  }
+
+  test("warn when requesting runtime=compiled on an unsupported query") {
+    val result = innerExecute("EXPLAIN CYPHER runtime=compiled MATCH (a)-->(b), (c)-->(d) RETURN *")
+    result.notifications should contain(RuntimeUnsupportedNotification)
   }
 }

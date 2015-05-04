@@ -55,7 +55,7 @@ class LegacyVsNewExecutablePlanBuilderTest extends CypherFunSuite {
     val planContext = mock[PlanContext]
     val oldBuilder = mock[ExecutablePlanBuilder]
     val newBuilder = mock[ExecutablePlanBuilder]
-    val pipeBuilder = new LegacyVsNewExecutablePlanBuilder(oldBuilder, newBuilder, mock[NewLogicalPlanSuccessRateMonitor])
+    val pipeBuilder = new LegacyVsNewExecutablePlanBuilder(oldBuilder, newBuilder, mock[NewLogicalPlanSuccessRateMonitor], false)
     val preparedQuery = PreparedQuery(parser.parse(queryText), queryText, Map.empty)(null, Set.empty, null, null)
     val pipeInfo = mock[PipeInfo]
     when( oldBuilder.producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING ) ).thenReturn(Right(pipeInfo))

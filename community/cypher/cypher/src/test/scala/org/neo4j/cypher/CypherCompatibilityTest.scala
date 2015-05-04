@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import java.util
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.test.ImpermanentGraphDatabase
 
 import scala.collection.JavaConverters._
@@ -105,12 +106,86 @@ class CypherCompatibilityTest extends CypherFunSuite {
     }
   }
 
-  test("should fail if asked to execute query with COST instead to fallback to RULE") {
+  private def shouldHaveWarnings(result: ExtendedExecutionResult, statusCodes: List[Status.Statement]) {
+    val resultCodes = result.notifications.map(_.getCode)
+    statusCodes.foreach(statusCode => resultCodes should contain(statusCode.code.serialize()))
+  }
+
+  private def shouldHaveWarning(result: ExtendedExecutionResult, notification: Status.Statement) {
+    shouldHaveWarnings(result, List(notification))
+  }
+
+  private def shouldHaveNoWarnings(result: ExtendedExecutionResult) {
+    shouldHaveWarnings(result, List())
+  }
+
+  private val queryThatCannotRunWithCostPlanner = "MATCH (n:Movie) SET n.title = 'The Movie'"
+  private val querySupportedByCostButNotCompiledRuntime = "MATCH (n:Movie)--(b), (a:A)--(c:C)--(d:D) RETURN b, d"
+
+  test("should not fail if cypher allowed to choose planner or we specify RULE for update query") {
+    runWithConfig("dbms.cypher.hints.error" -> "true") {
+      engine =>
+        engine.execute(queryThatCannotRunWithCostPlanner)
+        engine.execute(s"CYPHER planner=RULE $queryThatCannotRunWithCostPlanner")
+        shouldHaveNoWarnings(engine.execute(s"EXPLAIN CYPHER planner=RULE $queryThatCannotRunWithCostPlanner"))
+    }
+  }
+
+  test("should fail if asked to execute query with COST instead of falling back to RULE if hint errors turned on") {
+    runWithConfig("dbms.cypher.hints.error" -> "true") {
+      engine =>
+        intercept[InvalidArgumentException](engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner"))
+    }
+  }
+
+  test("should not fail if asked to execute query with COST and instead fallback to RULE and return a warning if hint errors turned off") {
+    runWithConfig("dbms.cypher.hints.error" -> "false") {
+      engine =>
+        shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner"), Status.Statement.PlannerUnsupportedWarning)
+    }
+  }
+
+  test("should not fail if asked to execute query with COST and instead fallback to RULE and return a warning by default") {
     runWithConfig() {
       engine =>
-        engine.execute("MATCH (n:Movie) SET n.title = 'The Movie'")
-        engine.execute("PLANNER RULE MATCH (n:Movie) SET n.title = 'The Movie'")
-        intercept[InvalidArgumentException](engine.execute("PLANNER COST MATCH (n:Movie) SET n.title = 'The Movie'"))
+        shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner"), Status.Statement.PlannerUnsupportedWarning)
+    }
+  }
+
+  test("should not fail if asked to execute query with runtime=compiled on simple query") {
+    runWithConfig("dbms.cypher.hints.error" -> "true") {
+      engine =>
+        engine.execute("MATCH (n:Movie) RETURN n")
+        engine.execute("CYPHER runtime=compiled MATCH (n:Movie) RETURN n")
+        shouldHaveNoWarnings(engine.execute("EXPLAIN CYPHER runtime=compiled MATCH (n:Movie) RETURN n"))
+    }
+  }
+
+  test("should fail if asked to execute query with runtime=compiled instead of falling back to interpreted if hint errors turned on") {
+    runWithConfig("dbms.cypher.hints.error" -> "true") {
+      engine =>
+        intercept[InvalidArgumentException](engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime"))
+    }
+  }
+
+  test("should not fail if asked to execute query with runtime=compiled and instead fallback to interpreted and return a warning if hint errors turned off") {
+    runWithConfig("dbms.cypher.hints.error" -> "false") {
+      engine =>
+        shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime"), Status.Statement.RuntimeUnsupportedWarning)
+    }
+  }
+
+  test("should not fail if asked to execute query with runtime=compiled and instead fallback to interpreted and return a warning by default") {
+    runWithConfig() {
+      engine =>
+        shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime"), Status.Statement.RuntimeUnsupportedWarning)
+    }
+  }
+
+  test("should not fail nor generate a warning if asked to execute query without specifying runtime, knowing that compiled is default but will fallback silently to interpreted") {
+    runWithConfig() {
+      engine =>
+        shouldHaveNoWarnings(engine.execute(s"EXPLAIN CYPHER $querySupportedByCostButNotCompiledRuntime"))
     }
   }
 

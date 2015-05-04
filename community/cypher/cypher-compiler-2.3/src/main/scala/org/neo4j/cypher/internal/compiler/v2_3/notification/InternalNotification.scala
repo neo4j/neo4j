@@ -31,3 +31,7 @@ case class CartesianProductNotification(position: InputPosition) extends Interna
 case class LengthOnNonPathNotification(position: InputPosition) extends InternalNotification
 
 case object LegacyPlannerNotification extends InternalNotification
+
+case object PlannerUnsupportedNotification extends InternalNotification
+
+case object RuntimeUnsupportedNotification extends InternalNotification

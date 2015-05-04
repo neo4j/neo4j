@@ -20,17 +20,13 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherVersion._
-import org.neo4j.cypher.InvalidArgumentException
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.KernelAPI
-import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
@@ -69,6 +65,7 @@ class CypherCompiler(graph: GraphDatabaseService,
                      configuredVersion: CypherVersion,
                      configuredPlanner: CypherPlanner,
                      configuredRuntime: CypherRuntime,
+                     useErrorsOverWarnings: Boolean,
                      logProvider: LogProvider) {
   import org.neo4j.cypher.internal.CypherCompiler._
 
@@ -85,7 +82,7 @@ class CypherCompiler(graph: GraphDatabaseService,
         }
       case PlannerSpec_v2_3(planner, runtime) => planner match {
         case CypherPlanner.rule => CompatibilityFor2_3Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
-        case _ => CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner, runtime)
+        case _ => CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner, runtime, useErrorsOverWarnings)
       }
     }
   }
