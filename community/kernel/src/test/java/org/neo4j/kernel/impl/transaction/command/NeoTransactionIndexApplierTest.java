@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -57,8 +58,9 @@ public class NeoTransactionIndexApplierTest
     @SuppressWarnings( "unchecked" )
     private final Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
-
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
+    private WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork>
+            labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
 
     @Test
     public void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
@@ -67,7 +69,7 @@ public class NeoTransactionIndexApplierTest
         final ValidatedIndexUpdates indexUpdates = mock( ValidatedIndexUpdates.class );
         when( indexUpdates.hasChanges() ).thenReturn( true );
         final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, indexUpdates,
-                labelScanStore, cacheAccess );
+                labelScanStoreSynchronizer, cacheAccess );
 
         final NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 17, emptyDynamicRecords );
@@ -99,7 +101,7 @@ public class NeoTransactionIndexApplierTest
         final ValidatedIndexUpdates indexUpdates = mock( ValidatedIndexUpdates.class );
         when( indexUpdates.hasChanges() ).thenReturn( false );
         final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, indexUpdates,
-                labelScanStore, cacheAccess );
+                labelScanStoreSynchronizer, cacheAccess );
         // when
         applier.apply();
 
@@ -114,7 +116,7 @@ public class NeoTransactionIndexApplierTest
         final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
         final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
-                ValidatedIndexUpdates.NONE, labelScanStore, cacheAccess );
+                ValidatedIndexUpdates.NONE, labelScanStoreSynchronizer, cacheAccess );
 
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
         command.init( emptyDynamicRecords, singleton( createdDynamicRecord( 1 ) ), indexRule );
@@ -135,7 +137,7 @@ public class NeoTransactionIndexApplierTest
         final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
         final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
-                ValidatedIndexUpdates.NONE, labelScanStore, cacheAccess );
+                ValidatedIndexUpdates.NONE, labelScanStoreSynchronizer, cacheAccess );
 
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
         command.init( singleton( createdDynamicRecord( 1 ) ), singleton( dynamicRecord( 1, false ) ), indexRule );
