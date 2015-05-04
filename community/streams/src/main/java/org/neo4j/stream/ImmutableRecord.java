@@ -37,12 +37,6 @@ public class ImmutableRecord implements Record
     }
 
     @Override
-    public Record copy()
-    {
-        return this;
-    }
-
-    @Override
     public boolean equals( Object o )
     {
         if ( this == o )
