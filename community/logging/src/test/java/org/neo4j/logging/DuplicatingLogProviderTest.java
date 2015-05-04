@@ -21,6 +21,7 @@ package org.neo4j.logging;
 
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -46,5 +47,30 @@ public class DuplicatingLogProviderTest
         // Then
         DuplicatingLog log = logProvider.getLog( "test context" );
         assertThat( logProvider.getLog( "test context" ), sameInstance( log ) );
+    }
+
+    @Test
+    public void shouldRemoveLogProviderFromDuplication()
+    {
+        // Given
+        AssertableLogProvider logProvider1 = new AssertableLogProvider();
+        AssertableLogProvider logProvider2 = new AssertableLogProvider();
+
+        DuplicatingLogProvider logProvider = new DuplicatingLogProvider( logProvider1, logProvider2 );
+
+        // When
+        Log log = logProvider.getLog( getClass() );
+        log.info( "When the going gets weird" );
+        assertThat( logProvider.remove( logProvider1 ), is( true ) );
+        log.info( "The weird turn pro" );
+
+        // Then
+        logProvider1.assertExactly(
+                AssertableLogProvider.inLog( getClass() ).info( "When the going gets weird" )
+        );
+        logProvider2.assertExactly(
+                AssertableLogProvider.inLog( getClass() ).info( "When the going gets weird" ),
+                AssertableLogProvider.inLog( getClass() ).info( "The weird turn pro" )
+        );
     }
 }

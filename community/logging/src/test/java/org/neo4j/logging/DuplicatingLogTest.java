@@ -70,4 +70,51 @@ public class DuplicatingLogTest
                 AssertableLogProvider.inLog( "log 2" ).info( "When the going gets weird" )
         );
     }
+
+    @Test
+    public void shouldRemoveLogFromDuplication()
+    {
+        // Given
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Log log1 = logProvider.getLog( "log 1" );
+        Log log2 = logProvider.getLog( "log 2" );
+
+        DuplicatingLog log = new DuplicatingLog( log1, log2 );
+
+        // When
+        log.info( "When the going gets weird" );
+        log.remove( log1 );
+        log.info( "The weird turn pro" );
+
+        // Then
+        logProvider.assertExactly(
+                AssertableLogProvider.inLog( "log 1" ).info( "When the going gets weird" ),
+                AssertableLogProvider.inLog( "log 2" ).info( "When the going gets weird" ),
+                AssertableLogProvider.inLog( "log 2" ).info( "The weird turn pro" )
+        );
+    }
+
+    @Test
+    public void shouldRemoveLoggersFromDuplication()
+    {
+        // Given
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Log log1 = logProvider.getLog( "log 1" );
+        Log log2 = logProvider.getLog( "log 2" );
+
+        DuplicatingLog log = new DuplicatingLog( log1, log2 );
+        Logger logger = log.infoLogger();
+
+        // When
+        logger.log( "When the going gets weird" );
+        log.remove( log1 );
+        logger.log( "The weird turn pro" );
+
+        // Then
+        logProvider.assertExactly(
+                AssertableLogProvider.inLog( "log 1" ).info( "When the going gets weird" ),
+                AssertableLogProvider.inLog( "log 2" ).info( "When the going gets weird" ),
+                AssertableLogProvider.inLog( "log 2" ).info( "The weird turn pro" )
+        );
+    }
 }

@@ -19,42 +19,90 @@
  */
 package org.neo4j.logging;
 
+import org.neo4j.function.Function;
+
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * A {@link LogProvider} implementation that duplicates all messages to other LogProvider instances
  */
 public class DuplicatingLogProvider extends AbstractLogProvider<DuplicatingLog>
 {
-    private final LogProvider[] logProviders;
+    private final CopyOnWriteArraySet<LogProvider> logProviders;
+    private final Map<DuplicatingLog, Map<LogProvider, Log>> duplicatingLogCache = Collections.synchronizedMap( new WeakHashMap<DuplicatingLog, Map<LogProvider, Log>>() );
 
     /**
      * @param logProviders A list of {@link LogProvider} instances that messages should be duplicated to
      */
     public DuplicatingLogProvider( LogProvider... logProviders )
     {
-        this.logProviders = logProviders;
+        this.logProviders = new CopyOnWriteArraySet<>( Arrays.asList( logProviders ) );
+    }
+
+    /**
+     * Remove a {@link LogProvider} from the duplicating set. Note that the LogProvider must return
+     * cached Log instances from its {@link LogProvider#getLog(String)} for this to behave as expected.
+     *
+     * @param logProvider the LogProvider to be removed
+     * @return true if the log was found and removed
+     */
+    public boolean remove( LogProvider logProvider )
+    {
+        if ( !this.logProviders.remove( logProvider ) )
+        {
+            return false;
+        }
+        for ( DuplicatingLog duplicatingLog : cachedLogs() )
+        {
+            duplicatingLog.remove( duplicatingLogCache.get( duplicatingLog ).remove( logProvider ) );
+        }
+        return true;
     }
 
     @Override
-    protected DuplicatingLog buildLog( Class loggingClass )
+    protected DuplicatingLog buildLog( final Class loggingClass )
     {
-        ArrayList<Log> logs = new ArrayList<>();
-        for ( LogProvider logProvider : logProviders )
+        return buildLog( new Function<LogProvider, Log>()
         {
-            logs.add( logProvider.getLog( loggingClass ) );
-        }
-        return new DuplicatingLog( logs );
+            @Override
+            public Log apply( LogProvider logProvider )
+            {
+                return logProvider.getLog( loggingClass );
+            }
+        } );
     }
 
     @Override
-    protected DuplicatingLog buildLog( String context )
+    protected DuplicatingLog buildLog( final String context )
     {
-        ArrayList<Log> logs = new ArrayList<>();
+        return buildLog( new Function<LogProvider, Log>()
+        {
+            @Override
+            public Log apply( LogProvider logProvider )
+            {
+                return logProvider.getLog( context );
+            }
+        } );
+    }
+
+    private DuplicatingLog buildLog( Function<LogProvider, Log> logConstructor )
+    {
+        ArrayList<Log> logs = new ArrayList<>( logProviders.size() );
+        HashMap<LogProvider, Log> providedLogs = new HashMap<>();
         for ( LogProvider logProvider : logProviders )
         {
-            logs.add( logProvider.getLog( context ) );
+            Log log = logConstructor.apply( logProvider );
+            providedLogs.put( logProvider, log );
+            logs.add( log );
         }
-        return new DuplicatingLog( logs );
+        DuplicatingLog duplicatingLog = new DuplicatingLog( logs );
+        duplicatingLogCache.put( duplicatingLog, providedLogs );
+        return duplicatingLog;
     }
 }

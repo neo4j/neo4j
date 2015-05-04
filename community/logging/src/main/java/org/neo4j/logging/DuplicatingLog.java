@@ -22,37 +22,39 @@ package org.neo4j.logging;
 import org.neo4j.function.Consumer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * A {@link Log} implementation that duplicates all messages to other Log instances
  */
 public class DuplicatingLog extends AbstractLog
 {
-    private final Log[] logs;
-    private final Logger debugLogger;
-    private final Logger infoLogger;
-    private final Logger warnLogger;
-    private final Logger errorLogger;
-
-    /**
-     * @param logs A list of {@link Log} instances that messages should be duplicated to
-     */
-    public DuplicatingLog( List<Log> logs )
-    {
-        this( logs.toArray( new Log[logs.size()] ) );
-    }
+    private final CopyOnWriteArraySet<Log> logs;
+    private final DuplicatingLogger debugLogger;
+    private final DuplicatingLogger infoLogger;
+    private final DuplicatingLogger warnLogger;
+    private final DuplicatingLogger errorLogger;
 
     /**
      * @param logs A list of {@link Log} instances that messages should be duplicated to
      */
     public DuplicatingLog( Log... logs )
     {
-        this.logs = logs;
-        ArrayList<Logger> debugLoggers = new ArrayList<>();
-        ArrayList<Logger> infoLoggers = new ArrayList<>();
-        ArrayList<Logger> warnLoggers = new ArrayList<>();
-        ArrayList<Logger> errorLoggers = new ArrayList<>();
+        this( Arrays.asList( logs ) );
+    }
+
+    /**
+     * @param logs A list of {@link Log} instances that messages should be duplicated to
+     */
+    public DuplicatingLog( List<Log> logs )
+    {
+        ArrayList<Logger> debugLoggers = new ArrayList<>( logs.size() );
+        ArrayList<Logger> infoLoggers = new ArrayList<>( logs.size() );
+        ArrayList<Logger> warnLoggers = new ArrayList<>( logs.size() );
+        ArrayList<Logger> errorLoggers = new ArrayList<>( logs.size() );
 
         for ( Log log : logs )
         {
@@ -62,10 +64,27 @@ public class DuplicatingLog extends AbstractLog
             errorLoggers.add( log.errorLogger() );
         }
 
+        this.logs = new CopyOnWriteArraySet<>( logs );
         this.debugLogger = new DuplicatingLogger( debugLoggers );
         this.infoLogger = new DuplicatingLogger( infoLoggers );
         this.warnLogger = new DuplicatingLogger( warnLoggers );
         this.errorLogger = new DuplicatingLogger( errorLoggers );
+    }
+
+    /**
+     * Remove a {@link Log} from the duplicating set
+     *
+     * @param log the Log to be removed
+     * @return true if the log was found and removed
+     */
+    public boolean remove( Log log )
+    {
+        boolean removed = this.logs.remove( log );
+        this.debugLogger.remove( log.debugLogger() );
+        this.infoLogger.remove( log.infoLogger() );
+        this.warnLogger.remove( log.warnLogger() );
+        this.errorLogger.remove( log.errorLogger() );
+        return removed;
     }
 
     @Override
@@ -108,21 +127,21 @@ public class DuplicatingLog extends AbstractLog
     @Override
     public void bulk( Consumer<Log> consumer )
     {
-        bulk( 0, new Log[logs.length], consumer );
+        bulk( new LinkedList<>( logs ), new ArrayList<Log>( logs.size() ), consumer );
     }
 
-    private void bulk( final int logIdx, final Log[] bulkLogs, final Consumer<Log> finalConsumer )
+    private static void bulk( final LinkedList<Log> remaining, final ArrayList<Log> bulkLogs, final Consumer<Log> finalConsumer )
     {
-        if ( logIdx < logs.length )
+        if ( !remaining.isEmpty() )
         {
-            Log log = logs[logIdx];
+            Log log = remaining.pop();
             log.bulk( new Consumer<Log>()
             {
                 @Override
                 public void accept( Log bulkLog )
                 {
-                    bulkLogs[logIdx] = bulkLog;
-                    bulk( logIdx + 1, bulkLogs, finalConsumer );
+                    bulkLogs.add( bulkLog );
+                    bulk( remaining, bulkLogs, finalConsumer );
                 }
             } );
         } else
@@ -134,16 +153,16 @@ public class DuplicatingLog extends AbstractLog
 
     private static class DuplicatingLogger implements Logger
     {
-        private final Logger[] loggers;
+        private final CopyOnWriteArraySet<Logger> loggers;
 
         public DuplicatingLogger( List<Logger> loggers )
         {
-            this( loggers.toArray( new Logger[loggers.size()] ) );
+            this.loggers = new CopyOnWriteArraySet<>( loggers );
         }
 
-        public DuplicatingLogger( Logger... loggers )
+        public boolean remove( Logger logger )
         {
-            this.loggers = loggers;
+            return this.loggers.remove( logger );
         }
 
         @Override
@@ -176,21 +195,21 @@ public class DuplicatingLog extends AbstractLog
         @Override
         public void bulk( Consumer<Logger> consumer )
         {
-            bulk( 0, new Logger[loggers.length], consumer );
+            bulk( new LinkedList<>( loggers ), new ArrayList<Logger>( loggers.size() ), consumer );
         }
 
-        private void bulk( final int loggerIdx, final Logger[] bulkLoggers, final Consumer<Logger> finalConsumer )
+        private static void bulk( final LinkedList<Logger> remaining, final ArrayList<Logger> bulkLoggers, final Consumer<Logger> finalConsumer )
         {
-            if ( loggerIdx < loggers.length )
+            if ( !remaining.isEmpty() )
             {
-                Logger logger = loggers[loggerIdx];
+                Logger logger = remaining.pop();
                 logger.bulk( new Consumer<Logger>()
                 {
                     @Override
                     public void accept( Logger bulkLogger )
                     {
-                        bulkLoggers[loggerIdx] = bulkLogger;
-                        bulk( loggerIdx + 1, bulkLoggers, finalConsumer );
+                        bulkLoggers.add( bulkLogger );
+                        bulk( remaining, bulkLoggers, finalConsumer );
                     }
                 } );
             } else
