@@ -60,12 +60,12 @@ case class ExpandC(id: String, fromVar: String, relVar: String, dir: Direction,
        |}
        |${inner.generateCode()}""".stripMargin
 
-  override def _importedClasses() = Set(
+  override protected def importedClasses = Set(
     "org.neo4j.graphdb.Direction",
     "org.neo4j.collection.primitive.PrimitiveLongIterator",
     "org.neo4j.kernel.impl.api.RelationshipDataExtractor")
 
-  override def _exceptions() = Set(KernelExceptionCodeGen)
+  override protected def exceptions = Set(KernelExceptionCodeGen)
 
   def javaType = "org.neo4j.kernel.impl.api.store.RelationshipIterator"
 

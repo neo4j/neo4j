@@ -43,7 +43,7 @@ case class WhileLoop(id: JavaSymbol, producer: LoopDataGenerator, action: Instru
        |""".stripMargin
   }
 
-  override def _importedClasses() = Set(
+  override protected def importedClasses = Set(
     "org.neo4j.collection.primitive.PrimitiveLongIterator",
     "org.neo4j.collection.primitive.Primitive")
 

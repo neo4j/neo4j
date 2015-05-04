@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.Namer
 
 sealed trait BuildProbeTable extends Instruction {
@@ -84,13 +83,14 @@ case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Ma
     CodeThunk(symbols, code)
   }
 
-  override def _importedClasses() = Set(
+  override protected def importedClasses = Set(
     "org.neo4j.collection.primitive.PrimitiveLongObjectMap",
     "java.util.ArrayList"
   )
 
   def producedType: String = s"PrimitiveLongObjectMap<ArrayList<$valueType>>"
 
+  override protected def children = Seq.empty
 }
 
 case class BuildCountingProbeTable(id: String, name: String, node: String, namer: Namer) extends BuildProbeTable {
@@ -107,17 +107,17 @@ case class BuildCountingProbeTable(id: String, name: String, node: String, namer
        |$name.put( $node, count + 1 );
        |}""".stripMargin
 
-  override def _importedClasses() = Set(
+  override protected def importedClasses = Set(
     "org.neo4j.collection.primitive.PrimitiveLongIntMap",
     "org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable")
+
+  override protected def operatorId = Some(id)
 
   def producedType: String = "PrimitiveLongIntMap"
 
   def members() = ""
 
   def valueType = "int"
-
-  override def operatorId: Some[String] = Some(id)
 
   override def generateFetchCode = {
     val timesSeen = namer.newVarName()
@@ -140,6 +140,8 @@ case class BuildCountingProbeTable(id: String, name: String, node: String, namer
       }
     CodeThunk(Map.empty, code)
   }
+
+  override protected def children = Seq.empty
 }
 
 case class CodeThunk(vars: Map[String, JavaSymbol], generator: (String, Instruction) => String) {

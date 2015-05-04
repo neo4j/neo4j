@@ -29,5 +29,5 @@ trait LoopDataGenerator extends Instruction {
 
   def id: String
 
-  override def operatorId: Some[String] = Some(id)
+  override protected def operatorId = Some(id)
 }

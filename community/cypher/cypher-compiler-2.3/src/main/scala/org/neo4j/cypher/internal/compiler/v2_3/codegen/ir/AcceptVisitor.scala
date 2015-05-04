@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
 
 case class AcceptVisitor(id: String, columns: Map[String, JavaSymbol]) extends Instruction {
 
-
   def generateCode() = {
     val eventVar = "event_" + id
     s"""${columns.toSeq.map { case (k, v) => s"""row.set( "${k.toJava}", ${v.materialize.name} );"""}.mkString(n)}
@@ -41,10 +40,7 @@ case class AcceptVisitor(id: String, columns: Map[String, JavaSymbol]) extends I
        |}""".stripMargin
   }
 
-  override def operatorId: Some[String] = Some(id)
-
   def generateInit() = ""
-
 
   def members() = {
     val columnsList = columns.keys.map(_.toJava) match {
@@ -62,7 +58,11 @@ case class AcceptVisitor(id: String, columns: Map[String, JavaSymbol]) extends I
       stripMargin
   }
 
-  override def _importedClasses() = Set(
+  override protected def operatorId = Some(id)
+
+  override protected def importedClasses = Set(
     "java.util.List", "java.util.Arrays", "java.util.Collections"
   )
+
+  override protected def children = Seq.empty
 }

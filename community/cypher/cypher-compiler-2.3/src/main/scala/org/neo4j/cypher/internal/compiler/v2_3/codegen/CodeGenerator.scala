@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.apache.commons.lang3.StringEscapeUtils
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.{JavaSymbol, JavaTypes}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, PlanFingerprint, _}
@@ -44,7 +43,7 @@ object CodeGenerator {
   def generateClass(instructions: Seq[Instruction]) = {
     val className = Namer.newClassName()
     val source = generateCodeFromInstructions(className, instructions)
-    //println(indentNicely(source))
+
     (Javac.compile(s"$packageName.$className", source), source)
   }
 
@@ -82,13 +81,7 @@ object CodeGenerator {
   def n = System.lineSeparator()
 
   private def generateCodeFromInstructions(className: String, instructions: Seq[Instruction]) = {
-    val importLines: Set[String] =
-      instructions.
-        map(_.importedClasses()).
-        reduceOption(_ ++ _).
-        getOrElse(Set.empty)
-
-
+    val importLines = instructions.map(_.allImportedClasses).reduceOption(_ ++ _).getOrElse(Set.empty)
 
     val imports = if (importLines.nonEmpty)
       importLines.toSeq.sorted.mkString("import ", s";${n}import ", ";")
@@ -97,10 +90,10 @@ object CodeGenerator {
     val members = instructions.map(_.members().trim).mkString(n).trim
     val init = instructions.map(_.generateInit().trim).mkString(n).trim
     val methodBody = instructions.map(_.generateCode().trim).reduce(_ + n + _).trim
-    val privateMethods = instructions.flatMap(_.methods).distinct.sortBy(_.name)
+    val privateMethods = instructions.flatMap(_.allMethods).distinct.sortBy(_.name)
     val privateMethodText = privateMethods.map(_.generateCode.trim).reduceOption(_ + n + _).getOrElse("").trim
-    val exceptions = instructions.flatMap(_.exceptions).toSet
-    val opIds = instructions.flatMap(_.operatorIds).map(s => s"public static Id $s;").mkString(n)
+    val exceptions = instructions.flatMap(_.allExceptions).toSet
+    val opIds = instructions.flatMap(_.allOperatorIds).map(s => s"public static Id $s;").mkString(n)
 
     s"""package $packageName;
        |

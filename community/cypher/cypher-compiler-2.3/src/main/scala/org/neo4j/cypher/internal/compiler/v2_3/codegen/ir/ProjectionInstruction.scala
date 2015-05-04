@@ -26,14 +26,14 @@ import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenerator, KernelExc
 sealed trait ProjectionInstruction extends Instruction {
   def projectedVariable: JavaSymbol
   def generateCode() = ""
-  override protected def _importedClasses() = Set.empty
 }
 
 object ProjectionInstruction {
   def literal(value: Long): ProjectionInstruction = ProjectLiteral(JavaSymbol(value.toString + "L", LONG))
   def literal(value: Double): ProjectionInstruction = ProjectLiteral(JavaSymbol(value.toString, DOUBLE))
-  def literal(value: String): ProjectionInstruction = ProjectLiteral(JavaSymbol( s""""$value"""", STRING))
-  def literal(value: Boolean): ProjectionInstruction = ???
+
+  def literal(value: String): ProjectionInstruction = ProjectLiteral(JavaSymbol(s""""$value"""", STRING))
+
   def parameter(key: String): ProjectionInstruction = ProjectParameter(key)
 
   def add(lhs: ProjectionInstruction, rhs: ProjectionInstruction): ProjectionInstruction = ProjectAddition(lhs, rhs)
@@ -52,18 +52,18 @@ case class ProjectNodeProperty(id: String, token: Option[Int], propName: String,
        """.stripMargin
       else ""
 
-  override def _importedClasses() =
-    Set("org.neo4j.kernel.api.properties.Property", "org.neo4j.kernel.api.exceptions.EntityNotFoundException")
-
   override def members() = if (token.isEmpty) s"private int $propKeyVar = -1;" else ""
 
   def projectedVariable = JavaSymbol(s"$methodName( $nodeIdVar )", OBJECT)
 
-  override protected def _exceptions() = Set(KernelExceptionCodeGen)
+  override protected def importedClasses =
+    Set("org.neo4j.kernel.api.properties.Property", "org.neo4j.kernel.api.exceptions.EntityNotFoundException")
 
-  override def operatorId = Some(id)
+  override protected def exceptions = Set(KernelExceptionCodeGen)
 
-  override protected def _method: Option[Method] = Some(new Method() {
+  override protected def operatorId = Some(id)
+
+  override protected def method = Some(new Method() {
     override def name: String = methodName
 
     override def generateCode: String = {
@@ -81,6 +81,8 @@ case class ProjectNodeProperty(id: String, token: Option[Int], propName: String,
       """.stripMargin
     }
   })
+
+  override protected def children = Seq.empty
 }
 
 case class ProjectRelProperty(token: Option[Int], propName: String, relIdVar: String, namer: Namer) extends ProjectionInstruction {
@@ -94,14 +96,15 @@ case class ProjectRelProperty(token: Option[Int], propName: String, relIdVar: St
          |}""".stripMargin
     else ""
 
-  override def _importedClasses() =
-    Set("org.neo4j.kernel.api.properties.Property")
-
   override def members() = if (token.isEmpty) s"private int $propKeyVar = -1;" else ""
 
   def projectedVariable = JavaSymbol(s"ro.relationshipGetProperty( $relIdVar, $propKeyVar ).value( null )", OBJECT)
 
-  override protected def _exceptions() = Set(KernelExceptionCodeGen)
+  override protected def importedClasses = Set("org.neo4j.kernel.api.properties.Property")
+
+  override protected def exceptions = Set(KernelExceptionCodeGen)
+
+  override protected def children = Seq.empty
 }
 
 case class ProjectParameter(key: String) extends ProjectionInstruction {
@@ -117,7 +120,9 @@ case class ProjectParameter(key: String) extends ProjectionInstruction {
 
   def members() = ""
 
-  override def _importedClasses(): Set[String] = Set("org.neo4j.cypher.internal.compiler.v2_3.ParameterNotFoundException")
+  override protected def importedClasses = Set("org.neo4j.cypher.internal.compiler.v2_3.ParameterNotFoundException")
+
+  override protected def children = Seq.empty
 }
 
 case class ProjectLiteral(projectedVariable: JavaSymbol) extends ProjectionInstruction {
@@ -125,6 +130,8 @@ case class ProjectLiteral(projectedVariable: JavaSymbol) extends ProjectionInstr
   def generateInit() = ""
 
   def members() = ""
+
+  override protected def children = Seq.empty
 }
 
 case class ProjectNode(nodeIdVar: JavaSymbol) extends ProjectionInstruction {
@@ -134,6 +141,8 @@ case class ProjectNode(nodeIdVar: JavaSymbol) extends ProjectionInstruction {
   def generateInit() = ""
 
   def members() = ""
+
+  override protected def children = Seq.empty
 }
 
 case class ProjectRelationship(relId: JavaSymbol) extends ProjectionInstruction {
@@ -143,6 +152,8 @@ case class ProjectRelationship(relId: JavaSymbol) extends ProjectionInstruction 
   def generateInit() = ""
 
   def members() = ""
+
+  override protected def children = Seq.empty
 }
 
 case class ProjectAddition(lhs: ProjectionInstruction, rhs: ProjectionInstruction) extends ProjectionInstruction {
@@ -173,7 +184,7 @@ case class ProjectAddition(lhs: ProjectionInstruction, rhs: ProjectionInstructio
 
   override def children = Seq(lhs, rhs)
 
-  override def _importedClasses(): Set[String] = Set("org.neo4j.cypher.internal.compiler.v2_3.codegen.CompiledMathHelper")
+  override protected def importedClasses = Set("org.neo4j.cypher.internal.compiler.v2_3.codegen.CompiledMathHelper")
 }
 
 case class ProjectSubtraction(lhs: ProjectionInstruction, rhs: ProjectionInstruction) extends ProjectionInstruction {
@@ -198,7 +209,7 @@ case class ProjectSubtraction(lhs: ProjectionInstruction, rhs: ProjectionInstruc
 
   override def children = Seq(lhs, rhs)
 
-  override def _importedClasses(): Set[String] = Set("org.neo4j.cypher.internal.compiler.v2_3.codegen.CompiledMathHelper")
+  override protected def importedClasses = Set("org.neo4j.cypher.internal.compiler.v2_3.codegen.CompiledMathHelper")
 }
 
 case class ProjectCollection(instructions: Seq[ProjectionInstruction]) extends ProjectionInstruction {
@@ -212,10 +223,10 @@ case class ProjectCollection(instructions: Seq[ProjectionInstruction]) extends P
 
   def members() = ""
 
-  override def _importedClasses() = Set( "java.util.Arrays")
-
   private def asJavaList(f: ProjectionInstruction => String) =
     JavaSymbol(instructions.map(f).mkString("Arrays.asList(", ",", ")"), LIST)
+
+  override protected def importedClasses = Set("java.util.Arrays")
 }
 
 case class ProjectMap(instructions: Map[String, ProjectionInstruction]) extends ProjectionInstruction {
@@ -245,6 +256,4 @@ case class Project(projections:Seq[ProjectionInstruction], parent:Instruction) e
   override def generateInit() = generate(_.generateInit())
 
   private def generate(f : Instruction => String) = projections.map(f(_)).mkString("", CodeGenerator.n, CodeGenerator.n) + f(parent)
-
-  override protected def _importedClasses(): Set[String] = Set.empty
 }
