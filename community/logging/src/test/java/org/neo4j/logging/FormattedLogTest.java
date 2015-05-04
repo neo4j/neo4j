@@ -244,6 +244,30 @@ public class FormattedLogTest
         assertThat( writer.toString(), equalTo( "" ) );
     }
 
+    @Test
+    public void shouldAllowLevelToBeChanged()
+    {
+        // Given
+        StringWriter writer = new StringWriter();
+        FormattedLog log = newFormattedLog( writer, Level.INFO );
+
+        // When
+        log.info( "No, it's when there's nothing wrong with you, but you hurt anyway. You get it?" );
+        log.setLevel( Level.WARN );
+        log.info( "I know now why you cry. But it's something I can never do." );
+        log.setLevel( Level.DEBUG );
+        log.info( "There's 215 bones in the human body. That's one." );
+
+        // Then
+        assertThat(
+                writer.toString(),
+                equalTo( format( "%s%n%s%n",
+                        "1984-10-26 04:23:24.343 INFO  [test] No, it's when there's nothing wrong with you, but you hurt anyway. You get it?",
+                        "1984-10-26 04:23:24.343 INFO  [test] There's 215 bones in the human body. That's one."
+                ) )
+        );
+    }
+
     private static FormattedLog newFormattedLog( StringWriter writer )
     {
         return newFormattedLog( writer, Level.DEBUG );

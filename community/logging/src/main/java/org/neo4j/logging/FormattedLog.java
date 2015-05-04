@@ -33,6 +33,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A {@link Log} implementation that applies a simple formatting to each log message.
@@ -186,7 +187,7 @@ public class FormattedLog extends AbstractLog
     private final Supplier<PrintWriter> writerSupplier;
     private final Object lock;
     private final String category;
-    private final Level level;
+    private final AtomicReference<Level> levelRef;
     private final boolean autoFlush;
     private final Logger debugLogger;
     private final Logger infoLogger;
@@ -308,7 +309,7 @@ public class FormattedLog extends AbstractLog
         this.writerSupplier = writerSupplier;
         this.lock = ( maybeLock != null ) ? maybeLock : this;
         this.category = category;
-        this.level = level;
+        this.levelRef = new AtomicReference<>( level );
         this.autoFlush = autoFlush;
 
         String debugPrefix = ( category != null && !category.isEmpty() ) ? "DEBUG [" + category + "]" : "DEBUG";
@@ -329,13 +330,24 @@ public class FormattedLog extends AbstractLog
      */
     public Level getLevel()
     {
-        return level;
+        return levelRef.get();
+    }
+
+    /**
+     * Set the {@link Level} that logging should be enabled at
+     *
+     * @param level the new logging level
+     * @return the previous logging level
+     */
+    public Level setLevel( Level level )
+    {
+        return levelRef.getAndSet( level );
     }
 
     @Override
     public boolean isDebugEnabled()
     {
-        return Level.DEBUG.compareTo( level ) >= 0;
+        return Level.DEBUG.compareTo( levelRef.get() ) >= 0;
     }
 
     @Override
@@ -349,7 +361,7 @@ public class FormattedLog extends AbstractLog
      */
     public boolean isInfoEnabled()
     {
-        return Level.INFO.compareTo( level ) >= 0;
+        return Level.INFO.compareTo( levelRef.get() ) >= 0;
     }
 
     @Override
@@ -363,7 +375,7 @@ public class FormattedLog extends AbstractLog
      */
     public boolean isWarnEnabled()
     {
-        return Level.WARN.compareTo( level ) >= 0;
+        return Level.WARN.compareTo( levelRef.get() ) >= 0;
     }
 
     @Override
@@ -377,7 +389,7 @@ public class FormattedLog extends AbstractLog
      */
     public boolean isErrorEnabled()
     {
-        return Level.ERROR.compareTo( level ) >= 0;
+        return Level.ERROR.compareTo( levelRef.get() ) >= 0;
     }
 
     @Override
@@ -393,7 +405,7 @@ public class FormattedLog extends AbstractLog
         synchronized (lock)
         {
             writer = writerSupplier.get();
-            consumer.accept( new FormattedLog( currentDateSupplier, Suppliers.singleton( writer ), lock, category, level, false ) );
+            consumer.accept( new FormattedLog( currentDateSupplier, Suppliers.singleton( writer ), lock, category, levelRef.get(), false ) );
         }
         if ( autoFlush )
         {
