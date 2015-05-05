@@ -19,6 +19,8 @@
  */
 package org.neo4j.ext;
 
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.function.Factory;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
@@ -33,8 +35,14 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.ndp.runtime.Sessions;
 import org.neo4j.ndp.runtime.internal.StandardSessions;
+import org.neo4j.ndp.transport.socket.NettyServer;
+import org.neo4j.ndp.transport.socket.SocketProtocol;
+import org.neo4j.ndp.transport.socket.SocketProtocolV1;
 import org.neo4j.ndp.transport.socket.SocketTransport;
+import org.neo4j.ndp.transport.socket.WebSocketTransport;
 
+import static java.util.Arrays.asList;
+import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
 import static org.neo4j.helpers.Settings.setting;
@@ -51,9 +59,13 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
         public static final Setting<Boolean> ndp_enabled = setting( "experimental.ndp.enabled", BOOLEAN,
                 "false" );
 
-        @Description("Host and port for the Neo4j Data Protocol http transport")
-        public static final Setting<HostnamePort> ndp_address =
+        @Description("Host and port for the Neo4j Data Protocol")
+        public static final Setting<HostnamePort> ndp_socket_address =
                 setting( "dbms.ndp.address", HOSTNAME_PORT, "localhost:7687" );
+
+        @Description("Host and port for the Neo4j Data Protocol Websocket")
+        public static final Setting<HostnamePort> ndp_ws_address =
+                setting( "dbms.ndp.ws.address", HOSTNAME_PORT, "localhost:7688" );
     }
 
     public interface Dependencies
@@ -77,15 +89,30 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
         final GraphDatabaseService gdb = dependencies.db();
         final GraphDatabaseAPI api = (GraphDatabaseAPI) gdb;
         final Log log = dependencies.logService().getInternalLog( Sessions.class );
-        final HostnamePort address = config.get( Settings.ndp_address );
+
+        final HostnamePort socketAddress = config.get( Settings.ndp_socket_address );
+        final HostnamePort webSocketAddress = config.get( Settings.ndp_ws_address );
+
         final LifeSupport life = new LifeSupport();
 
         if ( config.get( Settings.ndp_enabled ) )
         {
-            final Sessions env = life.add( new StandardSessions( api, log ) );
+            final Sessions sessions = life.add( new StandardSessions( api, log ) );
+
+            PrimitiveLongObjectMap<Factory<SocketProtocol>> availableVersions = longObjectMap();
+            availableVersions.put( SocketProtocolV1.VERSION, new Factory<SocketProtocol>()
+            {
+                @Override
+                public SocketProtocol newInstance()
+                {
+                    return new SocketProtocolV1( log, sessions.newSession() );
+                }
+            } );
 
             // Start services
-            life.add( new SocketTransport( address, log, env ) );
+            life.add( new NettyServer( asList(
+                    new SocketTransport( socketAddress, availableVersions ),
+                    new WebSocketTransport( webSocketAddress, availableVersions ))) );
             log.info( "NDP Server extension loaded." );
         }
 

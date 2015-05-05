@@ -54,11 +54,15 @@ public class SocketProtocolV1 implements SocketProtocol
     private final Log log;
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
 
-    private final byte[] currentHeader = new byte[2];
+    enum State
+    {
+        AWAITING_CHUNK,
+        IN_CHUNK,
+        IN_HEADER,
+    }
 
-    private boolean isReadingSplitHeader = false;
-    private boolean isReadingSplitChunk = false;
-    private int splitChunkRemaining = 0;
+    private State state = State.AWAITING_CHUNK;
+    private int chunkSize = 0;
 
     public SocketProtocolV1( final Log log, Session session )
     {
@@ -88,78 +92,78 @@ public class SocketProtocolV1 implements SocketProtocol
     public void handle( ChannelHandlerContext channelContext, ByteBuf data )
     {
         onBatchOfMessagesStarted();
-        while ( data.readableBytes() > 0 )
+        try
         {
-            // Chunks may split across network packages, so we get partial chunks. If that's currently the case,
-            // we gather those parts up as if they were individual chunks
-            if ( isReadingSplitChunk )
+            while ( data.readableBytes() > 0 )
             {
-                collectChunk( data, splitChunkRemaining );
-            }
-            else if ( data.readableBytes() == 1 )
-            {
-                // Chunk header is split across network packets..
-                currentHeader[0] = data.readByte();
-            }
-            else
-            {
-                // Read next chunk header
-                int chunkSize;
-                if ( isReadingSplitHeader )
+                switch ( state )
                 {
-                    currentHeader[1] = data.readByte();
-                    chunkSize = (currentHeader[0] << 8 | currentHeader[1]) & 0xffff;
+                case AWAITING_CHUNK:
+                {
+                    if ( data.readableBytes() >= 2 )
+                    {
+                        // Whole header available, read that
+                        chunkSize = data.readUnsignedShort();
+                        handleHeader( channelContext );
+                    }
+                    else
+                    {
+                        // Only one byte available, read that and wait for the second byte
+                        chunkSize = data.readByte() << 8;
+                        state = State.IN_HEADER;
+                    }
+                    break;
                 }
-                else
+                case IN_HEADER:
                 {
-                    chunkSize = data.readUnsignedShort();
+                    // First header byte read, now we read the next one
+                    chunkSize = (chunkSize | data.readByte()) & 0xFFFF;
+                    handleHeader( channelContext );
+                    break;
                 }
-
-                // Is there data in the chunk, or are we at a message boundary?
-                if ( chunkSize > 0 )
+                case IN_CHUNK:
                 {
-                    // Save this chunk
-                    collectChunk( data, chunkSize );
+                    if ( chunkSize < data.readableBytes() )
+                    {
+                        // Current packet is larger than current chunk, slice of the chunk
+                        input.addChunk( data.readSlice( chunkSize ) );
+                        state = State.AWAITING_CHUNK;
+                    }
+                    else if ( chunkSize == data.readableBytes() )
+                    {
+                        // Current packet perfectly maps to current chunk
+                        input.addChunk( data );
+                        state = State.AWAITING_CHUNK;
+                    }
+                    else
+                    {
+                        // Current packet is smaller than the chunk we're reading, split the current chunk itself up
+                        chunkSize -= data.readableBytes();
+                        input.addChunk( data );
+                    }
+                    break;
                 }
-                else
-                {
-                    // A full message collected, forward it for processing
-                    processCollectedMessage( channelContext );
                 }
             }
         }
-        onBatchOfMessagesDone();
+        finally
+        {
+            data.release();
+            onBatchOfMessagesDone();
+        }
     }
 
-    private void collectChunk( ByteBuf data, int chunkSize )
+    private void handleHeader( ChannelHandlerContext channelContext )
     {
-        if ( chunkSize <= data.readableBytes() )
+        if(chunkSize == 0)
         {
-            // Incoming buffer contains the whole chunk, forward it to our chunked input handling
-            input.addChunk( data.readSlice( chunkSize ) );
-            isReadingSplitChunk = false;
+            // Message boundary
+            processCollectedMessage( channelContext );
+            state = State.AWAITING_CHUNK;
         }
         else
         {
-            // Incoming buffer does not contain all the data we expect in the current chunk, gather up whats
-            // available, treat that as a chunk and remember how much we've got left to read from the next network
-            // packet.
-            if ( data.readableBytes() > 0 )
-            {
-                input.addChunk( data );
-            }
-
-            if ( isReadingSplitChunk )
-            {
-                // In the middle of reading split chunks, count down how much remains.
-                splitChunkRemaining -= chunkSize;
-            }
-            else
-            {
-                // First of a series of split chunk pieces, note the total length we need to read
-                isReadingSplitChunk = true;
-                splitChunkRemaining = chunkSize;
-            }
+            state = State.IN_CHUNK;
         }
     }
 

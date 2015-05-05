@@ -111,7 +111,7 @@ public class ChunkedOutput implements PackOutput
         if ( buffer != null && buffer.readableBytes() > 0 )
         {
             closeChunkIfOpen();
-            channel.writeAndFlush( buffer );
+            channel.writeAndFlush( buffer, channel.voidPromise() );
             newBuffer();
         }
         return this;
@@ -163,17 +163,14 @@ public class ChunkedOutput implements PackOutput
         int index = 0;
         while ( index < length )
         {
-            int amountToWrite = Math.min( buffer == null ? maxChunkSize : buffer.writableBytes() - CHUNK_HEADER_SIZE,
-                    length - index );
-            ensure( amountToWrite );
+            // Ensure there is an open chunk, and that it has at least one byte of space left
+            ensure(1);
+
+            // Write as much as we can into the current chunk
+            int amountToWrite = Math.min( buffer.writableBytes(), length - index );
 
             buffer.writeBytes( data, offset + index, amountToWrite );
             index += amountToWrite;
-
-            if ( buffer.writableBytes() == 0 )
-            {
-                flush();
-            }
         }
         return this;
     }
@@ -191,7 +188,7 @@ public class ChunkedOutput implements PackOutput
     private void newBuffer()
     {
         // Assumption: We're using nettys buffer pooling here
-        buffer = channel.alloc().buffer( bufferSize, bufferSize );
+        buffer = channel.alloc().buffer( bufferSize, bufferSize ); // TODO: implement a #close method in this class, dispose of this buffer on close
         chunkOpen = false;
     }
 

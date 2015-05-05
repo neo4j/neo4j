@@ -1,7 +1,7 @@
 [[ndp-transport]]
 == Transport layer
-The protocol uses a TCP transport for sending and receiving messages.
-The transport protocol is responsible for:
+The protocol supports a TCP and a WebSocket transport protocol for sending and receiving messages.
+A transport protocol is responsible for:
 
 * Negotiating Neo4j protocol version
 * Establishing and terminating sessions
@@ -19,8 +19,18 @@ Neo4j uses 'sticky sessions', which means that, in a database cluster, each sess
 
 === Connecting
 
-To initialize a new session, the client connects using a regular TCP socket to the address the server has been configured to use.
-Once the socket is connected, a handshake to establish which protocol version to use takes place.
+To initialize a new session, the client connects either using a regular TCP socket, or using a websocket.
+Once connected, both connection methods behave identically.
+
+The websocket connection should be made to the host and port Neo4j has been configured to use for its websocket listener.
+The URL by default is `ws://localhost:8776`.
+
+The TCP socket connection should be made to the host and port Neo4j has been configued to use for its TCP socket listener.
+The host and port by default is `localhost:7687`.
+
+=== Handshake
+
+After connecting, a handshake to establish which protocol version to use takes place.
 
 In the handshake, the client proposes up to four protocol versions it supports, in order of preference.
 The proposal is always represented as four 32-bit unsigned big-endian integers.

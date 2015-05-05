@@ -701,6 +701,11 @@ public class ComponentVersion extends Version
         <version>1.9.13</version>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>websocket-client</artifactId>
+        <version>9.2.10.v20150310</version>
+      </dependency>
+      <dependency>
         <groupId>org.rrd4j</groupId>
         <artifactId>rrd4j</artifactId>
         <version>2.2</version>

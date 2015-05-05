@@ -20,12 +20,13 @@
 package org.neo4j.ndp.transport.socket;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.Factory;
@@ -33,29 +34,25 @@ import org.neo4j.helpers.BiConsumer;
 import org.neo4j.helpers.HostnamePort;
 
 /**
- * Implements a transport for the Neo4j Messaging Protocol that uses good old regular sockets.
+ * Carries the Neo4j protocol over websockets. Apart from the initial websocket handshake, this works with the exact
+ * same protocol as {@link org.neo4j.ndp.transport.socket.SocketTransport}.
  */
-public class SocketTransport implements BiConsumer<EventLoopGroup, EventLoopGroup>
+public class WebSocketTransport implements BiConsumer<EventLoopGroup,EventLoopGroup>
 {
     private final HostnamePort address;
-    private final PrimitiveLongObjectMap<Factory<SocketProtocol>> protocolVersions;
+    private final PrimitiveLongObjectMap<Factory<SocketProtocol>> availableVersions;
 
-    public SocketTransport( HostnamePort address, PrimitiveLongObjectMap<Factory<SocketProtocol>> protocolVersions)
+    public WebSocketTransport( HostnamePort address, PrimitiveLongObjectMap<Factory<SocketProtocol>> protocolVersions )
     {
         this.address = address;
-        this.protocolVersions = protocolVersions;
-    }
-
-    public HostnamePort address()
-    {
-        return address;
+        this.availableVersions = protocolVersions;
     }
 
     @Override
     public void accept( EventLoopGroup bossGroup, EventLoopGroup workerGroup )
     {
         ServerBootstrap b = new ServerBootstrap();
-        b.option( ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT )
+        b//.option( ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT )
          .group( bossGroup, workerGroup )
          .channel( NioServerSocketChannel.class )
          .childHandler( new ChannelInitializer<SocketChannel>()
@@ -63,8 +60,13 @@ public class SocketTransport implements BiConsumer<EventLoopGroup, EventLoopGrou
                     @Override
                     public void initChannel( SocketChannel ch ) throws Exception
                     {
-                        ch.pipeline().addLast( new SocketTransportHandler(
-                                new SocketTransportHandler.ProtocolChooser( protocolVersions ) ) );
+                        ch.pipeline().addLast(
+                                new HttpServerCodec(),
+                                new HttpObjectAggregator(65536),
+                                new WebSocketServerProtocolHandler( "" ),
+                                new WebSocketFrameTranslator(),
+                                new SocketTransportHandler(
+                                        new SocketTransportHandler.ProtocolChooser( availableVersions ) ) );
                     }
                 } );
 

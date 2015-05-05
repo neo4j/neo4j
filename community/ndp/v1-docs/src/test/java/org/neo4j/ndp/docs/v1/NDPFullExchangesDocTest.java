@@ -19,6 +19,7 @@
  */
 package org.neo4j.ndp.docs.v1;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,7 +28,10 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.ndp.transport.socket.integration.NDPConn;
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.ndp.transport.socket.client.Connection;
+import org.neo4j.ndp.transport.socket.client.SocketConnection;
+import org.neo4j.ndp.transport.socket.client.WebSocketConnection;
 import org.neo4j.ndp.transport.socket.integration.Neo4jWithSocket;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -44,7 +48,16 @@ public class NDPFullExchangesDocTest
     public Neo4jWithSocket neo4j = new Neo4jWithSocket();
 
     @Parameterized.Parameter( 0 )
+    public String testName;
+
+    @Parameterized.Parameter( 1 )
     public DocExchangeExample example;
+
+    @Parameterized.Parameter( 2 )
+    public Connection client;
+
+    @Parameterized.Parameter( 3 )
+    public HostnamePort address;
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> documentedFullProtocolExamples()
@@ -52,12 +65,15 @@ public class NDPFullExchangesDocTest
         Collection<Object[]> mappings = new ArrayList<>();
 
         // Load the documented mappings
+        HostnamePort socketAddress = new HostnamePort( "localhost:7687" );
+        HostnamePort wsAddress = new HostnamePort( "localhost:7688" );
         for ( DocExchangeExample ex : docs().read(
                 "dev/transport.asciidoc",
                 "code[data-lang=\"ndp_exchange\"]",
                 exchange_example ) )
         {
-            mappings.add( new Object[]{ex} );
+            mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SocketConnection(), socketAddress} );
+            mappings.add( new Object[]{"WebSocket - "+ex.name(), ex, new WebSocketConnection(), wsAddress} );
         }
 
         for ( DocExchangeExample ex : docs().read(
@@ -65,74 +81,78 @@ public class NDPFullExchangesDocTest
                 "code[data-lang=\"ndp_exchange\"]",
                 exchange_example ) )
         {
-            mappings.add( new Object[]{ex} );
+            mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SocketConnection(), socketAddress} );
+            mappings.add( new Object[]{"WebSocket - "+ex.name(), ex, new WebSocketConnection(), wsAddress} );
         }
 
         return mappings;
     }
 
+    @After
+    public void shutdown() throws Exception
+    {
+        client.close();
+    }
+
     @Test
     public void serverShouldBehaveAsDocumented() throws Throwable
     {
-        try ( NDPConn client = new NDPConn() )
+        for ( DocExchangeExample.Event event : example )
         {
-            for ( DocExchangeExample.Event event : example )
+            if ( event.from().equalsIgnoreCase( "client" ) )
             {
-                if ( event.from().equalsIgnoreCase( "client" ) )
+                // Play out a client action
+                switch ( event.type() )
                 {
-                    // Play out a client action
-                    switch ( event.type() )
+                case CONNECT:
+                    client.connect( address );
+                    break;
+                case DISCONNECT:
+                    client.disconnect();
+                    break;
+                case SEND:
+                    // Ensure the documented binary representation matches the human-readable version in the docs
+                    if ( event.hasHumanReadableValue() )
                     {
-                    case CONNECT:
-                        client.connect( neo4j.address() );
-                        break;
-                    case DISCONNECT:
-                        client.disconnect();
-                        break;
-                    case SEND:
-                        // Ensure the documented binary representation matches the human-readable version in the docs
-                        if ( event.hasHumanReadableValue() )
-                        {
-                            assertThat( "'" + event.humanReadableMessage() + "' should serialize to the documented " +
-                                        "binary data.",
-                                    hex( event.payload() ),
-                                    equalTo( hex( packAndChunk( event.humanReadableMessage(), 64 ) ) ) );
-                        }
-                        client.send( event.payload() );
-                        break;
-                    default:
-                        throw new RuntimeException( "Unknown client event: " + event.type() );
+                        assertThat( "'" + event.humanReadableMessage() + "' should serialize to the documented " +
+                                    "binary data.",
+                                hex( event.payload() ),
+                                equalTo( hex( packAndChunk( event.humanReadableMessage(), 64 ) ) ) );
                     }
+                    client.send( event.payload() );
+                    break;
+                default:
+                    throw new RuntimeException( "Unknown client event: " + event.type() );
                 }
-                else if ( event.from().equalsIgnoreCase( "server" ) )
+            }
+            else if ( event.from().equalsIgnoreCase( "server" ) )
+            {
+                // Assert that the server does what the docs say
+                // Play out a client action
+                switch ( event.type() )
                 {
-                    // Assert that the server does what the docs say
-                    // Play out a client action
-                    switch ( event.type() )
+                case DISCONNECT:
+                    // There's not really a good way to verify that the remote connection is closed, we can read and
+                    // time out, or write perhaps, but that's buggy and racy.. not sure how to test this on this
+                    // level.
+                    break;
+                case SEND:
+                    if ( event.hasHumanReadableValue() )
                     {
-                    case DISCONNECT:
-                        // There's not really a good way to verify that the remote connection is closed, we can read and
-                        // time out, or write perhaps, but that's buggy and racy.. not sure how to test this on this
-                        // level.
-                        break;
-                    case SEND:
-                        if ( event.hasHumanReadableValue() )
-                        {
-                            assertThat( "'" + event.humanReadableMessage() + "' should serialize to the documented " +
-                                        "binary data.",
-                                    hex( event.payload() ),
-                                    equalTo( hex( packAndChunk( event.humanReadableMessage(), 512 ) ) ) );
-                        }
-
-                        byte[] recieved = client.recv( event.payload().length );
-
-                        assertThat(
-                                hex( recieved ),
-                                equalTo( hex( event.payload() ) ) );
-                        break;
-                    default:
-                        throw new RuntimeException( "Unknown server event: " + event.type() );
+                        assertThat( "'" + event.humanReadableMessage() + "' should serialize to the documented " +
+                                    "binary data.",
+                                hex( event.payload() ),
+                                equalTo( hex( packAndChunk( event.humanReadableMessage(), 512 ) ) ) );
                     }
+
+                    byte[] recieved = client.recv( event.payload().length );
+
+                    assertThat(
+                            hex( recieved ),
+                            equalTo( hex( event.payload() ) ) );
+                    break;
+                default:
+                    throw new RuntimeException( "Unknown server event: " + event.type() );
                 }
             }
         }

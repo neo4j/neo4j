@@ -86,6 +86,10 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
             {
                 channelRead( ctx, buffer );
             }
+            else
+            {
+                buffer.release();
+            }
             return;
         case NO_APPLICABLE_PROTOCOL:
             ctx.writeAndFlush( wrappedBuffer( new byte[]{0, 0, 0, 0} ) )
