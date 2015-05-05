@@ -10,7 +10,6 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-streams</artifactId>
   <version>2.3-SNAPSHOT</version>
 
@@ -58,18 +57,6 @@ the relevant Commercial Agreement.
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>2.2</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
       <!-- Disable the ComponentVersion generation -->
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>

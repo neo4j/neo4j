@@ -18,8 +18,6 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
     <jta.groupId>org.apache.geronimo.specs</jta.groupId>
     <jta.artifactId>geronimo-jta_1.1_spec</jta.artifactId>
     <jta.version>1.1.1</jta.version>
@@ -517,7 +515,7 @@ public class ComponentVersion extends Version
           <version>1.3</version>
           <scope>test</scope>
       </dependency>
-      
+
       <dependency>
         <groupId>org.powermock</groupId>
         <artifactId>powermock-module-junit4</artifactId>
@@ -600,8 +598,8 @@ public class ComponentVersion extends Version
         <version>3.3.2</version>
       </dependency>
 
-      <!-- Netty is used by three components: Com, Cluster and NDP Socket Transport. 
-           Netty 4 is a significant improvement over Netty 3, in that it introduces 
+      <!-- Netty is used by three components: Com, Cluster and NDP Socket Transport.
+           Netty 4 is a significant improvement over Netty 3, in that it introduces
            buffer pooling (among lots of other improvements), and thus we want to move
            to Netty 4 to reduce GC overhead. Netty 4 (io.netty:netty-all) can co-exist
            with Netty 3 (io.netty:netty) because they have different modules and different
@@ -617,7 +615,7 @@ public class ComponentVersion extends Version
         <artifactId>netty-all</artifactId>
         <version>4.0.24.Final</version>
       </dependency>
-      
+
       <dependency>
         <groupId>log4j</groupId>
         <artifactId>log4j</artifactId>
