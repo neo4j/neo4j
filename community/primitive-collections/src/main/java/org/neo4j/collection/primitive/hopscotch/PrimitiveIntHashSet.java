@@ -62,6 +62,18 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
         return HopScotchHashingAlgorithm.get( table, monitor, DEFAULT_HASHING, value ) == valueMarker;
     }
 
+    /**
+     * Prefer using {@link #contains(int)} - this method is identical and required by the {@link org.neo4j.function.IntPredicate} interface
+     *
+     * @param value the input argument
+     * @return true if the input argument matches the predicate, otherwise false
+     */
+    @Override
+    public boolean test( int value )
+    {
+        return HopScotchHashingAlgorithm.get( table, monitor, DEFAULT_HASHING, value ) == valueMarker;
+    }
+
     @Override
     public boolean accept( int value )
     {
