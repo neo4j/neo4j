@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.FreshIdNameGenerator
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherException, InputPosition, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.compiler.v2_3.{topDown, CypherException, InputPosition, Rewriter, bottomUp}
 
 /**
  * This rewriter makes sure that all return items in a RETURN clauses are aliased, and moves
@@ -74,7 +74,7 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
           (AliasedReturnItem(i.expression, newIdentifier)(i.position), AliasedReturnItem(newIdentifier.copyId, returnColumn)(i.position))
       }.unzip
 
-      val newOrderBy = orderBy.endoRewrite(bottomUp(Rewriter.lift {
+      val newOrderBy = orderBy.endoRewrite(topDown(Rewriter.lift {
         case exp: Expression if rewrites.contains(exp) => rewrites(exp).copyId
       }))
 

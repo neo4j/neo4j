@@ -107,7 +107,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       }
 
       def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
-        if (config.indexes((labelName, propertyKey)))
+        if (config.indexes((labelName, propertyKey)) || config.uniqueIndexes((labelName, propertyKey)))
           Some(new IndexDescriptor(
             semanticTable.resolvedLabelIds(labelName).id,
             semanticTable.resolvedPropertyKeyNames(propertyKey).id

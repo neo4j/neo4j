@@ -98,6 +98,15 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest with As
     )
   }
 
+  test("should replace the aggregation function in the order by") {
+    assertRewrite(
+      """MATCH n
+        |RETURN n as n, count(n) as count ORDER BY count(n)""".stripMargin,
+      """MATCH n
+        |WITH n AS `  FRESHID15`, count(n) AS `  FRESHID23` ORDER BY `  FRESHID23`
+        |RETURN `  FRESHID15` AS n, `  FRESHID23` as count""".stripMargin)
+  }
+
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parseForRewriting(originalQuery)
     val expected = parseForRewriting(expectedQuery)

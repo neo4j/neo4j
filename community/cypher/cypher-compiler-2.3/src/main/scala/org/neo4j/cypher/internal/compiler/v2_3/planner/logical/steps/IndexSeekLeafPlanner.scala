@@ -84,7 +84,6 @@ object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
     (predicates: Seq[Expression]) =>
       context.logicalPlanProducer.planNodeIndexUniqueSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
 
-
   protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
     context.planContext.getUniqueIndexRule(label, property)
 }
@@ -100,9 +99,12 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
     (predicates: Seq[Expression]) =>
       context.logicalPlanProducer.planNodeIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
 
-  protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
-    context.planContext.getIndexRule(label, property)
+  protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] = {
+    if (uniqueIndex(label, property).isDefined) None else anyIndex(label, property)
+  }
 
+  private def anyIndex(label: String, property: String)(implicit context: LogicalPlanningContext) = context.planContext.getIndexRule(label, property)
+  private def uniqueIndex(label: String, property: String)(implicit context: LogicalPlanningContext) = context.planContext.getUniqueIndexRule(label, property)
 }
 
 object legacyHintLeafPlanner extends LeafPlanner {

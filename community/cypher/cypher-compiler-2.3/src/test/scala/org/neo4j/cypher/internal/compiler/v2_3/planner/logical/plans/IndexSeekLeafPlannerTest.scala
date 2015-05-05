@@ -50,6 +50,20 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     }
   }
 
+  test("does not plan index seek when there is a matching unique index") {
+    new given {
+      qg = queryGraph(inCollectionValue, hasLabels)
+
+      uniqueIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
   test("does not plan index seek when no unique index exist") {
     new given {
       qg = queryGraph(inCollectionValue, hasLabels)
