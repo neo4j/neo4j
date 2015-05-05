@@ -47,7 +47,8 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("all nodes scan") { // MATCH a RETURN a
     //given
-    val plan = ProduceResult(List("a"), List.empty, List.empty, AllNodesScan(IdName("a"), Set.empty)(solved))
+    val plan = ProduceResult(List("a"), List.empty, List.empty,
+      Projection(AllNodesScan(IdName("a"), Set.empty)(solved), Map("a" -> ident("a")))(solved))
 
     //when
     val compiled = compileAndExecute(plan)
@@ -66,7 +67,8 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("label scan") {// MATCH (a:T1) RETURN a
     //given
-    val plan = ProduceResult(List("a"), List.empty, List.empty, NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved))
+    val plan = ProduceResult(List("a"), List.empty, List.empty,
+      Projection(NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), Map("a" -> ident("a")))(solved))
 
     //when
     val compiled = compileAndExecute(plan)
@@ -85,7 +87,8 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val lhs = AllNodesScan(IdName("a"), Set.empty)(solved)
     val rhs = AllNodesScan(IdName("a"), Set.empty)(solved)
     val join = NodeHashJoin(Set(IdName("a")), lhs, rhs)(solved)
-    val plan = ProduceResult(List("a"), List.empty, List.empty, join)
+    val plan = ProduceResult(List("a"), List.empty, List.empty,
+      Projection(join, Map("a" -> ident("a")))(solved))
 
     //when
     val compiled = compileAndExecute(plan)
@@ -105,8 +108,10 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("all nodes scan + expand") { // MATCH (a)-[r]->(b) RETURN a, b
     //given
     val plan = ProduceResult(List("a", "b"), List.empty, List.empty,
-      Expand(
-        AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
+      Projection(
+        Expand(
+          AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved),
+        Map("a" -> ident("a"), "b" -> ident("b")))(solved))
 
     //when
     val compiled = compileAndExecute(plan)
@@ -125,8 +130,11 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("label scan + expand outgoing") { // MATCH (a:T1)-[r]->(b) RETURN a, b
     //given
     val plan = ProduceResult(List("a", "b"), List.empty, List.empty,
-      Expand(
-        NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
+      Projection(
+        Expand(
+          NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"),
+          Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved),
+        Map("a" -> ident("a"), "b" -> ident("b")))(solved))
 
     //when
     val compiled = compileAndExecute(plan)
@@ -144,8 +152,10 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("all node scan+ expand outgoing with one type") { // MATCH (a)-[r:R1]->(b) RETURN a, b
   //given
   val plan = ProduceResult(List("a", "b"), List.empty, List.empty,
-      Expand(
-        AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), Direction.OUTGOING, Seq(RelTypeName("R1")(null)), IdName("b"), IdName("r"), ExpandAll)(solved))
+      Projection(
+        Expand(
+          AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), Direction.OUTGOING, Seq(RelTypeName("R1")(null)), IdName("b"), IdName("r"), ExpandAll)(solved),
+        Map("a" -> ident("a"), "b" -> ident("b")))(solved))
 
     //when
     val compiled = compileAndExecute(plan)
@@ -163,9 +173,11 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("all node scan+ expand outgoing with multiple types") { // MATCH (a)-[r:R1|R2]->(b) RETURN a, b
   //given
   val plan = ProduceResult(List("a", "b"), List.empty, List.empty,
-      Expand(
-        AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), Direction.OUTGOING,
-        Seq(RelTypeName("R1")(pos), RelTypeName("R2")(pos)), IdName("b"), IdName("r"), ExpandAll)(solved))
+      Projection(
+        Expand(
+          AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), Direction.OUTGOING,
+          Seq(RelTypeName("R1")(pos), RelTypeName("R2")(pos)), IdName("b"), IdName("r"), ExpandAll)(solved),
+          Map("a" -> ident("a"), "b" -> ident("b")))(solved))
 
     //when
     val compiled = compileAndExecute(plan)
@@ -199,8 +211,11 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("label scan + expand both directions") { // MATCH (a:T1)-[r]-(b) RETURN a, b
   //given
   val plan = ProduceResult(List("a", "b"), List.empty, List.empty,
+    Projection(
       Expand(
-        NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"), Direction.BOTH, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
+        NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"), Direction.BOTH,
+        Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved),
+      Map("a" -> ident("a"), "b" -> ident("b")))(solved))
 
     //when
     val compiled = compileAndExecute(plan)
@@ -221,8 +236,10 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     //given
     val lhs = Expand(AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
     val rhs = Expand(AllNodesScan(IdName("c"), Set.empty)(solved), IdName("c"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r2"), ExpandAll)(solved)
-    val join = NodeHashJoin(Set(IdName("b")), lhs, rhs)(solved)
-    val plan = ProduceResult(List("a", "b", "c"), List.empty, List.empty, join)
+    val plan = ProduceResult(List("a", "b", "c"), List.empty, List.empty,
+      Projection(
+        NodeHashJoin(Set(IdName("b")), lhs, rhs)(solved), Map("a" -> ident("a"), "b" -> ident("b"), "c" -> ident("c"))
+      )(solved))
 
     val compiled = compileAndExecute(plan)
 
@@ -254,7 +271,8 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
     val rhs = Expand(NodeByLabelScan(IdName("c"), LazyLabel("T2"), Set.empty)(solved), IdName("c"),
       Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r2"), ExpandAll)(solved)
-    val join = NodeHashJoin(Set(IdName("b")), lhs, rhs)(solved)
+    val join = Projection(NodeHashJoin(Set(IdName("b")), lhs, rhs)(solved),
+      Map("a" -> ident("a"), "b" -> ident("b"), "c" -> ident("c")))(solved)
     val plan = ProduceResult(List("a", "b", "c"), List.empty, List.empty, join)
 
     val compiled = compileAndExecute(plan)
@@ -304,9 +322,9 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("project subtraction of two ints") {
     val lhs = SignedDecimalIntegerLiteral("7")(pos)
     val rhs = SignedDecimalIntegerLiteral("5")(pos)
-    val add = Subtract(lhs, rhs)(pos)
+    val subtract = Subtract(lhs, rhs)(pos)
 
-    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> subtract))(solved))
     val compiled = compileAndExecute(plan)
 
     //then
@@ -487,7 +505,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def compile(plan: LogicalPlan) = {
-    generator.generate(plan, newMockedPlanContext, Clock.SYSTEM_CLOCK, mock[SemanticTable])
+    generator.generate(plan, newMockedPlanContext, Clock.SYSTEM_CLOCK, semanticTable)
   }
 
   private def compileAndExecute(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, taskCloser: TaskCloser = new TaskCloser) = {
@@ -515,6 +533,15 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private val eNode = mockNode(4L, "e")
   private val fNode = mockNode(5L, "f")
   private val gNode = mockNode(6L, "g")
+
+  private val semanticTable =  mock[SemanticTable]
+  when(semanticTable.isNode(ident("a"))).thenReturn(true)
+  when(semanticTable.isNode(ident("b"))).thenReturn(true)
+  when(semanticTable.isNode(ident("c"))).thenReturn(true)
+  when(semanticTable.isNode(ident("d"))).thenReturn(true)
+  when(semanticTable.isNode(ident("e"))).thenReturn(true)
+  when(semanticTable.isNode(ident("f"))).thenReturn(true)
+  when(semanticTable.isNode(ident("g"))).thenReturn(true)
 
   private val allNodes = Seq(aNode, bNode, cNode, dNode, eNode, fNode, gNode)
   private val nodesForLabel = Map("T1" -> Seq(aNode, bNode, cNode), "T2" -> Seq(fNode, gNode))

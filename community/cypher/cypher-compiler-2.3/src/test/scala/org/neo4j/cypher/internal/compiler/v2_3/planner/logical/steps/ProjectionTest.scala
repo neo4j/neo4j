@@ -57,7 +57,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan, projections)
 
     // then
-    result should equal(startPlan)
+    result should equal(Projection(startPlan, projections)(solved))
     result.solved.horizon should equal(RegularQueryProjection(projections))
   }
 

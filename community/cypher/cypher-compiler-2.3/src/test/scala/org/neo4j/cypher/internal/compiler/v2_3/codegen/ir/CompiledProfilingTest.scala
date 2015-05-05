@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import org.mockito.Mockito._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v2_3.ProfileMode
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaSymbol
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
@@ -42,7 +42,9 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val id2 = new Id()
 
     val compiled = compile(WhileLoop(JavaSymbol("name", "Object"),
-      ScanAllNodes("OP1"), AcceptVisitor("OP2", Map.empty, Map.empty, Map.empty)))
+      ScanAllNodes("OP1"),
+      Project(List(ProjectNode(JavaSymbol("foo", "Node"))),
+      AcceptVisitor("OP2", Map("n" -> JavaSymbol("name", "Node"))))))
 
     val statement = mock[Statement]
     val readOps = mock[ReadOperations]
@@ -108,7 +110,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     // given
     val instruction = WhileLoop(JavaSymbol("name", "Object"),
       ScanAllNodes("foo"),
-      AcceptVisitor("bar", Map.empty, Map.empty, Map.empty))
+      AcceptVisitor("bar", Map.empty))
 
     // when
     val source = generateSource(instruction)

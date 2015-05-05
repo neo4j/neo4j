@@ -19,19 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.{n, JavaString}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaString
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
 
-case class AcceptVisitor(id: String, nodes: Map[String, String],
-                          relationships: Map[String, String],
-                          other: Map[String, String]) extends Instruction {
 
-  val columns = nodes.keySet ++ relationships.keySet ++ other.keySet
+case class AcceptVisitor(id: String, columns: Map[String, JavaSymbol]) extends Instruction {
+
 
   def generateCode() = {
     val eventVar = "event_" + id
-    s"""${nodes.toSeq.map { case (k, v) => s"""row.setNode("${k.toJava}", $v);"""}.mkString(n)}
-       |${relationships.toSeq.map { case (k, v) => s"""row.setRelationship("${k.toJava}", $v);"""}.mkString(n)}
-       |${other.toSeq.map { case (k, v) => s"""row.set("${k.toJava}", $v);"""}.mkString(n)}
+    s"""${columns.toSeq.map { case (k, v) => s"""row.set( "${k.toJava}", ${v.materialize.name} );"""}.mkString(n)}
        |try ( QueryExecutionEvent $eventVar = tracer.executeOperator( $id ) )
        |{
        |if ( !visitor.visit(row) )
@@ -49,7 +47,7 @@ case class AcceptVisitor(id: String, nodes: Map[String, String],
 
 
   def members() = {
-    val columnsList = columns.toList.map(_.toJava) match {
+    val columnsList = columns.keys.map(_.toJava) match {
       case Nil => "Collections.emptyList()"
       case lst => s"Arrays.asList( ${lst.mkString("\"", "\", \"", "\"")} )"
     }
@@ -63,7 +61,6 @@ case class AcceptVisitor(id: String, nodes: Map[String, String],
        |}""".
       stripMargin
   }
-
 
   override def _importedClasses() = Set(
     "java.util.List", "java.util.Arrays", "java.util.Collections"

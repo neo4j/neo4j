@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Namer, CodeGenerator, JavaSymbol}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils._
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.Namer
 
 sealed trait BuildProbeTable extends Instruction {
   def producedType: String

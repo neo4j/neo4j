@@ -2216,6 +2216,24 @@ return b
     ))
   }
 
+  test("properly handle collections of nodes and relationships") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val rel = relate(node1, node2)
+    val result = executeWithAllPlannersAndRuntimes("match (n)-[r]->(m) return [n, r, m] as r").toComparableResult
+
+    result should equal(Seq(Map("r" -> Seq(node1, rel, node2))))
+  }
+
+  test("properly handle maps of nodes and relationships") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val rel = relate(node1, node2)
+    val result = executeWithAllPlannersAndRuntimes("match (n)-[r]->(m) return {node1: n, rel: r, node2: m} as m").toComparableResult
+
+    result should equal(Seq(Map("m" -> Map("node1" -> node1, "rel" -> rel, "node2" -> node2))))
+  }
+
   /**
    * Append identifier to keys and transform value arrays to lists
    */

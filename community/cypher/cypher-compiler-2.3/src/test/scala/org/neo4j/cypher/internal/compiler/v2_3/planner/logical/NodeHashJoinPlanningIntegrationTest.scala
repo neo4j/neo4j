@@ -42,7 +42,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         case _                             => Double.MaxValue
       }
 
-    } planFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X) RETURN b").plan
+    } planFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X) RETURN b").innerPlan
 
     val expected =
       Selection(
@@ -74,7 +74,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       }
 
       indexOn("Person", "name")
-    } planFor "MATCH (a)-[r]->(b) USING INDEX a:Person(name) USING INDEX b:Person(name) WHERE a:Person AND b:Person AND a.name = 'Jakub' AND b.name = 'Andres' return r").plan should equal(
+    } planFor "MATCH (a)-[r]->(b) USING INDEX a:Person(name) USING INDEX b:Person(name) WHERE a:Person AND b:Person AND a.name = 'Jakub' AND b.name = 'Andres' return r").innerPlan should equal(
       NodeHashJoin(
         Set(IdName("b")),
         Selection(

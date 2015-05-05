@@ -43,13 +43,14 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
     val pathExpr = PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep)))_
 
     planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a RETURN b").plan should equal(
-      Selection(
-        Seq(Equals(
-          FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, pathExpr)_)_,
-          Identifier("a")_
-        )_),
-        Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING,  Seq.empty, "b", "r")(solved)
-      )(solved)
+      Projection(
+        Selection(
+          Seq(Equals(
+            FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, pathExpr) _) _,
+            Identifier("a") _
+          ) _),
+          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING, Seq.empty, "b", "r")(solved)
+        )(solved), Map("b" -> ident("b")))(solved)
     )
   }
 
@@ -57,19 +58,20 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
     val pathExpr = PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep)))_
 
     planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a AND length(p) > 10 RETURN b").plan should equal(
-      Selection(
-        Seq(
-          GreaterThan(
-            FunctionInvocation(FunctionName("length")_, pathExpr)_,
-            SignedDecimalIntegerLiteral("10")_
-          )_,
-          Equals(
-            FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, pathExpr)_)_,
-            Identifier("a")_
-          )_
-        ),
-        Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING,  Seq.empty, "b", "r")(solved)
-      )(solved)
+      Projection(
+        Selection(
+          Seq(
+            GreaterThan(
+              FunctionInvocation(FunctionName("length") _, pathExpr) _,
+              SignedDecimalIntegerLiteral("10") _
+            ) _,
+            Equals(
+              FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, pathExpr) _) _,
+              Identifier("a") _
+            ) _
+          ),
+          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING, Seq.empty, "b", "r")(solved)
+        )(solved), Map("b" -> ident("b")))(solved)
     )
   }
 }
