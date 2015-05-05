@@ -70,6 +70,7 @@ public class RecoveryLegacyIndexApplierLookup implements LegacyIndexApplierLooku
     {
         private final String name;
         private int applyCount;
+        private boolean applied;
 
         RecoveryCommandHandler( String name, NeoCommandHandler applier )
         {
@@ -80,10 +81,10 @@ public class RecoveryLegacyIndexApplierLookup implements LegacyIndexApplierLooku
         @Override
         public void apply()
         {
+            assert !applied;
             if ( ++applyCount % batchSize == 0 )
             {
                 applyForReal();
-                appliers.remove( name );
             }
         }
 
@@ -94,12 +95,17 @@ public class RecoveryLegacyIndexApplierLookup implements LegacyIndexApplierLooku
         @Override
         public void close()
         {
-            super.close();
+            if ( applied )
+            {
+                super.close();
+            }
         }
 
         private void applyForReal()
         {
             super.apply();
+            appliers.remove( name );
+            applied = true;
         }
     }
 }
