@@ -69,9 +69,10 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
   }
 
   private def kitWithShortestPathSupport(kit: QueryPlannerKit)(implicit context: LogicalPlanningContext) =
-    kit.copy(select = (plan: LogicalPlan, qg: QueryGraph) => selectShortestPath(kit, plan, qg))
+    kit.copy(select = selectShortestPath(kit, _, _))
 
-  private def selectShortestPath(kit: QueryPlannerKit, initialPlan: LogicalPlan, qg: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan =
+  private def selectShortestPath(kit: QueryPlannerKit, initialPlan: LogicalPlan, qg: QueryGraph)
+                                (implicit context: LogicalPlanningContext): LogicalPlan =
     qg.shortestPathPatterns.foldLeft(kit.select(initialPlan, qg)) {
       case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) =>
         val shortestPath = context.logicalPlanProducer.planShortestPaths(plan, sp)
@@ -99,10 +100,10 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
     // TODO: Investigate dropping leafPlanWeHopeToGetAwayWithIgnoring argument
     val leaves = leafPlanFinder(config, qg)
 
-    if (qg.patternRelationships.size > 0) {
+    if (qg.patternRelationships.nonEmpty) {
 
       val generators = solvers.map(_(qg))
-      val selectingGenerators = generators.map(_.map( plan => kit.select(plan, qg) ))
+      val selectingGenerators = generators.map(_.map(plan => kit.select(plan, qg)))
       val generator = selectingGenerators.foldLeft(IDPSolverStep.empty[PatternRelationship, LogicalPlan, LogicalPlanningContext])(_ ++ _)
 
       val solver = new IDPSolver[PatternRelationship, LogicalPlan, LogicalPlanningContext](
@@ -120,7 +121,9 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
       monitor.endIDPIterationFor(qg, component, result)
       result
     } else {
-      val solutionPlans = leaves.filter(plan => (qg.coveredIds -- plan.availableSymbols).isEmpty)
+      val solutionPlans = leaves collect {
+        case plan if (qg.coveredIds -- plan.availableSymbols).isEmpty => kit.select(plan, qg)
+      }
       val result = kit.pickBest(solutionPlans).getOrElse(throw new InternalException("Found no leaf plan for connected component.  This must not happen."))
       monitor.noIDPIterationFor(qg, component, result)
       result

@@ -75,6 +75,6 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerList,
 case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan,
                            projectAllEndpoints: (LogicalPlan, QueryGraph) => LogicalPlan,
                            pickBest: CandidateSelector) {
-  def select(plans: Iterable[Seq[LogicalPlan]], qg: QueryGraph):Iterable[Seq[LogicalPlan]] =
-    plans.map(_.map( plan => select(plan, qg) ))
+  def select(plans: Iterable[Seq[LogicalPlan]], qg: QueryGraph): Iterable[Seq[LogicalPlan]] =
+    plans.map(_.map(plan => select(plan, qg)))
 }
