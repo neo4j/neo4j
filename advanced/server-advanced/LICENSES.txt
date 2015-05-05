@@ -279,6 +279,7 @@ BSD License
   Commons Compiler
   Janino
   Scala Compiler
+  scala-parser-combinators
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>

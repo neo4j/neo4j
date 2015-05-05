@@ -67,6 +67,7 @@ BSD License
   Janino
   JQuery Easing Plugin
   Scala Compiler
+  scala-parser-combinators
 
 Bouncy Castle License
   Legion of the Bouncy Castle Java Cryptography APIs

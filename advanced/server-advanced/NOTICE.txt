@@ -58,6 +58,7 @@ BSD License
   Commons Compiler
   Janino
   Scala Compiler
+  scala-parser-combinators
 
 Bouncy Castle License
   Legion of the Bouncy Castle Java Cryptography APIs

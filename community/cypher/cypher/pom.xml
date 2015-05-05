@@ -84,6 +84,11 @@
       <version>${scala.version}</version>
     </dependency>
 
+    <dependency>
+      <artifactId>scala-parser-combinators_2.11</artifactId>
+      <groupId>org.scala-lang.modules</groupId>
+    </dependency>
+
     <!-- scala test dependencies -->
 
     <dependency>

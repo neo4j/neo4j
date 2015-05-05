@@ -321,6 +321,7 @@ BSD License
   Janino
   JQuery Easing Plugin
   Scala Compiler
+  scala-parser-combinators
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
