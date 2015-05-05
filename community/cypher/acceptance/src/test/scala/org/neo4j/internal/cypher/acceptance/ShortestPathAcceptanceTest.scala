@@ -67,6 +67,12 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result should equal(List(List(nodeA, nodeB, nodeD)))
   }
 
+  test("returns null when no shortest path is found") {
+    val result = executeWithAllPlanners("MATCH (a:A), (b:B) OPTIONAL MATCH p = shortestPath( (a)-[*]->(b) ) RETURN p").toList
+
+    result should equal(List(Map("p" -> null)))
+  }
+
   test("finds shortest path rels") {
     /*
        a-b-c-d
