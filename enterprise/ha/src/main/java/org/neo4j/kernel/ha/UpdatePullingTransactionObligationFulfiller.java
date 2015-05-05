@@ -21,7 +21,7 @@ package org.neo4j.kernel.ha;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.function.Supplier;
 import org.neo4j.kernel.ha.UpdatePuller.Condition;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
@@ -38,16 +38,16 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
 {
     private final UpdatePuller updatePuller;
     private final RoleListener listener;
-    private final DependencyResolver resolver;
     private TransactionIdStore transactionIdStore;
     private final HighAvailabilityMemberStateMachine memberStateMachine;
+    private Supplier<TransactionIdStore> transactionIdStoreSupplier;
 
     public UpdatePullingTransactionObligationFulfiller( UpdatePuller updatePuller,
-            HighAvailabilityMemberStateMachine memberStateMachine, InstanceId serverId, DependencyResolver resolver )
+            HighAvailabilityMemberStateMachine memberStateMachine, InstanceId serverId, Supplier<TransactionIdStore> transactionIdStoreSupplier )
     {
         this.updatePuller = updatePuller;
         this.memberStateMachine = memberStateMachine;
-        this.resolver = resolver;
+        this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.listener = new RoleListener( serverId );
     }
 
@@ -104,7 +104,7 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
                 // Pull out the transaction id store at this very moment, because we receive this event
                 // when joining a cluster or switching to a new master and there might have been a store copy
                 // just now where there has been a new transaction id store created.
-                transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+                transactionIdStore = transactionIdStoreSupplier.get();
             }
         }
     }

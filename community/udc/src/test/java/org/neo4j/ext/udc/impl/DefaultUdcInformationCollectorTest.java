@@ -299,7 +299,7 @@ public class DefaultUdcInformationCollectorTest
         }
     }
 
-    private static class StubDependencyResolver implements DependencyResolver
+    private static class StubDependencyResolver extends DependencyResolver.Adapter
     {
         private final IdGeneratorFactory idGeneratorFactory;
 

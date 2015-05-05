@@ -75,6 +75,9 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
             assertEquals( graphdb.getDependencyResolver().resolveDependency( Config.class ),
                     graphdb.getDependencyResolver().resolveDependency( KernelExtensions.class ).resolveDependency(
                             DummyExtension.class ).getDependencies().getConfig() );
+            assertEquals( graphdb.getDependencyResolver().resolveDependency( NeoStoreDataSource.class ),
+                    graphdb.getDependencyResolver().resolveDependency( KernelExtensions.class ).resolveDependency(
+                            DummyExtension.class ).getDependencies().getNeoStoreDataSource().get() );
         }
         finally
         {

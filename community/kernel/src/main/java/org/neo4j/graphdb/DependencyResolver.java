@@ -21,6 +21,8 @@ package org.neo4j.graphdb;
 
 import java.util.Iterator;
 
+import org.neo4j.function.Supplier;
+
 /**
  * Find a dependency given a type. This can be the exact type or a super type of
  * the actual dependency.
@@ -48,6 +50,11 @@ public interface DependencyResolver
      * @throws IllegalArgumentException if no matching dependency was found.
      */
     <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException;
+
+    <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector);
+
+    <T> Supplier<T> provideDependency( final Class<T> type );
+
 
     /**
      * Responsible for making the choice between available candidates.
@@ -91,6 +98,30 @@ public interface DependencyResolver
         public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
         {
             return resolveDependency( type, FIRST );
+        }
+
+        public <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector)
+        {
+            return new Supplier<T>()
+            {
+                @Override
+                public T get()
+                {
+                    return resolveDependency( type, selector );
+                }
+            };
+        }
+
+        public <T> Supplier<T> provideDependency( final Class<T> type )
+        {
+            return new Supplier<T>()
+            {
+                @Override
+                public T get()
+                {
+                    return resolveDependency( type );
+                }
+            };
         }
     }
 }

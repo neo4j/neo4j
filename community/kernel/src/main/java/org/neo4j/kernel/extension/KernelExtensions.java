@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.extension;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -32,6 +29,7 @@ import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -121,8 +119,7 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     {
         Class configurationClass = (Class) ((ParameterizedType) factory.getClass().getGenericSuperclass())
                 .getActualTypeArguments()[0];
-        return Proxy.newProxyInstance( configurationClass.getClassLoader(), new Class[]{configurationClass},
-                new KernelExtensionHandler() );
+        return DependenciesProxy.dependencies(dependencies, configurationClass);
     }
 
     public Iterable<KernelExtensionFactory<?>> listFactories()
@@ -143,23 +140,6 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
         public boolean test( Object extension )
         {
             return type.isInstance( extension );
-        }
-    }
-
-    private class KernelExtensionHandler
-            implements InvocationHandler
-    {
-        @Override
-        public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
-        {
-            try
-            {
-                return dependencies.resolveDependency( method.getReturnType() );
-            }
-            catch ( IllegalArgumentException e )
-            {
-                throw new UnsatisfiedDependencyException( e );
-            }
         }
     }
 

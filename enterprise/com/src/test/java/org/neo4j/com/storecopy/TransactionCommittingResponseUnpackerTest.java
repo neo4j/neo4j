@@ -30,7 +30,8 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.function.Supplier;
+import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.KernelHealth;
@@ -98,25 +99,16 @@ public class TransactionCommittingResponseUnpackerTest
         // Given
 
         // Handcrafted deep mocks, otherwise the dependency resolution throws ClassCastExceptions
-        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
-        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
-
-        when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
+        final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
 
         TransactionAppender appender = mockedTransactionAppender();
-        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
+        final LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
         when( logicalTransactionStore.getAppender() ).thenReturn( appender );
-        when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) )
-                .thenReturn( logicalTransactionStore );
 
-        when( dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ) )
-                .thenReturn( mock( TransactionRepresentationStoreApplier.class ) );
-        LogFile logFile = mock( LogFile.class );
-        when( dependencyResolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
-        LogRotation logRotation = mock(LogRotation.class);
-        when( dependencyResolver.resolveDependency( LogRotation.class ) ).thenReturn( logRotation );
+        final LogFile logFile = mock( LogFile.class );
+        final LogRotation logRotation = mock(LogRotation.class);
 
-        setUpIndexUpdatesValidatorMocking( dependencyResolver );
+        final IndexUpdatesValidator indexUpdatesValidator = setUpIndexUpdatesValidatorMocking(  );
 
           /*
            * The tx handler is called on every transaction applied after setting its id to committing
@@ -125,9 +117,60 @@ public class TransactionCommittingResponseUnpackerTest
            */
         StoppingTxHandler stoppingTxHandler = new StoppingTxHandler();
 
+        TransactionCommittingResponseUnpacker.Dependencies deps = new TransactionCommittingResponseUnpacker.Dependencies()
+
+        {
+            @Override
+            public LogicalTransactionStore logicalTransactionStore()
+            {
+                return logicalTransactionStore;
+            }
+
+            @Override
+            public TransactionRepresentationStoreApplier transactionRepresentationStoreApplier()
+            {
+                return mock( TransactionRepresentationStoreApplier.class );
+            }
+
+            @Override
+            public IndexUpdatesValidator indexUpdatesValidator()
+            {
+                return indexUpdatesValidator;
+            }
+
+            @Override
+            public TransactionIdStore transactionIdStore()
+            {
+                return txIdStore;
+            }
+
+            @Override
+            public Supplier<TransactionObligationFulfiller> transactionObligationFulfiller()
+            {
+                return Suppliers.singleton( mock(TransactionObligationFulfiller.class) );
+            }
+
+            @Override
+            public LogFile logFile()
+            {
+                return logFile;
+            }
+
+            @Override
+            public LogRotation logRotation()
+            {
+                return logRotation;
+            }
+
+            @Override
+            public KernelHealth kernelHealth()
+            {
+                return mock(KernelHealth.class);
+            }
+        };
+
         int maxBatchSize = 10;
-        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
-                dependencyResolver, maxBatchSize );
+        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(deps, maxBatchSize );
         stoppingTxHandler.setUnpacker( unpacker );
 
         // When
@@ -162,31 +205,71 @@ public class TransactionCommittingResponseUnpackerTest
     public void shouldApplyQueuedTransactionsIfMany() throws Throwable
     {
         // GIVEN
-        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
-        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
-
-        when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
+        final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
 
         TransactionAppender appender = mockedTransactionAppender();
-        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
+        final LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
         when( logicalTransactionStore.getAppender() ).thenReturn( appender );
-        when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) )
-                .thenReturn( logicalTransactionStore );
 
-        when( dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ) )
-                .thenReturn( mock( TransactionRepresentationStoreApplier.class ) );
+        final IndexUpdatesValidator indexUpdatesValidator = setUpIndexUpdatesValidatorMocking(  );
 
-        setUpIndexUpdatesValidatorMocking( dependencyResolver );
+        final LogFile logFile = mock( LogFile.class );
 
-        LogFile logFile = mock( LogFile.class );
-        when( dependencyResolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
+        final LogRotation logRotation = mock(LogRotation.class);
 
-        LogRotation logRotation = mock(LogRotation.class);
-        when( dependencyResolver.resolveDependency( LogRotation.class ) ).thenReturn( logRotation );
+        TransactionCommittingResponseUnpacker.Dependencies deps = new TransactionCommittingResponseUnpacker.Dependencies()
+        {
+            @Override
+            public LogicalTransactionStore logicalTransactionStore()
+            {
+                return logicalTransactionStore;
+            }
+
+            @Override
+            public TransactionRepresentationStoreApplier transactionRepresentationStoreApplier()
+            {
+                return mock( TransactionRepresentationStoreApplier.class );
+            }
+
+            @Override
+            public IndexUpdatesValidator indexUpdatesValidator()
+            {
+                return indexUpdatesValidator;
+            }
+
+            @Override
+            public TransactionIdStore transactionIdStore()
+            {
+                return txIdStore;
+            }
+
+            @Override
+            public Supplier<TransactionObligationFulfiller> transactionObligationFulfiller()
+            {
+                return Suppliers.singleton( mock(TransactionObligationFulfiller.class) );
+            }
+
+            @Override
+            public LogFile logFile()
+            {
+                return logFile;
+            }
+
+            @Override
+            public LogRotation logRotation()
+            {
+                return logRotation;
+            }
+
+            @Override
+            public KernelHealth kernelHealth()
+            {
+                return null;
+            }
+        };
 
         int maxBatchSize = 3;
-        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
-                dependencyResolver, maxBatchSize );
+        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(deps, maxBatchSize );
         unpacker.start();
 
         // WHEN/THEN
@@ -203,24 +286,66 @@ public class TransactionCommittingResponseUnpackerTest
     public void shouldAwaitTransactionObligationsToBeFulfilled() throws Throwable
     {
         // GIVEN
-        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
-
-        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
-        when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
+        final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
 
         TransactionAppender appender = mock( TransactionAppender.class );
-        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
+        final LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
         when( logicalTransactionStore.getAppender() ).thenReturn( appender );
-        when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) )
-                .thenReturn( logicalTransactionStore );
+        final TransactionObligationFulfiller obligationFulfiller = mock( TransactionObligationFulfiller.class );
 
-        when( dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ) )
-                .thenReturn( mock( TransactionRepresentationStoreApplier.class ) );
-        TransactionObligationFulfiller obligationFulfiller = mock( TransactionObligationFulfiller.class );
-        when( dependencyResolver.resolveDependency( TransactionObligationFulfiller.class ) )
-                .thenReturn( obligationFulfiller );
-        final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
-                dependencyResolver );
+        TransactionCommittingResponseUnpacker.Dependencies deps = new TransactionCommittingResponseUnpacker.Dependencies()
+        {
+            @Override
+            public LogicalTransactionStore logicalTransactionStore()
+            {
+                return logicalTransactionStore;
+            }
+
+            @Override
+            public TransactionRepresentationStoreApplier transactionRepresentationStoreApplier()
+            {
+                return mock( TransactionRepresentationStoreApplier.class );
+            }
+
+            @Override
+            public IndexUpdatesValidator indexUpdatesValidator()
+            {
+                return mock(IndexUpdatesValidator.class);
+            }
+
+            @Override
+            public TransactionIdStore transactionIdStore()
+            {
+                return txIdStore;
+            }
+
+            @Override
+            public Supplier<TransactionObligationFulfiller> transactionObligationFulfiller()
+            {
+                return Suppliers.singleton( obligationFulfiller );
+            }
+
+            @Override
+            public LogFile logFile()
+            {
+                return mock(LogFile.class);
+            }
+
+            @Override
+            public LogRotation logRotation()
+            {
+                return mock(LogRotation.class);
+            }
+
+            @Override
+            public KernelHealth kernelHealth()
+            {
+                return mock(KernelHealth.class);
+            }
+        };
+
+
+        final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(deps);
         unpacker.start();
 
         // WHEN
@@ -234,30 +359,70 @@ public class TransactionCommittingResponseUnpackerTest
     public void shouldIssueKernelPanicInCaseOfFailureToAppendOrApply() throws Throwable
     {
         // GIVEN
-        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
-
-        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
-        when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
+        final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
 
         TransactionAppender appender = mock( TransactionAppender.class );
-        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
+        final LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
         when( logicalTransactionStore.getAppender() ).thenReturn( appender );
-        when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) )
-                .thenReturn( logicalTransactionStore );
 
-        when( dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ) )
-                .thenReturn( mock( TransactionRepresentationStoreApplier.class ) );
-        TransactionObligationFulfiller obligationFulfiller = mock( TransactionObligationFulfiller.class );
-        when( dependencyResolver.resolveDependency( TransactionObligationFulfiller.class ) )
-                .thenReturn( obligationFulfiller );
-        LogFile logFile = mock( LogFile.class );
-        when( dependencyResolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
-        KernelHealth kernelHealth = mock( KernelHealth.class );
-        when( dependencyResolver.resolveDependency( KernelHealth.class ) ).thenReturn( kernelHealth );
-        LogRotation logRotation = mock(LogRotation.class);
-        when( dependencyResolver.resolveDependency( LogRotation.class ) ).thenReturn( logRotation );
-        final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
-                dependencyResolver );
+        final TransactionObligationFulfiller obligationFulfiller = mock( TransactionObligationFulfiller.class );
+        final LogFile logFile = mock( LogFile.class );
+        final KernelHealth kernelHealth = mock( KernelHealth.class );
+        final LogRotation logRotation = mock(LogRotation.class);
+
+        TransactionCommittingResponseUnpacker.Dependencies deps = new TransactionCommittingResponseUnpacker.Dependencies()
+
+        {
+            @Override
+            public LogicalTransactionStore logicalTransactionStore()
+            {
+                return logicalTransactionStore;
+            }
+
+            @Override
+            public TransactionRepresentationStoreApplier transactionRepresentationStoreApplier()
+            {
+                return mock( TransactionRepresentationStoreApplier.class );
+            }
+
+            @Override
+            public IndexUpdatesValidator indexUpdatesValidator()
+            {
+                return mock(IndexUpdatesValidator.class);
+            }
+
+            @Override
+            public TransactionIdStore transactionIdStore()
+            {
+                return txIdStore;
+            }
+
+            @Override
+            public Supplier<TransactionObligationFulfiller> transactionObligationFulfiller()
+            {
+                return Suppliers.singleton(obligationFulfiller);
+            }
+
+            @Override
+            public LogFile logFile()
+            {
+                return logFile;
+            }
+
+            @Override
+            public LogRotation logRotation()
+            {
+                return logRotation;
+            }
+
+            @Override
+            public KernelHealth kernelHealth()
+            {
+                return kernelHealth;
+            }
+        };
+
+        final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( deps );
         unpacker.start();
 
         // WHEN failing to append one or more transactions from a transaction stream response
@@ -280,27 +445,70 @@ public class TransactionCommittingResponseUnpackerTest
     public void shouldNotApplyTransactionIfIndexUpdatesValidationFails() throws Throwable
     {
         // Given
-        DependencyResolver resolver = mock( DependencyResolver.class );
-
-        when( resolver.resolveDependency( LogFile.class ) ).thenReturn( mock( LogFile.class ) );
-        when( resolver.resolveDependency( LogRotation.class ) ).thenReturn( mock( LogRotation.class ) );
-        when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( mock( TransactionIdStore.class ) );
-        KernelHealth kernelHealth = mock( KernelHealth.class );
-        when( resolver.resolveDependency( KernelHealth.class ) ).thenReturn( kernelHealth );
-        LogicalTransactionStore txStore = mock( LogicalTransactionStore.class );
+        final KernelHealth kernelHealth = mock( KernelHealth.class );
+        final LogicalTransactionStore txStore = mock( LogicalTransactionStore.class );
         TransactionAppender appender = mockedTransactionAppender();
         when( txStore.getAppender() ).thenReturn( appender );
-        when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( txStore );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
-        when( resolver.resolveDependency( TransactionRepresentationStoreApplier.class ) ).thenReturn( storeApplier );
 
-        IndexUpdatesValidator validator = mock( IndexUpdatesValidator.class );
+        final IndexUpdatesValidator validator = mock( IndexUpdatesValidator.class );
         IOException error = new IOException( "error" );
         when( validator.validate( any( TransactionRepresentation.class ), eq( TransactionApplicationMode.EXTERNAL ) ) )
                 .thenThrow( error );
-        when( resolver.resolveDependency( IndexUpdatesValidator.class ) ).thenReturn( validator );
 
-        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( resolver );
+        TransactionCommittingResponseUnpacker.Dependencies deps = new TransactionCommittingResponseUnpacker.Dependencies()
+
+        {
+            @Override
+            public LogicalTransactionStore logicalTransactionStore()
+            {
+                return txStore;
+            }
+
+            @Override
+            public TransactionRepresentationStoreApplier transactionRepresentationStoreApplier()
+            {
+                return mock( TransactionRepresentationStoreApplier.class );
+            }
+
+            @Override
+            public IndexUpdatesValidator indexUpdatesValidator()
+            {
+                return validator;
+            }
+
+            @Override
+            public TransactionIdStore transactionIdStore()
+            {
+                return mock( TransactionIdStore.class );
+            }
+
+            @Override
+            public Supplier<TransactionObligationFulfiller> transactionObligationFulfiller()
+            {
+                return Suppliers.singleton(null);
+            }
+
+            @Override
+            public LogFile logFile()
+            {
+                return mock( LogFile.class );
+            }
+
+            @Override
+            public LogRotation logRotation()
+            {
+                return mock( LogRotation.class );
+            }
+
+            @Override
+            public KernelHealth kernelHealth()
+            {
+                return kernelHealth;
+            }
+        };
+
+        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( deps );
         unpacker.start();
 
         Response<?> response = new DummyTransactionResponse( BASE_TX_ID + 1, 1, appender, 10 );
@@ -325,37 +533,88 @@ public class TransactionCommittingResponseUnpackerTest
     public void shouldNotMarkTransactionsAsCommittedIfAppenderClosed() throws Throwable
     {
         // GIVEN an unpacker with close-to-real dependencies injected
-        DependencyResolver resolver = mock( DependencyResolver.class );
         // (we don't want this FS in every test in this class, so just don't use EFSR)
         FileSystemAbstraction fs = cleanup.add( new EphemeralFileSystemAbstraction() );
         File directory = new File( "dir" );
         fs.mkdirs( directory );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, fs );
-        TransactionIdStore transactionIdStore = spy( new DeadSimpleTransactionIdStore() );
+        final TransactionIdStore transactionIdStore = spy( new DeadSimpleTransactionIdStore() );
         LogVersionRepository logVersionRepository = mock( LogVersionRepository.class );
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 10 );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1_000, transactionIdStore,
+        final LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1_000, transactionIdStore,
                 logVersionRepository, new PhysicalLogFile.Monitor.Adapter(), transactionMetadataCache ) );
-        KernelHealth health = mock( KernelHealth.class );
-        LogRotation logRotation = LogRotation.NO_ROTATION;
-        LogicalTransactionStore logicalTransactionStore = life.add( new PhysicalLogicalTransactionStore( logFile,
+        final KernelHealth health = mock( KernelHealth.class );
+        final LogRotation logRotation = LogRotation.NO_ROTATION;
+        final LogicalTransactionStore logicalTransactionStore = life.add( new PhysicalLogicalTransactionStore( logFile,
                 logRotation, transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS,
                 health, true ) );
-        IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
+        final IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
                 any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );
         life.start();
         TransactionAppender appender = logicalTransactionStore.getAppender();
-        when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( logicalTransactionStore );
-        when( resolver.resolveDependency( IndexUpdatesValidator.class ) ).thenReturn( indexUpdatesValidator );
-        when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( transactionIdStore );
-        when( resolver.resolveDependency( TransactionObligationFulfiller.class ) ).thenReturn( null );
-        when( resolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
-        when( resolver.resolveDependency( LogRotation.class ) ).thenReturn( logRotation );
-        when( resolver.resolveDependency( KernelHealth.class ) ).thenReturn( health );
-        when( resolver.resolveDependency( TransactionObligationFulfiller.class ) ).thenThrow(
-                new IllegalArgumentException() );
-        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( resolver );
+
+        TransactionCommittingResponseUnpacker.Dependencies deps = new TransactionCommittingResponseUnpacker.Dependencies()
+
+        {
+            boolean returnedFulfiller = false;
+
+            @Override
+            public LogicalTransactionStore logicalTransactionStore()
+            {
+                return logicalTransactionStore;
+            }
+
+            @Override
+            public TransactionRepresentationStoreApplier transactionRepresentationStoreApplier()
+            {
+                return null;
+            }
+
+            @Override
+            public IndexUpdatesValidator indexUpdatesValidator()
+            {
+                return indexUpdatesValidator;
+            }
+
+            @Override
+            public TransactionIdStore transactionIdStore()
+            {
+                return transactionIdStore;
+            }
+
+            @Override
+            public Supplier<TransactionObligationFulfiller> transactionObligationFulfiller()
+            {
+                if (!returnedFulfiller)
+                {
+                    returnedFulfiller = true;
+                    return Suppliers.singleton( null );
+                }
+                else
+                    throw new IllegalArgumentException();
+            }
+
+            @Override
+            public LogFile logFile()
+            {
+                return logFile;
+            }
+
+            @Override
+            public LogRotation logRotation()
+            {
+                return logRotation;
+            }
+
+            @Override
+            public KernelHealth kernelHealth()
+            {
+                return health;
+            }
+        };
+
+        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( deps );
         unpacker.start();
 
         // and a closed logFile/appender
@@ -382,7 +641,7 @@ public class TransactionCommittingResponseUnpackerTest
         return appender;
     }
 
-    private void setUpIndexUpdatesValidatorMocking( DependencyResolver dependencyResolverMock ) throws IOException
+    private IndexUpdatesValidator setUpIndexUpdatesValidatorMocking( ) throws IOException
     {
         IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
 
@@ -390,9 +649,7 @@ public class TransactionCommittingResponseUnpackerTest
                 .when( indexUpdatesValidator )
                 .validate( any( TransactionRepresentation.class ), any( TransactionApplicationMode.class ) );
 
-        doReturn( indexUpdatesValidator )
-                .when( dependencyResolverMock )
-                .resolveDependency( IndexUpdatesValidator.class );
+        return indexUpdatesValidator;
     }
 
     private static class StoppingTxHandler implements ResponseUnpacker.TxHandler

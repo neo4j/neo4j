@@ -30,17 +30,16 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
-import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
-import org.neo4j.com.storecopy.TransactionObligationFulfiller;
+import org.neo4j.function.Factory;
+import org.neo4j.function.Function;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
@@ -63,9 +62,9 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
-import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.InconsistentlyUpgradedClusterException;
@@ -77,9 +76,8 @@ import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.Log;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -104,7 +102,6 @@ public class SwitchToSlave
             IndexConfigStore.class,
             OnlineBackupKernelExtension.class,
     };
-    private final LogService logService;
 
     public interface Monitor
     {
@@ -120,6 +117,17 @@ public class SwitchToSlave
 
     private static final int VERSION_CHECK_TIMEOUT = 10;
 
+    private final LogService logService;
+    private final Supplier<NeoStoreDataSource> neoDataSourceSupplier;
+    private final FileSystemAbstraction fileSystemAbstraction;
+    private final ClusterMembers clusterMembers;
+    private Supplier<TransactionIdStore> transactionIdStoreSupplier;
+    private final Factory<Slave> slaveFactory;
+    private final Function<Slave, SlaveServer> slaveServerFactory;
+    private final UpdatePuller updatePuller;
+    private final PageCache pageCache;
+    private final Monitors monitors;
+
     private final Log userLog;
     private final Log msgLog;
     private final Config config;
@@ -130,21 +138,32 @@ public class SwitchToSlave
     private final RequestContextFactory requestContextFactory;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
     private final MasterClientResolver masterClientResolver;
-    private final ByteCounterMonitor byteCounterMonitor;
-    private final RequestMonitor requestMonitor;
     private final StoreCopyClient.Monitor storeCopyMonitor;
     private final Monitor monitor;
 
-    public SwitchToSlave( LogService logService, Config config, DependencyResolver resolver,
-            HaIdGeneratorFactory idGeneratorFactory,
-            DelegateInvocationHandler<Master> masterDelegateHandler,
-            ClusterMemberAvailability clusterMemberAvailability,
-            RequestContextFactory requestContextFactory,
-            Iterable<KernelExtensionFactory<?>> kernelExtensions, MasterClientResolver masterClientResolver,
-            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor, Monitor monitor,
-            StoreCopyClient.Monitor storeCopyMonitor )
+    public SwitchToSlave( LogService logService, FileSystemAbstraction fileSystemAbstraction, ClusterMembers
+            clusterMembers, Config config, DependencyResolver resolver,
+                          HaIdGeneratorFactory idGeneratorFactory,
+                          DelegateInvocationHandler<Master> masterDelegateHandler,
+                          ClusterMemberAvailability clusterMemberAvailability,
+                          RequestContextFactory requestContextFactory,
+                          Iterable<KernelExtensionFactory<?>> kernelExtensions, MasterClientResolver masterClientResolver,
+                          Monitor monitor,
+                          StoreCopyClient.Monitor storeCopyMonitor,
+                          Supplier<NeoStoreDataSource> neoDataSourceSupplier,
+                          Supplier<TransactionIdStore> transactionIdStoreSupplier,
+                          Factory<Slave> slaveFactory, Function<Slave, SlaveServer> slaveServerFactory, UpdatePuller updatePuller, PageCache pageCache, Monitors monitors )
     {
         this.logService = logService;
+        this.fileSystemAbstraction = fileSystemAbstraction;
+        this.clusterMembers = clusterMembers;
+        this.neoDataSourceSupplier = neoDataSourceSupplier;
+        this.transactionIdStoreSupplier = transactionIdStoreSupplier;
+        this.slaveFactory = slaveFactory;
+        this.slaveServerFactory = slaveServerFactory;
+        this.updatePuller = updatePuller;
+        this.pageCache = pageCache;
+        this.monitors = monitors;
         this.userLog = logService.getUserLog( getClass() );
         this.config = config;
         this.resolver = resolver;
@@ -152,8 +171,6 @@ public class SwitchToSlave
         this.clusterMemberAvailability = clusterMemberAvailability;
         this.requestContextFactory = requestContextFactory;
         this.kernelExtensions = kernelExtensions;
-        this.byteCounterMonitor = byteCounterMonitor;
-        this.requestMonitor = requestMonitor;
         this.storeCopyMonitor = storeCopyMonitor;
         this.msgLog = logService.getInternalLog( getClass() );
         this.masterDelegateHandler = masterDelegateHandler;
@@ -209,12 +226,12 @@ public class SwitchToSlave
              * start the ds or we already had a store, so we have already started the ds. Either way,
              * make sure it's there.
              */
-            NeoStoreDataSource nioneoDataSource = resolver.resolveDependency( NeoStoreDataSource.class );
+            NeoStoreDataSource nioneoDataSource = neoDataSourceSupplier.get();
             nioneoDataSource.afterModeSwitch();
             StoreId myStoreId = nioneoDataSource.getStoreId();
 
             boolean consistencyChecksExecutedSuccessfully = executeConsistencyChecks(
-                    myId, masterUri, nioneoDataSource, cancellationRequest );
+                    myId, transactionIdStoreSupplier.get(), masterUri, myStoreId, cancellationRequest );
 
             if ( !consistencyChecksExecutedSuccessfully )
             {
@@ -244,7 +261,7 @@ public class SwitchToSlave
 
     private void copyStoreFromMasterIfNeeded( URI masterUri, CancellationRequest cancellationRequest ) throws Throwable
     {
-        if ( !isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config ) )
+        if ( !isStorePresent( fileSystemAbstraction, config ) )
         {
             boolean success = false;
             monitor.storeCopyStarted();
@@ -274,25 +291,22 @@ public class SwitchToSlave
         }
     }
 
-    private boolean executeConsistencyChecks( InstanceId myId, URI masterUri, NeoStoreDataSource nioneoDataSource,
+    private boolean executeConsistencyChecks( InstanceId myId, TransactionIdStore txIdStore, URI masterUri, StoreId storeId,
                                               CancellationRequest cancellationRequest ) throws Throwable
     {
         LifeSupport consistencyCheckLife = new LifeSupport();
         try
         {
-            StoreId myStoreId = nioneoDataSource.getStoreId();
-
-            MasterClient masterClient = newMasterClient( masterUri, myStoreId, consistencyCheckLife );
+            MasterClient masterClient = newMasterClient( masterUri, storeId, consistencyCheckLife );
             consistencyCheckLife.start();
 
             boolean masterIsOld = MasterClient.CURRENT.compareTo( masterClient.getProtocolVersion() ) > 0;
 
             if ( masterIsOld )
             {
-                ClusterMembers members = resolver.resolveDependency( ClusterMembers.class );
-                ClusterMemberVersionCheck checker = new ClusterMemberVersionCheck( members, myId, SYSTEM_CLOCK );
+                ClusterMemberVersionCheck checker = new ClusterMemberVersionCheck( clusterMembers, myId, SYSTEM_CLOCK );
 
-                Outcome outcome = checker.doVersionCheck( myStoreId, VERSION_CHECK_TIMEOUT, SECONDS );
+                Outcome outcome = checker.doVersionCheck( storeId, VERSION_CHECK_TIMEOUT, SECONDS );
                 msgLog.info( "Cluster members version  checked: " + outcome );
 
                 if ( outcome.hasUnavailable() )
@@ -301,7 +315,7 @@ public class SwitchToSlave
                 }
                 if ( outcome.hasMismatched() )
                 {
-                    throw new InconsistentlyUpgradedClusterException( myStoreId, outcome.getMismatched() );
+                    throw new InconsistentlyUpgradedClusterException( storeId, outcome.getMismatched() );
                 }
             }
 
@@ -310,7 +324,7 @@ public class SwitchToSlave
                 return false;
             }
 
-            checkDataConsistency( masterClient, nioneoDataSource, masterUri, masterIsOld );
+            checkDataConsistency( masterClient, txIdStore, storeId, masterUri, masterIsOld );
         }
         finally
         {
@@ -319,15 +333,14 @@ public class SwitchToSlave
         return true;
     }
 
-    void checkDataConsistency( MasterClient masterClient, NeoStoreDataSource neoDataSource, URI masterUri,
+    void checkDataConsistency( MasterClient masterClient, TransactionIdStore txIdStore, StoreId storeId, URI masterUri,
             boolean masterIsOld ) throws Throwable
     {
-        TransactionIdStore txIdStore = neoDataSource.getDependencyResolver().resolveDependency( TransactionIdStore.class );
         try
         {
             userLog.info( "Checking store consistency with master" );
-            checkMyStoreIdAndMastersStoreId( neoDataSource, masterIsOld );
-            checkDataConsistencyWithMaster( masterUri, masterClient, neoDataSource, txIdStore );
+            checkMyStoreIdAndMastersStoreId( storeId, masterIsOld );
+            checkDataConsistencyWithMaster( masterUri, masterClient, storeId, txIdStore );
             userLog.info( "Store is consistent" );
         }
         catch ( StoreUnableToParticipateInClusterException upe )
@@ -361,13 +374,10 @@ public class SwitchToSlave
         }
     }
 
-    private void checkMyStoreIdAndMastersStoreId( NeoStoreDataSource neoDataSource, boolean masterIsOld )
+    private void checkMyStoreIdAndMastersStoreId( StoreId myStoreId, boolean masterIsOld )
     {
         if ( !masterIsOld )
         {
-            StoreId myStoreId = neoDataSource.getStoreId();
-
-            ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
             ClusterMember master = first( filter( inRole( MASTER ), clusterMembers.getMembers() ) );
             StoreId masterStoreId = master.getStoreId();
 
@@ -388,9 +398,11 @@ public class SwitchToSlave
     {
         MasterClient master = newMasterClient( masterUri, neoDataSource.getStoreId(), haCommunicationLife );
 
-        Slave slaveImpl = new SlaveImpl( resolver.resolveDependency( TransactionObligationFulfiller.class ) );
+        Slave slaveImpl = slaveFactory.newInstance();
 
-        SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logService.getInternalLogProvider(), byteCounterMonitor, requestMonitor);
+        SlaveServer server = slaveServerFactory.apply(slaveImpl);
+
+        ;
 
         masterDelegateHandler.setDelegate( master );
 
@@ -417,42 +429,11 @@ public class SwitchToSlave
         userLog.info( "Catching up with master. I'm at %s", catchUpRequestContext );
 
         // Unpause the update puller, because we know that we are a slave that just started communication with master.
-        UpdatePuller updatePuller = resolver.resolveDependency( UpdatePuller.class );
         updatePuller.unpause();
         updatePuller.await( UpdatePuller.NEXT_TICKET, true );
 
         userLog.info( "Now caught up with master" );
         monitor.catchupCompleted();
-    }
-
-    private Server.Configuration serverConfig()
-    {
-        return new Server.Configuration()
-        {
-            @Override
-            public long getOldChannelThreshold()
-            {
-                return config.get( HaSettings.lock_read_timeout );
-            }
-
-            @Override
-            public int getMaxConcurrentTransactions()
-            {
-                return config.get( HaSettings.max_concurrent_channels_per_slave );
-            }
-
-            @Override
-            public int getChunkSize()
-            {
-                return config.get( HaSettings.com_chunk_size ).intValue();
-            }
-
-            @Override
-            public HostnamePort getServerAddress()
-            {
-                return config.get( HaSettings.ha_server );
-            }
-        };
     }
 
     private URI createHaURI( URI me, Server<?, ?> server )
@@ -467,12 +448,9 @@ public class SwitchToSlave
     private void copyStoreFromMaster( final MasterClient masterClient,
                                       CancellationRequest cancellationRequest ) throws Throwable
     {
-        FileSystemAbstraction fs = resolver.resolveDependency( FileSystemAbstraction.class );
-        PageCache pageCache = resolver.resolveDependency( PageCache.class );
-
         // This will move the copied db to the graphdb location
         userLog.info( "Copying store from master" );
-        new StoreCopyClient( config, kernelExtensions, logService.getUserLogProvider(), fs, pageCache, storeCopyMonitor ).copyStore(
+        new StoreCopyClient( config, kernelExtensions, logService.getUserLogProvider(), fileSystemAbstraction, pageCache, storeCopyMonitor ).copyStore(
                 new StoreCopyClient.StoreCopyRequester()
                 {
                     @Override
@@ -495,7 +473,7 @@ public class SwitchToSlave
     private MasterClient newMasterClient( URI masterUri, StoreId storeId, LifeSupport life )
     {
         MasterClient masterClient = masterClientResolver.instantiate( masterUri.getHost(), masterUri.getPort(),
-                resolver.resolveDependency( Monitors.class ), storeId, life );
+                monitors, storeId, life );
         if ( masterClient.getProtocolVersion().compareTo( MasterClient210.PROTOCOL_VERSION ) < 0 )
         {
             idGeneratorFactory.enableCompatibilityMode();
@@ -523,13 +501,13 @@ public class SwitchToSlave
     }
 
     private void checkDataConsistencyWithMaster( URI availableMasterId, Master master,
-                                                 NeoStoreDataSource neoDataSource,
+                                                 StoreId storeId,
                                                  TransactionIdStore transactionIdStore )
     {
         long[] myLastCommittedTxData = transactionIdStore.getLastCommittedTransaction();
         long myLastCommittedTx = myLastCommittedTxData[0];
         HandshakeResult handshake;
-        try ( Response<HandshakeResult> response = master.handshake( myLastCommittedTx, neoDataSource.getStoreId() ) )
+        try ( Response<HandshakeResult> response = master.handshake( myLastCommittedTx, storeId ) )
         {
             handshake = response.response();
             requestContextFactory.setEpoch( handshake.epoch() );

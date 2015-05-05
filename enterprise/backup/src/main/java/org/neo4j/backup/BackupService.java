@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -313,7 +314,8 @@ class BackupService
         DependencyResolver resolver = targetDb.getDependencyResolver();
 
         ProgressTxHandler handler = new ProgressTxHandler();
-        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( resolver );
+        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
+                DependenciesProxy.dependencies(resolver, TransactionCommittingResponseUnpacker.Dependencies.class) );
 
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         LogProvider logProvider = resolver.resolveDependency( LogService.class ).getInternalLogProvider();
