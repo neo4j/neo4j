@@ -22,21 +22,23 @@ package org.neo4j.ndp.runtime.internal.session;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.logging.NullLog;
 import org.neo4j.ndp.runtime.Session;
+import org.neo4j.ndp.runtime.StatementMetadata;
 import org.neo4j.ndp.runtime.integration.RecordingCallback;
 import org.neo4j.ndp.runtime.internal.StatementRunner;
 import org.neo4j.stream.RecordStream;
 
-import static java.util.Collections.EMPTY_MAP;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
@@ -51,10 +53,12 @@ import static org.neo4j.ndp.runtime.internal.session.SessionStateMachine.State.E
 
 public class StateMachineErrorTest
 {
+    private static final Map<String, Object> EMPTY_PARAMS = Collections.emptyMap();
+
     private GraphDatabaseService db = mock( GraphDatabaseService.class );
     private ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
     private StatementRunner runner = mock( StatementRunner.class );
-    private Transaction tx = mock( Transaction.class );
+    private Transaction tx = mock( TopLevelTransaction.class );
 
     @Before
     public void setup()
@@ -66,7 +70,7 @@ public class StateMachineErrorTest
     public void testSyntaxError() throws Throwable
     {
         // Given
-        RecordingCallback responses = new RecordingCallback();
+        RecordingCallback<StatementMetadata, Object> responses = new RecordingCallback<>();
 
         doThrow( new SyntaxException( "src/test" ) ).when( runner ).run( any( SessionState.class ),
                 any( String.class ), any( Map.class ) );
@@ -74,7 +78,7 @@ public class StateMachineErrorTest
         SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
         // When
-        machine.run( "this is nonsense", EMPTY_MAP, null, responses );
+        machine.run( "this is nonsense", EMPTY_PARAMS, null, responses );
 
         // Then
         assertThat( responses.next(), failedWith( Status.Statement.InvalidSyntax ) );
@@ -85,10 +89,10 @@ public class StateMachineErrorTest
     public void testPublishingError() throws Throwable
     {
         // Given
-        RecordingCallback failingCallback = new RecordingCallback()
+        RecordingCallback<RecordStream, Object> failingCallback = new RecordingCallback<RecordStream, Object>()
         {
             @Override
-            public void result( Object result, Object attachment )
+            public void result( RecordStream result, Object attachment )
             {
                 throw new RuntimeException( "Well, that didn't work out very well." );
             }
@@ -99,7 +103,7 @@ public class StateMachineErrorTest
         SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
         // and Given there is a result ready to be retrieved
-        machine.run( "something", null, null, Session.Callback.NO_OP );
+        machine.run( "something", null, null, Session.Callbacks.<StatementMetadata, Object>noop() );
 
         // When
         machine.pullAll( null, failingCallback );
@@ -132,7 +136,8 @@ public class StateMachineErrorTest
     public void testCantDoAnythingIfInErrorState() throws Throwable
     {
         // Given
-        RecordingCallback messages = new RecordingCallback();
+        RecordingCallback<StatementMetadata, Object> messages = new RecordingCallback<>();
+        RecordingCallback<RecordStream, Object> pulling = new RecordingCallback<>();
         SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
         // When I perform some action that causes an error state
@@ -155,13 +160,13 @@ public class StateMachineErrorTest
         assertThat( machine.state(), equalTo( ERROR ) );
 
         // this includes externally triggered actions
-        machine.run( "src/test", EMPTY_MAP, null, messages );
+        machine.run( "src/test", EMPTY_PARAMS, null, messages );
         assertThat( machine.state(), equalTo( ERROR ) );
         assertThat( messages.next(), ignored() );
 
-        machine.pullAll( null, messages );
+        machine.pullAll( null, pulling );
         assertThat( machine.state(), equalTo( ERROR ) );
-        assertThat( messages.next(), ignored() );
+        assertThat( pulling.next(), ignored() );
 
         // And nothing at all should have been done
         verifyNoMoreInteractions( db, runner );
@@ -171,20 +176,21 @@ public class StateMachineErrorTest
     public void testAcknowledgingError() throws Throwable
     {
         // Given
-        RecordingCallback messages = new RecordingCallback();
+        RecordingCallback<StatementMetadata, Object> messages = new RecordingCallback<>();
+        RecordingCallback<Void, Object> failures = new RecordingCallback<>();
         SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
         // Given I've performed some action that causes an error state
         machine.commitTransaction(); // No tx to be committed!
 
         // When
-        machine.acknowledgeFailure( null, messages );
+        machine.acknowledgeFailure( null, failures );
 
         // Then
-        assertThat( messages.next(), success() );
+        assertThat( failures.next(), success() );
 
         // And when I know run some other operation
-        machine.run( "src/test", EMPTY_MAP, null, messages );
+        machine.run( "src/test", EMPTY_PARAMS, null, messages );
 
     }
 }

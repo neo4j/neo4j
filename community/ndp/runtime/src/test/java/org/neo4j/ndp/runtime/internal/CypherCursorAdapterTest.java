@@ -21,10 +21,11 @@ package org.neo4j.ndp.runtime.internal;
 
 import org.junit.Test;
 
+import java.util.Collections;
+
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.collection.MapUtil;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -35,13 +36,13 @@ import static org.neo4j.runtime.internal.runner.StreamMatchers.equalsStream;
 public class CypherCursorAdapterTest
 {
     @Test
-    @SuppressWarnings("unchecked")
     public void nextShouldNotEqualNotNext()
     {
         // Given
         Result result = mock( Result.class );
-        when( result.columns() ).thenReturn( asList( "name" ) );
+        when( result.columns() ).thenReturn( Collections.singletonList( "name" ) );
         when( result.hasNext() ).thenReturn( true, true, false );
+        //noinspection unchecked
         when( result.next() ).thenReturn( MapUtil.map( "name", "bob" ), MapUtil.map( "name", "Steve Brook" ), null );
 
         // When
