@@ -28,16 +28,13 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
-import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class PackStreamTest
 {
@@ -121,11 +118,10 @@ public class PackStreamTest
 
         // When
         PackStream.Unpacker unpacker = newUnpacker( bytes );
-        PackValue value = unpacker.unpack();
+        unpacker.unpackNull();
 
         // Then
-        assertThat( value.isNull(), equalTo( true ) );
-
+        // it does not blow up
     }
 
     @Test
@@ -144,11 +140,9 @@ public class PackStreamTest
 
         // When
         PackStream.Unpacker unpacker = newUnpacker( bytes );
-        PackValue value = unpacker.unpack();
 
         // Then
-        assertThat( value.isBoolean(), equalTo( true ) );
-        assertThat( value.booleanValue(), equalTo( true ) );
+        assertThat( unpacker.unpackBoolean(), equalTo( true ) );
 
     }
 
@@ -168,11 +162,9 @@ public class PackStreamTest
 
         // When
         PackStream.Unpacker unpacker = newUnpacker( bytes );
-        PackValue value = unpacker.unpack();
 
         // Then
-        assertThat( value.isBoolean(), equalTo( true ) );
-        assertThat( value.booleanValue(), equalTo( false ) );
+        assertThat( unpacker.unpackBoolean(), equalTo( false ) );
 
     }
 
@@ -195,31 +187,10 @@ public class PackStreamTest
 
             // When
             PackStream.Unpacker unpacker = newUnpacker( bytes );
-            PackValue value = unpacker.unpack();
 
             // Then
-            assertThat( value.isInteger(), equalTo( true ) );
-            assertThat( value.longValue(), equalTo( i ) );
-
+            assertThat( unpacker.unpackLong(), equalTo( i ) );
         }
-
-    }
-
-    @Test
-    public void testZeroIntegerAlwaysUnpacksToSameInstance() throws Throwable
-    {
-        // Given
-        byte[] bytes = new byte[]{0};
-
-        // When
-        PackStream.Unpacker unpacker = newUnpacker( bytes );
-        PackValue firstValue = unpacker.unpack();
-        unpacker = newUnpacker( bytes );
-        PackValue secondValue = unpacker.unpack();
-
-        // Then
-        assertThat( firstValue == secondValue, equalTo( true ) );
-
     }
 
     @Test
@@ -241,14 +212,10 @@ public class PackStreamTest
 
             // When
             PackStream.Unpacker unpacker = newUnpacker( bytes );
-            PackValue value = unpacker.unpack();
 
             // Then
-            assertThat( value.isInteger(), equalTo( true ) );
-            assertThat( value.longValue(), equalTo( i ) );
-
+            assertThat( unpacker.unpackLong(), equalTo( i ) );
         }
-
     }
 
     @Test
@@ -267,12 +234,9 @@ public class PackStreamTest
             machine.packer().flush();
 
             // Then
-            PackValue value = newUnpacker( machine.output() ).unpack();
-            assertThat( value.isInteger(), equalTo( true ) );
-            assertThat( value.longValue(), equalTo( n ) );
-
+            long value = newUnpacker( machine.output() ).unpackLong();
+            assertThat( value, equalTo( n ) );
         }
-
     }
 
     @Test
@@ -290,13 +254,11 @@ public class PackStreamTest
             machine.packer().pack( n );
             machine.packer().flush();
 
+            double value = newUnpacker( machine.output() ).unpackDouble();
+
             // Then
-            PackValue value = newUnpacker( machine.output() ).unpack();
-            assertThat( value.isFloat(), equalTo( true ) );
-            assertThat( value.doubleValue(), equalTo( n ) );
-
+            assertThat( value, equalTo( n ) );
         }
-
     }
 
     @Test
@@ -315,12 +277,9 @@ public class PackStreamTest
             machine.packer().flush();
 
             // Then
-            PackValue value = newUnpacker( machine.output() ).unpack();
-            assertThat( value.isFloat(), equalTo( true ) );
-            assertThat( value.doubleValue(), equalTo( n ) );
-
+            double value = newUnpacker( machine.output() ).unpackDouble();
+            assertThat( value, equalTo( n ) );
         }
-
     }
 
     @Test
@@ -339,9 +298,8 @@ public class PackStreamTest
             machine.packer().flush();
 
             // Then
-            PackValue value = newUnpacker( machine.output() ).unpack();
-            assertThat( value.isBytes(), equalTo( true ) );
-            assertThat( value.byteArrayValue(), equalTo( array ) );
+            byte[] value = newUnpacker( machine.output() ).unpackBytes();
+            assertThat( value, equalTo( array ) );
         }
     }
 
@@ -361,11 +319,9 @@ public class PackStreamTest
             machine.packer().flush();
 
             // Then
-            PackValue value = newUnpacker( machine.output() ).unpack();
-            assertThat( value.isText(), equalTo( true ) );
-            assertThat( value.stringValue(), equalTo( string ) );
+            String value = newUnpacker( machine.output() ).unpackString();
+            assertThat( value, equalTo( string ) );
         }
-
     }
 
     @Test
@@ -373,16 +329,16 @@ public class PackStreamTest
     {
         // Given
         Machine machine = new Machine();
+        byte[] bytes = "ABCDEFGHIJ".getBytes();
 
         // When
         PackStream.Packer packer = machine.packer();
-        packer.pack( "ABCDEFGHIJ".getBytes() );
+        packer.pack( bytes );
         packer.flush();
 
         // Then
-        PackValue value = newUnpacker( machine.output() ).unpack();
-        assertThat( value.isBytes(), equalTo( true ) );
-        assertThat( value.byteArrayValue(), equalTo( "ABCDEFGHIJ".getBytes() ) );
+        byte[] value = newUnpacker( machine.output() ).unpackBytes();
+        assertThat( value, equalTo( bytes ) );
 
     }
 
@@ -391,17 +347,16 @@ public class PackStreamTest
     {
         // Given
         Machine machine = new Machine();
+        String abcdefghij = "ABCDEFGHIJ";
 
         // When
         PackStream.Packer packer = machine.packer();
-        packer.pack( "ABCDEFGHIJ" );
+        packer.pack( abcdefghij );
         packer.flush();
 
         // Then
-        PackValue value = newUnpacker( machine.output() ).unpack();
-        assertThat( value.isText(), equalTo( true ) );
-        assertThat( value.stringValue(), equalTo( "ABCDEFGHIJ" ) );
-
+        String value = newUnpacker( machine.output() ).unpackString();
+        assertThat( value, equalTo( abcdefghij ) );
     }
 
     @Test
@@ -409,17 +364,16 @@ public class PackStreamTest
     {
         // Given
         Machine machine = new Machine();
+        String abcdefghij = "ABCDEFGHIJ";
 
         // When
         PackStream.Packer packer = machine.packer();
-        packer.packText( "ABCDEFGHIJ".getBytes() );
+        packer.packText( abcdefghij.getBytes() );
         packer.flush();
 
         // Then
-        PackValue value = newUnpacker( machine.output() ).unpack();
-        assertThat( value.isText(), equalTo( true ) );
-        assertThat( value.stringValue(), equalTo( "ABCDEFGHIJ" ) );
-
+        String value = newUnpacker( machine.output() ).unpackString();
+        assertThat( value, equalTo( abcdefghij ) );
     }
 
     @Test
@@ -432,19 +386,14 @@ public class PackStreamTest
         PackStream.Packer packer = machine.packer();
         packer.pack( asList( 12, 13, 14 ) );
         packer.flush();
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
         // Then
-        PackValue value = newUnpacker( machine.output() ).unpack();
-        assertThat( value.isList(), equalTo( true ) );
-        List<PackValue> list = value.listValue();
-        assertThat( list.size(), equalTo( 3 ) );
-        assertThat( list.get( 0 ).isInteger(), equalTo( true ) );
-        assertThat( list.get( 1 ).isInteger(), equalTo( true ) );
-        assertThat( list.get( 2 ).isInteger(), equalTo( true ) );
-        assertThat( list.get( 0 ).longValue(), equalTo( 12L ) );
-        assertThat( list.get( 1 ).longValue(), equalTo( 13L ) );
-        assertThat( list.get( 2 ).longValue(), equalTo( 14L ) );
+        assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
 
+        assertThat( unpacker.unpackLong(), equalTo( 12L ) );
+        assertThat( unpacker.unpackLong(), equalTo( 13L ) );
+        assertThat( unpacker.unpackLong(), equalTo( 14L ) );
     }
 
     @Test
@@ -460,19 +409,14 @@ public class PackStreamTest
         packer.pack( 13 );
         packer.pack( 14 );
         packer.flush();
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
         // Then
-        PackValue value = newUnpacker( machine.output() ).unpack();
-        assertThat( value.isList(), equalTo( true ) );
-        List<PackValue> list = value.listValue();
-        assertThat( list.size(), equalTo( 3 ) );
-        assertThat( list.get( 0 ).isInteger(), equalTo( true ) );
-        assertThat( list.get( 1 ).isInteger(), equalTo( true ) );
-        assertThat( list.get( 2 ).isInteger(), equalTo( true ) );
-        assertThat( list.get( 0 ).intValue(), equalTo( 12 ) );
-        assertThat( list.get( 1 ).intValue(), equalTo( 13 ) );
-        assertThat( list.get( 2 ).intValue(), equalTo( 14 ) );
+        assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
 
+        assertThat( unpacker.unpackLong(), equalTo( 12L ) );
+        assertThat( unpacker.unpackLong(), equalTo( 13L ) );
+        assertThat( unpacker.unpackLong(), equalTo( 14L ) );
     }
 
     @Test
@@ -485,19 +429,14 @@ public class PackStreamTest
         PackStream.Packer packer = machine.packer();
         packer.pack( asList( "eins", "zwei", "drei" ) );
         packer.flush();
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
         // Then
-        PackValue value = newUnpacker( machine.output() ).unpack();
-        assertThat( value.isList(), equalTo( true ) );
-        List<PackValue> list = value.listValue();
-        assertThat( list.size(), equalTo( 3 ) );
-        assertThat( list.get( 0 ).isText(), equalTo( true ) );
-        assertThat( list.get( 1 ).isText(), equalTo( true ) );
-        assertThat( list.get( 2 ).isText(), equalTo( true ) );
-        assertThat( list.get( 0 ).stringValue(), equalTo( "eins" ) );
-        assertThat( list.get( 1 ).stringValue(), equalTo( "zwei" ) );
-        assertThat( list.get( 2 ).stringValue(), equalTo( "drei" ) );
+        assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
 
+        assertThat( unpacker.unpackString(), equalTo( "eins" ) );
+        assertThat( unpacker.unpackString(), equalTo( "zwei" ) );
+        assertThat( unpacker.unpackString(), equalTo( "drei" ) );
     }
 
     @Test
@@ -516,19 +455,14 @@ public class PackStreamTest
         packer.flush();
         packer.pack( "drei" );
         packer.flush();
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
         // Then
-        PackValue value = newUnpacker( machine.output() ).unpack();
-        assertThat( value.isList(), equalTo( true ) );
-        List<PackValue> list = value.listValue();
-        assertThat( list.size(), equalTo( 3 ) );
-        assertThat( list.get( 0 ).isText(), equalTo( true ) );
-        assertThat( list.get( 1 ).isText(), equalTo( true ) );
-        assertThat( list.get( 2 ).isText(), equalTo( true ) );
-        assertThat( list.get( 0 ).stringValue(), equalTo( "eins" ) );
-        assertThat( list.get( 1 ).stringValue(), equalTo( "zwei" ) );
-        assertThat( list.get( 2 ).stringValue(), equalTo( "drei" ) );
+        assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
 
+        assertThat( unpacker.unpackString(), equalTo( "eins" ) );
+        assertThat( unpacker.unpackString(), equalTo( "zwei" ) );
+        assertThat( unpacker.unpackString(), equalTo( "drei" ) );
     }
 
     @Test
@@ -541,19 +475,16 @@ public class PackStreamTest
         PackStream.Packer packer = machine.packer();
         packer.pack( asMap( "one", 1, "two", 2 ) );
         packer.flush();
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
         // Then
-        PackValue value = newUnpacker( machine.output() ).unpack();
-        assertThat( value.isMap(), equalTo( true ) );
-        Map<String,PackValue> map = value.mapValue();
-        assertThat( map.size(), equalTo( 2 ) );
-        assertThat( map.containsKey( "one" ), equalTo( true ) );
-        assertThat( map.containsKey( "two" ), equalTo( true ) );
-        assertThat( map.get( "one" ).isInteger(), equalTo( true ) );
-        assertThat( map.get( "two" ).isInteger(), equalTo( true ) );
-        assertThat( map.get( "one" ).longValue(), equalTo( 1L ) );
-        assertThat( map.get( "two" ).longValue(), equalTo( 2L ) );
 
+        assertThat( unpacker.unpackMapHeader(), equalTo( 2L ) );
+
+        assertThat( unpacker.unpackString(), equalTo( "one" ) );
+        assertThat( unpacker.unpackLong(), equalTo( 1L ) );
+        assertThat( unpacker.unpackString(), equalTo( "two" ) );
+        assertThat( unpacker.unpackLong(), equalTo( 2L ) );
     }
 
     @Test
@@ -569,27 +500,27 @@ public class PackStreamTest
         packer.pack( asList( "Person", "Employee" ) );
         packer.pack( asMap( "name", "Alice", "age", 33 ) );
         packer.flush();
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
         // Then
-        PackValue value = newUnpacker( machine.output() ).unpack();
-        assertThat( value.isStruct(), equalTo( true ) );
-        List<PackValue> struct = value.listValue();
-        assertThat( struct.size(), equalTo( 3 ) );
-        assertThat( struct.get( 0 ).isInteger(), equalTo( true ) );
-        assertThat( struct.get( 1 ).isList(), equalTo( true ) );
-        assertThat( struct.get( 2 ).isMap(), equalTo( true ) );
-        assertThat( struct.get( 0 ).longValue(), equalTo( 12L ) );
-        assertThat( struct.get( 1 ).listValue().size(), equalTo( 2 ) );
-        assertThat( struct.get( 1 ).listValue().get( 0 ).stringValue(), equalTo( "Person" ) );
-        assertThat( struct.get( 1 ).listValue().get( 1 ).stringValue(), equalTo( "Employee" ) );
-        assertThat( struct.get( 2 ).mapValue().size(), equalTo( 2 ) );
-        assertThat( struct.get( 2 ).mapValue().get( "name" ).stringValue(), equalTo( "Alice" ) );
-        assertThat( struct.get( 2 ).mapValue().get( "age" ).intValue(), equalTo( 33 ) );
+        assertThat( unpacker.unpackStructHeader(), equalTo( 3L ) );
+        assertThat( unpacker.unpackStructSignature(), equalTo( 'N' ) );
 
+        assertThat( unpacker.unpackLong(), equalTo( 12L ) );
+
+        assertThat( unpacker.unpackListHeader(), equalTo( 2L ) );
+        assertThat( unpacker.unpackString(), equalTo( "Person" ) );
+        assertThat( unpacker.unpackString(), equalTo( "Employee" ) );
+
+        assertThat( unpacker.unpackMapHeader(), equalTo( 2L ) );
+        assertThat( unpacker.unpackString(), equalTo( "name" ) );
+        assertThat( unpacker.unpackString(), equalTo( "Alice" ) );
+        assertThat( unpacker.unpackString(), equalTo( "age" ) );
+        assertThat( unpacker.unpackLong(), equalTo( 33L ) );
     }
 
     @Test
-    public void testCanPackAndUnpackStructIncludingSignature() throws Throwable
+    public void testCanPackStructIncludingSignature() throws Throwable
     {
         // Given
         Machine machine = new Machine();
@@ -617,32 +548,6 @@ public class PackStreamTest
                 PackStream.TINY_TEXT | 3, 'a', 'g', 'e',
                 33};
         assertThat( bytes, equalTo( expected ) );
-
-        // When
-        PackValue value = newUnpacker( bytes ).unpack();
-
-        // Then
-        assertThat( value.isStruct(), equalTo( true ) );
-        assertThat( value.size(), equalTo( 3 ) );
-        assertThat( value.signature(), equalTo( 'N' ) );
-
-        PackValue identity = value.get( 0 );
-        assertThat( identity.isInteger(), equalTo( true ) );
-        assertThat( identity.intValue(), equalTo( 12 ) );
-
-        PackValue labels = value.get( 1 );
-        assertThat( labels.isList(), equalTo( true ) );
-        List<PackValue> labelList = labels.listValue();
-        assertThat( labelList.size(), equalTo( 2 ) );
-        assertThat( labelList.get( 0 ).stringValue(), equalTo( "Person" ) );
-        assertThat( labelList.get( 1 ).stringValue(), equalTo( "Employee" ) );
-
-        PackValue properties = value.get( 2 );
-        assertThat( properties.isMap(), equalTo( true ) );
-        Map<String,PackValue> propertyMap = properties.mapValue();
-        assertThat( propertyMap.size(), equalTo( 2 ) );
-        assertThat( propertyMap.get( "name" ).stringValue(), equalTo( "Alice" ) );
-        assertThat( propertyMap.get( "age" ).intValue(), equalTo( 33 ) );
     }
 
     @Test
@@ -749,35 +654,6 @@ public class PackStreamTest
         assertEquals( "cat_ages", k2 );
         assertEquals( 4.3, d, 0.0001 );
         assertEquals( true, e );
-    }
-
-    @Test
-    public void testHasNext() throws Throwable
-    {
-        // Given
-        Machine machine = new Machine();
-        PackStream.Packer packer = machine.packer();
-        packer.pack( "name" );
-        packer.pack( asList( 1, 2 ) );
-        packer.flush();
-
-        // When I start unpacking
-        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
-
-        // Then
-        assertTrue( unpacker.hasNext() );
-
-        // When I unpack the first string
-        unpacker.unpack();
-
-        // Then
-        assertTrue( unpacker.hasNext() );
-
-        // When I unpack the list
-        unpacker.unpack();
-
-        // Then
-        assertFalse( unpacker.hasNext() );
     }
 
     @Test

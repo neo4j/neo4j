@@ -566,7 +566,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 return unpacker.unpackBoolean();
             case NULL:
                 // still need to move past the null value
-                unpacker.unpack();
+                unpacker.unpackNull();
                 return null;
             case LIST:
             {
