@@ -51,6 +51,20 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     }
   }
 
+  test("does not plan index seek when there is a matching unique index") {
+    new given {
+      qg = queryGraph(inCollectionValue, hasLabels)
+
+      uniqueIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
   test("does not plan index seek when no unique index exist") {
     new given {
       qg = queryGraph(inCollectionValue, hasLabels)
@@ -61,7 +75,6 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       // then
       resultPlans shouldBe empty
     }
-
   }
 
   test("index scan when there is an index on the property") {
@@ -78,7 +91,6 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) =>  ()
       }
     }
-
   }
 
   test("plans index seeks when identifier exists as an argument") {
@@ -174,7 +186,6 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
       }
     }
-
   }
 
   private def queryGraph(predicates: Expression*) =
