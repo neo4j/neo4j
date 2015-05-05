@@ -43,6 +43,9 @@ body.theme-outline
 
   table.json-object
     background-color: #eee;
+    border: 1px solid secondary-border-color
+    border-collapse: separate
+    border-radius: 5px
     tbody
       tr
         background-color: transparent;
@@ -134,11 +137,17 @@ body.theme-outline
         background-color: tertiary-background-color
 
     .hero-unit
-      background-color: tertiary-background-color
+      border: 1px solid secondary-border-color
 
     article.guide, article.help, article.guide, pre
       color: secondary-text-color
       background-color: secondary-background-color
+      button
+        border: 1px solid secondary-border-color
+      .panel
+        border: 1px solid secondary-border-color
+        .form-control
+          border: 1px solid secondary-border-color
       p
         color: secondary-text-color
       pre.code
@@ -152,7 +161,7 @@ body.theme-outline
       background: url(../images/intro.png) 50% 48% no-repeat
 
     .view-editor, .view-editor pre
-      background-color: tertiary-background-color
+      //background-color: tertiary-background-color
       z-index: -1
 
     footer
@@ -162,37 +171,37 @@ body.theme-outline
   .CodeMirror
     z-index: 2
     &.cm-s-neo, &.cm-s-css
-      color: red
+      color: primary-text
       .cm-comment
-        color: #C0C4CA
+        color: primary-text
       .cm-keyword, .cm-property
-        color: #3498DB
+        color: primary-text
       .cm-atom, .cm-number
-        color: #9B59B6
+        color: primary-text
       .cm-node, .cm-tag
-        color: #E74C3C
+        color: primary-text
       .cm-string
-        color: #E67E22
+        color: primary-text
       .cm-variable, .cm-qualifier
-        color: #1ABC9C
+        color: primary-text
   #editor
     .CodeMirror
       .CodeMirror-placeholder
-        color: #E0E2E6
+        color: primary-text
       .CodeMirror-lines
       .CodeMirror-gutters
       .CodeMirror-linenumber
-        color: primary-text-color
+        color: primary-text
       .CodeMirror-code
-        color: primary-text-color
+        color: primary-text
       div.CodeMirror-cursor
-        border-left: 11px solid yellow
+        border-left: 11px solid primary-text
         opacity: 0.5
     .prompt
-      color: primary-text-color
+      color: primary-text
     .disable-highlighting
       .CodeMirror .CodeMirror-code *
-        color: primary-text-color
+        color: primary-text
   div.CodeMirror-selected
-    background-color: primary-text-color
+    background-color: primary-text
     opacity: 0.5
