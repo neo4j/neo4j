@@ -44,17 +44,10 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     {
         void opened( File logFile, long logVersion, long lastTransactionId, boolean clean );
 
-        void failureToTruncate( File logFile, IOException e );
-
         public class Adapter implements Monitor
         {
             @Override
             public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
-            {
-            }
-
-            @Override
-            public void failureToTruncate( File logFile, IOException e )
             {
             }
         }

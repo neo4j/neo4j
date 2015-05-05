@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.neo4j.kernel.impl.transaction.log.entry.DefaultLogEntryParserFactory;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserDispatcher;
-
 import org.junit.Test;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;

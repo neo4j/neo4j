@@ -34,10 +34,4 @@ public final class ReadPastEndException extends IOException
     private ReadPastEndException()
     {
     }
-
-    @Override
-    public Throwable fillInStackTrace()
-    {
-        return this;
-    }
 }
