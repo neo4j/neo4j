@@ -25,10 +25,15 @@ trait PlanDescription {
   self =>
 
   def name: String
-  def children: Seq[PlanDescription]
   def arguments: Map[String, AnyRef]
-  def hasProfilerStatistics: Boolean
+
+  // TODO: These two methods need default implementations in order to be useable from cypher-compiler-1.9
+  // TODO: Remove the implementation once we drop support for cypher-compiler-1.9
+  def children: Seq[PlanDescription] = throw new UnsupportedOperationException("This should not have been called")
+  def hasProfilerStatistics: Boolean = throw new UnsupportedOperationException("This should not have been called")
+
   def asJava: javacompat.PlanDescription
+
   def render(builder: StringBuilder) {}
   def render(builder: StringBuilder, separator: String, levelSuffix: String) {}
 }
