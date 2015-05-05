@@ -23,12 +23,8 @@ import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
-import java.util.List;
-import java.util.Map;
 
 import static java.lang.Integer.toHexString;
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
 
 /**
  * PackStream is a messaging serialisation format heavily inspired by MessagePack.
@@ -193,7 +189,7 @@ public class PackStream
             out.flush();
         }
 
-        public void packRaw( byte[] data ) throws IOException
+        private void packRaw( byte[] data ) throws IOException
         {
             out.put( data, 0, data.length );
         }
@@ -281,60 +277,7 @@ public class PackStream
             }
         }
 
-        public void pack( List<?> values ) throws IOException
-        {
-            if ( values == null ) { packNull(); }
-            else
-            {
-                packListHeader( values.size() );
-                for ( Object value : values )
-                {
-                    pack( value );
-                }
-            }
-        }
-
-        public void pack( Map<?,?> values ) throws IOException
-        {
-            if ( values == null ) { packNull(); }
-            else
-            {
-                packMapHeader( values.size() );
-                for ( Object key : values.keySet() )
-                {
-                    pack( key );
-                    pack( values.get( key ) );
-                }
-            }
-        }
-
-        void pack( Object value ) throws IOException
-        {
-            if ( value == null ) { packNull(); }
-            else if ( value instanceof Boolean ) { pack( (boolean) value ); }
-            else if ( value instanceof boolean[] ) { pack( asList( value ) ); }
-            else if ( value instanceof Byte ) { pack( (byte) value ); }
-            else if ( value instanceof byte[] ) { pack( (byte[]) value ); }
-            else if ( value instanceof Short ) { pack( (short) value ); }
-            else if ( value instanceof short[] ) { pack( asList( value ) ); }
-            else if ( value instanceof Integer ) { pack( (int) value ); }
-            else if ( value instanceof int[] ) { pack( asList( value ) ); }
-            else if ( value instanceof Long ) { pack( (long) value ); }
-            else if ( value instanceof long[] ) { pack( asList( value ) ); }
-            else if ( value instanceof Float ) { pack( (float) value ); }
-            else if ( value instanceof float[] ) { pack( asList( value ) ); }
-            else if ( value instanceof Double ) { pack( (double) value ); }
-            else if ( value instanceof double[] ) { pack( asList( value ) ); }
-            else if ( value instanceof Character ) { pack( Character.toString( (char) value ) ); }
-            else if ( value instanceof char[] ) { pack( new String( (char[]) value ) ); }
-            else if ( value instanceof String ) { pack( (String) value ); }
-            else if ( value instanceof String[] ) { pack( asList( value ) ); }
-            else if ( value instanceof List ) { pack( (List) value ); }
-            else if ( value instanceof Map ) { pack( (Map) value ); }
-            else { throw new Unpackable( format( "Cannot pack object %s", value ) );}
-        }
-
-        public void packBytesHeader( int size ) throws IOException
+        private void packBytesHeader( int size ) throws IOException
         {
             if ( size <= Byte.MAX_VALUE )
             {
@@ -356,7 +299,7 @@ public class PackStream
             }
         }
 
-        public void packTextHeader( int size ) throws IOException
+        private void packTextHeader( int size ) throws IOException
         {
             if ( size < 0x10 )
             {

@@ -28,6 +28,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
@@ -384,7 +385,10 @@ public class PackStreamTest
 
         // When
         PackStream.Packer packer = machine.packer();
-        packer.pack( asList( 12, 13, 14 ) );
+        packer.packListHeader( 3 );
+        packer.pack( 12 );
+        packer.pack( 13 );
+        packer.pack( 14 );
         packer.flush();
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
@@ -427,26 +431,6 @@ public class PackStreamTest
 
         // When
         PackStream.Packer packer = machine.packer();
-        packer.pack( asList( "eins", "zwei", "drei" ) );
-        packer.flush();
-        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
-
-        // Then
-        assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
-
-        assertThat( unpacker.unpackString(), equalTo( "eins" ) );
-        assertThat( unpacker.unpackString(), equalTo( "zwei" ) );
-        assertThat( unpacker.unpackString(), equalTo( "drei" ) );
-    }
-
-    @Test
-    public void testCanPackAndUnpackListOfTextOneByOne() throws Throwable
-    {
-        // Given
-        Machine machine = new Machine();
-
-        // When
-        PackStream.Packer packer = machine.packer();
         packer.packListHeader( 3 );
         packer.flush();
         packer.pack( "eins" );
@@ -473,7 +457,11 @@ public class PackStreamTest
 
         // When
         PackStream.Packer packer = machine.packer();
-        packer.pack( asMap( "one", 1, "two", 2 ) );
+        packer.packMapHeader( 2 );
+        packer.pack( "one" );
+        packer.pack( 1 );
+        packer.pack( "two" );
+        packer.pack( 2 );
         packer.flush();
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
@@ -497,8 +485,14 @@ public class PackStreamTest
         PackStream.Packer packer = machine.packer();
         packer.packStructHeader( 3, 'N' );
         packer.pack( 12 );
-        packer.pack( asList( "Person", "Employee" ) );
-        packer.pack( asMap( "name", "Alice", "age", 33 ) );
+        packer.packListHeader( 2 );
+        packer.pack( "Person" );
+        packer.pack( "Employee" );
+        packer.packMapHeader( 2 );
+        packer.pack( "name" );
+        packer.pack( "Alice" );
+        packer.pack( "age" );
+        packer.pack( 33 );
         packer.flush();
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
@@ -529,8 +523,14 @@ public class PackStreamTest
         PackStream.Packer packer = machine.packer();
         packer.packStructHeader( 3, 'N' );
         packer.pack( 12 );
-        packer.pack( asList( "Person", "Employee" ) );
-        packer.pack( asMap( "name", "Alice", "age", 33 ) );
+        packer.packListHeader( 2 );
+        packer.pack( "Person" );
+        packer.pack( "Employee" );
+        packer.packMapHeader( 2 );
+        packer.pack( "name" );
+        packer.pack( "Alice" );
+        packer.pack( "age" );
+        packer.pack( 33 );
         packer.flush();
 
         // Then
@@ -556,7 +556,13 @@ public class PackStreamTest
         // Given
         Machine machine = new Machine();
         PackStream.Packer packer = machine.packer();
-        packer.pack( asList( 1, 2, 3, asList( 4, 5 ) ) );
+        packer.packListHeader( 4 );
+        packer.pack( 1 );
+        packer.pack( 2 );
+        packer.pack( 3 );
+        packer.packListHeader( 2 );
+        packer.pack( 4 );
+        packer.pack( 5 );
         packer.flush();
 
         // When I unpack this value
@@ -592,7 +598,9 @@ public class PackStreamTest
         packer.pack( 1 );
         packer.pack( 2 );
         packer.pack( 3 );
-        packer.pack( asList( 4, 5 ) );
+        packer.packListHeader( 2 );
+        packer.pack( 4 );
+        packer.pack( 5 );
         packer.flush();
 
         // When I unpack this value
@@ -630,7 +638,9 @@ public class PackStreamTest
         packer.pack( "name" );
         packer.pack( "Bob" );
         packer.pack( "cat_ages" );
-        packer.pack( asList( 4.3, true ) );
+        packer.packListHeader( 2 );
+        packer.pack( 4.3 );
+        packer.pack( true );
         packer.flush();
 
         // When I unpack this value
@@ -690,24 +700,63 @@ public class PackStreamTest
     {
         // When & Then
         assertPeekType( PackType.TEXT, "a string" );
-        assertPeekType( PackType.INTEGER, 123 );
-        assertPeekType( PackType.FLOAT, 123.123 );
+        assertPeekType( PackType.INTEGER, 123L );
+        assertPeekType( PackType.FLOAT, 123.123d );
         assertPeekType( PackType.BOOLEAN, true );
         assertPeekType( PackType.LIST, asList( 1, 2, 3 ) );
         assertPeekType( PackType.MAP, asMap( "l", 3 ) );
     }
 
-    void assertPeekType( PackType type, Object value ) throws IOException
+    private void assertPeekType( PackType type, Object value ) throws IOException
     {
         // Given
         Machine machine = new Machine();
         PackStream.Packer packer = machine.packer();
-        packer.pack( value );
+        doTheThing( packer, value );
         packer.flush();
 
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
         // When & Then
         assertEquals( type, unpacker.peekNextType() );
+    }
+
+    private void doTheThing( PackStream.Packer packer, Object value ) throws IOException
+    {
+        if ( value instanceof String )
+        {
+            packer.pack( (String) value );
+        }
+        else if ( value instanceof Long || value instanceof Integer)
+        {
+            packer.pack( ((Number) value).longValue() );
+        }
+        else if ( value instanceof Double || value instanceof Float )
+        {
+            packer.pack( ((Number) value).doubleValue() );
+        }
+        else if ( value instanceof Boolean )
+        {
+            packer.pack( (Boolean) value );
+        }
+        else if ( value instanceof List )
+        {
+            List list = (List) value;
+            packer.packListHeader( list.size() );
+            for ( Object o : list )
+            {
+                doTheThing( packer, o );
+            }
+        }
+        else if ( value instanceof Map )
+        {
+            Map<?,?> map = (Map<?,?>) value;
+            packer.packMapHeader( map.size() );
+            for ( Map.Entry<?,?> o : map.entrySet() )
+            {
+                doTheThing( packer, o.getKey() );
+                doTheThing( packer, o.getValue() );
+            }
+        }
     }
 }

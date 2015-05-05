@@ -540,7 +540,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             int size = (int) unpacker.unpackMapHeader();
             if ( size == 0 )
             {
-                return Collections.EMPTY_MAP;
+                return Collections.emptyMap();
             }
             Map<String,Object> map = new HashMap<>( size, 1 );
             for ( int i = 0; i < size; i++ )
