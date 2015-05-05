@@ -341,8 +341,6 @@ public class JavaExecutionEngineDocTest
         assertEquals( "Johan", n_column.next() );
     }
 
-    
-
     @Test
     public void exampleWithParameterCSCIStringPatternMatching() throws Exception
     {
@@ -358,9 +356,7 @@ public class JavaExecutionEngineDocTest
         Iterator<Object> n_column = result.columnAs( "n.name" );
         assertEquals( "Michaela", n_column.next() );
     }
-    
-    
-    
+
     @Test
     public void create_node_from_map() throws Exception
     {

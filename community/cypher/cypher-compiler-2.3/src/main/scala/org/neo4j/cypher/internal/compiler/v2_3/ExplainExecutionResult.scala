@@ -30,12 +30,12 @@ import org.neo4j.graphdb.QueryExecutionType.{QueryType, explained}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.graphdb.Result.ResultVisitor
 
-case class ExplainExecutionResult(closer: TaskCloser, columns: List[String],
+case class ExplainExecutionResult(columns: List[String],
                                   executionPlanDescription: InternalPlanDescription, queryType: QueryType,
                                   notifications: Seq[InternalNotification])
   extends InternalExecutionResult {
 
-  def javaIterator: ResourceIterator[util.Map[String, Any]] = new EmptyResourceIterator(close)
+  def javaIterator: ResourceIterator[util.Map[String, Any]] = new EmptyResourceIterator()
   def columnAs[T](column: String) = Iterator.empty
   def javaColumns: util.List[String] = Collections.emptyList()
 
@@ -51,13 +51,13 @@ case class ExplainExecutionResult(closer: TaskCloser, columns: List[String],
        |+--------------------------------------------+
        |""".stripMargin
 
-  def javaColumnAs[T](column: String): ResourceIterator[T] = new EmptyResourceIterator(close)
+  def javaColumnAs[T](column: String): ResourceIterator[T] = new EmptyResourceIterator()
 
   def planDescriptionRequested = true
 
   def executionType = explained(queryType)
 
-  def close() { closer.close(success = true) }
+  def close() {}
 
   def next() = Iterator.empty.next()
 
@@ -66,8 +66,8 @@ case class ExplainExecutionResult(closer: TaskCloser, columns: List[String],
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = {}
 }
 
-final class EmptyResourceIterator[T](onClose: () => Unit) extends ResourceIterator[T] {
-  def close() { onClose() }
+final class EmptyResourceIterator[T]() extends ResourceIterator[T] {
+  def close() {}
 
   def next(): T= Iterator.empty.next()
 
