@@ -22,37 +22,37 @@ package org.neo4j.cypher.internal.compiler.v2_3.spi
 import org.neo4j.cypher.internal.compiler.v2_3.CypherException
 
 trait MapToPublicExceptions[T <: Throwable] {
-  def failedIndexException(indexName: String): T
+  def failedIndexException(indexName: String, cause: Throwable): T
 
-  def periodicCommitInOpenTransactionException(): T
+  def periodicCommitInOpenTransactionException(cause: Throwable): T
 
-  def syntaxException(message: String, query: String, offset: Option[Int]): T
+  def syntaxException(message: String, query: String, offset: Option[Int], cause: Throwable): T
 
   def loadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException): T
 
   def loadExternalResourceException(message: String, cause: Throwable): T
 
-  def incomparableValuesException(lhs: String, rhs: String): T
+  def incomparableValuesException(lhs: String, rhs: String, cause: Throwable): T
 
   def arithmeticException(message: String, cause: Throwable): T
 
-  def mergeConstraintConflictException(message: String): T
+  def mergeConstraintConflictException(message: String, cause: Throwable): T
 
-  def invalidSemanticException(message: String): T
+  def invalidSemanticException(message: String, cause: Throwable): T
 
-  def indexHintException(identifier: String, label: String, property: String, message: String): T
+  def indexHintException(identifier: String, label: String, property: String, message: String, cause: Throwable): T
 
-  def labelScanHintException(identifier: String, label: String, message: String): T
+  def labelScanHintException(identifier: String, label: String, message: String, cause: Throwable): T
 
-  def unknownLabelException(s: String): T
+  def unknownLabelException(s: String, cause: Throwable): T
 
-  def profilerStatisticsNotReadyException(): T
+  def profilerStatisticsNotReadyException(cause: Throwable): T
 
   def nodeStillHasRelationshipsException(nodeId: Long, cause: Throwable): T
 
-  def internalException(message: String): T
+  def internalException(message: String, cause: Exception): T
 
-  def patternException(message: String): T
+  def patternException(message: String, cause: Throwable): T
 
   def invalidArgumentException(message: String, cause: Throwable): T
 
@@ -60,7 +60,7 @@ trait MapToPublicExceptions[T <: Throwable] {
 
   def parameterNotFoundException(message: String, cause: Throwable): T
 
-  def uniquePathNotUniqueException(message: String): T
+  def uniquePathNotUniqueException(message: String, cause: Throwable): T
 
   def entityNotFoundException(message: String, cause: Throwable): T
 
