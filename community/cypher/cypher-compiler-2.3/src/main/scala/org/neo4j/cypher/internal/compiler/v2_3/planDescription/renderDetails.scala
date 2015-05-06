@@ -31,6 +31,7 @@ object renderDetails extends (InternalPlanDescription => String) {
     val plans: Seq[InternalPlanDescription] = plan.flatten
     val names = renderAsTree.createUniqueNames(plan)
 
+
     val headers = Seq("Operator", "EstimatedRows", "Rows", "DbHits", "Time (ms)", "Identifiers", "Other")
     val rows: Seq[Seq[(String, Option[String])]] = plans.map {
       p =>
