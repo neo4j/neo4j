@@ -36,7 +36,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
  *
  * @param <T> the type of batch objects received from upstream.
  */
-public interface Step<T> extends Parallelizable
+public interface Step<T> extends Parallelizable, AutoCloseable
 {
     /**
      * Whether or not tickets arrive in {@link #receive(long, Object)} ordered by ticket number.
@@ -102,5 +102,6 @@ public interface Step<T> extends Parallelizable
     /**
      * Closes any resources kept open by this step. Called after a {@link Stage} is executed, whether successful or not.
      */
-    void close();
+    @Override
+    void close() throws Exception;
 }

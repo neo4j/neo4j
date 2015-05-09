@@ -19,9 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -35,37 +33,13 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 public class NodeFirstRelationshipStage extends Stage
 {
     public NodeFirstRelationshipStage( Configuration config, NodeStore nodeStore,
-            RelationshipGroupStore relationshipGroupStore, NodeRelationshipCache cache, Collector collector )
+            RelationshipGroupStore relationshipGroupStore, NodeRelationshipCache cache, final Collector collector,
+            LabelScanStore labelScanStore )
     {
         super( "Node --> Relationship", config );
         add( new ReadNodeRecordsStep( control(), config, nodeStore ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
                 new NodeFirstRelationshipProcessor( relationshipGroupStore, cache ), false ) );
-        add( new UpdateRecordsStep<>( control(), config, nodeStore,
-                deleteDuplicates( collector.leftOverDuplicateNodesIds() ) ) );
-    }
-
-    private Predicate<NodeRecord> deleteDuplicates( final PrimitiveLongIterator ids )
-    {
-        return !ids.hasNext() ? Predicates.<NodeRecord>TRUE() : new Predicate<NodeRecord>()
-        {
-            private long current = ids.next();
-            private boolean end;
-
-            @Override
-            public boolean accept( NodeRecord node )
-            {
-                if ( !end && current == node.getId() )
-                {   // Found an id to exclude, exclude it and go to the next (they are sorted)
-                    end = !ids.hasNext();
-                    if ( !end )
-                    {
-                        current = ids.next();
-                    }
-                    return false;
-                }
-                return true;
-            }
-        };
+        add( new UpdateNodeRecordsStep( control(), config, nodeStore, collector, labelScanStore ) );
     }
 }

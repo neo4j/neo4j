@@ -22,6 +22,8 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 /**
  * A stage of processing, mainly consisting of one or more {@link Step steps} that batches of data to
  * process flows through.
@@ -76,10 +78,35 @@ public class Stage
 
     public void close()
     {
-        for ( Step<?> step : pipeline )
+        Exception exception = null;
+        try
         {
-            step.close();
+            for ( Step<?> step : pipeline )
+            {
+                try
+                {
+                    step.close();
+                }
+                catch ( Exception e )
+                {
+                    if ( exception == null )
+                    {
+                        exception = e;
+                    }
+                    else
+                    {
+                        exception.addSuppressed( e );
+                    }
+                }
+            }
+            if ( exception != null )
+            {
+                throw launderedException( exception );
+            }
         }
-        pipeline.clear();
+        finally
+        {
+            pipeline.clear();
+        }
     }
 }

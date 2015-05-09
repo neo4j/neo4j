@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -44,7 +45,8 @@ public class NodeStage extends Stage
 {
     public NodeStage( Configuration config, IoMonitor writeMonitor, WriterFactory writerFactory,
             InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
-            BatchingNeoStore neoStore, InputCache inputCache, StatsProvider memoryUsage ) throws IOException
+            BatchingNeoStore neoStore, InputCache inputCache, LabelScanStore labelScanStore,
+            StatsProvider memoryUsage ) throws IOException
     {
         super( "Nodes", config, ORDER_SEND_DOWNSTREAM );
         add( new InputIteratorBatcherStep<>( control(), config, nodes.iterator(), InputNode.class ) );
@@ -59,6 +61,7 @@ public class NodeStage extends Stage
                 propertyStore ) );
         add( new NodeEncoderStep( control(), config, idMapper, idGenerator,
                 neoStore.getLabelRepository(), nodeStore, memoryUsage ) );
+        add( new LabelScanStorePopulationStep( control(), config, labelScanStore ) );
         add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore,
                 writeMonitor, writerFactory ) );
     }

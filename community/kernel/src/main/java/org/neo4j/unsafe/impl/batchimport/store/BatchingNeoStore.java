@@ -23,9 +23,15 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -34,7 +40,10 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
@@ -56,7 +65,7 @@ import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
  * Creator and accessor of {@link NeoStore} with some logic to provide very batch friendly services to the
  * {@link NeoStore} when instantiating it. Different services for specific purposes.
  */
-public class BatchingNeoStore implements AutoCloseable
+public class BatchingNeoStore implements AutoCloseable, NeoStoreProvider
 {
     private final FileSystemAbstraction fileSystem;
     private final Monitors monitors;
@@ -68,6 +77,8 @@ public class BatchingNeoStore implements AutoCloseable
     private final BatchingPageCache pageCache;
     private final NeoStore neoStore;
     private final WriterFactory writerFactory;
+    private final LifeSupport life = new LifeSupport();
+    private final LabelScanStore labelScanStore;
 
     public BatchingNeoStore( FileSystemAbstraction fileSystem, File storeDir,
                              Configuration config, Monitor writeMonitor, Logging logging,
@@ -107,6 +118,20 @@ public class BatchingNeoStore implements AutoCloseable
                 neoStore.getLabelTokenStore(), initialIds.highLabelTokenId() );
         this.relationshipTypeRepository = new BatchingRelationshipTypeTokenRepository(
                 neoStore.getRelationshipTypeTokenStore(), initialIds.highRelationshipTypeTokenId() );
+
+        // Initialze kernel extensions
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( neo4jConfig );
+        dependencies.satisfyDependency( fileSystem );
+        dependencies.satisfyDependency( this );
+        dependencies.satisfyDependency( logging );
+        @SuppressWarnings( { "unchecked", "rawtypes" } )
+        KernelExtensions extensions = life.add( new KernelExtensions(
+                (Iterable) Service.load( KernelExtensionFactory.class ),
+                dependencies, UnsatisfiedDependencyStrategies.ignore() ) );
+        life.start();
+        labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
+                LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore() );
     }
 
     private boolean alreadyContainsData( NeoStore neoStore )
@@ -188,6 +213,7 @@ public class BatchingNeoStore implements AutoCloseable
         flushNeoStoreAndAwaitEverythingWritten();
 
         // Close the neo store
+        life.shutdown();
         neoStore.close();
     }
 
@@ -207,5 +233,16 @@ public class BatchingNeoStore implements AutoCloseable
     public long getLastCommittedTransactionId()
     {
         return neoStore.getLastCommittedTransactionId();
+    }
+
+    public LabelScanStore getLabelScanStore()
+    {
+        return labelScanStore;
+    }
+
+    @Override
+    public NeoStore evaluate()
+    {
+        return neoStore;
     }
 }
