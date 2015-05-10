@@ -88,10 +88,11 @@ public class HighPerformanceCache<E extends EntityWithSizeObject> extends Cache.
                             + arrayHeapFraction + "%" );
         }
         long memToUse = (long)(((double)arrayHeapFraction) * Runtime.getRuntime().maxMemory() / 100);
-        long maxElementCount = (int) ( memToUse / 8 );
+        int bytesPerElementFactor = 8;
+        long maxElementCount = (int) (memToUse / bytesPerElementFactor);
         if ( memToUse > Integer.MAX_VALUE )
         {
-            maxElementCount = Integer.MAX_VALUE;
+            maxElementCount = Integer.MAX_VALUE / bytesPerElementFactor;
         }
         if ( maxSizeInBytes < MIN_SIZE )
         {
