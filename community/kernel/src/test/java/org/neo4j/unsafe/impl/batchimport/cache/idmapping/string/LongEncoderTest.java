@@ -19,32 +19,23 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-import static java.lang.Math.log10;
-import static java.lang.Math.max;
+import org.junit.Test;
 
-/**
- * {@link Encoder} that assumes that the entered strings can be parsed to {@link Long} directly.
- */
-public class LongEncoder implements Encoder
+import static org.junit.Assert.assertNotEquals;
+
+public class LongEncoderTest
 {
-    @Override
-    public long encode( Object value )
+    @Test
+    public void shouldProperlyEncodeLength() throws Exception
     {
-        long longValue = ((Number)value).longValue();
-        long length = numberOfDigits( longValue );
-        length = length << 57;
-        long returnVal = length | longValue;
-        return returnVal;
-    }
+        // GIVEN
+        Encoder encoder = new LongEncoder();
 
-    private static int numberOfDigits( long value )
-    {
-        return max( 1, (int)(log10( value ) + 1) );
-    }
+        // WHEN
+        long a = encoder.encode( 1L << 25 );
+        long b = encoder.encode( 1L << 28 );
 
-    @Override
-    public String toString()
-    {
-        return getClass().getSimpleName();
+        // THEN
+        assertNotEquals( a, b );
     }
 }
