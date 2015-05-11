@@ -23,12 +23,12 @@ import java.io.{PrintWriter, StringWriter}
 import java.util
 import java.util.Collections
 
+import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{Eagerly, IsCollection}
 import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Runtime, Planner}
-import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ExplainMode, ProfileMode, _}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
 import org.neo4j.function.Supplier
 import org.neo4j.graphdb.QueryExecutionType._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
@@ -48,20 +48,24 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
 
   import scala.collection.JavaConverters._
 
-  protected var innerIterator: Iterator[Map[String, Any]] = null
+  private lazy val innerIterator: util.Iterator[util.Map[String, Any]] = {
+    val list = new util.ArrayList[util.Map[String, Any]]()
+    doInAccept(populateResults(list))
+    list.iterator()
+  }
 
   override def columns: List[String] = javaColumns.asScala.toList
 
   def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
     def hasNext = self.hasNext
-    def next() = makeValueJavaCompatible(getAnyColumn(column, self.next())).asInstanceOf[T]
+    def next() = extractJavaColumn(column, innerIterator.next()).asInstanceOf[T]
   }
 
-  override def columnAs[T](column: String): Iterator[T] = javaColumnAs(column).asScala
+  override def columnAs[T](column: String): Iterator[T] = map { case m => extractColumn(column, m).asInstanceOf[T] }
 
   override def javaIterator: ResourceIterator[util.Map[String, Any]] = new WrappingResourceIterator[util.Map[String, Any]] {
     def hasNext = self.hasNext
-    def next() = Eagerly.immutableMapValues(self.next(), makeValueJavaCompatible).asJava
+    def next() = innerIterator.next()
   }
 
   override def dumpToString(): String = {
@@ -84,13 +88,12 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
    */
   def toEagerIterableResult(planner: PlannerName, runtime: RuntimeName): InternalExecutionResult = {
     val dumpToStringBuilder = Seq.newBuilder[Map[String, String]]
-    val resultBuilder = Seq.newBuilder[Map[String, Any]]
+    val result = new util.ArrayList[util.Map[String, Any]]()
     doInAccept{ (row) =>
-      populateResults(resultBuilder)(row)
+      populateResults(result)(row)
       populateDumpToStringResults(dumpToStringBuilder)(row)
     }
-    val result = resultBuilder.result()
-    val iterator = result.toIterator
+    val iterator = result.iterator()
     new CompiledExecutionResult(taskCloser, statement, executionMode, description) {
 
       override def javaColumns: util.List[String] = self.javaColumns
@@ -99,11 +102,11 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
 
       override def executionPlanDescription(): InternalPlanDescription = self.executionPlanDescription().addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
 
-      override def toList = result.map(Eagerly.immutableMapValues(_, materialize)).toList
+      override def toList = result.asScala.map(m => Eagerly.immutableMapValues(m.asScala, materializeAsScala)).toList
 
       override def dumpToString(writer: PrintWriter) = formatOutput(writer, columns, dumpToStringBuilder.result(), queryStatistics())
 
-      override def next() = Eagerly.immutableMapValues(iterator.next(), materialize)
+      override def next() = Eagerly.immutableMapValues(iterator.next().asScala, materializeAsScala)
 
       override def hasNext = iterator.hasNext
     }
@@ -135,31 +138,17 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
 
   override def notifications = Iterable.empty[InternalNotification]
 
-  override def hasNext = {
-    ensureIterator()
-    innerIterator.hasNext
-  }
+  override def hasNext = innerIterator.hasNext
 
-  override def next() = {
-    ensureIterator()
-    Eagerly.immutableMapValues(innerIterator.next(), materialize)
-  }
+  override def next() = Eagerly.immutableMapValues(innerIterator.next().asScala, materializeAsScala)
 
   //TODO when allowing writes this should be moved to the generated class
   protected def queryType: QueryType = QueryType.READ_ONLY
 
-  private def ensureIterator() = {
-    if (innerIterator == null) {
-      val res = Seq.newBuilder[Map[String, Any]]
-      doInAccept(populateResults(res))
-      innerIterator = res.result().toIterator
-    }
-  }
-
-  private def populateResults(builder: mutable.Builder[Map[String, Any], Seq[Map[String, Any]]])(row: ResultRow) = {
-    val map = new mutable.HashMap[String, Any]()
+  private def populateResults(results: util.List[util.Map[String, Any]])(row: ResultRow) = {
+    val map = new util.HashMap[String, Any]()
     columns.foreach(c => map.put(c, row.get(c)))
-    builder += map
+    results.add(map)
   }
 
   private def populateDumpToStringResults(builder: mutable.Builder[Map[String, String], Seq[Map[String, String]]])(row: ResultRow) = {
@@ -208,24 +197,39 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
     })
   }
 
-  private def materialize(v: Any): Any = v match {
-    case (x: Stream[_])   => x.map(materialize).toList
-    case (x: Map[_, _])   => Eagerly.immutableMapValues(x, materialize)
-    case (x: Iterable[_]) => x.map(materialize)
+  private def materializeAsScala(v: Any): Any = {
+    val scalaValue = makeValueScalaCompatible(v)
+
+    scalaValue match {
+      case (x: Stream[_]) => x.map(materializeAsScala).toList
+      case (x: Map[_, _]) => Eagerly.immutableMapValues(x, materializeAsScala)
+      case (x: Iterable[_]) => x.map(materializeAsScala)
+      case x => x
+    }
+  }
+
+  private def makeValueScalaCompatible(value: Any): Any = value match {
+    case list: java.util.List[_] => list.asScala.map(makeValueScalaCompatible).toList
+    case map: java.util.Map[_, _] => Eagerly.immutableMapValues(map.asScala, makeValueScalaCompatible)
     case x => x
   }
 
-  private def makeValueJavaCompatible(value: Any): Any = value match {
-    case iter: Seq[_]    => iter.map(makeValueJavaCompatible).asJava
-    case iter: Map[_, _] => Eagerly.immutableMapValues(iter, makeValueJavaCompatible).asJava
-    case x               => x
-  }
-
-  private def getAnyColumn[T](column: String, m: Map[String, Any]): Any = {
-    m.getOrElse(column, {
-      throw new EntityNotFoundException("No column named '" + column + "' was found. Found: " + m.keys.mkString("(\"", "\", \"", "\")"))
+  private def extractColumn[T](column: String, data: Map[String, Any]): Any = {
+    data.getOrElse(column, {
+      throw columnNotFound(column, data)
     })
   }
+
+  private def extractJavaColumn[T](column: String, data: util.Map[String, Any]): Any = {
+    val value = data.get(column)
+    if (value == null) {
+      throw columnNotFound(column, data.asScala)
+    }
+    value
+  }
+
+  private def columnNotFound(column: String, data: Map[String, Any]) =
+    new EntityNotFoundException("No column named '" + column + "' was found. Found: " + data.keys.mkString("(\"", "\", \"", "\")"))
 
   private trait WrappingResourceIterator[T] extends ResourceIterator[T] {
     def remove() { Collections.emptyIterator[T]().remove() }
