@@ -23,18 +23,8 @@ import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 import static java.lang.Integer.toHexString;
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-import static org.neo4j.packstream.PackValue.EMPTY_BYTE_ARRAY;
-import static org.neo4j.packstream.PackValue.EMPTY_LIST_OF_VALUES;
-import static org.neo4j.packstream.PackValue.EMPTY_MAP_OF_VALUES;
-import static org.neo4j.packstream.PackValue.NullValue.NULL_VALUE;
 
 /**
  * PackStream is a messaging serialisation format heavily inspired by MessagePack.
@@ -199,7 +189,7 @@ public class PackStream
             out.flush();
         }
 
-        public void packRaw( byte[] data ) throws IOException
+        private void packRaw( byte[] data ) throws IOException
         {
             out.put( data, 0, data.length );
         }
@@ -287,60 +277,7 @@ public class PackStream
             }
         }
 
-        public void pack( List values ) throws IOException
-        {
-            if ( values == null ) { packNull(); }
-            else
-            {
-                packListHeader( values.size() );
-                for ( Object value : values )
-                {
-                    pack( value );
-                }
-            }
-        }
-
-        public void pack( Map values ) throws IOException
-        {
-            if ( values == null ) { packNull(); }
-            else
-            {
-                packMapHeader( values.size() );
-                for ( Object key : values.keySet() )
-                {
-                    pack( key );
-                    pack( values.get( key ) );
-                }
-            }
-        }
-
-        public void pack( Object value ) throws IOException
-        {
-            if ( value == null ) { packNull(); }
-            else if ( value instanceof Boolean ) { pack( (boolean) value ); }
-            else if ( value instanceof boolean[] ) { pack( asList( value ) ); }
-            else if ( value instanceof Byte ) { pack( (byte) value ); }
-            else if ( value instanceof byte[] ) { pack( (byte[]) value ); }
-            else if ( value instanceof Short ) { pack( (short) value ); }
-            else if ( value instanceof short[] ) { pack( asList( value ) ); }
-            else if ( value instanceof Integer ) { pack( (int) value ); }
-            else if ( value instanceof int[] ) { pack( asList( value ) ); }
-            else if ( value instanceof Long ) { pack( (long) value ); }
-            else if ( value instanceof long[] ) { pack( asList( value ) ); }
-            else if ( value instanceof Float ) { pack( (float) value ); }
-            else if ( value instanceof float[] ) { pack( asList( value ) ); }
-            else if ( value instanceof Double ) { pack( (double) value ); }
-            else if ( value instanceof double[] ) { pack( asList( value ) ); }
-            else if ( value instanceof Character ) { pack( Character.toString( (char) value ) ); }
-            else if ( value instanceof char[] ) { pack( new String( (char[]) value ) ); }
-            else if ( value instanceof String ) { pack( (String) value ); }
-            else if ( value instanceof String[] ) { pack( asList( value ) ); }
-            else if ( value instanceof List ) { pack( (List) value ); }
-            else if ( value instanceof Map ) { pack( (Map) value ); }
-            else { throw new Unpackable( format( "Cannot pack object %s", value ) );}
-        }
-
-        public void packBytesHeader( int size ) throws IOException
+        private void packBytesHeader( int size ) throws IOException
         {
             if ( size <= Byte.MAX_VALUE )
             {
@@ -362,7 +299,7 @@ public class PackStream
             }
         }
 
-        public void packTextHeader( int size ) throws IOException
+        private void packTextHeader( int size ) throws IOException
         {
             if ( size < 0x10 )
             {
@@ -476,6 +413,8 @@ public class PackStream
 
     public static class Unpacker
     {
+        private static final byte[] EMPTY_BYTE_ARRAY = {};
+
         private PackInput in;
 
         public Unpacker( ReadableByteChannel channel )
@@ -606,6 +545,33 @@ public class PackStream
             return new String( unpackUtf8(), UTF_8 );
         }
 
+        public byte[] unpackBytes() throws IOException
+        {
+            final byte markerByte = in.ensure( 1 ).get();
+
+            switch ( markerByte )
+            {
+            case BYTES_8:
+                return unpackBytes( unpackUINT8() );
+            case BYTES_16:
+                return unpackBytes( unpackUINT16() );
+            case BYTES_32:
+            {
+                long size = unpackUINT32();
+                if ( size <= Integer.MAX_VALUE )
+                {
+                    return unpackBytes( (int) size );
+                }
+                else
+                {
+                    throw new Overflow( "BYTES_32 too long for Java" );
+                }
+            }
+            default:
+                throw new Unexpected( "Expected bytes, but got: " + toHexString( markerByte & 0xFF ) );
+            }
+        }
+
         public byte[] unpackUtf8() throws IOException
         {
             final byte markerByte = in.ensure( 1 ).get();
@@ -650,154 +616,10 @@ public class PackStream
             }
         }
 
-        public PackValue unpack() throws IOException
+        public void unpackNull() throws IOException
         {
             final byte markerByte = in.ensure( 1 ).get();
-            final byte markerHighNibble = (byte) (markerByte & 0xF0);
-            final byte markerLowNibble = (byte) (markerByte & 0x0F);
-
-            if ( markerByte == NULL )
-            {
-                return NULL_VALUE;
-            }
-            else if ( markerByte == TRUE )
-            {
-                return PackValue.BooleanValue.TRUE;
-            }
-            else if ( markerByte == FALSE )
-            {
-                return PackValue.BooleanValue.FALSE;
-            }
-            else if ( markerByte == FLOAT_64 )
-            {
-                return new PackValue.FloatValue( in.ensure( 8 ).getDouble() );
-            }
-            else if ( markerByte == INT_8 )
-            {
-                return PackValue.IntegerValue.getInstance( in.ensure( 1 ).get() );
-            }
-            else if ( markerByte == INT_16 )
-            {
-                return PackValue.IntegerValue.getInstance( in.ensure( 2 ).getShort() );
-            }
-            else if ( markerByte == INT_32 )
-            {
-                return PackValue.IntegerValue.getInstance( in.ensure( 4 ).getInt() );
-            }
-            else if ( markerByte == INT_64 )
-            {
-                return PackValue.IntegerValue.getInstance( in.ensure( 8 ).getLong() );
-            }
-            else if ( markerByte == BYTES_8 )
-            {
-                return PackValue.BytesValue.getInstance( unpackBytes( unpackUINT8() ) );
-            }
-            else if ( markerByte == BYTES_16 )
-            {
-                return PackValue.BytesValue.getInstance( unpackBytes( unpackUINT16() ) );
-            }
-            else if ( markerByte == BYTES_32 )
-            {
-                long size = unpackUINT32();
-                if ( size <= Integer.MAX_VALUE )
-                {
-                    return PackValue.BytesValue.getInstance( unpackBytes( (int) size ) );
-                }
-                else
-                {
-                    throw new Overflow( "BYTES_32 too long for Java" );
-                }
-            }
-            else if ( markerHighNibble == TINY_TEXT )
-            {
-                return PackValue.TextValue.getInstance( unpackBytes( markerLowNibble ) );
-            }
-            else if ( markerByte == TEXT_8 )
-            {
-                return PackValue.TextValue.getInstance( unpackBytes( unpackUINT8() ) );
-            }
-            else if ( markerByte == TEXT_16 )
-            {
-                return PackValue.TextValue.getInstance( unpackBytes( unpackUINT16() ) );
-            }
-            else if ( markerByte == TEXT_32 )
-            {
-                long size = unpackUINT32();
-                if ( size <= Integer.MAX_VALUE )
-                {
-                    return PackValue.TextValue.getInstance( unpackBytes( (int) size ) );
-                }
-                else
-                {
-                    throw new Overflow( "TEXT_32 too long for Java" );
-                }
-            }
-            else if ( markerHighNibble == TINY_LIST )
-            {
-                return PackValue.ListValue.getInstance( unpackList( markerLowNibble ) );
-            }
-            else if ( markerByte == LIST_8 )
-            {
-                return PackValue.ListValue.getInstance( unpackList( unpackUINT8() ) );
-            }
-            else if ( markerByte == LIST_16 )
-            {
-                return PackValue.ListValue.getInstance( unpackList( unpackUINT16() ) );
-            }
-            else if ( markerByte == LIST_32 )
-            {
-                long size = unpackUINT32();
-                if ( size <= Integer.MAX_VALUE )
-                {
-                    return PackValue.ListValue.getInstance( unpackList( (int) size ) );
-                }
-                else
-                {
-                    throw new Overflow( "LIST_32 too long for Java" );
-                }
-            }
-            else if ( markerHighNibble == TINY_MAP )
-            {
-                return PackValue.MapValue.getInstance( unpackMap( markerLowNibble ) );
-            }
-            else if ( markerByte == MAP_8 )
-            {
-                return PackValue.MapValue.getInstance( unpackMap( unpackUINT8() ) );
-            }
-            else if ( markerByte == MAP_16 )
-            {
-                return PackValue.MapValue.getInstance( unpackMap( unpackUINT16() ) );
-            }
-            else if ( markerByte == MAP_32 )
-            {
-                long size = unpackUINT32();
-                if ( size <= Integer.MAX_VALUE )
-                {
-                    return PackValue.MapValue.getInstance( unpackMap( (int) size ) );
-                }
-                else
-                {
-                    throw new Overflow( "MAP_32 too long for Java" );
-                }
-            }
-            else if ( markerHighNibble == TINY_STRUCT )
-            {
-                char signature = unpackStructSignature();
-                return PackValue.StructValue.getInstance( signature, unpackList( markerLowNibble ) );
-            }
-            else if ( markerByte == STRUCT_8 )
-            {
-                int size = unpackUINT8();
-                char signature = unpackStructSignature();
-                return PackValue.StructValue.getInstance( signature, unpackList( size ) );
-            }
-            else if ( markerByte == STRUCT_16 )
-            {
-                int size = unpackUINT16();
-                char signature = unpackStructSignature();
-                return PackValue.StructValue.getInstance( signature, unpackList( size ) );
-            }
-            else { return PackValue.IntegerValue.getInstance( markerByte ); }
+            assert  markerByte == NULL;
         }
 
         private int unpackUINT8() throws IOException
@@ -840,39 +662,6 @@ public class PackStream
                 }
             }
             return heapBuffer;
-        }
-
-        private List<PackValue> unpackList( int size ) throws IOException
-        {
-            if ( size == 0 )
-            {
-                return EMPTY_LIST_OF_VALUES;
-            }
-            List<PackValue> list = new ArrayList<>( size );
-            for ( int i = 0; i < size; i++ )
-            {
-                list.add( unpack() );
-            }
-            return list;
-        }
-
-        private Map<String,PackValue> unpackMap( int size ) throws IOException
-        {
-            if ( size == 0 )
-            {
-                return EMPTY_MAP_OF_VALUES;
-            }
-            Map<String,PackValue> map = new LinkedHashMap<>( size );
-            for ( int i = 0; i < size; i++ )
-            {
-                String key = unpack().stringValue();
-                if ( key != null )
-                {
-                    PackValue value = unpack();
-                    map.put( key, value );
-                }
-            }
-            return map;
         }
 
         public PackType peekNextType() throws IOException
