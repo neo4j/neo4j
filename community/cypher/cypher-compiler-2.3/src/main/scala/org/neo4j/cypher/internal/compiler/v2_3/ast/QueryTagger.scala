@@ -43,6 +43,16 @@ object QueryTags {
     UnDirectedRelTag,
     SingleNodePatternTag,
     RelPatternTag,
+
+    WhereTag,
+    WithTag,
+    ReturnTag,
+    StartTag,
+    UnionTag,
+    UnwindTag,
+    LoadCSVTag,
+    UpdatesTag,
+
     ComplexExpressionTag,
     FilteringExpressionTag,
     LiteralExpressionTag,
@@ -81,6 +91,8 @@ object QueryTags {
   }
 }
 
+// Matching
+
 case object MatchTag extends QueryTag("match")
 case object OptionalMatchTag extends QueryTag("opt-match")
 case object RegularMatchTag extends QueryTag("reg-match")
@@ -97,6 +109,26 @@ case object UnDirectedRelTag extends QueryTag("undirected-rel")
 case object SingleNodePatternTag extends QueryTag("single-node-pattern")
 case object RelPatternTag extends QueryTag("rel-pattern")
 
+case object WhereTag extends QueryTag("where")
+
+// Projection
+
+case object WithTag extends QueryTag("with")
+case object ReturnTag extends QueryTag("return")
+
+// Others
+
+case object StartTag extends QueryTag("start")
+case object UnionTag extends QueryTag("union")
+case object UnwindTag extends QueryTag("unwind")
+case object LoadCSVTag extends QueryTag("load-csv")
+
+// Updates
+
+case object UpdatesTag extends QueryTag("updates")
+
+// Expressions
+
 case object ComplexExpressionTag extends QueryTag("complex-expr")
 case object FilteringExpressionTag extends QueryTag("filtering-expr")
 case object LiteralExpressionTag extends QueryTag("literal-expr")
@@ -108,14 +140,39 @@ object QueryTagger extends QueryTagger[String] {
   def apply(input: String) = default(input)
 
   val default: QueryTagger[String] = fromString(forEachChild(
-    // MATCH ...
-    lift[ASTNode] { case x: Match =>
-      val tags = Set[QueryTag](
-        MatchTag,
-        if (x.optional) OptionalMatchTag else RegularMatchTag
-      )
-      val containsSingleNode = x.pattern.patternParts.exists(_.element.isSingleNode)
-      if (containsSingleNode) tags + SingleNodePatternTag else tags
+    // Clauses
+    lift[ASTNode] {
+      case x: Match =>
+        val tags = Set[QueryTag](
+          MatchTag,
+          if (x.optional) OptionalMatchTag else RegularMatchTag
+        )
+        val containsSingleNode = x.pattern.patternParts.exists(_.element.isSingleNode)
+        if (containsSingleNode) tags + SingleNodePatternTag else tags
+
+      case x: Where =>
+        Set(WhereTag)
+
+      case x: With =>
+        Set(WithTag)
+
+      case x: Return =>
+        Set(ReturnTag)
+
+      case x: Start =>
+        Set(StartTag)
+
+      case x: Union =>
+        Set(UnionTag)
+
+      case x: Unwind =>
+        Set(UnwindTag)
+
+      case x: LoadCSV =>
+        Set(LoadCSVTag)
+
+      case x: UpdateClause =>
+        Set(UpdatesTag)
     } ++
 
     // Pattern features
