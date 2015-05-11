@@ -176,4 +176,19 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         r should equal(expected)
     }
   }
+
+  test("should propagate source description") {
+    // given
+    val url = createCSVTempFileURL {
+      writer =>
+        // an illegal value. There's currently no other way to verify source description
+        // from a CSV resource (since it returns an iterator) than via an exception
+        // that provides it.
+        writer.println("\"quoted\" and then some")
+    }
+
+    // when
+    val e = intercept[IllegalStateException](resources.getCsvIterator(new URL(url)))
+    e.getMessage should include(url)
+  }
 }
