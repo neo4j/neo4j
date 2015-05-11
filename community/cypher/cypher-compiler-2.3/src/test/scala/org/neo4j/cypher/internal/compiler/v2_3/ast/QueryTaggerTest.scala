@@ -27,6 +27,10 @@ class QueryTaggerTest extends CypherFunSuite {
     QueryTagger("MATCH n RETURN n") should contain(MatchTag)
   }
 
+  test(queryTag(RegularMatchTag)) {
+    QueryTagger("MATCH n RETURN n") should contain(RegularMatchTag)
+  }
+
   test(queryTag(OptionalMatchTag)) {
     QueryTagger("OPTIONAL MATCH n RETURN 1") should contain(OptionalMatchTag)
   }
@@ -64,8 +68,23 @@ class QueryTaggerTest extends CypherFunSuite {
     QueryTagger("MATCH ()-[]->() RETURN 1") should not contain SingleNodePatternTag
   }
 
+  test(queryTag(IdentifierExpressionTag)) {
+    QueryTagger("RETURN n") should contain(IdentifierExpressionTag)
+  }
+
+  test(queryTag(LiteralExpressionTag)) {
+    QueryTagger("RETURN 1") should contain(LiteralExpressionTag)
+  }
+
+  test(queryTag(ParameterExpressionTag)) {
+    QueryTagger("RETURN {param}") should contain(ParameterExpressionTag)
+  }
+
   test(queryTag(ComplexExpressionTag)) {
     QueryTagger("RETURN n + 1") should contain(ComplexExpressionTag)
+    QueryTagger("RETURN {param}") should contain(ComplexExpressionTag)
+    QueryTagger("RETURN n") should not contain ComplexExpressionTag
+    QueryTagger("RETURN 1") should not contain ComplexExpressionTag
   }
 
   test(queryTag(FilteringExpressionTag)) {
