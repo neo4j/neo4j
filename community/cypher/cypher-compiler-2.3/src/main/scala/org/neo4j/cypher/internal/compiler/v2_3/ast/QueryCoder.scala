@@ -40,7 +40,18 @@ object QueryCoder {
 
   private val mnemonicIndex: Map[QueryTag, Mnemonic] = orderSpec.toMap
 
-  def apply(in: Set[QueryTag]) = in.toSeq.sortBy(orderIndex).map(mnemonicIndex).flatMap(_(in)).mkString("")
+  def apply(tags: Set[QueryTag]) = {
+    // Set(LiteralExpressionTag, MatchTag) =>
+    val sortedTags = tags.toSeq.sortBy(orderIndex)
+    // => Seq(MatchTag, LiteralExpressionTag) =>
+    val mnemonics = sortedTags.map(mnemonicIndex)
+    // => Seq(plain("M"), ifPresent(ComplexExpressionTag)(plain("l"), plain("L"))) =>
+    val parts = mnemonics.map(_(tags))
+    // => Seq(Some("M"), Some("l")) =>
+    val result = parts.map(_.getOrElse("")).mkString("")
+    // => "Ml" =>
+    result
+  }
 
   private def ifPresent(tag: QueryTag)(ifMnemonic: Mnemonic, elseMnemonic: Mnemonic = none): Mnemonic =
     tags => (if (tags(tag)) ifMnemonic else elseMnemonic)(tags)
