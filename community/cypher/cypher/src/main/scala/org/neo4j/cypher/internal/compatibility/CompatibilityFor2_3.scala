@@ -55,27 +55,25 @@ object helpersv2_3 {
 }
 
 object exceptionHandlerFor2_3 extends MapToPublicExceptions[CypherException] {
-  def syntaxException(message: String, query: String, offset: Option[Int]) = new SyntaxException(message, query, offset)
+  def syntaxException(message: String, query: String, offset: Option[Int], cause: Throwable) = new SyntaxException(message, query, offset, cause)
 
   def arithmeticException(message: String, cause: Throwable) = new ArithmeticException(message, cause)
 
-  def profilerStatisticsNotReadyException() = {
-    throw new ProfilerStatisticsNotReadyException()
+  def profilerStatisticsNotReadyException(cause: Throwable) = {
+    throw new ProfilerStatisticsNotReadyException(cause)
   }
 
-  def incomparableValuesException(lhs: String, rhs: String) = new IncomparableValuesException(lhs, rhs)
+  def incomparableValuesException(lhs: String, rhs: String, cause: Throwable) = new IncomparableValuesException(lhs, rhs, cause)
 
-  def unknownLabelException(s: String) = new UnknownLabelException(s)
+  def unknownLabelException(s: String, cause: Throwable) = new UnknownLabelException(s, cause)
 
-  def patternException(message: String) = new PatternException(message)
+  def patternException(message: String, cause: Throwable) = new PatternException(message, cause)
 
   def invalidArgumentException(message: String, cause: Throwable) = new InvalidArgumentException(message, cause)
 
-  def mergeConstraintConflictException(message: String) = new MergeConstraintConflictException(message)
+  def mergeConstraintConflictException(message: String, cause: Throwable) = new MergeConstraintConflictException(message, cause)
 
-  def internalException(message: String) = new InternalException(message)
-
-  def missingConstraintException() = new MissingConstraintException
+  def internalException(message: String, cause: Exception) = new InternalException(message, cause)
 
   def loadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException_v2_3) =
     new LoadCsvStatusWrapCypherException(extraInfo, cause.mapToPublic(exceptionHandlerFor2_3))
@@ -84,7 +82,7 @@ object exceptionHandlerFor2_3 extends MapToPublicExceptions[CypherException] {
 
   def parameterNotFoundException(message: String, cause: Throwable) = throw new ParameterNotFoundException(message, cause)
 
-  def uniquePathNotUniqueException(message: String) = throw new UniquePathNotUniqueException(message)
+  def uniquePathNotUniqueException(message: String, cause: Throwable) = throw new UniquePathNotUniqueException(message, cause)
 
   def entityNotFoundException(message: String, cause: Throwable) = throw new EntityNotFoundException(message, cause)
 
@@ -92,21 +90,19 @@ object exceptionHandlerFor2_3 extends MapToPublicExceptions[CypherException] {
 
   def cypherExecutionException(message: String, cause: Throwable) = throw new CypherExecutionException(message, cause)
 
-  def labelScanHintException(identifier: String, label: String, message: String) = throw new LabelScanHintException(identifier, label, message)
+  def labelScanHintException(identifier: String, label: String, message: String, cause: Throwable) = throw new LabelScanHintException(identifier, label, message, cause)
 
-  def invalidSemanticException(message: String) = throw new InvalidSemanticsException(message)
+  def invalidSemanticException(message: String, cause: Throwable) = throw new InvalidSemanticsException(message, cause)
 
   def parameterWrongTypeException(message: String, cause: Throwable) = throw new ParameterWrongTypeException(message, cause)
 
-  def outOfBoundsException(message: String) = throw new OutOfBoundsException(message)
-
   def nodeStillHasRelationshipsException(nodeId: Long, cause: Throwable) = throw new NodeStillHasRelationshipsException(nodeId, cause)
 
-  def indexHintException(identifier: String, label: String, property: String, message: String) = throw new IndexHintException(identifier, label, property, message)
+  def indexHintException(identifier: String, label: String, property: String, message: String, cause: Throwable) = throw new IndexHintException(identifier, label, property, message, cause)
 
-  def periodicCommitInOpenTransactionException() = throw new PeriodicCommitInOpenTransactionException
+  def periodicCommitInOpenTransactionException(cause: Throwable) = throw new PeriodicCommitInOpenTransactionException(cause)
 
-  def failedIndexException(indexName: String): CypherException = throw new FailedIndexException(indexName)
+  def failedIndexException(indexName: String, cause: Throwable): CypherException = throw new FailedIndexException(indexName, cause)
 
   def runSafely[T](body: => T)(implicit f: Throwable => Unit = (_) => ()) = {
     try {

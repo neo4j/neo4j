@@ -73,8 +73,6 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
 
   def internalException(message: String) = new InternalException(message)
 
-  def missingConstraintException() = new MissingConstraintException
-
   def loadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException_v2_2) =
     new LoadCsvStatusWrapCypherException(extraInfo, cause.mapToPublic(exceptionHandlerFor2_2))
 
@@ -82,7 +80,7 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
 
   def parameterNotFoundException(message: String, cause: Throwable) = throw new ParameterNotFoundException(message, cause)
 
-  def uniquePathNotUniqueException(message: String) = throw new UniquePathNotUniqueException(message)
+  def uniquePathNotUniqueException(message: String) = throw new UniquePathNotUniqueException(message, null)
 
   def entityNotFoundException(message: String, cause: Throwable) = throw new EntityNotFoundException(message, cause)
 
@@ -93,8 +91,6 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
   def invalidSemanticException(message: String) = throw new InvalidSemanticsException(message)
 
   def parameterWrongTypeException(message: String, cause: Throwable) = throw new ParameterWrongTypeException(message, cause)
-
-  def outOfBoundsException(message: String) = throw new OutOfBoundsException(message)
 
   def nodeStillHasRelationshipsException(nodeId: Long, cause: Throwable) = throw new NodeStillHasRelationshipsException(nodeId, cause)
 

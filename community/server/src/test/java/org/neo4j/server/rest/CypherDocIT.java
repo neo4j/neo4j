@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Map;
 import javax.ws.rs.core.Response.Status;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -44,12 +44,12 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class CypherDocIT extends AbstractRestFunctionalTestBase {
@@ -391,7 +391,8 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         String response = cypherRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
         Map<String, Object> responseMap = jsonToMap( response );
-        assertEquals( 5, responseMap.size() );
+        assertThat( responseMap.keySet(), containsInAnyOrder(
+                "message", "exception", "fullname", "stackTrace", "cause", "errors" ) );
         assertThat( response, containsString( "message" ) );
         assertThat( ((String) responseMap.get( "message" )), containsString( "frien not defined" ) );
     }
