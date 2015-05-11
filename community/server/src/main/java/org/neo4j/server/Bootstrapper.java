@@ -99,7 +99,7 @@ public abstract class Bootstrapper
 
     public Integer start()
     {
-        LogProvider userLogProvider = new ContextLessLogProviderDelegate( FormattedLogProvider.toOutputStream( System.out ) );
+        LogProvider userLogProvider = FormattedLogProvider.withoutRenderingContext().toOutputStream( System.out );
 
         JULBridge.resetJUL();
         Logger.getLogger( "" ).setLevel( Level.WARNING );
@@ -234,27 +234,5 @@ public abstract class Bootstrapper
         // Default implementation just checks if this is a subclass of other
         return other.getClass()
                 .isAssignableFrom( getClass() );
-    }
-
-    private static class ContextLessLogProviderDelegate implements LogProvider
-    {
-        private LogProvider delegate;
-
-        private ContextLessLogProviderDelegate( LogProvider delegate )
-        {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public Log getLog( Class loggingClass )
-        {
-            return delegate.getLog( "" );
-        }
-
-        @Override
-        public Log getLog( String context )
-        {
-            return delegate.getLog( "" );
-        }
     }
 }

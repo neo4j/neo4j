@@ -66,7 +66,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         if ( internalLogRotationThreshold == 0 )
         {
             OutputStream outputStream = createOrOpenAsOuputStream( fileSystem, logFile, true );
-            internalLogProvider = FormattedLogProvider.toOutputStream( outputStream );
+            internalLogProvider = FormattedLogProvider.withUTCTimeZone().toOutputStream( outputStream );
             rotationListener.accept( internalLogProvider );
             this.closeable = outputStream;
         } else
@@ -78,13 +78,13 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
                 @Override
                 public void outputFileCreated( OutputStream newStream, OutputStream oldStream )
                 {
-                    FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( newStream );
+                    FormattedLogProvider logProvider = FormattedLogProvider.withUTCTimeZone().toOutputStream( newStream );
                     logProvider.getLog( StoreLogService.class ).info( "Opened new internal log file" );
                     rotationListener.accept( logProvider );
                     logProvider.getLog( StoreLogService.class ).info( "Rotated internal log file" );
                 }
             } );
-            internalLogProvider = FormattedLogProvider.toOutputStream( rotatingSupplier );
+            internalLogProvider = FormattedLogProvider.withUTCTimeZone().toOutputStream( rotatingSupplier );
             this.closeable = rotatingSupplier;
         }
         this.logService = new SimpleLogService( userLogProvider, internalLogProvider );

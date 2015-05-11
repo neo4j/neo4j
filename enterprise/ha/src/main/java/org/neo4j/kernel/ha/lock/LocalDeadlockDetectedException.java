@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.lock;
 
 import java.io.StringWriter;
 import java.util.Arrays;
+import java.util.TimeZone;
 
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.DumpLocksVisitor;
@@ -58,7 +59,7 @@ public class LocalDeadlockDetectedException extends DeadlockDetectedException
                 "%s tried to apply local %s lock on %s(%s) after acquired on master. Currently these locks exist:%n",
                 client, type, resourceType, Arrays.toString( resourceIds ) ) );
 
-        lockManager.accept( new DumpLocksVisitor( FormattedLog.toWriter( stringWriter ) ) );
+        lockManager.accept( new DumpLocksVisitor( FormattedLog.withUTCTimeZone().toWriter( stringWriter ) ) );
         return stringWriter.toString();
     }
 }

@@ -26,8 +26,6 @@ public class NullLogProvider implements LogProvider
 {
     private static final NullLogProvider INSTANCE = new NullLogProvider();
 
-    public final NullLog nullLog = NullLog.getInstance();
-
     private NullLogProvider()
     {
     }
@@ -43,12 +41,12 @@ public class NullLogProvider implements LogProvider
     @Override
     public Log getLog( Class loggingClass )
     {
-        return nullLog;
+        return NullLog.getInstance();
     }
 
     @Override
     public Log getLog( String context )
     {
-        return nullLog;
+        return NullLog.getInstance();
     }
 }
