@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.IdentifierExpressionTag
-
 object QueryCoder {
 
   type Mnemonic = Set[QueryTag] => Option[String]

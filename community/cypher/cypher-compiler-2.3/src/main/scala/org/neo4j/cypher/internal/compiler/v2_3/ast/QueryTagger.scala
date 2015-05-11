@@ -21,11 +21,56 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast
 
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonitor}
 
+import scala.annotation.tailrec
+
 sealed class QueryTag(aName: String) {
+  val name = aName.trim.toLowerCase
+  val token = s":$name"
 
-  val name = aName.toLowerCase
+  override def toString = token
+}
 
-  override def toString = s":$name"
+object QueryTags {
+  val all = Set[QueryTag](
+    MatchTag,
+    OptionalMatchTag,
+    RegularMatchTag,
+    ComplexExpressionTag,
+    FilteringExpressionTag,
+    LiteralExpressionTag,
+    ParameterExpressionTag,
+    IdentifierExpressionTag
+  )
+
+  private val tagsByName: Map[String, QueryTag] = all.map { tag => tag.name -> tag }.toMap
+
+  def parse(text: String) = {
+    val tokens = tokenize(text.trim)
+    val tags = tokens.map { piece =>
+      tagsByName.getOrElse(piece, throw new IllegalArgumentException(s":$piece is an unknown query tag"))
+    }
+    tags
+  }
+
+  @tailrec
+  private def tokenize(input: String, tags: Set[String] = Set.empty): Set[String] = {
+    if (input.isEmpty)
+      tags
+    else {
+      if (input.charAt(0) == ':') {
+        val boundary = input.indexOf(':', 1)
+        if (boundary == -1) {
+          val tag = input.substring(1).trim
+          tags + tag
+        } else {
+          val tag = input.substring(1, boundary).trim
+          val tail = input.substring(boundary)
+          tokenize(tail, tags + tag)
+        }
+      } else
+        throw new IllegalArgumentException(s"'$input' does not start with a query tag token")
+    }
+  }
 }
 
 case object MatchTag extends QueryTag("match")
