@@ -36,6 +36,7 @@
     <module>cypher-compiler-2.3</module>
     <module>cypher</module>
     <module>acceptance</module>
+    <module>compatibility-suite</module>
     <module>docs/cypher-docs</module>
     <module>docs/graphgist</module>
     <module>docs/refcard-tests</module>
