@@ -49,9 +49,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
   var parser = new CypherParser(mock[ParserMonitor[Statement]])
-  var semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
+  var semanticChecker = new SemanticChecker
   val rewriterSequencer = RewriterStepSequencer.newValidating _
-  var astRewriter = new ASTRewriter(rewriterSequencer, mock[AstRewritingMonitor], shouldExtractParameters = false)
+  var astRewriter = new ASTRewriter(rewriterSequencer, shouldExtractParameters = false)
   var tokenResolver = new SimpleTokenResolver()
   var monitor = mock[PlanningMonitor]
   val planRewriter = LogicalPlanRewriter(rewriterSequencer)

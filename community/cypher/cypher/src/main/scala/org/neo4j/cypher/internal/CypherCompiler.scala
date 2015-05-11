@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherVersion._
+import org.neo4j.cypher.InvalidArgumentException
+import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, InternalNotificationLogger, RecordingNotificationLogger, devNullLogger}
+import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -67,7 +69,6 @@ class CypherCompiler(graph: GraphDatabaseService,
                      configuredVersion: CypherVersion,
                      configuredPlanner: CypherPlanner,
                      configuredRuntime: CypherRuntime,
-                     optionParser: CypherPreParser,
                      logProvider: LogProvider) {
   import org.neo4j.cypher.internal.CypherCompiler._
 
@@ -98,7 +99,7 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = {
-    val preParsedStatement = optionParser(queryText)
+    val preParsedStatement = CypherPreParser(queryText)
     val statementWithOptions = CypherStatementWithOptions(preParsedStatement)
     val CypherStatementWithOptions(statement, offset, version, planner, runtime, mode, notifications) = statementWithOptions
 
@@ -140,12 +141,12 @@ class CypherCompiler(graph: GraphDatabaseService,
   }
 
   @throws(classOf[SyntaxException])
-  def parseQuery(preParsedQuery: PreParsedQuery): ParsedQuery = {
+  def parseQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
     val planner = preParsedQuery.planner
     val runtime = preParsedQuery.runtime
 
     preParsedQuery.version match {
-      case CypherVersion.v2_3 => planners(PlannerSpec_v2_3(planner, runtime)).produceParsedQuery(preParsedQuery)
+      case CypherVersion.v2_3 => planners(PlannerSpec_v2_3(planner, runtime)).produceParsedQuery(preParsedQuery, tracer)
       case CypherVersion.v2_2 => planners(PlannerSpec_v2_2(planner)).produceParsedQuery(preParsedQuery.statement)
       case CypherVersion.v1_9 => planners(PlannerSpec_v1_9).parseQuery(preParsedQuery.statement)
     }

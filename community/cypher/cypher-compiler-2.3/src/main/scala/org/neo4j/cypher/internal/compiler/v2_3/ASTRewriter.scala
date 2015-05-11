@@ -24,13 +24,11 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.conditions._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
 
-class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, rewritingMonitor: AstRewritingMonitor, shouldExtractParameters: Boolean = true) {
+class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, shouldExtractParameters: Boolean = true) {
 
   import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStep._
 
   def rewrite(queryText: String, statement: Statement, semanticState: SemanticState): (Statement, Map[String, Any], Set[RewriterCondition]) = {
-    rewritingMonitor.startRewriting(queryText, statement)
-
     val (extractParameters, extractedParameters) = if (shouldExtractParameters)
       literalReplacement(statement)
     else
@@ -59,7 +57,6 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, rewritin
 
     val rewrittenStatement = statement.rewrite(contract.rewriter).asInstanceOf[ast.Statement]
 
-    rewritingMonitor.finishRewriting(queryText, rewrittenStatement)
     (rewrittenStatement, extractedParameters, contract.postConditions)
   }
 }

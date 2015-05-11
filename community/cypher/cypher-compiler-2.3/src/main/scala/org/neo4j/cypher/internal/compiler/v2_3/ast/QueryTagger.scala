@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonitor}
+import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser}
 
 import scala.annotation.tailrec
 
@@ -204,10 +204,10 @@ object QueryTagger extends QueryTagger[String] {
   ))
 
   // run parser and pass statement to next query tagger
-  case class fromString(next: QueryTagger[Statement], monitor: ParserMonitor[Statement] = ParserMonitor.empty[Statement])
+  case class fromString(next: QueryTagger[Statement])
     extends QueryTagger[String] {
 
-    val parser = new CypherParser(monitor)
+    val parser = new CypherParser
 
     def apply(queryText: String): Set[QueryTag] = next(parser.parse(queryText))
   }

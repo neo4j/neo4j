@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
+import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhase.{PARSING,SEMANTIC_CHECK,AST_REWRITE}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.closing
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.LogicalPlanRewriter
@@ -71,16 +73,15 @@ object CypherCompilerFactory {
                         plannerName: Option[CostBasedPlannerName],
                         runtimeName: Option[RuntimeName]): CypherCompiler = {
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
-    val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
-    val rewriter = new ASTRewriter(rewriterSequencer, monitors.newMonitor[AstRewritingMonitor](monitorTag))
+    val checker = new SemanticChecker
+    val rewriter = new ASTRewriter(rewriterSequencer)
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
-    val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
 
     val pickedPlannerName = plannerName.getOrElse(FallbackPlannerName)
     val pickedRuntimeName = runtimeName.getOrElse(CompiledRuntimeName)
-    val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, planningMonitor, clock, queryPlanner = queryPlanner,
+    val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, clock, queryPlanner = queryPlanner,
       rewriterSequencer = rewriterSequencer, plannerName = pickedPlannerName, runtimeName = pickedRuntimeName)
     // falling back to legacy planner is allowed only when no cost-based planner is picked explicitly (e.g., COST, IDP)
     val pipeBuilder = pickedPlannerName match {
@@ -103,8 +104,8 @@ object CypherCompilerFactory {
                         queryPlanTTL: Long, clock: Clock, monitors: Monitors,
                         rewriterSequencer: (String) => RewriterStepSequencer): CypherCompiler = {
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
-    val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
-    val rewriter = new ASTRewriter(rewriterSequencer, monitors.newMonitor[AstRewritingMonitor](monitorTag))
+    val checker = new SemanticChecker
+    val rewriter = new ASTRewriter(rewriterSequencer)
     val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, rewriterSequencer)
 
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
@@ -133,29 +134,35 @@ case class CypherCompiler(parser: CypherParser,
 
   def planQuery(queryText: String, context: PlanContext, notificationLogger: InternalNotificationLogger,
                 offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) =
-    planPreparedQuery(prepareQuery(queryText, notificationLogger), context)
+    planPreparedQuery(prepareQuery(queryText, notificationLogger), context, CompilationPhaseTracer.NO_TRACING)
 
-  def prepareQuery(queryText: String, notificationLogger: InternalNotificationLogger, offset: Option[InputPosition] = None): PreparedQuery = {
-    val parsedStatement = parser.parse(queryText, offset)
+  def prepareQuery(queryText: String, notificationLogger: InternalNotificationLogger, offset: Option[InputPosition] = None, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuery = {
+    val parsedStatement = closing(tracer.beginPhase(PARSING)) { parser.parse(queryText, offset) }
 
     val mkException = new SyntaxExceptionCreator(queryText, offset)
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-    val originalSemanticState = semanticChecker.check(queryText, cleanedStatement, notificationLogger, mkException)
+    val originalSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
+      semanticChecker.check(queryText, cleanedStatement, notificationLogger, mkException)
+    }
 
-    val (rewrittenStatement, extractedParams, postConditions) = astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
-    val postRewriteSemanticState = semanticChecker.check(queryText, rewrittenStatement, devNullLogger, mkException)
+    val (rewrittenStatement, extractedParams, postConditions) = closing(tracer.beginPhase(AST_REWRITE)) {
+      astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
+    }
+    val postRewriteSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
+      semanticChecker.check(queryText, rewrittenStatement, devNullLogger, mkException)
+    }
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
     PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree, notificationLogger)
   }
 
-  def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
+  def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
     val cache = provideCache(cacheAccessor, cacheMonitor, context)
     var planned = false
     val plan = Iterator.continually {
       cacheAccessor.getOrElseUpdate(cache)(parsedQuery.statement, {
         planned = true
-        executionPlanBuilder.build(context, parsedQuery)
+        executionPlanBuilder.build(context, parsedQuery, tracer)
       })
     }.flatMap { plan =>
       if ( !planned && plan.isStale(context.txIdProvider, context.statistics) ) {

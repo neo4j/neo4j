@@ -21,16 +21,17 @@ package org.neo4j.cypher
 
 import java.io.{File, PrintWriter}
 import java.util.concurrent.TimeUnit
+
+import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PipeInfo
-import org.neo4j.cypher.internal.compiler.v2_3.planner.PlanningMonitor
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
+import org.neo4j.cypher.internal.tracing.TimingCompilationTracer.QueryEvent
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.TopLevelTransaction
-import org.neo4j.test.{TestGraphDatabaseFactory, ImpermanentGraphDatabase}
+import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -1020,17 +1021,16 @@ order by a.COL1""")
   }
 
   override def databaseConfig() = super.databaseConfig() ++ Map(
-    "dbms.cypher.min_replan_interval" -> "0"
+    "dbms.cypher.min_replan_interval" -> "0",
+    "dbms.cypher.compiler_tracing" -> "true"
   )
 
-  case class PlanningListener(planRequests: mutable.ArrayBuffer[String] = mutable.ArrayBuffer.empty) extends PlanningMonitor {
-    def startedPlanning(q: String): Unit = {
-      planRequests.append(q)
+  case class PlanningListener(planRequests: mutable.ArrayBuffer[String] = mutable.ArrayBuffer.empty) extends TimingCompilationTracer.EventListener {
+    override def queryCompiled(event: QueryEvent): Unit = {
+      if(event.phases().asScala.exists(_.phase() == CompilationPhase.LOGICAL_PLANNING)) {
+        planRequests.append(event.query())
+      }
     }
-
-    def foundPlan(q: String, p: LogicalPlan): Unit = {}
-
-    def successfulPlanning(q: String): Unit = {}
   }
 
   test("should discard plans that are considerably unsuitable") {

@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.{DescriptionProvider, tracer}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders._
-import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
@@ -81,13 +80,13 @@ trait NewRuntimeSuccessRateMonitor {
 }
 
 trait ExecutablePlanBuilder {
-  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): Either[CompiledPlan, PipeInfo]
+  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): Either[CompiledPlan, PipeInfo]
 }
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold: Double, queryPlanTTL: Long,
                            clock: Clock, pipeBuilder: ExecutablePlanBuilder) extends PatternGraphBuilder {
-  def build(planContext: PlanContext, inputQuery: PreparedQuery): ExecutionPlan = {
-    val executablePlan = pipeBuilder.producePlan(inputQuery, planContext)
+  def build(planContext: PlanContext, inputQuery: PreparedQuery, tracer: CompilationPhaseTracer=CompilationPhaseTracer.NO_TRACING): ExecutionPlan = {
+    val executablePlan = pipeBuilder.producePlan(inputQuery, planContext, tracer)
     executablePlan match {
       case Left(compiledPlan) => buildCompiled(compiledPlan, planContext, inputQuery)
       case Right(pipeInfo) => buildInterpreted(pipeInfo, planContext, inputQuery)

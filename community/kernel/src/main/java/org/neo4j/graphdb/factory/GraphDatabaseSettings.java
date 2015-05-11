@@ -100,6 +100,10 @@ public abstract class GraphDatabaseSettings
             "dbms.cypher.runtime",
             options( "INTERPRETED", "COMPILED", DEFAULT ), DEFAULT );
 
+    @Description( "Enable tracing of compilation in cypher." )
+    @Internal
+    public static final Setting<Boolean> cypher_compiler_tracing = setting( "dbms.cypher.compiler_tracing", BOOLEAN, FALSE );
+
     @Description( "The number of Cypher query execution plans that are cached." )
     public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "1000", min( 0 ) );
 

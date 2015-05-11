@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
 import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
 import org.neo4j.cypher.internal.compiler.v2_3
+import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer
 import org.neo4j.cypher.internal.spi.v1_9.{GDSBackedQueryContext => QueryContext_v1_9}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -37,7 +38,7 @@ case class CompatibilityFor1_9(graph: GraphDatabaseService, queryCacheSize: Int,
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   def parseQuery(statementAsText: String) = new ParsedQuery {
-    def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = {
+    def plan(statement: Statement, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
       val planImpl = compiler1_9.prepare(statementAsText)
       (new ExecutionPlanWrapper(planImpl), Map.empty)
     }

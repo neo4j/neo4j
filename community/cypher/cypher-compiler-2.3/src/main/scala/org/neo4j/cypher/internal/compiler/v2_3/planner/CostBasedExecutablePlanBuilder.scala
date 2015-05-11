@@ -19,15 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner
 
+import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhase.{LOGICAL_PLANNING,PIPE_BUILDING,CODE_GENERATION}
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutablePlanBuilder, NewRuntimeSuccessRateMonitor}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.closing
 import org.neo4j.cypher.internal.compiler.v2_3.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{LogicalPlan, ProduceResult}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
@@ -37,7 +39,6 @@ import org.neo4j.helpers.Clock
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                 metricsFactory: MetricsFactory,
-                                monitor: PlanningMonitor,
                                 clock: Clock,
                                 tokenResolver: SimpleTokenResolver,
                                 executionPlanBuilder: PipeExecutionPlanBuilder,
@@ -48,9 +49,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                 runtimeName: RuntimeName)
   extends ExecutablePlanBuilder {
 
-
-
-  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext) = {
+  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer) = {
     val statement =
       CostBasedExecutablePlanBuilder.rewriteStatement(
         statement = inputQuery.statement,
@@ -65,20 +64,19 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     val planBuilderMonitor = monitors.newMonitor[NewRuntimeSuccessRateMonitor](CypherCompilerFactory.monitorTag)
     statement match {
       case (ast: Query, rewrittenSemanticTable) =>
-        monitor.startedPlanning(inputQuery.queryText)
-        val (logicalPlan, pipeBuildContext) = produceLogicalPlan(ast, rewrittenSemanticTable)(planContext)
-        monitor.foundPlan(inputQuery.queryText, logicalPlan)
+        val (logicalPlan, pipeBuildContext) = closing(tracer.beginPhase(LOGICAL_PLANNING)) {
+          produceLogicalPlan(ast, rewrittenSemanticTable)(planContext)
+        }
         try {
-          val res = produceCompiledPlan(logicalPlan, inputQuery, rewrittenSemanticTable,
-            planContext, pipeBuildContext, planBuilderMonitor)
-          monitor.successfulPlanning(inputQuery.queryText)
-          res
+          closing(tracer.beginPhase(CODE_GENERATION)) {
+            produceCompiledPlan(logicalPlan, inputQuery, rewrittenSemanticTable, planContext, pipeBuildContext, planBuilderMonitor)
+          }
         } catch {//fallback on interpreted plans
           case e: CantCompileQueryException =>
             planBuilderMonitor.unableToHandlePlan(logicalPlan, e)
-            val res = Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
-            monitor.successfulPlanning(inputQuery.queryText)
-            res
+            closing(tracer.beginPhase(PIPE_BUILDING)) {
+              Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
+            }
         }
       case _ =>
         throw new CantHandleQueryException

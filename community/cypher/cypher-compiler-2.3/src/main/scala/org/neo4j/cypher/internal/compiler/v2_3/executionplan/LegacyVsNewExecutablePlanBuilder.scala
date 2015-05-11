@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_3.PreparedQuery
+import org.neo4j.cypher.internal.compiler.v2_3.{CompilationPhaseTracer, PreparedQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 class LegacyVsNewExecutablePlanBuilder(oldBuilder: ExecutablePlanBuilder,
                              newBuilder: ExecutablePlanBuilder,
                              monitor: NewLogicalPlanSuccessRateMonitor) extends ExecutablePlanBuilder {
-  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): Either[CompiledPlan, PipeInfo] = {
+  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer): Either[CompiledPlan, PipeInfo] = {
     val queryText = inputQuery.queryText
     val statement = inputQuery.statement
     try {
@@ -38,11 +38,11 @@ class LegacyVsNewExecutablePlanBuilder(oldBuilder: ExecutablePlanBuilder,
         throw new CantHandleQueryException("Ronja does not handle update queries yet.")
       }
 
-      newBuilder.producePlan(inputQuery, planContext)
+      newBuilder.producePlan(inputQuery, planContext, tracer)
     } catch {
       case e: CantHandleQueryException =>
         monitor.unableToHandleQuery(queryText, statement, e)
-        oldBuilder.producePlan(inputQuery, planContext)
+        oldBuilder.producePlan(inputQuery, planContext, tracer)
     }
   }
 

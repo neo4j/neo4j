@@ -81,7 +81,7 @@ class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks 
   }
 
   private def parse(arg:String): PreParsedStatement = {
-    CypherPreParser(mock[ParserMonitor[PreParsedStatement]]).apply(arg)
+    CypherPreParser(arg)
   }
 
   private implicit def lift(pos: (Int, Int, Int)): InputPosition = InputPosition(pos._3, pos._1, pos._2)

@@ -35,7 +35,7 @@ trait QueryGraphProducer extends MockitoSugar {
     val q = query + " RETURN 1 AS Result"
     val ast = parser.parse(q)
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
-    val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
+    val semanticChecker = new SemanticChecker
     val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
     val semanticState = semanticChecker.check(query, cleanedStatement, devNullLogger, mkException)
 

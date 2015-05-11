@@ -110,7 +110,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
     ))
   }
 
-  val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, mock[AstRewritingMonitor], false)
+  val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, false)
 
   private def assertRewritten(from: String, to: String) = {
     val fromAst = parseAndRewrite(from)

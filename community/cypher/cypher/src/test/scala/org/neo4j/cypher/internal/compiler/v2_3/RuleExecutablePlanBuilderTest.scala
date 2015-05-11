@@ -35,12 +35,12 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{DefaultQueryPlanner, SimpleMetricsFactory}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{CostBasedPipeBuilderFactory, PlanningMonitor, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CostBasedPipeBuilderFactory, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundQueryContext
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.DynamicLabel
 import org.neo4j.helpers.Clock
 import org.scalatest.mock.MockitoSugar
@@ -56,7 +56,7 @@ class RuleExecutablePlanBuilderTest
   val ast = mock[Statement]
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
-  val planner = CostBasedPipeBuilderFactory(mock[Monitors], SimpleMetricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK, queryPlanner, rewriterSequencer)
+  val planner = CostBasedPipeBuilderFactory(mock[Monitors], SimpleMetricsFactory, Clock.SYSTEM_CLOCK, queryPlanner, rewriterSequencer)
 
   class FakePreparedQuery(q: AbstractQuery)
     extends PreparedQuery(mock[Statement], "q", Map.empty)(SemanticTable(), Set.empty, Scope(Map.empty, Seq.empty), devNullLogger) {

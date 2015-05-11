@@ -44,9 +44,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   val monitors = mock[Monitors]
   val parser = new CypherParser(mock[ParserMonitor[Statement]])
-  val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
+  val semanticChecker = new SemanticChecker
   val rewriterSequencer = RewriterStepSequencer.newValidating _
-  val astRewriter = new ASTRewriter(rewriterSequencer, mock[AstRewritingMonitor], shouldExtractParameters = false)
+  val astRewriter = new ASTRewriter(rewriterSequencer, shouldExtractParameters = false)
   val mockRel = newPatternRelationship("a", "b", "r")
   val tokenResolver = new SimpleTokenResolver()
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
@@ -156,7 +156,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newPlanner(metricsFactory: MetricsFactory): CostBasedExecutablePlanBuilder = {
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
-    CostBasedPipeBuilderFactory(monitors, metricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK, queryPlanner, rewriterSequencer)
+    CostBasedPipeBuilderFactory(monitors, metricsFactory, Clock.SYSTEM_CLOCK, queryPlanner, rewriterSequencer)
   }
 
   def produceLogicalPlan(queryText: String)(implicit planner: CostBasedExecutablePlanBuilder, planContext: PlanContext): LogicalPlan = {
