@@ -93,11 +93,15 @@ case class RelationshipsPattern(element: RelationshipChain)(val position: InputP
 sealed abstract class PatternPart extends ASTNode with ASTParticle {
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck
   def semanticCheck(ctx: SemanticContext): SemanticCheck
+
+  def element: PatternElement
 }
 
 case class NamedPatternPart(identifier: Identifier, patternPart: AnonymousPatternPart)(val position: InputPosition) extends PatternPart {
   def declareIdentifiers(ctx: SemanticContext) = patternPart.declareIdentifiers(ctx) chain identifier.declare(CTPath)
   def semanticCheck(ctx: SemanticContext) = patternPart.semanticCheck(ctx)
+
+  def element: PatternElement = patternPart.element
 }
 
 
@@ -196,6 +200,8 @@ sealed abstract class PatternElement extends ASTNode with ASTParticle {
   def identifier: Option[Identifier]
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck
   def semanticCheck(ctx: SemanticContext): SemanticCheck
+
+  def isSingleNode = false
 }
 
 case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern)(val position: InputPosition)
@@ -236,6 +242,8 @@ case class NodePattern(
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     checkParens chain
     checkProperties(ctx)
+
+  override def isSingleNode = true
 
   private def checkParens: SemanticCheck =
     when (naked && (!labels.isEmpty || properties.isDefined)) {
@@ -324,4 +332,6 @@ case class RelationshipPattern(
     properties.semanticCheck(Expression.SemanticContext.Simple) chain properties.expectType(CTMap.covariant)
 
   def isSingleLength = length.fold(true)(_.fold(false)(_.isSingleLength))
+
+  def isDirected = direction != Direction.BOTH
 }

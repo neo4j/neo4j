@@ -35,6 +35,14 @@ object QueryTags {
     MatchTag,
     OptionalMatchTag,
     RegularMatchTag,
+    ShortestPathTag,
+    NamedPathTag,
+    SingleLengthRelTag,
+    VarLengthRelTag,
+    DirectedRelTag,
+    UnDirectedRelTag,
+    SingleNodePatternTag,
+    RelPatternTag,
     ComplexExpressionTag,
     FilteringExpressionTag,
     LiteralExpressionTag,
@@ -76,6 +84,19 @@ object QueryTags {
 case object MatchTag extends QueryTag("match")
 case object OptionalMatchTag extends QueryTag("opt-match")
 case object RegularMatchTag extends QueryTag("reg-match")
+
+case object ShortestPathTag extends QueryTag("shortest-path")
+case object NamedPathTag extends QueryTag("named-path")
+
+case object SingleLengthRelTag extends QueryTag("single-length-rel")
+case object VarLengthRelTag extends QueryTag("var-length-rel")
+
+case object DirectedRelTag extends QueryTag("directed-rel")
+case object UnDirectedRelTag extends QueryTag("undirected-rel")
+
+case object SingleNodePatternTag extends QueryTag("single-node-pattern")
+case object RelPatternTag extends QueryTag("rel-pattern")
+
 case object ComplexExpressionTag extends QueryTag("complex-expr")
 case object FilteringExpressionTag extends QueryTag("filtering-expr")
 case object LiteralExpressionTag extends QueryTag("literal-expr")
@@ -88,10 +109,26 @@ object QueryTagger extends QueryTagger[String] {
 
   val default: QueryTagger[String] = fromString(forEachChild(
     // MATCH ...
-    lift[ASTNode] { case x: Match if !x.optional => Set(MatchTag, RegularMatchTag) } ++
+    lift[ASTNode] { case x: Match =>
+      val tags = Set[QueryTag](
+        MatchTag,
+        if (x.optional) OptionalMatchTag else RegularMatchTag
+      )
+      val containsSingleNode = x.pattern.patternParts.exists(_.element.isSingleNode)
+      if (containsSingleNode) tags + SingleNodePatternTag else tags
+    } ++
 
-    // OPTIONAL MATCH ...
-    lift[ASTNode] { case x: Match if x.optional => Set(MatchTag, OptionalMatchTag) } ++
+    // Pattern features
+    lift[ASTNode] {
+      case x: ShortestPaths => Set(ShortestPathTag)
+      case x: NamedPatternPart => Set(NamedPathTag)
+      case x: RelationshipPattern =>
+        Set(
+          RelPatternTag,
+          if (x.isSingleLength) SingleLengthRelTag else VarLengthRelTag,
+          if (x.isDirected) DirectedRelTag else UnDirectedRelTag
+        )
+    } ++
 
     // <expr> unless identifier or literal
     lift[ASTNode] {
