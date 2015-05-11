@@ -793,16 +793,4 @@ public class PrimitiveIntCollections
         }
         return set;
     }
-
-    public static IntPredicate inSet( final PrimitiveIntSet set )
-    {
-        return new IntPredicate()
-        {
-            @Override
-            public boolean test( int value )
-            {
-                return set.contains( value );
-            }
-        };
-    }
 }

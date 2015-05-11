@@ -619,19 +619,6 @@ public class PrimitiveLongCollections
         return set;
     }
 
-
-    public static LongPredicate inSet( final PrimitiveLongSet set )
-    {
-        return new LongPredicate()
-        {
-            @Override
-            public boolean test( long value )
-            {
-                return set.contains( value );
-            }
-        };
-    }
-
     public static PrimitiveLongSet asSetAllowDuplicates( PrimitiveLongIterator iterator )
     {
         PrimitiveLongSet set = Primitive.longSet();
