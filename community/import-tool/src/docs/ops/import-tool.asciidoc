@@ -531,3 +531,29 @@ Since there was only one bad node the import process will complete successfully 
 ----
 include::bad-duplicate-nodes-default-not-imported.bad.adoc[]
 ----
+
+== Output and statistics
+
+While an import is running through its different stages, some statistics and figures are printed in the console. 
+The general interpretation of that output is to look at the horizontal line, which is divided up into sections, each section representing one type of work going on in parallel with the other sections.
+The wider a section is, the more time is spent there relative to the other sections, the widest being the bottleneck, also marked with `\*`.
+If a section has a double line, instead of just a single line, it means that multiple threads are executing the work in that section.
+To the far right a number is displayed telling how many entities (nodes or relationships) have been processed by that stage.
+
+As an example:
+
+`[*>:20,25 MB/s------------------|PREPARE(3)====================|RELATIONSHIP(2)===============] 16M`
+
+Would be interpreted as:
+* `>` data being read, and perhaps parsed, at `20,25 MB/s`, data that is being passed on to...
+* `PREPARE` preparing the data for...
+* `RELATIONSHIP` creating actual relationship records and...
+* `v` writing the relationships to the store. This step isn't visible in this example, because it's so cheap compared to the other sections
+
+Observing the section sizes can give hints about where performance can be improved.
+As an example, reading data from input, marked as `>`, being the bottleneck might hint about the disk being slow, or poorly handling simultaneously reading and writing (since often the last section revolves around writing to disk).
+
+== Verbose error information
+
+In some cases if an unexpected error occurs it might be useful to supply the command line option `--stacktrace` to the import (and rerun the import to actually see the additional information).
+This will have the error printed with additional debug information, useful for a developer and issue reporting.
