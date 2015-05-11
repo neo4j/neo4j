@@ -72,11 +72,51 @@ class QueryTaggerTest extends CypherFunSuite {
     QueryTagger("RETURN any(n in [1,2] where n > 0)") should contain(FilteringExpressionTag)
   }
 
+  test(queryTag(WhereTag)) {
+    QueryTagger("MATCH n WHERE n.prop RETURN n") should contain(WhereTag)
+  }
+
+  test(queryTag(WithTag)) {
+    QueryTagger("MATCH n WITH n.prop AS x RETURN 1") should contain(WithTag)
+  }
+
+  test(queryTag(ReturnTag)) {
+    QueryTagger("MATCH n RETURN n.prop AS x") should contain(ReturnTag)
+  }
+
+  test(queryTag(StartTag)) {
+    QueryTagger("START n=node(0) RETURN id(n)") should contain(StartTag)
+  }
+
+  test(queryTag(UnionTag)) {
+    QueryTagger("MATCH n UNION MATCH n RETURN n") should contain(UnionTag)
+  }
+
+  test(queryTag(UnwindTag)) {
+    QueryTagger("UNWIND [1, 2] AS x RETURN x") should contain(UnwindTag)
+  }
+
+  test(queryTag(LoadCSVTag)) {
+    QueryTagger("LOAD CSV WITH HEADERS FROM \"http://somewhere/file.csv\" AS csvLine\nCREATE (p:Person { id: toInt(csvLine.id), name: csvLine.name })") should contain(LoadCSVTag)
+  }
+
+  test(queryTag(UpdatesTag)) {
+    QueryTagger("CREATE ()") should contain(UpdatesTag)
+    QueryTagger("CREATE ()-[]->()") should contain(UpdatesTag)
+    QueryTagger("CREATE UNIQUE ()-[]->()") should contain(UpdatesTag)
+    QueryTagger("MERGE (n:X {id: 12})") should contain(UpdatesTag)
+    QueryTagger("MATCH a, b MERGE (a)-[n:X {id: 12}]->(b)") should contain(UpdatesTag)
+    QueryTagger("MATCH n REMOVE n.foo") should contain(UpdatesTag)
+    QueryTagger("MATCH n SET n.foo = 12") should contain(UpdatesTag)
+    QueryTagger("MATCH n DELETE n") should contain(UpdatesTag)
+  }
+
   test("Supports combining tags") {
     QueryTagger("MATCH n RETURN n") should be(Set(
       MatchTag,
       RegularMatchTag,
       SingleNodePatternTag,
+      ReturnTag,
       IdentifierExpressionTag)
     )
   }
