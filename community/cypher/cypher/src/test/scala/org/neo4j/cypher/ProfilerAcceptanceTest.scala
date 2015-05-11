@@ -111,8 +111,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     val result = profileWithAllPlanners("match (n) where id(n) = 0 RETURN n.foo")
 
-    println(result.executionPlanDescription())
-
     //WHEN THEN
     assertRows(1)(result)("ProduceResults", "Projection", "NodeByIdSeek")
     assertDbHits(0)(result)("ProduceResults")
@@ -244,7 +242,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("reports RULE planner when showing plan description") {
     val executionPlanDescription = eengine.execute("CYPHER planner=rule create ()").executionPlanDescription()
 
-    println(executionPlanDescription)
     executionPlanDescription.toString should not include "Planner COST"
     executionPlanDescription.toString should include("Planner RULE" + System.lineSeparator())
   }
