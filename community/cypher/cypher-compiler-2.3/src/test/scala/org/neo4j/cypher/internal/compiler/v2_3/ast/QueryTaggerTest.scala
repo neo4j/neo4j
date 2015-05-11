@@ -23,23 +23,63 @@ import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class QueryTaggerTest extends CypherFunSuite {
 
-  test("Tags match clauses with :match") {
+  test(queryTag(MatchTag)) {
     QueryTagger("MATCH n RETURN n") should contain(MatchTag)
   }
 
-  test("Tags optional clauses with :opt") {
+  test(queryTag(OptionalMatchTag)) {
     QueryTagger("OPTIONAL MATCH n RETURN 1") should contain(OptionalMatchTag)
   }
 
-  test("Tags used expressions with :expr") {
+  test(queryTag(ShortestPathTag)) {
+    QueryTagger("MATCH shortestPath( ()-[*]->() ) RETURN 1") should contain(ShortestPathTag)
+  }
+
+  test(queryTag(NamedPathTag)) {
+    QueryTagger("MATCH p = ()-[*]->() RETURN 1") should contain(NamedPathTag)
+  }
+
+  test(queryTag(SingleLengthRelTag)) {
+    QueryTagger("MATCH ()-[]->() RETURN 1") should contain(SingleLengthRelTag)
+  }
+
+  test(queryTag(VarLengthRelTag)) {
+    QueryTagger("MATCH ()-[*]->() RETURN 1") should contain(VarLengthRelTag)
+  }
+
+  test(queryTag(DirectedRelTag)) {
+    QueryTagger("MATCH ()-[]->() RETURN 1") should contain(DirectedRelTag)
+  }
+
+  test(queryTag(UnDirectedRelTag)) {
+    QueryTagger("MATCH ()-[]-() RETURN 1") should contain(UnDirectedRelTag)
+  }
+
+  test(queryTag(RelPatternTag)) {
+    QueryTagger("MATCH ()-[]->() RETURN 1") should contain(RelPatternTag)
+  }
+
+  test(queryTag(SingleNodePatternTag)) {
+    QueryTagger("MATCH () RETURN 1") should contain(SingleNodePatternTag)
+    QueryTagger("MATCH ()-[]->() RETURN 1") should not contain SingleNodePatternTag
+  }
+
+  test(queryTag(ComplexExpressionTag)) {
     QueryTagger("RETURN n + 1") should contain(ComplexExpressionTag)
   }
 
-  test("Tags filtering expressions with :filtering-expr") {
+  test(queryTag(FilteringExpressionTag)) {
     QueryTagger("RETURN any(n in [1,2] where n > 0)") should contain(FilteringExpressionTag)
   }
 
   test("Supports combining tags") {
-    QueryTagger("MATCH n RETURN n") should be(Set(MatchTag, RegularMatchTag, IdentifierExpressionTag))
+    QueryTagger("MATCH n RETURN n") should be(Set(
+      MatchTag,
+      RegularMatchTag,
+      SingleNodePatternTag,
+      IdentifierExpressionTag)
+    )
   }
+
+  private def queryTag(tag: QueryTag) = tag.toString
 }
