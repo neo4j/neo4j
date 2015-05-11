@@ -42,13 +42,20 @@ object QueryTagger extends QueryTagger[String] {
   def apply(input: String) = default(input)
 
   val default: QueryTagger[String] = fromString(forEachChild(
+    // MATCH ...
     lift[ASTNode] { case x: Match if !x.optional => Set(MatchTag, RegularMatchTag) } ++
+
+    // OPTIONAL MATCH ...
     lift[ASTNode] { case x: Match if x.optional => Set(MatchTag, OptionalMatchTag) } ++
+
+    // <expr> unless identifier or literal
     lift[ASTNode] {
       case x: Identifier => Set.empty
       case x: Literal => Set.empty
       case x: Expression => Set(ComplexExpressionTag)
     } ++
+
+    // subtype of <expr>
     lift[ASTNode] {
       case x: Identifier => Set(IdentifierExpressionTag)
       case x: Literal => Set(LiteralExpressionTag)
@@ -57,6 +64,7 @@ object QueryTagger extends QueryTagger[String] {
     }
   ))
 
+  // run parser and pass statement to next query tagger
   case class fromString(next: QueryTagger[Statement], monitor: ParserMonitor[Statement] = ParserMonitor.empty[Statement])
     extends QueryTagger[String] {
 
@@ -65,6 +73,7 @@ object QueryTagger extends QueryTagger[String] {
     def apply(queryText: String): Set[QueryTag] = next(parser.parse(queryText))
   }
 
+  // run inner query tagger on each child ast node and return union over all results
   case class forEachChild(inner: QueryTagger[ASTNode]) extends QueryTagger[Statement] {
     def apply(input: Statement) = input.treeFold(Set.empty[QueryTag]) {
       case node: ASTNode => (acc, children) => children(acc ++ inner(node))
@@ -73,8 +82,8 @@ object QueryTagger extends QueryTagger[String] {
 
   def lift[T](f: PartialFunction[T, Set[QueryTag]]): QueryTagger[T] = f.lift.andThen(_.getOrElse(Set.empty))
 
-  implicit class RichQueryTagger[T](self: QueryTagger[T]) {
-    def ++(other: QueryTagger[T]): QueryTagger[T] = (input: T) => self(input) ++ other(input)
+  implicit class RichQueryTagger[T](lhs: QueryTagger[T]) {
+    def ++(rhs: QueryTagger[T]): QueryTagger[T] = (input: T) => lhs(input) `union` rhs(input)
     //    def --(other: QueryTagger[T]): QueryTagger[T] = (input: T) => self(input) -- other(input)
     //    def &&(other: QueryTagger[T]): QueryTagger[T] = (input: T) => self(input) intersect other(input)
   }
