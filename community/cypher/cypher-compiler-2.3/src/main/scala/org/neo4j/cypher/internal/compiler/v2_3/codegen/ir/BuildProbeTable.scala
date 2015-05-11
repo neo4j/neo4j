@@ -24,25 +24,31 @@ import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.Namer
 
 sealed trait BuildProbeTable extends Instruction {
+
   def producedType: String
+
   def generateFetchCode: CodeThunk
 
 }
+
 object BuildProbeTable {
-  def apply(id:String, name: String, node: String, valueSymbols: Map[String, JavaSymbol], namer: Namer): BuildProbeTable = {
+
+  def apply(id: String, name: String, node: String, valueSymbols: Map[String, JavaSymbol],
+            namer: Namer): BuildProbeTable = {
     if (valueSymbols.isEmpty) BuildCountingProbeTable(id, name, node, namer)
     else BuildRecordingProbeTable(name, node, valueSymbols, namer)
   }
 }
 
-case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Map[String, JavaSymbol], namer: Namer) extends BuildProbeTable {
+case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Map[String, JavaSymbol], namer: Namer)
+  extends BuildProbeTable {
 
   private val valueType = s"ValueTypeIn$name"
 
   private val innerClassDeclaration =
     s"""static class $valueType
         |{
-        |${valueSymbols.map {case (k, v) => s"${v.javaType} $k;"}.mkString(n)}
+        |${valueSymbols.map { case (k, v) => s"${v.javaType} $k;" }.mkString(n)}
         |}""".stripMargin
 
   def members() = innerClassDeclaration
@@ -79,7 +85,7 @@ case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Ma
           |${action.generateCode()}
           |}
           |}""".stripMargin
-      }
+    }
     CodeThunk(symbols, code)
   }
 
@@ -94,6 +100,7 @@ case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Ma
 }
 
 case class BuildCountingProbeTable(id: String, name: String, node: String, namer: Namer) extends BuildProbeTable {
+
   def generateInit() = s"final PrimitiveLongIntMap $name = Primitive.longIntMap();"
 
   def generateCode() =
@@ -122,7 +129,7 @@ case class BuildCountingProbeTable(id: String, name: String, node: String, namer
   override def generateFetchCode = {
     val timesSeen = namer.newVarName()
     val eventVar = s"event_$id"
-    val code  = (key: String, action: Instruction) => {
+    val code = (key: String, action: Instruction) => {
       s"""
          |try ( QueryExecutionEvent $eventVar = tracer.executeOperator( $id ) )
          |{
@@ -137,7 +144,7 @@ case class BuildCountingProbeTable(id: String, name: String, node: String, namer
          |}
          |}"""
         .stripMargin
-      }
+    }
     CodeThunk(Map.empty, code)
   }
 
@@ -145,5 +152,6 @@ case class BuildCountingProbeTable(id: String, name: String, node: String, namer
 }
 
 case class CodeThunk(vars: Map[String, JavaSymbol], generator: (String, Instruction) => String) {
+
   def apply(key: String, instruction: Instruction) = generator(key, instruction)
 }

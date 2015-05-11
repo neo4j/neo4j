@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.Statement
 import scala.collection.{Map, immutable, mutable}
 
 object CodeGenerator {
+
   def generateClass(instructions: Seq[Instruction]) = {
     val className = Namer.newClassName()
     val source = generateCodeFromInstructions(className, instructions)
@@ -51,6 +52,7 @@ object CodeGenerator {
 
   //TODO these methods should be move out of 2.3 together with everyting that touches Statement
   def getNodeById(v: String) = JavaSymbol(s"""db.getNodeById( $v )""", JavaTypes.NODE)
+
   def getRelationshipById(v: String) = JavaSymbol(s"""db.getRelationshipById( $v )""", JavaTypes.RELATIONSHIP)
 
   private val nameCounter = new AtomicInteger(0)
@@ -162,7 +164,8 @@ object CodeGenerator {
        |}""".stripMargin
   }
 
-  private def createInstructions(plan: LogicalPlan, semanticTable: SemanticTable, idMap: immutable.Map[LogicalPlan, Id]): (Seq[Instruction], mutable.Map[Id, String]) = {
+  private def createInstructions(plan: LogicalPlan, semanticTable: SemanticTable,
+                                 idMap: immutable.Map[LogicalPlan, Id]): (Seq[Instruction], mutable.Map[Id, String]) = {
     import LogicalPlanConverter._
 
     val context = new CodeGenContext(semanticTable, idMap)
@@ -170,7 +173,6 @@ object CodeGenerator {
     (result, context.operatorIds)
   }
 }
-
 
 
 class CodeGenerator {
@@ -203,7 +205,8 @@ class CodeGenerator {
                     descriptionProvider: (InternalPlanDescription) => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer]),
                     params: immutable.Map[String, Any], closer: TaskCloser): InternalExecutionResult = {
             val (supplier, tracer) = descriptionProvider(description)
-            Javac.newInstance(clazz, closer, statement, db, execMode, supplier, tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
+            Javac.newInstance(clazz, closer, statement, db, execMode, supplier,
+                              tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
           }
         }
 

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 case class ScanAllNodes(id: String) extends Instruction with LoopDataGenerator {
+
   def generateCode() = "ro.nodesGetAll()"
 
   def generateVariablesAndAssignment() = ""

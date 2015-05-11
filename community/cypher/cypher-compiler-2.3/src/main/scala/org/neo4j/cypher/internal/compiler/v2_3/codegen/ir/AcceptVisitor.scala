@@ -23,12 +23,11 @@ import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaString
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
 
-
 case class AcceptVisitor(id: String, columns: Map[String, JavaSymbol]) extends Instruction {
 
   def generateCode() = {
     val eventVar = "event_" + id
-    s"""${columns.toSeq.map { case (k, v) => s"""row.set( "${k.toJava}", ${v.materialize.name} );"""}.mkString(n)}
+    s"""${columns.toSeq.map { case (k, v) => s"""row.set( "${k.toJava}", ${v.materialize.name} );""" }.mkString(n)}
        |try ( QueryExecutionEvent $eventVar = tracer.executeOperator( $id ) )
        |{
        |if ( !visitor.visit(row) )

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ExceptionCodeGen
 
 trait Instruction {
+
   // Actual code produced by element
   def generateCode(): String
 
@@ -57,6 +58,7 @@ trait Instruction {
 }
 
 object Instruction {
+
   val empty = new Instruction {
     override def generateCode() = ""
 

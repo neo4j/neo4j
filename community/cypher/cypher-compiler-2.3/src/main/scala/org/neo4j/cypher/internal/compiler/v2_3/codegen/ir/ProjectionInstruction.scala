@@ -24,12 +24,16 @@ import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaTypes.{DOUB
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenerator, KernelExceptionCodeGen, Namer}
 
 sealed trait ProjectionInstruction extends Instruction {
+
   def projectedVariable: JavaSymbol
+
   def generateCode() = ""
 }
 
 object ProjectionInstruction {
+
   def literal(value: Long): ProjectionInstruction = ProjectLiteral(JavaSymbol(value.toString + "L", LONG))
+
   def literal(value: Double): ProjectionInstruction = ProjectLiteral(JavaSymbol(value.toString, DOUBLE))
 
   def literal(value: String): ProjectionInstruction = ProjectLiteral(JavaSymbol(s""""$value"""", STRING))
@@ -37,20 +41,23 @@ object ProjectionInstruction {
   def parameter(key: String): ProjectionInstruction = ProjectParameter(key)
 
   def add(lhs: ProjectionInstruction, rhs: ProjectionInstruction): ProjectionInstruction = ProjectAddition(lhs, rhs)
+
   def sub(lhs: ProjectionInstruction, rhs: ProjectionInstruction): ProjectionInstruction = ProjectSubtraction(lhs, rhs)
 }
 
-case class ProjectNodeProperty(id: String, token: Option[Int], propName: String, nodeIdVar: String, namer: Namer) extends ProjectionInstruction {
+case class ProjectNodeProperty(id: String, token: Option[Int], propName: String, nodeIdVar: String, namer: Namer)
+  extends ProjectionInstruction {
+
   private val propKeyVar = token.map(_.toString).getOrElse(namer.newVarName())
   private val methodName = namer.newMethodName()
 
   def generateInit() = if (token.isEmpty)
-      s"""if ( $propKeyVar == -1 )
-         |{
-         |$propKeyVar = ro.propertyKeyGetForName( "$propName" );
-         |}
+    s"""if ( $propKeyVar == -1 )
+        |{
+        |$propKeyVar = ro.propertyKeyGetForName( "$propName" );
+        |}
        """.stripMargin
-      else ""
+  else ""
 
   override def members() = if (token.isEmpty) s"private int $propKeyVar = -1;" else ""
 
@@ -69,15 +76,15 @@ case class ProjectNodeProperty(id: String, token: Option[Int], propName: String,
     override def generateCode: String = {
       val eventVar = "event_" + id
       s"""
-        |private Object $methodName( long nodeId ) throws EntityNotFoundException
-        |{
-        |try ( QueryExecutionEvent $eventVar = tracer.executeOperator( $id ) )
-        |{
-        |$eventVar.dbHit();
-        |$eventVar.row();
-        |return ro.nodeGetProperty( nodeId, $propKeyVar ).value( null );
-        |}
-        |}
+         |private Object $methodName( long nodeId ) throws EntityNotFoundException
+         |{
+         |try ( QueryExecutionEvent $eventVar = tracer.executeOperator( $id ) )
+         |{
+         |$eventVar.dbHit();
+         |$eventVar.row();
+         |return ro.nodeGetProperty( nodeId, $propKeyVar ).value( null );
+         |}
+         |}
       """.stripMargin
     }
   })
@@ -85,15 +92,17 @@ case class ProjectNodeProperty(id: String, token: Option[Int], propName: String,
   override protected def children = Seq.empty
 }
 
-case class ProjectRelProperty(token: Option[Int], propName: String, relIdVar: String, namer: Namer) extends ProjectionInstruction {
+case class ProjectRelProperty(token: Option[Int], propName: String, relIdVar: String, namer: Namer)
+  extends ProjectionInstruction {
+
   private val propKeyVar = token.map(_.toString).getOrElse(namer.newVarName())
 
   def generateInit() =
     if (token.isEmpty)
       s"""if ( $propKeyVar == -1 )
-         |{
-         |$propKeyVar = ro.propertyKeyGetForName( "$propName" );
-         |}""".stripMargin
+          |{
+          |$propKeyVar = ro.propertyKeyGetForName( "$propName" );
+          |}""".stripMargin
     else ""
 
   override def members() = if (token.isEmpty) s"private int $propKeyVar = -1;" else ""
@@ -111,9 +120,9 @@ case class ProjectParameter(key: String) extends ProjectionInstruction {
 
   def generateInit() =
     s"""if( !params.containsKey( "${key.toJava}" ) )
-      |{
-      |throw new ParameterNotFoundException( "Expected a parameter named ${key.toJava}" );
-      |}
+       |{
+       |throw new ParameterNotFoundException( "Expected a parameter named ${key.toJava}" );
+       |}
     """.stripMargin
 
   def projectedVariable = JavaSymbol(s"""params.get( "${key.toJava}" )""", OBJECT)
@@ -246,8 +255,9 @@ case class ProjectMap(instructions: Map[String, ProjectionInstruction]) extends 
     }.mkString("org.neo4j.helpers.collection.MapUtil.map(", ",", ")"), MAP)
 }
 
-case class Project(projections:Seq[ProjectionInstruction], parent:Instruction) extends Instruction {
-  override def generateCode()= generate(_.generateCode())
+case class Project(projections: Seq[ProjectionInstruction], parent: Instruction) extends Instruction {
+
+  override def generateCode() = generate(_.generateCode())
 
   override protected def children = projections :+ parent
 
@@ -255,5 +265,6 @@ case class Project(projections:Seq[ProjectionInstruction], parent:Instruction) e
 
   override def generateInit() = generate(_.generateInit())
 
-  private def generate(f : Instruction => String) = projections.map(f(_)).mkString("", CodeGenerator.n, CodeGenerator.n) + f(parent)
+  private def generate(f: Instruction => String) = projections.map(f(_))
+    .mkString("", CodeGenerator.n, CodeGenerator.n) + f(parent)
 }

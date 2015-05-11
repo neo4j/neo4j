@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
 
 case class WhileLoop(id: JavaSymbol, producer: LoopDataGenerator, action: Instruction) extends Instruction {
+
   def generateCode(): String = {
     val iterator = s"${id.name}Iter"
     val eventVar = s"event_${producer.id}"
