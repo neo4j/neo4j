@@ -23,7 +23,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonitor}
+import org.neo4j.cypher.internal.compiler.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_3.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.{CypherTestSupport, CypherFunSuite}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.Clock
 
@@ -43,7 +43,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   self: CypherFunSuite =>
 
   val monitors = mock[Monitors]
-  val parser = new CypherParser(mock[ParserMonitor[Statement]])
+  val parser = new CypherParser
   val semanticChecker = new SemanticChecker
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   val astRewriter = new ASTRewriter(rewriterSequencer, shouldExtractParameters = false)

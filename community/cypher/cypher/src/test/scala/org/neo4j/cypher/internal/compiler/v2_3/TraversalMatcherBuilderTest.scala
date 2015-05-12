@@ -19,17 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.junit.Assert._
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementConverters
-import StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.{BuilderTest, Solved, TraversalMatcherBuilder, Unsolved}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonitor}
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ArgumentPipe, SingleRowPipe, PipeMonitor}
+import org.neo4j.cypher.internal.compiler.v2_3.parser.CypherParser
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ArgumentPipe, PipeMonitor, SingleRowPipe}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundPlanContext
 import org.neo4j.graphdb.Transaction
@@ -140,7 +138,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest
     }
   }
 
-  private val parser = new CypherParser(mock[ParserMonitor[Statement]])
+  private val parser = new CypherParser
 
   private def query(text: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parse(text).asQuery.asInstanceOf[Query])
 }

@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3.{CompilationPhaseTracer, PreparedQuery}
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonitor}
+import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class LegacyVsNewExecutablePlanBuilderTest extends CypherFunSuite {
 
-  val parser = new CypherParser(mock[ParserMonitor[Statement]])
+  val parser = new CypherParser
 
   test("should delegate var length to old pipe builder") {
     new uses("MATCH ()-[r*]->() RETURN r") {
@@ -62,7 +61,10 @@ class LegacyVsNewExecutablePlanBuilderTest extends CypherFunSuite {
     when( oldBuilder.producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING ) ).thenReturn(Right(pipeInfo))
     when( newBuilder.producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING ) ).thenReturn(Right(pipeInfo))
 
-    def result = pipeBuilder.producePlan(preparedQuery, planContext).right.toOption.get
+    def result = {
+      val plan = pipeBuilder.producePlan(preparedQuery, planContext)
+      plan.right.toOption.get
+    }
 
     def assertUsed(used: ExecutablePlanBuilder) = {
       val notUsed = if (used == oldBuilder) newBuilder else oldBuilder

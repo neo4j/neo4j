@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonitor}
+import org.neo4j.cypher.internal.compiler.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
@@ -48,12 +48,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   self: CypherFunSuite =>
 
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
-  var parser = new CypherParser(mock[ParserMonitor[Statement]])
+  var parser = new CypherParser
   var semanticChecker = new SemanticChecker
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   var astRewriter = new ASTRewriter(rewriterSequencer, shouldExtractParameters = false)
   var tokenResolver = new SimpleTokenResolver()
-  var monitor = mock[PlanningMonitor]
   val planRewriter = LogicalPlanRewriter(rewriterSequencer)
   final var planner = new DefaultQueryPlanner(planRewriter) {
     def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =

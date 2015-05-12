@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhase.{PARSING,SEMANTIC_CHECK,AST_REWRITE}
+import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhase.{AST_REWRITE, PARSING, SEMANTIC_CHECK}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.closing
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonitor}
+import org.neo4j.cypher.internal.compiler.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
@@ -33,16 +33,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSeq
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 
-trait SemanticCheckMonitor {
-  def startSemanticCheck(query: String)
-  def finishSemanticCheckSuccess(query: String)
-  def finishSemanticCheckError(query: String, errors: Seq[SemanticError])
-}
-
 trait AstRewritingMonitor {
-  def startRewriting(queryText: String, statement: Statement)
   def abortedRewriting(obj: AnyRef)
-  def finishRewriting(queryText: String, statement: Statement)
 }
 
 trait CypherCacheFlushingMonitor[T] {
@@ -72,7 +64,7 @@ object CypherCompilerFactory {
                         rewriterSequencer: (String) => RewriterStepSequencer,
                         plannerName: Option[CostBasedPlannerName],
                         runtimeName: Option[RuntimeName]): CypherCompiler = {
-    val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
+    val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
@@ -103,7 +95,7 @@ object CypherCompilerFactory {
   def ruleBasedCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
                         queryPlanTTL: Long, clock: Clock, monitors: Monitors,
                         rewriterSequencer: (String) => RewriterStepSequencer): CypherCompiler = {
-    val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
+    val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
     val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, rewriterSequencer)

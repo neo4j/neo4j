@@ -146,9 +146,3 @@ object CostBasedExecutablePlanBuilder {
   }
 }
 
-trait PlanningMonitor {
-  def startedPlanning(q: String)
-  def foundPlan(q: String, p: LogicalPlan)
-
-  def successfulPlanning(q: String)
-}
