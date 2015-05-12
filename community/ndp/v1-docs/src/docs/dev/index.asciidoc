@@ -18,7 +18,7 @@ Every exchange of messages is initiated by the client with one or more request m
 
 The diagram below illustrates a typical interaction including the order of messages sent and the life spans of the session and job (which are described in more detail in other chapters).
 
-image:typical-interaction.png[]
+image:images/typical-interaction.png[]
 
 The protocol is divided into two layers - <<ndp-transport,transport>> and <<ndp-messaging,messaging>>.
 

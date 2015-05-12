@@ -18,7 +18,7 @@ For example, `RECORD` messages are classed as detail messages and `SUCCESS` mess
 
 The diagrams below illustrates a basic exchange wherein the client sends a fictional request message and receives a series of response messages.
 
-image:simple-exchange.png[]
+image:images/simple-exchange.png[]
 
 [[ndp-messaging-pipelining]]
 === Pipelining
@@ -26,7 +26,7 @@ image:simple-exchange.png[]
 The client is not required to wait for a response before sending more messages.
 Sending multiple messages together like this is called pipelining:
 
-image:pipelining.png[]
+image:images/pipelining.png[]
 
 For performance reasons, it is recommended that clients use pipelining as much as possible.
 Through pipelining, multiple messages can be transmitted together in the same network package, significantly reducing latency and increasing throughput.
@@ -45,13 +45,13 @@ The server should issue an IGNORED message in response to any other kind of mess
 
 The diagram below illustrates a typical flow involving `ACK_FAILURE` messages:
 
-image:failure-ack.png[]
+image:images/failure-ack.png[]
 
 Here, the original failure is acknowledged immediately by the client, allowing the subsequent RUN to be actioned as expected.
 
 This second diagram shows a sequence where a pair of request messages are sent together:
 
-image:failure-optimistic.png[]
+image:images/failure-optimistic.png[]
 
 Here, the client optimistically sends a pair of messages. The first of these fails and the second is consequently
 `IGNORED`.

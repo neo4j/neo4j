@@ -7,7 +7,7 @@ For details on the layout and meaning of specific messages, see <<ndp-messaging,
 
 [[ndp-type-system-mapping]]
 .Types overview
-[options="header",name="value-translation-table"]
+[cols="20,80",options="header",name="value-translation-table"]
 |=======================
 |Type                                  |Description
 |<<ndp-packstream-null,Null>>          |Represents the absence of a value
@@ -55,7 +55,7 @@ The size itself is either an 8-bit, 16-bit or 32-bit big-endian unsigned integer
 
 The diagram below illustrates the general layout for a sized value, here with a 16-bit size:
 
-image:packstream-sized.png[]
+image:images/packstream-sized.png[]
 
 [[ndp-packstream-null]]
 === Null
@@ -124,7 +124,7 @@ These markers can be identified by a zero high-order bit or by a high-order nibb
 
 The available encodings are illustrated below and each shows a valid representation for the decimal value 42, with marker bytes in green:
 
-image:packstream-integers.png[]
+image:images/packstream-integers.png[]
 
 Note that while encoding small numbers in wider formats is supported, it is generally recommended to use the most compact representation possible.
 The following table shows the optimal representation for every possible integer:
@@ -154,7 +154,7 @@ CB 7F FF FF  FF FF FF FF  FF
 ----
 
 .Suggested integer representations
-[options="header",name="packstream-integer-range-table"]
+[cols=">,>,^",options="header",name="packstream-integer-range-table"]
 |=======================
 |Range Minimum               |Range Maximum              |Suggested representation
 |-9 223 372 036 854 775 808  |-2 147 483 649             |`INT_64`
@@ -173,7 +173,7 @@ Text data is represented as UTF-8 encoded binary data.
 Note that sizes used for text are the byte counts of the UTF-8 encoded data, not the character count of the original text.
 
 .Text markers
-[options="header",name="packstream-text-marker-table"]
+[cols="^20,<50,<30",options="header",name="packstream-text-marker-table"]
 |=======================
 |Marker         |Size                                        |Maximum data size
 |`0x80`..`0x8F` |contained within low-order nibble of marker |15 bytes
@@ -188,14 +188,14 @@ The encoded data then immediately follows the marker.
 The example below shows how the string "Hello" would be represented:
 
 // TODO: Convert this to a code-segment that can be tested
-image:packstream-tinytext.png[]
+image:images/packstream-tinytext.png[]
 
 ==== Regular Text Strings
 For encoded text containing 16 bytes or more, the marker `0xD0`, `0xD1` or `0xD2` should be used, depending on scale.
 This marker is followed by the size and the UTF-8 encoded data as in the example below:
 
 // TODO: Convert this to a code-segment that can be tested
-image:packstream-text.png[]
+image:images/packstream-text.png[]
 
 ==== Examples
 
@@ -232,7 +232,7 @@ The size of a list denotes the number of items within that list, not the total p
 The markers used to denote a list are described in the table below:
 
 .List markers
-[options="header",name="packstream-list-marker-table"]
+[cols="^20,<50,<30",options="header",name="packstream-list-marker-table"]
 |=======================
 |Marker         |Size                                        |Maximum list size
 |`0x90`..`0x9F` |contained within low-order nibble of marker |15 bytes
@@ -283,13 +283,13 @@ The size of a map denotes the number of pairs within that map, not the total pac
 The markers used to denote a map are described in the table below:
 
 .Map markers
-[options="header",name="packstream-map-marker-table"]
+[cols="^20,<50,<30",options="header",name="packstream-map-marker-table"]
 |=======================
 |Marker         |Size                                        |Maximum map size
-|`0xA0`..`0xAF` |contained within low-order nibble of marker |15 key-value pairs
-|`0xD8`         |8-bit  big-endian unsigned integer          |255 key-value pairs
-|`0xD9`         |16-bit big-endian unsigned integer          |65 535 key-value pairs
-|`0xDA`         |32-bit big-endian unsigned integer          |4 294 967 295 key-value pairs
+|`0xA0`..`0xAF` |contained within low-order nibble of marker |15 entries
+|`0xD8`         |8-bit  big-endian unsigned integer          |255 entries
+|`0xD9`         |16-bit big-endian unsigned integer          |65 535 entries
+|`0xDA`         |32-bit big-endian unsigned integer          |4 294 967 295 entries
 |=======================
 
 ==== Tiny Maps & Empty Maps
@@ -336,7 +336,7 @@ The size of a structure is measured as the number of fields, not the total packe
 The markers used to denote a structure are described in the table below:
 
 .Structure markers
-[options="header",name="packstream-structure-marker-table"]
+[cols="^20,<50,<30",options="header",name="packstream-structure-marker-table"]
 |=======================
 |Marker         |Size                                        |Maximum structure size
 |`0xB0`..`0xBF` |contained within low-order nibble of marker |15 fields
@@ -440,7 +440,7 @@ These are all the marker bytes:
 
 [[ndp-packstream-markers]]
 .Marker table
-[options="header",name="ndp-packstream-marker-table"]
+[cols="^15,^15,^15,<55",options="header",name="ndp-packstream-marker-table"]
 |=======================
 |Marker         |Binary     |Type          |Description
 |`0x00`..`0x7F` |`0xxxxxxx` |`+TINY_INT`   |Integer 0 to 127
