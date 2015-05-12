@@ -7,18 +7,18 @@ For details on how Neo4j types are represented in binary form, see <<ndp-seriali
 Clients may send request messages at any time.
 Clients may <<ndp-messaging-pipelining,pipeline>> requests, sending multiple requests together.
 
-Servers must fully respond to each request before the next request is processed and processing must be done in the same order requests arrived in for a given session.
+Servers must fully respond to each request before the next request is processed and processing of requests within a session must be done in the same order in which the requests.
 
 Servers must ignore messages sent by the client after a failure occurs on the server, until the client has acknowledged the failure. See Failure & Acknowledgement.
 
-For each request message sent, clients should expect to receive zero or more detail messages followed by exactly one summary message.
+For each request message sent, clients must anticipate receiving zero or more detail messages followed by exactly one summary message.
 The detail messages deliver the response content, while a summary message denotes the end of the response and any response metadata.
-Note that these are classifications of message, not specific message types.
+Note that "detail" and "summary" are classifications of message, not specific message types.
 For example, `RECORD` messages are classed as detail messages and `SUCCESS` messages as summary messages.
 
-The diagrams below illustrates a basic exchange wherein the client sends a fictional request message and receives a series of response messages.
+The diagrams below illustrates a basic exchange wherein the client sends a request message and receives a series of response messages.
 
-image:simple-exchange.png[]
+image:images/simple-exchange.png[]
 
 [[ndp-messaging-pipelining]]
 === Pipelining
@@ -26,7 +26,7 @@ image:simple-exchange.png[]
 The client is not required to wait for a response before sending more messages.
 Sending multiple messages together like this is called pipelining:
 
-image:pipelining.png[]
+image:images/pipelining.png[]
 
 For performance reasons, it is recommended that clients use pipelining as much as possible.
 Through pipelining, multiple messages can be transmitted together in the same network package, significantly reducing latency and increasing throughput.
@@ -39,22 +39,21 @@ commit is issued or a result is read by the application, and then sending all me
 Because the protocol leverages pipelining, the client and the server need to agree on what happens when a failure
 occurs, otherwise messages that were sent assuming no failure would occur might have unintended effects.
 
-When requests fail on the server, this is signalled to the client via a `FAILURE` message.
-After a failure, the server will not accept any messages it recieves until the client sends an `ACK_FAILURE` message.
-The server should issue an IGNORED message in response to any other kind of message sent by the client until an `ACK_FAILURE` has been received.
+When requests fail on the server, the server will send the client a `FAILURE` message.
+The client must acknowledge the `FAILURE` message by sending an `ACK_FAILURE` message to the server.
+Until the server receives the `ACK_FAILURE` message, it will send an `IGNORED` message in response to any other message from by the client, including messages that were sent in a pipeline.
 
 The diagram below illustrates a typical flow involving `ACK_FAILURE` messages:
 
-image:failure-ack.png[]
+image:images/failure-ack.png[]
 
 Here, the original failure is acknowledged immediately by the client, allowing the subsequent RUN to be actioned as expected.
 
 This second diagram shows a sequence where a pair of request messages are sent together:
 
-image:failure-optimistic.png[]
+image:images/failure-optimistic.png[]
 
-Here, the client optimistically sends a pair of messages. The first of these fails and the second is consequently
-`IGNORED`.
+Here, the client optimistically sends a pair of messages. The first of these fails and the second is consequently `IGNORED`.
 Once the client acknowledges the failure, it is then able to resend a corrected RUN message.
 
 
@@ -65,7 +64,7 @@ Protocol messages are represented as <<ndp-packstream-structures,serialized stru
 
 ==== RUN
 
-The `RUN` message is a client message that is used to start a new job on the server. It has the following structure:
+The `RUN` message is a client message used to start a new job on the server. It has the following structure:
 
 [source,ndp_message_struct]
 ----
@@ -75,15 +74,14 @@ RunMessage (signature=0x10) {
 }
 ----
 
-On receipt of a `RUN` message, a server should start a new job by executing the statement with the parameters supplied.
-If successful, the subsequent response should consist of a single `SUCCESS` message; if not, a `FAILURE` response should
- be sent instead.
+On receipt of a `RUN` message, the server will start a new job by executing the statement with the parameters supplied.
+If successful, the subsequent response will consist of a single `SUCCESS` message; if not, a `FAILURE` response will be sent instead.
 A successful job will always produce a result stream which must then be explicitly consumed, even if empty.
 
 In the case where a previous result stream has not yet been fully consumed (via `PULL_ALL` or `DISCARD_ALL`), an
-attempt to `RUN` a new job should trigger a `FAILURE` response.
+attempt to `RUN` a new job will trigger a `FAILURE` response.
 
-If an unacknowledged failure is pending from a previous exchange, the server must immediately respond with a single
+If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a single
 `IGNORED` message and take no further action.
 
 .Example
@@ -96,7 +94,7 @@ B2 10 8F 52  45 54 55 52  4E 20 31 20  41 53 20 6E  75 6D A0
 
 ==== DISCARD_ALL
 
-The `DISCARD_ALL` message is a client message that is used to discard all remaining items from the active result
+The `DISCARD_ALL` message is a client message used to discard all remaining items from the active result
 stream. It has the following structure:
 
 [source,ndp_message_struct]
@@ -105,10 +103,10 @@ DiscardAllMessage (signature=0x2F) {
 }
 ----
 
-On receipt of a `DISCARD_ALL` message, a server should dispose of all remaining items from the active result stream.
-If no result stream is currently active, the server should respond with a single FAILURE message.
+On receipt of a `DISCARD_ALL` message, the server will dispose of all remaining items from the active result stream, close the stream and send a single `SUCCESS` message to the client.
+If no result stream is currently active, the server will respond with a single `FAILURE` message.
 
-If an unacknowledged failure is pending from a previous exchange, the server must immediately respond with a single IGNORED message and take no further action.
+If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a single `IGNORED` message and take no further action.
 
 .Example
 [source,ndp_packstream_type]
@@ -119,7 +117,8 @@ B0 7E
 ----
 
 ==== PULL_ALL
-The `PULL_ALL` message is a client message that is used to retrieve all remaining items from the active result stream.
+
+The `PULL_ALL` message is a client message used to retrieve all remaining items from the active result stream.
 It has the following structure:
 
 [source,ndp_message_struct]
@@ -128,12 +127,11 @@ PullAllMessage (signature=0x3F) {
 }
 ----
 
-On receipt of a `PULL_ALL` message, a server should send all remaining result data items to the client, each in a
-single `RECORD` message, followed by a single `SUCCESS` message which may contain summary information on the data items
-sent.
-If an error is encountered, the server must instead send a `FAILURE` message and discard all remaining data items.
+On receipt of a `PULL_ALL` message, the server will send all remaining result data items to the client, each in a single `RECORD` message.
+The server will then close the stream and send a single `SUCCESS` message optionally containing summary information on the data items sent.
+If an error is encountered, the server must instead send a `FAILURE` message, discard all remaining data items and close the stream.
 
-If an unacknowledged failure is pending from a previous exchange, the server must immediately respond with a single IGNORED message and take no further action.
+If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a single `IGNORED` message and take no further action.
 
 .Example
 [source,ndp_packstream_type]
@@ -145,7 +143,7 @@ B0 3F
 
 ==== ACK_FAILURE
 
-The `ACK_FAILURE` message is a client message that is used to signal that a client has acknowledged a previous `FAILURE`
+The `ACK_FAILURE` message is a client message used to signal that a client has acknowledged a previous `FAILURE`
 . It has the following structure:
 
 [source,ndp_message_struct]
@@ -154,10 +152,10 @@ AcknowledgeFailureMessage (signature=0x0F) {
 }
 ----
 
-On receipt of an `ACK_FAILURE` message, a server should clear any pending failure state and respond with a single
-`SUCCESS` message. If no such failure state is pending, a FAILURE message should be sent instead.
+On receipt of an `ACK_FAILURE` message, the server will clear any pending failure state and respond with a single `SUCCESS` message.
+If no such failure state is pending, a FAILURE message will be sent instead.
 
-An `ACK_FAILURE` should never be ignored.
+An `ACK_FAILURE` will never be ignored by the server.
 
 .Example
 [source,ndp_packstream_type]
@@ -169,8 +167,9 @@ B0 0F
 
 ==== RECORD
 
-The `RECORD` message is a server detail message used to deliver data from the server to the client. Each record
-message contains a single List, which in turn contains the fields of the record in order. It has the following structure:
+The `RECORD` message is a server detail message used to deliver data from the server to the client.
+Each record message contains a single List, which in turn contains the fields of the record in order.
+It has the following structure:
 
 [source,ndp_message_struct]
 ----
@@ -189,8 +188,8 @@ B1 71 93 01  02 03
 
 ==== SUCCESS
 
-The `SUCCESS` message is a server summary message that is used to signal that a corresponding client message has been
-received and actioned as intended. It has the following structure:
+The `SUCCESS` message is a server summary message used to signal that a corresponding client message has been received and actioned as intended.
+It has the following structure:
 
 [source,ndp_message_struct]
 ----
@@ -210,8 +209,8 @@ B1 70 A1 86  66 69 65 6C  64 73 92 84  6E 61 6D 65
 
 ==== FAILURE
 
-The `FAILURE` message is a server summary message that is used to signal that a corresponding client message has
-encountered an error while being actioned. It has the following structure:
+The `FAILURE` message is a server summary message used to signal that a corresponding client message has encountered an error while being processed.
+It has the following structure:
 
 [source,ndp_message_struct]
 ----
@@ -220,8 +219,8 @@ FailureMessage (signature=0x7F) {
 }
 ----
 
-`FAILURE` messages contain metadata which describe the detail of the primary failure that has occurred. This metadata
-is a simple map containing a code and a message. These codes map to the standard Neo4j status codes.
+`FAILURE` messages contain metadata providing details regarding the primary failure that has occurred.
+This metadata is a simple map containing a code and a message. These codes map to the standard Neo4j status codes.
 
 .Example
 [source,ndp_packstream_type]
@@ -237,8 +236,8 @@ B1 7F A2 84  63 6F 64 65  D0 27 4E 65  6F 2E 43 6C
 
 ==== IGNORED
 
-The `IGNORED` message is a server summary message that is used to signal that a corresponding client message has been
-ignored and not actioned. It has the following structure:
+The `IGNORED` message is a server summary message used to signal that a corresponding client message has been ignored and not actioned.
+It has the following structure:
 
 [source,ndp_message_struct]
 ----
@@ -248,8 +247,9 @@ IgnoredMessage (signature=0x7E) {
 ----
 
 A client message will be ignored if an earlier failure has not yet been acknowledged by the client via an `ACK_FAILURE` message.
-This will occur if the client optimistically sends a group of messages, one of which fails during execution: all subsequent messages in that group will then be ignored.
-
+For example, this will occur if the client optimistically sends a group of messages, one of which fails during execution: all subsequent messages in that group will then be ignored.
+Note that the original `PULL_ALL` message was never processed by the server.
+
 .Example
 [source,ndp_packstream_type]
 ----

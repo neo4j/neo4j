@@ -40,7 +40,7 @@ Server: SUCCESS {}
 
 === Pipelining
 
-This illustrates running two statements and retreiving their results, without waiting for the server to respond
+This illustrates running two statements and retrieving their results, without waiting for the server to respond
 in-between.
 
 Note that these two statements are executed in two individual transactions, implicitly created for each statement.
@@ -103,7 +103,7 @@ Server: SUCCESS {}
 === Error handling
 
 This illustrates how the server behaves when a request fails, and the server ignores incoming messages until an
-`ACK_FAILURE` message is recieved.
+`ACK_FAILURE` message is received.
 
 .Error handling
 [source,ndp_exchange]
