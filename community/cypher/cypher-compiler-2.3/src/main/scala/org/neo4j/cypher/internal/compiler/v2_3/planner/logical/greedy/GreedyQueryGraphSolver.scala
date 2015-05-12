@@ -33,12 +33,12 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable],
 
     import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.CandidateGenerator._
 
-    val kit = config.toKit(queryGraph)
+    val kit = config.toKit()
     val optionalMatchesSolver = solveOptionalMatches(config.optionalSolvers, kit.pickBest)
 
     def generateLeafPlanTable(): GreedyPlanTable = {
       val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, kit.projectAllEndpoints)
-      val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.iterator.map(_.map(kit.select))
+      val leafPlanCandidateListsWithSelections = kit.select(leafPlanCandidateLists, queryGraph).iterator
       val bestLeafPlans: Iterator[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(kit.pickBest(_))
       val startTable: GreedyPlanTable = leafPlan.foldLeft(GreedyPlanTable.empty)(_ + _)
       bestLeafPlans.foldLeft(startTable)(_ + _)
@@ -50,7 +50,7 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable],
         val generated: Seq[LogicalPlan] = step(planTable, queryGraph)
 
         if (generated.nonEmpty) {
-          val selected: Seq[LogicalPlan] = generated.map(kit.select)
+          val selected: Seq[LogicalPlan] = generated.map(plan => kit.select(plan, queryGraph))
           //          println("Building on top of " + planTable.plans.map(_.availableSymbols).mkString(" | "))
           //          println("Produced: " + selected.map(_.availableSymbols).mkString(" | "))
 

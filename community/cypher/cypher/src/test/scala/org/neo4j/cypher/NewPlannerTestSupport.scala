@@ -150,9 +150,11 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   def executeWithAllPlanners(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
+    val idpResult = innerExecute(s"CYPHER planner=idp $queryText", params: _*)
     val costResult = executeWithCostPlannerOnly(queryText, params: _*)
 
     assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")
+    assertResultsAreSame(idpResult, costResult, queryText, "Diverging results between IDP and greedy planner")
     ruleResult.close()
     costResult
   }
