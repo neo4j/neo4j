@@ -27,7 +27,7 @@ import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  test("path query should return results in written order") {
+  ignore("path query should return results in written order") {
     val a = createLabeledNode("label1")
     val b = createLabeledNode("label2")
     val r = relate(b, a)
@@ -38,7 +38,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.toList should equal(Seq(Map("p" -> List(PathImpl(a, r, b)))))
   }
 
-  test("Get node degree via length of pattern expression") {
+  ignore("Get node degree via length of pattern expression") {
     val node = createLabeledNode("X")
     relate(node, createNode())
     relate(node, createNode())
@@ -47,7 +47,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     executeScalarWithAllPlanners[Int]("MATCH (a:X) RETURN length(a-->())") should equal(3)
   }
 
-  test("Get node degree via length of pattern expression that specifies a relationship type") {
+  ignore("Get node degree via length of pattern expression that specifies a relationship type") {
     val node = createLabeledNode("X")
     relate(node, createNode())
     relate(node, createNode())
@@ -57,7 +57,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     executeScalarWithAllPlanners[Int]("MATCH (a:X) RETURN length(a-[:REL]->())") should equal(3)
   }
 
-  test("Get node degree via length of pattern expression that specifies multiple relationship types") {
+  ignore("Get node degree via length of pattern expression that specifies multiple relationship types") {
     val node = createLabeledNode("X")
     relate(node, createNode())
     relate(node, createNode())
@@ -67,7 +67,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     executeScalarWithAllPlanners[Int]("MATCH (a:X) RETURN length(a-[:REL|AFFE]->())") should equal(4)
   }
 
-  test("should be able to use multiple MATCH clauses to do a cartesian product") {
+  ignore("should be able to use multiple MATCH clauses to do a cartesian product") {
     createNode("value" -> 1)
     createNode("value" -> 2)
     createNode("value" -> 3)
@@ -78,7 +78,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     )
   }
 
-  test("should be able to use params in pattern matching predicates") {
+  ignore("should be able to use params in pattern matching predicates") {
     val n1 = createNode()
     val n2 = createNode()
     relate(n1, n2, "A", Map("foo" -> "bar"))
@@ -88,7 +88,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs("b").toList should equal (List(n2))
   }
 
-  test("should filter out based on node prop name") {
+  ignore("should filter out based on node prop name") {
     val name = "Andres"
     val start: Node = createNode()
     val a1: Node = createNode(Map("name" -> "Someone Else"))
@@ -102,13 +102,13 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs[Node]("a").toList should equal (List(a2))
   }
 
-  test("should honour the column name for RETURN items") {
+  ignore("should honour the column name for RETURN items") {
     val start: Node = createNode(Map("name" -> "Someone Else"))
     val result = executeWithAllPlanners(s"MATCH a WITH a.name AS a RETURN a")
     result.columnAs[String]("a").toList should equal (List("Someone Else"))
   }
 
-  test("should filter based on rel prop name") {
+  ignore("should filter based on rel prop name") {
     val start: Node = createNode()
     val a: Node = createNode()
     val b: Node = createNode()

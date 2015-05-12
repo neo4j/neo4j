@@ -43,7 +43,7 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream) ex
 
   private var query: String = null
   private var status: String = Result.PASSED
-  private val pattern: Regex = "running: (.*)".r
+  private val pattern: Regex = """running( parametrized)?: (.*)""".r
 
   override def done(): Unit = {
     jsonWriter.println(producer.dump())
@@ -56,7 +56,7 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream) ex
 
   override def step(step: Step) {
     if(step.getKeyword.trim == "When") {
-      val pattern(q) = step.getName
+      val pattern(_, q) = step.getName
       query = q
     }
   }
