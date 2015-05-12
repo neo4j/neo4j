@@ -86,7 +86,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             TransactionRepresentation representation = transaction.getTransactionRepresentation();
             try
             {
-                commitmentAccess.get().transactionCommitted();
+                commitmentAccess.get().publishAsCommitted();
                 try ( LockGroup locks = new LockGroup();
                       ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( representation, EXTERNAL ) )
                 {

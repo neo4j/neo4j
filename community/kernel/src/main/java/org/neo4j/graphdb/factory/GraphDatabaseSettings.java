@@ -377,7 +377,9 @@ public abstract class GraphDatabaseSettings
     @Description( "Relationship count threshold for considering a node to be dense" )
     public static final Setting<Integer> dense_node_threshold = setting( "dense_node_threshold", INTEGER, "50", min(1) );
 
+    @Deprecated
     @Description("Whether or not transactions are appended to the log in batches")
+    @Obsoleted( "Write batching can no longer be turned off" )
     public static final Setting<Boolean> batched_writes = setting( "batched_writes", BOOLEAN, Boolean.TRUE.toString() );
 
     @Description( "Log executed queries that takes longer than the configured threshold." )
