@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,30 +32,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.helpers.collection.CloseableVisitor;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.Recovery;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.LogFileRecoverer;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -75,7 +62,7 @@ import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 public class PhysicalLogicalTransactionStoreTest
 {
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction(); // new EphemeralFileSystemAbstraction()
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     @Rule
     public TargetDirectory.TestDirectory dir = testDirForTest( getClass() );
     private File testDir;
@@ -99,7 +86,7 @@ public class PhysicalLogicalTransactionStoreTest
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
                 transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
         life.add( new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, mock( KernelHealth.class ), true ) );
+                transactionIdStore, BYPASS, mock( KernelHealth.class ) ) );
 
         try
         {
@@ -169,7 +156,7 @@ public class PhysicalLogicalTransactionStoreTest
 
         PhysicalLogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile,
                 LogRotation.NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, mock( KernelHealth.class ), true );
+                transactionIdStore, BYPASS, mock( KernelHealth.class ) );
         life.add( store );
         life.add(new Recovery(new Recovery.SPI()
         {
@@ -269,7 +256,7 @@ public class PhysicalLogicalTransactionStoreTest
                 positionCache ) );
 
         LogicalTransactionStore store = life.add( new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION,
-                positionCache, transactionIdStore, BYPASS, mock( KernelHealth.class ), true ) );
+                positionCache, transactionIdStore, BYPASS, mock( KernelHealth.class ) ) );
 
         // WHEN
         life.start();
@@ -299,7 +286,7 @@ public class PhysicalLogicalTransactionStoreTest
         TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         LogicalTransactionStore txStore =
                 new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION, cache, txIdStore, BYPASS,
-                        mock( KernelHealth.class ), false );
+                        mock( KernelHealth.class ) );
 
         // WHEN
         try
@@ -325,7 +312,7 @@ public class PhysicalLogicalTransactionStoreTest
         cache.cacheTransactionMetadata( 10, new LogPosition( 2, 130 ), 1, 1, 100 );
         LogicalTransactionStore txStore =
                 new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION, cache, txIdStore, BYPASS,
-                        mock( KernelHealth.class ), false );
+                        mock( KernelHealth.class ) );
 
         // WHEN
           // we ask for that transaction and forward
@@ -348,7 +335,7 @@ public class PhysicalLogicalTransactionStoreTest
                                            byte[] additionalHeader, int masterId, int authorId, long timeStarted,
                                            long latestCommittedTxWhenStarted, long timeCommitted ) throws IOException
     {
-        TransactionAppender appender = new PhysicalTransactionAppender(
+        TransactionAppender appender = new BatchingTransactionAppender(
                 logFile, LogRotation.NO_ROTATION, positionCache, transactionIdStore, BYPASS,
                 mock( KernelHealth.class ) );
         PhysicalTransactionRepresentation transaction =

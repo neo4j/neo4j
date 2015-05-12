@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.LogRotationImpl;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -38,15 +40,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.BatchingPhysicalTransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
@@ -89,7 +82,7 @@ public class LogRotationDeadlockTest
                 rotationControl, health, NullLogProvider.getInstance() );
 
         // controlled batching transaction appender that will halt a committer
-        TransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, rotation,
+        TransactionAppender appender = new BatchingTransactionAppender( logFile, rotation,
                 new TransactionMetadataCache( 10, 10 ), txIdStore, mock( IdOrderingQueue.class ),
                 health )
         {

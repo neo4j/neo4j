@@ -45,7 +45,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
 import static org.neo4j.test.ThreadTestUtils.fork;
 
-public class BatchingPhysicalTransactionAppenderTest
+public class BatchingTransactionAppenderConcurrencyTest
 {
     private static enum ChannelCommand
     {
@@ -124,7 +124,7 @@ public class BatchingPhysicalTransactionAppenderTest
         when( logFile.getWriter() ).thenReturn( channel );
     }
 
-    private Runnable createForceAfterAppendRunnable( final BatchingPhysicalTransactionAppender appender )
+    private Runnable createForceAfterAppendRunnable( final BatchingTransactionAppender appender )
     {
         return new Runnable()
         {
@@ -146,7 +146,7 @@ public class BatchingPhysicalTransactionAppenderTest
     @Test
     public void shouldForceLogChannel() throws Exception
     {
-        BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, logRotation,
+        BatchingTransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
                 transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth );
 
         appender.forceAfterAppend( logAppendEvent );
@@ -165,7 +165,7 @@ public class BatchingPhysicalTransactionAppenderTest
         // The 'emptyBuffer...' command will be put into the queue, and then it'll block on 'force' because the queue
         // will be at capacity.
 
-        final BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, logRotation,
+        final BatchingTransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
                 transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth );
 
         Runnable runnable = createForceAfterAppendRunnable( appender );
@@ -195,7 +195,7 @@ public class BatchingPhysicalTransactionAppenderTest
         // The 'emptyBuffer...' command will be put into the queue, and then it'll block on 'force' because the queue
         // will be at capacity.
 
-        final BatchingPhysicalTransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, logRotation,
+        final BatchingTransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
                 transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth );
 
         Runnable runnable = createForceAfterAppendRunnable( appender );

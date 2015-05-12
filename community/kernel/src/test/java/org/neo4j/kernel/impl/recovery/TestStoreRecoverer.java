@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.recovery;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -39,11 +39,12 @@ import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionAppender;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -114,8 +115,11 @@ public class TestStoreRecoverer
 
         try
         {
-            TransactionAppender appender = new PhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION, positionCache,
-                    transactionIdStore, null, mock( KernelHealth.class ) );
+            PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFile,
+                    LogRotation.NO_ROTATION, positionCache, transactionIdStore, IdOrderingQueue.BYPASS,
+                    mock( KernelHealth.class ) );
+            life.add( transactionStore );
+            TransactionAppender appender = transactionStore.getAppender();
             appender.append( singleNodeTransaction(), LogAppendEvent.NULL );
         }
         finally

@@ -43,16 +43,18 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     private final LogFile logFile;
     private final LogRotation logRotation;
     private final TransactionMetadataCache transactionMetadataCache;
-    private TransactionAppender appender;
     private final TransactionIdStore transactionIdStore;
-    private final boolean batchedWrites;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
     private final KernelHealth kernelHealth;
+    private TransactionAppender appender;
 
-    public PhysicalLogicalTransactionStore( LogFile logFile, LogRotation logRotation,
+    public PhysicalLogicalTransactionStore(
+            LogFile logFile,
+            LogRotation logRotation,
             TransactionMetadataCache transactionMetadataCache,
-            TransactionIdStore transactionIdStore, IdOrderingQueue legacyIndexTransactionOrdering,
-            KernelHealth kernelHealth, boolean batchedWrites )
+            TransactionIdStore transactionIdStore,
+            IdOrderingQueue legacyIndexTransactionOrdering,
+            KernelHealth kernelHealth )
     {
         this.logFile = logFile;
         this.logRotation = logRotation;
@@ -60,17 +62,14 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
         this.transactionIdStore = transactionIdStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         this.kernelHealth = kernelHealth;
-        this.batchedWrites = batchedWrites;
     }
 
     @Override
     public void start() throws Throwable
     {
-        this.appender = batchedWrites ?
-                new BatchingPhysicalTransactionAppender( logFile, logRotation, transactionMetadataCache, transactionIdStore,
-                        legacyIndexTransactionOrdering, kernelHealth ) :
-                new PhysicalTransactionAppender( logFile, logRotation,
-                        transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering, kernelHealth );
+        // We can't open the appender until 'start()' because the LogFile needs recovery to have completed first.
+        this.appender = new BatchingTransactionAppender( logFile, logRotation, transactionMetadataCache,
+                transactionIdStore, legacyIndexTransactionOrdering, kernelHealth );
     }
 
     @Override
