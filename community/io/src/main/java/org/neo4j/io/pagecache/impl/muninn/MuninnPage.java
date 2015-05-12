@@ -326,7 +326,7 @@ final class MuninnPage extends StampedLock implements Page
             while ( read != -1 && (readTotal += read) < length );
 
             // Zero-fill the rest.
-            UnsafeUtil.setMemory( pointer + readTotal, getCachePageSize() - readTotal, (byte) 0 );
+            UnsafeUtil.setMemory( pointer + readTotal, length - readTotal, (byte) 0 );
             return readTotal;
         }
         catch ( ClosedChannelException e )
