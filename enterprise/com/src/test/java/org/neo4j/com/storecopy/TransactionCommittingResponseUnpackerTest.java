@@ -19,11 +19,11 @@
  */
 package org.neo4j.com.storecopy;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
@@ -76,7 +76,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
@@ -340,7 +339,7 @@ public class TransactionCommittingResponseUnpackerTest
         LogRotation logRotation = LogRotation.NO_ROTATION;
         LogicalTransactionStore logicalTransactionStore = life.add( new PhysicalLogicalTransactionStore( logFile,
                 logRotation, transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS,
-                health, true ) );
+                health ) );
         IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
                 any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );

@@ -62,51 +62,14 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
     {
         try ( ValidatedIndexUpdates indexUpdates = validateIndexUpdates( transaction ) )
         {
-            // serialise commands to the log
-            long transactionId = commitTransaction( transaction, commitEvent );
-            commitEvent.setTransactionId( transactionId );
-
-            // apply changes to the store
-            try ( StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply() )
-            {
-                storeApplier.apply( transaction, indexUpdates, locks, transactionId, mode );
-            }
-            // TODO catch different types of exceptions here, some which are OK
-            catch ( Throwable e )
-            {
-                throw exception( CouldNotCommit, e,
-                        "Could not apply the transaction to the store after written to log" );
-            }
-            finally
-            {
-                transactionIdStore.transactionClosed( transactionId );
-            }
-
+            long transactionId = appendToLog( transaction, commitEvent );
+            applyToStore( transaction, locks, commitEvent, indexUpdates, transactionId );
             return transactionId;
         }
     }
 
-    private TransactionFailureException exception( Status status, Throwable cause, String message )
-    {
-        kernelHealth.panic( cause );
-        return new TransactionFailureException( status, cause, message );
-    }
-
-    private long commitTransaction( TransactionRepresentation tx, CommitEvent commitEvent ) throws TransactionFailureException
-    {
-        try ( LogAppendEvent logAppendEvent = commitEvent.beginLogAppend() )
-        {
-            return logicalTransactionStore.getAppender().append( tx, logAppendEvent );
-        }
-        catch ( Throwable e )
-        {
-            throw exception( Status.Transaction.CouldNotWriteToLog, e,
-                    "Could not append transaction representation to log" );
-        }
-    }
-
-    private ValidatedIndexUpdates validateIndexUpdates( TransactionRepresentation transaction )
-            throws TransactionFailureException
+    private ValidatedIndexUpdates validateIndexUpdates(
+            TransactionRepresentation transaction ) throws TransactionFailureException
     {
         try
         {
@@ -116,5 +79,48 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         {
             throw new TransactionFailureException( ValidationFailed, e, "Validation of index updates failed" );
         }
+    }
+
+    private long appendToLog(
+            TransactionRepresentation transaction, CommitEvent commitEvent ) throws TransactionFailureException
+    {
+        long transactionId;
+        try ( LogAppendEvent logAppendEvent = commitEvent.beginLogAppend() )
+        {
+            transactionId = logicalTransactionStore.getAppender().append( transaction, logAppendEvent );
+        }
+        catch ( Throwable e )
+        {
+            throw exception( Status.Transaction.CouldNotWriteToLog, e,
+                    "Could not append transaction representation to log" );
+        }
+        commitEvent.setTransactionId( transactionId );
+        return transactionId;
+    }
+
+    private void applyToStore(
+            TransactionRepresentation transaction, LockGroup locks, CommitEvent commitEvent,
+            ValidatedIndexUpdates indexUpdates, long transactionId ) throws TransactionFailureException
+    {
+        try ( StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply() )
+        {
+            storeApplier.apply( transaction, indexUpdates, locks, transactionId, mode );
+        }
+        // TODO catch different types of exceptions here, some which are OK
+        catch ( Throwable e )
+        {
+            throw exception( CouldNotCommit, e,
+                    "Could not apply the transaction to the store after written to log" );
+        }
+        finally
+        {
+            transactionIdStore.transactionClosed( transactionId );
+        }
+    }
+
+    private TransactionFailureException exception( Status status, Throwable cause, String message )
+    {
+        kernelHealth.panic( cause );
+        return new TransactionFailureException( status, cause, message );
     }
 }
