@@ -40,7 +40,7 @@ public interface RecordStream extends AutoCloseable
         void visit( Record record ) throws Exception;
     }
 
-    public static RecordStream EMPTY = new RecordStream()
+    RecordStream EMPTY = new RecordStream()
     {
         private final String[] nothing = new String[0];
 

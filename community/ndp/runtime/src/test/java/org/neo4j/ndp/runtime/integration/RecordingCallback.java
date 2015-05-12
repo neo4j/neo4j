@@ -30,10 +30,11 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.StatementMetadata;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
+import org.neo4j.stream.ImmutableRecord;
 import org.neo4j.stream.Record;
 import org.neo4j.stream.RecordStream;
 
-public class RecordingCallback<V, A> implements Session.Callback<V, A>
+public class RecordingCallback<V, A> implements Session.Callback<V,A>
 {
     private final BlockingQueue<Call> calls = new ArrayBlockingQueue<>( 64 );
 
@@ -227,9 +228,9 @@ public class RecordingCallback<V, A> implements Session.Callback<V, A>
             @Override
             public void visit( Record record )
             {
-                values.add( record.copy() );
+                values.add( new ImmutableRecord( record.fields() ) );
             }
         } );
-        return values.toArray(new Record[values.size()]);
+        return values.toArray( new Record[values.size()] );
     }
 }

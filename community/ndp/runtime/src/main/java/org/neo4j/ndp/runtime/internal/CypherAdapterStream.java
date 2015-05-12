@@ -76,26 +76,6 @@ public class CypherAdapterStream implements RecordStream
             return fields;
         }
 
-        @Override
-        public Record copy()
-        {
-            final Object[] clone = fields.clone();
-            return new Record()
-            {
-                @Override
-                public Object[] fields()
-                {
-                    return clone;
-                }
-
-                @Override
-                public Record copy()
-                {
-                    return this; // This is immutable, so no reason to copy it
-                }
-            };
-        }
-
         public CypherAdapterRecord reset( Map<String,Object> cypherRecord )
         {
             for ( int i = 0; i < fields.length; i++ )

@@ -23,7 +23,4 @@ public interface Record
 {
     /* Implementation note: This should use Neo4jValue, or some such interface that denotes Neo4j-specific types */
     Object[] fields();
-
-    /** Create a deep copy of this record, optional operation */
-    Record copy();
 }
