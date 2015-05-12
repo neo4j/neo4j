@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
@@ -40,7 +41,6 @@ import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
@@ -104,7 +104,6 @@ public class SwitchToSlave
             IndexConfigStore.class,
             OnlineBackupKernelExtension.class,
     };
-    private final LogService logService;
 
     public interface Monitor
     {
@@ -120,6 +119,9 @@ public class SwitchToSlave
 
     private static final int VERSION_CHECK_TIMEOUT = 10;
 
+    private final LogService logService;
+    private final FileSystemAbstraction fs;
+    private final File storeDir;
     private final Log userLog;
     private final Log msgLog;
     private final Config config;
@@ -135,7 +137,7 @@ public class SwitchToSlave
     private final StoreCopyClient.Monitor storeCopyMonitor;
     private final Monitor monitor;
 
-    public SwitchToSlave( LogService logService, Config config, DependencyResolver resolver,
+    public SwitchToSlave( LogService logService, FileSystemAbstraction fs, File storeDir, Config config, DependencyResolver resolver,
             HaIdGeneratorFactory idGeneratorFactory,
             DelegateInvocationHandler<Master> masterDelegateHandler,
             ClusterMemberAvailability clusterMemberAvailability,
@@ -146,6 +148,8 @@ public class SwitchToSlave
     {
         this.logService = logService;
         this.userLog = logService.getUserLog( getClass() );
+        this.fs = fs;
+        this.storeDir = storeDir;
         this.config = config;
         this.resolver = resolver;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -244,7 +248,7 @@ public class SwitchToSlave
 
     private void copyStoreFromMasterIfNeeded( URI masterUri, CancellationRequest cancellationRequest ) throws Throwable
     {
-        if ( !isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config ) )
+        if ( !isStorePresent( fs, storeDir ) )
         {
             boolean success = false;
             monitor.storeCopyStarted();
@@ -472,7 +476,7 @@ public class SwitchToSlave
 
         // This will move the copied db to the graphdb location
         userLog.info( "Copying store from master" );
-        new StoreCopyClient( config, kernelExtensions, logService.getUserLogProvider(), fs, pageCache, storeCopyMonitor ).copyStore(
+        new StoreCopyClient( storeDir, config, kernelExtensions, logService.getUserLogProvider(), fs, pageCache, storeCopyMonitor ).copyStore(
                 new StoreCopyClient.StoreCopyRequester()
                 {
                     @Override
@@ -519,7 +523,7 @@ public class SwitchToSlave
             resolver.resolveDependency( serviceClass ).stop();
         }
 
-        branchPolicy.handle( config.get( CommunityFacadeFactory.Configuration.store_dir ) );
+        branchPolicy.handle( storeDir );
     }
 
     private void checkDataConsistencyWithMaster( URI availableMasterId, Master master,

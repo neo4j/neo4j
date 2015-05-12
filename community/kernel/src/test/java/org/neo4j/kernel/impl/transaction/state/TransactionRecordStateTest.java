@@ -272,8 +272,8 @@ public class TransactionRecordStateTest
     {
         File storeDir = new File( "dir" );
         fsr.get().mkdirs( storeDir );
-        Config configuration = StoreFactory.configForStoreDir( new Config( stringMap( config ) ), storeDir );
-        StoreFactory storeFactory = new StoreFactory( configuration, new DefaultIdGeneratorFactory(),
+        Config configuration = new Config( stringMap( config ) );
+        StoreFactory storeFactory = new StoreFactory( storeDir, configuration, new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fsr.get() ),
                 fsr.get(), NullLogProvider.getInstance(), new Monitors() );
         return cleanup.add( storeFactory.newNeoStore( true ) );

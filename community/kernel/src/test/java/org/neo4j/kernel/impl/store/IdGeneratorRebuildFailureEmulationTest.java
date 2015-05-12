@@ -61,8 +61,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
-
 @RunWith(Suite.class)
 @SuiteClasses({IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class})
 public class IdGeneratorRebuildFailureEmulationTest
@@ -81,10 +79,9 @@ public class IdGeneratorRebuildFailureEmulationTest
     @BreakpointTrigger
     private void performTest() throws Exception
     {
-        String file = storeDir + File.separator + Thread.currentThread().getStackTrace()[2].getMethodName().replace(
-                '_', '.' );
+        File idFile = new File( storeDir, Thread.currentThread().getStackTrace()[2].getMethodName().replace( '_', '.' ) + ".id" );
         // emulate the need for rebuilding id generators by deleting it
-        fs.deleteFile( new File( file + ".id") );
+        fs.deleteFile( idFile );
         NeoStore neostore = null;
         try
         {
@@ -114,7 +111,7 @@ public class IdGeneratorRebuildFailureEmulationTest
 
     private FileSystem fs;
     private StoreFactory factory;
-    private final String storeDir = new File( "dir" ).getAbsolutePath();
+    private final File storeDir = new File( "dir" ).getAbsoluteFile();
 
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
@@ -129,8 +126,9 @@ public class IdGeneratorRebuildFailureEmulationTest
         Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
         Monitors monitors = new Monitors();
-        Config config = configForStoreDir( new Config( params, GraphDatabaseSettings.class ), new File( storeDir ) );
+        Config config = new Config( params, GraphDatabaseSettings.class );
         factory = new StoreFactory(
+                storeDir,
                 config,
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs ),
@@ -239,20 +237,20 @@ public class IdGeneratorRebuildFailureEmulationTest
     @SuppressWarnings("deprecation")
     private class Database extends ImpermanentGraphDatabase
     {
-        public Database( String storeDir )
+        public Database( File storeDir )
         {
             super( storeDir );
         }
 
         @Override
-        protected void create( Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+        protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
             new CommunityFacadeFactory()
             {
                 @Override
-                protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                 {
-                    return new ImpermanentPlatformModule( params, dependencies, graphDatabaseFacade )
+                    return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
                     {
                         @Override
                         protected FileSystemAbstraction createFileSystemAbstraction()
@@ -261,7 +259,7 @@ public class IdGeneratorRebuildFailureEmulationTest
                         }
                     };
                 }
-            }.newFacade( params, dependencies, this );
+            }.newFacade( storeDir, params, dependencies, this );
         }
 
     }

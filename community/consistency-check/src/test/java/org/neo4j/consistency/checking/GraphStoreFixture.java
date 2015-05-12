@@ -29,7 +29,6 @@ import java.util.Collection;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -41,7 +40,6 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
@@ -69,7 +67,6 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
-import static java.util.Collections.singletonMap;
 
 public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
 {
@@ -90,7 +87,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             directStoreAccess = new DirectStoreAccess(
                     nativeStores,
                     new LuceneLabelScanStoreBuilder(
-                            directory().getAbsolutePath(),
+                            directory,
                             nativeStores.getRawNeoStore(),
                             fileSystem,
                             FormattedLogProvider.toOutputStream( System.out )
@@ -103,14 +100,12 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
     private SchemaIndexProvider createIndexes()
     {
-        Config config = new Config( singletonMap( GraphDatabaseSettings.store_dir.name(),
-                directory().getAbsolutePath() ) );
-        return new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, config );
+        return new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, directory );
     }
 
     public File directory()
     {
-        return new File( directory );
+        return directory;
     }
 
     public static abstract class Transaction
@@ -318,7 +313,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
     protected abstract void generateInitialData( GraphDatabaseService graphDb );
 
-    protected void start( @SuppressWarnings("UnusedParameters") String storeDir )
+    protected void start( @SuppressWarnings("UnusedParameters") File storeDir )
     {
         // allow for override
     }
@@ -376,7 +371,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         }
     }
 
-    private String directory;
+    private File directory;
     private long schemaId;
     private long nodeId;
     private int labelId;
@@ -425,7 +420,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             @Override
             public void evaluate() throws Throwable
             {
-                GraphStoreFixture.this.directory = directory.directory().getAbsolutePath();
+                GraphStoreFixture.this.directory = directory.graphDbDir();
                 try
                 {
                     generateInitialData();

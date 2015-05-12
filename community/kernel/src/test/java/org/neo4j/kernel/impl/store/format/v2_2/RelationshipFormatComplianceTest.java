@@ -64,7 +64,7 @@ public class RelationshipFormatComplianceTest
     public void setup()
     {
         pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        storeFactory = new StoreFactory( StoreFactory.configForStoreDir( new Config(), storeDir ), new DefaultIdGeneratorFactory(), pageCache, fsRule.get(), NullLogProvider.getInstance(), new Monitors() );
+        storeFactory = new StoreFactory( storeDir, new Config(), new DefaultIdGeneratorFactory(), pageCache, fsRule.get(), NullLogProvider.getInstance(), new Monitors() );
     }
 
     @Test

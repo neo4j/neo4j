@@ -137,7 +137,7 @@ public class KernelRecoveryTest
         fs.mkdirs( storeDir );
         return new TestGraphDatabaseFactory()
                     .setFileSystem( fs )
-                    .newImpermanentDatabase( storeDir.getAbsolutePath() );
+                    .newImpermanentDatabase( storeDir );
     }
 
     private long createNode( GraphDatabaseService db )

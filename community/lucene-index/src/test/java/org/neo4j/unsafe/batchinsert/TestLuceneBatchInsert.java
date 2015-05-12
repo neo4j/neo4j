@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -70,7 +71,6 @@ import static org.neo4j.index.impl.lucene.Contains.contains;
 import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
 import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG;
 import static org.neo4j.index.lucene.ValueContext.numeric;
-import static org.neo4j.unsafe.batchinsert.BatchInserters.inserter;
 
 public class TestLuceneBatchInsert
 {
@@ -511,7 +511,7 @@ public class TestLuceneBatchInsert
         }
     }
 
-    private final String storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath();
+    private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsoluteFile();
     private BatchInserter inserter;
     private GraphDatabaseService db;
 
@@ -521,7 +521,7 @@ public class TestLuceneBatchInsert
     {
         Iterable filteredKernelExtensions = filter( onlyRealLuceneExtensions(),
                 Service.load( KernelExtensionFactory.class ) );
-        inserter = inserter( storeDir, new DefaultFileSystemAbstraction(), stringMap(),
+        inserter = BatchInserters.inserter( storeDir, new DefaultFileSystemAbstraction(), stringMap(),
                 filteredKernelExtensions );
     }
 

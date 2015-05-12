@@ -109,7 +109,7 @@ public abstract class AbstractNeo4jTestCase
         {
             try
             {
-                FileUtils.deleteRecursively( new File( getStorePath( "neo-test" ) ) );
+                FileUtils.deleteRecursively( getStorePath( "neo-test" ) );
             }
             catch ( IOException e )
             {
@@ -137,9 +137,9 @@ public abstract class AbstractNeo4jTestCase
         return tx;
     }
 
-    public static String getStorePath( String endPath )
+    public static File getStorePath( String endPath )
     {
-        return new File( NEO4J_BASE_DIR, currentTestClassName.get() + "-" + endPath ).getAbsolutePath();
+        return new File( NEO4J_BASE_DIR, currentTestClassName.get() + "-" + endPath ).getAbsoluteFile();
     }
 
     @Before

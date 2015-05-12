@@ -89,17 +89,15 @@ public class ExternallyManagedPageCache implements PageCache
         return new GraphDatabaseFactory()
         {
             @Override
-            protected GraphDatabaseService newDatabase( String path, Map<String,String> config,
+            protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
                                                         GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
-                config.put( GraphDatabaseFacadeFactory.Configuration.store_dir.name(), path );
-
                 return new CommunityFacadeFactory()
                 {
                     @Override
-                    protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                     {
-                        return new PlatformModule( params, dependencies, graphDatabaseFacade )
+                        return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
                         {
 
                             @Override
@@ -109,7 +107,7 @@ public class ExternallyManagedPageCache implements PageCache
                             }
                         };
                     }
-                }.newFacade( config, dependencies );
+                }.newFacade( storeDir, config, dependencies );
             }
         };
     }

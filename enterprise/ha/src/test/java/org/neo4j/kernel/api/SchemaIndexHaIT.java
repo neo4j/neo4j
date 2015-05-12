@@ -61,6 +61,7 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -549,18 +550,18 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public Lifecycle newKernelExtension( SchemaIndexHaIT.IndexProviderDependencies deps ) throws Throwable
+        public Lifecycle newInstance( KernelContext context, SchemaIndexHaIT.IndexProviderDependencies deps ) throws Throwable
         {
             if(injectLatchPredicate.test( deps.db() ))
             {
                 ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider(
-                        new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, deps.config() ) );
+                        new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, context.storeDir() ) );
                 perDbIndexProvider.put( deps.db(), provider );
                 return provider;
             }
             else
             {
-                return new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, deps.config() );
+                return new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, context.storeDir() );
             }
         }
     }

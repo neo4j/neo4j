@@ -32,6 +32,7 @@ import java.util.Properties;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -63,7 +64,6 @@ import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
 import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
 import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
-import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class CommunityServerBuilder
@@ -81,8 +81,10 @@ public class CommunityServerBuilder
     public static LifecycleManagingDatabase.GraphFactory IN_MEMORY_DB = new LifecycleManagingDatabase.GraphFactory()
     {
         @Override
-        public GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+        public GraphDatabaseAPI newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
+            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
+            Map<String, String> params = config.getParams();
             params.put( CommunityFacadeFactory.Configuration.ephemeral.name(), "true" );
             return new ImpermanentGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(dependencies) );
         }
@@ -472,7 +474,7 @@ public class CommunityServerBuilder
 
         private TestCommunityNeoServer( ConfigurationBuilder propertyFileConfigurator, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
         {
-            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? EMBEDDED : IN_MEMORY_DB ), dependencies, logProvider );
+            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? COMMUNITY_FACTORY : IN_MEMORY_DB ), dependencies, logProvider );
             this.configFile = configFile;
         }
 

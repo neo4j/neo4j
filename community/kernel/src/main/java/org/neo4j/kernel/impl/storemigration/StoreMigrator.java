@@ -338,7 +338,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
 
         Configuration importConfig = new Configuration.Overridden( config );
-        BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
+        BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
                 importConfig, logService.getInternalLogProvider(), withDynamicProcessorAssignment( migrationBatchImporterMonitor(
                         legacyStore, progressMonitor ), importConfig ),
                 parallel(), readAdditionalIds( storeDir, lastTxId, lastTxChecksum ) );
@@ -457,7 +457,8 @@ public class StoreMigrator implements StoreMigrationParticipant
     private StoreFactory storeFactory( PageCache pageCache, File migrationDir )
     {
         return new StoreFactory(
-                StoreFactory.configForStoreDir( config, migrationDir ),
+                migrationDir,
+                new Config(),
                 new DefaultIdGeneratorFactory(), pageCache,
                 fileSystem, NullLogProvider.getInstance(), new Monitors() );
     }

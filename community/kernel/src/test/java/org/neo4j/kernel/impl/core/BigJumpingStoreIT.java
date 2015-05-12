@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +62,7 @@ import static org.neo4j.kernel.impl.core.BigStoreIT.assertProperties;
 public class BigJumpingStoreIT
 {
     private static final int SIZE_PER_JUMP = 1000;
-    private static final String PATH = "target/var/bigjump";
+    private static final File PATH = new File( "target/var/bigjump" );
     private static final RelationshipType TYPE = DynamicRelationshipType.withName( "KNOWS" );
     private static final RelationshipType TYPE2 = DynamicRelationshipType.withName( "DROP_KICKS" );
     private GraphDatabaseService db;
@@ -73,9 +74,9 @@ public class BigJumpingStoreIT
         db = new CommunityFacadeFactory()
         {
             @Override
-            protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
-                return new PlatformModule( params, dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
                 {
                     protected FileSystemAbstraction createFileSystemAbstraction()
                     {
@@ -96,7 +97,7 @@ public class BigJumpingStoreIT
                     }
                 };
             }
-        }.newFacade( config(), GraphDatabaseDependencies.newDependencies() );
+        }.newFacade( PATH, config(), GraphDatabaseDependencies.newDependencies() );
     }
 
     private Map<String, String> config()

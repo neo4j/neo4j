@@ -59,7 +59,7 @@ public class ConstraintRecoveryIT
         // given
         final EphemeralFileSystemAbstraction fs = fileSystemRule.get();
         fs.mkdir( new File("/tmp") );
-        String pathToDb = "/tmp/bar2";
+        File pathToDb = new File( "/tmp/bar2" );
 
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
         dbFactory.setFileSystem( fs );

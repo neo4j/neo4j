@@ -68,7 +68,7 @@ public class RrdFactoryTest
     public void setUp() throws IOException
     {
         db = new WrappedDatabase( new ImpermanentGraphDatabase(
-                TargetDirectory.forTest( getClass() ).cleanDirectory( "rrd" ).getAbsolutePath()) );
+                TargetDirectory.forTest( getClass() ).cleanDirectory( "rrd" ) ) );
         config = new Config();
     }
 

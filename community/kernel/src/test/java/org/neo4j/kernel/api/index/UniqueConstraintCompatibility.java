@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.io.File;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -1002,7 +1003,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     @Before
     public void setUp() {
-        String storeDir = testDirectory.absolutePath();
+        File storeDir = testDirectory.graphDbDir();
         TestGraphDatabaseFactory dbfactory = new TestGraphDatabaseFactory();
         dbfactory.addKernelExtension( new PredefinedSchemaIndexProviderFactory( indexProvider ) );
         db = dbfactory.newImpermanentDatabase( storeDir );

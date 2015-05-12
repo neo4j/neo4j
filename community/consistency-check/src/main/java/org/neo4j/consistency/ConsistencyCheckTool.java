@@ -96,8 +96,8 @@ public class ConsistencyCheckTool
     void run( String... args ) throws ToolFailureException, IOException
     {
         Args arguments = Args.withFlags( RECOVERY, PROP_OWNER ).parse( args );
-        String storeDir = determineStoreDirectory( arguments );
-        Config tuningConfiguration = readTuningConfiguration( storeDir, arguments );
+        File storeDir = determineStoreDirectory( arguments );
+        Config tuningConfiguration = readTuningConfiguration( arguments );
 
         attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir );
 
@@ -113,7 +113,7 @@ public class ConsistencyCheckTool
         }
     }
 
-    private void attemptRecoveryOrCheckStateOfLogicalLogs( Args arguments, String storeDir )
+    private void attemptRecoveryOrCheckStateOfLogicalLogs( Args arguments, File storeDir )
     {
         if ( arguments.getBoolean( RECOVERY, false, true ) )
         {
@@ -123,7 +123,7 @@ public class ConsistencyCheckTool
         {
             try
             {
-                if ( recoveryChecker.recoveryNeededAt( new File( storeDir ) ) )
+                if ( recoveryChecker.recoveryNeededAt( storeDir ) )
                 {
                     systemError.print( lines(
                             "Active logical log detected, this might be a source of inconsistencies.",
@@ -141,22 +141,22 @@ public class ConsistencyCheckTool
         }
     }
 
-    private String determineStoreDirectory( Args arguments ) throws ToolFailureException
+    private File determineStoreDirectory( Args arguments ) throws ToolFailureException
     {
         List<String> unprefixedArguments = arguments.orphans();
         if ( unprefixedArguments.size() != 1 )
         {
             throw new ToolFailureException( usage() );
         }
-        String storeDir = unprefixedArguments.get( 0 );
-        if ( !new File( storeDir ).isDirectory() )
+        File storeDir = new File( unprefixedArguments.get( 0 ) );
+        if ( !storeDir.isDirectory() )
         {
             throw new ToolFailureException( lines( String.format( "'%s' is not a directory", storeDir ) ) + usage() );
         }
         return storeDir;
     }
 
-    private Config readTuningConfiguration( String storeDir, Args arguments ) throws ToolFailureException
+    private Config readTuningConfiguration( Args arguments ) throws ToolFailureException
     {
         Map<String,String> specifiedProperties = stringMap();
 
@@ -174,7 +174,6 @@ public class ConsistencyCheckTool
                         propertyFilePath ), e );
             }
         }
-        specifiedProperties.put( GraphDatabaseSettings.store_dir.name(), storeDir );
         return new Config( specifiedProperties, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 

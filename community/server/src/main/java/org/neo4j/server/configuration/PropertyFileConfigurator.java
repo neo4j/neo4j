@@ -57,8 +57,6 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
 
         serverConfig = new Config( serverProperties );
         setServerSettingsClasses( serverConfig );
-
-        overrideStoreDirPropertyFromServerToDatabase();
     }
 
     public static void setServerSettingsClasses( Config config )
@@ -147,17 +145,4 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
             serverProperties = new HashMap<>();
         }
     }
-
-    private void overrideStoreDirPropertyFromServerToDatabase()
-    {
-        // Always override the store dir property
-        // use the user defined or rely on the default value
-
-        // TODO Should use the same key if they represent the same thing.
-        // warning: db_location key used by GraphDatabaseSettings and store_dir key used by NeoServerSettings are
-        // different.
-        String db_location = serverConfig.get( ServerInternalSettings.legacy_db_location ).getAbsolutePath();
-        databaseTuningProperties.put( GraphDatabaseSettings.store_dir.name(), db_location );
-    }
-
 }

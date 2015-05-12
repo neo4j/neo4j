@@ -149,9 +149,9 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         this.configurator = configurator;
         this.logProvider = logProvider;
-        this.dbConfig = new Config();
         this.log = logProvider.getLog( getClass() );
 
+        this.dbConfig = new Config();
         this.database = life.add( dependencyResolver.satisfyDependency(dbFactory.newDatabase( dbConfig, dependencies)) );
 
         FileUserRepository users = life.add( new FileUserRepository( configurator.configuration().get( ServerInternalSettings.auth_store ).toPath(), logProvider ) );
@@ -186,7 +186,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
             try
             {
-                reloadConfigFromDisk();
+                this.dbConfig.applyChanges( reloadConfigFromDisk() );
 
                 life.start();
 
@@ -244,15 +244,14 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
-    private void reloadConfigFromDisk()
+    private Map<String, String> reloadConfigFromDisk()
     {
         Map<String, String> result = new HashMap<>( configurator.getDatabaseTuningProperties() );
-        result.put( GraphDatabaseSettings.store_dir.name(), configurator.configuration()
-                .get( ServerInternalSettings.legacy_db_location ).getAbsolutePath() );
+        result.put( ServerInternalSettings.legacy_db_location.name(),
+                configurator.configuration().get( ServerInternalSettings.legacy_db_location ).getAbsolutePath() );
 
         putIfAbsent( result, ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
-
-        dbConfig.applyChanges( result );
+        return result;
     }
 
     private void putIfAbsent( Map<String, String> databaseProperties, String configKey, String configValue )

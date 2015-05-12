@@ -27,9 +27,9 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 
 public class LuceneKernelExtensions
 {
-    public static DirectoryFactory directoryFactory( Config config, FileSystemAbstraction fileSystem )
+    public static DirectoryFactory directoryFactory( boolean ephemeral, FileSystemAbstraction fileSystem )
     {
-        if ( config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral ) )
+        if ( ephemeral )
         {
             return fileSystem.getOrCreateThirdPartyFileSystem( DirectoryFactory.class, IN_MEMORY_FACTORY );
         }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -54,7 +55,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return newImpermanentDatabaseBuilder().newGraphDatabase();
     }
 
-    public GraphDatabaseService newImpermanentDatabase( String storeDir )
+    public GraphDatabaseService newImpermanentDatabase( File storeDir )
     {
         return newImpermanentDatabaseBuilder( storeDir ).newGraphDatabase();
     }
@@ -135,7 +136,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return (TestGraphDatabaseFactory) super.addKernelExtension( newKernelExtension );
     }
 
-    public GraphDatabaseBuilder newImpermanentDatabaseBuilder( final String storeDir )
+    public GraphDatabaseBuilder newImpermanentDatabaseBuilder( final File storeDir )
     {
         final TestGraphDatabaseFactoryState state = getStateCopy();
         GraphDatabaseBuilder.DatabaseCreator creator =
@@ -151,7 +152,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return new TestGraphDatabaseBuilder( creator );
     }
 
-    protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( final String storeDir,
+    protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( final File storeDir,
                                                                                      final TestGraphDatabaseFactoryState state )
     {
         return new GraphDatabaseBuilder.DatabaseCreator()
@@ -160,13 +161,12 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             @SuppressWarnings("deprecation")
             public GraphDatabaseService newDatabase( Map<String, String> config )
             {
-                config.put(GraphDatabaseSettings.store_dir.name(), storeDir);
                 return new CommunityFacadeFactory()
                 {
                     @Override
-                    protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                     {
-                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( params, dependencies, graphDatabaseFacade )
+                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()
@@ -210,7 +210,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 
                         };
                     }
-                }.newFacade( config, GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
+                }.newFacade( storeDir, config, GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
             }
         };
     }

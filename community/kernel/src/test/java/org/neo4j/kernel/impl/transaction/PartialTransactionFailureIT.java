@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
@@ -71,18 +72,18 @@ public class PartialTransactionFailureIT
                 "org.neo4j.kernel.impl.nioneo.xa.Command$RelationshipCommand" );
         adversary.disable();
 
-        String storeDir = dir.directory().getAbsolutePath();
+        File storeDir = dir.graphDbDir();
         final EmbeddedGraphDatabase db = new TestEmbeddedGraphDatabase( storeDir, stringMap() )
         {
             @Override
-            protected void create( Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+            protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
                 new CommunityFacadeFactory()
                 {
                     @Override
-                    protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                     {
-                        return new PlatformModule( params, dependencies, graphDatabaseFacade )
+                        return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()
@@ -91,7 +92,7 @@ public class PartialTransactionFailureIT
                             }
                         };
                     }
-                }.newFacade( params, dependencies, this );
+                }.newFacade( storeDir, params, dependencies, this );
             }
         };
 
@@ -209,7 +210,7 @@ public class PartialTransactionFailureIT
 
     private static class TestEmbeddedGraphDatabase extends EmbeddedGraphDatabase
     {
-        public TestEmbeddedGraphDatabase( String storeDir, Map<String, String> params )
+        public TestEmbeddedGraphDatabase( File storeDir, Map<String, String> params )
         {
             super( storeDir,
                     params,

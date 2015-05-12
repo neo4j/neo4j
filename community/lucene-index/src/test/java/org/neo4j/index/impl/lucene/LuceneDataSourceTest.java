@@ -48,16 +48,12 @@ public class LuceneDataSourceTest
 {
     private IndexConfigStore indexStore;
     private LuceneDataSource dataSource;
-    File dbPath = getDbPath();
-
-    private File getDbPath()
-    {
-        return new File("target/var/datasource" + System.currentTimeMillis());
-    }
+    private File dbPath;
 
     @Before
     public void setup()
     {
+        dbPath = new File( "target/var/datasource" + System.currentTimeMillis() );
         dbPath.mkdirs();
         indexStore = new IndexConfigStore( dbPath, new DefaultFileSystemAbstraction() );
         addIndex( "foo" );
@@ -83,8 +79,11 @@ public class LuceneDataSourceTest
     @Test
     public void testShouldReturnIndexWriterFromLRUCache() throws InstantiationException
     {
-        Config config = new Config( config(), GraphDatabaseSettings.class );
-        dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction());
+        Config config = new Config(
+                MapUtil.stringMap(),
+                GraphDatabaseSettings.class
+        );
+        dataSource = new LuceneDataSource( dbPath, config, indexStore, new DefaultFileSystemAbstraction());
         dataSource.start();
         IndexIdentifier identifier = identifier( "foo" );
         IndexWriter writer = dataSource.getIndexSearcher( identifier ).getWriter();
@@ -94,8 +93,11 @@ public class LuceneDataSourceTest
     @Test
     public void testShouldReturnIndexSearcherFromLRUCache() throws InstantiationException, IOException
     {
-        Config config = new Config( config(), GraphDatabaseSettings.class );
-        dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() );
+        Config config = new Config(
+                MapUtil.stringMap(),
+                GraphDatabaseSettings.class
+        );
+        dataSource = new LuceneDataSource( dbPath, config, indexStore, new DefaultFileSystemAbstraction() );
         dataSource.start();
         IndexIdentifier identifier = identifier( "foo" );
         IndexReference searcher = dataSource.getIndexSearcher( identifier );
@@ -108,10 +110,12 @@ public class LuceneDataSourceTest
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Map<String, String> configMap = config();
-        configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
-        Config config = new Config( configMap, GraphDatabaseSettings.class );
-        dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() );
+        addIndex( "baz" );
+        Config config = new Config(
+                MapUtil.stringMap( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" ),
+                GraphDatabaseSettings.class
+        );
+        dataSource = new LuceneDataSource( dbPath, config, indexStore, new DefaultFileSystemAbstraction() );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -128,10 +132,11 @@ public class LuceneDataSourceTest
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Map<String, String> configMap = config();
-        configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
-        Config config = new Config( configMap, GraphDatabaseSettings.class );
-        dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() );
+        Config config = new Config(
+                MapUtil.stringMap( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" ),
+                GraphDatabaseSettings.class
+        );
+        dataSource = new LuceneDataSource( dbPath, config, indexStore, new DefaultFileSystemAbstraction() );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -150,10 +155,11 @@ public class LuceneDataSourceTest
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Map<String, String> configMap = config();
-        configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
-        Config config = new Config( configMap, GraphDatabaseSettings.class );
-        dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() );
+        Config config = new Config(
+                MapUtil.stringMap( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" ),
+                GraphDatabaseSettings.class
+        );
+        dataSource = new LuceneDataSource( dbPath, config, indexStore, new DefaultFileSystemAbstraction() );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -175,10 +181,11 @@ public class LuceneDataSourceTest
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Map<String, String> configMap = config();
-        configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
-        Config config = new Config( configMap, GraphDatabaseSettings.class );
-        dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() );
+        Config config = new Config(
+                MapUtil.stringMap( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" ),
+                GraphDatabaseSettings.class
+        );
+        dataSource = new LuceneDataSource( dbPath, config, indexStore, new DefaultFileSystemAbstraction() );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -189,10 +196,5 @@ public class LuceneDataSourceTest
         IndexWriter newFooIndexWriter = dataSource.getIndexSearcher( fooIdentifier ).getWriter();
         assertNotSame( oldFooIndexWriter, newFooIndexWriter );
         assertFalse( IndexWriterAccessor.isClosed( newFooIndexWriter ) );
-    }
-
-    private Map<String, String> config()
-    {
-        return MapUtil.stringMap("store_dir", getDbPath().getPath() );
     }
 }

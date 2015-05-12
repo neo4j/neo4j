@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
@@ -46,7 +47,9 @@ public final class BatchInserters
      *
      * @param storeDir the store directory
      * @return a new {@link BatchInserter}
+     * @deprecated use {@link #inserter(File, FileSystemAbstraction)} instead
      */
+    @Deprecated
     public static BatchInserter inserter( String storeDir ) throws IOException
     {
         return inserter( storeDir, stringMap() );
@@ -58,10 +61,21 @@ public final class BatchInserters
      * @param storeDir the store directory
      * @param config configuration settings to use
      * @return a new {@link BatchInserter}
+     * @deprecated use {@link #inserter(File, FileSystemAbstraction, Map)} instead
      */
+    @Deprecated
     public static BatchInserter inserter( String storeDir, Map<String,String> config ) throws IOException
     {
         return inserter( storeDir, new DefaultFileSystemAbstraction(), config );
+    }
+
+    /**
+     * @deprecated use {@link #inserter(File, FileSystemAbstraction)} instead
+     */
+    @Deprecated
+    public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem ) throws IOException
+    {
+        return inserter( storeDir, fileSystem, stringMap() );
     }
 
     /**
@@ -70,9 +84,19 @@ public final class BatchInserters
      * @param storeDir the store directory
      * @return a new {@link BatchInserter}
      */
-    public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem ) throws IOException
+    public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem ) throws IOException
     {
         return inserter( storeDir, fileSystem, stringMap() );
+    }
+
+    /**
+     * @deprecated use {@link #inserter(File, FileSystemAbstraction, Map)} instead
+     */
+    @Deprecated
+    public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,
+            Map<String,String> config ) throws IOException
+    {
+        return inserter( new File( storeDir ), fileSystem, config );
     }
 
     /**
@@ -83,14 +107,24 @@ public final class BatchInserters
      * @return a new {@link BatchInserter}
      */
     @SuppressWarnings( { "unchecked", "rawtypes" } )
-    public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,
-            Map<String,String> config ) throws IOException
+    public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem,
+                                          Map<String,String> config ) throws IOException
     {
         return inserter( storeDir, fileSystem, config, (Iterable) Service.load( KernelExtensionFactory.class ) );
     }
 
+    /**
+     * @deprecated use {@link #inserter(File, FileSystemAbstraction, Map, Iterable)} instead
+     */
+    @Deprecated
     public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,
             Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
+    {
+        return inserter( new File( storeDir ), fileSystem, config, kernelExtensions );
+    }
+
+    public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem,
+                                          Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
         return new BatchInserterImpl( storeDir, fileSystem, config, kernelExtensions );
     }

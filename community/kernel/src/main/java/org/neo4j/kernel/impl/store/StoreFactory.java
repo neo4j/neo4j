@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -42,7 +43,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
@@ -94,20 +94,20 @@ public class StoreFactory
     public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, LogProvider logProvider,
                          Monitors monitors, StoreVersionMismatchHandler versionMismatchHandler )
     {
-        this( configForStoreDir( new Config(), storeDir ),
+        this( storeDir, new Config(),
                 new DefaultIdGeneratorFactory(), pageCache, fileSystem,
                 logProvider, monitors, versionMismatchHandler );
     }
 
-    public StoreFactory( Config config, @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory,
+    public StoreFactory( File storeDir, Config config, @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory,
                          PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider,
                          Monitors monitors )
     {
-        this( config, idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider,
+        this( storeDir, config, idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider,
                 monitors, StoreVersionMismatchHandler.FORCE_CURRENT_VERSION );
     }
 
-    public StoreFactory( Config config, @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory,
+    public StoreFactory( File storeDir, Config config, @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory,
                          PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider,
                          Monitors monitors, StoreVersionMismatchHandler versionMismatchHandler )
     {
@@ -117,7 +117,7 @@ public class StoreFactory
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.versionMismatchHandler = versionMismatchHandler;
-        this.neoStoreFileName = config.get( GraphDatabaseSettings.neo_store );
+        this.neoStoreFileName = new File( storeDir, NeoStore.DEFAULT_NAME );
         assert neoStoreFileName != null;
         this.monitors = monitors;
         this.pageCache = pageCache;
@@ -126,18 +126,6 @@ public class StoreFactory
     public static String buildTypeDescriptorAndVersion( String typeDescriptor )
     {
         return typeDescriptor + " " + CommonAbstractStore.ALL_STORES_VERSION;
-    }
-
-    /**
-     * Fills in neo_store and store_dir based on store dir.
-     *
-     * @return a new modified config, leaves this config unchanged.
-     */
-    public static Config configForStoreDir( Config config, File storeDir )
-    {
-        return config.with( stringMap(
-                GraphDatabaseSettings.neo_store.name(), new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath(),
-                GraphDatabaseSettings.store_dir.name(), storeDir.getAbsolutePath() ) );
     }
 
     public File storeFileName( String toAppend )
@@ -589,10 +577,7 @@ public class StoreFactory
                                    @SuppressWarnings( "deprecation" ) IdType idType )
     {
         // sanity checks
-        if ( fileName == null )
-        {
-            throw new IllegalArgumentException( "Null filename" );
-        }
+        Objects.requireNonNull( fileName, "fileName is required" );
         if ( fileSystemAbstraction.fileExists( fileName ) )
         {
             throw new IllegalStateException( "Can't create store[" + fileName

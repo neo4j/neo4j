@@ -192,7 +192,7 @@ public class RebuildCountsTest
                       .setInternalLogProvider( internalLogProvider )
                       .setFileSystem( fs )
                       .addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) )
-                      .newImpermanentDatabaseBuilder( storeDir.getAbsolutePath() )
+                      .newImpermanentDatabaseBuilder( storeDir )
                       .setConfig( index_background_sampling_enabled, "false" )
                       .newGraphDatabase();
     }

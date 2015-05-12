@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.web;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.apache.http.client.methods.HttpGet;
@@ -86,7 +87,7 @@ public class TestJetty9WebServer
     public void shouldBeAbleToSetExecutionLimit() throws Throwable
     {
         @SuppressWarnings("deprecation")
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( "path", stringMap(),
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( new File( "path" ), stringMap(),
                 GraphDatabaseDependencies.newDependencies() )
         {
         };
@@ -121,7 +122,7 @@ public class TestJetty9WebServer
     public void shouldDisallowDirectoryListings() throws Exception
     {
         @SuppressWarnings("deprecation")
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( "path", stringMap(),
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( new File( "path" ), stringMap(),
                 GraphDatabaseDependencies.newDependencies() )
         {
         };

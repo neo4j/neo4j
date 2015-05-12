@@ -103,7 +103,7 @@ public class StoreMigratorFrom21IT
         ConsistencyCheckService service = new ConsistencyCheckService();
 
         ConsistencyCheckService.Result result = service.runFullConsistencyCheck(
-                dir.getAbsolutePath(), new Config(), ProgressMonitorFactory.NONE, NullLogProvider.getInstance() );
+                dir.getAbsoluteFile(), new Config(), ProgressMonitorFactory.NONE, NullLogProvider.getInstance() );
         assertTrue( result.isSuccessful() );
 
         database = builder.newGraphDatabase();

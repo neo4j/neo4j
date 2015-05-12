@@ -28,8 +28,11 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import java.io.File;
+
 public class LuceneKernelExtension extends LifecycleAdapter
 {
+    private final File storeDir;
     private final Config config;
     private final IndexConfigStore indexStore;
     private final FileSystemAbstraction fileSystemAbstraction;
@@ -37,9 +40,10 @@ public class LuceneKernelExtension extends LifecycleAdapter
     private LuceneDataSource luceneDataSource;
     private final LifeSupport life = new LifeSupport();
 
-    public LuceneKernelExtension( Config config, IndexConfigStore indexStore,
+    public LuceneKernelExtension( File storeDir, Config config, IndexConfigStore indexStore,
             FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders )
     {
+        this.storeDir = storeDir;
         this.config = config;
         this.indexStore = indexStore;
         this.fileSystemAbstraction = fileSystemAbstraction;
@@ -49,7 +53,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
     @Override
     public void init()
     {
-        luceneDataSource = life.add( new LuceneDataSource( config, indexStore, fileSystemAbstraction ) );
+        luceneDataSource = life.add( new LuceneDataSource( storeDir, config, indexStore, fileSystemAbstraction ) );
         // TODO Don't do this here, do proper life cycle management
         life.start();
         LuceneIndexImplementation indexImplementation = new LuceneIndexImplementation( luceneDataSource );

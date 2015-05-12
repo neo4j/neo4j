@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -34,12 +36,12 @@ public class CommunityFacadeFactory
         extends GraphDatabaseFacadeFactory
 {
     @Override
-    public GraphDatabaseFacade newFacade( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade
+    public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade
             graphDatabaseFacade )
     {
         params.put( Configuration.editionName.name(), "Community" );
 
-        return super.newFacade( params, newDependencies( dependencies ).settingsClasses(
+        return super.newFacade( storeDir, params, newDependencies( dependencies ).settingsClasses(
                 toList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) ),
                 graphDatabaseFacade );
     }

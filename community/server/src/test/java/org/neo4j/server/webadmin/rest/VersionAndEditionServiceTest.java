@@ -24,6 +24,7 @@ import javax.ws.rs.core.Response;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.KernelData;
@@ -41,6 +42,9 @@ import org.neo4j.server.rest.management.VersionAndEditionService;
 import org.neo4j.server.web.WebServer;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
+import java.io.File;
+
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -137,7 +141,7 @@ public class VersionAndEditionServiceTest
 
     private KernelData stubKernelData( final GraphDatabaseAPI graphDatabaseAPI, final Version version )
     {
-        return new KernelData( new Config() )
+        return new KernelData( new DefaultFileSystemAbstraction(), new File( "graph.db" ), new Config() )
         {
             @Override
             public Version version()

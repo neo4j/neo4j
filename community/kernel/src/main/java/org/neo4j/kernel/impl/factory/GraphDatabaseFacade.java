@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 
@@ -95,7 +96,7 @@ import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PRO
  *
  * To make a custom GraphDatabaseFacade, the best option is to subclass an existing GraphDatabaseFacadeFactory. Another
  * alternative, used by legacy database implementations, is to subclass this class and call
- * {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory#newFacade(java.util.Map, org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)} in the constructor.
+ * {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory#newFacade(java.io.File, java.util.Map, org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)} in the constructor.
  */
 public class GraphDatabaseFacade
     implements GraphDatabaseAPI
@@ -120,14 +121,14 @@ public class GraphDatabaseFacade
     private long transactionStartTimeout;
     private DependencyResolver dependencies;
     private Supplier<StoreId> storeId;
-    protected String storeDir;
+    protected File storeDir;
 
     public PlatformModule platformModule;
     public EditionModule editionModule;
     public DataSourceModule dataSourceModule;
 
     /**
-     * When {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory#newFacade(java.util.Map, org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)} has created the different
+     * When {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory#newFacade(java.io.File, java.util.Map, org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)} has created the different
      * modules of a database, it calls this method so that the facade can get access to the created services.
      *
      * @param platformModule
@@ -153,7 +154,7 @@ public class GraphDatabaseFacade
         this.transactionStartTimeout = editionModule.transactionStartTimeout;
         this.dependencies = platformModule.dependencies;
         this.storeId = dataSourceModule.storeId;
-        this.storeDir = platformModule.storeDir.toString();
+        this.storeDir = platformModule.storeDir;
 
         initialized = true;
     }
@@ -535,7 +536,7 @@ public class GraphDatabaseFacade
     @Override
     public String getStoreDir()
     {
-        return storeDir;
+        return storeDir.toString();
     }
 
     @Override

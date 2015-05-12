@@ -61,7 +61,7 @@ public class GraphDatabaseFacadeFactoryTest
         try
         {
             // When
-            db.newFacade( Collections.<String, String>emptyMap(), mock( GraphDatabaseFacadeFactory.Dependencies.class ),
+            db.newFacade( dir.graphDbDir(), Collections.<String, String>emptyMap(), mock( GraphDatabaseFacadeFactory.Dependencies.class ),
                     mockFacade );
             fail( "Should have thrown " + RuntimeException.class );
         }
@@ -85,7 +85,7 @@ public class GraphDatabaseFacadeFactoryTest
         try
         {
             // When
-            db.newFacade( Collections.<String, String>emptyMap(), mock( GraphDatabaseFacadeFactory.Dependencies.class ),
+            db.newFacade( dir.graphDbDir(), Collections.<String, String>emptyMap(), mock( GraphDatabaseFacadeFactory.Dependencies.class ),
                     mockFacade );
             fail( "Should have thrown " + RuntimeException.class );
         }
@@ -102,7 +102,7 @@ public class GraphDatabaseFacadeFactoryTest
         return new GraphDatabaseFacadeFactory()
         {
             @Override
-            protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies,
+            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies,
                                                      GraphDatabaseFacade graphDatabaseFacade )
             {
                 final LifeSupport lifeMock = mock( LifeSupport.class );
@@ -117,7 +117,7 @@ public class GraphDatabaseFacadeFactoryTest
                 } ).when(lifeMock).add( any() );
 
 
-                PlatformModule module = new PlatformModule( mock( Map.class ),
+                PlatformModule module = new PlatformModule( storeDir, mock( Map.class ),
                         mock( Dependencies.class, RETURNS_MOCKS ),
                         mock( GraphDatabaseFacade.class ) )
                 {
@@ -125,12 +125,6 @@ public class GraphDatabaseFacadeFactoryTest
                     public LifeSupport createLife()
                     {
                         return lifeMock;
-                    }
-
-                    @Override
-                    public File getStoreDir()
-                    {
-                        return dir.graphDbDir();
                     }
                 };
                 return module;

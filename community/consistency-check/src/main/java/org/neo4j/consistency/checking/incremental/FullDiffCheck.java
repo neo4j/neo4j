@@ -36,6 +36,8 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
+import java.io.File;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class FullDiffCheck extends DiffCheck
@@ -46,17 +48,16 @@ public class FullDiffCheck extends DiffCheck
     }
 
     @Override
-    public ConsistencySummaryStatistics execute( DiffStore diffs ) throws ConsistencyCheckIncompleteException
+    public ConsistencySummaryStatistics execute( File storeDir, DiffStore diffs ) throws ConsistencyCheckIncompleteException
     {
         Config tuningConfiguration = new Config( stringMap(), GraphDatabaseSettings.class,
                 ConsistencyCheckSettings.class );
 
-        String storeDir = tuningConfiguration.get( GraphDatabaseSettings.store_dir ).getAbsolutePath();
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         LabelScanStore labelScanStore =
             new LuceneLabelScanStoreBuilder( storeDir, diffs.getRawNeoStore(), fileSystem, logProvider ).build();
 
-        SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
+        SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, storeDir );
         DirectStoreAccess stores = new DirectStoreAccess( diffs, labelScanStore, indexes );
         return new FullCheck( tuningConfiguration, ProgressMonitorFactory.NONE ).execute( stores, log );
     }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.factory;
 
+import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -31,7 +32,7 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
 {
     @Override
     protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator(
-            final String path, final GraphDatabaseFactoryState state )
+            final File storeDir, final GraphDatabaseFactoryState state )
     {
         return new GraphDatabaseBuilder.DatabaseCreator()
         {
@@ -41,7 +42,7 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
             {
                 config.put( "ephemeral", "false" );
 
-                return new HighlyAvailableGraphDatabase( path, config, state.databaseDependencies() );
+                return new HighlyAvailableGraphDatabase( storeDir, config, state.databaseDependencies() );
             }
         };
     }

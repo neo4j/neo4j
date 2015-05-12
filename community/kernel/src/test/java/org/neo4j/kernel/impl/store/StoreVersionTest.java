@@ -45,7 +45,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 public class StoreVersionTest
 {
@@ -53,6 +52,7 @@ public class StoreVersionTest
     public void allStoresShouldHaveTheCurrentVersionIdentifier()
     {
         StoreFactory sf = new StoreFactory(
+                outputDir,
                 config,
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs.get() ),
@@ -111,6 +111,7 @@ public class StoreVersionTest
     public void neoStoreHasCorrectStoreVersionField()
     {
         StoreFactory sf = new StoreFactory(
+                outputDir,
                 config,
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs.get() ),
@@ -143,8 +144,7 @@ public class StoreVersionTest
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final File outputDir = new File( "target/var/" + StoreVersionTest.class.getSimpleName() ).getAbsoluteFile();
-    private final Config config = configForStoreDir(
-            new Config( stringMap(), GraphDatabaseSettings.class ), outputDir );
+    private final Config config = new Config( stringMap(), GraphDatabaseSettings.class );
     private final Monitors monitors = new Monitors();
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();

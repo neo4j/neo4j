@@ -55,14 +55,14 @@ public class TestStoreAccess
         snapshot.deleteFile( messages );
 
         PageCache pageCache = pageCacheRule.getPageCache( snapshot );
-        new StoreAccess( snapshot, pageCache, storeDir.getPath() ).close();
+        new StoreAccess( snapshot, pageCache, storeDir ).close();
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
     }
 
     private EphemeralFileSystemAbstraction produceUncleanStore()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() )
-                .newImpermanentDatabase( storeDir.getPath() );
+                .newImpermanentDatabase( storeDir );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();

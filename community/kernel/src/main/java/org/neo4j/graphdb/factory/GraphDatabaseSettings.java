@@ -110,9 +110,8 @@ public abstract class GraphDatabaseSettings
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
     public static Setting<Boolean> allow_file_urls = setting( "allow_file_urls", BOOLEAN, TRUE );
 
-
-
-    // Store files
+    @Deprecated
+    @Obsoleted( "This is no longer used" )
     @Description("The directory where the database files are located.")
     public static final Setting<File> store_dir = setting("store_dir", PATH, NO_DEFAULT );
 
@@ -121,11 +120,6 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<Long> transaction_start_timeout =
             setting( "transaction_start_timeout", DURATION, "1s" );
-
-    @Description("The base name for the Neo4j Store files, either an absolute path or relative to the store_dir " +
-            "setting. This should generally not be changed.")
-    @Internal
-    public static final Setting<File> neo_store = setting("neo_store", PATH, "neostore", basePath(store_dir) );
 
     @Description( "Threshold for rotation of the internal log." )
     public static final Setting<Long> store_internal_log_rotation_threshold = setting("store.internal_log.rotation_threshold", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
@@ -380,8 +374,8 @@ public abstract class GraphDatabaseSettings
     @Description( "Log executed queries that takes longer than the configured threshold." )
     public static final Setting<Boolean> log_queries = setting("dbms.querylog.enabled", BOOLEAN, FALSE );
 
-    @Description( "The file where queries will be recorded." )
-    public static final Setting<File> log_queries_filename = setting("dbms.querylog.filename", PATH, "queries.log", basePath(store_dir) );
+    @Description( "Log executed queries that take longer than the configured threshold" )
+    public static final Setting<File> log_queries_filename = setting("dbms.querylog.filename", PATH, NO_DEFAULT );
 
     @Description("If the execution of query takes more time than this threshold, the query is logged - " +
             "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")

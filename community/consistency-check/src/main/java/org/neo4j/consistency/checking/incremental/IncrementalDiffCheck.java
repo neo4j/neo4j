@@ -35,6 +35,8 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.logging.LogProvider;
 
+import java.io.File;
+
 import static org.neo4j.kernel.impl.store.RecordStore.Scanner.scan;
 
 public class IncrementalDiffCheck extends DiffCheck
@@ -45,7 +47,7 @@ public class IncrementalDiffCheck extends DiffCheck
     }
 
     @Override
-    public ConsistencySummaryStatistics execute( DiffStore diffs )
+    public ConsistencySummaryStatistics execute( File storeDir, DiffStore diffs )
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
         ConsistencyReporter reporter = new ConsistencyReporter( new DirectDiffRecordAccess( diffs ),

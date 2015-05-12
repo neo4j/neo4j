@@ -52,7 +52,6 @@ import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 public class ApplyRecoveredTransactionsTest
 {
@@ -114,8 +113,7 @@ public class ApplyRecoveredTransactionsTest
     public void before()
     {
         File storeDir = new File( "dir" );
-        Config config = configForStoreDir( new Config(), storeDir );
-        StoreFactory storeFactory = new StoreFactory( config, new DefaultIdGeneratorFactory(),
+        StoreFactory storeFactory = new StoreFactory( storeDir, new Config(), new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fsr.get() ), fsr.get(), NullLogProvider.getInstance(), new Monitors() );
         neoStore = storeFactory.newNeoStore( true );
     }

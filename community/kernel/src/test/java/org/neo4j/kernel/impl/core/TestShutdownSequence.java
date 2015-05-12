@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Before;
@@ -90,8 +89,7 @@ public class TestShutdownSequence
     void canRemoveFilesAndReinvokeShutdown()
     {
         graphDb.shutdown();
-        AbstractNeo4jTestCase.deleteFileOrDirectory( new File(
-                getStorePath( "shutdown" ) ) );
+        AbstractNeo4jTestCase.deleteFileOrDirectory( getStorePath( "shutdown" ) );
         graphDb.shutdown();
     }
 

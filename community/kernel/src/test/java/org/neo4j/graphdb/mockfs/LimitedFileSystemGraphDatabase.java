@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.mockfs;
 
+import java.io.File;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,14 +35,14 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
     private LimitedFilesystemAbstraction fs;
 
     @Override
-    protected void create( Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         new CommunityFacadeFactory()
         {
             @Override
-            protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
-                return new ImpermanentPlatformModule( params, dependencies, graphDatabaseFacade )
+                return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
                 {
                     @Override
                     protected FileSystemAbstraction createFileSystemAbstraction()
@@ -50,7 +51,7 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
                     }
                 };
             }
-        }.newFacade( params, dependencies, this );
+        }.newFacade( storeDir, params, dependencies, this );
     }
 
 

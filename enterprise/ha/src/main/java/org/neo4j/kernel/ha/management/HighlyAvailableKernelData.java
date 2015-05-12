@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.ha.management;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.Functions;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.Version;
@@ -43,9 +45,9 @@ public class HighlyAvailableKernelData extends KernelData implements Lifecycle
     private final ClusterDatabaseInfoProvider memberInfoProvider;
 
     public HighlyAvailableKernelData( GraphDatabaseAPI db, ClusterMembers memberInfo,
-            ClusterDatabaseInfoProvider databaseInfo, Config config )
+            ClusterDatabaseInfoProvider databaseInfo, FileSystemAbstraction fileSystem, File storeDir, Config config )
     {
-        super( config );
+        super( fileSystem, storeDir, config );
         this.db = db;
         this.memberInfo = memberInfo;
         this.memberInfoProvider = databaseInfo;

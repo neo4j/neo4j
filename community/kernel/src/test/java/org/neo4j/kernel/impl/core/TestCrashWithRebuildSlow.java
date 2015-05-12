@@ -130,7 +130,7 @@ public class TestCrashWithRebuildSlow
     @Test
     public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
     {
-        String storeDir = new File( "dir" ).getAbsolutePath();
+        File storeDir = new File( "dir" ).getAbsoluteFile();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
@@ -214,7 +214,7 @@ public class TestCrashWithRebuildSlow
         return highIds;
     }
 
-    private void assertNumberOfFreeIdsEquals( String storeDir, FileSystemAbstraction fs, long numberOfFreeIds )
+    private void assertNumberOfFreeIdsEquals( File storeDir, FileSystemAbstraction fs, long numberOfFreeIds )
     {
         long fileSize = fs.getFileSize( new File( storeDir, "neostore.propertystore.db.strings.id" ) );
         long fileSizeWithoutHeader = fileSize - 9;

@@ -31,6 +31,7 @@ import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -41,14 +42,16 @@ import static org.neo4j.helpers.collection.Iterables.map;
 
 public class KernelExtensions extends DependencyResolver.Adapter implements Lifecycle
 {
+    private final KernelContext kernelContext;
     private final List<KernelExtensionFactory<?>> kernelExtensionFactories;
     private final Dependencies dependencies;
     private final LifeSupport life = new LifeSupport();
     private final UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy;
 
-    public KernelExtensions( Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
+    public KernelExtensions( KernelContext kernelContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
                              Dependencies dependencies, UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy )
     {
+        this.kernelContext = kernelContext;
         this.unsatisfiedDepencyStrategy = unsatisfiedDepencyStrategy;
         this.kernelExtensionFactories = Iterables.addAll( new ArrayList<KernelExtensionFactory<?>>(),
                 kernelExtensionFactories );
@@ -61,11 +64,11 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
 
         for ( KernelExtensionFactory kernelExtensionFactory : kernelExtensionFactories )
         {
-            Object configuration = getKernelExtensionDependencies( kernelExtensionFactory );
+            Object kernelExtensionDependencies = getKernelExtensionDependencies( kernelExtensionFactory );
 
             try
             {
-                Lifecycle dependency = kernelExtensionFactory.newKernelExtension( configuration );
+                Lifecycle dependency = kernelExtensionFactory.newInstance( kernelContext, kernelExtensionDependencies );
                 Objects.requireNonNull( dependency, kernelExtensionFactory.toString() + " returned a null " +
                         "KernelExtension" );
                 life.add( dependencies.satisfyDependency( dependency ) );

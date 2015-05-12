@@ -58,7 +58,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     private static boolean TRACK_UNCLOSED_DATABASE_INSTANCES = false;
     private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<>();
 
-    protected static final String PATH = "target/test-data/impermanent-db";
+    protected static final File PATH = new File( "target/test-data/impermanent-db" );
 
     /**
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
@@ -78,7 +78,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      * since an ImpermanentGraphDatabase should not have any mention of a store directory in
      * any case.
      */
-    public ImpermanentGraphDatabase( String storeDir )
+    public ImpermanentGraphDatabase( File storeDir )
     {
         this( storeDir, new HashMap<String, String>() );
     }
@@ -96,7 +96,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
      */
     @Deprecated
-    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params )
+    public ImpermanentGraphDatabase( File storeDir, Map<String, String> params )
     {
         this( storeDir, params,
                 Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
@@ -117,7 +117,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
      */
     @Deprecated
-    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params,
+    public ImpermanentGraphDatabase( File storeDir, Map<String, String> params,
                                      Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         this( storeDir, params, getDependencies( kernelExtensions ) );
@@ -128,7 +128,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         return newDependencies().kernelExtensions( kernelExtensions );
     }
 
-    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    public ImpermanentGraphDatabase( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         super( storeDir, params, dependencies );
 
@@ -136,23 +136,23 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     }
 
     @Override
-    protected void create( Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         new CommunityFacadeFactory()
         {
             @Override
-            protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
-                return new ImpermanentPlatformModule( params, dependencies, graphDatabaseFacade );
+                return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
             }
-        }.newFacade( params, dependencies, this );
+        }.newFacade( storeDir, new HashMap<>( params ), dependencies, this );
     }
 
-    private void trackUnclosedUse( String path )
+    private void trackUnclosedUse( File storeDir )
     {
         if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
         {
-            Exception testThatDidNotCloseDb = startedButNotYetClosed.put( new File( path ),
+            Exception testThatDidNotCloseDb = startedButNotYetClosed.put( storeDir,
                     new Exception( "Unclosed database instance" ) );
             if ( testThatDidNotCloseDb != null )
             {
@@ -191,10 +191,10 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     protected static class ImpermanentPlatformModule extends PlatformModule
     {
-        public ImpermanentPlatformModule( Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies
+        public ImpermanentPlatformModule( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies
                 dependencies, GraphDatabaseFacade graphDatabaseFacade )
         {
-            super( withForcedInMemoryConfiguration(params), dependencies, graphDatabaseFacade );
+            super( storeDir, withForcedInMemoryConfiguration(params), dependencies, graphDatabaseFacade );
         }
 
         @Override

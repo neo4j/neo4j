@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
@@ -57,7 +57,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NonUniqueIndexTests
@@ -97,9 +96,9 @@ public class NonUniqueIndexTests
         return new CommunityFacadeFactory()
         {
             @Override
-            protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
-                return new PlatformModule( params, dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
                 {
                     @Override
                     protected Neo4jJobScheduler createJobScheduler()
@@ -114,7 +113,7 @@ public class NonUniqueIndexTests
                     }
                 };
             }
-        }.newFacade( stringMap( GraphDatabaseSettings.store_dir.name(), directory.absolutePath() ),
+        }.newFacade( directory.graphDbDir(), stringMap(),
                 graphDatabaseFactoryState.databaseDependencies() );
     }
 
@@ -145,8 +144,8 @@ public class NonUniqueIndexTests
 
     private List<Long> nodeIdsInIndex( int indexId, String value ) throws IOException
     {
-        Config config = new Config( stringMap( store_dir.name(), directory.absolutePath() ) );
-        SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, config );
+        Config config = new Config();
+        SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, directory.graphDbDir() );
         IndexConfiguration indexConfig = new IndexConfiguration( false );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId, indexConfig, samplingConfig );

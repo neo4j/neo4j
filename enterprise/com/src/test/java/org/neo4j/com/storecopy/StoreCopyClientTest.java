@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -63,7 +62,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 
 public class StoreCopyClientTest
 {
@@ -79,10 +77,8 @@ public class StoreCopyClientTest
             throws IOException
     {
         // given
-        final String copyDir = new File( testDir.directory(), "copy" ).getAbsolutePath();
-        final String originalDir = new File( testDir.directory(), "original" ).getAbsolutePath();
-
-        Config config = new Config( MapUtil.stringMap( store_dir.name(), copyDir ) );
+        final File copyDir = new File( testDir.directory(), "copy" );
+        final File originalDir = new File( testDir.directory(), "original" );
 
         final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
         CancellationRequest cancellationRequest = new CancellationRequest()
@@ -106,7 +102,7 @@ public class StoreCopyClientTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreCopyClient copier =
-                new StoreCopyClient( config, loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache, storeCopyMonitor );
+                new StoreCopyClient( copyDir, new Config(), loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache, storeCopyMonitor );
 
         final GraphDatabaseAPI original =
                 (GraphDatabaseAPI) startDatabase( originalDir );
@@ -147,7 +143,7 @@ public class StoreCopyClientTest
         verify( storeCopyRequest, times( 1 ) ).done();
     }
 
-    private GraphDatabaseService startDatabase( String storeDir )
+    private GraphDatabaseService startDatabase( File storeDir )
     {
         return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
@@ -157,10 +153,8 @@ public class StoreCopyClientTest
             throws IOException
     {
         // given
-        final String copyDir = new File( testDir.directory(), "copy" ).getAbsolutePath();
-        final String originalDir = new File( testDir.directory(), "original" ).getAbsolutePath();
-
-        Config config = new Config( MapUtil.stringMap( store_dir.name(), copyDir ) );
+        final File copyDir = new File( testDir.directory(), "copy" );
+        final File originalDir = new File( testDir.directory(), "original" );
 
         final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
         CancellationRequest cancellationRequest = new CancellationRequest()
@@ -184,7 +178,7 @@ public class StoreCopyClientTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreCopyClient copier =
-                new StoreCopyClient( config, loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache, storeCopyMonitor );
+                new StoreCopyClient( copyDir, new Config(), loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache, storeCopyMonitor );
 
         final GraphDatabaseAPI original =
                 (GraphDatabaseAPI) startDatabase( originalDir );
@@ -222,7 +216,7 @@ public class StoreCopyClientTest
         verify( storeCopyRequest, times( 1 ) ).done();
     }
 
-    private StoreCopyClient.StoreCopyRequester storeCopyRequest( final String originalDir,
+    private StoreCopyClient.StoreCopyRequester storeCopyRequest( final File originalDir,
             final GraphDatabaseAPI original )
     {
         return spy( new StoreCopyClient.StoreCopyRequester()
@@ -245,7 +239,7 @@ public class StoreCopyClientTest
                             LogRotationControl.class );
 
                     RequestContext requestContext = new StoreCopyServer(transactionIdStore, neoStoreDataSource,
-                            logRotationControl, fs, new File(originalDir), new Monitors().newMonitor( StoreCopyServer.Monitor.class ) )
+                            logRotationControl, fs, originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ) )
                             .flushStoresAndStreamStoreFiles( writer, false );
 
                     final StoreId storeId = original.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get().getStoreId();

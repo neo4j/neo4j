@@ -25,6 +25,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +36,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 
 public class KernelDataTest
@@ -137,7 +139,7 @@ public class KernelDataTest
     {
         Kernel( String desiredId )
         {
-            super( new Config( config( desiredId ) ) );
+            super( new DefaultFileSystemAbstraction(), new File( "graph.db" ), new Config( config( desiredId ) ) );
             kernels.add( this );
         }
 

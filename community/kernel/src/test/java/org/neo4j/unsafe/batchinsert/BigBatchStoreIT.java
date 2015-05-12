@@ -28,6 +28,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.core.BigStoreIT.machineIsOkToRunThisTest;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -48,7 +49,7 @@ import org.neo4j.unsafe.batchinsert.BatchRelationship;
 
 public class BigBatchStoreIT implements RelationshipType
 {
-    private static final String PATH = "target/var/bigb";
+    private static final File PATH = new File( "target/var/bigb" );
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private org.neo4j.unsafe.batchinsert.BatchInserter db;
     public @Rule
@@ -64,7 +65,7 @@ public class BigBatchStoreIT implements RelationshipType
     @Before
     public void doBefore() throws Exception
     {
-        db = BatchInserters.inserter( PATH, fs.get());
+        db = BatchInserters.inserter( PATH.getAbsoluteFile(), fs.get());
     }
     
     @After
@@ -120,7 +121,7 @@ public class BigBatchStoreIT implements RelationshipType
 
         assertEquals( asSet( asList( relBelowTheLine, relAboveTheLine ) ), asIds( db.getRelationships( idBelow ) ) );
         db.shutdown();
-        db = BatchInserters.inserter( PATH, fs.get() );
+        db = BatchInserters.inserter( PATH.getAbsoluteFile(), fs.get() );
         assertEquals( asSet( asList( relBelowTheLine, relAboveTheLine ) ), asIds( db.getRelationships( idBelow ) ) );
         db.shutdown();
         
@@ -131,7 +132,7 @@ public class BigBatchStoreIT implements RelationshipType
         assertEquals(   asSet( asList( edb.getRelationshipById( relBelowTheLine ), edb.getRelationshipById( relAboveTheLine ) ) ),
                         asSet( asCollection( edb.getNodeById( idBelow ).getRelationships() ) ) );
         edb.shutdown();
-        db = BatchInserters.inserter( PATH, fs.get() );
+        db = BatchInserters.inserter( PATH.getAbsoluteFile(), fs.get() );
     }
     
     @Test( expected=IllegalArgumentException.class )

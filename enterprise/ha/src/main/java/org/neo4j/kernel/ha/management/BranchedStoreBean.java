@@ -25,10 +25,10 @@ import java.util.List;
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -75,17 +75,20 @@ public final class BranchedStoreBean extends ManagementBeanProvider
 
     private static class BranchedStoreImpl extends Neo4jMBean implements BranchedStore
     {
+        private final FileSystemAbstraction fileSystem;
         private final File storePath;
 
         protected BranchedStoreImpl( final ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
+            fileSystem = getFilesystem( management );
             storePath = getStorePath( management );
         }
 
         protected BranchedStoreImpl( final ManagementData management, boolean isMXBean )
         {
             super( management, isMXBean );
+            fileSystem = getFilesystem( management );
             storePath = getStorePath( management );
         }
 
@@ -98,7 +101,7 @@ public final class BranchedStoreBean extends ManagementBeanProvider
             }
 
             List<BranchedStoreInfo> toReturn = new LinkedList<>();
-            for ( File branchDirectory : getBranchedDataRootDirectory( storePath ).listFiles() )
+            for ( File branchDirectory : fileSystem.listFiles( getBranchedDataRootDirectory( storePath ) ) )
             {
                 if ( !branchDirectory.isDirectory() )
                 {
@@ -117,11 +120,14 @@ public final class BranchedStoreBean extends ManagementBeanProvider
             return new BranchedStoreInfo( branchDirectory.getName(), txId, timestamp );
         }
 
+        private FileSystemAbstraction getFilesystem( ManagementData management )
+        {
+            return management.getKernelData().getFilesystemAbstraction();
+        }
+
         private File getStorePath( ManagementData management )
         {
-            return management.getKernelData().
-                    getConfig().
-                    get( CommunityFacadeFactory.Configuration.store_dir );
+            return management.getKernelData().getStoreDir();
         }
     }
 }

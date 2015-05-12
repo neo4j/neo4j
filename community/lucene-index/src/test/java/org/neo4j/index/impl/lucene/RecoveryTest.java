@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -154,9 +153,8 @@ public class RecoveryTest
         assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        Map<String, String> params = MapUtil.stringMap( "store_dir", path.getPath() );
-        Config config = new Config( params, GraphDatabaseSettings.class );
-        LuceneDataSource ds = new LuceneDataSource( config, new IndexConfigStore( path, fileSystem ), fileSystem );
+        Config config = new Config( MapUtil.stringMap(), GraphDatabaseSettings.class );
+        LuceneDataSource ds = new LuceneDataSource( path, config, new IndexConfigStore( path, fileSystem ), fileSystem );
         ds.start();
         ds.stop();
     }

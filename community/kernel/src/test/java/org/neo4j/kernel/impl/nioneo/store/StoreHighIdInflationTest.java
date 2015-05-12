@@ -62,7 +62,7 @@ public class StoreHighIdInflationTest
     {
         // GIVEN
         FileSystemAbstraction fs = fsr.get();
-        fs.mkdirs( new File( storeDir ) );
+        fs.mkdirs( storeDir );
         GraphDatabaseAPI db = (GraphDatabaseAPI) newImpermanentDb();
         long highestCreatedNodeId = createACoupleOfNodes( db, 3 );
         long highestPropertyStringRecord = getHighestDynamicStringPropertyId( db );
@@ -90,7 +90,7 @@ public class StoreHighIdInflationTest
         int labelTokenRecordSize;
 
         FileSystemAbstraction fs = fsr.get();
-        fs.mkdirs( new File( storeDir ) );
+        fs.mkdirs( storeDir );
         GraphDatabaseService db = newImpermanentDb();
         createLabeledNodesAndRels( nodesWithUniqueLabels, relsWithUniqueTypes, db );
         labelTokenRecordSize = neoStoreOf( db ).getLabelTokenStore().getRecordSize();
@@ -123,7 +123,7 @@ public class StoreHighIdInflationTest
         String relTypeStoreFileName = NeoStore.DEFAULT_NAME + RELATIONSHIP_TYPE_TOKEN_STORE_NAME;
 
         FileSystemAbstraction fs = fsr.get();
-        fs.mkdirs( new File( storeDir ) );
+        fs.mkdirs( storeDir );
         GraphDatabaseService db = newImpermanentDb();
         createLabeledNodesAndRels( nodesWithUniqueLabels, relsWithUniqueTypes, db );
         relTypeTokenRecordSize = relTypeTokenStore( db ).getRecordSize();
@@ -270,5 +270,5 @@ public class StoreHighIdInflationTest
     }
 
     public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
-    private final String storeDir = new File( "dir" ).getAbsolutePath();
+    private final File storeDir = new File( "dir" ).getAbsoluteFile();
 }

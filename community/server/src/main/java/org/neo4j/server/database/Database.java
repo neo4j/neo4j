@@ -28,12 +28,12 @@ public interface Database extends Lifecycle
 {
     interface Factory
     {
-        Database newDatabase(Config config, CommunityFacadeFactory.Dependencies dependencies);
+        Database newDatabase( Config config, CommunityFacadeFactory.Dependencies dependencies);
     }
 
-    public String getLocation();
+    String getLocation();
 
-    public GraphDatabaseAPI getGraph();
+    GraphDatabaseAPI getGraph();
 
-    public abstract boolean isRunning();
+    boolean isRunning();
 }

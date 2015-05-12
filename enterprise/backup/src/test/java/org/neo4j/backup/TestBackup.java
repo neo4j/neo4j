@@ -557,15 +557,14 @@ public class TestBackup
         return representation;
     }
 
-    private GraphDatabaseService startGraphDatabase( File path, boolean withOnlineBackup )
+    private GraphDatabaseService startGraphDatabase( File storeDir, boolean withOnlineBackup )
     {
         GraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory()
         {
             @Override
-            protected GraphDatabaseService newDatabase( String path, Map<String,String> config,
+            protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
                     GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
-                config.put(GraphDatabaseSettings.store_dir.name(), path);
                 return new CommunityFacadeFactory()
                 {
 
@@ -589,10 +588,10 @@ public class TestBackup
                             }
                         };
                     }
-                }.newFacade( config, dependencies );
+                }.newFacade( storeDir, config, dependencies );
             }
         };
-        return dbFactory.newEmbeddedDatabaseBuilder( path.getPath() ).
+        return dbFactory.newEmbeddedDatabaseBuilder( storeDir ).
             setConfig( OnlineBackupSettings.online_backup_enabled, String.valueOf( withOnlineBackup ) ).
             setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
             newGraphDatabase();

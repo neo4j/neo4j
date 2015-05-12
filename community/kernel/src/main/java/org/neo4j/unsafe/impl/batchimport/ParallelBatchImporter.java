@@ -85,11 +85,11 @@ public class ParallelBatchImporter implements BatchImporter
      * Advanced usage of the parallel batch importer, for special and very specific cases. Please use
      * a constructor with fewer arguments instead.
      */
-    public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem, Configuration config,
+    public ParallelBatchImporter( File storeDir, FileSystemAbstraction fileSystem, Configuration config,
             LogProvider logProvider, ExecutionMonitor executionMonitor, Function<Configuration,WriterFactory> writerFactory,
             AdditionalInitialIds additionalInitialIds )
     {
-        this.storeDir = new File( storeDir );
+        this.storeDir = storeDir;
         this.fileSystem = fileSystem;
         this.config = config;
         this.logProvider = logProvider;
@@ -106,7 +106,7 @@ public class ParallelBatchImporter implements BatchImporter
      * The provided {@link ExecutionMonitor} will be decorated with {@link DynamicProcessorAssigner} for
      * optimal assignment of processors to bottleneck steps over time.
      */
-    public ParallelBatchImporter( String storeDir, Configuration config, LogProvider logProvider,
+    public ParallelBatchImporter( File storeDir, Configuration config, LogProvider logProvider,
             ExecutionMonitor executionMonitor )
     {
         this( storeDir, new DefaultFileSystemAbstraction(), config, logProvider,

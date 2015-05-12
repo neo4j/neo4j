@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel;
 
+import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 
 /**
@@ -65,10 +67,14 @@ public abstract class KernelData
     }
 
     private final String instanceId;
+    private final FileSystemAbstraction fs;
+    private final File storeDir;
     private final Config configuration;
 
-    protected KernelData( Config configuration )
+    protected KernelData( FileSystemAbstraction fs, File storeDir, Config configuration )
     {
+        this.fs = fs;
+        this.storeDir = storeDir;
         this.configuration = configuration;
         this.instanceId = newInstance( this );
     }
@@ -92,9 +98,19 @@ public abstract class KernelData
 
     public abstract Version version();
 
+    public File getStoreDir()
+    {
+        return storeDir;
+    }
+
     public Config getConfig()
     {
         return configuration;
+    }
+
+    public FileSystemAbstraction getFilesystemAbstraction()
+    {
+        return fs;
     }
 
     public abstract GraphDatabaseAPI graphDatabase();

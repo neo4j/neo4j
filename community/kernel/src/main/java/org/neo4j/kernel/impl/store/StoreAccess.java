@@ -20,11 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Settings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -102,26 +98,21 @@ public class StoreAccess
         this.counts = store.getCounts();
     }
 
-    public StoreAccess( PageCache pageCache, String path )
+    public StoreAccess( PageCache pageCache, File storeDir )
     {
-        this( new DefaultFileSystemAbstraction(), pageCache, path );
+        this( new DefaultFileSystemAbstraction(), pageCache, storeDir );
     }
 
-    public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, String path )
+    public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir )
     {
-        this( fileSystem, pageCache, path, new Config( requiredParams( defaultParams(), path )), new Monitors() );
+        this( fileSystem, pageCache, storeDir, new Config(), new Monitors() );
     }
 
-    private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, String path, Config config, Monitors monitors )
+    private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config, Monitors monitors )
     {
-        this( new StoreFactory( config, new DefaultIdGeneratorFactory(), pageCache,
+        this( new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory(), pageCache,
                 fileSystem, NullLogProvider.getInstance(), monitors ).newNeoStore( false ) );
         this.closeable = true;
-    }
-
-    private static Map<String, String> requiredParams( Map<String, String> params, String path )
-    {
-        return StoreFactory.configForStoreDir( new Config(), new File( path ) ).getParams();
     }
 
     public NeoStore getRawNeoStore()
@@ -253,13 +244,6 @@ public class StoreAccess
             throws FAILURE
     {
         processor.applyFiltered( store, RecordStore.IN_USE );
-    }
-
-    private static Map<String, String> defaultParams()
-    {
-        Map<String, String> params = new HashMap<>();
-        params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.TRUE );
-        return params;
     }
 
     public synchronized void close()

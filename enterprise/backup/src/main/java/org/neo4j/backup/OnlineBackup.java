@@ -25,6 +25,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 
+import java.io.File;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
@@ -75,6 +77,15 @@ public class OnlineBackup
     }
 
     /**
+     * @deprecated use {@link #backup(File)} instead
+     */
+    @Deprecated
+    public OnlineBackup backup( String targetDirectory )
+    {
+        return backup( new File( targetDirectory ) );
+    }
+
+    /**
      * Performs a backup into targetDirectory. The server contacted is the one configured in the factory method used to
      * obtain this instance. After the backup is complete, a verification phase will take place, checking
      * the database for consistency. If any errors are found, they will be printed in stderr.
@@ -88,11 +99,20 @@ public class OnlineBackup
      * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
      * @return The same OnlineBackup instance, possible to use for a new backup operation
      */
-    public OnlineBackup backup( String targetDirectory )
+    public OnlineBackup backup( File targetDirectory )
     {
         outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory, true,
                 defaultConfig(), timeoutMillis, forensics );
         return this;
+    }
+
+    /**
+     * @deprecated use {@link #backup(File, boolean)} instead
+     */
+    @Deprecated
+    public OnlineBackup backup( String targetDirectory, boolean verification )
+    {
+        return backup( new File( targetDirectory ), verification );
     }
 
     /**
@@ -111,11 +131,20 @@ public class OnlineBackup
      * @param verification If true, the verification phase will be run.
      * @return The same OnlineBackup instance, possible to use for a new backup operation
      */
-    public OnlineBackup backup( String targetDirectory, boolean verification )
+    public OnlineBackup backup( File targetDirectory, boolean verification )
     {
         outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory,
                 verification, defaultConfig(), timeoutMillis, forensics );
         return this;
+    }
+
+    /**
+     * @deprecated use {@link #backup(File, Config)} instead
+     */
+    @Deprecated
+    public OnlineBackup backup( String targetDirectory, Config tuningConfiguration )
+    {
+        return backup( new File( targetDirectory ), tuningConfiguration );
     }
 
     /**
@@ -132,11 +161,21 @@ public class OnlineBackup
      * @param tuningConfiguration The {@link Config} to use when running the consistency check
      * @return The same OnlineBackup instance, possible to use for a new backup operation
      */
-    public OnlineBackup backup( String targetDirectory, Config tuningConfiguration )
+    public OnlineBackup backup( File targetDirectory, Config tuningConfiguration )
     {
         outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory, true,
                 tuningConfiguration, timeoutMillis, forensics );
         return this;
+    }
+
+    /**
+     * @deprecated use {@link #backup(File, Config, boolean)} instead
+     */
+    @Deprecated
+    public OnlineBackup backup( String targetDirectory, Config tuningConfiguration,
+                                boolean verification )
+    {
+        return backup( new File( targetDirectory ), tuningConfiguration, verification );
     }
 
     /**
@@ -155,7 +194,7 @@ public class OnlineBackup
      * @param verification If true, the verification phase will be run.
      * @return The same OnlineBackup instance, possible to use for a new backup operation.
      */
-    public OnlineBackup backup( String targetDirectory, Config tuningConfiguration,
+    public OnlineBackup backup( File targetDirectory, Config tuningConfiguration,
                                 boolean verification )
     {
         outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory,
@@ -187,12 +226,12 @@ public class OnlineBackup
      *
      * @param targetDirectory The directory in which to store the database
      * @return The same OnlineBackup instance, possible to use for a new backup operation.
-     * @deprecated Use {@link #backup(String)} instead.
+     * @deprecated Use {@link #backup(File)} instead.
      */
     @Deprecated
     public OnlineBackup full( String targetDirectory )
     {
-        outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, true, defaultConfig(),
+        outcome = new BackupService().doFullBackup( hostNameOrIp, port, new File( targetDirectory ), true, defaultConfig(),
                 timeoutMillis, forensics );
         return this;
     }
@@ -208,12 +247,12 @@ public class OnlineBackup
      * @param targetDirectory The directory in which to store the database
      * @param verification a boolean indicating whether to perform verification on the created backup
      * @return The same OnlineBackup instance, possible to use for a new backup operation.
-     * @deprecated Use {@link #backup(String, boolean)} instead
+     * @deprecated Use {@link #backup(File, boolean)} instead
      */
     @Deprecated
     public OnlineBackup full( String targetDirectory, boolean verification )
     {
-        outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, verification,
+        outcome = new BackupService().doFullBackup( hostNameOrIp, port, new File( targetDirectory ), verification,
                 defaultConfig(), timeoutMillis, forensics );
         return this;
     }
@@ -231,12 +270,12 @@ public class OnlineBackup
      * @param verification a boolean indicating whether to perform verification on the created backup
      * @param tuningConfiguration The {@link Config} to use when running the consistency check
      * @return The same OnlineBackup instance, possible to use for a new backup operation.
-     * @deprecated Use {@link #backup(String, Config, boolean)} instead.
+     * @deprecated Use {@link #backup(File, Config, boolean)} instead.
      */
     @Deprecated
     public OnlineBackup full( String targetDirectory, boolean verification, Config tuningConfiguration )
     {
-        outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, verification,
+        outcome = new BackupService().doFullBackup( hostNameOrIp, port, new File( targetDirectory ), verification,
                 tuningConfiguration, timeoutMillis, forensics );
         return this;
     }
@@ -252,12 +291,12 @@ public class OnlineBackup
      *
      * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
      * @return The same OnlineBackup instance, possible to use for a new backup operation
-     * @deprecated Use {@link #backup(String)} instead.
+     * @deprecated Use {@link #backup(File)} instead.
      */
     @Deprecated
     public OnlineBackup incremental( String targetDirectory )
     {
-        outcome = new BackupService().doIncrementalBackup( hostNameOrIp, port, targetDirectory, true,
+        outcome = new BackupService().doIncrementalBackup( hostNameOrIp, port, new File( targetDirectory ), true,
                 timeoutMillis, defaultConfig() );
         return this;
     }
@@ -274,12 +313,12 @@ public class OnlineBackup
      * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
      * @param verification If true, the verification phase will be run.
      * @return The same OnlineBackup instance, possible to use for a new backup operation
-     * @deprecated Use {@link #backup(String, boolean)} instead.
+     * @deprecated Use {@link #backup(File, boolean)} instead.
      */
     @Deprecated
     public OnlineBackup incremental( String targetDirectory, boolean verification )
     {
-        outcome = new BackupService().doIncrementalBackup( hostNameOrIp, port, targetDirectory, verification,
+        outcome = new BackupService().doIncrementalBackup( hostNameOrIp, port, new File( targetDirectory ), verification,
                 timeoutMillis, defaultConfig() );
         return this;
     }

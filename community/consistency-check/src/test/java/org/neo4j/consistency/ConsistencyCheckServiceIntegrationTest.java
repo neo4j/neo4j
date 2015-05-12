@@ -63,7 +63,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         // when
-        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
+        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory(),
                 configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance() );
 
         // then
@@ -82,7 +82,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         // when
-        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
+        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory(),
                 configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance() );
 
         // then
@@ -104,7 +104,7 @@ public class ConsistencyCheckServiceIntegrationTest
         );
 
         // when
-        service.runFullConsistencyCheck( fixture.directory().getPath(), configuration,
+        service.runFullConsistencyCheck( fixture.directory(), configuration,
                 ProgressMonitorFactory.NONE, NullLogProvider.getInstance() );
 
         // then
@@ -117,7 +117,7 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.absolutePath() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
 
         String propertyKey = "itemId";
         Label label = DynamicLabel.label( "Item" );
@@ -135,7 +135,7 @@ public class ConsistencyCheckServiceIntegrationTest
         db.shutdown();
 
         // when
-        Result result = service.runFullConsistencyCheck( testDirectory.absolutePath(), configuration,
+        Result result = service.runFullConsistencyCheck( testDirectory.graphDbDir(), configuration,
                 ProgressMonitorFactory.NONE, NullLogProvider.getInstance() );
 
         // then

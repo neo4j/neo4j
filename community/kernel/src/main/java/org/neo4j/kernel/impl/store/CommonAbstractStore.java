@@ -38,7 +38,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdSequence;
@@ -568,14 +567,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     }
 
     /**
-     * @return the store directory from config.
-     */
-    protected File getStoreDir()
-    {
-        return configuration.get( Configuration.store_dir );
-    }
-
-    /**
      * Returns the name of this store.
      *
      * @return The name of this store
@@ -878,9 +869,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     public static abstract class Configuration
     {
-        public static final Setting<File> store_dir = GraphDatabaseFacadeFactory.Configuration.store_dir;
-        public static final Setting<File> neo_store = GraphDatabaseFacadeFactory.Configuration.neo_store;
-
         public static final Setting<Boolean> rebuild_idgenerators_fast =
                 GraphDatabaseSettings.rebuild_idgenerators_fast;
     }

@@ -36,7 +36,7 @@ import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
 public class TestTxEntries
 {
-    private final String storeDir = new File("dir").getAbsolutePath();
+    private final File storeDir = new File("dir");
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     /*

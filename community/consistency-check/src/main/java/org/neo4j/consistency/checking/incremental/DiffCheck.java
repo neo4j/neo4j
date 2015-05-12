@@ -26,6 +26,8 @@ import org.neo4j.consistency.store.DiffStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import java.io.File;
+
 public abstract class DiffCheck
 {
     final LogProvider logProvider;
@@ -37,12 +39,12 @@ public abstract class DiffCheck
         this.log = logProvider.getLog( getClass() );
     }
 
-    public final void check( DiffStore diffs ) throws InconsistentStoreException, ConsistencyCheckIncompleteException
+    public final void check( File storeDir, DiffStore diffs ) throws InconsistentStoreException, ConsistencyCheckIncompleteException
     {
-        verify( diffs, execute( diffs ) );
+        verify( diffs, execute( storeDir, diffs ) );
     }
 
-    public abstract ConsistencySummaryStatistics execute( DiffStore diffs )
+    public abstract ConsistencySummaryStatistics execute( File storeDir, DiffStore diffs )
             throws ConsistencyCheckIncompleteException;
 
     protected void verify( DiffStore diffs, ConsistencySummaryStatistics summary )

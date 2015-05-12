@@ -69,7 +69,7 @@ public class TestIdReuse
         File storeDir = new File( "target/var/idreuse" );
         File file = new File( storeDir, fileName );
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).
-            newImpermanentDatabaseBuilder( storeDir.getPath() ).
+            newImpermanentDatabaseBuilder( storeDir ).
             newGraphDatabase();
         for ( int i = 0; i < 5; i++ )
         {
@@ -77,7 +77,7 @@ public class TestIdReuse
         }
         db.shutdown();
         long sizeBefore = file.length();
-        db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir.getPath() );
+        db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         for ( int i = 0; i < iterations; i++ )
         {
             setAndRemoveSomeProperties( db, value );

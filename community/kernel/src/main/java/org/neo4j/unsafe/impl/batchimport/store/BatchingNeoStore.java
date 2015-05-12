@@ -50,7 +50,6 @@ import static java.lang.String.valueOf;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 /**
  * Creator and accessor of {@link NeoStore} with some logic to provide very batch friendly services to the
@@ -64,6 +63,7 @@ public class BatchingNeoStore implements AutoCloseable
     private final BatchingLabelTokenRepository labelRepository;
     private final BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
     private final LogProvider logProvider;
+    private final File storeDir;
     private final Config neo4jConfig;
     private final BatchingPageCache pageCache;
     private final NeoStore neoStore;
@@ -77,10 +77,9 @@ public class BatchingNeoStore implements AutoCloseable
         this.monitors = monitors;
         this.writerFactory = writerFactory;
         this.logProvider = logProvider;
-        this.neo4jConfig = configForStoreDir(
-                new Config( stringMap( dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ) ),
-                        GraphDatabaseSettings.class ),
-                storeDir );
+        this.storeDir = storeDir;
+        this.neo4jConfig = new Config( stringMap( dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ) ),
+                        GraphDatabaseSettings.class );
 
         this.pageCache = new BatchingPageCache( fileSystem, config.fileChannelBufferSize(),
                 config.bigFileChannelBufferSizeMultiplier(), writerFactory, writeMonitor );
@@ -133,7 +132,7 @@ public class BatchingNeoStore implements AutoCloseable
 
     private NeoStore newNeoStore( PageCache pageCache )
     {
-        StoreFactory storeFactory = new StoreFactory( neo4jConfig, new BatchingIdGeneratorFactory(),
+        StoreFactory storeFactory = new StoreFactory( storeDir, neo4jConfig, new BatchingIdGeneratorFactory(),
                 pageCache, fileSystem, logProvider, monitors );
         return storeFactory.newNeoStore( true );
     }

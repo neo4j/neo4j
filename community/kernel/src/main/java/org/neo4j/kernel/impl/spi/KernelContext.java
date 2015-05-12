@@ -17,19 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.impl.spi;
 
-import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
-import static org.neo4j.test.TargetDirectory.forTest;
+import java.io.File;
 
-public class LuceneSchemaIndexProviderTest extends IndexProviderCompatibilityTestSuite
+public interface KernelContext
 {
-    @Override
-    protected LuceneSchemaIndexProvider createIndexProvider()
-    {
-        return new LuceneSchemaIndexProvider( new DirectoryFactory.InMemoryDirectoryFactory(),
-                forTest( getClass() ).makeGraphDbDir()
-        );
-    }
+    FileSystemAbstraction fileSystem();
+
+    File storeDir();
 }

@@ -1008,9 +1008,7 @@ public class ClusterManager
                         ClusterSettings.cluster_name.name(), name,
                         ClusterSettings.initial_hosts.name(), initialHosts.toString(),
                         ClusterSettings.server_id.name(), serverId + "",
-                        ClusterSettings.cluster_server.name(), "0.0.0.0:" + clusterUri.getPort(),
-                        GraphDatabaseSettings.store_dir.name(),
-                        new File( parent, "arbiter" + serverId ).getAbsolutePath() );
+                        ClusterSettings.cluster_server.name(), "0.0.0.0:" + clusterUri.getPort() );
                 Config config1 = new Config( config, GraphDatabaseFacadeFactory.Configuration.class,
                         GraphDatabaseSettings.class );
 
@@ -1099,7 +1097,7 @@ public class ClusterManager
         public File getStoreDir( HighlyAvailableGraphDatabase member )
         {
             assertMember( member );
-            return member.getDependencyResolver().resolveDependency( Config.class ).get( GraphDatabaseSettings.store_dir );
+            return member.getStoreDirectory();
         }
 
         public void sync( HighlyAvailableGraphDatabase... except ) throws InterruptedException

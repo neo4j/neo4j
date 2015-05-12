@@ -55,14 +55,15 @@ public class BatchInsertDocTest
     public void insert() throws Exception
     {
         // Make sure our scratch directory is clean
-        FileUtils.deleteRecursively( new File( "target/batchinserter-example" ) );
+        File tempStoreDir = new File( "target/batchinserter-example" ).getAbsoluteFile();
+        FileUtils.deleteRecursively( tempStoreDir );
 
         // START SNIPPET: insert
         BatchInserter inserter = null;
         try
         {
             inserter = BatchInserters.inserter(
-                    new File( "target/batchinserter-example" ).getAbsolutePath(),
+                    tempStoreDir.getAbsoluteFile(),
                     fileSystem );
 
             Label personLabel = DynamicLabel.label( "Person" );
@@ -90,7 +91,7 @@ public class BatchInsertDocTest
 
         // try it out from a normal db
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase(
-                new File("target/batchinserter-example").getAbsolutePath() );
+                tempStoreDir );
         try ( Transaction tx = db.beginTx() )
         {
             Label personLabelForTesting = DynamicLabel.label( "Person" );
@@ -115,7 +116,7 @@ public class BatchInsertDocTest
         Map<String, String> config = new HashMap<>();
         config.put( "dbms.pagecache.memory", "512m" );
         BatchInserter inserter = BatchInserters.inserter(
-                new File("target/batchinserter-example-config").getAbsolutePath(), fileSystem, config );
+                new File("target/batchinserter-example-config").getAbsoluteFile(), fileSystem, config );
         // Insert data here ... and then shut down:
         inserter.shutdown();
         // END SNIPPET: configuredInsert

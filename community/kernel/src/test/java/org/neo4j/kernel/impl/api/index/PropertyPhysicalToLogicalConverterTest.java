@@ -218,8 +218,7 @@ public class PropertyPhysicalToLogicalConverterTest
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
         Monitors monitors = new Monitors();
-        Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
-        StoreFactory storeFactory = new StoreFactory( config,
+        StoreFactory storeFactory = new StoreFactory( storeDir, new Config(),
                 new DefaultIdGeneratorFactory(), pageCacheRule.getPageCache( fs.get() ),
                 fs.get(), NullLogProvider.getInstance(), monitors );
         storeFactory.createPropertyStore();
