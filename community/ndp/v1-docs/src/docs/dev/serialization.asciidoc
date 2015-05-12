@@ -444,10 +444,10 @@ These are all the marker bytes:
 |=======================
 |Marker         |Binary     |Type          |Description
 |`0x00`..`0x7F` |`0xxxxxxx` |`+TINY_INT`   |Integer 0 to 127
-|`0x80`..`0x8F` |`1000xxxx` |`TINY_TEXT`   |UTF-8 encoded text string (fewer than 24 bytes)
-|`0x90`..`0x9F` |`1001xxxx` |`TINY_LIST`   |List (fewer than 24 items)
-|`0xA0`..`0xAF` |`1010xxxx` |`TINY_MAP`    |Map (fewer than 24 key-value pairs)
-|`0xB0`..`0xBF` |`1011xxxx` |`TINY_STRUCT` |Structure (fewer than 24 fields)
+|`0x80`..`0x8F` |`1000xxxx` |`TINY_TEXT`   |UTF-8 encoded text string (fewer than 2^4^ bytes)
+|`0x90`..`0x9F` |`1001xxxx` |`TINY_LIST`   |List (fewer than 2^4^ items)
+|`0xA0`..`0xAF` |`1010xxxx` |`TINY_MAP`    |Map (fewer than 2^4^ key-value pairs)
+|`0xB0`..`0xBF` |`1011xxxx` |`TINY_STRUCT` |Structure (fewer than 2^4^ fields)
 |`0xC0`         |`11000000` |`NULL`        |Null
 |`0xC1`         |`11000001` |`FLOAT_64`    |64-bit floating point number (double)
 |`0xC2`         |`11000010` |`FALSE`       |Boolean false
@@ -458,20 +458,20 @@ These are all the marker bytes:
 |`0xCA`         |`11001010` |`INT_32`      |32-bit signed integer
 |`0xCB`         |`11001011` |`INT_64`      |64-bit signed integer
 |`0xCC`..`0xCF` |`11001100` |              |Reserved
-|`0xD0`         |`11010000` |`TEXT_8`      |UTF-8 encoded text string (fewer than 28 bytes)
-|`0xD1`         |`11010001` |`TEXT_16`     |UTF-8 encoded text string (fewer than 216 bytes)
-|`0xD2`         |`11010010` |`TEXT_32`     |UTF-8 encoded text string (fewer than 232 bytes)
+|`0xD0`         |`11010000` |`TEXT_8`      |UTF-8 encoded text string (fewer than 2^8^ bytes)
+|`0xD1`         |`11010001` |`TEXT_16`     |UTF-8 encoded text string (fewer than 2^16^ bytes)
+|`0xD2`         |`11010010` |`TEXT_32`     |UTF-8 encoded text string (fewer than 2^32^ bytes)
 |`0xD3`         |`11010011` |              |Reserved
-|`0xD4`         |`11010100` |`LIST_8`      |List (fewer than 28 items)
-|`0xD5`         |`11010101` |`LIST_16`     |List (fewer than 216 items)
-|`0xD6`         |`11010110` |`LIST_32`     |List (fewer than 232 items)
+|`0xD4`         |`11010100` |`LIST_8`      |List (fewer than 2^8^ items)
+|`0xD5`         |`11010101` |`LIST_16`     |List (fewer than 2^16^ items)
+|`0xD6`         |`11010110` |`LIST_32`     |List (fewer than 2^32^ items)
 |`0xD7`         |`11010111` |              |Reserved
-|`0xD8`         |`11011000` |`MAP_8`       |Map (fewer than 28 key-value pairs)
-|`0xD9`         |`11011001` |`MAP_16`      |Map (fewer than 216 key-value pairs)
-|`0xDA`         |`11011010` |`MAP_32`      |Map (fewer than 232 key-value pairs)
+|`0xD8`         |`11011000` |`MAP_8`       |Map (fewer than 2^8^ key-value pairs)
+|`0xD9`         |`11011001` |`MAP_16`      |Map (fewer than 2^16^ key-value pairs)
+|`0xDA`         |`11011010` |`MAP_32`      |Map (fewer than 2^32^ key-value pairs)
 |`0xDB`         |`11011011` |              |Reserved
-|`0xDC`         |`11011100` |`STRUCT_8`    |Structure (fewer than 28 fields)
-|`0xDD`         |`11011101` |`STRUCT_16`   |Structure (fewer than 216 fields)
+|`0xDC`         |`11011100` |`STRUCT_8`    |Structure (fewer than 2^8^ fields)
+|`0xDD`         |`11011101` |`STRUCT_16`   |Structure (fewer than 2^16^ fields)
 |`0xDE`..`0xEF` |`1110xxxx` |              |Reserved
 |`0xF0`..`0xFF` |`1111xxxx` |`-TINY_INT`   |Integer -1 to -16
 |=======================
