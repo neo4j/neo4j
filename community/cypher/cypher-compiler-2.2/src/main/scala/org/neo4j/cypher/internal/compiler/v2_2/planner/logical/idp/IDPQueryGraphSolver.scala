@@ -61,9 +61,8 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
     val components = queryGraph.connectedComponents
     val plans = if (components.isEmpty) planEmptyComponent(queryGraph) else planComponents(components)
 
-    val plansWithRemainingOptionalMatches = plans.map { (plan: LogicalPlan) => (plan, queryGraph.optionalMatches) }
     monitor.startConnectingComponents(queryGraph)
-    val result = connectComponents(plansWithRemainingOptionalMatches, queryGraph)
+    val result = connectComponentsAndSolveOptionalMatch(plans.toSet, queryGraph)
     monitor.endConnectingComponents(queryGraph, result)
     result
   }
@@ -157,58 +156,49 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
     }.flatten
   }
 
-  // TODO: Consider replacing with IDP loop
-  private def connectComponents(plans: Seq[(LogicalPlan, Seq[QueryGraph])], queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
-    @tailrec
-    def recurse(plans: Seq[(LogicalPlan, Seq[QueryGraph])]): LogicalPlan = {
-      if (plans.size == 1) {
-        val (resultPlan, leftOvers) = applyApplicableOptionalMatches(plans.head)
-        if (leftOvers.nonEmpty)
-          throw new InternalException(s"Failed to plan all optional matches:\n$leftOvers")
-        resultPlan
-      } else {
-        val candidates = plans.map(applyApplicableOptionalMatches)
-        val cartesianProducts: Map[LogicalPlan, (Set[(LogicalPlan, Seq[QueryGraph])], Seq[QueryGraph])] =
-          (for (
-            lhs@(left, leftRemaining) <- candidates.iterator;
-            rhs@(right, rightRemaining) <- candidates.iterator if left ne right;
-            remaining = if (leftRemaining.size < rightRemaining.size) leftRemaining else rightRemaining;
-            oldPlans = Set(lhs, rhs);
-            newPlan = kit.select(context.logicalPlanProducer.planCartesianProduct(left, right), queryGraph)
-          )
-            yield newPlan -> (oldPlans -> remaining)).toMap
-        val bestCartesian = kit.pickBest(cartesianProducts.keys).get
-        val (oldPlans, remaining) = cartesianProducts(bestCartesian)
-        val newPlans = plans.filterNot(oldPlans.contains) :+ (bestCartesian -> remaining)
-        recurse(newPlans)
-      }
+  private def connectComponentsAndSolveOptionalMatch(plans: Set[LogicalPlan], qg: QueryGraph)
+    (implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
+
+    def findBestCartesianProduct(plans: Set[LogicalPlan]): Set[LogicalPlan] = {
+
+      assert(plans.size > 1, "Can't build cartesian product with less than two input plans")
+
+      val allCrossProducts = (for (p1 <- plans; p2 <- plans if p1 != p2) yield {
+        val crossProduct = kit.select(context.logicalPlanProducer.planCartesianProduct(p1, p2), qg)
+        (crossProduct, (p1, p2))
+      }).toMap
+      val bestCartesian = kit.pickBest(allCrossProducts.keySet).get
+      val (p1, p2) = allCrossProducts(bestCartesian)
+
+      plans - p1 - p2 + bestCartesian
     }
 
     @tailrec
-    def applyApplicableOptionalMatches(todo: (LogicalPlan, Seq[QueryGraph])): (/* new plan*/ LogicalPlan, /* remaining */ Seq[QueryGraph]) = {
-      todo match {
-        case (plan, allRemaining @ Seq(nextOptional, nextRemaining@_*)) => withOptionalMatch(plan, nextOptional) match {
-          case Some(newPlan) => applyApplicableOptionalMatches(newPlan -> nextRemaining)
-          case None          => (plan, allRemaining)
-        }
+    def recurse(plans: Set[LogicalPlan], optionalMatches: Seq[QueryGraph]): (Set[LogicalPlan], Seq[QueryGraph]) = {
+      if (optionalMatches.nonEmpty) {
+        // If we have optional matches left to solve - start with that
+        val firstOptionalMatch = optionalMatches.head
+        val applicablePlan = plans.find(p => firstOptionalMatch.argumentIds subsetOf p.availableSymbols)
 
-        case done =>
-          done
-      }
+        applicablePlan match {
+          case Some(p) =>
+            val candidates = config.optionalSolvers.flatMap(solver => solver(firstOptionalMatch, p))
+            val best = kit.pickBest(candidates).get
+            recurse(plans - p + best, optionalMatches.tail)
+
+          case None =>
+            // If we couldn't find any optional match we can take on, produce the best cartesian product possible
+            recurse(findBestCartesianProduct(plans), optionalMatches)
+        }
+      } else if (plans.size > 1) {
+
+        recurse(findBestCartesianProduct(plans), optionalMatches)
+      } else (plans, optionalMatches)
     }
 
-    def withOptionalMatch(plan: LogicalPlan, optionalMatch: QueryGraph): Option[LogicalPlan] =
-      if ((optionalMatch.argumentIds -- plan.availableSymbols).isEmpty) {
-        val candidates = config.optionalSolvers.flatMap {
-          solver =>
-            solver(optionalMatch, plan)
-        }
-        val best = kit.pickBest(candidates)
-        best
-      } else {
-        None
-      }
-
-    recurse(plans)
+    val (resultingPlans, optionalMatches) = recurse(plans, qg.optionalMatches)
+    assert(resultingPlans.size == 1)
+    assert(optionalMatches.isEmpty)
+    resultingPlans.head
   }
 }
