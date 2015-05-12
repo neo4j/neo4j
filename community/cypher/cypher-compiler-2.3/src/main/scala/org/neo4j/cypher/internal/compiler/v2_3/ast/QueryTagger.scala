@@ -223,8 +223,6 @@ object QueryTagger extends QueryTagger[String] {
 
   implicit class RichQueryTagger[T](lhs: QueryTagger[T]) {
     def ++(rhs: QueryTagger[T]): QueryTagger[T] = (input: T) => lhs(input) `union` rhs(input)
-    //    def --(other: QueryTagger[T]): QueryTagger[T] = (input: T) => self(input) -- other(input)
-    //    def &&(other: QueryTagger[T]): QueryTagger[T] = (input: T) => self(input) intersect other(input)
   }
 }
 
