@@ -154,7 +154,7 @@
             </goals>
             <configuration>
               <backend>html</backend>
-              <outputDirectory>${basedir}/target/protocol-manual/pdf</outputDirectory>
+              <outputDirectory>${basedir}/target/protocol-manual/html</outputDirectory>
             </configuration>
           </execution>
         </executions>
