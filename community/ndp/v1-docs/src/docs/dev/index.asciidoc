@@ -4,6 +4,8 @@ Neo4j Data Protocol, Version 1
 
 WARNING: This component is in active development and *will* change.
 
+NOTE: Byte values within this document are represented in http://en.wikipedia.org/wiki/Hexadecimal[hexadecimal] notation unless otherwise specified.
+
 == Overview
 
 This section describes the Neo4j Data Protocol, version 1.
