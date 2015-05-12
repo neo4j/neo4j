@@ -32,6 +32,7 @@ import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.msgprocess.TransportBridge;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
+import org.neo4j.packstream.PackStream;
 
 /**
  * Implements version one of the Neo4j protocol when transported over a socket. This means this class will handle a
@@ -70,7 +71,7 @@ public class SocketProtocolV1 implements SocketProtocol
         this.session = session;
         this.output = new ChunkedOutput();
         this.input = new ChunkedInput();
-        this.packer = new PackStreamMessageFormatV1.Writer( output, output.messageBoundaryHook() );
+        this.packer = new PackStreamMessageFormatV1.Writer( new PackStream.Packer( output ), output.messageBoundaryHook() );
         this.unpacker = new PackStreamMessageFormatV1.Reader( input );
         this.bridge = new TransportBridge( log ).reset( session, packer, new Runnable()
         {

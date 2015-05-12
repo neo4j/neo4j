@@ -98,11 +98,10 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
                     .close();
             return;
         case PARTIAL_HANDSHAKE:
-            return;
         }
     }
 
-    public static enum HandshakeOutcome
+    public enum HandshakeOutcome
     {
         /** Yay! */
         PROTOCOL_CHOSEN,

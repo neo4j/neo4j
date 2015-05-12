@@ -19,7 +19,6 @@
  */
 package org.neo4j.ndp.runtime.internal;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -38,17 +37,15 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     private final GraphDatabaseAPI gds;
     private final Log log;
     private final LifeSupport life = new LifeSupport();
-    private final DependencyResolver deps;
 
     private CypherStatementRunner queryEngine;
     private ThreadToStatementContextBridge txBridge;
 
     public StandardSessions( GraphDatabaseAPI gds, Log log )
     {
-        this.deps = gds.getDependencyResolver();
         this.gds = gds;
         this.log = log;
-        this.txBridge = deps.resolveDependency( ThreadToStatementContextBridge.class );
+        this.txBridge = gds.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     @Override

@@ -30,11 +30,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
@@ -45,18 +47,17 @@ import org.neo4j.ndp.runtime.internal.Neo4jError;
 import org.neo4j.packstream.BufferedChannelInput;
 import org.neo4j.packstream.BufferedChannelOutput;
 import org.neo4j.packstream.PackInput;
-import org.neo4j.packstream.PackOutput;
 import org.neo4j.packstream.PackStream;
 import org.neo4j.packstream.PackType;
 import org.neo4j.stream.Record;
 
+import static org.neo4j.ndp.messaging.v1.infrastructure.ValueParser.parseId;
 import static org.neo4j.ndp.runtime.internal.Neo4jError.codeFromString;
 import static org.neo4j.stream.Records.record;
 
 public class PackStreamMessageFormatV1 implements MessageFormat
 {
     public static final int VERSION = 1;
-    public static final String CONTENT_TYPE = "application/vnd.neo4j.v" + VERSION + "+packstream";
     public static final char NODE = 'N';
     public static final char RELATIONSHIP = 'R';
     public static final char PATH = 'P';
@@ -64,7 +65,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     @Override
     public MessageFormat.Writer newWriter()
     {
-        return new Writer();
+        return new Writer( new PackStream.Packer( new BufferedChannelOutput( 8192 ) ), Writer.NO_OP );
     }
 
     @Override
@@ -94,30 +95,22 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
     public static class Writer implements MessageFormat.Writer
     {
+        public static final Runnable NO_OP = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                // no-op
+            }
+        };
+
         private final PackStream.Packer packer;
         private final Runnable onMessageComplete;
 
-        public Writer()
-        {
-            this( new BufferedChannelOutput( 8192 ), new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    // no-op
-                }
-            } );
-        }
-
         /**
-         * @param output interface to write messages to
+         * @param packer serializer to output channel
          * @param onMessageComplete invoked for each message, after it's done writing to the output
          */
-        public Writer( PackOutput output, Runnable onMessageComplete )
-        {
-            this( new PackStream.Packer( output ), onMessageComplete );
-        }
-
         public Writer( PackStream.Packer packer, Runnable onMessageComplete )
         {
             this.packer = packer;
@@ -225,7 +218,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private void packRawMap( Map<String,Object> map ) throws IOException
         {
             packer.packMapHeader( map.size() );
-            if( map.size() > 0 )
+            if ( map.size() > 0 )
             {
                 for ( Map.Entry<String,Object> entry : map.entrySet() )
                 {
@@ -399,8 +392,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             }
             else
             {
-                throw new RuntimeException( "Unpackable value " + obj.toString() + " of type " + obj.getClass()
-                        .getName() );
+                throw new RuntimeException( "Unpackable value " + obj + " of type " + obj.getClass().getName() );
             }
         }
     }
@@ -623,23 +615,28 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     }
                     else
                     {
-                        labels = Collections.EMPTY_LIST;
+                        labels = Collections.emptyList();
                     }
 
                     Map<String,Object> props = unpackProperties();
 
-                    return new ValueNode( urn, labels, props );
+                    return new ValueNode( parseId( urn ), labels, props );
                 }
                 case RELATIONSHIP:
                 {
                     String urn = unpacker.unpackString();
                     String startUrn = unpacker.unpackString();
                     String endUrn = unpacker.unpackString();
-                    String relType = unpacker.unpackString();
+                    String relTypeName = unpacker.unpackString();
 
                     Map<String,Object> props = unpackProperties();
 
-                    return new ValueRelationship( urn, startUrn, endUrn, relType, props );
+                    long relId = parseId( urn );
+                    long startNodeId = parseId( startUrn );
+                    long endNodeId = parseId( endUrn );
+                    RelationshipType relType = DynamicRelationshipType.withName( relTypeName );
+
+                    return new ValueRelationship( relId, startNodeId, endNodeId, relType, props );
                 }
                 case PATH:
                 {

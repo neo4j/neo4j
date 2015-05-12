@@ -63,14 +63,7 @@ public class DocSerialization
     {
         RecordingByteChannel ch = new RecordingByteChannel();
         PackStream.Packer packer = new PackStream.Packer( new BufferedChannelOutput( ch, 128 ) );
-        PackStreamMessageFormatV1.Writer writer = new PackStreamMessageFormatV1.Writer( packer, new Runnable()
-        {
-            @Override
-            public void run()
-            {
-
-            }
-        } );
+        PackStreamMessageFormatV1.Writer writer = new PackStreamMessageFormatV1.Writer( packer, PackStreamMessageFormatV1.Writer.NO_OP );
 
         pack( value, packer, writer );
 

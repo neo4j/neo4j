@@ -38,14 +38,6 @@ public class ValueNode implements Node
     private final List<Label> labels;
     private final Map<String,Object> props;
 
-    public ValueNode( String id, List<Label> labels, Map<String,Object> props )
-    {
-        String[] split = id.split( "/" );
-        this.id = Long.parseLong( split[split.length - 1] );
-        this.labels = labels;
-        this.props = props;
-    }
-
     public ValueNode( long id, List<Label> labels, Map<String,Object> props )
     {
         this.id = id;
