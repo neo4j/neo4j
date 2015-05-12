@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha.lock;
 
 import java.io.StringWriter;
 import java.util.Arrays;
-import java.util.TimeZone;
 
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.DumpLocksVisitor;
@@ -37,10 +36,10 @@ import static java.lang.String.format;
  * deadlock exceptions and retry. This exception is thrown instead of awaiting a lock locally on a slave
  * after it was acquired on the master, since applying a lock locally after master granted it should succeed,
  * or fail; it cannot wait for another condition.
- * 
+ *
  * While this work-around is in place there is more breathing room to figure out the real problem preventing
  * some local locks to be grabbed.
- * 
+ *
  * @author Mattias Persson
  */
 public class LocalDeadlockDetectedException extends DeadlockDetectedException
