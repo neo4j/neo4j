@@ -160,6 +160,7 @@
         </executions>
         <configuration>
           <sourceDirectory>${basedir}/src/docs/dev</sourceDirectory>
+          <imagesDir>.</imagesDir>
           <attributes>
             <pagenums/>
             <toc/>
