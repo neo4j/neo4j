@@ -22,7 +22,7 @@ Once connected, both transport layers can be treated identically.
 A regular socket connection should be made to the host and port Neo4j has been configured to use for its regular socket listener.
 The default port for regular socket connections is *7687*.
 Similar configuration exists for the WebSocket listener.
-The default port for WebSocket connections is *8776*.
+The default port for WebSocket connections is *7688*.
 
 === Handshake
 

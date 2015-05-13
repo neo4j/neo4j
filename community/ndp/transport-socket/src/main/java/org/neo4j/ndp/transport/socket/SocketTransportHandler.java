@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.Factory;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
+import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 
 /**
  * Handles incoming chunks of data for a given client channel. This initially will negotiate a protocol version to use,
@@ -68,7 +69,26 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
         }
     }
 
-    // TODO: Handle channelInactive (eg. close our session if we've opened one)
+    @Override
+    public void channelInactive( ChannelHandlerContext ctx ) throws Exception
+    {
+        close();
+    }
+
+    @Override
+    public void handlerRemoved( ChannelHandlerContext ctx ) throws Exception
+    {
+        close();
+    }
+
+    private void close()
+    {
+        if(protocol != null)
+        {
+            protocol.close();
+            protocol = null;
+        }
+    }
 
     private void chooseProtocolVersion( ChannelHandlerContext ctx, ByteBuf buffer ) throws Exception
     {
@@ -102,7 +122,7 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
         }
     }
 
-    public static enum HandshakeOutcome
+    public enum HandshakeOutcome
     {
         /** Yay! */
         PROTOCOL_CHOSEN,

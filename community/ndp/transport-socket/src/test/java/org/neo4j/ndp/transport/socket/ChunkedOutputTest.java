@@ -36,10 +36,12 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 public class ChunkedOutputTest
 {
+    private final ChannelHandlerContext ch = mock( ChannelHandlerContext.class );
     private final ByteBuffer writtenData = ByteBuffer.allocate( 1024 );
     private final ChunkedOutput out = new ChunkedOutput( 16 );
 
@@ -77,9 +79,8 @@ public class ChunkedOutputTest
     @Before
     public void setup()
     {
-        ChannelHandlerContext ch = mock( ChannelHandlerContext.class );
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
-        when( ch.writeAndFlush( any(), any(ChannelPromise.class) ) ).thenAnswer( new Answer<Object>()
+        when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).thenAnswer( new Answer<Object>()
         {
             @Override
             public Object answer( InvocationOnMock invocation ) throws Throwable
