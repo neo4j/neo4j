@@ -66,12 +66,13 @@ import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.ha.store.ForeignStoreException;
+import org.neo4j.kernel.ha.store.InconsistentlyUpgradedClusterException;
+import org.neo4j.kernel.ha.store.UnableToCopyStoreFromOldMasterException;
+import org.neo4j.kernel.ha.store.UnavailableMembersException;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.store.InconsistentlyUpgradedClusterException;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.store.UnableToCopyStoreFromOldMasterException;
-import org.neo4j.kernel.impl.store.UnavailableMembersException;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -353,12 +354,11 @@ public class SwitchToSlave
             {
                 msgLog.warn( "Found and deleting empty store with mismatching store id", e );
                 stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
+                throw e;
             }
-            else
-            {
-                msgLog.error( "Store cannot participate in cluster due to mismatching store IDs", e );
-            }
-            throw e;
+
+            msgLog.error( "Store cannot participate in cluster due to mismatching store IDs", e );
+            throw new ForeignStoreException( e.getExpected(), e.getEncountered() );
         }
     }
 

@@ -35,12 +35,12 @@ import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Functions;
-import org.neo4j.kernel.impl.store.InconsistentlyUpgradedClusterException;
+import org.neo4j.kernel.ha.store.HighAvailabilityStoreFailureException;
+import org.neo4j.kernel.ha.store.InconsistentlyUpgradedClusterException;
+import org.neo4j.kernel.ha.store.UnableToCopyStoreFromOldMasterException;
+import org.neo4j.kernel.ha.store.UnavailableMembersException;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.store.UnableToCopyStoreFromOldMasterException;
-import org.neo4j.kernel.impl.store.UnavailableMembersException;
-import org.neo4j.kernel.impl.transaction.log.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -340,8 +340,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         canAskForElections.set( true );
                     }
                 }
-                catch ( UnableToCopyStoreFromOldMasterException | InconsistentlyUpgradedClusterException |
-                        UnavailableMembersException e )
+                catch ( HighAvailabilityStoreFailureException e )
                 {
                     consoleLog.error( "UNABLE TO START UP AS SLAVE: " + e.getMessage() );
                     msgLog.error( "Unable to start up as slave", e );
@@ -362,9 +361,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     modeSwitcherExecutor.schedule( this, 5, TimeUnit.SECONDS );
                     throw e;
                 }
-                catch ( MismatchingStoreIdException | NoSuchLogVersionException e )
+                catch ( MismatchingStoreIdException e )
                 {
-                    // Try again immediately
+                    // Try again immediately, the place that threw it have already treated the db
+                    // as branched and so a new attempt will have this slave copy a new store from master.
                     run();
                 }
                 catch ( Throwable t )
