@@ -562,4 +562,12 @@ return coalesce(a.title, a.name)""")
 
     result.toComparableResult should equal(List(Map("FOO" -> List(1, 2, 3, 4))))
   }
+
+  test("Should return correct scala objects") {
+    val query = "RETURN {uid: 'foo'} AS params"
+
+    val rows = executeWithAllPlannersAndRuntimes(query).columnAs[Map[String, Any]]("params").toList
+
+    rows.head should equal(Map("uid" -> "foo"))
+  }
 }
