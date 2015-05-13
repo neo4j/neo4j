@@ -453,7 +453,6 @@ public class ExecutionResultSerializer
         finally
         {
             out.writeEndArray(); // </data>
-            data.close(); // free associated resources as early a possible
         }
     }
 
