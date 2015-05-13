@@ -61,6 +61,9 @@ script(id="inspector/relationshipType.html", type="text/ng-template")
       ul.list-inline
         li Caption:
         li
+          a.attribute(ng-click='selectCaption(item, "<id>")'
+            ng-class="{selected: isSelectedCaption(item, '<id>')}") &lt;id&gt;
+        li
           a.attribute(ng-click='selectCaption(item, "<type>")'
             ng-class="{selected: isSelectedCaption(item, '<type>')}") &lt;type&gt;
         li(ng-repeat='property in item.attrs')
