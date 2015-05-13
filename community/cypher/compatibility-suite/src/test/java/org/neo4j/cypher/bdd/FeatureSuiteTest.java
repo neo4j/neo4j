@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.bdd;
 
-
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import org.junit.runner.RunWith;
 
 @RunWith(Cucumber.class)
-@CucumberOptions(plugin={"pretty", "html:target/cucumber", "org.neo4j.cypher.cucumber.CypherResultReporter:target/cypher-cucumber"})
+@CucumberOptions(plugin={
+        "pretty", "html:target/cucumber",
+        "org.neo4j.cypher.cucumber.reporter.CypherResultReporter:target/cypher-cucumber",
+        "org.neo4j.cypher.cucumber.db.DatabaseProvider:target/dbs-cucumber",
+})
 public class FeatureSuiteTest
 {
 }

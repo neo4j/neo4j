@@ -1,0 +1,9 @@
+{
+  "user_csv" : "file:src/test/resources/org/neo4j/cypher/db/cineast/User.csv",
+  "person_csv" : "file:src/test/resources/org/neo4j/cypher/db/cineast/Person.csv",
+  "movie_csv" : "file:src/test/resources/org/neo4j/cypher/db/cineast/Movie.csv",
+  "acts_in_csv" : "file:src/test/resources/org/neo4j/cypher/db/cineast/ACTS_IN.csv",
+  "directed_csv" : "file:src/test/resources/org/neo4j/cypher/db/cineast/DIRECTED.csv",
+  "friend_csv" : "file:src/test/resources/org/neo4j/cypher/db/cineast/FRIEND.csv",
+  "rated_csv" : "file:src/test/resources/org/neo4j/cypher/db/cineast/RATED.csv"
+}
