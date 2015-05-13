@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 // Generates the code that moves data into local variables from the iterator being consumed
 trait LoopDataGenerator extends Instruction {
+
   def generateVariablesAndAssignment(): String
 
   def javaType: String
@@ -29,5 +30,5 @@ trait LoopDataGenerator extends Instruction {
 
   def id: String
 
-  override def operatorId: Some[String] = Some(id)
+  override protected def operatorId = Some(id)
 }

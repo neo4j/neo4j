@@ -39,17 +39,17 @@ case class MethodInvocation(override val operatorId: Option[String],
     case None => s"final $resultType $resultVariable = $methodName();"
   }
 
-  override def methods = super.methods
-
   override def children = statements
 
   def generateInit() = ""
 
-  override protected def _method = Some(new Method {
+  def members() = statements.map(_.members()).reduce(_ + n + _)
+
+  override protected def method = Some(new Method {
     def generateCode = {
       val init = statements.map(_.generateInit()).reduce(_ + n + _)
       val methodBody = statements.map(_.generateCode()).reduce(_ + n + _)
-      val exceptions = statements.flatMap(_.exceptions).map(_.throwClause)
+      val exceptions = statements.flatMap(_.allExceptions).map(_.throwClause)
       val throwClause = if (exceptions.isEmpty) "" else exceptions.mkString("throws ", ",", "")
 
       s"""private $resultType $methodName() throws KernelException
@@ -64,9 +64,7 @@ case class MethodInvocation(override val operatorId: Option[String],
     def name = methodName
   })
 
-  override def exceptions: Set[ExceptionCodeGen] = Set(KernelExceptionCodeGen)
+  override protected def exceptions = Set(KernelExceptionCodeGen)
 
-  def members() = statements.map(_.members()).reduce(_ + n + _)
-
-  override def _importedClasses() = Set("org.neo4j.kernel.api.exceptions.KernelException")
+  override protected def importedClasses = Set("org.neo4j.kernel.api.exceptions.KernelException")
 }

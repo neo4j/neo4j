@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 case class GetMatchesFromProbeTable(key: String, code: CodeThunk, action: Instruction) extends Instruction {
+
   def generateCode() = code(key, action)
 
   def generateInit() = action.generateInit()
@@ -27,6 +28,4 @@ case class GetMatchesFromProbeTable(key: String, code: CodeThunk, action: Instru
   def members() = action.members()
 
   override def children = Seq(action)
-
-  override protected def _importedClasses() = Set.empty
 }

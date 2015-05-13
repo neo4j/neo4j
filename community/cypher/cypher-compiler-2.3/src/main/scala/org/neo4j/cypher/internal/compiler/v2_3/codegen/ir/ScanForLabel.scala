@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaString
 
+case class ScanForLabel(id: String, labelName: String, labelVar: JavaSymbol)
+  extends Instruction with LoopDataGenerator {
 
-case class ScanForLabel(id: String, labelName: String, labelVar: JavaSymbol) extends Instruction with LoopDataGenerator {
   def generateCode() = s"""ro.nodesGetForLabel( ${labelVar.name} )"""
 
   def generateVariablesAndAssignment() = ""
@@ -37,9 +38,9 @@ case class ScanForLabel(id: String, labelName: String, labelVar: JavaSymbol) ext
 
   override def members() = s"private ${labelVar.javaType} ${labelVar.name} = -1;"
 
-  override def _importedClasses() =
-    Set("org.neo4j.collection.primitive.PrimitiveLongIterator")
+  override protected def importedClasses = Set("org.neo4j.collection.primitive.PrimitiveLongIterator")
 
   def javaType = "PrimitiveLongIterator"
 
+  override protected def children = Seq.empty
 }

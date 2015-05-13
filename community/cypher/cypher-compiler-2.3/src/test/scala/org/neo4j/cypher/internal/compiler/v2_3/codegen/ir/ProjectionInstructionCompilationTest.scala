@@ -170,6 +170,5 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
     case v: Long => ProjectionInstruction.literal(v)
     case v: Double => ProjectionInstruction.literal(v)
     case v: String => ProjectionInstruction.literal(v)
-    case v: Boolean => ProjectionInstruction.literal(v)
   }
 }

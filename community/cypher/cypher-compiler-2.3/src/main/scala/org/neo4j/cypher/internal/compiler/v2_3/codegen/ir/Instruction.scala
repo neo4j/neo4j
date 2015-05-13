@@ -22,48 +22,43 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ExceptionCodeGen
 
 trait Instruction {
+
   // Actual code produced by element
   def generateCode(): String
-
-  final def importedClasses() = allLeafs.flatMap(_._importedClasses()).toSet
-
-  //generate class level members
-  def members(): String
 
   //Initialises necessary data-structures. Is inserted at the top of the generated method
   def generateInit(): String
 
-  def methods: Seq[Method] = {
-    (allLeafs :+ this).flatMap(_._method)
+  //generate class level members
+  def members(): String
+
+  protected def children: Seq[Instruction]
+
+  private def treeView: Seq[Instruction] = {
+    children.foldLeft(Seq(this)) { (acc, child) => acc ++ child.treeView }
   }
 
-  def exceptions: Set[ExceptionCodeGen] = allLeafs.flatMap(_._exceptions()).toSet
+  // Aggregating methods -- final to prevent overriding
+  final def allImportedClasses: Set[String] = treeView.flatMap(_.importedClasses).toSet
 
-  // Generates import list for class - implement this!
-  protected def _importedClasses(): Set[String]
+  final def allMethods: Seq[Method] = treeView.flatMap(_.method)
 
-  protected def _exceptions(): Set[ExceptionCodeGen] = Set.empty
+  final def allExceptions: Set[ExceptionCodeGen] = treeView.flatMap(_.exceptions).toSet
 
-  protected def children: Seq[Instruction] = Seq.empty
+  final def allOperatorIds: Set[String] = treeView.flatMap(_.operatorId).toSet
 
-  def operatorId: Option[String] = None
+  // Override these
+  protected def importedClasses: Set[String] = Set.empty
 
-  protected def _method: Option[Method] = None
+  protected def method: Option[Method] = None
 
-  private def allLeafs: Seq[Instruction] = {
-    val grandKids = children.foldLeft(Seq.empty[Instruction]) {
-      case (acc, child) => acc ++ child.allLeafs
-    }
+  protected def exceptions: Set[ExceptionCodeGen] = Set.empty
 
-    children ++ grandKids
-  }
-
-  def operatorIds: Set[String] = {
-    (operatorId.getOrElse("") +: children.flatMap(_.operatorIds)).toSet.filter(_.nonEmpty)
-  }
+  protected def operatorId: Option[String] = None
 }
 
 object Instruction {
+
   val empty = new Instruction {
     override def generateCode() = ""
 
@@ -71,8 +66,6 @@ object Instruction {
 
     override def generateInit() = ""
 
-    override def exceptions: Set[ExceptionCodeGen] = Set.empty
-
-    override protected def _importedClasses() = Set.empty
+    override protected def children = Seq.empty
   }
 }

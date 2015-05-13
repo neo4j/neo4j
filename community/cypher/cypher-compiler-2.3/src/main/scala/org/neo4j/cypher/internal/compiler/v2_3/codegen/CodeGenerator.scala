@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.apache.commons.lang3.StringEscapeUtils
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.{JavaSymbol, JavaTypes}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, PlanFingerprint, _}
@@ -41,10 +40,11 @@ import org.neo4j.kernel.api.Statement
 import scala.collection.{Map, immutable, mutable}
 
 object CodeGenerator {
+
   def generateClass(instructions: Seq[Instruction]) = {
     val className = Namer.newClassName()
     val source = generateCodeFromInstructions(className, instructions)
-    //println(indentNicely(source))
+
     (Javac.compile(s"$packageName.$className", source), source)
   }
 
@@ -52,6 +52,7 @@ object CodeGenerator {
 
   //TODO these methods should be move out of 2.3 together with everyting that touches Statement
   def getNodeById(v: String) = JavaSymbol(s"""db.getNodeById( $v )""", JavaTypes.NODE)
+
   def getRelationshipById(v: String) = JavaSymbol(s"""db.getRelationshipById( $v )""", JavaTypes.RELATIONSHIP)
 
   private val nameCounter = new AtomicInteger(0)
@@ -82,13 +83,7 @@ object CodeGenerator {
   def n = System.lineSeparator()
 
   private def generateCodeFromInstructions(className: String, instructions: Seq[Instruction]) = {
-    val importLines: Set[String] =
-      instructions.
-        map(_.importedClasses()).
-        reduceOption(_ ++ _).
-        getOrElse(Set.empty)
-
-
+    val importLines = instructions.map(_.allImportedClasses).reduceOption(_ ++ _).getOrElse(Set.empty)
 
     val imports = if (importLines.nonEmpty)
       importLines.toSeq.sorted.mkString("import ", s";${n}import ", ";")
@@ -97,10 +92,10 @@ object CodeGenerator {
     val members = instructions.map(_.members().trim).mkString(n).trim
     val init = instructions.map(_.generateInit().trim).mkString(n).trim
     val methodBody = instructions.map(_.generateCode().trim).reduce(_ + n + _).trim
-    val privateMethods = instructions.flatMap(_.methods).distinct.sortBy(_.name)
+    val privateMethods = instructions.flatMap(_.allMethods).distinct.sortBy(_.name)
     val privateMethodText = privateMethods.map(_.generateCode.trim).reduceOption(_ + n + _).getOrElse("").trim
-    val exceptions = instructions.flatMap(_.exceptions).toSet
-    val opIds = instructions.flatMap(_.operatorIds).map(s => s"public static Id $s;").mkString(n)
+    val exceptions = instructions.flatMap(_.allExceptions).toSet
+    val opIds = instructions.flatMap(_.allOperatorIds).map(s => s"public static Id $s;").mkString(n)
 
     s"""package $packageName;
        |
@@ -169,7 +164,8 @@ object CodeGenerator {
        |}""".stripMargin
   }
 
-  private def createInstructions(plan: LogicalPlan, semanticTable: SemanticTable, idMap: immutable.Map[LogicalPlan, Id]): (Seq[Instruction], mutable.Map[Id, String]) = {
+  private def createInstructions(plan: LogicalPlan, semanticTable: SemanticTable,
+                                 idMap: immutable.Map[LogicalPlan, Id]): (Seq[Instruction], mutable.Map[Id, String]) = {
     import LogicalPlanConverter._
 
     val context = new CodeGenContext(semanticTable, idMap)
@@ -177,7 +173,6 @@ object CodeGenerator {
     (result, context.operatorIds)
   }
 }
-
 
 
 class CodeGenerator {
@@ -210,7 +205,8 @@ class CodeGenerator {
                     descriptionProvider: (InternalPlanDescription) => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer]),
                     params: immutable.Map[String, Any], closer: TaskCloser): InternalExecutionResult = {
             val (supplier, tracer) = descriptionProvider(description)
-            Javac.newInstance(clazz, closer, statement, db, execMode, supplier, tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
+            Javac.newInstance(clazz, closer, statement, db, execMode, supplier,
+                              tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
           }
         }
 

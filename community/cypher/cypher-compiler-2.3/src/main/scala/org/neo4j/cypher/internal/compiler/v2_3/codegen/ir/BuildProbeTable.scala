@@ -21,29 +21,34 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.Namer
 
 sealed trait BuildProbeTable extends Instruction {
+
   def producedType: String
+
   def generateFetchCode: CodeThunk
 
 }
+
 object BuildProbeTable {
-  def apply(id:String, name: String, node: String, valueSymbols: Map[String, JavaSymbol], namer: Namer): BuildProbeTable = {
+
+  def apply(id: String, name: String, node: String, valueSymbols: Map[String, JavaSymbol],
+            namer: Namer): BuildProbeTable = {
     if (valueSymbols.isEmpty) BuildCountingProbeTable(id, name, node, namer)
     else BuildRecordingProbeTable(name, node, valueSymbols, namer)
   }
 }
 
-case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Map[String, JavaSymbol], namer: Namer) extends BuildProbeTable {
+case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Map[String, JavaSymbol], namer: Namer)
+  extends BuildProbeTable {
 
   private val valueType = s"ValueTypeIn$name"
 
   private val innerClassDeclaration =
     s"""static class $valueType
         |{
-        |${valueSymbols.map {case (k, v) => s"${v.javaType} $k;"}.mkString(n)}
+        |${valueSymbols.map { case (k, v) => s"${v.javaType} $k;" }.mkString(n)}
         |}""".stripMargin
 
   def members() = innerClassDeclaration
@@ -80,20 +85,22 @@ case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Ma
           |${action.generateCode()}
           |}
           |}""".stripMargin
-      }
+    }
     CodeThunk(symbols, code)
   }
 
-  override def _importedClasses() = Set(
+  override protected def importedClasses = Set(
     "org.neo4j.collection.primitive.PrimitiveLongObjectMap",
     "java.util.ArrayList"
   )
 
   def producedType: String = s"PrimitiveLongObjectMap<ArrayList<$valueType>>"
 
+  override protected def children = Seq.empty
 }
 
 case class BuildCountingProbeTable(id: String, name: String, node: String, namer: Namer) extends BuildProbeTable {
+
   def generateInit() = s"final PrimitiveLongIntMap $name = Primitive.longIntMap();"
 
   def generateCode() =
@@ -107,9 +114,11 @@ case class BuildCountingProbeTable(id: String, name: String, node: String, namer
        |$name.put( $node, count + 1 );
        |}""".stripMargin
 
-  override def _importedClasses() = Set(
+  override protected def importedClasses = Set(
     "org.neo4j.collection.primitive.PrimitiveLongIntMap",
     "org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable")
+
+  override protected def operatorId = Some(id)
 
   def producedType: String = "PrimitiveLongIntMap"
 
@@ -117,12 +126,10 @@ case class BuildCountingProbeTable(id: String, name: String, node: String, namer
 
   def valueType = "int"
 
-  override def operatorId: Some[String] = Some(id)
-
   override def generateFetchCode = {
     val timesSeen = namer.newVarName()
     val eventVar = s"event_$id"
-    val code  = (key: String, action: Instruction) => {
+    val code = (key: String, action: Instruction) => {
       s"""
          |try ( QueryExecutionEvent $eventVar = tracer.executeOperator( $id ) )
          |{
@@ -137,11 +144,14 @@ case class BuildCountingProbeTable(id: String, name: String, node: String, namer
          |}
          |}"""
         .stripMargin
-      }
+    }
     CodeThunk(Map.empty, code)
   }
+
+  override protected def children = Seq.empty
 }
 
 case class CodeThunk(vars: Map[String, JavaSymbol], generator: (String, Instruction) => String) {
+
   def apply(key: String, instruction: Instruction) = generator(key, instruction)
 }
