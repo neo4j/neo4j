@@ -521,8 +521,7 @@ public class TestLuceneBatchInsert
     {
         Iterable filteredKernelExtensions = filter( onlyRealLuceneExtensions(),
                 Service.load( KernelExtensionFactory.class ) );
-        inserter = BatchInserters.inserter( storeDir, new DefaultFileSystemAbstraction(), stringMap(),
-                filteredKernelExtensions );
+        inserter = BatchInserters.inserter( storeDir, stringMap(), filteredKernelExtensions );
     }
 
     @SuppressWarnings( "rawtypes" )

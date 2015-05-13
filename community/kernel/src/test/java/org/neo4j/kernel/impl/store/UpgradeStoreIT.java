@@ -250,7 +250,7 @@ public class UpgradeStoreIT
 
         try
         {
-            BatchInserters.inserter( path, new DefaultFileSystemAbstraction(), stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) );
+            BatchInserters.inserter( path, stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) );
             fail( "Shouldn't be able to upgrade with batch inserter" );
         }
         catch ( IllegalArgumentException e )

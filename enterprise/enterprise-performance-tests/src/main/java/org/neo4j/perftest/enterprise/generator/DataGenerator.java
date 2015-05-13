@@ -111,7 +111,7 @@ public class DataGenerator
         FileUtils.deleteRecursively( storeDir );
         DataGenerator generator = new DataGenerator( configuration );
         Map<String,String> config = batchInserterConfig( configuration );
-        BatchInserter batchInserter = BatchInserters.inserter( storeDir.getAbsoluteFile(), new DefaultFileSystemAbstraction(), config );
+        BatchInserter batchInserter = BatchInserters.inserter( storeDir.getAbsoluteFile(), config );
         try
         {
             generator.generateData( batchInserter );
