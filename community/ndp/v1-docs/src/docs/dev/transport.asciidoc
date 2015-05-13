@@ -1,42 +1,40 @@
 [[ndp-transport]]
 == Transport layer
-The protocol supports a TCP and a WebSocket transport protocol for sending and receiving messages.
-A transport protocol is responsible for:
+The protocol supports both regular http://en.wikipedia.org/wiki/Network_socket[socket] and http://en.wikipedia.org/wiki/WebSocket[WebSocket] transport layers for sending and receiving messages.
+The transport layer is versioned along with the rest of the data protocol and is responsible for:
 
 * Negotiating Neo4j protocol version
 * Establishing and terminating sessions
 * Routing messages from clients to specific sessions and back
 
-The transport is versioned along with the rest of the data protocol - however, versioning applies only after a version negotiation handshake takes place.
-Before that handshake, the protocol will remain stable across versions to support backwards compatibility.
-
 === Sessions
 
-A connection to the server via a transport is called a session.
-Each session with the server is isolated and the server tracks the current state based on the requests and responses delivered within that session.
+Each connection to the server creates a new *session* that lives until that connection is closed.
+Each session is isolated and the server keep track of the current state, based on the requests and responses exchanged within that session.
 
-Neo4j uses 'sticky sessions', which means that, in a database cluster, each session is tied to one specific Neo4j instance.
+Neo4j uses _sticky sessions_, which means that, in a database cluster, each session is tied to one specific Neo4j instance.
 
 === Connecting
 
-To initialize a new session, the client connects either using a regular TCP socket, or using a websocket.
-Once connected, both connection methods behave identically.
+To begin a new session, the client connects using either a regular socket or a WebSocket.
+Once connected, both transport layers can be treated identically.
 
-The websocket connection should be made to the host and port Neo4j has been configured to use for its websocket listener.
-The URL by default is `ws://localhost:8776`.
-
-The TCP socket connection should be made to the host and port Neo4j has been configued to use for its TCP socket listener.
-The host and port by default is `localhost:7687`.
+A regular socket connection should be made to the host and port Neo4j has been configured to use for its regular socket listener.
+The default port for regular socket connections is *7687*.
+Similar configuration exists for the WebSocket listener.
+The default port for WebSocket connections is *8776*.
 
 === Handshake
 
-After connecting, a handshake to establish which protocol version to use takes place.
+After connecting, a handshake takes place to establish which protocol version should be used for that connection.
+This handshake is a _version-independent_ mini-protocol which is guaranteed to remain the same, regardless of preferred or available protocol versions.
 
 In the handshake, the client proposes up to four protocol versions it supports, in order of preference.
-The proposal is always represented as four 32-bit unsigned big-endian integers.
+The proposal is always represented as four 32-bit unsigned integers.
 Each integer represents a proposed protocol version to use, or zero (`00 00 00 00`) for "none".
 
-The server will respond with a single 32-bit unsigned big-endian integer representing the chosen protocol, this will always be the highest-priority protocol version the server supports.
+The server will respond with a single 32-bit unsigned integer representing the chosen protocol.
+This will always represent the highest-priority protocol version the server supports.
 If none of the proposed protocols are supported, the server responds with zero (`00 00 00 00`) and closes the connection.
 
 .Initial handshake
@@ -116,4 +114,5 @@ header |         Data         |  Marker
 
 === Disconnecting
 
-To end a session, the client simply closes the TCP socket.
+A session ends when its communication socket is closed.
+Typically, this will be closed by the client.

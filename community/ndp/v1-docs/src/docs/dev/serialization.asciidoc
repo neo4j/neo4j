@@ -7,7 +7,7 @@ For details on the layout and meaning of specific messages, see <<ndp-messaging,
 
 [[ndp-type-system-mapping]]
 .Types overview
-[options="header",name="value-translation-table"]
+[cols="20,80",options="header",name="value-translation-table"]
 |=======================
 |Type                                  |Description
 |<<ndp-packstream-null,Null>>          |Represents the absence of a value
@@ -55,7 +55,7 @@ The size itself is either an 8-bit, 16-bit or 32-bit big-endian unsigned integer
 
 The diagram below illustrates the general layout for a sized value, here with a 16-bit size:
 
-image:packstream-sized.png[]
+image:images/packstream-sized.png[]
 
 [[ndp-packstream-null]]
 === Null
@@ -124,7 +124,7 @@ These markers can be identified by a zero high-order bit or by a high-order nibb
 
 The available encodings are illustrated below and each shows a valid representation for the decimal value 42, with marker bytes in green:
 
-image:packstream-integers.png[]
+image:images/packstream-integers.png[]
 
 Note that while encoding small numbers in wider formats is supported, it is generally recommended to use the most compact representation possible.
 The following table shows the optimal representation for every possible integer:
@@ -154,7 +154,7 @@ CB 7F FF FF  FF FF FF FF  FF
 ----
 
 .Suggested integer representations
-[options="header",name="packstream-integer-range-table"]
+[cols=">,>,^",options="header",name="packstream-integer-range-table"]
 |=======================
 |Range Minimum               |Range Maximum              |Suggested representation
 |-9 223 372 036 854 775 808  |-2 147 483 649             |`INT_64`
@@ -173,7 +173,7 @@ Text data is represented as UTF-8 encoded binary data.
 Note that sizes used for text are the byte counts of the UTF-8 encoded data, not the character count of the original text.
 
 .Text markers
-[options="header",name="packstream-text-marker-table"]
+[cols="^20,<50,<30",options="header",name="packstream-text-marker-table"]
 |=======================
 |Marker         |Size                                        |Maximum data size
 |`0x80`..`0x8F` |contained within low-order nibble of marker |15 bytes
@@ -188,14 +188,14 @@ The encoded data then immediately follows the marker.
 The example below shows how the string "Hello" would be represented:
 
 // TODO: Convert this to a code-segment that can be tested
-image:packstream-tinytext.png[]
+image:images/packstream-tinytext.png[]
 
 ==== Regular Text Strings
 For encoded text containing 16 bytes or more, the marker `0xD0`, `0xD1` or `0xD2` should be used, depending on scale.
 This marker is followed by the size and the UTF-8 encoded data as in the example below:
 
 // TODO: Convert this to a code-segment that can be tested
-image:packstream-text.png[]
+image:images/packstream-text.png[]
 
 ==== Examples
 
@@ -232,7 +232,7 @@ The size of a list denotes the number of items within that list, not the total p
 The markers used to denote a list are described in the table below:
 
 .List markers
-[options="header",name="packstream-list-marker-table"]
+[cols="^20,<50,<30",options="header",name="packstream-list-marker-table"]
 |=======================
 |Marker         |Size                                        |Maximum list size
 |`0x90`..`0x9F` |contained within low-order nibble of marker |15 bytes
@@ -283,13 +283,13 @@ The size of a map denotes the number of pairs within that map, not the total pac
 The markers used to denote a map are described in the table below:
 
 .Map markers
-[options="header",name="packstream-map-marker-table"]
+[cols="^20,<50,<30",options="header",name="packstream-map-marker-table"]
 |=======================
 |Marker         |Size                                        |Maximum map size
-|`0xA0`..`0xAF` |contained within low-order nibble of marker |15 key-value pairs
-|`0xD8`         |8-bit  big-endian unsigned integer          |255 key-value pairs
-|`0xD9`         |16-bit big-endian unsigned integer          |65 535 key-value pairs
-|`0xDA`         |32-bit big-endian unsigned integer          |4 294 967 295 key-value pairs
+|`0xA0`..`0xAF` |contained within low-order nibble of marker |15 entries
+|`0xD8`         |8-bit  big-endian unsigned integer          |255 entries
+|`0xD9`         |16-bit big-endian unsigned integer          |65 535 entries
+|`0xDA`         |32-bit big-endian unsigned integer          |4 294 967 295 entries
 |=======================
 
 ==== Tiny Maps & Empty Maps
@@ -336,7 +336,7 @@ The size of a structure is measured as the number of fields, not the total packe
 The markers used to denote a structure are described in the table below:
 
 .Structure markers
-[options="header",name="packstream-structure-marker-table"]
+[cols="^20,<50,<30",options="header",name="packstream-structure-marker-table"]
 |=======================
 |Marker         |Size                                        |Maximum structure size
 |`0xB0`..`0xBF` |contained within low-order nibble of marker |15 fields
@@ -380,20 +380,10 @@ DC 10 01 01  02 03 04 05  06 07 08 09  00 01 02 03
 ----
 
 [[ndp-value-structs]]
-==== Neo4j value structs
+==== Graph Type Stuctures
 
-Neo4j values that are represented as <<ndp-packstream-structures,structures>>.
-
-[[ndp-value-identitystruct]]
-===== Identity
-An identity is an opaque unique handle that references a specific graph entity. The general serialised structure is as follows:
-
-[source,ndp_value_struct]
-----
-Identity (signature=0x49) {
-    Text              identityData
-}
-----
+A number of key Neo4j types are represented as <<ndp-packstream-structures,structures>>.
+These include _nodes_, _relationships_ and _paths_.
 
 [[ndp-value-nodestruct]]
 ===== Node
@@ -401,8 +391,8 @@ A Node represents a node from a Neo4j graph and consists of a unique identifier 
 
 [source,ndp_value_struct]
 ----
-Node (signature=0x4E) {
-    Identity          identity
+Node (signature=0x4E) {             /* signature: 'N' */
+    Text              identity
     List<Text>        labels
     Map<Text, Value>  properties
 }
@@ -414,11 +404,11 @@ A Relationship represents a relationship from a Neo4j graph and consists of a un
 
 [source,ndp_value_struct]
 ----
-Relationship (signature=0x52) {
-    Identity          identity
-    Identity          startNode
-    Identity          endNode
-    Identity          type
+Relationship (signature=0x52) {    /* signature: 'R' */
+    Text              identity
+    Text              startNode    /* identity of the start node */
+    Text              endNode      /* identity of the end node   */
+    Text              type
     Map<Text, Value>  properties
 }
 ----
@@ -429,7 +419,7 @@ A Path consists of a list of alternating nodes and relationships, always startin
 
 [source,ndp_value_struct]
 ----
-Path (signature=0x50) {
+Path (signature=0x50) {                  /* signature: 'P' */
     List<Node|Relationship> entities
 }
 ----
@@ -440,14 +430,14 @@ These are all the marker bytes:
 
 [[ndp-packstream-markers]]
 .Marker table
-[options="header",name="ndp-packstream-marker-table"]
+[cols="^15,^15,^15,<55",options="header",name="ndp-packstream-marker-table"]
 |=======================
 |Marker         |Binary     |Type          |Description
 |`0x00`..`0x7F` |`0xxxxxxx` |`+TINY_INT`   |Integer 0 to 127
-|`0x80`..`0x8F` |`1000xxxx` |`TINY_TEXT`   |UTF-8 encoded text string (fewer than 24 bytes)
-|`0x90`..`0x9F` |`1001xxxx` |`TINY_LIST`   |List (fewer than 24 items)
-|`0xA0`..`0xAF` |`1010xxxx` |`TINY_MAP`    |Map (fewer than 24 key-value pairs)
-|`0xB0`..`0xBF` |`1011xxxx` |`TINY_STRUCT` |Structure (fewer than 24 fields)
+|`0x80`..`0x8F` |`1000xxxx` |`TINY_TEXT`   |UTF-8 encoded text string (fewer than 2^4^ bytes)
+|`0x90`..`0x9F` |`1001xxxx` |`TINY_LIST`   |List (fewer than 2^4^ items)
+|`0xA0`..`0xAF` |`1010xxxx` |`TINY_MAP`    |Map (fewer than 2^4^ key-value pairs)
+|`0xB0`..`0xBF` |`1011xxxx` |`TINY_STRUCT` |Structure (fewer than 2^4^ fields)
 |`0xC0`         |`11000000` |`NULL`        |Null
 |`0xC1`         |`11000001` |`FLOAT_64`    |64-bit floating point number (double)
 |`0xC2`         |`11000010` |`FALSE`       |Boolean false
@@ -458,20 +448,20 @@ These are all the marker bytes:
 |`0xCA`         |`11001010` |`INT_32`      |32-bit signed integer
 |`0xCB`         |`11001011` |`INT_64`      |64-bit signed integer
 |`0xCC`..`0xCF` |`11001100` |              |Reserved
-|`0xD0`         |`11010000` |`TEXT_8`      |UTF-8 encoded text string (fewer than 28 bytes)
-|`0xD1`         |`11010001` |`TEXT_16`     |UTF-8 encoded text string (fewer than 216 bytes)
-|`0xD2`         |`11010010` |`TEXT_32`     |UTF-8 encoded text string (fewer than 232 bytes)
+|`0xD0`         |`11010000` |`TEXT_8`      |UTF-8 encoded text string (fewer than 2^8^ bytes)
+|`0xD1`         |`11010001` |`TEXT_16`     |UTF-8 encoded text string (fewer than 2^16^ bytes)
+|`0xD2`         |`11010010` |`TEXT_32`     |UTF-8 encoded text string (fewer than 2^32^ bytes)
 |`0xD3`         |`11010011` |              |Reserved
-|`0xD4`         |`11010100` |`LIST_8`      |List (fewer than 28 items)
-|`0xD5`         |`11010101` |`LIST_16`     |List (fewer than 216 items)
-|`0xD6`         |`11010110` |`LIST_32`     |List (fewer than 232 items)
+|`0xD4`         |`11010100` |`LIST_8`      |List (fewer than 2^8^ items)
+|`0xD5`         |`11010101` |`LIST_16`     |List (fewer than 2^16^ items)
+|`0xD6`         |`11010110` |`LIST_32`     |List (fewer than 2^32^ items)
 |`0xD7`         |`11010111` |              |Reserved
-|`0xD8`         |`11011000` |`MAP_8`       |Map (fewer than 28 key-value pairs)
-|`0xD9`         |`11011001` |`MAP_16`      |Map (fewer than 216 key-value pairs)
-|`0xDA`         |`11011010` |`MAP_32`      |Map (fewer than 232 key-value pairs)
+|`0xD8`         |`11011000` |`MAP_8`       |Map (fewer than 2^8^ key-value pairs)
+|`0xD9`         |`11011001` |`MAP_16`      |Map (fewer than 2^16^ key-value pairs)
+|`0xDA`         |`11011010` |`MAP_32`      |Map (fewer than 2^32^ key-value pairs)
 |`0xDB`         |`11011011` |              |Reserved
-|`0xDC`         |`11011100` |`STRUCT_8`    |Structure (fewer than 28 fields)
-|`0xDD`         |`11011101` |`STRUCT_16`   |Structure (fewer than 216 fields)
+|`0xDC`         |`11011100` |`STRUCT_8`    |Structure (fewer than 2^8^ fields)
+|`0xDD`         |`11011101` |`STRUCT_16`   |Structure (fewer than 2^16^ fields)
 |`0xDE`..`0xEF` |`1110xxxx` |              |Reserved
 |`0xF0`..`0xFF` |`1111xxxx` |`-TINY_INT`   |Integer -1 to -16
 |=======================
