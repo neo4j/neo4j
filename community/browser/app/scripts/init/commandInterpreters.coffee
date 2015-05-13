@@ -132,6 +132,16 @@ angular.module('neo4jApp')
           q.promise
       ]
 
+    # Shorthand for ":play sysinfo"
+    FrameProvider.interpreters.push
+      type: 'play'
+      matches: "#{cmdchar}sysinfo"
+      exec: ['Frame', (Frame) ->
+        (input, q) ->
+          Frame.create {input: "#{Settings.cmdchar}play sysinfo"}
+          return true
+      ]
+
     # Help/man handler
     FrameProvider.interpreters.push
       type: 'help'
