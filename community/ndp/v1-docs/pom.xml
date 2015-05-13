@@ -154,12 +154,13 @@
             </goals>
             <configuration>
               <backend>html</backend>
-              <outputDirectory>${basedir}/target/protocol-manual/pdf</outputDirectory>
+              <outputDirectory>${basedir}/target/protocol-manual/html</outputDirectory>
             </configuration>
           </execution>
         </executions>
         <configuration>
           <sourceDirectory>${basedir}/src/docs/dev</sourceDirectory>
+          <imagesDir>.</imagesDir>
           <attributes>
             <pagenums/>
             <toc/>
