@@ -5,6 +5,9 @@ script(id="inspector/graphItem.html", type="text/ng-template")
     li(ng-if="!item.isNode")
       .token.token-relationship-type(ng-style='styleForItem(item)', ng-bind="item.type")
     li.empty(ng-if='item.propertyList.length == 0') No properties
+    li.pair
+      .key(ng-bind-template="<id>: ")
+      .value(ng-bind="item.id")
     li.pair(ng-repeat='property in item.propertyList')
       .key(ng-bind-template="{{property.key}}: ")
       .value(ng-bind="property.value")
