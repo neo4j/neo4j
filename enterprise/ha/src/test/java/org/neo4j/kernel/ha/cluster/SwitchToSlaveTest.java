@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import java.io.File;
-
 import org.junit.Test;
 
 import org.neo4j.backup.OnlineBackupKernelExtension;
@@ -31,6 +29,7 @@ import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
@@ -46,7 +45,6 @@ import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
@@ -54,6 +52,8 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+
+import java.io.File;
 
 import static java.util.Arrays.asList;
 
@@ -126,7 +126,7 @@ public class SwitchToSlaveTest
     @SuppressWarnings( "unchecked" )
     private static SwitchToSlave newSwitchToSlaveSpy()
     {
-        return spy( new SwitchToSlave( NullLogService.getInstance(), configMock(), dependencyResolverMock(),
+        return spy( new SwitchToSlave( NullLogService.getInstance(), mock( FileSystemAbstraction.class ), mock( File.class ), configMock(), dependencyResolverMock(),
                 mock( HaIdGeneratorFactory.class ),
                 mock( DelegateInvocationHandler.class ),
                 mock( ClusterMemberAvailability.class ), mock( RequestContextFactory.class ),
@@ -147,7 +147,6 @@ public class SwitchToSlaveTest
     {
         Config config = mock( Config.class );
         when( config.get( HaSettings.branched_data_policy ) ).thenReturn( mock( BranchedDataPolicy.class ) );
-        when( config.get( GraphDatabaseFacadeFactory.Configuration.store_dir ) ).thenReturn( mock( File.class ) );
         return config;
     }
 

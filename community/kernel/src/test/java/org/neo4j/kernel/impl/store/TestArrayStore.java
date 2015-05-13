@@ -70,6 +70,7 @@ public class TestArrayStore
         Monitors monitors = new Monitors();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreFactory factory = new StoreFactory(
+                dir,
                 config,
                 idGeneratorFactory,
                 pageCache,

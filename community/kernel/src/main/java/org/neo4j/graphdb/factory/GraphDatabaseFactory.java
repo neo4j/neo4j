@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.factory;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -34,8 +35,8 @@ import static java.util.Arrays.asList;
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
  * <p/>
- * Use {@link #newEmbeddedDatabase(String)} or
- * {@link #newEmbeddedDatabaseBuilder(String)} to create a database instance.
+ * Use {@link #newEmbeddedDatabase(File)} or
+ * {@link #newEmbeddedDatabaseBuilder(File)} to create a database instance.
  */
 public class GraphDatabaseFactory
 {
@@ -61,15 +62,33 @@ public class GraphDatabaseFactory
         return new GraphDatabaseFactoryState( getCurrentState() );
     }
 
-    public GraphDatabaseService newEmbeddedDatabase( String path )
+    /**
+     * @deprecated use {@link #newEmbeddedDatabase(File)} instead
+     */
+    @Deprecated
+    public GraphDatabaseService newEmbeddedDatabase( String storeDir )
     {
-        return newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
+        return newEmbeddedDatabase( new File( storeDir ) );
     }
 
-    public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( final String path )
+    public GraphDatabaseService newEmbeddedDatabase( File storeDir )
+    {
+        return newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
+    }
+
+    /**
+     * @deprecated use {@link #newEmbeddedDatabaseBuilder(File)} instead
+     */
+    @Deprecated
+    public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( String storeDir )
+    {
+        return newEmbeddedDatabaseBuilder( new File( storeDir ) );
+    }
+
+    public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( File storeDir )
     {
         final GraphDatabaseFactoryState state = getStateCopy();
-        GraphDatabaseBuilder.DatabaseCreator creator = createDatabaseCreator( path, state );
+        GraphDatabaseBuilder.DatabaseCreator creator = createDatabaseCreator( storeDir, state );
         GraphDatabaseBuilder builder = createGraphDatabaseBuilder( creator );
         configure( builder );
         return builder;
@@ -81,17 +100,16 @@ public class GraphDatabaseFactory
     }
 
     protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator(
-            final String path, final GraphDatabaseFactoryState state )
+            final File storeDir, final GraphDatabaseFactoryState state )
     {
         return new GraphDatabaseBuilder.DatabaseCreator()
         {
-            @SuppressWarnings( "deprecation" )
             @Override
             public GraphDatabaseService newDatabase( Map<String,String> config )
             {
                 config.put( "ephemeral", "false" );
                 GraphDatabaseFacadeFactory.Dependencies dependencies = state.databaseDependencies();
-                return GraphDatabaseFactory.this.newDatabase( path, config, dependencies );
+                return GraphDatabaseFactory.this.newDatabase( storeDir, config, dependencies );
             }
         };
     }
@@ -101,12 +119,9 @@ public class GraphDatabaseFactory
         // Let the default configuration pass through.
     }
 
-    @SuppressWarnings( "deprecation" )
-    protected GraphDatabaseService newDatabase( String path, Map<String,String> config, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        config.put( GraphDatabaseFacadeFactory.Configuration.store_dir.name(), path );
-
-        return new CommunityFacadeFactory().newFacade( config, dependencies );
+        return new CommunityFacadeFactory().newFacade( storeDir, config, dependencies );
     }
 
     /**

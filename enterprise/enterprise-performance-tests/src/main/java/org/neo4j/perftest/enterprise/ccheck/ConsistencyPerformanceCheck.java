@@ -19,6 +19,7 @@
  */
 package org.neo4j.perftest.enterprise.ccheck;
 
+import java.io.File;
 import java.util.Map;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
@@ -94,8 +95,11 @@ public class ConsistencyPerformanceCheck
         {
             DataGenerator.run( configuration );
         }
+
+        File storeDir = new File( configuration.get( DataGenerator.store_dir ) );
+
         // ensure that the store is recovered
-        new GraphDatabaseFactory().newEmbeddedDatabase( configuration.get( DataGenerator.store_dir ) ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
 
         // run the consistency check
         ProgressMonitorFactory progress;
@@ -118,8 +122,7 @@ public class ConsistencyPerformanceCheck
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, tuningConfiguration, PageCacheTracer.NULL );
         pageCache = pageCacheFactory.getOrCreatePageCache();
-        DirectStoreAccess directStoreAccess = createScannableStores( configuration.get( DataGenerator.store_dir ),
-                tuningConfiguration );
+        DirectStoreAccess directStoreAccess = createScannableStores( storeDir, tuningConfiguration );
 
         JsonReportWriter reportWriter = new JsonReportWriter( configuration, tuningConfiguration );
         TimingProgress progressMonitor = new TimingProgress( new TimeLogger( reportWriter ), progress );
@@ -135,10 +138,11 @@ public class ConsistencyPerformanceCheck
         }
     }
 
-    private static DirectStoreAccess createScannableStores( String storeDir, Config tuningConfiguration )
+    private static DirectStoreAccess createScannableStores( File storeDir, Config tuningConfiguration )
     {
         Monitors monitors = new Monitors();
         StoreFactory factory = new StoreFactory(
+                storeDir,
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
                 pageCache,
@@ -148,7 +152,7 @@ public class ConsistencyPerformanceCheck
 
         NeoStore neoStore = factory.newNeoStore( true );
 
-        SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
+        SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, storeDir );
         return new DirectStoreAccess( new StoreAccess( neoStore ),
                 new LuceneLabelScanStoreBuilder( storeDir, neoStore, fileSystem, NullLogProvider.getInstance() ).build(), indexes );
     }
@@ -156,7 +160,6 @@ public class ConsistencyPerformanceCheck
     private static Config buildTuningConfiguration( Configuration configuration )
     {
         Map<String, String> passedOnConfiguration = passOn( configuration,
-                param( GraphDatabaseSettings.store_dir, DataGenerator.store_dir ),
                 param( GraphDatabaseSettings.pagecache_memory, pagecache_memory ),
                 param( GraphDatabaseSettings.mapped_memory_page_size, mapped_memory_page_size ),
                 param( ConsistencyCheckSettings.consistency_check_execution_order, execution_order ) );

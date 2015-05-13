@@ -232,11 +232,11 @@ public class NodeStoreTest
     {
         File storeDir = new File( "dir" );
         fs.mkdirs( storeDir );
-        Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         Monitors monitors = new Monitors();
         StoreFactory factory = new StoreFactory(
-                config,
+                storeDir,
+                new Config(),
                 idGeneratorFactory,
                 pageCacheRule.getPageCache( fs ),
                 fs,

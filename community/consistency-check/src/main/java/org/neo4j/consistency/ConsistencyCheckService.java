@@ -30,7 +30,6 @@ import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -54,7 +53,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
-import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 public class ConsistencyCheckService
 {
@@ -70,14 +68,13 @@ public class ConsistencyCheckService
         this.timestamp = timestamp;
     }
 
-    public Result runFullConsistencyCheck( String storeDir,
+    public Result runFullConsistencyCheck( File storeDir,
                                            Config tuningConfiguration,
                                            ProgressMonitorFactory progressFactory,
                                            LogProvider logProvider ) throws ConsistencyCheckIncompleteException, IOException
     {
         Log log = logProvider.getLog( getClass() );
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        tuningConfiguration = configForStoreDir( tuningConfiguration, new File( storeDir ) );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, tuningConfiguration, PageCacheTracer.NULL );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
@@ -100,7 +97,7 @@ public class ConsistencyCheckService
         }
     }
 
-    public Result runFullConsistencyCheck( String storeDir, Config tuningConfiguration,
+    public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
                                            ProgressMonitorFactory progressFactory,
                                            LogProvider logProvider,
                                            final FileSystemAbstraction fileSystem,
@@ -110,6 +107,7 @@ public class ConsistencyCheckService
         Log log = logProvider.getLog( getClass() );
         Monitors monitors = new Monitors();
         StoreFactory factory = new StoreFactory(
+                storeDir,
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
                 pageCache, fileSystem, logProvider,
@@ -117,7 +115,7 @@ public class ConsistencyCheckService
         );
 
         ConsistencySummaryStatistics summary;
-        final File reportFile = chooseReportPath( tuningConfiguration );
+        final File reportFile = chooseReportPath( storeDir, tuningConfiguration );
         Log reportLog = new ConsistencyReportLog( Suppliers.lazySingleton( new Supplier<PrintWriter>()
         {
             @Override
@@ -144,7 +142,7 @@ public class ConsistencyCheckService
                         storeDir, store.getRawNeoStore(), fileSystem, logProvider ).build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                         DirectoryFactory.PERSISTENT,
-                        tuningConfiguration );
+                        storeDir );
                 DirectStoreAccess stores = new DirectStoreAccess( store, labelScanStore, indexes );
                 FullCheck check = new FullCheck( tuningConfiguration, progressFactory );
                 summary = check.execute( stores, new DuplicatingLog( log, reportLog ) );
@@ -174,13 +172,12 @@ public class ConsistencyCheckService
         return Result.SUCCESS;
     }
 
-    private File chooseReportPath( Config tuningConfiguration )
+    private File chooseReportPath( File storeDir, Config tuningConfiguration )
     {
         final File reportPath = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_report_file );
         if ( reportPath == null )
         {
-            return new File( tuningConfiguration.get( GraphDatabaseSettings.store_dir ),
-                    defaultLogFileName( timestamp ) );
+            return new File( storeDir, defaultLogFileName( timestamp ) );
         }
 
         if ( reportPath.isDirectory() )

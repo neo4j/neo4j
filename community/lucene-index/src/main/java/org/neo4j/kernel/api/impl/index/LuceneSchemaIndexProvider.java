@@ -39,7 +39,6 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -49,7 +48,6 @@ import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.kernel.impl.store.StoreVersionMismatchHandler.ALLOW_OLD_VERSION;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
@@ -60,11 +58,11 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     private final FolderLayout folderLayout;
     private final Map<Long, String> failures = new HashMap<>();
 
-    public LuceneSchemaIndexProvider( DirectoryFactory directoryFactory, Config config )
+    public LuceneSchemaIndexProvider( DirectoryFactory directoryFactory, File storeDir )
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
-        File rootDirectory = getRootDirectory( config.get( store_dir ), LuceneSchemaIndexProviderFactory.KEY );
+        File rootDirectory = getRootDirectory( storeDir, LuceneSchemaIndexProviderFactory.KEY );
         this.folderLayout = new FolderLayout( rootDirectory );
         this.failureStorage = new FailureStorage( folderLayout );
     }

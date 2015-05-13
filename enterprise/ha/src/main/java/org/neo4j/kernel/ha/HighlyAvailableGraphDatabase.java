@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.io.File;
 import java.util.Map;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -44,7 +45,7 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
 {
     private EnterpriseEditionModule enterpriseEditionModule;
 
-    public HighlyAvailableGraphDatabase( String storeDir, Map<String,String> params,
+    public HighlyAvailableGraphDatabase( File storeDir, Map<String,String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                          Monitors monitors )
     {
@@ -53,7 +54,7 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
                 .kernelExtensions( kernelExtensions ).monitors( monitors ) );
     }
 
-    public HighlyAvailableGraphDatabase( String storeDir, Map<String,String> params,
+    public HighlyAvailableGraphDatabase( File storeDir, Map<String,String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         this( storeDir, params, newDependencies()
@@ -61,10 +62,9 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
                 .kernelExtensions( kernelExtensions ) );
     }
 
-    public HighlyAvailableGraphDatabase( String storeDir, Map<String,String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    public HighlyAvailableGraphDatabase( File storeDir, Map<String,String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        params.put( GraphDatabaseSettings.store_dir.name(), storeDir );
-        new EnterpriseFacadeFactory().newFacade( params, dependencies, this );
+        new EnterpriseFacadeFactory().newFacade( storeDir, params, dependencies, this );
     }
 
     @Override
@@ -87,5 +87,10 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
     public boolean isMaster()
     {
         return enterpriseEditionModule.memberStateMachine.isMaster();
+    }
+
+    public File getStoreDirectory()
+    {
+        return storeDir;
     }
 }

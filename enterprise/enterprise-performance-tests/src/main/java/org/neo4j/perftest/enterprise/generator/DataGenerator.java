@@ -107,11 +107,11 @@ public class DataGenerator
 
     public static void run( Configuration configuration ) throws IOException
     {
-        String storeDir = configuration.get( store_dir );
-        FileUtils.deleteRecursively( new File( storeDir ) );
+        File storeDir = new File( configuration.get( store_dir ) );
+        FileUtils.deleteRecursively( storeDir );
         DataGenerator generator = new DataGenerator( configuration );
         Map<String,String> config = batchInserterConfig( configuration );
-        BatchInserter batchInserter = BatchInserters.inserter( storeDir, config );
+        BatchInserter batchInserter = BatchInserters.inserter( storeDir.getAbsoluteFile(), new DefaultFileSystemAbstraction(), config );
         try
         {
             generator.generateData( batchInserter );

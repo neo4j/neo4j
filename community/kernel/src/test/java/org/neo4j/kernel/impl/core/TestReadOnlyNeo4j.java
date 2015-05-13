@@ -37,6 +37,8 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import java.io.File;
+
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -48,7 +50,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class TestReadOnlyNeo4j
 {
-    private static final String PATH = "read-only";
+    private static final File PATH = new File( "read-only" );
     public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test

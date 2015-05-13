@@ -49,6 +49,7 @@ public class QueryLoggerIT
         return RuleChain.outerRule( fs ).around( db );
     }
 
+    private final File logFile = new File( "target/test-data/impermanent-db/queries.log" ).getAbsoluteFile();
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final DatabaseRule db = new ImpermanentDatabaseRule()
     {
@@ -62,7 +63,8 @@ public class QueryLoggerIT
         protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
         {
             return super.newBuilder( factory )
-                    .setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE );
+                    .setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+                    .setConfig( GraphDatabaseSettings.log_queries_filename, logFile.getAbsolutePath() );
         }
     };
 
@@ -74,9 +76,8 @@ public class QueryLoggerIT
 
         db.shutdown();
 
-        File logfile = new File( "target/test-data/impermanent-db/queries.log" );
         List<String> logLines = new ArrayList<>();
-        try ( BufferedReader reader = new BufferedReader( fs.get().openAsReader( logfile, "UTF-8" ) ) )
+        try ( BufferedReader reader = new BufferedReader( fs.get().openAsReader( logFile, "UTF-8" ) ) )
         {
             for ( String line; (line = reader.readLine()) != null; )
             {

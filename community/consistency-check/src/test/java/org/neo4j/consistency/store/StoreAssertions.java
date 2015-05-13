@@ -50,7 +50,7 @@ public class StoreAssertions
 
         final ConsistencyCheckService.Result result =
                 new ConsistencyCheckService().runFullConsistencyCheck(
-                        dir.getAbsolutePath(),
+                        dir,
                         configuration,
                         ProgressMonitorFactory.NONE,
                         NullLogProvider.getInstance()

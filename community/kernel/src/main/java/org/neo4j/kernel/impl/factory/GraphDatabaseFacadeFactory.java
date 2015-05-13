@@ -46,7 +46,7 @@ import static org.neo4j.helpers.Settings.setting;
  * <p/>
  * It is abstract in order for subclasses to specify their own {@link org.neo4j.kernel.impl.factory.EditionModule}
  * implementations. Subclasses also have to set the edition name
- * in overriden version of {@link #newFacade(Map, GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)},
+ * in overriden version of {@link #newFacade(File, Map, GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)},
  * which is used for logging and similar.
  * <p/>
  * To create test versions of databases, override an edition factory (e.g. {@link org.neo4j.kernel.impl.factory
@@ -83,8 +83,6 @@ public abstract class GraphDatabaseFacadeFactory
                 "for example `100M size` for " +
                 "limiting logical log space on disk to 100Mb," +
                 " or `200k txs` for limiting the number of transactions to keep to 200 000", matches( ANY ) ) );
-        public static final Setting<File> store_dir = GraphDatabaseSettings.store_dir;
-        public static final Setting<File> neo_store = GraphDatabaseSettings.neo_store;
 
         // Kept here to have it not be publicly documented.
         public static final Setting<String> lock_manager = setting( "lock_manager", Settings.STRING, "" );
@@ -97,28 +95,30 @@ public abstract class GraphDatabaseFacadeFactory
     /**
      * Instantiate a graph database given configuration and dependencies.
      *
+     * @param storeDir
      * @param params
      * @param dependencies
      * @return
      */
-    public GraphDatabaseFacade newFacade( Map<String, String> params, final Dependencies dependencies )
+    public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, final Dependencies dependencies )
     {
-        return newFacade( params, dependencies, new GraphDatabaseFacade() );
+        return newFacade( storeDir, params, dependencies, new GraphDatabaseFacade() );
     }
 
     /**
      * Instantiate a graph database given configuration, dependencies, and a custom implementation of {@link org
      * .neo4j.kernel.impl.factory.GraphDatabaseFacade}.
      *
+     * @param storeDir
      * @param params
      * @param dependencies
      * @param graphDatabaseFacade
      * @return
      */
-    public GraphDatabaseFacade newFacade( Map<String, String> params, final Dependencies dependencies,
+    public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, final Dependencies dependencies,
                                           final GraphDatabaseFacade graphDatabaseFacade )
     {
-        PlatformModule platform = createPlatform( params, dependencies, graphDatabaseFacade );
+        PlatformModule platform = createPlatform( storeDir, params, dependencies, graphDatabaseFacade );
         EditionModule edition = createEdition( platform );
         final DataSourceModule dataSource = createDataSource( dependencies, platform, edition );
 
@@ -137,7 +137,7 @@ public abstract class GraphDatabaseFacadeFactory
         catch ( final Throwable throwable )
         {
             error = new RuntimeException( "Error starting " + getClass().getName() + ", " +
-                    platform.storeDir.getAbsolutePath(), throwable );
+                    platform.storeDir, throwable );
         }
         finally
         {
@@ -170,10 +170,10 @@ public abstract class GraphDatabaseFacadeFactory
      * @param graphDatabaseFacade
      * @return
      */
-    protected PlatformModule createPlatform( Map<String, String> params, final Dependencies dependencies,
+    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, final Dependencies dependencies,
                                              final GraphDatabaseFacade graphDatabaseFacade )
     {
-        return new PlatformModule( params, dependencies, graphDatabaseFacade );
+        return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
     }
 
     /**

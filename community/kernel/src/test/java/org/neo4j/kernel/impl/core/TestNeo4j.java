@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.io.File;
 import java.util.Iterator;
 import java.util.Random;
 
@@ -172,7 +173,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     // And it fails with NPE.
     public void testMultipleNeos()
     {
-        String storePath = getStorePath( "test-neo2" );
+        File storePath = getStorePath( "test-neo2" );
         deleteFileOrDirectory( storePath );
         GraphDatabaseService graphDb2 = new GraphDatabaseFactory().newEmbeddedDatabase( storePath );
         Transaction tx2 = graphDb2.beginTx();

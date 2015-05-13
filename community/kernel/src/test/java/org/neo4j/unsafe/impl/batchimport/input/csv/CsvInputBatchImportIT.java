@@ -85,7 +85,7 @@ public class CsvInputBatchImportIT
     public void shouldImportDataComingFromCsvFiles() throws Exception
     {
         // GIVEN
-        BatchImporter importer = new ParallelBatchImporter( directory.absolutePath(),
+        BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(),
                 smallBatchSizeConfig(), NullLogProvider.getInstance(), invisible() );
         List<InputNode> nodeData = randomNodeData();
         List<InputRelationship> relationshipData = randomRelationshipData( nodeData );
@@ -255,7 +255,7 @@ public class CsvInputBatchImportIT
                 expectedNodeCounts, expectedRelationshipCounts );
 
         // Do the verification
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.graphDbDir() );
         try ( Transaction tx = db.beginTx() )
         {
             // Verify nodes

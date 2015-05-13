@@ -293,7 +293,7 @@ public class BatchInsertTest
         inserter.shutdown();
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs );
-        return factory.newImpermanentDatabaseBuilder( inserter.getStoreDir() )
+        return factory.newImpermanentDatabaseBuilder( new File( inserter.getStoreDir() ) )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
                 .setConfig( configuration() )
                 .newGraphDatabase();

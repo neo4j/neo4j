@@ -73,34 +73,34 @@ public class RsdrMain
 
         if ( args.length != 1 || !files.isDirectory( new File( args[0] ) ) )
         {
-            console.printf("Usage: rsdr <storepath>%n");
+            console.printf("Usage: rsdr <store directory>%n");
             return;
         }
 
-        File storepath = new File( args[0] );
-        Config config = buildConfig( storepath );
+        File storedir = new File( args[0] );
+
+        Config config = buildConfig();
         try ( PageCache pageCache = createPageCache( files, config ) )
         {
-            StoreFactory factory = openStore( config, pageCache );
+            StoreFactory factory = openStore( new File( storedir, NeoStore.DEFAULT_NAME ), config, pageCache );
             NeoStore neoStore = factory.newNeoStore( false );
             interact( neoStore );
         }
     }
 
-    private static Config buildConfig( File storepath )
+    private static Config buildConfig()
     {
         return new Config( MapUtil.stringMap(
                 GraphDatabaseSettings.read_only.name(), "true",
-                GraphDatabaseSettings.pagecache_memory.name(), "64M",
-                GraphDatabaseSettings.neo_store.name(),
-                storepath.getAbsolutePath() + File.separator + NeoStore.DEFAULT_NAME ) );
+                GraphDatabaseSettings.pagecache_memory.name(), "64M"
+        ) );
     }
 
-    private static StoreFactory openStore( Config config, PageCache pageCache )
+    private static StoreFactory openStore( File storeDir, Config config, PageCache pageCache )
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         return new StoreFactory(
-                config, idGeneratorFactory, pageCache, files, NullLogProvider.getInstance(), null );
+                storeDir, config, idGeneratorFactory, pageCache, files, NullLogProvider.getInstance(), null );
     }
 
     private static void interact( NeoStore neoStore ) throws IOException

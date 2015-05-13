@@ -56,24 +56,19 @@ public class TestIdGeneratorRebuilding
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private EphemeralFileSystemAbstraction fs;
+    private File storeDir;
 
     @Before
     public void doBefore()
     {
         fs = fsRule.get();
-    }
-
-    private File path()
-    {
-        String path = AbstractNeo4jTestCase.getStorePath( "xatest" );
-        File file = new File( path );
-        fs.mkdirs( file );
-        return file;
+        storeDir = AbstractNeo4jTestCase.getStorePath( "xatest" );
+        fs.mkdirs( storeDir );
     }
 
     private File file( String name )
     {
-        return new File( path(), name );
+        return new File( storeDir, name );
     }
 
     @Test
@@ -142,10 +137,10 @@ public class TestIdGeneratorRebuilding
         // Given we have a store ...
         Config config = new Config( MapUtil.stringMap(
                 GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
-        config = StoreFactory.configForStoreDir( config, path() );
         File storeFile = file( "strings" );
 
         StoreFactory storeFactory = new StoreFactory(
+                storeDir,
                 config,
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs ),

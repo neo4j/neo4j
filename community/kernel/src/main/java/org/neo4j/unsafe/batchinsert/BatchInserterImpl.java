@@ -91,6 +91,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -145,6 +146,10 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
+/**
+ * @deprecated will be moved to an internal package in a future release
+ */
+@Deprecated
 public class BatchInserterImpl implements BatchInserter
 {
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
@@ -186,7 +191,33 @@ public class BatchInserterImpl implements BatchInserter
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeletor;
 
+    /**
+     * @deprecated use {@link #BatchInserterImpl(File, Map)} instead
+     */
+    @Deprecated
     BatchInserterImpl( String storeDir,
+                       Map<String, String> stringParams ) throws IOException
+    {
+        this( new File( FileUtils.fixSeparatorsInPath( storeDir ) ),
+                stringParams
+        );
+    }
+
+    /**
+     * @deprecated use {@link #BatchInserterImpl(File, FileSystemAbstraction, Map, Iterable)} instead
+     */
+    @Deprecated
+    BatchInserterImpl( String storeDir, final FileSystemAbstraction fileSystem,
+                       Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
+    {
+        this( new File( FileUtils.fixSeparatorsInPath( storeDir ) ),
+                fileSystem,
+                stringParams,
+                kernelExtensions
+        );
+    }
+
+    BatchInserterImpl( File storeDir,
                        Map<String, String> stringParams ) throws IOException
     {
         this( storeDir,
@@ -196,19 +227,18 @@ public class BatchInserterImpl implements BatchInserter
         );
     }
 
-    BatchInserterImpl( String storeDir, FileSystemAbstraction fileSystem,
+    BatchInserterImpl( final File storeDir, final FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
         rejectAutoUpgrade( stringParams );
         Map<String, String> params = getDefaultParams();
         params.putAll( stringParams );
-        config = StoreFactory.configForStoreDir( new Config( params, GraphDatabaseSettings.class ),
-                new File( storeDir ) );
+        this.config = new Config( params, GraphDatabaseSettings.class );
         Monitors monitors = new Monitors();
 
         life = new LifeSupport();
         this.fileSystem = fileSystem;
-        this.storeDir = new File( FileUtils.fixSeparatorsInPath( storeDir ) );
+        this.storeDir = storeDir;
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
@@ -223,6 +253,7 @@ public class BatchInserterImpl implements BatchInserter
         this.idGeneratorFactory = new DefaultIdGeneratorFactory();
 
         StoreFactory sf = new StoreFactory(
+                this.storeDir,
                 config,
                 idGeneratorFactory,
                 pageCache,
@@ -257,8 +288,22 @@ public class BatchInserterImpl implements BatchInserter
                             }
                         } );
 
+        KernelContext kernelContext = new KernelContext()
+        {
+            @Override
+            public FileSystemAbstraction fileSystem()
+            {
+                return fileSystem;
+            }
+
+            @Override
+            public File storeDir()
+            {
+                return storeDir;
+            }
+        };
         KernelExtensions extensions = life
-                .add( new KernelExtensions( kernelExtensions, deps,
+                .add( new KernelExtensions( kernelContext, kernelExtensions, deps,
                                             UnsatisfiedDependencyStrategies.ignore() ) );
 
         SchemaIndexProvider provider = extensions.resolveDependency( SchemaIndexProvider.class,

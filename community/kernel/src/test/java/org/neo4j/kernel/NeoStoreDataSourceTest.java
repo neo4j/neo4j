@@ -56,7 +56,7 @@ public class NeoStoreDataSourceTest
             KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ),
                     NullLogProvider.getInstance().getLog( KernelHealth.class ) );
 
-            theDataSource = ds.getDataSource( dir, fs.get(), pageCacheRule.getPageCache( fs.get() ),
+            theDataSource = ds.getDataSource( dir.graphDbDir(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
                     stringMap(), kernelHealth );
 
             kernelHealth.panic( new Throwable() );

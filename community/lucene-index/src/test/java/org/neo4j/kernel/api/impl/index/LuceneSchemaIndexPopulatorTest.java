@@ -29,6 +29,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -50,9 +51,7 @@ import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LuceneSchemaIndexPopulatorTest
 {
@@ -240,12 +239,11 @@ public class LuceneSchemaIndexPopulatorTest
         directory = new RAMDirectory();
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
-        Config config = new Config( stringMap( store_dir.name(), "target/whatever" ) );
-        provider = new LuceneSchemaIndexProvider( directoryFactory, config );
+        provider = new LuceneSchemaIndexProvider( directoryFactory, new File( "target/whatever" ) );
         indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
         indexStoreView = mock( IndexStoreView.class );
         IndexConfiguration indexConfig = new IndexConfiguration( false );
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         index = provider.getPopulator( indexId, indexDescriptor, indexConfig, samplingConfig );
         index.create();
     }

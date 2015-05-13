@@ -153,10 +153,11 @@ public class SchemaStoreTest
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
-        config = StoreFactory.configForStoreDir( new Config(), storeDir );
+        config = new Config();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         Monitors monitors = new Monitors();
         storeFactory = new StoreFactory(
+                storeDir,
                 config,
                 idGeneratorFactory,
                 pageCacheRule.getPageCache( fs.get() ),

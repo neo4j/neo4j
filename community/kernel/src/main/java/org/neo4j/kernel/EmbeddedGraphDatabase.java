@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -51,8 +52,6 @@ import static org.neo4j.helpers.collection.MapUtil.copyAndPut;
 @Deprecated
 public class EmbeddedGraphDatabase extends GraphDatabaseFacade
 {
-    private static final Iterable<Class<?>> SETTINGS_CLASSES = Arrays.<Class<?>>asList( GraphDatabaseSettings.class );
-
     /**
      * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
      */
@@ -60,12 +59,22 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
                                   Map<String, String> params,
                                   GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        create( copyAndPut( params, GraphDatabaseSettings.store_dir.name(), storeDir ), dependencies );
+        this( new File( storeDir ), params, dependencies );
     }
 
-    protected void create(Map<String, String> params,
+    /**
+     * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
+     */
+    public EmbeddedGraphDatabase( File storeDir,
+                                  Map<String, String> params,
+                                  GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        create( storeDir, params, dependencies );
+    }
+
+    protected void create( File storeDir, Map<String, String> params,
                                       GraphDatabaseFacadeFactory.Dependencies dependencies)
     {
-        new CommunityFacadeFactory().newFacade( params, dependencies, this );
+        new CommunityFacadeFactory().newFacade( storeDir, params, dependencies, this );
     }
 }

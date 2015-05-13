@@ -64,5 +64,5 @@ public class ConsistencyCheckSettings
     @SuppressWarnings("unchecked")
     @Description("File name for inconsistencies log file. If not specified, logs to a file in the store directory.")
     public static final
-    Setting<File> consistency_check_report_file = setting( "consistency_check_report_file", PATH, NO_DEFAULT, basePath( GraphDatabaseSettings.store_dir ));
+    Setting<File> consistency_check_report_file = setting( "consistency_check_report_file", PATH, NO_DEFAULT );
 }

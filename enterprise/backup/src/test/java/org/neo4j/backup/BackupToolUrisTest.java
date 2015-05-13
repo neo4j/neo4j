@@ -19,6 +19,7 @@
  */
 package org.neo4j.backup;
 
+import java.io.File;
 import java.io.PrintStream;
 import java.util.List;
 
@@ -94,7 +95,7 @@ public class BackupToolUrisTest
             verify( backupService ).doIncrementalBackupOrFallbackToFull(
                     eq( host ),
                     eq( port ),
-                    eq( "/var/backup/graph" ),
+                    eq( new File( "/var/backup/graph" ) ),
                     eq( true ),
                     any( Config.class ),
                     eq( BackupClient.BIG_READ_TIMEOUT ),
@@ -198,7 +199,7 @@ public class BackupToolUrisTest
             verify( backupService ).doIncrementalBackupOrFallbackToFull(
                     eq( host ),
                     eq( port ),
-                    eq( "/var/backup/graph" ),
+                    eq( new File( "/var/backup/graph" ) ),
                     eq( true ),
                     any( Config.class ),
                     eq( BackupClient.BIG_READ_TIMEOUT ),

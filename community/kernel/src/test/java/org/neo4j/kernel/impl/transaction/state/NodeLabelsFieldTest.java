@@ -454,9 +454,9 @@ public class NodeLabelsFieldTest
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
         Monitors monitors = new Monitors();
-        Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
         StoreFactory storeFactory = new StoreFactory(
-                config,
+                storeDir,
+                new Config(),
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),

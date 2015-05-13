@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -95,7 +96,7 @@ public class PlatformModule
 
     public final TransactionCounters transactionMonitor;
 
-    public PlatformModule(Map<String, String> params, final GraphDatabaseFacadeFactory.Dependencies externalDependencies,
+    public PlatformModule( File storeDir, Map<String, String> params, final GraphDatabaseFacadeFactory.Dependencies externalDependencies,
                                                   final GraphDatabaseFacade graphDatabaseFacade)
     {
         dependencies = new org.neo4j.kernel.impl.util.Dependencies( new Supplier<DependencyResolver>()
@@ -107,19 +108,13 @@ public class PlatformModule
             }
         } );
         life = dependencies.satisfyDependency( createLife() );
-        this.graphDatabaseFacade = dependencies.satisfyDependency(graphDatabaseFacade);
+        this.graphDatabaseFacade = dependencies.satisfyDependency( graphDatabaseFacade );
 
         // SPI - provided services
         config = dependencies.satisfyDependency( new Config( params, getSettingsClasses(
                 externalDependencies.settingsClasses(), externalDependencies.kernelExtensions() ) ) );
 
-        storeDir = getStoreDir();
-
-        kernelExtensions = dependencies.satisfyDependency( new KernelExtensions(
-                externalDependencies.kernelExtensions(),
-                dependencies,
-                UnsatisfiedDependencyStrategies.fail() ) );
-
+        this.storeDir = storeDir.getAbsoluteFile();
 
         fileSystem = life.add( dependencies.satisfyDependency( createFileSystemAbstraction() ) );
 
@@ -160,11 +155,26 @@ public class PlatformModule
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionCounters() );
 
-    }
+        KernelContext kernelContext = new KernelContext()
+        {
+            @Override
+            public FileSystemAbstraction fileSystem()
+            {
+                return PlatformModule.this.fileSystem;
+            }
 
-    public File getStoreDir()
-    {
-        return config.get( GraphDatabaseFacadeFactory.Configuration.store_dir );
+            @Override
+            public File storeDir()
+            {
+                return PlatformModule.this.storeDir;
+            }
+        };
+
+        kernelExtensions = dependencies.satisfyDependency( new KernelExtensions(
+                kernelContext,
+                externalDependencies.kernelExtensions(),
+                dependencies,
+                UnsatisfiedDependencyStrategies.fail() ) );
     }
 
     public LifeSupport createLife()

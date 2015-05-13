@@ -306,7 +306,7 @@ public class ImportTool
         life.start();
         org.neo4j.unsafe.impl.batchimport.Configuration config =
                 importConfiguration( processors, defaultSettingsSuitableForTests );
-        BatchImporter importer = new ParallelBatchImporter( storeDir.getPath(),
+        BatchImporter importer = new ParallelBatchImporter( storeDir,
                 config,
                 logService.getInternalLogProvider(),
                 ExecutionMonitors.defaultVisible() );

@@ -30,6 +30,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
@@ -45,13 +46,14 @@ public class PropertyKeyTest
     public void lazyLoadWithinWriteTransaction() throws Exception
     {
         // Given
-        File dir = new File( "dir" );
-        BatchInserter inserter = BatchInserters.inserter( dir.getAbsoluteFile().getPath(), fs.get() );
+        FileSystemAbstraction fileSystem = fs.get();
+        File dir = new File( "dir" ).getAbsoluteFile();
+        BatchInserter inserter = BatchInserters.inserter( dir, fileSystem );
         int count = 3000;
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();
         
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( dir.getAbsoluteFile().getPath() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( dir );
 
         // When
         try (Transaction tx = db.beginTx())

@@ -143,7 +143,7 @@ public class BackupTool
         String from = args.get( FROM ).trim();
         String to = args.get( TO ).trim();
         boolean verify = args.getBoolean( VERIFY, true, true );
-        Config tuningConfiguration = readTuningConfiguration( TO, args );
+        Config tuningConfiguration = readTuningConfiguration( args );
         boolean forensics = args.getBoolean( FORENSICS, false, true );
 
         long timeout = args.getDuration(TIMEOUT, BackupClient.BIG_READ_TIMEOUT);
@@ -152,7 +152,7 @@ public class BackupTool
 
         HostnamePort hostnamePort = newHostnamePort( backupURI );
 
-        return executeBackup( hostnamePort, to, verify, tuningConfiguration, timeout, forensics );
+        return executeBackup( hostnamePort, new File( to ), verify, tuningConfiguration, timeout, forensics );
     }
 
     private BackupOutcome runBackup( Args args ) throws ToolFailureException
@@ -161,7 +161,7 @@ public class BackupTool
         int port = args.getNumber( PORT, BackupServer.DEFAULT_PORT ).intValue();
         String to = args.get( TO ).trim();
         boolean verify = args.getBoolean( VERIFY, true, true );
-        Config tuningConfiguration = readTuningConfiguration( TO, args );
+        Config tuningConfiguration = readTuningConfiguration( args );
         boolean forensics = args.getBoolean( FORENSICS, false, true );
 
         if ( host.contains( ":" ) )
@@ -182,10 +182,10 @@ public class BackupTool
 
         HostnamePort hostnamePort = newHostnamePort( backupURI );
 
-        return executeBackup( hostnamePort, to, verify, tuningConfiguration, timeout, forensics );
+        return executeBackup( hostnamePort, new File( to ), verify, tuningConfiguration, timeout, forensics );
     }
 
-    private BackupOutcome executeBackup( HostnamePort hostnamePort, String to, boolean verify,
+    private BackupOutcome executeBackup( HostnamePort hostnamePort, File to, boolean verify,
                                 Config tuningConfiguration, long timeout, boolean forensics ) throws ToolFailureException
     {
         try
@@ -220,7 +220,7 @@ public class BackupTool
         }
     }
 
-    private BackupOutcome doBackup( HostnamePort hostnamePort, String to, boolean checkConsistency,
+    private BackupOutcome doBackup( HostnamePort hostnamePort, File to, boolean checkConsistency,
                            Config config, long timeout, boolean forensics ) throws ToolFailureException
     {
         try
@@ -245,7 +245,7 @@ public class BackupTool
         }
     }
 
-    private static Config readTuningConfiguration( String storeDir, Args arguments ) throws ToolFailureException
+    private static Config readTuningConfiguration( Args arguments ) throws ToolFailureException
     {
         Map<String, String> specifiedProperties = stringMap();
 
@@ -263,7 +263,6 @@ public class BackupTool
                         propertyFilePath ), e );
             }
         }
-        specifiedProperties.put( GraphDatabaseSettings.store_dir.name(), storeDir );
         return new Config( specifiedProperties, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
@@ -345,9 +344,8 @@ public class BackupTool
         return new HostnamePort( host, port );
     }
 
-    private static void moveExistingDatabase( FileSystemAbstraction fs, String to ) throws IOException
+    private static void moveExistingDatabase( FileSystemAbstraction fs, File toDir ) throws IOException
     {
-        File toDir = new File( to );
         File backupDir = new File( toDir, "old-version" );
         if ( !fs.mkdir( backupDir ) )
         {

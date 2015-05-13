@@ -151,7 +151,7 @@ public class BackupServiceIT
         try
         {
             // when
-            backupService().doFullBackup( "", 0, backupDir.getAbsolutePath(), true, new Config(),
+            backupService().doFullBackup( "", 0, backupDir.getAbsoluteFile(), true, new Config(),
                     BackupClient.BIG_READ_TIMEOUT, false );
         }
         catch ( RuntimeException ex )
@@ -171,7 +171,7 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, dbRule.getConfigCopy(),
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, dbRule.getConfigCopy(),
                 BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
@@ -231,7 +231,7 @@ public class BackupServiceIT
         // when
         BackupService backupService = backupService();
         BackupService.BackupOutcome outcome = backupService.doFullBackup( BACKUP_HOST, backupPort,
-                backupDir.getAbsolutePath(), true, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+                backupDir.getAbsoluteFile(), true, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
 
         db.shutdown();
 
@@ -252,7 +252,7 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, dbRule.getConfigCopy(),
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, dbRule.getConfigCopy(),
                 BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
@@ -272,7 +272,7 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, dbRule.getConfigCopy(),
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, dbRule.getConfigCopy(),
                 BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
@@ -298,7 +298,7 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, dbRule.getConfigCopy(),
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, dbRule.getConfigCopy(),
                 BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
@@ -317,7 +317,7 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig,
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
@@ -341,7 +341,7 @@ public class BackupServiceIT
         rotate( db );
 
         // A full backup
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
                 false, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // And the log the backup uses is rotated out
@@ -357,7 +357,7 @@ public class BackupServiceIT
         // when
         try
         {
-            backupService.doIncrementalBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
+            backupService.doIncrementalBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
                     false, BackupClient.BIG_READ_TIMEOUT, defaultConfig );
             fail( "Should have thrown exception." );
         }
@@ -382,7 +382,7 @@ public class BackupServiceIT
         createAndIndexNode( db, 1 );
 
         // A full backup
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
                 false, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // And the log the backup uses is rotated out
@@ -395,7 +395,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig,
+                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // Then
@@ -422,7 +422,7 @@ public class BackupServiceIT
 
         // A full backup
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig,
+                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // And the log the backup uses is rotated out
@@ -434,7 +434,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig,
+                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // Then
@@ -480,7 +480,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig,
+                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // then
@@ -535,7 +535,7 @@ public class BackupServiceIT
         } );
 
         BackupService.BackupOutcome backupOutcome = backupService.doFullBackup( BACKUP_HOST, backupPort,
-                backupDir.getAbsolutePath(), true, withOnlineBackupEnabled, BackupClient.BIG_READ_TIMEOUT, false );
+                backupDir.getAbsoluteFile(), true, withOnlineBackupEnabled, BackupClient.BIG_READ_TIMEOUT, false );
 
         backup.stop();
         executor.shutdown();
@@ -557,7 +557,7 @@ public class BackupServiceIT
         GraphDatabaseAPI db1 = dbRule.getGraphDatabaseAPI();
         createAndIndexNode( db1, 1 );
 
-        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
+        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), false,
                 defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // When
@@ -577,7 +577,7 @@ public class BackupServiceIT
         try
         {
             backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort,
-                    backupDir.getAbsolutePath(), false, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
+                    backupDir.getAbsoluteFile(), false, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
             fail( "Should have thrown exception about mismatching store ids" );
         }

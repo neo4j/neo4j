@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.enterprise;
 
+import java.io.File;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterables;
@@ -46,19 +47,19 @@ import org.neo4j.server.webadmin.rest.MasterInfoService;
 import static java.util.Arrays.asList;
 
 import static org.neo4j.helpers.collection.Iterables.mix;
-import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class EnterpriseNeoServer extends AdvancedNeoServer
 {
     public static final String SINGLE = "SINGLE";
     public static final String HA = "HA";
-    private static final GraphFactory HA_FACTORY = new GraphFactory()
+    private static final GraphFactory ENTERPRISE_FACTORY = new GraphFactory()
     {
         @Override
-        public GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String,String> params, Dependencies dependencies )
+        public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
         {
-            return new HighlyAvailableGraphDatabase( storeDir, params, dependencies );
+            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
+            return new HighlyAvailableGraphDatabase( storeDir, config.getParams(), dependencies );
         }
     };
 
@@ -75,7 +76,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
     protected static Database.Factory createDbFactory( Config config )
     {
         final String mode = config.get( ServerInternalSettings.legacy_db_mode ).toUpperCase();
-        return mode.equals( HA ) ? lifecycleManagingDatabase( HA_FACTORY ) : lifecycleManagingDatabase( EMBEDDED );
+        return mode.equals( HA ) ? lifecycleManagingDatabase( ENTERPRISE_FACTORY ) : lifecycleManagingDatabase( COMMUNITY_FACTORY );
     }
 
     @Override

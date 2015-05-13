@@ -54,25 +54,20 @@ public class TestStore
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
+    private File storeDir;
     private PageCache pageCache;
 
     @Before
     public void setUp()
     {
         pageCache = pageCacheRule.getPageCache( FILE_SYSTEM );
-    }
-
-    private File path()
-    {
-        String path = AbstractNeo4jTestCase.getStorePath( "teststore" );
-        File file = new File( path );
-        file.mkdirs();
-        return file;
+        storeDir = AbstractNeo4jTestCase.getStorePath( "teststore" );
+        storeDir.mkdirs();
     }
 
     private File file( String name )
     {
-        return new File( path() , name);
+        return new File( storeDir , name);
     }
 
     private File storeFile()
@@ -90,14 +85,6 @@ public class TestStore
     {
         try
         {
-            try
-            {
-                Store.createStore( null, pageCache );
-                fail( "Null fileName should throw exception" );
-            }
-            catch ( IllegalArgumentException e )
-            { // good
-            }
             Store store = Store.createStore( storeFile(), pageCache );
             try
             {
@@ -198,6 +185,7 @@ public class TestStore
         public static Store createStore( File fileName, PageCache pageCache ) throws IOException
         {
             new StoreFactory(
+                    fileName.getParentFile(),
                     new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class ),
                     ID_GENERATOR_FACTORY,
                     pageCache,

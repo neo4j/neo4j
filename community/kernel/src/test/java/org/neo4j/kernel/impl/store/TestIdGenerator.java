@@ -66,11 +66,14 @@ public class TestIdGenerator
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private EphemeralFileSystemAbstraction fs;
+    private File storeDir;
 
     @Before
     public void doBefore()
     {
         fs = fsRule.get();
+        storeDir = AbstractNeo4jTestCase.getStorePath( "xatest" );
+        fs.mkdirs( storeDir );
     }
 
     private void deleteIdGeneratorFile()
@@ -78,17 +81,9 @@ public class TestIdGenerator
         fs.deleteFile( idGeneratorFile() );
     }
 
-    private File path()
-    {
-        String path = AbstractNeo4jTestCase.getStorePath( "xatest" );
-        File file = new File( path );
-        fs.mkdirs( file );
-        return file;
-    }
-
     private File file( String name )
     {
-        return new File( path(), name );
+        return new File( storeDir, name );
     }
 
     private File idGeneratorFile()
@@ -618,8 +613,8 @@ public class TestIdGenerator
     @Test
     public void commandsGetWrittenOnceSoThatFreedIdsGetsAddedOnlyOnce() throws Exception
     {
-        String storeDir = "target/var/free-id-once";
-        deleteRecursively( new File( storeDir ) );
+        File storeDir = new File( "target/var/free-id-once" );
+        deleteRecursively( storeDir );
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( storeDir );
         RelationshipType type = withName( "SOME_TYPE" );
 

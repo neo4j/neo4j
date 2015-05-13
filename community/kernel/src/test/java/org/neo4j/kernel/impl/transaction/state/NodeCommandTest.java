@@ -210,11 +210,11 @@ public class NodeCommandTest
     {
         File dir = new File( "dir" );
         fs.get().mkdirs( dir );
-        Config config = StoreFactory.configForStoreDir( new Config(), dir );
         Monitors monitors = new Monitors();
         @SuppressWarnings("deprecation")
         StoreFactory storeFactory = new StoreFactory(
-                config,
+                dir,
+                new Config(),
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),

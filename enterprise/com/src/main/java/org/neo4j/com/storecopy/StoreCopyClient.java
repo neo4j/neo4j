@@ -38,7 +38,6 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
@@ -156,6 +155,7 @@ public class StoreCopyClient
                    && !file.getName().startsWith( "messages." );
         }
     };
+    private final File storeDir;
     private final Config config;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
     private final Log log;
@@ -163,10 +163,11 @@ public class StoreCopyClient
     private final PageCache pageCache;
     private final Monitor monitor;
 
-    public StoreCopyClient( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
+    public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
                             LogProvider logProvider, FileSystemAbstraction fs,
                             PageCache pageCache, Monitor monitor )
     {
+        this.storeDir = storeDir;
         this.config = config;
         this.kernelExtensions = kernelExtensions;
         this.log = logProvider.getLog( getClass() );
@@ -179,7 +180,6 @@ public class StoreCopyClient
             throws IOException
     {
         // Clear up the current temp directory if there
-        File storeDir = config.get( GraphDatabaseFacadeFactory.Configuration.store_dir );
         File tempStore = new File( storeDir, TEMP_COPY_DIRECTORY_NAME );
         cleanDirectory( tempStore );
 

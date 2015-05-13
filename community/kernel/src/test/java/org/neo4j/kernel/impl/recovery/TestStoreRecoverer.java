@@ -79,24 +79,24 @@ public class TestStoreRecoverer
     @Test
     public void shouldBeAbleToRecoverBrokenStore() throws Exception
     {
-        File store = createIntactStore();
-        createLogFileForNextVersionWithSomeDataInIt( store, fileSystem );
+        File storeDir = createIntactStore();
+        createLogFileForNextVersionWithSomeDataInIt( storeDir, fileSystem );
 
         StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
 
-        assertThat( recoverer.recoveryNeededAt( store ), is( true ) );
+        assertThat( recoverer.recoveryNeededAt( storeDir ), is( true ) );
 
         // Don't call recoverer.recover, because currently it's hard coded to start an embedded db
-        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( store.getPath() ).shutdown();
+        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
 
-        assertThat( recoverer.recoveryNeededAt( store ), is( false ) );
+        assertThat( recoverer.recoveryNeededAt( storeDir ), is( false ) );
     }
 
     private File createIntactStore()
     {
-        File storeDir = new File( "dir" );
+        File storeDir = new File( "dir" ).getAbsoluteFile();
         fileSystem.mkdirs( storeDir );
-        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir.getPath() ).shutdown();
+        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
         return storeDir;
     }
 

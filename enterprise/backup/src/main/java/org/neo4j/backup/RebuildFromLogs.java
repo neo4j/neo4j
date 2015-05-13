@@ -147,7 +147,7 @@ class RebuildFromLogs
         {
             if ( target.isDirectory() )
             {
-                if ( new BackupService().directoryContainsDb( target.getAbsolutePath() ) )
+                if ( new BackupService().directoryContainsDb( target.getAbsoluteFile() ) )
                 {
                     printUsage( "target graph database already exists" );
                     System.exit( -1 );
@@ -166,7 +166,7 @@ class RebuildFromLogs
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ) )
         {
             GraphDatabaseAPI graphdb =
-                    BackupService.startTemporaryDb( target.getAbsolutePath(), pageCache, stringMap() );
+                    BackupService.startTemporaryDb( target.getAbsoluteFile(), pageCache, stringMap() );
             try
             {
                 PhysicalLogFiles logFiles = new PhysicalLogFiles( source, FS );

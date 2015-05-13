@@ -114,9 +114,9 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public static final int META_DATA_RECORD_COUNT = Position.values().length;
 
-    public static boolean isStorePresent( FileSystemAbstraction fs, Config config )
+    public static boolean isStorePresent( FileSystemAbstraction fs, File storeDir )
     {
-        File neoStore = config.get( org.neo4j.kernel.impl.store.CommonAbstractStore.Configuration.neo_store );
+        File neoStore = new File( storeDir, DEFAULT_NAME );
         return fs.fileExists( neoStore );
     }
 
@@ -231,7 +231,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                  * Yes, this has to be fixed to be prettier.
                  */
                 String foundVersion = versionLongToString( getRecord( fileSystemAbstraction,
-                        configuration.get( Configuration.neo_store ), Position.STORE_VERSION ) );
+                        storageFileName, Position.STORE_VERSION ) );
                 if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
                 {
                     throw new IllegalStateException(

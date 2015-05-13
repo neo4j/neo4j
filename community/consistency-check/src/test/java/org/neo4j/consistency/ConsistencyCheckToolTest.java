@@ -53,7 +53,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -69,8 +68,8 @@ public class ConsistencyCheckToolTest
     public void runsConsistencyCheck() throws Exception
     {
         // given
-        String storeDirectoryPath = storeDirectory.directory().getPath();
-        String[] args = {storeDirectoryPath};
+        File storeDir = storeDirectory.directory();
+        String[] args = {storeDir.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
         PrintStream systemError = mock( PrintStream.class );
 
@@ -78,7 +77,7 @@ public class ConsistencyCheckToolTest
         new ConsistencyCheckTool( service, systemError ).run( args );
 
         // then
-        verify( service ).runFullConsistencyCheck( eq( storeDirectoryPath ), any( Config.class ),
+        verify( service ).runFullConsistencyCheck( eq( storeDir ), any( Config.class ),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ) );
     }
 
@@ -86,7 +85,8 @@ public class ConsistencyCheckToolTest
     public void appliesDefaultTuningConfigurationForConsistencyChecker() throws Exception
     {
         // given
-        String[] args = {storeDirectory.directory().getPath()};
+        File storeDir = storeDirectory.directory();
+        String[] args = {storeDir.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
@@ -95,7 +95,7 @@ public class ConsistencyCheckToolTest
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-        verify( service ).runFullConsistencyCheck( anyString(), config.capture(),
+        verify( service ).runFullConsistencyCheck( eq( storeDir ), config.capture(),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ) );
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
         assertEquals( TaskExecutionOrder.MULTI_PASS,
@@ -106,12 +106,13 @@ public class ConsistencyCheckToolTest
     public void passesOnConfigurationIfProvided() throws Exception
     {
         // given
+        File storeDir = storeDirectory.directory();
         File propertyFile = TargetDirectory.forTest( getClass() ).file( "neo4j.properties" );
         Properties properties = new Properties();
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         properties.store( new FileWriter( propertyFile ), null );
 
-        String[] args = {storeDirectory.directory().getPath(), "-config", propertyFile.getPath()};
+        String[] args = {storeDir.getPath(), "-config", propertyFile.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
@@ -120,7 +121,7 @@ public class ConsistencyCheckToolTest
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-        verify( service ).runFullConsistencyCheck( anyString(), config.capture(),
+        verify( service ).runFullConsistencyCheck( eq( storeDir ), config.capture(),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ) );
         assertTrue( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
@@ -186,7 +187,7 @@ public class ConsistencyCheckToolTest
                 new StoreRecoverer( fs.get() ), mock( ConsistencyCheckTool.ExitHandle.class ) );
 
         // When
-        consistencyCheckTool.run( "-recovery", storeDirectory.absolutePath() );
+        consistencyCheckTool.run( "-recovery", storeDirectory.graphDbDir().getAbsolutePath() );
 
         // Then
         verify( listener ).recoveryRequired( anyLong() );
@@ -210,7 +211,7 @@ public class ConsistencyCheckToolTest
         ConsistencyCheckTool consistencyCheckTool = newConsistencyCheckToolWith( monitors, storeRecoverer, exitHandle );
 
         // When
-        consistencyCheckTool.run( "-recovery=false", storeDirectory.absolutePath() );
+        consistencyCheckTool.run( "-recovery=false", storeDirectory.graphDbDir().getAbsolutePath() );
 
         // Then
         verifyZeroInteractions( listener );
@@ -221,7 +222,7 @@ public class ConsistencyCheckToolTest
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( storeDirectory.absolutePath() )
+                .newImpermanentDatabaseBuilder( storeDirectory.graphDbDir() )
                 .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
@@ -240,9 +241,9 @@ public class ConsistencyCheckToolTest
         GraphDatabaseFactory graphDbFactory = new TestGraphDatabaseFactory()
         {
             @Override
-            public GraphDatabaseService newEmbeddedDatabase( String path )
+            public GraphDatabaseService newEmbeddedDatabase( File storeDir )
             {
-                return newImpermanentDatabase( path );
+                return newImpermanentDatabase( storeDir );
             }
         }.setFileSystem( fs.get() ).setMonitors( monitors );
 

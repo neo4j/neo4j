@@ -19,6 +19,7 @@
  */
 package org.neo4j.tooling;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 
@@ -68,7 +69,7 @@ public class QuickImport
         long relationshipCount = parseLongWithUnit( args.get( "relationships", null ) );
         int labelCount = args.getNumber( "labels", 4 ).intValue();
         int relationshipTypeCount = args.getNumber( "relationship-types", 4 ).intValue();
-        String dir = args.get( ImportTool.Options.STORE_DIR.key() );
+        File dir = new File( args.get( ImportTool.Options.STORE_DIR.key() ) );
 
         Extractors extractors = new Extractors( COMMAS.arrayDelimiter() );
         IdType idType = IdType.ACTUAL;

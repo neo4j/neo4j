@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha.factory;
 
+import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
@@ -47,6 +48,7 @@ import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -150,6 +152,8 @@ public class EnterpriseEditionModule
     public EnterpriseEditionModule( final PlatformModule platformModule )
     {
         final LifeSupport life = platformModule.life;
+        final FileSystemAbstraction fs = platformModule.fileSystem;
+        final File storeDir = platformModule.storeDir;
         final Config config = platformModule.config;
         final Dependencies dependencies = platformModule.dependencies;
         final LogService logging = platformModule.logging;
@@ -328,7 +332,7 @@ public class EnterpriseEditionModule
                 config.get( HaSettings.max_concurrent_channels_per_slave ),
                 config.get( HaSettings.com_chunk_size ).intValue() );
 
-        SwitchToSlave switchToSlaveInstance = new SwitchToSlave( logging, config, dependencies,
+        SwitchToSlave switchToSlaveInstance = new SwitchToSlave( logging, fs, storeDir, config, dependencies,
                 (HaIdGeneratorFactory) idGeneratorFactory,
                 masterDelegateInvocationHandler, clusterMemberAvailability,
                 requestContextFactory, platformModule.kernelExtensions.listFactories(), masterClientResolver,
@@ -396,7 +400,7 @@ public class EnterpriseEditionModule
                 createRelationshipTypeCreator( config, memberStateMachine, masterDelegateInvocationHandler,
                         requestContextFactory, kernelProvider ) ) ) );
 
-        life.add( dependencies.satisfyDependency(createKernelData( config, platformModule.graphDatabaseFacade, members, lastUpdateTime ) ));
+        life.add( dependencies.satisfyDependency(createKernelData( fs, storeDir, config, platformModule.graphDatabaseFacade, members, lastUpdateTime ) ));
 
         commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, life,
                 clusterClient, members, platformModule.jobScheduler, master, requestContextFactory, memberStateMachine );
@@ -585,12 +589,12 @@ public class EnterpriseEditionModule
         }
     }
 
-    protected KernelData createKernelData( Config config, GraphDatabaseAPI graphDb, ClusterMembers members, LastUpdateTime lastUpdateTime)
+    protected KernelData createKernelData( FileSystemAbstraction fileSystem, File storeDir, Config config, GraphDatabaseAPI graphDb, ClusterMembers members, LastUpdateTime lastUpdateTime)
     {
         OnDiskLastTxIdGetter txIdGetter = new OnDiskLastTxIdGetter( graphDb );
         ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider(
                 members, txIdGetter, lastUpdateTime );
-        return new HighlyAvailableKernelData( graphDb, members, databaseInfo, config );
+        return new HighlyAvailableKernelData( graphDb, members, databaseInfo, fileSystem, storeDir, config );
     }
 
     protected void registerRecovery( final String editionName, final DependencyResolver dependencyResolver, final LogService logging)

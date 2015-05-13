@@ -327,7 +327,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
      * core API are now slowly accumulating in the Kernel implementation. Over time, these components should be
      * refactored into bigger components that wrap the very granular things we depend on here.
      */
-    public NeoStoreDataSource( Config config, StoreFactory sf, LogProvider logProvider, JobScheduler scheduler,
+    public NeoStoreDataSource( File storeDir, Config config, StoreFactory sf, LogProvider logProvider, JobScheduler scheduler,
             TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
             PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens, Locks lockManager,
@@ -343,6 +343,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             Monitors monitors,
             Tracers tracers )
     {
+        this.storeDir = storeDir;
         this.config = config;
         this.tokenNameLookup = tokenNameLookup;
         this.dependencyResolver = dependencyResolver;
@@ -412,8 +413,6 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     {
         dependencies = new Dependencies();
         life = new LifeSupport();
-        storeDir = config.get( Configuration.store_dir );
-        File store = config.get( Configuration.neo_store );
         if ( !storeFactory.storeExists() )
         {
             storeFactory.createNeoStore().close();
@@ -437,7 +436,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         } );
 
         // Upgrade the store before we begin
-        upgradeStore( store, storeMigrationProcess, indexProvider );
+        upgradeStore( storeDir, storeMigrationProcess, indexProvider );
 
         // Build all modules and their services
         try
@@ -459,7 +458,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                     indexingModule.indexingService(), cacheModule.schemaCache() );
 
             TransactionLogModule transactionLogModule =
-                    buildTransactionLogs( config, logProvider, indexingModule.labelScanStore(),
+                    buildTransactionLogs( storeDir, config, logProvider, indexingModule.labelScanStore(),
                             fs, neoStoreModule.neoStore(), cacheModule.cacheAccess(), indexingModule.indexingService(),
                             indexProviders.values() );
 
@@ -531,11 +530,11 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     // Startup sequence
     // By doing this sequence of method calls we can ensure that no dependency cycles exist, and get a clearer view
     // of the dependency tree, starting at the bottom
-    private void upgradeStore( File store, StoreUpgrader storeMigrationProcess, SchemaIndexProvider indexProvider )
+    private void upgradeStore( File storeDir, StoreUpgrader storeMigrationProcess, SchemaIndexProvider indexProvider )
     {
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fs ) );
         storeMigrationProcess.addParticipant( indexProvider.storeMigrationParticipant( fs, upgradableDatabase ) );
-        storeMigrationProcess.migrateIfNeeded( store.getParentFile(), indexProvider, pageCache );
+        storeMigrationProcess.migrateIfNeeded( storeDir, indexProvider, pageCache );
     }
 
     private NeoStoreModule buildNeoStore( final StoreFactory storeFactory, final LabelTokenHolder
@@ -710,16 +709,15 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         };
     }
 
-    private TransactionLogModule buildTransactionLogs( Config config, LogProvider logProvider,
+    private TransactionLogModule buildTransactionLogs( File storeDir, Config config, LogProvider logProvider,
             LabelScanStore labelScanStore,
             FileSystemAbstraction fileSystemAbstraction,
             NeoStore neoStore, CacheAccessBackDoor cacheAccess,
             IndexingService indexingService,
             Iterable<IndexImplementation> indexProviders )
     {
-        File directory = config.get( GraphDatabaseSettings.store_dir );
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 1000, 100_000 );
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, PhysicalLogFile.DEFAULT_NAME,
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, PhysicalLogFile.DEFAULT_NAME,
                 fileSystemAbstraction );
 
         IdOrderingQueue legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
@@ -1111,9 +1109,9 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         return getNeoStore().getStoreId();
     }
 
-    public String getStoreDir()
+    public File getStoreDir()
     {
-        return storeDir.getPath();
+        return storeDir;
     }
 
     public long getCreationTime()
@@ -1242,7 +1240,5 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     {
         public static final Setting<String> keep_logical_logs = GraphDatabaseSettings.keep_logical_logs;
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
-        public static final Setting<File> store_dir = GraphDatabaseFacadeFactory.Configuration.store_dir;
-        public static final Setting<File> neo_store = GraphDatabaseFacadeFactory.Configuration.neo_store;
     }
 }

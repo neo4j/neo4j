@@ -71,9 +71,9 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
         private static String FORMAT_DATE_ISO = "yyyy-MM-dd'T'HH:mm:ssZ";
         final private SimpleDateFormat dateFormat;
 
-        public StoreFiles( String storeDir )
+        public StoreFiles( File storeDir )
         {
-            this.storeDir = new File( storeDir );
+            this.storeDir = storeDir;
             TimeZone tz = TimeZone.getDefault();
             dateFormat = new SimpleDateFormat( FORMAT_DATE_ISO );
             dateFormat.setTimeZone( tz );

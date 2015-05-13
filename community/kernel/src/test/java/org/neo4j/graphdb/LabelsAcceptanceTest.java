@@ -671,7 +671,7 @@ public class LabelsAcceptanceTest
         {
             @Override
             protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator(
-                    final String storeDir, final TestGraphDatabaseFactoryState state )
+                    final File storeDir, final TestGraphDatabaseFactoryState state )
             {
                 return new GraphDatabaseBuilder.DatabaseCreator()
                 {
@@ -681,7 +681,7 @@ public class LabelsAcceptanceTest
                         return new ImpermanentGraphDatabase( storeDir, config, GraphDatabaseDependencies.newDependencies(state.databaseDependencies() ))
                         {
                             @Override
-                            protected void create( Map<String, String> params, GraphDatabaseFacadeFactory
+                            protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory
                                     .Dependencies dependencies )
                             {
                                 new CommunityFacadeFactory()
@@ -700,11 +700,11 @@ public class LabelsAcceptanceTest
                                     }
 
                                     @Override
-                                    protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                                     {
-                                        return new ImpermanentPlatformModule( params, dependencies, graphDatabaseFacade );
+                                        return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
                                     }
-                                }.newFacade( params, dependencies, this );
+                                }.newFacade( storeDir, params, dependencies, this );
                             }
 
                         };

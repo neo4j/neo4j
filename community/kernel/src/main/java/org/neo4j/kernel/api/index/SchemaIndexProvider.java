@@ -29,14 +29,12 @@ import org.neo4j.graphdb.DependencyResolver.SelectionStrategy;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEntryInformation;
 
@@ -234,11 +232,6 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         int result = priority;
         result = 31 * result + (providerDescriptor != null ? providerDescriptor.hashCode() : 0);
         return result;
-    }
-
-    protected File getRootDirectory( Config config, String key )
-    {
-        return getRootDirectory( config.get( store_dir ), key );
     }
 
     public static File getRootDirectory( File storeDir, String key )

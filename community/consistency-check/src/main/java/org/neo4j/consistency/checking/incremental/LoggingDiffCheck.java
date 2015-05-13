@@ -24,6 +24,8 @@ import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.store.DiffStore;
 import org.neo4j.logging.LogProvider;
 
+import java.io.File;
+
 public class LoggingDiffCheck extends DiffCheck
 {
     private final DiffCheck checker;
@@ -35,9 +37,9 @@ public class LoggingDiffCheck extends DiffCheck
     }
 
     @Override
-    public ConsistencySummaryStatistics execute( DiffStore diffs ) throws ConsistencyCheckIncompleteException
+    public ConsistencySummaryStatistics execute( File storeDir, DiffStore diffs ) throws ConsistencyCheckIncompleteException
     {
-        return checker.execute( diffs );
+        return checker.execute( storeDir, diffs );
     }
 
     @Override

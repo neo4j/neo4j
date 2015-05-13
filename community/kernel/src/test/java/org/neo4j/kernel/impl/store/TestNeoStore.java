@@ -81,14 +81,13 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 public class TestNeoStore
 {
+    private File storeDir;
     private PropertyStore pStore;
     private RelationshipTypeTokenStore rtStore;
     private NeoStoreDataSource ds;
-    private File path;
 
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
@@ -98,20 +97,15 @@ public class TestNeoStore
     @Rule public NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
     private PageCache pageCache;
 
-    private File file( String name )
-    {
-        return new File( path, name);
-    }
-
     @Before
     public void setUpNeoStore() throws Exception
     {
-        path = dir.directory( "dir" );
-        Config config = StoreFactory.configForStoreDir(
-                new Config( new HashMap<String, String>(), GraphDatabaseSettings.class ), path );
+        storeDir = dir.graphDbDir();
+        Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
         Monitors monitors = new Monitors();
         pageCache = pageCacheRule.getPageCache( fs.get() );
         StoreFactory sf = new StoreFactory(
+                storeDir,
                 config,
                 new DefaultIdGeneratorFactory(),
                 pageCache,
@@ -159,9 +153,9 @@ public class TestNeoStore
         return index;
     }
 
-    private void initializeStores( Map<String, String> additionalConfig ) throws IOException
+    private void initializeStores( File storeDir, Map<String, String> additionalConfig ) throws IOException
     {
-        ds = dsRule.getDataSource( dir, fs.get(), pageCache, additionalConfig );
+        ds = dsRule.getDataSource( storeDir, fs.get(), pageCache, additionalConfig );
         ds.init();
         ds.start();
 
@@ -209,8 +203,8 @@ public class TestNeoStore
                 "neo.schemastore.db",
         } )
         {
-            fs.get().deleteFile( file( file ) );
-            fs.get().deleteFile( file( file + ".id" ) );
+            fs.get().deleteFile( new File( storeDir, file ) );
+            fs.get().deleteFile( new File( storeDir, file + ".id" ) );
         }
 
         File file = new File( "." );
@@ -261,7 +255,7 @@ public class TestNeoStore
     @Test
     public void testCreateNeoStore() throws Exception
     {
-        initializeStores( stringMap() );
+        initializeStores( storeDir, stringMap() );
         startTx();
         // setup test population
         long node1 = nextId( Node.class );
@@ -309,7 +303,7 @@ public class TestNeoStore
         commitTx();
         ds.stop();
 
-        initializeStores( stringMap() );
+        initializeStores( storeDir, stringMap() );
         startTx();
         // validate node
         validateNodeRel1( node1, n1prop1, n1prop2, n1prop3, rel1, rel2,
@@ -325,7 +319,7 @@ public class TestNeoStore
         commitTx();
         ds.stop();
 
-        initializeStores( stringMap() );
+        initializeStores( storeDir, stringMap() );
         startTx();
         // validate and delete rels
         deleteRel1( rel1, r1prop1, r1prop2, r1prop3, node1, node2, relType1 );
@@ -336,7 +330,7 @@ public class TestNeoStore
         commitTx();
         ds.stop();
 
-        initializeStores( stringMap() );
+        initializeStores( storeDir, stringMap() );
         startTx();
         assertFalse( storeLayer.nodeExists( node1 ) );
         assertFalse( storeLayer.nodeExists( node2 ) );
@@ -900,7 +894,7 @@ public class TestNeoStore
     @Test
     public void testRels1() throws Exception
     {
-        initializeStores( stringMap() );
+        initializeStores( storeDir, stringMap() );
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName = "relationshiptype1";
@@ -937,7 +931,7 @@ public class TestNeoStore
     @Ignore
     public void testRels2() throws Exception
     {
-        initializeStores( stringMap() );
+        initializeStores( storeDir, stringMap() );
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName = "relationshiptype1";
@@ -976,7 +970,7 @@ public class TestNeoStore
     public void testRels3() throws Exception
     {
         // test linked list stuff during relationship delete
-        initializeStores( stringMap() );
+        initializeStores( storeDir, stringMap() );
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
         transaction.createRelationshipTypeToken( "relationshiptype1", relType1 );
@@ -1021,7 +1015,7 @@ public class TestNeoStore
     @Test
     public void testProps1() throws Exception
     {
-        initializeStores( stringMap() );
+        initializeStores( storeDir, stringMap() );
         startTx();
         long nodeId = nextId( Node.class );
         transaction.nodeCreate( nodeId );
@@ -1031,7 +1025,7 @@ public class TestNeoStore
                 new Integer( 10 ) );
         commitTx();
         ds.stop();
-        initializeStores( stringMap() );
+        initializeStores( storeDir, stringMap() );
         startTx();
         transaction.nodeChangeProperty( nodeId, prop.propertyKeyId(), new Integer( 5 ) );
         transaction.nodeRemoveProperty( nodeId, prop.propertyKeyId() );
@@ -1043,7 +1037,8 @@ public class TestNeoStore
     @Test
     public void testSetBlockSize() throws Exception
     {
-        initializeStores( stringMap( "string_block_size", "62", "array_block_size", "302" ) );
+        File storeDir = dir.directory( "small_store" );
+        initializeStores( storeDir, stringMap( "string_block_size", "62", "array_block_size", "302" ) );
         assertEquals( 62 + AbstractDynamicStore.BLOCK_HEADER_SIZE,
                 pStore.getStringBlockSize() );
         assertEquals( 302 + AbstractDynamicStore.BLOCK_HEADER_SIZE,
@@ -1055,8 +1050,8 @@ public class TestNeoStore
     public void setVersion() throws Exception
     {
         FileSystemAbstraction fileSystem = fs.get();
-        File storeDir = new File("target/test-data/set-version");
-        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir.getAbsolutePath() ).shutdown();
+        File storeDir = new File("target/test-data/set-version").getAbsoluteFile();
+        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
         assertEquals( 1, NeoStore.setRecord( fileSystem, new File( storeDir,
                 NeoStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 10 ) );
         assertEquals( 10, NeoStore.setRecord( fileSystem, new File( storeDir,
@@ -1065,7 +1060,8 @@ public class TestNeoStore
         Monitors monitors = new Monitors();
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory(
-                configForStoreDir( config, storeDir ),
+                storeDir,
+                config,
                 new DefaultIdGeneratorFactory(),
                 pageCache,
                 fileSystem,
@@ -1084,7 +1080,8 @@ public class TestNeoStore
         Monitors monitors = new Monitors();
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory(
-                configForStoreDir( config, dir.directory() ),
+                dir.directory(),
+                config,
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),

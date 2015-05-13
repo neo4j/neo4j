@@ -45,14 +45,14 @@ import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLab
  */
 public class LuceneLabelScanStoreBuilder
 {
-    private final String storeDir;
+    private final File storeDir;
     private final NeoStoreSupplier neoStoreSupplier;
     private final FileSystemAbstraction fileSystem;
     private final LogProvider logProvider;
 
     private LuceneLabelScanStore labelScanStore = null;
 
-    public LuceneLabelScanStoreBuilder( String storeDir,
+    public LuceneLabelScanStoreBuilder( File storeDir,
                                         NeoStore neoStore,
                                         FileSystemAbstraction fileSystem,
                                         LogProvider logProvider )

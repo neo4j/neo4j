@@ -27,7 +27,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.configuration.Config;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -35,7 +34,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.TargetDirectory.forTest;
 
 public class LuceneSchemaIndexCorruptionTest
@@ -50,7 +48,7 @@ public class LuceneSchemaIndexCorruptionTest
         when(dirFactory.open( any(File.class) )).thenThrow(new CorruptIndexException( "It's borken." ));
 
         LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
+                forTest( getClass() ).makeGraphDbDir()
         );
 
         // When
@@ -71,7 +69,7 @@ public class LuceneSchemaIndexCorruptionTest
         when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
 
         LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
+                forTest( getClass() ).makeGraphDbDir()
         );
 
         // When
@@ -93,7 +91,7 @@ public class LuceneSchemaIndexCorruptionTest
         when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
 
         LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
+                forTest( getClass() ).makeGraphDbDir()
         );
 
         // When
@@ -116,7 +114,7 @@ public class LuceneSchemaIndexCorruptionTest
         when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
 
         LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
+                forTest( getClass() ).makeGraphDbDir()
         );
 
         // When

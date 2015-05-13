@@ -27,10 +27,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import java.io.File;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -39,7 +42,6 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.test.TargetDirectory.forTest;
-import static org.neo4j.unsafe.batchinsert.BatchInserters.inserter;
 
 public class TestLuceneSchemaBatchInsertIT
 {
@@ -47,8 +49,8 @@ public class TestLuceneSchemaBatchInsertIT
     public void shouldLoadAndUseLuceneProvider() throws Exception
     {
         // GIVEN
-        String storeDir = forTest( getClass() ).makeGraphDbDir().getAbsolutePath();
-        BatchInserter inserter = inserter( storeDir );
+        File storeDir = forTest( getClass() ).makeGraphDbDir().getAbsoluteFile();
+        BatchInserter inserter = BatchInserters.inserter( storeDir, new DefaultFileSystemAbstraction() );
         inserter.createDeferredSchemaIndex( LABEL ).on( "name" ).create();
 
         // WHEN

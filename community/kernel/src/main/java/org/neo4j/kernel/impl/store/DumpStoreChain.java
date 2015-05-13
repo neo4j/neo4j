@@ -96,7 +96,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         return Boolean.getBoolean( "logger" ) ? FormattedLogProvider.toOutputStream( System.out ) : NullLogProvider.getInstance();
     }
 
-    void dump( File storeFile ) throws IOException
+    void dump( File storeDir ) throws IOException
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
@@ -104,8 +104,8 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         {
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
             Config config = new Config();
-            StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, pageCache, fs, logProvider(), null );
-            RecordStore<RECORD> store = store( storeFactory, storeFile );
+            StoreFactory storeFactory = new StoreFactory( null, config, idGeneratorFactory, pageCache, fs, logProvider(), null );
+            RecordStore<RECORD> store = store( storeFactory, storeDir );
             try
             {
                 for ( long next = first; next != -1; )
@@ -124,7 +124,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
 
     abstract long next( RECORD record );
 
-    abstract RecordStore<RECORD> store( StoreFactory factory, File storeFile );
+    abstract RecordStore<RECORD> store( StoreFactory factory, File storeDir );
 
     private static DumpStoreChain propertyChain( Args args )
     {
@@ -162,10 +162,10 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
             return new DumpPropertyChain( -1, false )
             {
                 @Override
-                PropertyStore store( StoreFactory factory, File storeFile )
+                PropertyStore store( StoreFactory factory, File storeDir )
                 {
-                    first = nodeRecord( factory, storeFile, node ).getNextProp();
-                    return super.store( factory, new File( storeFile, PROPSTORE ) );
+                    first = nodeRecord( factory, storeDir, node ).getNextProp();
+                    return super.store( factory, new File( storeDir, PROPSTORE ) );
                 }
             };
         }

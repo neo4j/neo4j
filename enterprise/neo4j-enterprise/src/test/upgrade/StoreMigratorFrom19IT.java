@@ -259,7 +259,8 @@ public class StoreMigratorFrom19IT
         pageCache = pageCacheRule.getPageCache( fs );
 
         storeFactory = new StoreFactory(
-                StoreFactory.configForStoreDir( config, storeDir.directory() ),
+                storeDir.directory(),
+                config,
                 new DefaultIdGeneratorFactory(),
                 pageCache,
                 fs,

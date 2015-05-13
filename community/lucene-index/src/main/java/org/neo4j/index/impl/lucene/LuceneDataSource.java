@@ -60,7 +60,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -75,6 +74,7 @@ import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_
  */
 public class LuceneDataSource implements Lifecycle
 {
+    private final File storeDir;
     private final Config config;
     private final FileSystemAbstraction fileSystemAbstraction;
 
@@ -83,7 +83,6 @@ public class LuceneDataSource implements Lifecycle
         public static final Setting<Integer> lucene_searcher_cache_size = GraphDatabaseSettings.lucene_searcher_cache_size;
         public static final Setting<Boolean> allow_store_upgrade = GraphDatabaseSettings.allow_store_upgrade;
         public static final Setting<Boolean> ephemeral = GraphDatabaseFacadeFactory.Configuration.ephemeral;
-        public static final Setting<File> store_dir = NeoStoreDataSource.Configuration.store_dir;
     }
 
     public static final Version LUCENE_VERSION = Version.LUCENE_36;
@@ -133,8 +132,9 @@ public class LuceneDataSource implements Lifecycle
     /**
      * Constructs this data source.
      */
-    public LuceneDataSource( Config config, IndexConfigStore indexStore, FileSystemAbstraction fileSystemAbstraction )
+    public LuceneDataSource( File storeDir, Config config, IndexConfigStore indexStore, FileSystemAbstraction fileSystemAbstraction )
     {
+        this.storeDir = storeDir;
         this.config = config;
         this.indexStore = indexStore;
         this.typeCache = new IndexTypeCache( indexStore );
@@ -153,7 +153,6 @@ public class LuceneDataSource implements Lifecycle
                 : LuceneFilesystemFacade.FS;
         indexSearchers = new IndexClockCache( config.get( Configuration.lucene_searcher_cache_size ) );
         caching = new Cache();
-        File storeDir = config.get( Configuration.store_dir );
         this.baseStorePath = this.filesystemFacade.ensureDirectoryExists( fileSystemAbstraction,
                 baseDirectory( storeDir ) );
         this.filesystemFacade.cleanWriteLocks( baseStorePath );

@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.util.Map;
+import java.io.File;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -40,8 +39,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 public class StoreFactoryTest
 {
     @Rule
@@ -54,11 +51,9 @@ public class StoreFactoryTest
     public void setup()
     {
         FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        Map<String, String> configParams = stringMap(
-                GraphDatabaseSettings.neo_store.name(), "graph.db/neostore" );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
 
-        storeFactory = new StoreFactory( new Config( configParams ), new DefaultIdGeneratorFactory(),
+        storeFactory = new StoreFactory( new File( "graph.db/neostore" ), new Config(), new DefaultIdGeneratorFactory(),
                 pageCache, fs, NullLogProvider.getInstance(), new Monitors() );
     }
 

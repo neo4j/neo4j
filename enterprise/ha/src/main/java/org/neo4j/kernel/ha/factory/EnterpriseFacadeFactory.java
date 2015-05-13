@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha.factory;
 
+import java.io.File;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -33,11 +34,11 @@ public class EnterpriseFacadeFactory
     extends GraphDatabaseFacadeFactory
 {
     @Override
-    public GraphDatabaseFacade newFacade( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade
+    public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade
             graphDatabaseFacade )
     {
         params.put( Configuration.editionName.name(), "Enterprise");
-        return super.newFacade( params, dependencies, graphDatabaseFacade );
+        return super.newFacade( storeDir, params, dependencies, graphDatabaseFacade );
     }
 
     @Override

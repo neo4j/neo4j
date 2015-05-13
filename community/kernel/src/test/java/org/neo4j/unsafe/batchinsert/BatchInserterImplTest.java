@@ -94,7 +94,7 @@ public class BatchInserterImplTest
     private int createInserterAndGetMemoryMappingConfig( Map<String, String> initialConfig ) throws Exception
     {
         BatchInserter inserter = BatchInserters.inserter(
-                TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath(), initialConfig );
+                TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsoluteFile(), new DefaultFileSystemAbstraction(), initialConfig );
         NeoStore neoStore = ReflectionUtil.getPrivateField( inserter, "neoStore", NeoStore.class );
         PageCache pageCache = ReflectionUtil.getPrivateField( neoStore, "pageCache", PageCache.class );
         inserter.shutdown();

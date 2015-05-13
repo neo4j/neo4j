@@ -60,8 +60,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
-
 public class RelationshipGroupStoreTest
 {
     @Rule
@@ -166,9 +164,9 @@ public class RelationshipGroupStoreTest
             customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
         }
         Monitors monitors = new Monitors();
-        Config config = configForStoreDir( config( customConfig ), directory );
         return new StoreFactory(
-                config,
+                directory,
+                config( customConfig ),
                 new DefaultIdGeneratorFactory(),
                 pageCache,
                 fs,

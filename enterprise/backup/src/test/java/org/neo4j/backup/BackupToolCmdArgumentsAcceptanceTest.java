@@ -25,6 +25,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.io.File;
 import java.io.PrintStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -54,7 +55,7 @@ public class BackupToolCmdArgumentsAcceptanceTest
 {
     private static final String HOST = "localhost";
     private static final int PORT = 9090;
-    private static final String PATH = "/var/backup/neo4j/";
+    private static final File PATH = new File( "/var/backup/neo4j/" ).getAbsoluteFile();
 
     @Parameter( 0 )
     public String argsAsString;
@@ -69,13 +70,13 @@ public class BackupToolCmdArgumentsAcceptanceTest
                         stringMap(
                                 "host", HOST,
                                 "port", String.valueOf( PORT ),
-                                "to", PATH
+                                "to", PATH.getAbsolutePath()
                         )
                 ),
                 allCombinations(
                         stringMap(
                                 "from", HOST + ":" + PORT,
-                                "to", PATH
+                                "to", PATH.getAbsolutePath()
                         )
                 )
         );

@@ -57,7 +57,10 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     @Override
     public Lifecycle newKernelExtension( final Dependencies deps ) throws Throwable
     {
-        if ( ! deps.config().get( GraphDatabaseSettings.log_queries ) )
+        boolean queryLogEnabled = deps.config().get( GraphDatabaseSettings.log_queries );
+        final File queryLogFile = deps.config().get( GraphDatabaseSettings.log_queries_filename );
+
+        if ( !queryLogEnabled || queryLogFile == null )
         {
             return new LifecycleAdapter();
         }
@@ -69,8 +72,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             public void init() throws Throwable
             {
                 final FileSystemAbstraction filesystem = deps.filesystem();
-                final File logFile = deps.config().get( GraphDatabaseSettings.log_queries_filename );
-                logOutputStream = createOrOpenAsOuputStream( filesystem, logFile, true );
+                logOutputStream = createOrOpenAsOuputStream( filesystem, queryLogFile, true );
                 Long thresholdMillis = deps.config().get( GraphDatabaseSettings.log_queries_threshold );
 
                 QueryLogger logger = new QueryLogger(

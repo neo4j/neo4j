@@ -32,7 +32,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
-import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -62,7 +62,7 @@ public class StoreMigrationTool
         new StoreMigrationTool().run( new DefaultFileSystemAbstraction(), new File( legacyStoreDirectory ), new Config(), userLogProvider, NO_MONITOR );
     }
 
-    public void run( FileSystemAbstraction fs, File legacyStoreDirectory, Config config, LogProvider userLogProvider, StoreUpgrader.Monitor monitor ) throws IOException
+    public void run( final FileSystemAbstraction fs, final File legacyStoreDirectory, Config config, LogProvider userLogProvider, StoreUpgrader.Monitor monitor ) throws IOException
     {
         ConfigMapUpgradeConfiguration upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
         StoreUpgrader migrationProcess = new StoreUpgrader( upgradeConfiguration, fs, monitor, userLogProvider );
@@ -72,15 +72,30 @@ public class StoreMigrationTool
         // Add participants from kernel extensions...
         Dependencies deps = new Dependencies();
         deps.satisfyDependencies( fs, config );
+
+
+        KernelContext kernelContext = new KernelContext()
+        {
+            @Override
+            public FileSystemAbstraction fileSystem()
+            {
+                return fs;
+            }
+
+            @Override
+            public File storeDir()
+            {
+                return legacyStoreDirectory;
+            }
+        };
         KernelExtensions kernelExtensions = life.add( new KernelExtensions(
-                GraphDatabaseDependencies.newDependencies().kernelExtensions(),
+                kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                 deps, ignore() ) );
 
         JobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
         LogService logService = new StoreLogService( userLogProvider, fs, legacyStoreDirectory, jobScheduler );
 
         // Add the kernel store migrator
-        config = StoreFactory.configForStoreDir( config, legacyStoreDirectory );
         life.start();
         SchemaIndexProvider schemaIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
                 SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );

@@ -72,7 +72,7 @@ public class BatchingNeoStoreTest
     private void someDataInTheDatabase()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fsr.get() )
-                .newImpermanentDatabase( storeDir.getAbsolutePath() );
+                .newImpermanentDatabase( storeDir );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
@@ -85,5 +85,5 @@ public class BatchingNeoStoreTest
     }
 
     public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
-    private final File storeDir = new File( "dir" );
+    private final File storeDir = new File( "dir" ).getAbsoluteFile();
 }

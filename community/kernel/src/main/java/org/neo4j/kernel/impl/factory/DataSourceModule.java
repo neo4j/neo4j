@@ -165,7 +165,7 @@ public class DataSourceModule
                 threadToTransactionBridge, indexProvider, nodeAutoIndexer, relAutoIndexer );
 
         // Factories for things that needs to be created later
-        StoreFactory storeFactory = new StoreFactory( config, editionModule.idGeneratorFactory,
+        StoreFactory storeFactory = new StoreFactory( storeDir, config, editionModule.idGeneratorFactory,
                 platformModule.pageCache, fileSystem, logging.getInternalLogProvider(), platformModule.monitors );
 
         StartupStatisticsProvider startupStatistics = deps.satisfyDependency( new StartupStatisticsProvider() );
@@ -193,7 +193,7 @@ public class DataSourceModule
         KernelHealth kernelHealth = deps.satisfyDependency( new KernelHealth( kernelPanicEventGenerator,
                 logging.getInternalLog( KernelHealth.class ) ) );
 
-        neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource( config,
+        neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource( storeDir, config,
                 storeFactory, logging.getInternalLogProvider(), platformModule.jobScheduler,
                 new NonTransactionalTokenNameLookup( editionModule.labelTokenHolder,
                         editionModule.propertyKeyTokenHolder ),

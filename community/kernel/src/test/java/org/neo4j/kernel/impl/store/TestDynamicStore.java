@@ -64,25 +64,20 @@ public class TestDynamicStore
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
+    private File storeDir;
     private PageCache pageCache;
 
     @Before
     public void setUp()
     {
         pageCache = pageCacheRule.getPageCache( fs.get() );
-    }
-
-    private File path()
-    {
-        String path = "dynamicstore";
-        File file = new File( path );
-        fs.get().mkdirs( file );
-        return file;
+        storeDir = new File( "dynamicstore" );
+        fs.get().mkdir( storeDir );
     }
 
     private File file( String name )
     {
-        return new File( path(), name);
+        return new File( storeDir, name);
     }
 
     private File dynamicStoreFile()
@@ -136,6 +131,7 @@ public class TestDynamicStore
     {
         Config config = config();
         new StoreFactory(
+                storeDir,
                 config,
                 ID_GENERATOR_FACTORY,
                 pageCache,
@@ -194,9 +190,7 @@ public class TestDynamicStore
 
     private Config config()
     {
-        return new Config( MapUtil.stringMap(
-                "neo_store", dynamicStoreFile().getPath(),
-                "store_dir", path().getPath() ), GraphDatabaseSettings.class );
+        return new Config( MapUtil.stringMap(), GraphDatabaseSettings.class );
     }
 
     @Test

@@ -80,7 +80,7 @@ public class UpgradeStoreIT
 
     private File path( int i )
     {
-        return new File( PATH, "" + i );
+        return new File( PATH, "" + i ).getAbsoluteFile();
     }
 
     @Test
@@ -250,7 +250,7 @@ public class UpgradeStoreIT
 
         try
         {
-            BatchInserters.inserter( path.getPath(), stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) );
+            BatchInserters.inserter( path, new DefaultFileSystemAbstraction(), stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) );
             fail( "Shouldn't be able to upgrade with batch inserter" );
         }
         catch ( IllegalArgumentException e )

@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -334,10 +335,10 @@ public class LuceneIndexRecoveryIT
                 LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
         {
             @Override
-            public Lifecycle newKernelExtension( LuceneSchemaIndexProviderFactory.Dependencies dependencies )
+            public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() )
+                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, context.storeDir() )
                 {
                     @Override
                     public InternalIndexState getInitialState( long indexId )
@@ -356,10 +357,10 @@ public class LuceneIndexRecoveryIT
                 LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
         {
             @Override
-            public Lifecycle newKernelExtension( LuceneSchemaIndexProviderFactory.Dependencies dependencies )
+            public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() )
+                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, context.storeDir() )
                 {
                     @Override
                     public int compareTo( SchemaIndexProvider o )

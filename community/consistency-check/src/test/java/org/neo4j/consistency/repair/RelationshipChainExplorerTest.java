@@ -112,8 +112,8 @@ public class RelationshipChainExplorerTest
 
     private StoreAccess createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( int nDegreeTwoNodes )
     {
-        File storeDirectory = storeLocation.directory();
-        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDirectory.getPath() );
+        File storeDirectory = storeLocation.graphDbDir();
+        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDirectory );
         Transaction transaction = database.beginTx();
         try
         {
@@ -140,6 +140,6 @@ public class RelationshipChainExplorerTest
         }
         database.shutdown();
         PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
-        return new StoreAccess( pageCache, storeDirectory.getPath() );
+        return new StoreAccess( pageCache, storeDirectory );
     }
 }

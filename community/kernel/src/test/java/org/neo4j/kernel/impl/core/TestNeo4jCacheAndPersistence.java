@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -389,8 +390,8 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     {
         Map<String,String> config = new HashMap<String,String>();
         config.put( "relationship_grab_size", "1" );
-        String storePath = getStorePath( "neo2" );
-        deleteFileOrDirectory( storePath );
+        File storeDir = getStorePath( "neo2" );
+        deleteFileOrDirectory( storeDir );
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
 
         Node node1, node2;
@@ -446,8 +447,8 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     {
         Map<String, String> config = new HashMap<String, String>();
         config.put( "relationship_grab_size", "2" );
-        String storePath = getStorePath( "neo2" );
-        deleteFileOrDirectory( storePath );
+        File storeDir = getStorePath( "neo2" );
+        deleteFileOrDirectory( storeDir );
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
         Transaction tx = graphDb.beginTx();
         Node node1 = graphDb.createNode();

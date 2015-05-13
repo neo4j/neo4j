@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -34,7 +33,7 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
         return new Factory()
         {
             @Override
-            public Database newDatabase(Config config, CommunityFacadeFactory.Dependencies dependencies)
+            public Database newDatabase( Config config, CommunityFacadeFactory.Dependencies dependencies)
             {
                 return new WrappedDatabase( db );
             }
@@ -57,8 +56,7 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
     @Override
     public String getLocation()
     {
-        return graph.getDependencyResolver().resolveDependency( Config.class )
-                .get( GraphDatabaseSettings.store_dir ).getAbsolutePath();
+        return graph.getStoreDir();
     }
 
     @Override

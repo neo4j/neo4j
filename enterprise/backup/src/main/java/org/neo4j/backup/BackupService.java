@@ -124,22 +124,19 @@ class BackupService
         this.monitors = monitors;
     }
 
-    BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, String targetDirectory,
+    BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, File targetDirectory,
             boolean checkConsistency, Config tuningConfiguration, final long timeout, final boolean forensics )
     {
         if ( directoryContainsDb( targetDirectory ) )
         {
             throw new RuntimeException( targetDirectory + " already contains a database" );
         }
-        Map<String, String> params = tuningConfiguration.getParams();
-        params.put( GraphDatabaseSettings.store_dir.name(), targetDirectory );
-        tuningConfiguration.applyChanges( params );
         long timestamp = System.currentTimeMillis();
         long lastCommittedTx = -1;
         boolean consistent = !checkConsistency; // default to true if we're not checking consistency
         try ( PageCache pageCache = createPageCache( fileSystem ) )
         {
-            StoreCopyClient storeCopier = new StoreCopyClient( tuningConfiguration, loadKernelExtensions(),
+            StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory, tuningConfiguration, loadKernelExtensions(),
                     logProvider,
                     new DefaultFileSystemAbstraction(), pageCache,
                     monitors.newMonitor( StoreCopyClient.Monitor.class, getClass() ) );
@@ -187,7 +184,7 @@ class BackupService
         }
     }
 
-    BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
+    BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, File targetDirectory,
             boolean verification, long timeout, Config config ) throws IncrementalBackupNotPossibleException
     {
         if ( !directoryContainsDb( targetDirectory ) )
@@ -227,7 +224,7 @@ class BackupService
     }
 
     BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort,
-            String targetDirectory, boolean verification, Config config, long timeout, boolean forensics )
+            File targetDirectory, boolean verification, Config config, long timeout, boolean forensics )
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
@@ -245,9 +242,8 @@ class BackupService
             {
                 // Our existing backup is out of date.
                 log.info( "Existing backup is too far out of date, a new full backup will be performed." );
-                File targetDirFile = new File( targetDirectory );
-                FileUtils.deleteRecursively( targetDirFile );
-                return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirFile.getAbsolutePath(), verification,
+                FileUtils.deleteRecursively( targetDirectory );
+                return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification,
                         config, timeout, forensics );
             }
             catch ( Exception fullBackupFailure )
@@ -271,12 +267,12 @@ class BackupService
         return anonymous( transactionIdStore.getLastCommittedTransactionId() );
     }
 
-    boolean directoryContainsDb( String targetDirectory )
+    boolean directoryContainsDb( File targetDirectory )
     {
         return fileSystem.fileExists( new File( targetDirectory, NeoStore.DEFAULT_NAME ) );
     }
 
-    static GraphDatabaseAPI startTemporaryDb( String targetDirectory, PageCache pageCache, Map<String,String> config )
+    static GraphDatabaseAPI startTemporaryDb( File targetDirectory, PageCache pageCache, Map<String,String> config )
     {
         GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
         return (GraphDatabaseAPI) factory.newEmbeddedDatabaseBuilder( targetDirectory )
@@ -366,9 +362,8 @@ class BackupService
         return new BackupOutcome( handler.getLastSeenTransactionId(), consistent );
     }
 
-    private static boolean bumpMessagesDotLogFile( String targetDirectory, long toTimestamp )
+    private static boolean bumpMessagesDotLogFile( File dbDirectory, long toTimestamp )
     {
-        File dbDirectory = new File( targetDirectory );
         File[] candidates = dbDirectory.listFiles( new FilenameFilter()
         {
             @Override

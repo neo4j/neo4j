@@ -162,7 +162,7 @@ public class ParallelBatchImporterTest
     {
         // GIVEN
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
-        final BatchImporter inserter = new ParallelBatchImporter( directory.absolutePath(),
+        final BatchImporter inserter = new ParallelBatchImporter( directory.graphDbDir(),
                 new DefaultFileSystemAbstraction(), config, NullLogProvider.getInstance(),
                 processorAssigner, writerFactory, EMPTY );
 
@@ -179,7 +179,7 @@ public class ParallelBatchImporterTest
                     RELATIONSHIP_COUNT/*insanely high bad tolerance, but it will actually never be that many*/ ) );
 
             // THEN
-            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.graphDbDir() );
             try ( Transaction tx = db.beginTx() )
             {
                 inputIdGenerator.reset();
@@ -190,7 +190,7 @@ public class ParallelBatchImporterTest
             {
                 db.shutdown();
             }
-            assertConsistent( directory.absolutePath() );
+            assertConsistent( directory.graphDbDir() );
             successful = true;
         }
         finally
@@ -222,7 +222,7 @@ public class ParallelBatchImporterTest
         }
     }
 
-    private void assertConsistent( String storeDir ) throws ConsistencyCheckIncompleteException, IOException
+    private void assertConsistent( File storeDir ) throws ConsistencyCheckIncompleteException, IOException
     {
         ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
         Result result = consistencyChecker.runFullConsistencyCheck( storeDir,

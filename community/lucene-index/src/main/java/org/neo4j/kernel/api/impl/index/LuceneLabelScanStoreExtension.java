@@ -21,14 +21,14 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.File;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore.Monitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.tracking;
@@ -45,8 +45,6 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
     public interface Dependencies
     {
         Config getConfig();
-
-        FileSystemAbstraction getFileSystem();
 
         NeoStoreSupplier getNeoStoreSupplier();
 
@@ -66,17 +64,18 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
     }
 
     @Override
-    public LabelScanStoreProvider newKernelExtension( Dependencies dependencies ) throws Throwable
+    public LabelScanStoreProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        DirectoryFactory directoryFactory = directoryFactory( dependencies.getConfig(), dependencies.getFileSystem() );
-        File storeDir = dependencies.getConfig().get( GraphDatabaseSettings.store_dir );
+        boolean ephemeral = dependencies.getConfig().get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
+        DirectoryFactory directoryFactory = directoryFactory( ephemeral, context.fileSystem() );
+
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore(
                 new NodeRangeDocumentLabelScanStorageStrategy(),
 
                 // <db>/schema/label/lucene
-                directoryFactory, new File( new File( new File( storeDir, "schema" ), "label" ), "lucene" ),
+                directoryFactory, new File( new File( new File( context.storeDir(), "schema" ), "label" ), "lucene" ),
 
-                dependencies.getFileSystem(), tracking(),
+                context.fileSystem(), tracking(),
                 fullStoreLabelUpdateStream( dependencies.getNeoStoreSupplier() ),
                 monitor != null ? monitor : loggerMonitor( dependencies.getLogService().getInternalLogProvider() ) );
 

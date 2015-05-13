@@ -56,7 +56,6 @@ import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestGraphProperties
@@ -160,7 +159,7 @@ public class TestGraphProperties
     @Test
     public void firstRecordOtherThanZeroIfNotFirst() throws Exception
     {
-        String storeDir = forTest( getClass()).cleanDirectory( "zero" ).getAbsolutePath();
+        File storeDir = forTest( getClass()).cleanDirectory( "zero" );
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
         Transaction tx = db.beginTx();
         Node node = db.createNode();
@@ -176,10 +175,10 @@ public class TestGraphProperties
         tx.finish();
         db.shutdown();
 
-        Config config = configForStoreDir( new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class ),
-                new File( storeDir ) );
+        Config config = new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class );
         Monitors monitors = new Monitors();
         StoreFactory storeFactory = new StoreFactory(
+                storeDir,
                 config,
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs.get() ),
@@ -240,7 +239,7 @@ public class TestGraphProperties
     @Test
     public void twoUncleanInARow() throws Exception
     {
-        String storeDir = new File("dir").getAbsolutePath();
+        File storeDir = new File("dir");
         EphemeralFileSystemAbstraction snapshot = produceUncleanStore( fs.get(), storeDir );
         snapshot = produceUncleanStore( snapshot, storeDir );
         snapshot = produceUncleanStore( snapshot, storeDir );
@@ -347,7 +346,7 @@ public class TestGraphProperties
     }
 
     private EphemeralFileSystemAbstraction produceUncleanStore( EphemeralFileSystemAbstraction fileSystem,
-            String storeDir )
+            File storeDir )
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir );
         Transaction tx = db.beginTx();

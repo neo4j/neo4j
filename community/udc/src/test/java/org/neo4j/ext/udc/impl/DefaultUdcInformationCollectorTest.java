@@ -42,6 +42,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -116,7 +117,7 @@ public class DefaultUdcInformationCollectorTest
     {
         public StubKernelData()
         {
-            super( new Config() );
+            super( new DefaultFileSystemAbstraction(), new File( "graph.db" ), new Config() );
         }
 
         @Override

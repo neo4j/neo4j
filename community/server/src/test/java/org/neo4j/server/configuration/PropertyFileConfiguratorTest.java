@@ -26,7 +26,6 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.AssertableLogProvider;
@@ -34,10 +33,8 @@ import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.test.Mute;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.Mute.muteAll;
 
@@ -124,22 +121,6 @@ public class PropertyFileConfiguratorTest
     }
 
     @Test
-    public void shouldSetStoreDirSetting() throws Exception
-    {
-        // Given
-        String dbLocation = new File( "/tmp/does_not_matter" ).getAbsolutePath();
-        File propertyFile = PropertyFileBuilder.builder( folder.getRoot() )
-                .withNameValue( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbLocation ).build();
-        PropertyFileConfigurator serverConfig = new PropertyFileConfigurator( propertyFile, log );
-
-        // When
-        Map<String,String> properties = serverConfig.getDatabaseTuningProperties();
-
-        // Then
-        assertThat( properties.get( GraphDatabaseSettings.store_dir.name() ), equalTo( dbLocation ) );
-    }
-
-    @Test
     public void shouldWorkFineWhenSpecifiedPropertiesFileDoesNotExist()
     {
         // Given
@@ -149,6 +130,6 @@ public class PropertyFileConfiguratorTest
         PropertyFileConfigurator configurator = new PropertyFileConfigurator( nonExistentFilePropertiesFile, log );
 
         // Then
-        assertFalse( configurator.getDatabaseTuningProperties().isEmpty() );
+        assertTrue( configurator.getDatabaseTuningProperties().isEmpty() );
     }
 }

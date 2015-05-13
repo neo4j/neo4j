@@ -36,8 +36,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.web.ServerInternalSettings;
 
-import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
-
 public class PerformUpgradeIfNecessary implements PreflightTask
 {
     private final LogProvider logProvider;
@@ -79,7 +77,7 @@ public class PerformUpgradeIfNecessary implements PreflightTask
             try
             {
                 new StoreMigrationTool().run( fileSystem, storeDir,
-                        configForStoreDir( new Config( dbConfig ), storeDir ), logProvider, monitor );
+                        new Config( dbConfig ), logProvider, monitor );
             }
             catch ( UpgradeNotAllowedByConfigurationException e )
             {

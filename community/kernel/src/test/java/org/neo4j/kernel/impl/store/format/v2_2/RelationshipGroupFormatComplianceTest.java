@@ -61,10 +61,9 @@ public class RelationshipGroupFormatComplianceTest
     public void setup()
     {
         pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         storeFactory = new StoreFactory(
-                config, idGeneratorFactory, pageCache, fsRule.get(), NullLogProvider.getInstance(), new Monitors() );
+                storeDir, new Config(), idGeneratorFactory, pageCache, fsRule.get(), NullLogProvider.getInstance(), new Monitors() );
     }
 
     @Test
