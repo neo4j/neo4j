@@ -22,7 +22,6 @@ package org.neo4j.index.lucene;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;

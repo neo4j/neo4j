@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;

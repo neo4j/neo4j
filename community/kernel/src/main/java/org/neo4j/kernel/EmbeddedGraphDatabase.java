@@ -20,16 +20,12 @@
 package org.neo4j.kernel;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-
-import static org.neo4j.helpers.collection.MapUtil.copyAndPut;
 
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j

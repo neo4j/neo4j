@@ -21,8 +21,6 @@ package org.neo4j.index.impl.lucene;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
-
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterAccessor;
 import org.junit.After;
