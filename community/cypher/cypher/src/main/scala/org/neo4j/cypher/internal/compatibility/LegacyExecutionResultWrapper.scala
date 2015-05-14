@@ -108,7 +108,13 @@ case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionR
     case _ => Iterable.empty
   }
 
-  def accept[EX <: Exception](visitor: ResultVisitor[EX]) = iteratorToVisitable.accept(self, visitor)
+  def accept[EX <: Exception](visitor: ResultVisitor[EX]) = {
+    try {
+      iteratorToVisitable.accept(self, visitor)
+    } finally {
+      self.close()
+    }
+  }
 
   // since we can't introspect the query result returned by the legacy planners, this is the best we can do
   private def queryType = if (schemaQuery(queryStatistics()))

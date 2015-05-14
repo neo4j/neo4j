@@ -778,41 +778,6 @@ public class ExecutionResultSerializerTest
         );
     }
 
-    @SuppressWarnings({"unchecked"})
-    @Test
-    public void shouldCloseResultIterator() throws Exception
-    {
-        // given
-        OutputStream output = mock( OutputStream.class );
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
-        RuntimeException onCloseException = new IllegalStateException("Iterator closed");
-        Result result = mock( Result.class );
-        mockAccept( result );
-        when( result.hasNext() ).thenReturn( true );
-        when( result.next() ).thenThrow( onCloseException );
-
-        // when
-        try
-        {
-            serializer.statementResult( result, false );
-            fail("Expected IllegalStateException to be thrown when closing the iterator");
-        }
-        catch (IllegalStateException e)
-        {
-            // expected to be thrown by iterator access
-            assertEquals( onCloseException, e );
-        }
-
-        // then
-        verify( result, times( 1 ) ).columns();
-        verify( result, times( 1 ) ).accept(
-                (Result.ResultVisitor<RuntimeException>) any( Result.ResultVisitor.class ) );
-        verify( result, times( 1 ) ).hasNext();
-        verify( result, times( 1 ) ).next();
-        verify( result, times( 1 ) ).close();
-        verifyNoMoreInteractions(result);
-    }
-
     @Test
     public void shouldReturnNotifications() throws IOException
     {
