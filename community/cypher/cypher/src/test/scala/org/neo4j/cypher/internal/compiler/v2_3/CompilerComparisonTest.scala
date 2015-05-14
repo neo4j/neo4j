@@ -26,12 +26,11 @@ import java.util.{Date, Locale}
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors2_3
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonitor}
+import org.neo4j.cypher.internal.compiler.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.LogicalPlanRewriter
-import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
@@ -285,14 +284,13 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
   private def ronjaCompiler(plannerName: CostBasedPlannerName, metricsFactoryInput: MetricsFactory = SimpleMetricsFactory)(graph: GraphDatabaseService): CypherCompiler = {
     val kernelMonitors = new KernelMonitors()
     val monitors = new WrappedMonitors2_3(kernelMonitors)
-    val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
-    val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
-    val rewriter = new ASTRewriter(rewriterSequencer, monitors.newMonitor[AstRewritingMonitor](monitorTag))
+    val parser = new CypherParser
+    val checker = new SemanticChecker
+    val rewriter = new ASTRewriter(rewriterSequencer)
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
-    val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(metricsFactoryInput)
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
-    val planner = CostBasedPipeBuilderFactory(monitors = monitors, metricsFactory = metricsFactory, monitor = planningMonitor, clock = clock, plannerName = plannerName, rewriterSequencer = rewriterSequencer, queryPlanner = queryPlanner)
+    val planner = CostBasedPipeBuilderFactory(monitors = monitors, metricsFactory = metricsFactory, clock = clock, plannerName = plannerName, rewriterSequencer = rewriterSequencer, queryPlanner = queryPlanner)
     val pipeBuilder = new LegacyVsNewExecutablePlanBuilder(new LegacyExecutablePlanBuilder(monitors, rewriterSequencer), planner, planBuilderMonitor)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)
@@ -306,9 +304,9 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
   private def legacyCompiler(graph: GraphDatabaseService): CypherCompiler = {
     val kernelMonitors = new KernelMonitors()
     val monitors = new WrappedMonitors2_3(kernelMonitors)
-    val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
-    val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
-    val rewriter = new ASTRewriter(rewriterSequencer, monitors.newMonitor[AstRewritingMonitor](monitorTag))
+    val parser = new CypherParser
+    val checker = new SemanticChecker
+    val rewriter = new ASTRewriter(rewriterSequencer)
     val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, rewriterSequencer)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)

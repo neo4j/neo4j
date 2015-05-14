@@ -20,15 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_3.PreparedQuery
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonitor}
+import org.neo4j.cypher.internal.compiler.v2_3.{CompilationPhaseTracer, PreparedQuery}
+import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class LegacyVsNewExecutablePlanBuilderTest extends CypherFunSuite {
 
-  val parser = new CypherParser(mock[ParserMonitor[Statement]])
+  val parser = new CypherParser
 
   test("should delegate var length to old pipe builder") {
     new uses("MATCH ()-[r*]->() RETURN r") {
@@ -59,14 +58,17 @@ class LegacyVsNewExecutablePlanBuilderTest extends CypherFunSuite {
     val pipeBuilder = new LegacyVsNewExecutablePlanBuilder(oldBuilder, newBuilder, mock[NewLogicalPlanSuccessRateMonitor])
     val preparedQuery = PreparedQuery(parser.parse(queryText), queryText, Map.empty)(null, Set.empty, null, null)
     val pipeInfo = mock[PipeInfo]
-    when( oldBuilder.producePlan(preparedQuery, planContext ) ).thenReturn(Right(pipeInfo))
-    when( newBuilder.producePlan(preparedQuery, planContext ) ).thenReturn(Right(pipeInfo))
+    when( oldBuilder.producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING ) ).thenReturn(Right(pipeInfo))
+    when( newBuilder.producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING ) ).thenReturn(Right(pipeInfo))
 
-    def result = pipeBuilder.producePlan(preparedQuery, planContext).right.toOption.get
+    def result = {
+      val plan = pipeBuilder.producePlan(preparedQuery, planContext)
+      plan.right.toOption.get
+    }
 
     def assertUsed(used: ExecutablePlanBuilder) = {
       val notUsed = if (used == oldBuilder) newBuilder else oldBuilder
-      verify( used ).producePlan(preparedQuery, planContext)
+      verify( used ).producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING)
       verifyNoMoreInteractions( used )
       verifyZeroInteractions( notUsed )
     }

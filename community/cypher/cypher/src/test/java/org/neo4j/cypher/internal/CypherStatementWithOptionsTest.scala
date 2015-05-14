@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.InvalidArgumentException
-import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserMonitor
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class CypherStatementWithOptionsTest extends CypherFunSuite {
@@ -45,6 +44,6 @@ class CypherStatementWithOptionsTest extends CypherFunSuite {
   }
 
   private implicit def parse(arg: String): PreParsedStatement = {
-    CypherPreParser(mock[ParserMonitor[PreParsedStatement]]).apply(arg)
+    CypherPreParser(arg)
   }
 }

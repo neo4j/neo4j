@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, Intern
 import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory, CypherException => CypherException_v2_2, _}
+import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.iteratorToVisitable
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
@@ -151,7 +152,7 @@ trait CompatibilityFor2_2 {
 
     def isPeriodicCommit = preparedQueryForV_2_2.map(_.isPeriodicCommit).getOrElse(false)
 
-    def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_2.runSafely {
+    def plan(statement: Statement, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_2.runSafely {
       val planContext = new TransactionBoundPlanContext(statement, graph)
       val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_2.get, planContext)
       (new ExecutionPlanWrapper(planImpl), extractedParameters)

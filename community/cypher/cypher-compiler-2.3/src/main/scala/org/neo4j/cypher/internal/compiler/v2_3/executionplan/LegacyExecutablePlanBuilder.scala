@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.Converge.iterateUntilConv
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_3.{Monitors, PreparedQuery, RulePlannerName, SyntaxException}
+import org.neo4j.cypher.internal.compiler.v2_3._
 
 trait ExecutionPlanInProgressRewriter {
   def rewrite(in: ExecutionPlanInProgress)(implicit context: PipeMonitor): ExecutionPlanInProgress
@@ -39,7 +39,7 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, rewriterSequencer: (String
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
-  override def producePlan(in: PreparedQuery, planContext: PlanContext) = {
+  override def producePlan(in: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer) = {
     val rewriter = rewriterSequencer("LegacyPipeBuilder")(reattachAliasedExpressions).rewriter
     val rewrite = in.rewrite(rewriter)
 

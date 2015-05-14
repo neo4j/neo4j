@@ -21,35 +21,20 @@ package org.neo4j.cypher.internal.compiler.v2_3.parser
 
 
 import org.neo4j.cypher.internal.compiler.v2_3.{ast, _}
-import org.parboiled.errors.ParseError
 import org.parboiled.scala._
 
-class CypherParser(monitor: ParserMonitor[ast.Statement]) extends Parser
+class CypherParser extends Parser
   with Statement
   with Expressions {
 
 
   @throws(classOf[SyntaxException])
   def parse(queryText: String, offset: Option[InputPosition] = None): ast.Statement =
-    parseOrThrow(queryText, offset, CypherParser.Statements, Some(monitor))
+    parseOrThrow(queryText, offset, CypherParser.Statements)
 }
 
 object CypherParser extends Parser with Statement with Expressions {
   val Statements: Rule1[Seq[ast.Statement]] = rule {
     oneOrMore(WS ~ Statement ~ WS, separator = ch(';')) ~~ optional(ch(';')) ~~ EOI.label("end of input")
-  }
-}
-
-trait ParserMonitor[T] {
-  def startParsing(query: String)
-  def finishParsingSuccess(query: String, result: T)
-  def finishParsingError(query:String, errors: Seq[ParseError])
-}
-
-object ParserMonitor {
-  def empty[T] = new ParserMonitor[T] {
-    override def startParsing(query: String): Unit = ()
-    override def finishParsingSuccess(query: String, result: T): Unit = ()
-    override def finishParsingError(query: String, errors: Seq[ParseError]): Unit = ()
   }
 }

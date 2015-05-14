@@ -112,22 +112,18 @@ trait Base extends Parser {
     ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
   }
 
-  def parseOrThrow[T](input: String, initialOffset: Option[InputPosition], rule: Rule1[Seq[T]], monitor: Option[ParserMonitor[T]]): T = {
-    monitor.foreach(_.startParsing(input))
+  def parseOrThrow[T](input: String, initialOffset: Option[InputPosition], rule: Rule1[Seq[T]]): T = {
     val parsingResults = ReportingParseRunner(rule).run(input)
     parsingResults.result match {
       case Some(statements) =>
         if (statements.size == 1) {
           val statement = statements.head
-          monitor.foreach(_.finishParsingSuccess(input, statement))
           statement
         } else {
-          monitor.foreach(_.finishParsingError(input, Seq.empty))
           throw new SyntaxException(s"Expected exactly one statement per query but got: ${statements.size}")
         }
       case _ => {
         val parseErrors: List[ParseError] = parsingResults.parseErrors
-        monitor.foreach(_.finishParsingError(input, parseErrors))
         parseErrors.map { error =>
           val message = if (error.getErrorMessage != null) {
             error.getErrorMessage

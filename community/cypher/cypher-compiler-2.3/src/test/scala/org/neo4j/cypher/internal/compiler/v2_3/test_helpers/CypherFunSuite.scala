@@ -20,9 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_3.test_helpers
 
 import org.junit.runner.RunWith
+import org.mockito.ArgumentCaptor
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.mock.MockitoSugar
+
+import scala.reflect.Manifest
 
 @RunWith(classOf[JUnitRunner])
 abstract class CypherFunSuite
@@ -40,5 +43,9 @@ abstract class CypherFunSuite
 
   override protected def afterEach() {
     stopTest()
+  }
+
+  def argCaptor[T <: AnyRef](implicit manifest: Manifest[T]): ArgumentCaptor[T] = {
+    ArgumentCaptor.forClass(manifest.runtimeClass.asInstanceOf[Class[T]])
   }
 }

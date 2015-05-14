@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher
 
+import java.lang.Boolean.FALSE
 import java.util.{Map => JavaMap}
 
-import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserMonitor
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.using
 import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.v2_3.{LRUCache => LRUCachev2_3, _}
+import org.neo4j.cypher.internal.tracing.{TimingCompilationTracer, CompilationTracer}
 import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
@@ -50,6 +52,12 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
   private val lastTxId: () => Long =
       graphAPI.getDependencyResolver.resolveDependency( classOf[TransactionIdStore]).getLastCommittedTransactionId
   protected val kernelMonitors: monitoring.Monitors = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
+  private val compilationTracer: CompilationTracer = {
+    if(optGraphSetting(graph, GraphDatabaseSettings.cypher_compiler_tracing, FALSE))
+      new TimingCompilationTracer(kernelMonitors.newMonitor(classOf[TimingCompilationTracer.EventListener]))
+    else
+      CompilationTracer.NO_COMPILATION_TRACING
+  }
   protected val compiler = createCompiler
 
   private val log = logProvider.getLog( getClass )
@@ -111,81 +119,80 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
 
   @throws(classOf[SyntaxException])
   protected def parseQuery(queryText: String): ParsedQuery =
-    parsePreParsedQuery(preParseQuery(queryText))
+    parsePreParsedQuery(preParseQuery(queryText), CompilationPhaseTracer.NO_TRACING)
 
   @throws(classOf[SyntaxException])
-  private def parsePreParsedQuery(preParsedQuery: PreParsedQuery): ParsedQuery =
-    parsedQueries.getOrElseUpdate(preParsedQuery.statementWithVersionAndPlanner, compiler.parseQuery(preParsedQuery))
+  private def parsePreParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery =
+    parsedQueries.getOrElseUpdate(preParsedQuery.statementWithVersionAndPlanner, compiler.parseQuery(preParsedQuery, tracer))
 
   @throws(classOf[SyntaxException])
   private def preParseQuery(queryText: String): PreParsedQuery =
     preParsedQueries.getOrElseUpdate(queryText, compiler.preParseQuery(queryText))
 
   @throws(classOf[SyntaxException])
-  protected def planQuery(queryText: String): (PreparedPlanExecution, TransactionInfo) = {
-    log.debug(queryText)
+  protected def planQuery(queryText: String): (PreparedPlanExecution, TransactionInfo) =
+    using(compilationTracer.compileQuery(queryText)) { phaseTracer: CompilationPhaseTracer =>
+      log.debug(queryText)
 
-    val preParsedQuery = preParseQuery(queryText)
-    val executionMode = preParsedQuery.executionMode
-    val cacheKey = preParsedQuery.statementWithVersionAndPlanner
+      val preParsedQuery = preParseQuery(queryText)
+      val executionMode = preParsedQuery.executionMode
+      val cacheKey = preParsedQuery.statementWithVersionAndPlanner
 
-    var n = 0
-    while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
-      // create transaction and query context
-      var touched = false
-      val isTopLevelTx = !txBridge.hasTransaction
-      val tx = graph.beginTx()
-      val kernelStatement = txBridge.get()
+      var n = 0
+      while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
+        // create transaction and query context
+        var touched = false
+        val isTopLevelTx = !txBridge.hasTransaction
+        val tx = graph.beginTx()
+        val kernelStatement = txBridge.get()
 
-      val (plan: ExecutionPlan, extractedParameters) = try {
-        // fetch plan cache
-        val cache: LRUCachev2_3[String, (ExecutionPlan, Map[String, Any])] = getOrCreateFromSchemaState(kernelStatement, {
-          cacheMonitor.cacheFlushDetected(kernelStatement)
-          new LRUCachev2_3[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
-        })
-
-        Iterator.continually {
-          cacheAccessor.getOrElseUpdate(cache)(cacheKey, {
-            touched = true
-            val parsedQuery = parsePreParsedQuery(preParsedQuery)
-            parsedQuery.plan(kernelStatement)
+        val (plan: ExecutionPlan, extractedParameters) = try {
+          // fetch plan cache
+          val cache: LRUCachev2_3[String, (ExecutionPlan, Map[String, Any])] = getOrCreateFromSchemaState(kernelStatement, {
+            cacheMonitor.cacheFlushDetected(kernelStatement)
+            new LRUCachev2_3[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
           })
-        }.flatMap { case (candidatePlan, params) =>
-          if (!touched && candidatePlan.isStale(lastTxId, kernelStatement)) {
-            cacheAccessor.remove(cache)(cacheKey)
-            None
-          } else {
-            Some((candidatePlan, params))
-          }
-        }.next()
-      }
-      catch {
-        case (t: Throwable) =>
+
+          Iterator.continually {
+            cacheAccessor.getOrElseUpdate(cache)(cacheKey, {
+              touched = true
+              val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
+              parsedQuery.plan(kernelStatement, phaseTracer)
+            })
+          }.flatMap { case (candidatePlan, params) =>
+            if(!touched && candidatePlan.isStale(lastTxId, kernelStatement)) {
+              cacheAccessor.remove(cache)(cacheKey)
+              None
+            } else {
+              Some((candidatePlan, params))
+            }
+          }.next()
+        } catch {
+          case (t: Throwable) =>
+            kernelStatement.close()
+            tx.failure()
+            tx.close()
+            throw t
+        }
+
+        if(touched) {
           kernelStatement.close()
-          tx.failure()
+          tx.success()
           tx.close()
-          throw t
+        } else {
+          // close the old statement reference after the statement has been "upgraded"
+          // to either a schema data or a schema statement, so that the locks are "handed over".
+          kernelStatement.close()
+          val preparedPlanExecution = PreparedPlanExecution(plan, executionMode, extractedParameters)
+          val txInfo = TransactionInfo(tx, isTopLevelTx, txBridge.get())
+          return (preparedPlanExecution, txInfo)
+        }
+
+        n += 1
       }
 
-      if (touched) {
-        kernelStatement.close()
-        tx.success()
-        tx.close()
-      }
-      else {
-        // close the old statement reference after the statement has been "upgraded"
-        // to either a schema data or a schema statement, so that the locks are "handed over".
-        kernelStatement.close()
-        val preparedPlanExecution = PreparedPlanExecution(plan, executionMode, extractedParameters)
-        val txInfo = TransactionInfo(tx, isTopLevelTx, txBridge.get())
-        return (preparedPlanExecution, txInfo)
-      }
-
-      n += 1
+      throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
     }
-
-    throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
-  }
 
   private val txBridge = graph.asInstanceOf[GraphDatabaseAPI]
     .getDependencyResolver
@@ -213,8 +220,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
       log.error(message)
       throw new IllegalStateException(message)
     }
-    val optionParser = CypherPreParser(kernelMonitors.newMonitor(classOf[ParserMonitor[PreParsedStatement]]))
-    new CypherCompiler(graph, kernel, kernelMonitors, version, planner, runtime, optionParser, logProvider)
+    new CypherCompiler(graph, kernel, kernelMonitors, version, planner, runtime, logProvider)
   }
 
   private def getPlanCacheSize: Int =

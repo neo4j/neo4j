@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer
 import org.neo4j.kernel.api.Statement
 
 trait ParsedQuery {
   def isPeriodicCommit: Boolean
-  def plan(statement: Statement): (ExecutionPlan, Map[String, Any])
+  def plan(statement: Statement, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any])
 }

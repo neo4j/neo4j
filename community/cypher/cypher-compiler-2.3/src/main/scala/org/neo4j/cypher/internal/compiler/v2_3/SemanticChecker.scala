@@ -21,22 +21,16 @@ package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 
-class SemanticChecker(semanticCheckMonitor: SemanticCheckMonitor) {
+class SemanticChecker {
   def check(queryText: String, statement: Statement, notificationLogger: InternalNotificationLogger = devNullLogger,
             mkException: (String, InputPosition) => CypherException): SemanticState = {
 
-    semanticCheckMonitor.startSemanticCheck(queryText)
     val SemanticCheckResult(semanticState, semanticErrors) = statement.semanticCheck(SemanticState.clean.withNotificationLogger(notificationLogger))
 
     val scopeTreeIssues = ScopeTreeVerifier.verify(semanticState.scopeTree)
     if (scopeTreeIssues.nonEmpty)
       throw new InternalException(scopeTreeIssues.mkString(s"\n"))
 
-    if (semanticErrors.nonEmpty) {
-      semanticCheckMonitor.finishSemanticCheckError(queryText, semanticErrors)
-    } else {
-      semanticCheckMonitor.finishSemanticCheckSuccess(queryText)
-    }
     semanticErrors.map { error => throw mkException(error.msg, error.position) }
 
     semanticState

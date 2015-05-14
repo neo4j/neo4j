@@ -29,7 +29,7 @@ trait RewriteTest {
   import parser.ParserFixture._
 
   def rewriterUnderTest: Rewriter
-  val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
+  val semanticChecker = new SemanticChecker
 
   protected def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parseForRewriting(originalQuery)

@@ -51,7 +51,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       else
         ast
 
-    val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
+    val semanticChecker = new SemanticChecker
     val semanticState = semanticChecker.check(query, cleanedStatement, devNullLogger, mkException)
     val statement = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
     val semanticTable: SemanticTable = SemanticTable(types = semanticState.typeTable)

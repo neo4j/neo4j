@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_3.{InvalidArgumentException, PreparedQuery}
+import org.neo4j.cypher.internal.compiler.v2_3.{CompilationPhaseTracer, InvalidArgumentException, PreparedQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 
 case class ErrorReportingExecutablePlanBuilder(inner: ExecutablePlanBuilder) extends ExecutablePlanBuilder {
-  override def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): Either[CompiledPlan, PipeInfo] =
+  override def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer): Either[CompiledPlan, PipeInfo] =
     try {
-      inner.producePlan(inputQuery, planContext)
+      inner.producePlan(inputQuery, planContext, tracer)
     } catch {
       case e: CantHandleQueryException =>
         throw new InvalidArgumentException("The given query is not supported at the moment in the selected cost-based planner", e)

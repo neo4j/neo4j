@@ -31,7 +31,6 @@ object CostBasedPipeBuilderFactory {
 
   def apply(monitors: Monitors,
             metricsFactory: MetricsFactory,
-            monitor: PlanningMonitor,
             clock: Clock,
             queryPlanner: QueryPlanner,
             rewriterSequencer: (String) => RewriterStepSequencer,
@@ -59,6 +58,6 @@ object CostBasedPipeBuilderFactory {
         )
     }
 
-    CostBasedExecutablePlanBuilder(monitors, metricsFactory, monitor, clock, tokenResolver, executionPlanBuilder, queryPlanner, queryGraphSolver, rewriterSequencer, plannerName, runtimeName)
+    CostBasedExecutablePlanBuilder(monitors, metricsFactory, clock, tokenResolver, executionPlanBuilder, queryPlanner, queryGraphSolver, rewriterSequencer, plannerName, runtimeName)
   }
 }

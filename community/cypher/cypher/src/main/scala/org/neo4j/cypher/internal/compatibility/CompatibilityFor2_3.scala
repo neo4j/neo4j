@@ -150,15 +150,16 @@ trait CompatibilityFor2_3 {
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery) = new ParsedQuery {
-    val preparedQueryForV_2_3 = Try(compiler.prepareQuery(preParsedQuery.statement, preParsedQuery.notificationLogger, Some(preParsedQuery.offset)))
+  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = {
+    val preparedQueryForV_2_3 = Try(compiler.prepareQuery(preParsedQuery.statement, preParsedQuery.notificationLogger, Some(preParsedQuery.offset), tracer))
+    new ParsedQuery {
+      def isPeriodicCommit = preparedQueryForV_2_3.map(_.isPeriodicCommit).getOrElse(false)
 
-    def isPeriodicCommit = preparedQueryForV_2_3.map(_.isPeriodicCommit).getOrElse(false)
-
-    def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_3.runSafely {
-      val planContext = new TransactionBoundPlanContext(statement, graph)
-      val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext)
-      (new ExecutionPlanWrapper(planImpl), extractedParameters)
+      def plan(statement: Statement, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_3.runSafely {
+        val planContext = new TransactionBoundPlanContext(statement, graph)
+        val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext, tracer)
+        (new ExecutionPlanWrapper(planImpl), extractedParameters)
+      }
     }
   }
 
