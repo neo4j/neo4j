@@ -292,6 +292,10 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
     inner.accept(visitor)
     endQueryExecution()
   }
+
+  override def toString() = {
+    getClass.getName + "@" + Integer.toHexString(hashCode())
+  }
 }
 
 case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, version: CypherVersion, planner: PlannerName, runtime: RuntimeName)

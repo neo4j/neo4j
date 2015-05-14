@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v2_3.{NormalMode, ExecutionMode}
+import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.collection.Iterables._
 
 import scala.collection.JavaConverters._
@@ -110,20 +111,47 @@ class CompiledExecutionResultTest extends CypherFunSuite {
     toList(result.javaIterator) should equal(javaList(javaMap("foo" -> javaMap("key" -> "value"))))
   }
 
-  private def newCompiledExecutionResult(row: util.Map[String, Any]) = {
+  test("javaIterator hasNext should not call accept if results already consumed") {
+    // given
+    var timesCalled = 0
+    val result = newCompiledExecutionResult(assertion = () => {
+      // then
+      timesCalled should equal(0)
+      timesCalled += 1
+    })
+
+    // when
+    result.accept(new ResultVisitor[Exception] {
+      override def visit(row: ResultRow): Boolean = {
+        false
+      }
+    })
+
+    // also then
+    intercept[IllegalStateException](result.javaIterator.hasNext)
+  }
+
+  private def newCompiledExecutionResult(row: util.Map[String, Any] = new util.HashMap(),
+                                         taskCloser: TaskCloser = new TaskCloser,
+                                         assertion: () => Unit = () => {}) = {
     val noCompiledCode: GeneratedQueryExecution = new GeneratedQueryExecution {
       override def setSuccessfulCloseable(closeable: SuccessfulCloseable){}
       override def javaColumns(): util.List[String] = new util.ArrayList(row.keySet())
       override def executionMode(): ExecutionMode = NormalMode
       override def accept[E <: Exception](visitor: ResultVisitor[E]): Unit = {
-        val rowImpl = new ResultRowImpl()
-        row.asScala.foreach { case (k, v) => rowImpl.set(k, v) }
-        visitor.visit(rowImpl)
+        try {
+          val rowImpl = new ResultRowImpl()
+          row.asScala.foreach { case (k, v) => rowImpl.set(k, v) }
+          visitor.visit(rowImpl)
+          assertion()
+        } finally {
+          taskCloser.close(success = true)
+        }
       }
       override def executionPlanDescription(): InternalPlanDescription = ???
     }
 
-    new CompiledExecutionResult(null, null, noCompiledCode, null)
+    new CompiledExecutionResult(taskCloser, null, noCompiledCode, null)
   }
 
   private def javaList[T](elements: T*): util.List[T] = elements.toList.asJava

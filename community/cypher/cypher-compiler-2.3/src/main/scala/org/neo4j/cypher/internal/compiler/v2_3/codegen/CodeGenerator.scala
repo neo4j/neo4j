@@ -198,6 +198,11 @@ object CodeGenerator {
        |}
        |}
        |$privateMethodText
+       |@Override
+       |public String toString()
+       |{
+       |return "$className";
+       |}
        |}""".stripMargin
   }
 
