@@ -15,7 +15,7 @@
   <packaging>pom</packaging>
   <name>Neo4j</name>
   <description>Neo4j Graph Database</description>
-  
+
   <properties>
     <neo4j.java.version>1.6</neo4j.java.version>
     <jta.groupId>org.apache.geronimo.specs</jta.groupId>
@@ -34,8 +34,9 @@
     <module>advanced</module>
     <module>enterprise</module>
     <module>cypher-plugin</module>
+    <module>gremlin-plugin</module>
   </modules>
-  
+
   <build>
     <pluginManagement>
       <plugins>
@@ -131,7 +132,7 @@
       </plugins>
     </pluginManagement>
   </build>
-  
+
   <profiles>
     <profile>
       <id>neo-full-build</id>
@@ -263,7 +264,7 @@
       </build>
     </profile>
   </profiles>
-  
+
   <dependencyManagement>
     <dependencies>
       <dependency>

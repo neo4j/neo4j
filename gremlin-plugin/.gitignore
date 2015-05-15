@@ -1,0 +1,6 @@
+target/
+.settings/
+.project
+.classpath
+.shell_history
+
