@@ -1,8 +1,9 @@
+@db:cineast
 Feature: The First
 
   Scenario: Simple match
-    Given init: CREATE ({name: "Andres"});
-    When running: MATCH (n) RETURN n.name AS name;
+    Given using: cineast
+    When running: MATCH (u:User {login: 'emileifrem'}) RETURN u.name AS name;
     Then result:
       | name |
-      | Andres |
+      | Emil Eifrem |
