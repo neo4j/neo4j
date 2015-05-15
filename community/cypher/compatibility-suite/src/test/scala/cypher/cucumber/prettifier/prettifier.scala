@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.cucumber.prettifier
+package cypher.cucumber.prettifier
 
 import org.neo4j.graphdb.{PropertyContainer, GraphDatabaseService, Node, Path, Relationship, RelationshipType}
 import org.scalactic.Prettifier

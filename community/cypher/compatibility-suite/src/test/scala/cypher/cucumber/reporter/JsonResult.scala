@@ -17,31 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.cucumber.reporter
+package cypher.cucumber.reporter
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.QueryTagger
+import com.novus.salat.annotations.{Ignore, Key, Persist}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.QueryTag
 
-import scala.collection.mutable
+import scala.annotation.meta.getter
 
-trait OutputProducer {
-  def complete(query: String, outcome: Outcome)
-  def dump(): String
+object Outcome {
+  def from(value: String) = value match {
+    case "passed" => Success
+    case _ => Failure
+  }
 }
 
-object JsonProducer extends JsonProducer(tagger = QueryTagger)
+sealed trait Outcome
 
-class JsonProducer(tagger: QueryTagger[String]) extends OutputProducer {
+object Success extends Outcome {
+  override def toString = "success"
+}
 
-  override def complete(query: String, outcome: Outcome): Unit = {
-    results += new JsonResult(query, tagger(query), outcome)
-  }
+object Failure extends Outcome {
+  override def toString = "failure"
+}
 
-  private val results = mutable.ListBuffer[JsonResult]()
+case class JsonResult(query: String, @Ignore tags: Set[QueryTag], @Ignore outcome: Outcome) {
+  @Key("tags")
+  @(Persist@getter)
+  val prettyTags: Set[String] = tags.map(_.toString)
 
-  override def dump(): String = {
-    import com.novus.salat._
-    import com.novus.salat.global._
-
-    grater[JsonResult].toPrettyJSONArray(results.toList)
-  }
+  @Key("outcome")
+  @(Persist@getter)
+  val prettyOutcome = outcome.toString
 }

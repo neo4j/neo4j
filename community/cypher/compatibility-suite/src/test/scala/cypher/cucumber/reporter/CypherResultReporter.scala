@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.cucumber.reporter
+package cypher.cucumber.reporter
 
 import java.io.{File, PrintStream}
 import java.net.URL
 
+import cypher.cucumber.CucumberAdapter
 import gherkin.formatter.model.{Match, Result, Step}
-import org.neo4j.cypher.cucumber.CucumberAdapter
 
 import scala.util.matching.Regex
 

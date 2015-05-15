@@ -17,25 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.bdd
+package cypher
 
 import java.util
 
-import cucumber.api.DataTable
-import cucumber.api.scala.{EN, ScalaDsl}
-import org.neo4j.cypher.cucumber.db.{DatabaseConfigProvider, DatabaseLoader}
-import DatabaseConfigProvider.cypherConfig
-import org.neo4j.cypher.cucumber.prettifier.prettifier
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import _root_.cucumber.api.DataTable
+import _root_.cucumber.api.scala.{EN, ScalaDsl}
+import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
+import cypher.cucumber.db.DatabaseLoader
+import cypher.cucumber.prettifier.prettifier
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.scalatest.{FunSuiteLike, Matchers}
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
-class GlueSteps extends CypherFunSuite with ScalaDsl with EN {
+class GlueSteps extends FunSuiteLike with Matchers with  ScalaDsl with EN {
 
   var result: Result = null
   var graph: GraphDatabaseService = null

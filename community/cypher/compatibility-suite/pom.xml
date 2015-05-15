@@ -77,13 +77,11 @@
       <groupId>info.cukes</groupId>
       <artifactId>cucumber-scala_2.10</artifactId>
       <version>1.2.2</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>info.cukes</groupId>
       <artifactId>cucumber-junit</artifactId>
       <version>1.2.2</version>
-      <scope>test</scope>
     </dependency>
 
     <!-- scala -->
@@ -91,12 +89,6 @@
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
-      <version>${scala.version}</version>
-    </dependency>
-
-    <dependency>
-      <artifactId>scala-reflect</artifactId>
-      <groupId>org.scala-lang</groupId>
       <version>${scala.version}</version>
     </dependency>
 
@@ -135,17 +127,13 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
 
     <!-- neo4j testing -->
@@ -161,14 +149,7 @@
       <artifactId>neo4j-io</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-2.3</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
+      <scope>compile</scope>
     </dependency>
 
 
@@ -177,6 +158,7 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-2.3</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -223,13 +205,13 @@
       <groupId>com.novus</groupId>
       <artifactId>salat-core_2.10</artifactId>
       <version>1.9.8</version>
+      <scope>test</scope>
       <exclusions>
         <exclusion>
           <groupId>org.scala-lang</groupId>
           <artifactId>scala-library</artifactId>
         </exclusion>
       </exclusions>
-      <scope>test</scope>
     </dependency>
 
   </dependencies>
