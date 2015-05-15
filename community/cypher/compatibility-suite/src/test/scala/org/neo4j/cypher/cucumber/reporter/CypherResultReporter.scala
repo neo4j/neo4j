@@ -28,17 +28,16 @@ import org.neo4j.cypher.cucumber.CucumberAdapter
 import scala.util.matching.Regex
 
 object CypherResultReporter {
-  def createPrintStream(path: String, filename: String): PrintStream = {
-    val pathFile = new File(path)
-    pathFile.mkdirs()
-    new PrintStream(new File(pathFile, filename))
+  def createPrintStream(path: File, filename: String): PrintStream = {
+    path.mkdirs()
+    new PrintStream(new File(path, filename))
   }
 }
 
 class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream) extends CucumberAdapter {
 
-  def this(reportDir: URL) = {
-    this(producer = JsonProducer, jsonWriter = CypherResultReporter.createPrintStream(reportDir.getFile, "compact.json") )
+  def this(reportDir: File) = {
+    this(producer = JsonProducer, jsonWriter = CypherResultReporter.createPrintStream(reportDir, "compact.json") )
   }
 
   private var query: String = null

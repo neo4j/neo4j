@@ -21,14 +21,42 @@ package org.neo4j.cypher.bdd;
 
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
+import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 
-@RunWith(Cucumber.class)
-@CucumberOptions(plugin={
-        "pretty", "html:target/cucumber",
-        "org.neo4j.cypher.cucumber.reporter.CypherResultReporter:target/cypher-cucumber",
-        "org.neo4j.cypher.cucumber.db.DatabaseProvider:target/dbs-cucumber",
-})
+@RunWith( Enclosed.class )
 public class FeatureSuiteTest
 {
+    @RunWith( Cucumber.class )
+    @CucumberOptions( plugin = {
+            "pretty", "html:target/rule-interpreted",
+            "org.neo4j.cypher.cucumber.reporter.CypherResultReporter:target/rule-interpreted",
+            "org.neo4j.cypher.cucumber.db.DatabaseProvider:target/dbs",
+            "org.neo4j.cypher.cucumber.db.DatabaseConfigProvider:/org/neo4j/cypher/db/config/rule.json",
+    } )
+    public static class RuleInterpreted
+    {
+    }
+
+    @RunWith( Cucumber.class )
+    @CucumberOptions( plugin = {
+            "pretty", "html:target/cost-interpreted",
+            "org.neo4j.cypher.cucumber.reporter.CypherResultReporter:target/cost-interpreted",
+            "org.neo4j.cypher.cucumber.db.DatabaseProvider:target/dbs",
+            "org.neo4j.cypher.cucumber.db.DatabaseConfigProvider:/org/neo4j/cypher/db/config/cost-interpreted.json",
+    } )
+    public static class CostInterpreted
+    {
+    }
+
+    @RunWith( Cucumber.class )
+    @CucumberOptions( plugin = {
+            "pretty", "html:target/cost-compiled",
+            "org.neo4j.cypher.cucumber.reporter.CypherResultReporter:target/cost-compiled",
+            "org.neo4j.cypher.cucumber.db.DatabaseProvider:target/dbs",
+            "org.neo4j.cypher.cucumber.db.DatabaseConfigProvider:/org/neo4j/cypher/db/config/cost-compiled.json",
+    } )
+    public static class CostCompiled
+    {
+    }
 }

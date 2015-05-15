@@ -44,8 +44,8 @@ object AvailableDatabase {
 
     val script = File.apply(scriptFile).slurp()
 
-    val contents = File.apply(paramsFile).slurp()
-    val json = scala.util.parsing.json.JSON.parseFull(contents)
+    val content = File.apply(paramsFile).slurp()
+    val json = scala.util.parsing.json.JSON.parseFull(content)
     val params = json match {
       case Some(map: Map[_,_]) => map.asInstanceOf[Map[String,AnyRef]].mapValues{
         case path:String if relativeFileURI(path) =>
@@ -67,18 +67,18 @@ object AvailableDatabase {
   } else false
 }
 
-case class DatabaseFactory(dbDir: String) extends ((String) => Unit) {
+case class DatabaseFactory(dbDir: JFile) extends ((String) => Unit) {
   override def apply(dbName: String): Unit = {
     val ImportQuery(script, params) = AvailableDatabase.archive(dbName)
     val dbPath = new JFile(dbDir, dbName)
     if (!dbPath.exists()) {
-      val graph = new GraphDatabaseFactory().newEmbeddedDatabase(dbPath.getAbsolutePath)
+      val graph = new GraphDatabaseFactory().newEmbeddedDatabase(dbPath)
       script.split(';').filter(_.trim.nonEmpty) foreach { q =>
         graph.execute(q.trim, params)
       }
       graph.shutdown()
     }
-    AvailableDatabase.dbPaths += dbName -> dbPath
+    AvailableDatabase.dbPaths += dbName -> dbPath.getAbsoluteFile
   }
 }
 

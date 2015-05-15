@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.bdd
 
-import java.io.File
 import java.util
 
 import cucumber.api.DataTable
 import cucumber.api.scala.{EN, ScalaDsl}
-import org.neo4j.cypher.cucumber.db.DatabaseLoader
+import org.neo4j.cypher.cucumber.db.{DatabaseConfigProvider, DatabaseLoader}
+import DatabaseConfigProvider.cypherConfig
 import org.neo4j.cypher.cucumber.prettifier.prettifier
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
+import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -46,22 +46,25 @@ class GlueSteps extends CypherFunSuite with ScalaDsl with EN {
   }
 
   Given("""^using: (.*)$""") { (dbName: String) =>
-    val path: File = DatabaseLoader(dbName)
-    graph = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(path.getAbsoluteFile)
-      .setConfig(GraphDatabaseSettings.pagecache_memory, "8M").newGraphDatabase()
+    val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(DatabaseLoader(dbName))
+    graph = loadConfig(builder).newGraphDatabase()
   }
 
   Given("""^init: (.*)$""") { (initQuery: String) =>
-    graph = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.pagecache_memory, "8M").newGraphDatabase()
-    graph.execute(initQuery)
+    val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+    graph = loadConfig(builder).newGraphDatabase()
+    assert(!initQuery.contains("cypher"), "init query should do specify pre parser options")
+    // init update queries should go with rule+interpreted regardless the database configuration
+    graph.execute(s"cypher planner=rule runtime=interpreted $initQuery")
   }
 
   When("""^running: (.*)$""") { (query: String) =>
+    assert(!query.contains("cypher"), "init query should do specify pre parser options")
     result = graph.execute(query)
   }
 
   When("""^running parametrized: (.*)$""") { (query: String, params: DataTable) =>
+    assert(!query.contains("cypher"), "init query should do specify pre parser options")
     val p: List[util.Map[String, AnyRef]] = params.asMaps(classOf[String], classOf[AnyRef]).asScala.toList
     assert(p.size == 1)
     result = graph.execute(query, p.head)
@@ -81,6 +84,12 @@ class GlueSteps extends CypherFunSuite with ScalaDsl with EN {
     }
 
     result.close()
+  }
+
+  private def loadConfig(builder: GraphDatabaseBuilder): GraphDatabaseBuilder = {
+    builder.setConfig(GraphDatabaseSettings.pagecache_memory, "8M")
+    cypherConfig().map { case (s, v) => builder.setConfig(s, v) }
+    builder
   }
 
   object sorter extends ((collection.Map[String, String], collection.Map[String, String]) => Boolean) {
