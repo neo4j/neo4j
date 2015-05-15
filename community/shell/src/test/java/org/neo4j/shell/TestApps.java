@@ -1149,7 +1149,7 @@ public class TestApps extends AbstractShellTest
     @Test
     public void shouldAllowProfileAsStartForACypherQuery() throws Exception
     {
-        executeCommand( "CYPHER runtime=interpreted PROFILE MATCH (n) RETURN n;", "DbHits" );
+        executeCommand( "CYPHER runtime=interpreted PROFILE MATCH (n) RETURN n;", "DB Hits" );
     }
 
     @Test

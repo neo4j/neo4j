@@ -152,10 +152,8 @@ final case class PlanDescriptionImpl(id: Id,
   def toSeq: Seq[InternalPlanDescription] = this +: children.toSeq
 
   override def toString = {
-    val treeString = renderAsTree(this)
-    val details = renderDetails(this)
-    val summary = renderSummary(this)
-    "%s%n%n%s%n%s".format(treeString, details, summary)
+    val NL = System.lineSeparator()
+    s"${renderAsTreeTable(this)}$NL${renderSummary(this)}"
   }
 
   def render( builder: StringBuilder, separator: String, levelSuffix: String ) { ??? }

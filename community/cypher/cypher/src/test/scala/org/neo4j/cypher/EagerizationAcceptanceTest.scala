@@ -579,7 +579,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     val result = execute(q)
     val plan = result.executionPlanDescription().toString
     result.close()
-    val length = EagerRegEx.findAllIn(plan).length / 2
+    val length = EagerRegEx.findAllIn(plan).length
     assert(length == expectedEagerCount, plan)
   }
 }

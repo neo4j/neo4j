@@ -40,7 +40,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
     val result = eengine.execute("explain match n return n")
     result.toList
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
-    result.executionPlanDescription().toString should include("EstimatedRows")
-    result.executionPlanDescription().asJava.toString should include("EstimatedRows")
+    result.executionPlanDescription().toString should include("Estimated Rows")
+    result.executionPlanDescription().asJava.toString should include("Estimated Rows")
   }
 }
