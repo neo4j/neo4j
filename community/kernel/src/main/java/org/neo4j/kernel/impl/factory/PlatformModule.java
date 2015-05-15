@@ -55,6 +55,7 @@ import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -224,13 +225,14 @@ public class PlatformModule
 
     protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers)
     {
+        Log pageCacheLog = logging.getInternalLog( PageCache.class );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, config, tracers.pageCacheTracer );
+                fileSystem, config, tracers.pageCacheTracer, pageCacheLog );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         if ( config.get( GraphDatabaseSettings.dump_configuration ) )
         {
-            pageCacheFactory.dumpConfiguration( logging.getInternalLog( PageCache.class ) );
+            pageCacheFactory.dumpConfiguration();
         }
         return pageCache;
     }

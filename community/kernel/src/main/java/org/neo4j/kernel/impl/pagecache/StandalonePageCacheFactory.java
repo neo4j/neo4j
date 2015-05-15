@@ -25,6 +25,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.FormattedLogProvider;
 
 /*
  * This class is an helper to allow to construct properly a page cache in the few places we need it without all
@@ -51,8 +52,9 @@ public final class StandalonePageCacheFactory
         Config baseConfig = new Config( MapUtil.stringMap(
                 GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
         Config finalConfig = baseConfig.with( config.getParams() );
+        FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, finalConfig, PageCacheTracer.NULL );
+                fileSystem, finalConfig, PageCacheTracer.NULL, logProvider.getLog( PageCache.class ) );
         return pageCacheFactory.getOrCreatePageCache();
     }
 }

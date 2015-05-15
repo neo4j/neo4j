@@ -39,14 +39,16 @@ public class ConfiguringPageCacheFactory
     private final PageSwapperFactory swapperFactory;
     private final Config config;
     private final PageCacheTracer tracer;
+    private final Log log;
     private PageCache pageCache;
 
     public ConfiguringPageCacheFactory(
-            FileSystemAbstraction fs, Config config, PageCacheTracer tracer )
+            FileSystemAbstraction fs, Config config, PageCacheTracer tracer, Log log )
     {
         this.swapperFactory = new SingleFilePageSwapperFactory( fs );
         this.config = config;
         this.tracer = tracer;
+        this.log = log;
     }
 
     public synchronized PageCache getOrCreatePageCache()
@@ -69,10 +71,17 @@ public class ConfiguringPageCacheFactory
 
     public int calculateMaxPages( Config config )
     {
-        long availableMemory = config.get( pagecache_memory );
+        long pageCacheMemory = config.get( pagecache_memory );
+        long maxHeap = Runtime.getRuntime().maxMemory();
+        if ( pageCacheMemory / maxHeap > 100 )
+        {
+            log.warn( "The memory configuration looks unbalanced. It is generally recommended to have at least " +
+                      "10 KiB of heap memory, for every 1 MiB of page cache memory. The current configuration is " +
+                      "allocating %s bytes for the page cache, and %s bytes for the heap.", pageCacheMemory, maxHeap );
+        }
         long pageSize = config.get( mapped_memory_page_size );
-        long pageCount = availableMemory / pageSize;
-        return (int) Math.min( Integer.MAX_VALUE, pageCount );
+        long pageCount = pageCacheMemory / pageSize;
+        return (int) Math.min( Integer.MAX_VALUE - 2000, pageCount );
     }
 
     public int calculatePageSize( Config config )
@@ -80,7 +89,7 @@ public class ConfiguringPageCacheFactory
         return config.get( mapped_memory_page_size ).intValue();
     }
 
-    public void dumpConfiguration( Log log )
+    public void dumpConfiguration()
     {
         long totalPhysicalMemory = totalPhysicalMemory();
         String totalPhysicalMemMb = totalPhysicalMemory == -1? "?" : "" + totalPhysicalMemory / 1024 / 1024;
