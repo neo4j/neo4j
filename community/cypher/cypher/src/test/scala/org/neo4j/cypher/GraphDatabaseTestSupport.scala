@@ -40,12 +40,12 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   var graph: GraphDatabaseAPI with Snitch = null
   var nodes: List[Node] = null
 
-  def databaseConfig(): Map[String,String] =
-    Map(GraphDatabaseSettings.pagecache_memory.name -> "8M")
+  def databaseConfig(): Map[String,String] = Map()
 
   override protected def initTest() {
     super.initTest()
-    graph = new ImpermanentGraphDatabase(databaseConfig().asJava) with Snitch
+    val config: Map[String, String] = databaseConfig() + (GraphDatabaseSettings.pagecache_memory.name -> "8M")
+    graph = new ImpermanentGraphDatabase(config.asJava) with Snitch
   }
 
   override protected def stopTest() {
