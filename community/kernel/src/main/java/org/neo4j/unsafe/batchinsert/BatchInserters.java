@@ -47,7 +47,7 @@ public final class BatchInserters
      *
      * @param storeDir the store directory
      * @return a new {@link BatchInserter}
-     * @deprecated use {@link #inserter(File, FileSystemAbstraction)} instead
+     * @deprecated use {@link #inserter(File)} instead
      */
     @Deprecated
     public static BatchInserter inserter( String storeDir ) throws IOException
@@ -59,9 +59,20 @@ public final class BatchInserters
      * Get a {@link BatchInserter} given a store directory.
      *
      * @param storeDir the store directory
+     * @return a new {@link BatchInserter}
+     */
+    public static BatchInserter inserter( File storeDir ) throws IOException
+    {
+        return inserter( storeDir, new DefaultFileSystemAbstraction(), stringMap() );
+    }
+
+    /**
+     * Get a {@link BatchInserter} given a store directory.
+     *
+     * @param storeDir the store directory
      * @param config configuration settings to use
      * @return a new {@link BatchInserter}
-     * @deprecated use {@link #inserter(File, FileSystemAbstraction, Map)} instead
+     * @deprecated use {@link #inserter(File, Map)} instead
      */
     @Deprecated
     public static BatchInserter inserter( String storeDir, Map<String,String> config ) throws IOException
@@ -70,7 +81,19 @@ public final class BatchInserters
     }
 
     /**
-     * @deprecated use {@link #inserter(File, FileSystemAbstraction)} instead
+     * Get a {@link BatchInserter} given a store directory.
+     *
+     * @param storeDir the store directory
+     * @param config configuration settings to use
+     * @return a new {@link BatchInserter}
+     */
+    public static BatchInserter inserter( File storeDir, Map<String,String> config ) throws IOException
+    {
+        return inserter( storeDir, new DefaultFileSystemAbstraction(), config );
+    }
+
+    /**
+     * @deprecated use {@link #inserter(File)} instead
      */
     @Deprecated
     public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem ) throws IOException
@@ -83,14 +106,16 @@ public final class BatchInserters
      *
      * @param storeDir the store directory
      * @return a new {@link BatchInserter}
+     * @deprecated use {@link #inserter(File)} instead
      */
+    @Deprecated
     public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem ) throws IOException
     {
         return inserter( storeDir, fileSystem, stringMap() );
     }
 
     /**
-     * @deprecated use {@link #inserter(File, FileSystemAbstraction, Map)} instead
+     * @deprecated use {@link #inserter(File, Map)} instead
      */
     @Deprecated
     public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,
@@ -105,7 +130,9 @@ public final class BatchInserters
      * @param storeDir the store directory
      * @param config configuration settings to use
      * @return a new {@link BatchInserter}
+     * @deprecated use {@link #inserter(File, Map)} instead
      */
+    @Deprecated
     @SuppressWarnings( { "unchecked", "rawtypes" } )
     public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem,
                                           Map<String,String> config ) throws IOException
@@ -114,7 +141,7 @@ public final class BatchInserters
     }
 
     /**
-     * @deprecated use {@link #inserter(File, FileSystemAbstraction, Map, Iterable)} instead
+     * @deprecated use {@link #inserter(File, Map, Iterable)} instead
      */
     @Deprecated
     public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,
@@ -123,6 +150,16 @@ public final class BatchInserters
         return inserter( new File( storeDir ), fileSystem, config, kernelExtensions );
     }
 
+    public static BatchInserter inserter( File storeDir,
+                                          Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
+    {
+        return new BatchInserterImpl( storeDir, new DefaultFileSystemAbstraction(), config, kernelExtensions );
+    }
+
+    /**
+     * @deprecated use {@link #inserter(File, Map, Iterable)} instead
+     */
+    @Deprecated
     public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem,
                                           Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {

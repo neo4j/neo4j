@@ -24,7 +24,9 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
+import org.neo4j.io.fs.*;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 
 import static java.lang.String.format;
@@ -34,7 +36,6 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.kernel.CannedFileSystemAbstraction.NOTHING;
 import static org.neo4j.kernel.StoreLocker.STORE_LOCK_FILENAME;
 
 public class StoreLockerTest
@@ -44,7 +45,14 @@ public class StoreLockerTest
     @Test
     public void shouldObtainLockWhenStoreFileNotLocked() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( true, null, null, true, NOTHING );
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( new DefaultFileSystemAbstraction() )
+        {
+            @Override
+            public boolean fileExists( File fileName )
+            {
+                return true;
+            }
+        };
         StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
 
         try
@@ -62,7 +70,14 @@ public class StoreLockerTest
     @Test
     public void shouldCreateStoreDirAndObtainLockWhenStoreDirDoesNotExist() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( false, null, null, true, NOTHING );
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( new DefaultFileSystemAbstraction() )
+        {
+            @Override
+            public boolean fileExists( File fileName )
+            {
+                return false;
+            }
+        };
         StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
 
         try
@@ -79,8 +94,20 @@ public class StoreLockerTest
     @Test
     public void shouldNotObtainLockWhenStoreDirCannotBeCreated() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( false,
-                new IOException( "store dir could not be created" ), null, true, NOTHING );
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( new DefaultFileSystemAbstraction() )
+        {
+            @Override
+            public void mkdirs( File fileName ) throws IOException
+            {
+                throw new IOException( "store dir could not be created" );
+            }
+
+            @Override
+            public boolean fileExists( File fileName )
+            {
+                return false;
+            }
+        };
         StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
         File storeDir = target.cleanDirectory( "unused" );
 
@@ -99,8 +126,20 @@ public class StoreLockerTest
     @Test
     public void shouldNotObtainLockWhenUnableToOpenLockFile() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( true, null,
-                new IOException( "cannot open lock file" ), true, NOTHING );
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( new DefaultFileSystemAbstraction() )
+        {
+            @Override
+            public StoreChannel open( File fileName, String mode ) throws IOException
+            {
+                throw new IOException( "cannot open lock file" );
+            }
+
+            @Override
+            public boolean fileExists( File fileName )
+            {
+                return false;
+            }
+        };
         StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
         File storeDir = target.cleanDirectory( "unused" );
 
@@ -120,7 +159,20 @@ public class StoreLockerTest
     @Test
     public void shouldNotObtainLockWhenStoreAlreadyInUse() throws Exception
     {
-        FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( true, null, null, false, NOTHING );
+        FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( new DefaultFileSystemAbstraction() )
+        {
+            @Override
+            public boolean fileExists( File fileName )
+            {
+                return false;
+            }
+
+            @Override
+            public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
+            {
+                throw new IOException( "Unable to create lock file " + fileName );
+            }
+        };
         StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
 
         try

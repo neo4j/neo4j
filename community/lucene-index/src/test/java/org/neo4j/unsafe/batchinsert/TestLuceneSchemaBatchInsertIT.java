@@ -50,7 +50,7 @@ public class TestLuceneSchemaBatchInsertIT
     {
         // GIVEN
         File storeDir = forTest( getClass() ).makeGraphDbDir().getAbsoluteFile();
-        BatchInserter inserter = BatchInserters.inserter( storeDir, new DefaultFileSystemAbstraction() );
+        BatchInserter inserter = BatchInserters.inserter( storeDir );
         inserter.createDeferredSchemaIndex( LABEL ).on( "name" ).create();
 
         // WHEN

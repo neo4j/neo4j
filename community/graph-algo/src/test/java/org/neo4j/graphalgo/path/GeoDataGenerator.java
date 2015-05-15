@@ -69,7 +69,7 @@ public class GeoDataGenerator
 
     public void generate( File storeDir ) throws IOException
     {
-        BatchInserter inserter = BatchInserters.inserter( storeDir.getAbsoluteFile(), new DefaultFileSystemAbstraction() );
+        BatchInserter inserter = BatchInserters.inserter( storeDir.getAbsoluteFile() );
         Grid grid = new Grid();
         try
         {
