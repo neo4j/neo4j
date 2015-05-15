@@ -30,28 +30,41 @@ import scala.reflect.io.File
 case class ImportQuery(script: String, params: java.util.Map[String, Object])
 
 object AvailableDatabase {
-  final val archive = Map("cineast" -> importInto("src/test/resources/org/neo4j/cypher/db/cineast/"))
+  final val archive = Map("cineast" -> importInto("/org/neo4j/cypher/db/cineast/"))
   final val dbPaths : mutable.Map[String, JFile] = new mutable.HashMap
   private final val SCRIPT_FILENAME = "import.cyp"
   private final val PARAMS_FILENAME = "params.json"
 
   private def importInto(path: String): ImportQuery = {
-    val scriptFile = new JFile(path, SCRIPT_FILENAME)
-    val paramsFile = new JFile(path, PARAMS_FILENAME)
-    assert(scriptFile.exists())
-    assert(paramsFile.exists())
+    val qualifiedPath = getClass.getResource(path).getPath
+    val scriptFile = new JFile(qualifiedPath, SCRIPT_FILENAME)
+    val paramsFile = new JFile(qualifiedPath, PARAMS_FILENAME)
+    assert(scriptFile.exists(), scriptFile + " should exist")
+    assert(paramsFile.exists(), paramsFile + " should exist")
 
     val script = File.apply(scriptFile).slurp()
 
     val contents = File.apply(paramsFile).slurp()
     val json = scala.util.parsing.json.JSON.parseFull(contents)
     val params = json match {
-      case Some(map: Map[_,_]) => map.asInstanceOf[Map[String,AnyRef]].asJava
+      case Some(map: Map[_,_]) => map.asInstanceOf[Map[String,AnyRef]].mapValues{
+        case path:String if relativeFileURI(path) =>
+          val qualified = new JFile(qualifiedPath, path.substring(5))
+          if (qualified.isFile) "file:" + qualified.getPath else path
+        case v => v
+      }.asJava
       case _ => throw new IllegalStateException(s"Unable to parse json file containing params at $paramsFile")
     }
 
     ImportQuery(script, params)
   }
+
+  private def relativeFileURI(str: String):Boolean = if (str.startsWith("file:")) try {
+    val uri = new java.net.URI(str)
+    uri.getScheme == "file" && !uri.getSchemeSpecificPart.startsWith("/")
+  } catch {
+    case e:java.net.URISyntaxException=> false
+  } else false
 }
 
 case class DatabaseFactory(dbDir: String) extends ((String) => Unit) {
