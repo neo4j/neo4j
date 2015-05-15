@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicLabel;
@@ -90,8 +91,13 @@ public class BatchInsertDocTest
         // END SNIPPET: insert
 
         // try it out from a normal db
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase(
-                tempStoreDir );
+        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        factory.setFileSystem( fileSystem );
+        GraphDatabaseService db = factory.newImpermanentDatabase( tempStoreDir );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+        }
         try ( Transaction tx = db.beginTx() )
         {
             Label personLabelForTesting = DynamicLabel.label( "Person" );
