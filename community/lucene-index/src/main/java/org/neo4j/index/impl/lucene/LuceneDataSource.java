@@ -205,7 +205,6 @@ public class LuceneDataSource implements Lifecycle
         {
             try
             {
-                index.setStale();
                 index.getWriter().commit();
             }
             catch ( IOException e )

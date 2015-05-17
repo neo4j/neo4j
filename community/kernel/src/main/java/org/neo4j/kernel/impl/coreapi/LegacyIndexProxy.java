@@ -516,4 +516,10 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     {
         type.add( statement.dataWriteOperations(), name, type.id( entity ), key, value );
     }
+
+    @Override
+    public String toString()
+    {
+        return "Index[" + type + ", " + name + "]";
+    }
 }

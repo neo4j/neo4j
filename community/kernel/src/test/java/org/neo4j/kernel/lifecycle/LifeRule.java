@@ -30,6 +30,17 @@ import org.junit.runners.model.Statement;
 public class LifeRule implements TestRule
 {
     private LifeSupport life = new LifeSupport(  );
+    private final boolean autoStart;
+
+    public LifeRule()
+    {
+        this( false );
+    }
+
+    public LifeRule( boolean autoStart )
+    {
+        this.autoStart = autoStart;
+    }
 
     @Override
     public Statement apply( final Statement base, Description description )
@@ -41,6 +52,10 @@ public class LifeRule implements TestRule
             {
                 try
                 {
+                    if ( autoStart )
+                    {
+                        start();
+                    }
                     base.evaluate();
                     life.shutdown();
                 }

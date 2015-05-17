@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,7 +41,14 @@ import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 public class LegacyIndexApplier extends NeoCommandHandler.Adapter
 {
     private final LegacyIndexApplierLookup applierLookup;
-    private final Map<String,NeoCommandHandler> appliers = new HashMap<>();
+
+    // We have these two maps here for "applier lookup" performance reasons. Every command that we apply we must
+    // redirect to the correct applier, i.e. the _single_ applier for the provider managing the specific index.
+    // Looking up provider for an index has a certain cost so those are cached in applierByIndex.
+    private Map<String/*indexName*/,NeoCommandHandler> applierByNodeIndex = Collections.emptyMap();
+    private Map<String/*indexName*/,NeoCommandHandler> applierByRelationshipIndex = Collections.emptyMap();
+    private Map<String/*providerName*/,NeoCommandHandler> applierByProvider = Collections.emptyMap();
+
     private final IndexConfigStore indexConfigStore;
     private final IdOrderingQueue transactionOrdering;
     private final long transactionId;
@@ -60,23 +68,67 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
 
     private NeoCommandHandler applier( IndexCommand command ) throws IOException
     {
-        byte nameId = command.getIndexNameId();
-        String indexName = defineCommand.getIndexName( nameId );
-        NeoCommandHandler applier = appliers.get( indexName );
+        // Have we got an applier for this index?
+        String indexName = defineCommand.getIndexName( command.getIndexNameId() );
+        Map<String,NeoCommandHandler> applierByIndex = applierByIndexMap( command );
+        NeoCommandHandler applier = applierByIndex.get( indexName );
         if ( applier == null )
         {
+            // We don't. Have we got an applier for the provider of this index?
             IndexEntityType entityType = IndexEntityType.byId( command.getEntityType() );
             Map<String,String> config = indexConfigStore.get( entityType.entityClass(), indexName );
             if ( config == null )
             {
+                // This provider doesn't even exist, return an EMPTY handler, i.e. ignore these changes.
+                // Could be that the index provider is temporarily unavailable?
                 return NeoCommandHandler.EMPTY;
             }
             String providerName = config.get( PROVIDER );
-            applier = applierLookup.newApplier( providerName, mode.needsIdempotencyChecks() );
-            applier.visitIndexDefineCommand( defineCommand );
-            appliers.put( indexName, applier );
+            applier = applierByProvider.get( providerName );
+            if ( applier == null )
+            {
+                // We don't, so create the applier
+                applier = applierLookup.newApplier( providerName, mode.needsIdempotencyChecks() );
+                applier.visitIndexDefineCommand( defineCommand );
+                applierByProvider.put( providerName, applier );
+            }
+
+            // Also cache this applier for this index
+            applierByIndex.put( indexName, applier );
         }
         return applier;
+    }
+
+    // Some lazy creation of Maps for holding appliers per provider and index
+    private Map<String,NeoCommandHandler> applierByIndexMap( IndexCommand command )
+    {
+        if ( command.getEntityType() == IndexEntityType.Node.id() )
+        {
+            if ( applierByNodeIndex.isEmpty() )
+            {
+                applierByNodeIndex = new HashMap<>();
+                lazyCreateApplierByprovider();
+            }
+            return applierByNodeIndex;
+        }
+        if ( command.getEntityType() == IndexEntityType.Relationship.id() )
+        {
+            if ( applierByRelationshipIndex.isEmpty() )
+            {
+                applierByRelationshipIndex = new HashMap<>();
+                lazyCreateApplierByprovider();
+            }
+            return applierByRelationshipIndex;
+        }
+        throw new UnsupportedOperationException( "Unknown entity type " + command.getEntityType() );
+    }
+
+    private void lazyCreateApplierByprovider()
+    {
+        if ( applierByProvider.isEmpty() )
+        {
+            applierByProvider = new HashMap<>();
+        }
     }
 
     @Override
@@ -121,7 +173,7 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     @Override
     public void apply()
     {
-        for ( NeoCommandHandler applier : appliers.values() )
+        for ( NeoCommandHandler applier : applierByProvider.values() )
         {
             applier.apply();
         }
@@ -132,7 +184,7 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     {
         try
         {
-            for ( NeoCommandHandler applier : appliers.values() )
+            for ( NeoCommandHandler applier : applierByProvider.values() )
             {
                 applier.close();
             }

@@ -110,7 +110,7 @@ class CommitContext implements Closeable
     public void close() throws IOException
     {
         applyDocuments( writer, indexType, documents );
-        if ( writer != null && !recovery )
+        if ( writer != null )
         {
             dataSource.invalidateIndexSearcher( identifier );
         }
@@ -131,6 +131,12 @@ class CommitContext implements Closeable
             this.document = document;
             this.exists = exists;
             this.entityId = entityId;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "DocumentContext[document=" + document + ", exists=" + exists + ", entityId=" + entityId + "]";
         }
     }
 }
