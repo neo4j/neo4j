@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.index.impl.lucene.CommitContext.DocumentContext;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
@@ -34,11 +35,15 @@ import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 
+/**
+ * Applies changes from {@link IndexCommand commands} onto one ore more indexes from the same
+ * {@link IndexImplementation provider}.
+ */
 public class LuceneCommandApplier extends NeoCommandHandler.Adapter
 {
     private final LuceneDataSource dataSource;
-    private final Map<Byte,CommitContext> nodeContexts = new HashMap<>();
-    private final Map<Byte,CommitContext> relationshipContexts = new HashMap<>();
+    private final Map<String,CommitContext> nodeContexts = new HashMap<>();
+    private final Map<String,CommitContext> relationshipContexts = new HashMap<>();
     private final boolean recovery;
     private IndexDefineCommand definitions;
 
@@ -144,24 +149,24 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
 
     private CommitContext commitContext( IndexCommand command )
     {
-        Map<Byte,CommitContext> contextMap = commitContextMap( command.getEntityType() );
-        byte indexNameId = command.getIndexNameId();
-        CommitContext context = contextMap.get( indexNameId );
+        Map<String,CommitContext> contextMap = commitContextMap( command.getEntityType() );
+        String indexName = definitions.getIndexName( command.getIndexNameId() );
+        CommitContext context = contextMap.get( indexName );
         if ( context == null )
         {
-            IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.byId( command.getEntityType() ),
-                    definitions.getIndexName( indexNameId ) );
+            IndexIdentifier identifier =
+                    new IndexIdentifier( IndexEntityType.byId( command.getEntityType() ), indexName );
 
             // TODO the fact that we look up index type from config here using the index store
             // directly should be avoided. But how can we do it in, say recovery?
             context = new CommitContext( dataSource, identifier,
                     dataSource.getType( identifier, recovery ), recovery );
-            contextMap.put( indexNameId, context );
+            contextMap.put( indexName, context );
         }
         return context;
     }
 
-    private Map<Byte,CommitContext> commitContextMap( byte entityType )
+    private Map<String,CommitContext> commitContextMap( byte entityType )
     {
         if ( entityType == IndexEntityType.Node.id() )
         {
