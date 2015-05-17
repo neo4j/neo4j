@@ -25,7 +25,9 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
@@ -43,15 +45,12 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.Settings.osIsWindows;
 import static org.neo4j.io.fs.FileUtils.readTextFile;
-import static org.neo4j.test.AssertEventually.Condition;
-import static org.neo4j.test.AssertEventually.assertEventually;
+import static org.neo4j.test.Assert.assertEventually;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 public class HTTPLoggingDocIT extends ExclusiveServerTestBase
@@ -85,11 +84,12 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
             // when
             String query = "?implicitlyDisabled" + UUID.randomUUID().toString();
             JaxRsResponse response = new RestRequest().get( functionalTestHelper.webAdminUri() + query );
-            assertEquals( 200, response.getStatus() );
+            assertThat( response.getStatus(), is( 200 ) );
             response.close();
 
             // then
-            assertFalse( occursIn( query, new File( logDirectory, "http.log" ) ) );
+            File httpLog = new File( logDirectory, "http.log" );
+            assertThat( httpLog.exists(), is( false ) );
         }
         finally
         {
@@ -128,11 +128,12 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 
             // when
             JaxRsResponse response = new RestRequest().get( functionalTestHelper.webAdminUri() + query );
-            assertEquals( 200, response.getStatus() );
+            assertThat( response.getStatus(), is( 200 ) );
             response.close();
 
             // then
-            assertEventually( "request appears in log", 5, logContains( logDirectory, query ) );
+            File httpLog = new File( logDirectory, "http.log" );
+            assertEventually( "request appears in log", fileContentSupplier( httpLog ), containsString( query ), 5, TimeUnit.SECONDS );
         }
         finally
         {
@@ -169,11 +170,12 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 
             // when
             HTTP.Response req = HTTP.POST( server.baseUri().resolve( "/db/data/node" ).toString(), rawPayload( "{\"name\":\"Hello, world!\"}" ) );
-            assertEquals( 201, req.status() );
+            assertThat( req.status(), is( 201 ) );
 
             // then
-            assertEventually( "request appears in log", 5, logContains( logDirectory, "Hello, world!" ) );
-            assertEventually( "request appears in log", 5, logContains( logDirectory, "metadata" ) );
+            File httpLog = new File( logDirectory, "http.log" );
+            assertEventually( "request appears in log", fileContentSupplier( httpLog ), containsString( "Hello, world!" ), 5, TimeUnit.SECONDS );
+            assertEventually( "request appears in log", fileContentSupplier( httpLog ), containsString( "metadata" ), 5, TimeUnit.SECONDS );
         }
         finally
         {
@@ -221,14 +223,14 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         }
     }
 
-    private Condition logContains( final File logDirectory, final String query )
+    private ThrowingSupplier<String, IOException> fileContentSupplier( final File file )
     {
-        return new Condition()
+        return new ThrowingSupplier<String, IOException>()
         {
             @Override
-            public boolean evaluate()
+            public String get() throws IOException
             {
-                return occursIn( query, new File( logDirectory, "http.log" ) );
+                return readTextFile( file, Charsets.UTF_8 );
             }
         };
     }
@@ -245,31 +247,10 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
             TargetDirectory targetDirectory = TargetDirectory.forTest( this.getClass() );
 
             file = targetDirectory.file( "unwritable-" + System.currentTimeMillis() );
-            assertTrue( "create directory to be unwritable", file.mkdirs() );
-            assertTrue( "mark directory as unwritable", file.setWritable( false, false ) );
+            assertThat( "create directory to be unwritable", file.mkdirs(), is( true ) );
+            assertThat( "mark directory as unwritable", file.setWritable( false, false ), is( true ) );
         }
 
         return file;
-    }
-
-    private boolean occursIn( String lookFor, File file )
-    {
-        if ( !file.exists() )
-        {
-            return false;
-        }
-
-        try
-        {
-            String s = readTextFile( file, Charsets.UTF_8 );
-            System.out.println(s);
-            System.out.println();
-            System.out.println("Does not contain: " + lookFor);
-            return s.contains( lookFor );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 }
