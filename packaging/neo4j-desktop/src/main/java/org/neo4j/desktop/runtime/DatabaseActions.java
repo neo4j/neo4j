@@ -44,7 +44,7 @@ public class DatabaseActions
     private final DesktopModel model;
     private AbstractNeoServer server;
     private Logging logging;
-    private LifeSupport life = new LifeSupport();
+    private LifeSupport life;
 
     public DatabaseActions( DesktopModel model )
     {
@@ -57,6 +57,7 @@ public class DatabaseActions
         {
             throw new UnableToStartServerException( "Already started" );
         }
+        life = new LifeSupport();
 
         DesktopConfigurator configurator = new DesktopConfigurator( model );
         logging = life.add( createDefaultLogging( configurator.getDatabaseTuningProperties() ) );
