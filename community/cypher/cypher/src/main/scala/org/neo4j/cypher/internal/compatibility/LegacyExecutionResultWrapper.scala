@@ -143,10 +143,15 @@ case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionR
       stats.constraintsRemoved > 0)
 }
 
+// This is carefully tiptoeing around calling abstract methods that have changed between 2.3 and 2.0
+// (i.e. if you touch this be very sure to not unintentionally introduce an AbstractMethodError)
 case class CompatibilityPlanDescriptionFor1_9(legacy: PlanDescription_v1_9, planDescriptionRequested: Boolean) extends ExtendedPlanDescription {
   self =>
 
   def identifiers: Set[String] = Set.empty
+
+  override def children: Seq[PlanDescription] = legacy.children.map(CompatibilityPlanDescriptionFor1_9(_, planDescriptionRequested))
+
   def extendedChildren: Seq[ExtendedPlanDescription] = legacy.children.map(CompatibilityPlanDescriptionFor1_9(_, planDescriptionRequested))
 
   override def asJava: javacompat.PlanDescription = new javacompat.PlanDescription {
@@ -162,8 +167,10 @@ case class CompatibilityPlanDescriptionFor1_9(legacy: PlanDescription_v1_9, plan
     override def toString: String = self.toString
   }
 
-  def arguments: Map[String, AnyRef] = legacy.arguments
+  def arguments: Map[String, AnyRef] = legacy.args.toMap
+
   override def hasProfilerStatistics = planDescriptionRequested
+
   def name: String = legacy.name
 
   override def toString = legacy.toString
