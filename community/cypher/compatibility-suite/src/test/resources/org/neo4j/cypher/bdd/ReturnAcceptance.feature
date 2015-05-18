@@ -149,7 +149,7 @@ Feature: ReturnAcceptanceTest
 
   Scenario: count star should count everything in scope
     Given init: CREATE (:l1), (:l2), (:l3);
-    When running: MATCH (a) RETURN a, count(*) ORDER BY count(*);̄
+    When running: MATCH (a) RETURN a, count(*) ORDER BY count(*);
     Then result:
       | a     | count(*) |
       | (:l1) | 1        |
