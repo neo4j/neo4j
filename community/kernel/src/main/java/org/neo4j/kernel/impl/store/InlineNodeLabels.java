@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.util.Bits;
 import static java.lang.Long.highestOneBit;
 import static java.lang.String.format;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.impl.store.LabelIdArray.concatAndSort;
 import static org.neo4j.kernel.impl.store.LabelIdArray.filter;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsBody;
@@ -38,7 +39,6 @@ import static org.neo4j.kernel.impl.util.Bits.bitsFromLongs;
 
 public class InlineNodeLabels implements NodeLabels
 {
-    private static final long[] NO_LABELS = new long[0];
     private static final int LABEL_BITS = 36;
     private final long labelField;
     private final NodeRecord node;
@@ -144,7 +144,7 @@ public class InlineNodeLabels implements NodeLabels
         byte numberOfLabels = labelCount( labelField );
         if ( numberOfLabels == 0 )
         {
-            return NO_LABELS;
+            return EMPTY_LONG_ARRAY;
         }
 
         long existingLabelsField = parseLabelsBody( labelField );

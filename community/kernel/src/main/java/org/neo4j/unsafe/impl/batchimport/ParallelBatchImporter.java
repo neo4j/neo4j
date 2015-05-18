@@ -143,7 +143,7 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Stage 1 -- nodes, properties, labels
             NodeStage nodeStage = new NodeStage( config, writeMonitor, writerFactory,
-                    nodes, idMapper, idGenerator, neoStore, inputCache, memoryUsageStats );
+                    nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(), memoryUsageStats );
 
             // Stage 2 -- calculate dense node threshold
             CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( config, relationships,
@@ -179,7 +179,8 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Stage 4 -- set node nextRel fields
             executeStages( new NodeFirstRelationshipStage( config, neoStore.getNodeStore(),
-                    neoStore.getRelationshipGroupStore(), nodeRelationshipCache, badCollector ) );
+                    neoStore.getRelationshipGroupStore(), nodeRelationshipCache, badCollector,
+                    neoStore.getLabelScanStore() ) );
             // Stage 5 -- link relationship chains together
             nodeRelationshipCache.clearRelationships();
             executeStages( new RelationshipLinkbackStage( config, neoStore.getRelationshipStore(),

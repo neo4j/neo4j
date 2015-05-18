@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.register.Register.DoubleLongRegister;
 
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 

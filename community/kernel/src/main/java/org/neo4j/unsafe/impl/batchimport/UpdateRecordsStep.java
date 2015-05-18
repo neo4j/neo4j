@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.Collection;
 
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
@@ -41,39 +40,41 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
         extends ProcessorStep<RECORD[]>
         implements StatsProvider
 {
-    private final RecordStore<RECORD> store;
+    protected final RecordStore<RECORD> store;
     private final int recordSize;
     private int recordsUpdated;
-    private final Predicate<RECORD> updatePredicate;
 
     public UpdateRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store )
-    {
-        this( control, config, store, Predicates.<RECORD>TRUE() );
-    }
-
-    public UpdateRecordsStep( StageControl control, Configuration config,
-            RecordStore<RECORD> store, Predicate<RECORD> updatePredicate )
     {
         super( control, "v", config, 1 );
         this.store = store;
         this.recordSize = store.getRecordSize();
-        this.updatePredicate = updatePredicate;
     }
 
     @SuppressWarnings( "unchecked" )
     @Override
-    protected void process( RECORD[] batch, BatchSender sender )
+    protected void process( RECORD[] batch, BatchSender sender ) throws Throwable
     {
         for ( RECORD record : batch )
         {
-            if ( record.inUse() && !updatePredicate.accept( record ) )
+            if ( record.inUse() && !accept( record ) )
             {
                 record = (RECORD) record.clone();
                 record.setInUse( false );
             }
-            store.updateRecord( record );
+            update( record );
         }
         recordsUpdated += batch.length;
+    }
+
+    protected void update( RECORD record ) throws Throwable
+    {
+        store.updateRecord( record );
+    }
+
+    protected boolean accept( @SuppressWarnings( "unused" ) RECORD record )
+    {
+        return true;
     }
 
     @Override

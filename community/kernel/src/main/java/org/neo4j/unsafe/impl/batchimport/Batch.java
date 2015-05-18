@@ -45,6 +45,7 @@ public class Batch<INPUT,RECORD extends PrimitiveRecord>
     public long[] ids;
     public boolean parallelizableWithPrevious;
     public long firstRecordId;
+    public long[][] labels;
 
     public Batch( INPUT[] input )
     {

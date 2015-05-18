@@ -71,7 +71,7 @@ public class QuickImport
         String dir = args.get( ImportTool.Options.STORE_DIR.key() );
 
         Extractors extractors = new Extractors( COMMAS.arrayDelimiter() );
-        IdType idType = IdType.ACTUAL;
+        IdType idType = IdType.valueOf( args.get( "id-type", IdType.ACTUAL.name() ) );
 
         Header nodeHeader = parseNodeHeader( args, idType, extractors );
         Header relationshipHeader = parseRelationshipHeader( args, idType, extractors );

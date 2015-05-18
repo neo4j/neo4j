@@ -436,7 +436,7 @@ public class EncodingIdMapper implements IdMapper
             Collector collector, ProgressListener progress )
             throws InterruptedException
     {
-        progress.started( "RESOLVE" );
+        progress.started( "RESOLVE (" + numberOfCollisions + " collisions)" );
         Radix radix = radixFactory.newInstance();
         List<String> sourceDescriptions = new ArrayList<>();
         String lastSourceDescription = null;

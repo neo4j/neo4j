@@ -261,7 +261,7 @@ public abstract class AbstractStep<T> implements Step<T>
     }
 
     @Override
-    public void close()
+    public void close() throws Exception
     {   // Do nothing by default
     }
 
