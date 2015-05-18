@@ -1,6 +1,7 @@
 2.2.2
 -----
 o Fixes an issue in multi-line quotes values where a value ending with a newline could corrupt the next value.
+o BufferedCharSeeker has ability to allow/disallow multi-line fields
 
 2.2.1
 -----
