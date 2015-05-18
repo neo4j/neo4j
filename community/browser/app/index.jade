@@ -8,6 +8,8 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     meta(name="description", content="Neo4j Browser")
     meta(name="author", content="Neo Technology")
 
+    include views/partials/device-icons
+
     //build:css styles/main.css
     link(rel='stylesheet', href='components/bootstrap/dist/css/bootstrap.css')
     link(rel='stylesheet', href='components/font-awesome/css/font-awesome.css')
@@ -144,7 +146,6 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     script(src='scripts/directives/helpUrl.js')
     script(src='scripts/directives/helpTopic.js')
     script(src='scripts/directives/playTopic.js')
-    script(src='scripts/directives/anyTopic.js')
     script(src='scripts/directives/noNgAnimate.js')
     script(src='scripts/init/localStorage.js')
     script(src='scripts/controllers/Editor.js')

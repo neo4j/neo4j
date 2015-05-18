@@ -110,25 +110,6 @@ angular.module('neo4jApp')
           q.promise
       ]
 
-    # System info
-    FrameProvider.interpreters.push
-      type: 'info'
-      templateUrl: 'views/frame-info.html'
-      matches: "#{cmdchar}sysinfo"
-      exec: ['$http', ($http) ->
-        step_number = 1
-        (input, q) ->
-          url = "content/info/sysinfo.html"
-          $http.get(url)
-          .then(
-            ->
-              q.resolve(page: url)
-          ,
-            (r)->
-              q.reject(r)
-          )
-          q.promise
-      ]
 
     # play handler
     FrameProvider.interpreters.push
@@ -149,6 +130,16 @@ angular.module('neo4jApp')
               q.reject(r)
           )
           q.promise
+      ]
+
+    # Shorthand for ":play sysinfo"
+    FrameProvider.interpreters.push
+      type: 'play'
+      matches: "#{cmdchar}sysinfo"
+      exec: ['Frame', (Frame) ->
+        (input, q) ->
+          Frame.create {input: "#{Settings.cmdchar}play sysinfo"}
+          return true
       ]
 
     # Help/man handler
