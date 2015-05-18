@@ -119,7 +119,7 @@ public class TransportErrorIT
         final RecordingByteChannel rawData = new RecordingByteChannel();
         final PackStream.Packer packer = new PackStream.Packer( new BufferedChannelOutput( rawData ) );
 
-        packer.packStructHeader( 2, (char) PackStreamMessageFormatV1.MessageTypes.MSG_RUN );
+        packer.packStructHeader( 2, PackStreamMessageFormatV1.MessageTypes.MSG_RUN );
         packer.pack( "RETURN 1" );
         packer.pack( 1234 ); // Should've been a map
         packer.flush();
@@ -146,7 +146,7 @@ public class TransportErrorIT
         final RecordingByteChannel rawData = new RecordingByteChannel();
         final PackStream.Packer packer = new PackStream.Packer( new BufferedChannelOutput( rawData ) );
 
-        packer.packStructHeader( 1, (char) 0x66 ); // Invalid message type
+        packer.packStructHeader( 1, (byte)0x66 ); // Invalid message type
         packer.pack( 1234 );
         packer.flush();
 
@@ -171,7 +171,7 @@ public class TransportErrorIT
         final BufferedChannelOutput out = new BufferedChannelOutput( rawData );
         final PackStream.Packer packer = new PackStream.Packer( out );
 
-        packer.packStructHeader( 2, (char) PackStreamMessageFormatV1.MessageTypes.MSG_RUN );
+        packer.packStructHeader( 2, PackStreamMessageFormatV1.MessageTypes.MSG_RUN );
         out.writeByte( PackStream.RESERVED_C4 ); // Invalid marker byte
         out.flush();
 

@@ -21,8 +21,7 @@ package org.neo4j.ndp.runtime;
 
 /**
  * Metadata that becomes available as soon as a statement is started, and is sent to the client before the result
- * stream
- * is sent.
+ * stream is sent.
  */
 public interface StatementMetadata
 {

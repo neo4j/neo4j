@@ -54,6 +54,7 @@ public class SocketProtocolV1 implements SocketProtocol
 
     private final TransportBridge bridge;
     private final Session session;
+
     private final Log log;
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
     private final ErrorTranslator errorTranslator;

@@ -44,6 +44,7 @@ import org.neo4j.ndp.transport.socket.SocketProtocol;
 import org.neo4j.ndp.transport.socket.SocketProtocolV1;
 import org.neo4j.ndp.transport.socket.SocketTransport;
 import org.neo4j.ndp.transport.socket.WebSocketTransport;
+import org.neo4j.udc.UsageData;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
@@ -81,6 +82,8 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
         GraphDatabaseService db();
 
         JobScheduler scheduler();
+
+        UsageData usageData();
     }
 
     public NDPKernelExtension()
@@ -105,7 +108,7 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
         if ( config.get( Settings.ndp_enabled ) )
         {
             final Sessions sessions = life.add( new ThreadedSessions(
-                    life.add( new StandardSessions( api, logging ) ),
+                    life.add( new StandardSessions( api, dependencies.usageData(), logging ) ),
                     dependencies.scheduler(),
                     logging ) );
 

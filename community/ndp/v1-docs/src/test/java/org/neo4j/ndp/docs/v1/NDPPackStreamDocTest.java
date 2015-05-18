@@ -68,7 +68,7 @@ public class NDPPackStreamDocTest
     public void serializingLeadsToSpecifiedOutput() throws Throwable
     {
         assertThat( "Serialized version of value should match documented data: " + example,
-                normalizedHex( pack( example.attribute( "Value" ) ) ),
-                equalTo( normalizedHex( example.serializedData() ) ) );
+                normalizedHex( example.serializedData() ),
+                equalTo( normalizedHex( pack( example.attribute( "Value" ) ) ) ) );
     }
 }

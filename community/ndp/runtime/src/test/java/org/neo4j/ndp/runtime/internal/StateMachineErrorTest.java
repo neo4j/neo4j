@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.runtime.internal.session;
+package org.neo4j.ndp.runtime.internal;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -36,8 +36,8 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.StatementMetadata;
 import org.neo4j.ndp.runtime.integration.RecordingCallback;
-import org.neo4j.ndp.runtime.internal.StatementRunner;
 import org.neo4j.stream.RecordStream;
+import org.neo4j.udc.UsageData;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.ndp.runtime.integration.SessionMatchers.failedWith;
 import static org.neo4j.ndp.runtime.integration.SessionMatchers.ignored;
 import static org.neo4j.ndp.runtime.integration.SessionMatchers.success;
-import static org.neo4j.ndp.runtime.internal.session.SessionStateMachine.State.ERROR;
+import static org.neo4j.ndp.runtime.internal.SessionStateMachine.State.ERROR;
 
 public class StateMachineErrorTest
 {
@@ -75,7 +75,7 @@ public class StateMachineErrorTest
         doThrow( new SyntaxException( "src/test" ) ).when( runner ).run( any( SessionState.class ),
                 any( String.class ), any( Map.class ) );
 
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLogService.getInstance() );
+        SessionStateMachine machine = newIdleMachine();
 
         // When
         machine.run( "this is nonsense", EMPTY_PARAMS, null, responses );
@@ -83,6 +83,14 @@ public class StateMachineErrorTest
         // Then
         assertThat( responses.next(), failedWith( Status.Statement.InvalidSyntax ) );
         assertThat( machine.state(), equalTo( ERROR ) );
+    }
+
+    private SessionStateMachine newIdleMachine()
+    {
+        SessionStateMachine machine = new SessionStateMachine( new UsageData(), db, txBridge, runner, NullLogService
+                .getInstance() );
+        machine.initialize( "FunClient", null, Session.Callback.NO_OP );
+        return machine;
     }
 
     @Test
@@ -100,7 +108,7 @@ public class StateMachineErrorTest
         when( runner.run( any( SessionState.class ), any( String.class ), any( Map.class ) ) )
                 .thenReturn( mock( RecordStream.class ) );
 
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLogService.getInstance() );
+        SessionStateMachine machine = newIdleMachine();
 
         // and Given there is a result ready to be retrieved
         machine.run( "something", null, null, Session.Callbacks.<StatementMetadata, Object>noop() );
@@ -117,7 +125,7 @@ public class StateMachineErrorTest
     public void testRollbackError() throws Throwable
     {
         // Given
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLogService.getInstance() );
+        SessionStateMachine machine = newIdleMachine();
 
         // Given there is a running transaction
         machine.beginTransaction();
@@ -138,7 +146,9 @@ public class StateMachineErrorTest
         // Given
         RecordingCallback<StatementMetadata, Object> messages = new RecordingCallback<>();
         RecordingCallback<RecordStream, Object> pulling = new RecordingCallback<>();
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLogService.getInstance() );
+        RecordingCallback<Void, Object> initializing = new RecordingCallback<>();
+
+        SessionStateMachine machine = newIdleMachine();
 
         // When I perform some action that causes an error state
         machine.commitTransaction(); // No tx to be committed!
@@ -168,6 +178,10 @@ public class StateMachineErrorTest
         assertThat( machine.state(), equalTo( ERROR ) );
         assertThat( pulling.next(), ignored() );
 
+        machine.initialize( "", null, initializing );
+        assertThat( machine.state(), equalTo( ERROR ) );
+        assertThat( initializing.next(), ignored() );
+
         // And nothing at all should have been done
         verifyNoMoreInteractions( db, runner );
     }
@@ -178,7 +192,8 @@ public class StateMachineErrorTest
         // Given
         RecordingCallback<StatementMetadata, Object> messages = new RecordingCallback<>();
         RecordingCallback<Void, Object> failures = new RecordingCallback<>();
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLogService.getInstance() );
+
+        SessionStateMachine machine = newIdleMachine();
 
         // Given I've performed some action that causes an error state
         machine.commitTransaction(); // No tx to be committed!
@@ -195,5 +210,21 @@ public class StateMachineErrorTest
         // Then
         assertThat( messages.next(), success() );
 
+    }
+
+    @Test
+    public void actionsDisallowedBeforeInitialized() throws Throwable
+    {
+        // Given
+        RecordingCallback messages = new RecordingCallback();
+        SessionStateMachine machine = new SessionStateMachine( new UsageData(), db, txBridge, runner, NullLogService
+                .getInstance() );
+
+        // When
+        machine.run( "RETURN 1", null, null, messages );
+
+        // Then
+        assertThat(messages.next(), failedWith( Status.Request.Invalid ));
+        assertThat(machine.state(), equalTo(SessionStateMachine.State.STOPPED));
     }
 }

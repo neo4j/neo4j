@@ -483,7 +483,7 @@ public class PackStreamTest
 
         // When
         PackStream.Packer packer = machine.packer();
-        packer.packStructHeader( 3, 'N' );
+        packer.packStructHeader( 3, (byte)'N' );
         packer.pack( 12 );
         packer.packListHeader( 2 );
         packer.pack( "Person" );
@@ -521,7 +521,7 @@ public class PackStreamTest
 
         // When
         PackStream.Packer packer = machine.packer();
-        packer.packStructHeader( 3, 'N' );
+        packer.packStructHeader( 3,  (byte)'N' );
         packer.pack( 12 );
         packer.packListHeader( 2 );
         packer.pack( "Person" );
@@ -594,7 +594,7 @@ public class PackStreamTest
         // Given
         Machine machine = new Machine();
         PackStream.Packer packer = machine.packer();
-        packer.packStructHeader( 4, '~' );
+        packer.packStructHeader( 4,  (byte)'~' );
         packer.pack( 1 );
         packer.pack( 2 );
         packer.pack( 3 );

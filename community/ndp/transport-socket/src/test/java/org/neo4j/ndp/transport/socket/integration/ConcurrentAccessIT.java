@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.ndp.messaging.v1.message.Messages;
 import org.neo4j.ndp.transport.socket.client.Connection;
 
 import static java.util.Arrays.asList;
@@ -108,6 +110,7 @@ public class ConcurrentAccessIT
     {
         return new Callable<Void>()
         {
+            private final byte[] initialize = chunk( Messages.initialize( "TestClient" ) );
             private final byte[] createAndRollback = chunk(
                     run( "BEGIN" ), pullAll(),
                     run( "CREATE (n)" ), pullAll(),
@@ -124,12 +127,22 @@ public class ConcurrentAccessIT
                 client.connect( address ).send( acceptedVersions( 1, 0, 0, 0 ) );
                 assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
 
+                initialize(client);
+
                 for ( int i = 0; i < iterationsToRun; i++ )
                 {
                     creaeteAndRollback( client );
                 }
 
                 return null;
+            }
+
+            private void initialize( Connection client ) throws Exception
+            {
+                client.send( initialize );
+                assertThat( client, eventuallyRecieves(
+                    msgSuccess()
+                ));
             }
 
             private void creaeteAndRollback(Connection client) throws Exception

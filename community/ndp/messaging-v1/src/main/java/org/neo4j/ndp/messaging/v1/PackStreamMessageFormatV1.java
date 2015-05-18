@@ -54,9 +54,10 @@ import static org.neo4j.stream.Records.record;
 public class PackStreamMessageFormatV1 implements MessageFormat
 {
     public static final int VERSION = 1;
-    public static final char NODE = 'N';
-    public static final char RELATIONSHIP = 'R';
-    public static final char PATH = 'P';
+
+    public static final byte NODE = 'N';
+    public static final byte RELATIONSHIP = 'R';
+    public static final byte PATH = 'P';
 
     @Override
     public int version()
@@ -66,6 +67,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
     public interface MessageTypes
     {
+        byte MSG_INITIALIZE = 0x01;
         byte MSG_ACK_FAILURE = 0x0F;
         byte MSG_RUN = 0x10;
         byte MSG_DISCARD_ALL = 0x2F;
@@ -128,7 +130,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public void handleRunMessage( String statement, Map<String,Object> params )
                 throws IOException
         {
-            packer.packStructHeader( 2, (char) MessageTypes.MSG_RUN );
+            packer.packStructHeader( 2, MessageTypes.MSG_RUN );
             packer.pack( statement );
             packRawMap( params );
             onMessageComplete.run();
@@ -138,7 +140,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public void handlePullAllMessage()
                 throws IOException
         {
-            packer.packStructHeader( 0, (char) MessageTypes.MSG_PULL_ALL );
+            packer.packStructHeader( 0, MessageTypes.MSG_PULL_ALL );
             onMessageComplete.run();
         }
 
@@ -146,14 +148,14 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public void handleDiscardAllMessage()
                 throws IOException
         {
-            packer.packStructHeader( 0, (char) MessageTypes.MSG_DISCARD_ALL );
+            packer.packStructHeader( 0, MessageTypes.MSG_DISCARD_ALL );
             onMessageComplete.run();
         }
 
         @Override
         public void handleAckFailureMessage() throws IOException
         {
-            packer.packStructHeader( 0, (char) MessageTypes.MSG_ACK_FAILURE );
+            packer.packStructHeader( 0, MessageTypes.MSG_ACK_FAILURE );
             onMessageComplete.run();
         }
 
@@ -162,7 +164,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throws IOException
         {
             Object[] fields = item.fields();
-            packer.packStructHeader( 1, (char) MessageTypes.MSG_RECORD );
+            packer.packStructHeader( 1, MessageTypes.MSG_RECORD );
             packer.packListHeader( fields.length );
             for ( int i = 0; i < fields.length; i++ )
             {
@@ -175,7 +177,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public void handleSuccessMessage( Map<String,Object> metadata )
                 throws IOException
         {
-            packer.packStructHeader( 1, (char) MessageTypes.MSG_SUCCESS );
+            packer.packStructHeader( 1, MessageTypes.MSG_SUCCESS );
             packRawMap( metadata );
             onMessageComplete.run();
         }
@@ -184,7 +186,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public void handleFailureMessage( Neo4jError cause )
                 throws IOException
         {
-            packer.packStructHeader( 1, (char) MessageTypes.MSG_FAILURE );
+            packer.packStructHeader( 1, MessageTypes.MSG_FAILURE );
             packer.packMapHeader( 2 );
 
             packer.pack( "code" );
@@ -198,7 +200,15 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         @Override
         public void handleIgnoredMessage() throws IOException
         {
-            packer.packStructHeader( 0, (char) MessageTypes.MSG_IGNORED );
+            packer.packStructHeader( 0, MessageTypes.MSG_IGNORED );
+            onMessageComplete.run();
+        }
+
+        @Override
+        public void handleInitializeMessage( String clientName ) throws IOException
+        {
+            packer.packStructHeader( 1, MessageTypes.MSG_INITIALIZE );
+            packer.pack( clientName );
             onMessageComplete.run();
         }
 
@@ -444,6 +454,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     case MessageTypes.MSG_IGNORED:
                         unpackIgnoredMessage( output );
                         break;
+                    case MessageTypes.MSG_INITIALIZE:
+                        unpackInitializeMessage( output );
+                        break;
                     default:
                         throw new NDPIOException( Status.Request.Invalid,
                                 "0x" + Integer.toHexString(type) + " is not a valid message type." );
@@ -528,6 +541,12 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throws E, IOException
         {
             output.handlePullAllMessage();
+        }
+
+        private <E extends Exception> void unpackInitializeMessage( MessageHandler<E> output ) throws IOException, E
+        {
+            String clientName = unpacker.unpackString();
+            output.handleInitializeMessage( clientName );
         }
 
         private Map<String,Object> unpackRawMap() throws IOException

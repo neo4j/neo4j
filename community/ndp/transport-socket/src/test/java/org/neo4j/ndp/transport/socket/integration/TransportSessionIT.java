@@ -38,6 +38,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.ndp.messaging.v1.message.Messages.initialize;
 import static org.neo4j.ndp.messaging.v1.message.Messages.pullAll;
 import static org.neo4j.ndp.messaging.v1.message.Messages.run;
 import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.msgRecord;
@@ -118,12 +119,14 @@ public class TransportSessionIT
         client.connect( address )
                 .send( acceptedVersions( 1, 0, 0, 0 ) )
                 .send( chunk(
+                        initialize("TestClient/1.1"),
                         run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
                         pullAll() ) );
 
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves(
+                msgSuccess(),
                 msgSuccess( map( "fields", asList( "a", "a_squared" ) ) ),
                 msgRecord( eqRecord( equalTo( 1l ), equalTo( 1l ) ) ),
                 msgRecord( eqRecord( equalTo( 2l ), equalTo( 4l ) ) ),

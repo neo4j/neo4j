@@ -47,6 +47,19 @@ public class SessionWorkerFacade implements Session
     }
 
     @Override
+    public <A> void initialize( final String clientName, final A attachment, final Callback<Void,A> callback )
+    {
+        queue( new Consumer<Session>()
+        {
+            @Override
+            public void accept( Session session )
+            {
+                session.initialize( clientName, attachment, callback );
+            }
+        } );
+    }
+
+    @Override
     public <A> void run( final String statement, final Map<String,Object> params, final A attachment,
             final Callback<StatementMetadata,A> callback )
     {
