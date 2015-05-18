@@ -23,6 +23,7 @@ import java.util.Random;
 
 import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.function.Function;
+import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.test.Randoms;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
@@ -73,7 +74,7 @@ public class RandomDataIterator<T> extends PrefetchingIterator<T> implements Inp
         String[] result = new String[count];
         for ( int i = 0; i < count; i++ )
         {
-            result[i] = prefix + count;
+            result[i] = prefix + (i+1);
         }
         return result;
     }
@@ -179,9 +180,13 @@ public class RandomDataIterator<T> extends PrefetchingIterator<T> implements Inp
         }
 
         String[] result = new String[length];
-        for ( int i = 0; i < result.length; i++ )
+        for ( int i = 0; i < result.length; )
         {
-            result[i] = labels.random( random );
+            String candidate = labels.random( random );
+            if ( !ArrayUtil.contains( result, i, candidate ) )
+            {
+                result[i++] = candidate;
+            }
         }
         position += length * 6;
         return result;
