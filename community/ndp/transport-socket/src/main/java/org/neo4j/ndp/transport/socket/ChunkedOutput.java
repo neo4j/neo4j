@@ -188,7 +188,7 @@ public class ChunkedOutput implements PackOutput
     private void newBuffer()
     {
         // Assumption: We're using nettys buffer pooling here
-        buffer = channel.alloc().buffer( bufferSize, bufferSize ); // TODO: implement a #close method in this class, dispose of this buffer on close
+        buffer = channel.alloc().buffer( bufferSize, bufferSize );
         chunkOpen = false;
     }
 
@@ -200,5 +200,14 @@ public class ChunkedOutput implements PackOutput
     public void setTargetChannel( ChannelHandlerContext channel )
     {
         this.channel = channel;
+    }
+
+    public void close()
+    {
+        if(buffer != null)
+        {
+            buffer.release();
+            buffer = null;
+        }
     }
 }

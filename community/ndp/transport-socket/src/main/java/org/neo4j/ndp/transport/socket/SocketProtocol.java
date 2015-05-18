@@ -32,4 +32,7 @@ public interface SocketProtocol
     void handle( ChannelHandlerContext ctx, ByteBuf data );
 
     int version();
+
+    /** Close this instance of the protocol, disposing of any held resources */
+    void close();
 }

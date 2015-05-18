@@ -213,4 +213,8 @@ public class ChunkedInput implements PackInput
         }
     }
 
+    public void close()
+    {
+        clear();
+    }
 }

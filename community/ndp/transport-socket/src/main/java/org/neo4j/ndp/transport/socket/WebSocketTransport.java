@@ -20,7 +20,9 @@
 package org.neo4j.ndp.transport.socket;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -52,7 +54,7 @@ public class WebSocketTransport implements BiConsumer<EventLoopGroup,EventLoopGr
     public void accept( EventLoopGroup bossGroup, EventLoopGroup workerGroup )
     {
         ServerBootstrap b = new ServerBootstrap();
-        b//.option( ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT )
+        b.option( ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT )
          .group( bossGroup, workerGroup )
          .channel( NioServerSocketChannel.class )
          .childHandler( new ChannelInitializer<SocketChannel>()

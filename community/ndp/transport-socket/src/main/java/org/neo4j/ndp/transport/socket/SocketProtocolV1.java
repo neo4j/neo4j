@@ -59,6 +59,7 @@ public class SocketProtocolV1 implements SocketProtocol
         AWAITING_CHUNK,
         IN_CHUNK,
         IN_HEADER,
+        CLOSED
     }
 
     private State state = State.AWAITING_CHUNK;
@@ -143,6 +144,11 @@ public class SocketProtocolV1 implements SocketProtocol
                     }
                     break;
                 }
+                case CLOSED:
+                {
+                    // No-op
+                    return;
+                }
                 }
             }
         }
@@ -151,6 +157,21 @@ public class SocketProtocolV1 implements SocketProtocol
             data.release();
             onBatchOfMessagesDone();
         }
+    }
+
+    @Override
+    public int version()
+    {
+        return VERSION;
+    }
+
+    @Override
+    public void close()
+    {
+        state = State.CLOSED;
+        input.close();
+        output.close();
+        session.close();
     }
 
     private void handleHeader( ChannelHandlerContext channelContext )
@@ -165,12 +186,6 @@ public class SocketProtocolV1 implements SocketProtocol
         {
             state = State.IN_CHUNK;
         }
-    }
-
-    @Override
-    public int version()
-    {
-        return VERSION;
     }
 
     public void processCollectedMessage( final ChannelHandlerContext channelContext )
@@ -217,7 +232,7 @@ public class SocketProtocolV1 implements SocketProtocol
         }
         finally
         {
-            session.close();
+            close();
         }
     }
 
