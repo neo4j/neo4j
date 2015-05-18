@@ -70,7 +70,6 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.relationshipData;
 
-
 public class CsvInputTest
 {
     @Test
@@ -901,9 +900,19 @@ public class CsvInputTest
         };
     }
 
+    private static final org.neo4j.csv.reader.Configuration SEEKER_CONFIG =
+            new org.neo4j.csv.reader.Configuration.Overridden( new org.neo4j.csv.reader.Configuration.Default() )
+    {
+        @Override
+        public int bufferSize()
+        {
+            return 1_000;
+        }
+    };
+
     private static CharSeeker charSeeker( String data )
     {
-        return new BufferedCharSeeker( wrap( new StringReader( data ) ), 1_000 );
+        return new BufferedCharSeeker( wrap( new StringReader( data ) ), SEEKER_CONFIG );
     }
 
     @SuppressWarnings( { "rawtypes", "unchecked" } )
