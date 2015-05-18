@@ -49,6 +49,9 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                 runtimeName: RuntimeName)
   extends ExecutablePlanBuilder {
 
+  private val codeGen = new CodeGenerator
+
+
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer) = {
     val statement =
       CostBasedExecutablePlanBuilder.rewriteStatement(
@@ -68,9 +71,8 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
           produceLogicalPlan(ast, rewrittenSemanticTable)(planContext)
         }
         try {
-          closing(tracer.beginPhase(CODE_GENERATION)) {
-            produceCompiledPlan(logicalPlan, inputQuery, rewrittenSemanticTable, planContext, pipeBuildContext, planBuilderMonitor)
-          }
+            produceCompiledPlan(logicalPlan, inputQuery, rewrittenSemanticTable,
+              planContext, pipeBuildContext, planBuilderMonitor, tracer)
         } catch {//fallback on interpreted plans
           case e: CantCompileQueryException =>
             planBuilderMonitor.unableToHandlePlan(logicalPlan, e)
@@ -86,15 +88,18 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
   private def produceCompiledPlan(logicalPlan: LogicalPlan, inputQuery: PreparedQuery,
                                   semanticTable: SemanticTable, planContext: PlanContext,
                                   pipeBuildContext: PipeExecutionBuilderContext,
-                                   monitor: NewRuntimeSuccessRateMonitor) = {
+                                  monitor: NewRuntimeSuccessRateMonitor,
+                                  tracer: CompilationPhaseTracer) = {
     //only return compiled plans if asked for
     runtimeName match {
-      case InterpretedRuntimeName => Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
+      case InterpretedRuntimeName => closing(tracer.beginPhase(PIPE_BUILDING)) {
+        Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
+      }
       case CompiledRuntimeName =>
-        monitor.newPlanSeen(logicalPlan)
-
-        val codeGen = new CodeGenerator
-        Left(codeGen.generate(logicalPlan, planContext, clock, semanticTable))
+        closing(tracer.beginPhase(CODE_GENERATION)) {
+          monitor.newPlanSeen(logicalPlan)
+          Left(codeGen.generate(logicalPlan, planContext, clock, semanticTable))
+        }
     }
   }
 
