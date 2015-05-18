@@ -32,8 +32,9 @@ import org.scalatest.{FunSuiteLike, Matchers}
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+import scala.util.Try
 
-class GlueSteps extends FunSuiteLike with Matchers with  ScalaDsl with EN {
+class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
 
   import cypher.GlueSteps._
   import cypher.cucumber.DataTableConverter._
@@ -68,7 +69,7 @@ class GlueSteps extends FunSuiteLike with Matchers with  ScalaDsl with EN {
     assert(!query.contains("cypher"), "init query should do specify pre parser options")
     val p = params.toList[AnyRef]
     assert(p.size == 1)
-    result = graph.execute(query, p.head)
+    result = graph.execute(query, castParameters(p.head))
   }
 
   Then(RESULT) { (sorted: Boolean, names: DataTable) =>
@@ -87,6 +88,12 @@ class GlueSteps extends FunSuiteLike with Matchers with  ScalaDsl with EN {
     result.close()
   }
 
+  private def castParameters(map: java.util.Map[String, Object]) = {
+    map.asScala.map { case (k, v) =>
+      k -> Try(Integer.valueOf(v.toString)).getOrElse(v)
+    }.asJava
+  }
+
   private def loadConfig(builder: GraphDatabaseBuilder): GraphDatabaseBuilder = {
     builder.setConfig(GraphDatabaseSettings.pagecache_memory, "8M")
     cypherConfig().map { case (s, v) => builder.setConfig(s, v) }
@@ -95,21 +102,22 @@ class GlueSteps extends FunSuiteLike with Matchers with  ScalaDsl with EN {
 
   object sorter extends ((collection.Map[String, String], collection.Map[String, String]) => Boolean) {
     def apply(left: collection.Map[String, String], right: collection.Map[String, String]): Boolean = {
-      if (left.isEmpty) {
-        right.isEmpty
-      } else {
-        compareByKey(left, right, left.keys.toList.sorted)
-      }
+      val sortedKeys = left.keys.toList.sorted
+      compareByKey(left, right, sortedKeys)
     }
 
     @tailrec
     private def compareByKey(left: collection.Map[String, String], right: collection.Map[String, String], keys: collection.Seq[String]): Boolean = {
-      val key = keys.head
-      val l = left(key)
-      val r = right(key)
-      if (l == r)
-        compareByKey(left, right, keys.tail)
-      else l < r
+      if (keys.isEmpty)
+        left.size < right.size
+      else {
+        val key = keys.head
+        val l = left(key)
+        val r = right(key)
+        if (l == r)
+          compareByKey(left, right, keys.tail)
+        else l < r
+      }
     }
   }
 }
