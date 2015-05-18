@@ -48,7 +48,7 @@ final class MuninnPagedFile implements PagedFile
             UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "lastPageId" );
 
     final MuninnPageCache pageCache;
-    final int pageSize;
+    final int filePageSize;
     final PageCacheTracer tracer;
 
     // This is the table where we translate file-page-ids to cache-page-ids. Only one thread can perform a resize at
@@ -65,13 +65,13 @@ final class MuninnPagedFile implements PagedFile
     MuninnPagedFile(
             File file,
             MuninnPageCache pageCache,
-            int pageSize,
+            int filePageSize,
             PageSwapperFactory swapperFactory,
             CursorPool cursorPool,
             PageCacheTracer tracer ) throws IOException
     {
         this.pageCache = pageCache;
-        this.pageSize = pageSize;
+        this.filePageSize = filePageSize;
         this.cursorPool = cursorPool;
         this.tracer = tracer;
 
@@ -88,7 +88,7 @@ final class MuninnPagedFile implements PagedFile
         // the remaining outer array slots with more inner arrays, and then finally assigns the new outer array to
         // the translationTable field and releases the resize lock.
         PageEvictionCallback onEviction = new MuninnPageEvictionCallback( this );
-        swapper = swapperFactory.createPageSwapper( file, pageSize, onEviction );
+        swapper = swapperFactory.createPageSwapper( file, filePageSize, onEviction );
         long lastPageId = swapper.getLastPageId();
 
         int initialChunks = 1 + computeChunkId( lastPageId );
@@ -146,7 +146,7 @@ final class MuninnPagedFile implements PagedFile
     @Override
     public int pageSize()
     {
-        return pageSize;
+        return filePageSize;
     }
 
     File file()

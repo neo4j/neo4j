@@ -20,10 +20,8 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.concurrent.jsr166e.StampedLock;
 import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -31,9 +29,9 @@ import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-import org.neo4j.concurrent.jsr166e.StampedLock;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
+import static java.lang.String.format;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allowUnalignedMemoryAccess;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.storeByteOrderIsNative;
 
@@ -72,10 +70,10 @@ final class MuninnPage extends StampedLock implements Page
 
     private void checkBounds( int position )
     {
-        if ( position > getCachePageSize() )
+        if ( position > size() )
         {
             String msg = "Position " + position + " is greater than the upper " +
-                    "page size bound of " + (getCachePageSize());
+                    "page size bound of " + (size());
             throw new IndexOutOfBoundsException( msg );
         }
     }
@@ -85,9 +83,16 @@ final class MuninnPage extends StampedLock implements Page
         return System.identityHashCode( this );
     }
 
-    private int getCachePageSize()
+    @Override
+    public int size()
     {
         return 1 << (cachePageHeader & 0x7F);
+    }
+
+    @Override
+    public long address()
+    {
+        return pointer;
     }
 
     /**
@@ -305,78 +310,6 @@ final class MuninnPage extends StampedLock implements Page
     }
 
     /**
-     * NOTE: This method must be called while holding the page write lock.
-     * This method assumes that initBuffer() has already been called at least once.
-     */
-    @Override
-    public int swapIn( StoreChannel channel, long offset, int length ) throws IOException
-    {
-        assert isWriteLocked() : "swapIn requires write lock to protect the cache page";
-        int readTotal = 0;
-        try
-        {
-            ByteBuffer bufferProxy = UnsafeUtil.newDirectByteBuffer( pointer, getCachePageSize() );
-            bufferProxy.clear();
-            bufferProxy.limit( length );
-            int read;
-            do
-            {
-                read = channel.read( bufferProxy, offset + readTotal );
-            }
-            while ( read != -1 && (readTotal += read) < length );
-
-            // Zero-fill the rest.
-            assert readTotal >= 0 && length <= getCachePageSize() && readTotal <= length: format(
-                    "pointer = %h, readTotal = %s, length = %s, page size = %s",
-                    pointer, readTotal, length, getCachePageSize() );
-            UnsafeUtil.setMemory( pointer + readTotal, length - readTotal, MuninnPageCache.ZERO_BYTE );
-            return readTotal;
-        }
-        catch ( ClosedChannelException e )
-        {
-            throw e;
-        }
-        catch ( Throwable e )
-        {
-            String msg = String.format(
-                    "Read failed after %s of %s bytes from offset %s",
-                    readTotal, length, offset );
-            throw new IOException( msg, e );
-        }
-    }
-
-    /**
-     * NOTE: This method must be called while holding at least the page read lock.
-     * This method assumes that initBuffer() has already been called at least once.
-     */
-    @Override
-    public void swapOut( StoreChannel channel, long offset, int length ) throws IOException
-    {
-        assert isReadLocked() || isWriteLocked() : "swapOut requires lock";
-        try
-        {
-            ByteBuffer bufferProxy = UnsafeUtil.newDirectByteBuffer( pointer, getCachePageSize() );
-            bufferProxy.clear();
-            bufferProxy.limit( length );
-            channel.writeAll( bufferProxy, offset );
-        }
-        catch ( IOException e )
-        {
-            throw e;
-        }
-        catch ( Throwable e )
-        {
-            throw new IOException( e );
-        }
-    }
-
-    @Override
-    public void clear()
-    {
-        UnsafeUtil.setMemory( pointer, getCachePageSize(), MuninnPageCache.ZERO_BYTE );
-    }
-
-    /**
      * NOTE: This method must be called while holding a pessimistic lock on the page.
      */
     public void flush( FlushEventOpportunity flushOpportunity ) throws IOException
@@ -408,6 +341,7 @@ final class MuninnPage extends StampedLock implements Page
             long filePageId,
             FlushEventOpportunity flushOpportunity ) throws IOException
     {
+        assert isReadLocked() || isWriteLocked() : "doFlush requires lock";
         FlushEvent event = flushOpportunity.beginFlush( filePageId, getCachePageId(), swapper );
         try
         {
@@ -434,10 +368,10 @@ final class MuninnPage extends StampedLock implements Page
         assert isWriteLocked(): "Cannot fault page without write-lock";
         if ( this.swapper != null || this.filePageId != PageCursor.UNBOUND_PAGE_ID )
         {
-            String msg = String.format(
+            String msg = format(
                     "Cannot fault page {filePageId = %s, swapper = %s} into " +
-                            "cache page %s. Already bound to {filePageId = " +
-                            "%s, swapper = %s}.",
+                    "cache page %s. Already bound to {filePageId = " +
+                    "%s, swapper = %s}.",
                     filePageId, swapper, getCachePageId(), this.filePageId, this.swapper );
             throw new IllegalStateException( msg );
         }
@@ -498,9 +432,9 @@ final class MuninnPage extends StampedLock implements Page
         assert isWriteLocked(): "Cannot initBuffer without write-lock";
         if ( pointer == 0 )
         {
-            pointer = UnsafeUtil.malloc( getCachePageSize() );
+            pointer = UnsafeUtil.malloc( size() );
             memoryReleaser.registerPointer( pointer );
-            clear();
+            UnsafeUtil.setMemory( pointer, size(), MuninnPageCache.ZERO_BYTE );
         }
     }
 
@@ -517,8 +451,8 @@ final class MuninnPage extends StampedLock implements Page
     @Override
     public String toString()
     {
-        return String.format( "MuninnPage@%x[%s -> %x, filePageId = %s%s, swapper = %s]%s",
-                hashCode(), getCachePageId(), pointer, filePageId, (isDirty()? ", dirty" : ""),
+        return format( "MuninnPage@%x[%s -> %x, filePageId = %s%s, swapper = %s]%s",
+                hashCode(), getCachePageId(), pointer, filePageId, (isDirty() ? ", dirty" : ""),
                 swapper, getLockStateString() );
     }
 }

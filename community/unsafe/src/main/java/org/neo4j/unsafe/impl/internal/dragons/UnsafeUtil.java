@@ -446,13 +446,21 @@ public final class UnsafeUtil
         {
             // Simulate the JNI NewDirectByteBuffer(void*, long) invocation.
             Object dbb = unsafe.allocateInstance( directByteBufferClass );
-            unsafe.putInt( dbb, directByteBufferCapacityOffset, cap );
-            unsafe.putInt( dbb, directByteBufferLimitOffset, cap );
-            unsafe.putInt( dbb, directByteBufferMarkOffset, -1 );
-            unsafe.putLong( dbb, directByteBufferAddressOffset, addr );
+            initDirectByteBuffer( dbb, addr, cap );
             return (ByteBuffer) dbb;
         }
         // Reflection based fallback code.
         return (ByteBuffer) directByteBufferCtor.newInstance( addr, cap );
+    }
+
+    /**
+     * Initialize (simulate calling the constructor of) the given DirectByteBuffer.
+     */
+    public static void initDirectByteBuffer( Object dbb, long addr, int cap )
+    {
+        unsafe.putInt( dbb, directByteBufferCapacityOffset, cap );
+        unsafe.putInt( dbb, directByteBufferLimitOffset, cap );
+        unsafe.putInt( dbb, directByteBufferMarkOffset, -1 );
+        unsafe.putLong( dbb, directByteBufferAddressOffset, addr );
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -29,7 +30,10 @@ import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+
+import static java.lang.String.format;
 
 /**
  * A simple PageSwapper implementation that directs all page swapping to a
@@ -62,6 +66,34 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private static final long fileSizeOffset =
             UnsafeUtil.getFieldOffset( SingleFilePageSwapper.class, "fileSize" );
+
+    private static final ThreadLocal<ByteBuffer> proxyCache = new ThreadLocal<>();
+
+    private static ByteBuffer proxy( long buffer, int bufferLength ) throws IOException
+    {
+        ByteBuffer buf = proxyCache.get();
+        if ( buf != null )
+        {
+            UnsafeUtil.initDirectByteBuffer( buf, buffer, bufferLength );
+            return buf;
+        }
+        return createAndGetNewBuffer( buffer, bufferLength );
+    }
+
+    private static ByteBuffer createAndGetNewBuffer( long buffer, int bufferLength ) throws IOException
+    {
+        ByteBuffer buf;
+        try
+        {
+            buf = UnsafeUtil.newDirectByteBuffer( buffer, bufferLength );
+        }
+        catch ( Exception e )
+        {
+            throw new IOException( e );
+        }
+        proxyCache.set( buf );
+        return buf;
+    }
 
     private final FileSystemAbstraction fs;
     private final File file;
@@ -111,28 +143,88 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private StoreChannel channel( long filePageId )
     {
-        int stripe = channelStripe( filePageId );
+        int stripe = stripe( filePageId );
         return channels[stripe];
     }
 
-    private static int channelStripe( long filePageId )
+    private static int stripe( long filePageId )
     {
         return (int) (filePageId >>> channelStripeShift) & channelStripeMask;
+    }
+
+    private int swapIn( StoreChannel channel, Page page, long fileOffset, int filePageSize ) throws IOException
+    {
+        int cachePageSize = page.size();
+        long address = page.address();
+        int readTotal = 0;
+        try
+        {
+            ByteBuffer bufferProxy = proxy( address, filePageSize );
+            bufferProxy.position( 0 );
+            int read;
+            do
+            {
+                read = channel.read( bufferProxy, fileOffset + readTotal );
+            }
+            while ( read != -1 && (readTotal += read) < filePageSize );
+
+            // Zero-fill the rest.
+            assert readTotal >= 0 && filePageSize <= cachePageSize && readTotal <= filePageSize: format(
+                    "pointer = %h, readTotal = %s, length = %s, page size = %s",
+                    address, readTotal, filePageSize, cachePageSize );
+            UnsafeUtil.setMemory( address + readTotal, filePageSize - readTotal, MuninnPageCache.ZERO_BYTE );
+            return readTotal;
+        }
+        catch ( IOException e )
+        {
+            throw e;
+        }
+        catch ( Throwable e )
+        {
+            String msg = format(
+                    "Read failed after %s of %s bytes from fileOffset %s",
+                    readTotal, filePageSize, fileOffset );
+            throw new IOException( msg, e );
+        }
+    }
+
+    private int swapOut( Page page, long fileOffset, StoreChannel channel ) throws IOException
+    {
+        try
+        {
+            ByteBuffer bufferProxy = proxy( page.address(), filePageSize );
+            bufferProxy.position( 0 );
+            channel.writeAll( bufferProxy, fileOffset );
+        }
+        catch ( IOException e )
+        {
+            throw e;
+        }
+        catch ( Throwable e )
+        {
+            throw new IOException( e );
+        }
+        return filePageSize;
+    }
+
+    private void clear( Page page )
+    {
+        UnsafeUtil.setMemory( page.address(), page.size(), MuninnPageCache.ZERO_BYTE );
     }
 
     @Override
     public int read( long filePageId, Page page ) throws IOException
     {
-        long offset = pageIdToPosition( filePageId );
+        long fileOffset = pageIdToPosition( filePageId );
         try
         {
-            if ( offset < getCurrentFileSize() )
+            if ( fileOffset < getCurrentFileSize() )
             {
-                return page.swapIn( channel( filePageId ), offset, filePageSize );
+                return swapIn( channel( filePageId ), page, fileOffset, filePageSize );
             }
             else
             {
-                page.clear();
+                clear( page );
             }
         }
         catch ( ClosedChannelException e )
@@ -156,12 +248,12 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public int write( long filePageId, Page page ) throws IOException
     {
-        long offset = pageIdToPosition( filePageId );
-        increaseFileSizeTo( offset + filePageSize );
+        long fileOffset = pageIdToPosition( filePageId );
+        increaseFileSizeTo( fileOffset + filePageSize );
         try
         {
-            page.swapOut( channel( filePageId ), offset, filePageSize );
-            return filePageSize;
+            StoreChannel channel = channel( filePageId );
+            return swapOut( page, fileOffset, channel );
         }
         catch ( ClosedChannelException e )
         {
@@ -235,7 +327,7 @@ public class SingleFilePageSwapper implements PageSwapper
      */
     private synchronized void tryReopen( long filePageId, ClosedChannelException closedException ) throws ClosedChannelException
     {
-        int stripe = channelStripe( filePageId );
+        int stripe = stripe( filePageId );
         StoreChannel channel = channels[stripe];
         if ( channel.isOpen() )
         {
