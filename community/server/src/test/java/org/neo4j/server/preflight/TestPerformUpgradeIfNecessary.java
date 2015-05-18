@@ -157,7 +157,7 @@ public class TestPerformUpgradeIfNecessary
         order.verify( monitor, times( 1 ) ).migrationCompleted();
         order.verifyNoMoreInteractions();
 
-        logging.getMessagesLog( ParallelBatchImporter.class ).assertContainsMessageContaining( "Import completed" );
+        logging.getMessagesLog( ParallelBatchImporter.class ).assertContainsMessageContaining( "IMPORT DONE" );
     }
 
     private Config buildProperties(boolean allowStoreUpgrade) throws IOException

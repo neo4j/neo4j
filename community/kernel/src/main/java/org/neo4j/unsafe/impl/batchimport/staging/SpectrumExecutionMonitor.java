@@ -50,7 +50,7 @@ import static org.neo4j.helpers.Format.duration;
  * The specified width is included stage identifier and progress, so in a console the whole
  * console width can be specified.
  */
-public class SpectrumExecutionMonitor extends ExecutionMonitor.Adpter
+public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
 {
     public static final int DEFAULT_WIDTH = 100;
     private static final char[] WEIGHTS = new char[] {' ', 'k', 'M', 'B', 'T'};
@@ -88,10 +88,10 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adpter
     }
 
     @Override
-    public void done( long totalTimeMillis )
+    public void done( long totalTimeMillis, String additionalInformation )
     {
         out.println();
-        out.println( "IMPORT DONE in " + duration( totalTimeMillis ) );
+        out.println( "IMPORT DONE in " + duration( totalTimeMillis ) + ". " + additionalInformation );
     }
 
     @Override

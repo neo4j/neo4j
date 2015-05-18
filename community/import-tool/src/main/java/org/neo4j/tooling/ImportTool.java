@@ -65,9 +65,11 @@ import static java.nio.charset.Charset.defaultCharset;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
+import static org.neo4j.unsafe.impl.batchimport.cache.AvailableMemoryCalculator.RUNTIME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
@@ -312,7 +314,7 @@ public class ImportTool
                 config,
                 logging,
                 ExecutionMonitors.defaultVisible() );
-        printInputSummary( storeDir, nodesFiles, relationshipsFiles );
+        printOverview( storeDir, nodesFiles, relationshipsFiles );
         boolean success = false;
         try
         {
@@ -353,12 +355,17 @@ public class ImportTool
         }
     }
 
-    private static void printInputSummary( File storeDir, Collection<Option<File[]>> nodesFiles,
+    private static void printOverview( File storeDir, Collection<Option<File[]>> nodesFiles,
             Collection<Option<File[]>> relationshipsFiles )
     {
         System.out.println( "Importing the contents of these files into " + storeDir + ":" );
         printInputFiles( "Nodes", nodesFiles );
         printInputFiles( "Relationships", relationshipsFiles );
+        System.out.println();
+        System.out.println( "Available memory:" );
+        printIndented( "Free machine memory: " + bytes( RUNTIME.availableOffHeapMemory() ) );
+        printIndented( "Max heap memory : " + bytes( Runtime.getRuntime().maxMemory() ) );
+        System.out.println();
     }
 
     private static void printInputFiles( String name, Collection<Option<File[]>> files )
@@ -370,7 +377,6 @@ public class ImportTool
 
         System.out.println( name + ":" );
         int i = 0;
-        String indent = "  ";
         for ( Option<File[]> group : files )
         {
             if ( i++ > 0 )
@@ -379,14 +385,18 @@ public class ImportTool
             }
             if ( group.metadata() != null )
             {
-                System.out.println( indent + ":" + group.metadata() );
+                printIndented( ":" + group.metadata() );
             }
             for ( File file : group.value() )
             {
-                System.out.println( indent + file );
+                printIndented( file );
             }
         }
-        System.out.println();
+    }
+
+    private static void printIndented( Object value )
+    {
+        System.out.println( "  " + value );
     }
 
     private static void validateInputFiles( Collection<Option<File[]>> nodesFiles,
