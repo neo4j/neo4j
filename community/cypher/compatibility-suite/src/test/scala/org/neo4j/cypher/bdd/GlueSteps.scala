@@ -19,40 +19,96 @@
  */
 package org.neo4j.cypher.bdd
 
-import java.io.File
+import java.util
 
 import cucumber.api.DataTable
 import cucumber.api.scala.{EN, ScalaDsl}
-import org.neo4j.cypher.cucumber.db.DatabaseLoader
+import org.neo4j.cypher.cucumber.db.{DatabaseConfigProvider, DatabaseLoader}
+import DatabaseConfigProvider.cypherConfig
+import org.neo4j.cypher.cucumber.prettifier.prettifier
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.helpers.collection.IteratorUtil
+import org.neo4j.test.TestGraphDatabaseFactory
 
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 
 class GlueSteps extends CypherFunSuite with ScalaDsl with EN {
 
   var result: Result = null
   var graph: GraphDatabaseService = null
 
+  After() { _ =>
+    // TODO: postpone this till the last scenario
+    graph.shutdown()
+  }
+
   Given("""^using: (.*)$""") { (dbName: String) =>
-    val path: File = DatabaseLoader(dbName)
-    graph = new GraphDatabaseFactory().newEmbeddedDatabase(path.getAbsolutePath)
+    val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(DatabaseLoader(dbName))
+    graph = loadConfig(builder).newGraphDatabase()
+  }
+
+  Given("""^init: (.*)$""") { (initQuery: String) =>
+    val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+    graph = loadConfig(builder).newGraphDatabase()
+    assert(!initQuery.contains("cypher"), "init query should do specify pre parser options")
+    // init update queries should go with rule+interpreted regardless the database configuration
+    graph.execute(s"cypher planner=rule runtime=interpreted $initQuery")
   }
 
   When("""^running: (.*)$""") { (query: String) =>
+    assert(!query.contains("cypher"), "init query should do specify pre parser options")
     result = graph.execute(query)
   }
 
-  Then("""^result:$""") { (names: DataTable) =>
-    val expected: List[mutable.Map[String, AnyRef]] = names.asMaps(classOf[String], classOf[AnyRef]).asScala.toList.map(_.asScala)
-    val actual: List[mutable.Map[String, AnyRef]] = IteratorUtil.asList(result).asScala.map(_.asScala).toList
-    actual should equal(expected)
-    result.close()
+  When("""^running parametrized: (.*)$""") { (query: String, params: DataTable) =>
+    assert(!query.contains("cypher"), "init query should do specify pre parser options")
+    val p: List[util.Map[String, AnyRef]] = params.asMaps(classOf[String], classOf[AnyRef]).asScala.toList
+    assert(p.size == 1)
+    result = graph.execute(query, p.head)
+  }
 
-    // TODO: postpone this till the last scenario
-    graph.shutdown()
+  Then("""^(sorted )?result:$""") { (sorted: Boolean, names: DataTable) =>
+    val expected = names.asMaps(classOf[String], classOf[String]).asScala.toList.map(_.asScala)
+    val actual = IteratorUtil.asList(result).asScala.map(_.asScala).toList.map {
+      _.map { case (k, v) => (k, prettifier.prettify(graph, v)) }
+    }
+
+    if (sorted) {
+      actual should equal(expected)
+    } else {
+      // if it is not sorted let's sort the result before checking equality
+      actual.sortWith(sorter) should equal(expected.sortWith(sorter))
+    }
+
+    result.close()
+  }
+
+  private def loadConfig(builder: GraphDatabaseBuilder): GraphDatabaseBuilder = {
+    builder.setConfig(GraphDatabaseSettings.pagecache_memory, "8M")
+    cypherConfig().map { case (s, v) => builder.setConfig(s, v) }
+    builder
+  }
+
+  object sorter extends ((collection.Map[String, String], collection.Map[String, String]) => Boolean) {
+    def apply(left: collection.Map[String, String], right: collection.Map[String, String]): Boolean = {
+      if (left.isEmpty) {
+        right.isEmpty
+      } else {
+        compareByKey(left, right, left.keySet)
+      }
+    }
+
+    @tailrec
+    private def compareByKey(left: collection.Map[String, String], right: collection.Map[String, String], keys: collection.Set[String]): Boolean = {
+      val key = keys.head
+      val l = left(key)
+      val r = right(key)
+      if (l === r)
+        compareByKey(left, right, keys.tail)
+      else l < r
+    }
   }
 }

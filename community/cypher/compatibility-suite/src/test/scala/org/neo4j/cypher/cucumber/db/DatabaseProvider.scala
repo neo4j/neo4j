@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.cucumber.db
 
-import java.net.URL
+import java.io.File
 
 import gherkin.formatter.model.{Feature, Tag}
 import org.neo4j.cypher.cucumber.CucumberAdapter
@@ -45,8 +45,8 @@ class DatabaseProvider(dbFactory: (String) => Unit) extends CucumberAdapter {
 
   private val builtDbs: mutable.Set[String] = new mutable.HashSet
 
-  def this(reportDir: URL) = {
-    this(dbFactory = DatabaseFactory(reportDir.getFile))
+  def this(reportDir: File) = {
+    this(dbFactory = DatabaseFactory(reportDir))
   }
 
   override def feature(feature: Feature): Unit = {

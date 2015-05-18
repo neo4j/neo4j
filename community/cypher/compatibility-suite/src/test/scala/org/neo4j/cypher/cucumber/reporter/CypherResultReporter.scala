@@ -28,22 +28,21 @@ import org.neo4j.cypher.cucumber.CucumberAdapter
 import scala.util.matching.Regex
 
 object CypherResultReporter {
-  def createPrintStream(path: String, filename: String): PrintStream = {
-    val pathFile = new File(path)
-    pathFile.mkdirs()
-    new PrintStream(new File(pathFile, filename))
+  def createPrintStream(path: File, filename: String): PrintStream = {
+    path.mkdirs()
+    new PrintStream(new File(path, filename))
   }
 }
 
 class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream) extends CucumberAdapter {
 
-  def this(reportDir: URL) = {
-    this(producer = JsonProducer, jsonWriter = CypherResultReporter.createPrintStream(reportDir.getFile, "compact.json") )
+  def this(reportDir: File) = {
+    this(producer = JsonProducer, jsonWriter = CypherResultReporter.createPrintStream(reportDir, "compact.json") )
   }
 
   private var query: String = null
   private var status: String = Result.PASSED
-  private val pattern: Regex = "running: (.*)".r
+  private val pattern: Regex = """running( parametrized)?: (.*)""".r
 
   override def done(): Unit = {
     jsonWriter.println(producer.dump())
@@ -56,7 +55,7 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream) ex
 
   override def step(step: Step) {
     if(step.getKeyword.trim == "When") {
-      val pattern(q) = step.getName
+      val pattern(_, q) = step.getName
       query = q
     }
   }
