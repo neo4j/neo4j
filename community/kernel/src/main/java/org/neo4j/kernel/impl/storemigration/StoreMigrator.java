@@ -339,7 +339,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
         Configuration importConfig = new Configuration.Overridden( config );
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
-                importConfig, logService.getInternalLogProvider(), withDynamicProcessorAssignment( migrationBatchImporterMonitor(
+                importConfig, logService, withDynamicProcessorAssignment( migrationBatchImporterMonitor(
                         legacyStore, progressMonitor ), importConfig ),
                 parallel(), readAdditionalIds( storeDir, lastTxId, lastTxChecksum ) );
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );

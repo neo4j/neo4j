@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.transaction.state;
 import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.copyOf;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+
 public class LabelChangeSummary
 {
-    private static final long[] NO_LABELS = new long[0];
-
     private final long[] addedLabels;
     private final long[] removedLabels;
     private final long[] unchangedLabels;
@@ -66,7 +66,7 @@ public class LabelChangeSummary
     {
         if ( toLength == 0 )
         {
-            return NO_LABELS;
+            return EMPTY_LONG_ARRAY;
         }
         return array.length == toLength ? array : copyOf( array, toLength );
     }

@@ -28,6 +28,7 @@ import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.helpers.Args;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -72,7 +73,7 @@ public class QuickImport
         File dir = new File( args.get( ImportTool.Options.STORE_DIR.key() ) );
 
         Extractors extractors = new Extractors( COMMAS.arrayDelimiter() );
-        IdType idType = IdType.ACTUAL;
+        IdType idType = IdType.valueOf( args.get( "id-type", IdType.ACTUAL.name() ) );
 
         Header nodeHeader = parseNodeHeader( args, idType, extractors );
         Header relationshipHeader = parseRelationshipHeader( args, idType, extractors );
@@ -80,7 +81,9 @@ public class QuickImport
         Input input = new CsvDataGeneratorInput(
                 nodeHeader, relationshipHeader,
                 COMMAS, nodeCount, relationshipCount, new Groups(), idType, labelCount, relationshipTypeCount );
-        BatchImporter importer = new ParallelBatchImporter( dir, DEFAULT, FormattedLogProvider.toOutputStream( System.out ), defaultVisible() );
+        FormattedLogProvider sysoutLogProvider = FormattedLogProvider.toOutputStream( System.out );
+        BatchImporter importer = new ParallelBatchImporter(
+                dir, DEFAULT, new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible() );
         importer.doImport( input );
     }
 

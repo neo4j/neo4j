@@ -65,6 +65,7 @@ public final class NodeEncoderStep extends ProcessorStep<Batch<InputNode,NodeRec
     {
         InputNode[] input = batch.input;
         batch.records = new NodeRecord[input.length];
+        batch.labels = new long[input.length][];
         for ( int i = 0; i < input.length; i++ )
         {
             InputNode batchNode = input[i];
@@ -86,7 +87,7 @@ public final class NodeEncoderStep extends ProcessorStep<Batch<InputNode,NodeRec
             }
             else
             {
-                long[] labels = labelHolder.getOrCreateIds( batchNode.labels() );
+                long[] labels = batch.labels[i] = labelHolder.getOrCreateIds( batchNode.labels() );
                 InlineNodeLabels.putSorted( nodeRecord, labels, null, nodeStore.getDynamicLabelStore() );
             }
         }

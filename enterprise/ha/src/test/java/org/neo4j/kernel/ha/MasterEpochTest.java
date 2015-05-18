@@ -41,6 +41,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class MasterEpochTest
@@ -75,7 +76,7 @@ public class MasterEpochTest
 
     private IdAllocation idAllocation( long from, int length )
     {
-        return new IdAllocation( new IdRange( new long[0], from, length ), from+length, 0 );
+        return new IdAllocation( new IdRange( EMPTY_LONG_ARRAY, from, length ), from+length, 0 );
     }
 
     private RequestContext context( long epoch )

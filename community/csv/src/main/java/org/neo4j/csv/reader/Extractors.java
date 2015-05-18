@@ -25,6 +25,8 @@ import java.util.Map;
 
 import static java.lang.reflect.Modifier.isStatic;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+
 /**
  * Common implementations of {@link Extractor}. Since array values can have a delimiter of user choice this isn't
  * an enum, but a regular class with a constructor where that delimiter can be specified.
@@ -765,8 +767,6 @@ public class Extractors
 
     private static class LongArrayExtractor extends ArrayExtractor<long[]>
     {
-        private static final long[] EMPTY = new long[0];
-
         LongArrayExtractor( char arrayDelimiter )
         {
             super( arrayDelimiter, Long.TYPE );
@@ -776,7 +776,7 @@ public class Extractors
         protected void extract0( char[] data, int offset, int length )
         {
             int numberOfValues = numberOfValues( data, offset, length );
-            value = numberOfValues > 0 ? new long[numberOfValues] : EMPTY;
+            value = numberOfValues > 0 ? new long[numberOfValues] : EMPTY_LONG_ARRAY;
             for ( int arrayIndex = 0, charIndex = 0; arrayIndex < numberOfValues; arrayIndex++, charIndex++ )
             {
                 int numberOfChars = charsToNextDelimiter( data, offset+charIndex, length-charIndex );

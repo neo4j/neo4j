@@ -190,7 +190,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     protected abstract void process( T batch, BatchSender sender ) throws Throwable;
 
     @Override
-    public void close()
+    public void close() throws Exception
     {
         super.close();
         executor.shutdown( panic == null );

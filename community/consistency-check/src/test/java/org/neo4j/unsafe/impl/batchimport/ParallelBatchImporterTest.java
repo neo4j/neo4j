@@ -57,6 +57,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
@@ -163,7 +164,7 @@ public class ParallelBatchImporterTest
         // GIVEN
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
         final BatchImporter inserter = new ParallelBatchImporter( directory.graphDbDir(),
-                new DefaultFileSystemAbstraction(), config, NullLogProvider.getInstance(),
+                new DefaultFileSystemAbstraction(), config, NullLogService.getInstance(),
                 processorAssigner, writerFactory, EMPTY );
 
         boolean successful = false;

@@ -25,17 +25,19 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import org.neo4j.com.Response;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
 public class HaIdGeneratorFactory implements IdGeneratorFactory
 {
@@ -63,7 +65,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         {
             previous.close();
         }
-        
+
         IdGenerator initialIdGenerator;
         switch ( globalState )
         {
@@ -114,7 +116,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
 
         generators.get( IdType.RELATIONSHIP_GROUP ).switchToMaster();
     }
-    
+
     public void switchToSlave()
     {
         globalState = IdGeneratorState.SLAVE;
@@ -171,7 +173,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                 {
                     fs.deleteFile( fileName );
                 }
-                    
+
                 localFactory.create( fs, fileName, highId );
                 delegate = localFactory.open( fs, fileName, grabSize, idType, highId );
                 log.debug( "Instantiated master delegate " + delegate + " of type " + idType + " with highid " + highId );
@@ -209,7 +211,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             {
                 throw new IllegalStateException( state.name() );
             }
-            
+
             long result = delegate.nextId();
             return result;
         }
@@ -221,7 +223,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             {
                 throw new IllegalStateException( state.name() );
             }
-            
+
             return delegate.nextIdBatch( size );
         }
 
@@ -375,7 +377,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         public void delete()
         {
         }
-        
+
         @Override
         public String toString()
         {
@@ -416,7 +418,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                 ++position;
             }
         }
-        
+
         @Override
         public String toString()
         {
@@ -425,7 +427,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     }
 
     private static IdRangeIterator EMPTY_ID_RANGE_ITERATOR =
-            new IdRangeIterator( new IdRange( new long[0], 0, 0 ) )
+            new IdRangeIterator( new IdRange( EMPTY_LONG_ARRAY, 0, 0 ) )
             {
                 @Override
                 long next()

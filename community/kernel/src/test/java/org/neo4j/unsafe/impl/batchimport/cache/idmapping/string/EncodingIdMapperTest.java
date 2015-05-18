@@ -44,8 +44,6 @@ import org.neo4j.test.RandomRule;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
-import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.Monitor;
@@ -139,8 +137,6 @@ public class EncodingIdMapperTest
             idMapper.put( id, index++, GLOBAL );
         }
         idMapper.prepare( ids, mock( Collector.class ), NONE );
-        MemoryStatsVisitor memoryStats = new GatheringMemoryStatsVisitor();
-        idMapper.acceptMemoryStatsVisitor( memoryStats );
 
         // THEN
         for ( Object id : ids )

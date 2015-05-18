@@ -30,9 +30,9 @@ import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
@@ -51,7 +51,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
@@ -74,7 +73,7 @@ public class ParallelBatchImporter implements BatchImporter
     private final FileSystemAbstraction fileSystem;
     private final Configuration config;
     private final IoMonitor writeMonitor;
-    private final LogProvider logProvider;
+    private final LogService logService;
     private final Log log;
     private final ExecutionMonitor executionMonitor;
     private final Monitors monitors;
@@ -86,14 +85,14 @@ public class ParallelBatchImporter implements BatchImporter
      * a constructor with fewer arguments instead.
      */
     public ParallelBatchImporter( File storeDir, FileSystemAbstraction fileSystem, Configuration config,
-            LogProvider logProvider, ExecutionMonitor executionMonitor, Function<Configuration,WriterFactory> writerFactory,
+            LogService logService, ExecutionMonitor executionMonitor, Function<Configuration,WriterFactory> writerFactory,
             AdditionalInitialIds additionalInitialIds )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
         this.config = config;
-        this.logProvider = logProvider;
-        this.log = logProvider.getLog( getClass() );
+        this.logService = logService;
+        this.log = logService.getInternalLogProvider().getLog( getClass() );
         this.executionMonitor = executionMonitor;
         this.additionalInitialIds = additionalInitialIds;
         this.monitors = new Monitors();
@@ -106,10 +105,10 @@ public class ParallelBatchImporter implements BatchImporter
      * The provided {@link ExecutionMonitor} will be decorated with {@link DynamicProcessorAssigner} for
      * optimal assignment of processors to bottleneck steps over time.
      */
-    public ParallelBatchImporter( File storeDir, Configuration config, LogProvider logProvider,
+    public ParallelBatchImporter( File storeDir, Configuration config, LogService logService,
             ExecutionMonitor executionMonitor )
     {
-        this( storeDir, new DefaultFileSystemAbstraction(), config, logProvider,
+        this( storeDir, new DefaultFileSystemAbstraction(), config, logService,
                 withDynamicProcessorAssignment( executionMonitor, config ), parallel(), EMPTY );
     }
 
@@ -126,7 +125,7 @@ public class ParallelBatchImporter implements BatchImporter
         boolean hasBadEntries = false;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
-              writeMonitor, logProvider, monitors, writerFactory, additionalInitialIds );
+              writeMonitor, logService, monitors, writerFactory, additionalInitialIds );
               OutputStream badOutput = new BufferedOutputStream( fileSystem.openAsOutputStream( badFile, false ) );
               Collector badCollector = input.badCollector( badOutput );
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
@@ -143,7 +142,7 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Stage 1 -- nodes, properties, labels
             NodeStage nodeStage = new NodeStage( config, writeMonitor, writerFactory,
-                    nodes, idMapper, idGenerator, neoStore, inputCache, memoryUsageStats );
+                    nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(), memoryUsageStats );
 
             // Stage 2 -- calculate dense node threshold
             CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( config, relationships,
@@ -179,7 +178,8 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Stage 4 -- set node nextRel fields
             executeStages( new NodeFirstRelationshipStage( config, neoStore.getNodeStore(),
-                    neoStore.getRelationshipGroupStore(), nodeRelationshipCache, badCollector ) );
+                    neoStore.getRelationshipGroupStore(), nodeRelationshipCache, badCollector,
+                    neoStore.getLabelScanStore() ) );
             // Stage 5 -- link relationship chains together
             nodeRelationshipCache.clearRelationships();
             executeStages( new RelationshipLinkbackStage( config, neoStore.getRelationshipStore(),

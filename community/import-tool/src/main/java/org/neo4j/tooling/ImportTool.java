@@ -308,7 +308,7 @@ public class ImportTool
                 importConfiguration( processors, defaultSettingsSuitableForTests );
         BatchImporter importer = new ParallelBatchImporter( storeDir,
                 config,
-                logService.getInternalLogProvider(),
+                logService,
                 ExecutionMonitors.defaultVisible() );
         printInputSummary( storeDir, nodesFiles, relationshipsFiles );
         boolean success = false;

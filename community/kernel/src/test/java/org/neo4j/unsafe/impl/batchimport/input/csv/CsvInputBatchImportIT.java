@@ -49,11 +49,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -86,7 +86,7 @@ public class CsvInputBatchImportIT
     {
         // GIVEN
         BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(),
-                smallBatchSizeConfig(), NullLogProvider.getInstance(), invisible() );
+                smallBatchSizeConfig(), NullLogService.getInstance(), invisible() );
         List<InputNode> nodeData = randomNodeData();
         List<InputRelationship> relationshipData = randomRelationshipData( nodeData );
 

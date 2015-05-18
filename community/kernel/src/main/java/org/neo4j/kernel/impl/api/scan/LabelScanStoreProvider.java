@@ -43,6 +43,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.Integer.MAX_VALUE;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEntryInformation;
 
@@ -126,7 +127,6 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
             {
                 return new PrefetchingIterator<NodeLabelUpdate>()
                 {
-                    private final long[] NO_LABELS = new long[0];
                     private final NodeStore nodeStore = neoStoreSupplier.get().getNodeStore();
                     private final long highId = nodeStore.getHighestPossibleIdInUse();
                     private long current;
@@ -142,7 +142,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
                                 long[] labels = NodeLabelsField.parseLabelsField( node ).get( nodeStore );
                                 if ( labels.length > 0 )
                                 {
-                                    return NodeLabelUpdate.labelChanges( node.getId(), NO_LABELS, labels );
+                                    return NodeLabelUpdate.labelChanges( node.getId(), EMPTY_LONG_ARRAY, labels );
                                 }
                             }
                         }
