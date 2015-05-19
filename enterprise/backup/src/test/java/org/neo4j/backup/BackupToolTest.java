@@ -19,14 +19,15 @@
  */
 package org.neo4j.backup;
 
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
 
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.helpers.HostnamePort;
@@ -45,8 +46,8 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -73,9 +74,9 @@ public class BackupToolTest
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
     }
-    
+
     @Test
-    public void shouldResetTimeout() throws Exception 
+    public void shouldResetTimeout() throws Exception
     {
         String newTimeout = "3"; /*seconds by default*/
         long expectedTimeout = 3 * 1000;
@@ -301,7 +302,7 @@ public class BackupToolTest
     {
         // Given
         String host = "localhost";
-        File targetDir = new File( "/var/backup/neo4j/" );
+        File targetDir = new File( "/var/backup/neo4j/" ).getAbsoluteFile();
         String[] args = {"-from", host, "-to", targetDir.getAbsolutePath(), "-verify", "false"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
