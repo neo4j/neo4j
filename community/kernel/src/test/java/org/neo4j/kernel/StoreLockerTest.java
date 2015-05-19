@@ -19,22 +19,24 @@
  */
 package org.neo4j.kernel;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.Test;
-
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
-import org.neo4j.io.fs.*;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileLock;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.TargetDirectory;
-
-import static java.lang.String.format;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
+import static java.lang.String.format;
 
 import static org.neo4j.kernel.StoreLocker.STORE_LOCK_FILENAME;
 
@@ -65,6 +67,10 @@ public class StoreLockerTest
         {
             fail();
         }
+        finally
+        {
+            storeLocker.release();
+        }
     }
 
     @Test
@@ -88,6 +94,10 @@ public class StoreLockerTest
         catch ( StoreLockException e )
         {
             fail();
+        }
+        finally
+        {
+            storeLocker.release();
         }
     }
 
@@ -120,6 +130,10 @@ public class StoreLockerTest
         {
             String msg = format( "Unable to create path for store dir: %s. Please ensure no other process is using this database, and that the directory is writable (required even for read-only access)", storeDir );
             assertThat( e.getMessage(), is( msg ) );
+        }
+        finally
+        {
+            storeLocker.release();
         }
     }
 
@@ -154,6 +168,10 @@ public class StoreLockerTest
                     STORE_LOCK_FILENAME ) );
             assertThat( e.getMessage(), is( msg ) );
         }
+        finally
+        {
+            storeLocker.release();
+        }
     }
 
     @Test
@@ -183,6 +201,10 @@ public class StoreLockerTest
         catch ( StoreLockException e )
         {
             assertThat( e.getMessage(), containsString( "Unable to obtain lock on store lock file" ) );
+        }
+        finally
+        {
+            storeLocker.release();
         }
     }
 }
