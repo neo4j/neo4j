@@ -187,7 +187,10 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     private void saveUsersToFile() throws IOException
     {
         Path directory = authFile.getParent();
-        Files.createDirectories( directory );
+        if ( !Files.exists( directory ) )
+        {
+            Files.createDirectories( directory );
+        }
 
         Path tempFile = Files.createTempFile( directory, authFile.getFileName().toString() + "-", ".tmp" );
         try
