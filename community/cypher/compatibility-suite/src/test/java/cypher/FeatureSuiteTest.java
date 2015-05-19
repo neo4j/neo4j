@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.bdd;
+package cypher;
 
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
@@ -30,9 +30,9 @@ public class FeatureSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions( plugin = {
             "pretty", "html:target/rule-interpreted",
-            "org.neo4j.cypher.cucumber.reporter.CypherResultReporter:target/rule-interpreted",
-            "org.neo4j.cypher.cucumber.db.DatabaseProvider:target/dbs",
-            "org.neo4j.cypher.cucumber.db.DatabaseConfigProvider:/org/neo4j/cypher/db/config/rule.json",
+            "cypher.cucumber.reporter.CypherResultReporter:target/rule-interpreted",
+            "cypher.cucumber.db.DatabaseProvider:target/dbs",
+            "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/rule.json",
     } )
     public static class RuleInterpreted
     {
@@ -41,9 +41,9 @@ public class FeatureSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions( plugin = {
             "pretty", "html:target/cost-interpreted",
-            "org.neo4j.cypher.cucumber.reporter.CypherResultReporter:target/cost-interpreted",
-            "org.neo4j.cypher.cucumber.db.DatabaseProvider:target/dbs",
-            "org.neo4j.cypher.cucumber.db.DatabaseConfigProvider:/org/neo4j/cypher/db/config/cost-interpreted.json",
+            "cypher.cucumber.reporter.CypherResultReporter:target/cost-interpreted",
+            "cypher.cucumber.db.DatabaseProvider:target/dbs",
+            "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/cost-interpreted.json",
     } )
     public static class CostInterpreted
     {
@@ -52,9 +52,9 @@ public class FeatureSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions( plugin = {
             "pretty", "html:target/cost-compiled",
-            "org.neo4j.cypher.cucumber.reporter.CypherResultReporter:target/cost-compiled",
-            "org.neo4j.cypher.cucumber.db.DatabaseProvider:target/dbs",
-            "org.neo4j.cypher.cucumber.db.DatabaseConfigProvider:/org/neo4j/cypher/db/config/cost-compiled.json",
+            "cypher.cucumber.reporter.CypherResultReporter:target/cost-compiled",
+            "cypher.cucumber.db.DatabaseProvider:target/dbs",
+            "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/cost-compiled.json",
     } )
     public static class CostCompiled
     {

@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.cucumber.db
+package cypher.cucumber.db
 
 import java.io.File
 
+import cypher.cucumber.CucumberAdapter
 import gherkin.formatter.model.{Feature, Tag}
-import org.neo4j.cypher.cucumber.CucumberAdapter
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -50,7 +50,7 @@ class DatabaseProvider(dbFactory: (String) => Unit) extends CucumberAdapter {
   }
 
   override def feature(feature: Feature): Unit = {
-    import org.neo4j.cypher.cucumber.db.DBTagParser.{isDBTag, parseDBName}
+    import DBTagParser.{isDBTag, parseDBName}
 
     feature.getTags.asScala.filter(isDBTag).foreach { tag =>
       val dbName = parseDBName(tag)

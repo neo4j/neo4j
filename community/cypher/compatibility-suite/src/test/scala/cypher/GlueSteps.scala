@@ -17,25 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.bdd
+package cypher
 
-import java.util
-
-import cucumber.api.DataTable
-import cucumber.api.scala.{EN, ScalaDsl}
-import org.neo4j.cypher.cucumber.db.{DatabaseConfigProvider, DatabaseLoader}
-import DatabaseConfigProvider.cypherConfig
-import org.neo4j.cypher.cucumber.prettifier.prettifier
-import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import _root_.cucumber.api.DataTable
+import _root_.cucumber.api.scala.{EN, ScalaDsl}
+import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
+import cypher.cucumber.db.DatabaseLoader
+import cypher.cucumber.prettifier.prettifier
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.scalatest.{FunSuiteLike, Matchers}
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
-class GlueSteps extends CypherFunSuite with ScalaDsl with EN {
+class GlueSteps extends FunSuiteLike with Matchers with  ScalaDsl with EN {
+
+  import cypher.GlueSteps._
+  import cypher.cucumber.DataTableConverter._
 
   var result: Result = null
   var graph: GraphDatabaseService = null
@@ -45,12 +46,12 @@ class GlueSteps extends CypherFunSuite with ScalaDsl with EN {
     graph.shutdown()
   }
 
-  Given("""^using: (.*)$""") { (dbName: String) =>
+  Given(USING_DB) { (dbName: String) =>
     val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(DatabaseLoader(dbName))
     graph = loadConfig(builder).newGraphDatabase()
   }
 
-  Given("""^init: (.*)$""") { (initQuery: String) =>
+  Given(INIT_DB) { (initQuery: String) =>
     val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
     graph = loadConfig(builder).newGraphDatabase()
     assert(!initQuery.contains("cypher"), "init query should do specify pre parser options")
@@ -58,20 +59,20 @@ class GlueSteps extends CypherFunSuite with ScalaDsl with EN {
     graph.execute(s"cypher planner=rule runtime=interpreted $initQuery")
   }
 
-  When("""^running: (.*)$""") { (query: String) =>
+  When(RUNNING_QUERY) { (query: String) =>
     assert(!query.contains("cypher"), "init query should do specify pre parser options")
     result = graph.execute(query)
   }
 
-  When("""^running parametrized: (.*)$""") { (query: String, params: DataTable) =>
+  When(RUNNING_PARAMETRIZED_QUERY) { (query: String, params: DataTable) =>
     assert(!query.contains("cypher"), "init query should do specify pre parser options")
-    val p: List[util.Map[String, AnyRef]] = params.asMaps(classOf[String], classOf[AnyRef]).asScala.toList
+    val p = params.toList[AnyRef]
     assert(p.size == 1)
     result = graph.execute(query, p.head)
   }
 
-  Then("""^(sorted )?result:$""") { (sorted: Boolean, names: DataTable) =>
-    val expected = names.asMaps(classOf[String], classOf[String]).asScala.toList.map(_.asScala)
+  Then(RESULT) { (sorted: Boolean, names: DataTable) =>
+    val expected = names.asScala[String]
     val actual = IteratorUtil.asList(result).asScala.map(_.asScala).toList.map {
       _.map { case (k, v) => (k, prettifier.prettify(graph, v)) }
     }
@@ -111,4 +112,12 @@ class GlueSteps extends CypherFunSuite with ScalaDsl with EN {
       else l < r
     }
   }
+}
+
+object GlueSteps {
+  val INIT_DB = """^init: (.*)$"""
+  val USING_DB = """^using: (.*)$"""
+  val RUNNING_QUERY = """^running: (.*)$"""
+  val RUNNING_PARAMETRIZED_QUERY = """^running parametrized: (.*)$"""
+  val RESULT = """^(sorted )?result:$"""
 }

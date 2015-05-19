@@ -17,36 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.cucumber.reporter
+package cypher.cucumber
 
-import com.novus.salat.annotations.{Ignore, Key, Persist}
-import org.neo4j.cypher.internal.compiler.v2_3.ast.QueryTag
+import cypher.FeatureSuiteTest
+import cypher.cucumber.classifier.{Scenario, ScenarioClassifier}
+import org.junit.runner.RunWith
+import org.scalatest.{Matchers, FunSuiteLike}
+import org.scalatest.junit.JUnitRunner
 
-import scala.annotation.meta.getter
+@RunWith(classOf[JUnitRunner])
+class ScenarioClassifierTest extends FunSuiteLike with Matchers {
+  test("should classify cucumber scenario") {
+    import com.novus.salat._
+    import com.novus.salat.global._
 
-object Outcome {
-  def from(value: String) = value match {
-    case "passed" => Success
-    case _ => Failure
+    val classify = new ScenarioClassifier().classify(classOf[FeatureSuiteTest])
+    val json = grater[Scenario].toPrettyJSONArray(classify)
+
+    // println(json)
+
+    json should not be  empty
   }
-}
-
-sealed trait Outcome
-
-object Success extends Outcome {
-  override def toString = "success"
-}
-
-object Failure extends Outcome {
-  override def toString = "failure"
-}
-
-case class JsonResult(query: String, @Ignore tags: Set[QueryTag], @Ignore outcome: Outcome) {
-  @Key("tags")
-  @(Persist@getter)
-  val prettyTags: Set[String] = tags.map(_.toString)
-
-  @Key("outcome")
-  @(Persist@getter)
-  val prettyOutcome = outcome.toString
 }

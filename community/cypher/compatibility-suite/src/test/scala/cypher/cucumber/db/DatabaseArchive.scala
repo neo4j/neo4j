@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.cucumber.db
+package cypher.cucumber.db
 
 import java.io.{File => JFile}
 
@@ -30,7 +30,7 @@ import scala.reflect.io.File
 case class ImportQuery(script: String, params: java.util.Map[String, Object])
 
 object AvailableDatabase {
-  final val archive = Map("cineast" -> importInto("/org/neo4j/cypher/db/cineast/"))
+  final val archive = Map("cineast" -> importInto("/cypher/db/cineast/"))
   final val dbPaths : mutable.Map[String, JFile] = new mutable.HashMap
   private final val SCRIPT_FILENAME = "import.cyp"
   private final val PARAMS_FILENAME = "params.json"
