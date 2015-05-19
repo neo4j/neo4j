@@ -23,8 +23,8 @@ import java.util
 
 import cucumber.api.DataTable
 import cucumber.api.scala.{EN, ScalaDsl}
-import org.neo4j.cypher.cucumber.db.{DatabaseConfigProvider, DatabaseLoader}
-import DatabaseConfigProvider.cypherConfig
+import org.neo4j.cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
+import org.neo4j.cypher.cucumber.db.DatabaseLoader
 import org.neo4j.cypher.cucumber.prettifier.prettifier
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
@@ -67,7 +67,7 @@ class GlueSteps extends CypherFunSuite with ScalaDsl with EN {
     assert(!query.contains("cypher"), "init query should do specify pre parser options")
     val p: List[util.Map[String, AnyRef]] = params.asMaps(classOf[String], classOf[AnyRef]).asScala.toList
     assert(p.size == 1)
-    result = graph.execute(query, p.head)
+    result = graph.execute(query, castParameters(p.head))
   }
 
   Then("""^(sorted )?result:$""") { (sorted: Boolean, names: DataTable) =>
@@ -86,6 +86,20 @@ class GlueSteps extends CypherFunSuite with ScalaDsl with EN {
     result.close()
   }
 
+  private def castParameters(map: util.Map[String, Object]) = {
+    val result = new util.HashMap[String, Object]()
+    map.asScala.map(pair => {
+      val casted = try {
+        Integer.valueOf(pair._2.toString)
+      } catch {
+        case e: NumberFormatException => pair._2.toString
+      }
+      result.put(pair._1, casted)
+    })
+    result
+  }
+
+
   private def loadConfig(builder: GraphDatabaseBuilder): GraphDatabaseBuilder = {
     builder.setConfig(GraphDatabaseSettings.pagecache_memory, "8M")
     cypherConfig().map { case (s, v) => builder.setConfig(s, v) }
@@ -93,21 +107,28 @@ class GlueSteps extends CypherFunSuite with ScalaDsl with EN {
   }
 
   object sorter extends ((collection.Map[String, String], collection.Map[String, String]) => Boolean) {
+
     def apply(left: collection.Map[String, String], right: collection.Map[String, String]): Boolean = {
       if (left.isEmpty) {
         right.isEmpty
       } else {
-        compareByKey(left, right, left.keySet)
+        compareByKey(left, right, left.keys.toList.sorted)
       }
     }
 
     @tailrec
-    private def compareByKey(left: collection.Map[String, String], right: collection.Map[String, String], keys: collection.Set[String]): Boolean = {
+    private def compareByKey(left: collection.Map[String, String], right: collection.Map[String, String],
+                             keys: List[String]): Boolean = {
       val key = keys.head
       val l = left(key)
       val r = right(key)
-      if (l === r)
+      if (l == r) {
+        if (keys.tail.isEmpty) {
+          // we can't tell the items apart; just let one be 'smaller'
+          return true
+        }
         compareByKey(left, right, keys.tail)
+      }
       else l < r
     }
   }
