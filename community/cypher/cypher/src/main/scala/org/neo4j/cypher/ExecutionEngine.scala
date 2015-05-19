@@ -214,13 +214,17 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
       graph, GraphDatabaseSettings.cypher_planner, CypherPlanner.default.name))
     val runtime = CypherRuntime(optGraphSetting[String](
       graph, GraphDatabaseSettings.cypher_runtime, CypherRuntime.default.name))
+    val useErrorsOverWarnings: java.lang.Boolean = optGraphSetting[java.lang.Boolean](
+      graph, GraphDatabaseSettings.cypher_hints_error,
+      GraphDatabaseSettings.cypher_hints_error.getDefaultValue.toBoolean
+    )
     if ((version != CypherVersion.v2_2 && version != CypherVersion.v2_3) && (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
       val message = s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
         s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}"
       log.error(message)
       throw new IllegalStateException(message)
     }
-    new CypherCompiler(graph, kernel, kernelMonitors, version, planner, runtime, logProvider)
+    new CypherCompiler(graph, kernel, kernelMonitors, version, planner, runtime, useErrorsOverWarnings, logProvider)
   }
 
   private def getPlanCacheSize: Int =

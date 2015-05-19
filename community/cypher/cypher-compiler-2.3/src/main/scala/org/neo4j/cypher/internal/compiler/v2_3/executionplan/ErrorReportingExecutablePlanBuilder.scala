@@ -29,6 +29,6 @@ case class ErrorReportingExecutablePlanBuilder(inner: ExecutablePlanBuilder) ext
       inner.producePlan(inputQuery, planContext, tracer)
     } catch {
       case e: CantHandleQueryException =>
-        throw new InvalidArgumentException("The given query is not supported at the moment in the selected cost-based planner", e)
+        throw new InvalidArgumentException("The given query is not currently supported in the selected cost-based planner", e)
     }
 }

@@ -63,7 +63,8 @@ object CypherCompilerFactory {
                         logger: InfoLogger,
                         rewriterSequencer: (String) => RewriterStepSequencer,
                         plannerName: Option[CostBasedPlannerName],
-                        runtimeName: Option[RuntimeName]): CypherCompiler = {
+                        runtimeName: Option[RuntimeName],
+                        useErrorsOverWarnings: Boolean): CypherCompiler = {
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
@@ -72,15 +73,21 @@ object CypherCompilerFactory {
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
 
     val pickedPlannerName = plannerName.getOrElse(FallbackPlannerName)
-    val pickedRuntimeName = runtimeName.getOrElse(CompiledRuntimeName)
+    val pickedRuntimeName = runtimeName.getOrElse(FallbackRuntimeName)
     val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, clock, queryPlanner = queryPlanner,
-      rewriterSequencer = rewriterSequencer, plannerName = pickedPlannerName, runtimeName = pickedRuntimeName)
+      rewriterSequencer = rewriterSequencer, plannerName = pickedPlannerName, runtimeName = pickedRuntimeName,
+      useErrorsOverWarnings = useErrorsOverWarnings, showWarnings = pickedRuntimeName != FallbackRuntimeName)
     // falling back to legacy planner is allowed only when no cost-based planner is picked explicitly (e.g., COST, IDP)
     val pipeBuilder = pickedPlannerName match {
       case FallbackPlannerName =>
-        new LegacyVsNewExecutablePlanBuilder(new LegacyExecutablePlanBuilder(monitors, rewriterSequencer), planner, planBuilderMonitor)
-      case _ =>
+        // If the user has NOT specified a planner, use default or fallback to RULE silently
+        new LegacyVsNewExecutablePlanBuilder(new LegacyExecutablePlanBuilder(monitors, rewriterSequencer), planner, planBuilderMonitor, false)
+      case _ if useErrorsOverWarnings =>
+        // If the config required errors, and the user selected a planner, use that planner or generate an error
         new ErrorReportingExecutablePlanBuilder(planner)
+      case _ =>
+        // If the config does not require errors and the user has specified a planner, use that or fallback to RULE with a warning
+        new LegacyVsNewExecutablePlanBuilder(new LegacyExecutablePlanBuilder(monitors, rewriterSequencer), planner, planBuilderMonitor, true)
     }
 
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)

@@ -25,7 +25,7 @@ import java.util
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlan => ExecutionPlan_v2_3, InternalExecutionResult}
-import org.neo4j.cypher.internal.compiler.v2_3.notification.{LengthOnNonPathNotification, CartesianProductNotification, InternalNotification, LegacyPlannerNotification}
+import org.neo4j.cypher.internal.compiler.v2_3.notification._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.MapToPublicExceptions
@@ -282,6 +282,10 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       NotificationCode.LEGACY_PLANNER.notification(InputPosition.empty)
     case LengthOnNonPathNotification(pos) =>
       NotificationCode.LENGTH_ON_NON_PATH.notification(new InputPosition(pos.offset, pos.line, pos.column))
+    case PlannerUnsupportedNotification =>
+      NotificationCode.PLANNER_UNSUPPORTED.notification(InputPosition.empty)
+    case RuntimeUnsupportedNotification =>
+      NotificationCode.RUNTIME_UNSUPPORTED.notification(InputPosition.empty)
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_3.runSafely {
@@ -357,7 +361,8 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
                                            kernelAPI: KernelAPI,
                                            log: Log,
                                            planner: CypherPlanner,
-                                           runtime: CypherRuntime) extends CompatibilityFor2_3 {
+                                           runtime: CypherRuntime,
+                                           useErrorsOverWarnings: Boolean) extends CompatibilityFor2_3 {
   protected val compiler = {
     val plannerName = planner match {
       case CypherPlanner.default => None
@@ -376,7 +381,7 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
 
     CypherCompilerFactory.costBasedCompiler(
       graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ),
-      new StringInfoLogger2_3( log ), rewriterSequencer, plannerName, runtimeName
+      new StringInfoLogger2_3( log ), rewriterSequencer, plannerName, runtimeName, useErrorsOverWarnings
     )
   }
 }

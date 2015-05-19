@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutablePlanBuilder, NewRuntimeSuccessRateMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.closing
+import org.neo4j.cypher.internal.compiler.v2_3.notification.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v2_3.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
@@ -46,7 +47,9 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                 queryGraphSolver: QueryGraphSolver,
                                 rewriterSequencer: (String) => RewriterStepSequencer,
                                 plannerName: CostBasedPlannerName,
-                                runtimeName: RuntimeName)
+                                runtimeName: RuntimeName,
+                                useErrorsOverWarnings: Boolean,
+                                showWarnings: Boolean)
   extends ExecutablePlanBuilder {
 
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer) = {
@@ -68,14 +71,19 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
           produceLogicalPlan(ast, rewrittenSemanticTable)(planContext)
         }
         try {
-          closing(tracer.beginPhase(CODE_GENERATION)) {
-            produceCompiledPlan(logicalPlan, inputQuery, rewrittenSemanticTable, planContext, pipeBuildContext, planBuilderMonitor)
-          }
-        } catch {//fallback on interpreted plans
+            runtimeName match {
+              case InterpretedRuntimeName => produceInterpretedPlan(logicalPlan, pipeBuildContext, planContext, tracer)
+              case _ => produceCompiledPlan(logicalPlan, rewrittenSemanticTable, planContext, planBuilderMonitor, tracer)
+            }
+        } catch {
+          //fallback on interpreted plans
           case e: CantCompileQueryException =>
             planBuilderMonitor.unableToHandlePlan(logicalPlan, e)
-            closing(tracer.beginPhase(PIPE_BUILDING)) {
-              Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
+            if (useErrorsOverWarnings) {
+              throw new InvalidArgumentException("The given query is not currently supported in the selected runtime")
+            } else {
+              if (showWarnings) inputQuery.notificationLogger.log(RuntimeUnsupportedNotification)
+                produceInterpretedPlan(logicalPlan, pipeBuildContext, planContext, tracer)
             }
         }
       case _ =>
@@ -83,18 +91,16 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     }
   }
 
-  private def produceCompiledPlan(logicalPlan: LogicalPlan, inputQuery: PreparedQuery,
-                                  semanticTable: SemanticTable, planContext: PlanContext,
-                                  pipeBuildContext: PipeExecutionBuilderContext,
-                                   monitor: NewRuntimeSuccessRateMonitor) = {
-    //only return compiled plans if asked for
-    runtimeName match {
-      case InterpretedRuntimeName => Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
-      case CompiledRuntimeName =>
-        monitor.newPlanSeen(logicalPlan)
+  private def produceInterpretedPlan(logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext, planContext: PlanContext, tracer: CompilationPhaseTracer) =
+    closing(tracer.beginPhase(PIPE_BUILDING)) {
+      Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
+    }
 
-        val codeGen = new CodeGenerator
-        Left(codeGen.generate(logicalPlan, planContext, clock, semanticTable))
+  private def produceCompiledPlan(logicalPlan: LogicalPlan, semanticTable: SemanticTable, planContext: PlanContext, monitor: NewRuntimeSuccessRateMonitor, tracer: CompilationPhaseTracer) = {
+    monitor.newPlanSeen(logicalPlan)
+    closing(tracer.beginPhase(CODE_GENERATION)) {
+      val codeGen = new CodeGenerator
+      Left(codeGen.generate(logicalPlan, planContext, clock, semanticTable))
     }
   }
 

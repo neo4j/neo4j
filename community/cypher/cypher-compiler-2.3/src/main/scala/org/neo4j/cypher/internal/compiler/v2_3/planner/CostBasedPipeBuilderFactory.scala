@@ -37,7 +37,9 @@ object CostBasedPipeBuilderFactory {
             tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
             maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
             plannerName: CostBasedPlannerName = PlannerName.default,
-            runtimeName: RuntimeName = RuntimeName.default
+            runtimeName: RuntimeName = RuntimeName.default,
+            useErrorsOverWarnings: Boolean = false,
+            showWarnings: Boolean = false
            ) = {
 
     val executionPlanBuilder: PipeExecutionPlanBuilder =
@@ -58,6 +60,6 @@ object CostBasedPipeBuilderFactory {
         )
     }
 
-    CostBasedExecutablePlanBuilder(monitors, metricsFactory, clock, tokenResolver, executionPlanBuilder, queryPlanner, queryGraphSolver, rewriterSequencer, plannerName, runtimeName)
+    CostBasedExecutablePlanBuilder(monitors, metricsFactory, clock, tokenResolver, executionPlanBuilder, queryPlanner, queryGraphSolver, rewriterSequencer, plannerName, runtimeName, useErrorsOverWarnings, showWarnings)
   }
 }

@@ -159,6 +159,8 @@ public interface Status
         ExecutionFailure( DatabaseError, "The database was unable to execute the statement." ),
         ExternalResourceFailure( TransientError, "The external resource is not available"),
         CartesianProduct( ClientNotification, "This query builds a cartesian product between disconnected patterns." ),
+        PlannerUnsupportedWarning( ClientNotification, "This query is not supported by the COST planner." ),
+        RuntimeUnsupportedWarning( ClientNotification, "This query is not supported by the compiled runtime." ),
         DeprecationWarning( ClientNotification, "This feature is deprecated and will be removed in future versions." ),
         ;
 
