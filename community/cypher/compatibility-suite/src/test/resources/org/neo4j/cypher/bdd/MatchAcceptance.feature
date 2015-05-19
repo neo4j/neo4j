@@ -88,3 +88,175 @@ Feature: MatchAcceptanceTest
       | a    |
       | (:a) |
 
+  Scenario: should cope with shadowed variables
+    Given init: CREATE ({value: 1, name: 'King Kong'}), ({value: 2, name: 'Ann Darrow'})
+    When running: MATCH n WITH n.name AS n RETURN n
+    Then result:
+      | n          |
+      | Ann Darrow |
+      | King Kong  |
+
+  Scenario: should get neighbours
+    Given init: CREATE (a:A {value : 1})-[:KNOWS]->(b:B {value : 2})
+    When running: MATCH (n1)-[rel:KNOWS]->(n2) RETURN n1, n2
+    Then result:
+      | n1              | n2              |
+      | (:A {value: 1}) | (:B {value: 2}) |
+
+  Scenario: should get two related nodes
+    Given init: CREATE (a:A {value: 1}), (a)-[:KNOWS]->(b:B {value: 2}), (a)-[:KNOWS]->(c:C {value: 3})
+    When running: MATCH (start)-[rel:KNOWS]->(x) RETURN x
+    Then result:
+      | x               |
+      | (:B {value: 2}) |
+      | (:C {value: 3}) |
+
+  Scenario: should get related to related to
+    Given init: CREATE (a:A {value: 1})-[:KNOWS]->(b:B {value: 2})-[:FRIEND]->(c:C {value: 3})
+    When running: MATCH n-->a-->b RETURN b
+    Then result:
+      | b               |
+      | (:C {value: 3}) |
+
+  Scenario: should handle comparison between node properties
+    Given init: CREATE (a:A {animal: "monkey"}), (b:B {animal: "cow"}), (c:C {animal: "monkey"}), (d:D {animal: "cow"}), (a)-[:KNOWS]->(b), (a)-[:KNOWS]->(c), (d)-[:KNOWS]->(b), (d)-[:KNOWS]->(c)
+    When running: MATCH (n)-[rel]->(x) WHERE n.animal = x.animal RETURN n, x
+    Then result:
+      | n                       | x                       |
+      | (:A {animal: "monkey"}) | (:C {animal: "monkey"}) |
+      | (:D {animal: "cow"})    | (:B {animal: "cow"})    |
+
+  Scenario: should return two subgraphs with bound undirected relationship
+    Given init: CREATE (a:A {value: 1})-[:REL {name: "r"}]->(b:B {value: 2})
+    When running: MATCH a-[r {name: 'r'}]-b RETURN a,b
+    Then result:
+      | a               | b               |
+      | (:B {value: 2}) | (:A {value: 1}) |
+      | (:A {value: 1}) | (:B {value: 2}) |
+
+  Scenario: should return two subgraphs with bound undirected relationship and optional relationship
+    Given init: CREATE (a:A {value: 1})-[:REL {name: "r1"}]->(b:B {value: 2})-[:REL {name: "r2"}]->(c:C {value: 3})
+    When running: MATCH (a)-[r {name:'r1'}]-(b) OPTIONAL MATCH (b)-[r2]-(c) WHERE r<>r2 RETURN a,b,c
+    Then result:
+      | a               | b               | c               |
+      | (:A {value: 1}) | (:B {value: 2}) | (:C {value: 3}) |
+      | (:B {value: 2}) | (:A {value: 1}) | null            |
+
+  Scenario: rel type function works as expected
+    Given init: CREATE (a:A {name: "A"}), (b:B {name: "B"}), (c:C {name: "C"}), (a)-[:KNOWS]->(b), (a)-[:HATES]->(c)
+    When running: MATCH (n {name:'A'})-[r]->(x) WHERE type(r) = 'KNOWS' RETURN x
+    Then result:
+      | x                |
+      | (:B {name: "B"}) |
+
+  Scenario: should walk alternative relationships
+    Given init: CREATE (a {name: "A"}), (b {name: "B"}), (c {name: "C"}), (a)-[:KNOWS]->(b), (a)-[:HATES]->(c), (a)-[:WONDERS]->(c)
+    When running: MATCH (n)-[r]->(x) WHERE type(r) = 'KNOWS' OR type(r) = 'HATES' RETURN r
+    Then result:
+      | r        |
+      | [:KNOWS] |
+      | [:HATES] |
+
+  Scenario: should handle OR in the WHERE clause
+    Given init: CREATE (a:A {p1: 12}), (b:B {p2: 13}), (c:C)
+    When running: MATCH (n) WHERE n.p1 = 12 OR n.p2 = 13 RETURN n
+    Then result:
+      | n             |
+      | (:A {p1: 12}) |
+      | (:B {p2: 13}) |
+
+  Scenario: should return a simple path
+    Given init: CREATE (a:A {name: "A"})-[:KNOWS]->(b:B {name: "B"})
+    When running: MATCH p=(a {name:'A'})-->b RETURN p
+    Then result:
+      | p                                           |
+      | (:A {name: "A"})-[:KNOWS]->(:B {name: "B"}) |
+
+  Scenario: should return a three node path
+    Given init: CREATE (a:A {name: "A"})-[:KNOWS]->(b:B {name: "B"})-[:KNOWS]->(c:C {name: "C"})
+    When running: MATCH p = (a {name:'A'})-[rel1]->b-[rel2]->c RETURN p
+    Then result:
+      | p                                                                      |
+      | (:A {name: "A"})-[:KNOWS]->(:B {name: "B"})-[:KNOWS]->(:C {name: "C"}) |
+
+  Scenario: should not return anything because path length does not match
+    Given init: CREATE (a:A {name: "A"})-[:KNOWS]->(b:B {name: "B"})
+    When running: MATCH p = n-->x WHERE length(p) = 10 RETURN x
+    Then result:
+      |  |
+
+  Scenario: should pass the path length test
+    Given init: CREATE (a:A {name: "A"})-[:KNOWS]->(b:B {name: "B"})
+    When running: MATCH p = n-->x WHERE length(p)=1 RETURN x
+    Then result:
+      | x                |
+      | (:B {name: "B"}) |
+
+  Scenario: should be able to filter on path nodes
+    Given init: CREATE (a:A {foo: "bar"})-[:REL]->(b:B {foo: "bar"})-[:REL]->(c:C {foo: "bar"})-[:REL]->(d:D {foo: "bar"})
+    When running: MATCH p = pA-[:REL*3..3]->pB WHERE all(i in nodes(p) WHERE i.foo = 'bar') RETURN pB
+    Then result:
+      | pB                |
+      | (:D {foo: "bar"}) |
+
+  Scenario: should return relationships by fetching them from the path - starting from the end
+    Given init: CREATE (a:A)-[:REL {value: 1}]->(b:B)-[:REL {value: 2}]->(e:End)
+    When running: MATCH p = a-[:REL*2..2]->(b:End) RETURN relationships(p)
+    Then result:
+      | relationships(p)                       |
+      | [[:REL {value: 1}], [:REL {value: 2}]] |
+
+  Scenario: should return relationships by fetching them from the path
+    Given init: CREATE (s:Start)-[:REL {value: 1}]->(b:B)-[:REL {value: 2}]->(c:C)
+    When running: MATCH p = (a:Start)-[:REL*2..2]->b RETURN relationships(p)
+    Then result:
+      | relationships(p)                       |
+      | [[:REL {value: 1}], [:REL {value: 2}]] |
+
+  Scenario: should return relationships by collecting them as a list - wrong way
+    Given init: CREATE (a:A)-[:REL {value: 1}]->(b:B)-[:REL {value: 2}]->(e:End)
+    When running: MATCH a-[r:REL*2..2]->(b:End) RETURN r
+    Then result:
+      | r                                      |
+      | [[:REL {value: 1}], [:REL {value: 2}]] |
+
+  Scenario: should return relationships by collecting them as a list - undirected
+    Given init: CREATE (a:End {value: 1})-[:REL {value: 1}]->(b:B)-[:REL {value: 2}]->(c:End {value : 2})
+    When running: MATCH a-[r:REL*2..2]-(b:End) RETURN r
+    Then result:
+      | r                                      |
+      | [[:REL {value: 1}], [:REL {value: 2}]] |
+      | [[:REL {value: 2}], [:REL {value: 1}]] |
+
+  Scenario: should return relationships by collecting them as a list
+    Given init: CREATE (s:Start)-[:REL {value: 1}]->(b:B)-[:REL {value: 2}]->(c:C)
+    When running: MATCH (a:Start)-[r:REL*2..2]->b RETURN r
+    Then result:
+      | r                                      |
+      | [[:REL {value: 1}], [:REL {value: 2}]] |
+
+  Scenario: should return a var length path
+    Given init: CREATE (a:A {name: "A"})-[:KNOWS {value: 1}]->(b:B {name: "B"})-[:KNOWS {value: 2}]->(c:C {name: "C"})
+    When running: MATCH p=(n {name:'A'})-[:KNOWS*1..2]->x RETURN p
+    Then result:
+      | p                                                                                            |
+      | (:A {name: "A"})-[:KNOWS {value: 1}]->(:B {name: "B"})                                       |
+      | (:A {name: "A"})-[:KNOWS {value: 1}]->(:B {name: "B"})-[:KNOWS {value: 2}]->(:C {name: "C"}) |
+
+  Scenario: a var length path of length zero
+    Given init: CREATE (a:A)-[:REL]->(b:B)
+    When running: MATCH p=a-[*0..1]->b RETURN a,b, length(p) AS l
+    Then result:
+      | a    | b    | l |
+      | (:A) | (:A) | 0 |
+      | (:B) | (:B) | 0 |
+      | (:A) | (:B) | 1 |
+
+  Scenario: a named var length path of length zero
+    Given init: CREATE (a:A {name: "A"})-[:KNOWS]->(b:B {name: "B"})-[:FRIEND]->(c:C {name: "C"})
+    When running: MATCH p=(a {name:'A'})-[:KNOWS*0..1]->b-[:FRIEND*0..1]->c RETURN p
+    Then result:
+      | p                                                                       |
+      | (:A {name: "A"})                                                        |
+      | (:A {name: "A"})-[:KNOWS]->(:B {name: "B"})                             |
+      | (:A {name: "A"})-[:KNOWS]->(:B {name: "B"})-[:FRIEND]->(:C {name: "C"}) |

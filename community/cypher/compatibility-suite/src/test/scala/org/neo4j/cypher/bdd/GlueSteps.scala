@@ -97,16 +97,16 @@ class GlueSteps extends CypherFunSuite with ScalaDsl with EN {
       if (left.isEmpty) {
         right.isEmpty
       } else {
-        compareByKey(left, right, left.keySet)
+        compareByKey(left, right, left.keys.toList.sorted)
       }
     }
 
     @tailrec
-    private def compareByKey(left: collection.Map[String, String], right: collection.Map[String, String], keys: collection.Set[String]): Boolean = {
+    private def compareByKey(left: collection.Map[String, String], right: collection.Map[String, String], keys: collection.Seq[String]): Boolean = {
       val key = keys.head
       val l = left(key)
       val r = right(key)
-      if (l === r)
+      if (l == r)
         compareByKey(left, right, keys.tail)
       else l < r
     }
