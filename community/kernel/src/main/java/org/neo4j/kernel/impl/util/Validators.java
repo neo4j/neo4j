@@ -21,25 +21,16 @@ package org.neo4j.kernel.impl.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 
 public class Validators
 {
-    public static final Validator<File[]> FILES_EXISTS = new Validator<File[]>()
-    {
-        @Override
-        public void validate( File[] files )
-        {
-            for ( File file : files )
-            {
-                FILE_EXISTS.validate( file );
-            }
-        }
-    };
-
     public static final Validator<File> FILE_EXISTS = new Validator<File>()
     {
         @Override
@@ -51,6 +42,37 @@ public class Validators
             }
         }
     };
+
+    public static final Validator<File> REGEX_FILE_EXISTS = new Validator<File>()
+    {
+        @Override
+        public void validate( File file )
+        {
+            if ( matchingFiles( file ).isEmpty() )
+            {
+                throw new IllegalArgumentException( "File '" + file + "' doesn't exist" );
+            }
+        }
+    };
+
+    static List<File> matchingFiles( File fileWithRegexInName )
+    {
+        File parent = fileWithRegexInName.getAbsoluteFile().getParentFile();
+        if ( parent == null || !parent.exists() )
+        {
+            throw new IllegalArgumentException( "Directory of " + fileWithRegexInName + " doesn't exist" );
+        }
+        final Pattern pattern = Pattern.compile( fileWithRegexInName.getName() );
+        List<File> files = new ArrayList<>();
+        for ( File file : parent.listFiles() )
+        {
+            if ( pattern.matcher( file.getName() ).matches() )
+            {
+                files.add( file );
+            }
+        }
+        return files;
+    }
 
     public static final Validator<File> DIRECTORY_IS_WRITABLE = new Validator<File>()
     {

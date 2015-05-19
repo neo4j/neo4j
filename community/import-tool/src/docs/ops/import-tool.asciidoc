@@ -240,6 +240,9 @@ include::separate-header-example-command.adoc[]
 
 As well as using a separate header file you can also provide multiple nodes or relationships files.
 This may be useful when processing the output from a Hadoop pipeline for example.
+Files within such an input group can be specified with multiple match strings, delimited by +,+, where each match string can be either:
+* exact file name
+* regular expression matching one or more files. Multiple matching files will be sorted according to their characters _and_ their natural number sort order for file names containing numbers.
 
 .movies4-header.csv
 [source]

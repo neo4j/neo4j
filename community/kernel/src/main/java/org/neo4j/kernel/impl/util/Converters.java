@@ -20,6 +20,10 @@
 package org.neo4j.kernel.impl.util;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 import org.neo4j.function.Function;
 
@@ -73,7 +77,41 @@ public class Converters
         };
     }
 
-    public static Function<String,File[]> toFiles( final String delimiter )
+    public static final Comparator<File> BY_FILE_NAME = new Comparator<File>()
+    {
+        @Override
+        public int compare( File o1, File o2 )
+        {
+            return o1.getName().compareTo( o2.getName() );
+        }
+    };
+
+    public static final Comparator<File> BY_FILE_NAME_WITH_CLEVER_NUMBERS = new Comparator<File>()
+    {
+        @Override
+        public int compare( File o1, File o2 )
+        {
+            return NumberAwareStringComparator.INSTANCE.compare( o1.getAbsolutePath(), o2.getAbsolutePath() );
+        }
+    };
+
+    public static Function<String,File[]> regexFiles( final boolean cleverNumberRegexSort )
+    {
+        return new Function<String,File[]>()
+        {
+            @Override
+            public File[] apply( String name ) throws RuntimeException
+            {
+                Comparator<File> sorting = cleverNumberRegexSort ? BY_FILE_NAME_WITH_CLEVER_NUMBERS : BY_FILE_NAME;
+                List<File> files = Validators.matchingFiles( new File( name ) );
+                Collections.sort( files, sorting );
+                return files.toArray( new File[files.size()] );
+            }
+        };
+    }
+
+    public static Function<String,File[]> toFiles( final String delimiter,
+            final Function<String,File[]> eachFileConverter )
     {
         return new Function<String,File[]>()
         {
@@ -86,12 +124,15 @@ public class Converters
                 }
 
                 String[] names = from.split( delimiter );
-                File[] file = new File[names.length];
-                for ( int i = 0; i < names.length; i++ )
+                List<File> files = new ArrayList<>();
+                for ( String name : names )
                 {
-                    file[i] = new File( names[i] );
+                    for ( File file : eachFileConverter.apply( name ) )
+                    {
+                        files.add( file );
+                    }
                 }
-                return file;
+                return files.toArray( new File[files.size()] );
             }
         };
     }
