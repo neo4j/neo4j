@@ -40,24 +40,23 @@ object CostBasedPipeBuilderFactory {
             runtimeName: RuntimeName = RuntimeName.default,
             useErrorsOverWarnings: Boolean = false,
             showWarnings: Boolean = false
-           ) = {
+             ) = {
 
     val executionPlanBuilder: PipeExecutionPlanBuilder =
       maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(clock, monitors))
 
     val queryGraphSolver = plannerName match {
-      case IDPPlannerName =>
-        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor]())
+      case GreedyPlannerName =>
+        new CompositeQueryGraphSolver(
+          new GreedyQueryGraphSolver(expandsOrJoins),
+          new GreedyQueryGraphSolver(expandsOnly)
+        )
 
       case DPPlannerName =>
         IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), maxTableSize = Int.MaxValue)
 
       case _ =>
-//        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor]())
-        new CompositeQueryGraphSolver(
-          new GreedyQueryGraphSolver(expandsOrJoins),
-          new GreedyQueryGraphSolver(expandsOnly)
-        )
+        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor]())
     }
 
     CostBasedExecutablePlanBuilder(monitors, metricsFactory, clock, tokenResolver, executionPlanBuilder, queryPlanner, queryGraphSolver, rewriterSequencer, plannerName, runtimeName, useErrorsOverWarnings, showWarnings)
