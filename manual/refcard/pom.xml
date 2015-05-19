@@ -16,7 +16,11 @@
   <packaging>jar</packaging>
 
   <properties>
+<<<<<<< HEAD
     <neo4j.version>2.3-SNAPSHOT</neo4j.version>
+=======
+    <neo4j.version>${project.version}</neo4j.version>
+>>>>>>> 2.2
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <docs.upstream>${project.build.directory}</docs.upstream>
     <docs.importdir>${docs.upstream}/docs</docs.importdir>
