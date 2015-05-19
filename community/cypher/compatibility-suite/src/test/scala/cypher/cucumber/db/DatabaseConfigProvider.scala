@@ -20,6 +20,7 @@
 package cypher.cucumber.db
 
 import java.io.{File => JFile}
+import java.net.URI
 
 import cypher.cucumber.CucumberAdapter
 import gherkin.formatter.model.Feature
@@ -37,7 +38,7 @@ object DatabaseConfigProvider {
   }
 }
 
-class DatabaseConfigProvider(jsonFile: JFile) extends CucumberAdapter {
+class DatabaseConfigProvider(jsonFile: URI) extends CucumberAdapter {
 
   override def feature(feature: Feature): Unit = {
     val file = new JFile(getClass.getResource(jsonFile.getPath).getPath)
