@@ -20,45 +20,37 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.execution.PipeExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy.{GreedyQueryGraphSolver, expandsOnly, expandsOrJoins}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.helpers.Clock
 
 object CostBasedPipeBuilderFactory {
 
-  def apply(monitors: Monitors,
-            metricsFactory: MetricsFactory,
-            clock: Clock,
-            queryPlanner: QueryPlanner,
-            rewriterSequencer: (String) => RewriterStepSequencer,
-            tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
-            maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
-            plannerName: CostBasedPlannerName = PlannerName.default,
-            runtimeName: RuntimeName = RuntimeName.default,
-            useErrorsOverWarnings: Boolean = false,
-            showWarnings: Boolean = false
-             ) = {
+  def create(monitors: Monitors,
+             metricsFactory: MetricsFactory,
+             queryPlanner: QueryPlanner,
+             rewriterSequencer: (String) => RewriterStepSequencer,
+             tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
+             plannerName: Option[CostBasedPlannerName],
+             runtimeBuilder: RuntimeBuilder
+    ) = {
 
-    val executionPlanBuilder: PipeExecutionPlanBuilder =
-      maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(clock, monitors))
-
-    val queryGraphSolver = plannerName match {
-      case GreedyPlannerName =>
-        new CompositeQueryGraphSolver(
-          new GreedyQueryGraphSolver(expandsOrJoins),
-          new GreedyQueryGraphSolver(expandsOnly)
-        )
+    def createQueryGraphSolver(n: CostBasedPlannerName): QueryGraphSolver = n match {
+      case IDPPlannerName =>
+        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor]())
 
       case DPPlannerName =>
         IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), maxTableSize = Int.MaxValue)
 
-      case _ =>
-        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor]())
+      case GreedyPlannerName =>
+        new CompositeQueryGraphSolver(
+          new GreedyQueryGraphSolver(expandsOrJoins),
+          new GreedyQueryGraphSolver(expandsOnly))
     }
 
-    CostBasedExecutablePlanBuilder(monitors, metricsFactory, clock, tokenResolver, executionPlanBuilder, queryPlanner, queryGraphSolver, rewriterSequencer, plannerName, runtimeName, useErrorsOverWarnings, showWarnings)
+    val actualPlannerName = plannerName.getOrElse(CostBasedPlannerName.default)
+    CostBasedExecutablePlanBuilder(monitors, metricsFactory, tokenResolver, queryPlanner,
+                                   createQueryGraphSolver(actualPlannerName), rewriterSequencer, actualPlannerName, runtimeBuilder)
   }
 }

@@ -156,7 +156,11 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newPlanner(metricsFactory: MetricsFactory): CostBasedExecutablePlanBuilder = {
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
-    CostBasedPipeBuilderFactory(monitors, metricsFactory, Clock.SYSTEM_CLOCK, queryPlanner, rewriterSequencer)
+    CostBasedPipeBuilderFactory.create(monitors, metricsFactory, queryPlanner, rewriterSequencer,
+                                       plannerName = None,
+                                       runtimeBuilder = SilentFallbackRuntimeBuilder(
+                                         InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, monitors),
+                                         CompiledPlanBuilder(Clock.SYSTEM_CLOCK)))
   }
 
   def produceLogicalPlan(queryText: String)(implicit planner: CostBasedExecutablePlanBuilder, planContext: PlanContext): LogicalPlan = {

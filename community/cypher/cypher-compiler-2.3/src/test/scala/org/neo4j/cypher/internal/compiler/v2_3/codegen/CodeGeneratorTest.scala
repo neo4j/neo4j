@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.{NormalMode, ParameterNotFoundException, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v2_3.{CostBasedPlannerName, NormalMode, ParameterNotFoundException, TaskCloser}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Direction, GraphDatabaseService, Node}
 import org.neo4j.helpers.Clock
@@ -505,7 +505,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def compile(plan: LogicalPlan) = {
-    generator.generate(plan, newMockedPlanContext, Clock.SYSTEM_CLOCK, semanticTable)
+    generator.generate(plan, newMockedPlanContext, Clock.SYSTEM_CLOCK, semanticTable, CostBasedPlannerName.default)
   }
 
   private def compileAndExecute(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, taskCloser: TaskCloser = new TaskCloser) = {

@@ -20,12 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_3.{CompilationPhaseTracer, PreparedQuery}
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser}
+import org.neo4j.cypher.internal.compiler.v2_3.notification.PlannerUnsupportedNotification
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantHandleQueryException}
+import org.neo4j.cypher.internal.compiler.v2_3.{RecordingNotificationLogger, CompilationPhaseTracer, PreparedQuery}
+import org.neo4j.cypher.internal.compiler.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
-class LegacyVsNewExecutablePlanBuilderTest extends CypherFunSuite {
+class FallbackPlanBuilderTest extends CypherFunSuite {
 
   val parser = new CypherParser
 
@@ -50,12 +52,33 @@ class LegacyVsNewExecutablePlanBuilderTest extends CypherFunSuite {
     }
   }
 
+  test("should warn if falling back from a specified plan") {
+    val preparedQuery = new PreparedQuery(null, null, null)(null, null, null, new RecordingNotificationLogger)
+    val builder = mock[ExecutablePlanBuilder]
+    when(builder.producePlan(preparedQuery, null, null)).thenThrow(classOf[CantHandleQueryException])
+    WarningFallbackPlanBuilder(mock[ExecutablePlanBuilder], builder, mock[NewLogicalPlanSuccessRateMonitor])
+      .producePlan(preparedQuery, null, null)
+
+    preparedQuery.notificationLogger.notifications should contain(PlannerUnsupportedNotification)
+  }
+
+  test("should not warn if falling back from fallback plan") {
+    val preparedQuery = new PreparedQuery(null, null, null)(null, null, null, new RecordingNotificationLogger)
+    val builder = mock[ExecutablePlanBuilder]
+    when(builder.producePlan(preparedQuery, null, null)).thenThrow(classOf[CantHandleQueryException])
+    SilentFallbackPlanBuilder(mock[ExecutablePlanBuilder], builder, mock[NewLogicalPlanSuccessRateMonitor])
+      .producePlan(preparedQuery, null, null)
+
+    preparedQuery.notificationLogger.notifications should not contain(PlannerUnsupportedNotification)
+
+  }
+
   class uses(queryText: String) {
     // given
     val planContext = mock[PlanContext]
     val oldBuilder = mock[ExecutablePlanBuilder]
     val newBuilder = mock[ExecutablePlanBuilder]
-    val pipeBuilder = new LegacyVsNewExecutablePlanBuilder(oldBuilder, newBuilder, mock[NewLogicalPlanSuccessRateMonitor], false)
+    val pipeBuilder = new SilentFallbackPlanBuilder(oldBuilder, newBuilder, mock[NewLogicalPlanSuccessRateMonitor])
     val preparedQuery = PreparedQuery(parser.parse(queryText), queryText, Map.empty)(null, Set.empty, null, null)
     val pipeInfo = mock[PipeInfo]
     when( oldBuilder.producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING ) ).thenReturn(Right(pipeInfo))

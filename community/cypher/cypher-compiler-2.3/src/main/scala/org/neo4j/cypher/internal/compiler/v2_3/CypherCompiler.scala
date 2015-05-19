@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.closing
+import org.neo4j.cypher.internal.compiler.v2_3.notification.PlannerUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.LogicalPlanRewriter
@@ -38,13 +39,13 @@ trait AstRewritingMonitor {
 }
 
 trait CypherCacheFlushingMonitor[T] {
-  def cacheFlushDetected(justBeforeKey: T){}
+  def cacheFlushDetected(justBeforeKey: T) {}
 }
 
 trait CypherCacheHitMonitor[T] {
-  def cacheHit(key: T){}
-  def cacheMiss(key: T){}
-  def cacheDiscard(key: T){}
+  def cacheHit(key: T) {}
+  def cacheMiss(key: T) {}
+  def cacheDiscard(key: T) {}
 }
 
 trait InfoLogger {
@@ -72,25 +73,22 @@ object CypherCompilerFactory {
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
 
-    val pickedPlannerName = plannerName.getOrElse(FallbackPlannerName)
-    val pickedRuntimeName = runtimeName.getOrElse(FallbackRuntimeName)
-    val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, clock, queryPlanner = queryPlanner,
-      rewriterSequencer = rewriterSequencer, plannerName = pickedPlannerName, runtimeName = pickedRuntimeName,
-      useErrorsOverWarnings = useErrorsOverWarnings, showWarnings = pickedRuntimeName != FallbackRuntimeName)
-    // falling back to legacy planner is allowed only when no cost-based planner is picked explicitly (e.g., COST, IDP)
-    val pipeBuilder = pickedPlannerName match {
-      case FallbackPlannerName =>
-        // If the user has NOT specified a planner, use default or fallback to RULE silently
-        new LegacyVsNewExecutablePlanBuilder(new LegacyExecutablePlanBuilder(monitors, rewriterSequencer), planner, planBuilderMonitor, false)
-      case _ if useErrorsOverWarnings =>
-        // If the config required errors, and the user selected a planner, use that planner or generate an error
-        new ErrorReportingExecutablePlanBuilder(planner)
-      case _ =>
-        // If the config does not require errors and the user has specified a planner, use that or fallback to RULE with a warning
-        new LegacyVsNewExecutablePlanBuilder(new LegacyExecutablePlanBuilder(monitors, rewriterSequencer), planner, planBuilderMonitor, true)
-    }
+    val compiledPlanBuilder = CompiledPlanBuilder(clock)
+    val interpretedPlanBuilder = InterpretedPlanBuilder(clock, monitors)
 
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
+    // Pick runtime based on input
+    val runtimeBuilder = RuntimeBuilder.create(runtimeName, interpretedPlanBuilder, compiledPlanBuilder, useErrorsOverWarnings)
+
+    val costPlanProducer = CostBasedPipeBuilderFactory
+      .create(monitors = monitors, metricsFactory = metricsFactory, queryPlanner = queryPlanner,
+              rewriterSequencer = rewriterSequencer, plannerName = plannerName, runtimeBuilder = runtimeBuilder)
+    val rulePlanProducer = new LegacyExecutablePlanBuilder(monitors, rewriterSequencer)
+
+    // Pick planner based on input
+    val planBuilder = ExecutablePlanBuilder.create(plannerName, rulePlanProducer,
+                                                   costPlanProducer, planBuilderMonitor, useErrorsOverWarnings)
+
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, planBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](queryCacheSize)
     monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
@@ -135,11 +133,16 @@ case class CypherCompiler(parser: CypherParser,
                 offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) =
     planPreparedQuery(prepareQuery(queryText, notificationLogger), context, CompilationPhaseTracer.NO_TRACING)
 
-  def prepareQuery(queryText: String, notificationLogger: InternalNotificationLogger, offset: Option[InputPosition] = None, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuery = {
-    val parsedStatement = closing(tracer.beginPhase(PARSING)) { parser.parse(queryText, offset) }
+  def prepareQuery(queryText: String, notificationLogger: InternalNotificationLogger,
+                   offset: Option[InputPosition] = None,
+                   tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuery = {
+    val parsedStatement = closing(tracer.beginPhase(PARSING)) {
+      parser.parse(queryText, offset)
+    }
 
     val mkException = new SyntaxExceptionCreator(queryText, offset)
-    val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+    val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException),
+                                                                             normalizeWithClauses(mkException)))
     val originalSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
       semanticChecker.check(queryText, cleanedStatement, notificationLogger, mkException)
     }
@@ -155,7 +158,8 @@ case class CypherCompiler(parser: CypherParser,
     PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree, notificationLogger)
   }
 
-  def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
+  def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext,
+                        tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
     val cache = provideCache(cacheAccessor, cacheMonitor, context)
     var planned = false
     val plan = Iterator.continually {
@@ -164,7 +168,7 @@ case class CypherCompiler(parser: CypherParser,
         executionPlanBuilder.build(context, parsedQuery, tracer)
       })
     }.flatMap { plan =>
-      if ( !planned && plan.isStale(context.txIdProvider, context.statistics) ) {
+      if (!planned && plan.isStale(context.txIdProvider, context.statistics)) {
         cacheAccessor.remove(cache)(parsedQuery.statement)
         None
       } else {

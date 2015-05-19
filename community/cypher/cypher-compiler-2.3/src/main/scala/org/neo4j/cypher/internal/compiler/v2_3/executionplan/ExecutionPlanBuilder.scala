@@ -79,6 +79,17 @@ trait NewRuntimeSuccessRateMonitor {
   def unableToHandlePlan(plan: LogicalPlan, origin: CantCompileQueryException)
 }
 
+object ExecutablePlanBuilder {
+
+  def create(plannerName: Option[PlannerName], rulePlanProducer: ExecutablePlanBuilder,
+             costPlanProducer: ExecutablePlanBuilder, planBuilderMonitor: NewLogicalPlanSuccessRateMonitor,
+             useErrorsOverWarnings: Boolean) = plannerName match {
+    case None => new SilentFallbackPlanBuilder(rulePlanProducer, costPlanProducer, planBuilderMonitor)
+    case Some(_) if useErrorsOverWarnings => new ErrorReportingExecutablePlanBuilder(costPlanProducer)
+    case Some(_) => new WarningFallbackPlanBuilder(rulePlanProducer, costPlanProducer, planBuilderMonitor)
+  }
+}
+
 trait ExecutablePlanBuilder {
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): Either[CompiledPlan, PipeInfo]
 }
@@ -118,7 +129,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
         }
       }
 
-      def plannerUsed: PlannerName = GreedyPlannerName
+      def plannerUsed: PlannerName = compiledPlan.plannerUsed
 
       def isPeriodicCommit: Boolean = compiledPlan.periodicCommit.isDefined
 

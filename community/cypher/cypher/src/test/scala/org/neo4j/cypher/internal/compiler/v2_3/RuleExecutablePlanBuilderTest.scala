@@ -56,7 +56,11 @@ class RuleExecutablePlanBuilderTest
   val ast = mock[Statement]
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
-  val planner = CostBasedPipeBuilderFactory(mock[Monitors], SimpleMetricsFactory, Clock.SYSTEM_CLOCK, queryPlanner, rewriterSequencer)
+  val planner = CostBasedPipeBuilderFactory.create(mock[Monitors], SimpleMetricsFactory, queryPlanner,
+                                                   rewriterSequencer, plannerName = None,
+                                                   runtimeBuilder = SilentFallbackRuntimeBuilder(
+                                                     InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, mock[Monitors]),
+                                                     CompiledPlanBuilder(Clock.SYSTEM_CLOCK)))
 
   class FakePreparedQuery(q: AbstractQuery)
     extends PreparedQuery(mock[Statement], "q", Map.empty)(SemanticTable(), Set.empty, Scope(Map.empty, Seq.empty), devNullLogger) {

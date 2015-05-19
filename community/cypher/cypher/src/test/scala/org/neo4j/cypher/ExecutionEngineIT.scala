@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.compiler.v2_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -28,7 +29,7 @@ import org.neo4j.test.TestGraphDatabaseFactory
 
 class ExecutionEngineIT extends CypherFunSuite {
 
-  test("by default when using cypher 2.2 some queries should default to COST and others to RULE") {
+  test("by default when using cypher 2.2 some queries should default to COST") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
@@ -43,7 +44,7 @@ class ExecutionEngineIT extends CypherFunSuite {
     plan2.getArguments.get("planner") should equal("COST")
   }
 
-  test("by default when using cypher 2.3 some queries should default to COST and others to RULE") {
+  test("by default when using cypher 2.3 some queries should default to COST") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
@@ -55,9 +56,9 @@ class ExecutionEngineIT extends CypherFunSuite {
 
     //then
     plan1.getArguments.get("planner") should equal("COST")
-    plan1.getArguments.get("planner-impl") should equal("GREEDY")
+    plan1.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
     plan2.getArguments.get("planner") should equal("COST")
-    plan2.getArguments.get("planner-impl") should equal("GREEDY")
+    plan2.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
   }
 
   test("should be able to set RULE as default when using cypher 2.2") {

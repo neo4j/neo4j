@@ -30,24 +30,29 @@ import org.neo4j.graphdb.QueryExecutionType.QueryType
 object RewindableExecutionResult {
   self =>
 
-  def apply(inner: InternalExecutionResult, planner:PlannerName, runtime:RuntimeName): InternalExecutionResult = inner match {
-    case other: PipeExecutionResult  =>
-      exceptionHandlerFor2_3.runSafely {
-        new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder, other.executionMode, QueryType.READ_WRITE) {
-          override def executionPlanDescription(): InternalPlanDescription = super.executionPlanDescription().addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
+  def apply(inner: InternalExecutionResult, planner: PlannerName, runtime: RuntimeName): InternalExecutionResult =
+    inner match {
+      case other: PipeExecutionResult =>
+        exceptionHandlerFor2_3.runSafely {
+          new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
+            other.executionMode, QueryType.READ_WRITE) {
+            override def executionPlanDescription(): InternalPlanDescription = super.executionPlanDescription()
+                                                                               .addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
+          }
         }
-      }
-    case other: CompiledExecutionResult  =>
-      exceptionHandlerFor2_3.runSafely {
-        other.toEagerIterableResult(planner, runtime)
-      }
+      case other: CompiledExecutionResult =>
+        exceptionHandlerFor2_3.runSafely {
+          other.toEagerIterableResult(planner, runtime)
+        }
 
-    case _ =>
-      inner
-  }
+      case _ =>
+        inner
+    }
 
   def apply(in: ExecutionResult): InternalExecutionResult = in match {
-    case e@ExecutionResultWrapperFor2_3(inner, _, _) => exceptionHandlerFor2_3.runSafely(apply(inner, e.planner, e.runtime))
-    case _                                           => throw new InternalException("Can't get the internal execution result of an older compiler")
+    case e@ExecutionResultWrapperFor2_3(inner, _, _) => exceptionHandlerFor2_3
+      .runSafely(apply(inner, e.planner, e.runtime))
+
+    case _ => throw new InternalException("Can't get the internal execution result of an older compiler")
   }
 }
