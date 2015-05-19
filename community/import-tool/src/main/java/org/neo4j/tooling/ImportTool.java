@@ -599,12 +599,12 @@ public class ImportTool
         public Collection<Option<File[]>> apply( Args args, String key )
         {
             return args.interpretOptionsWithMetadata( key, Converters.<File[]>optional(),
-                    Converters.toFiles( MULTI_FILE_DELIMITER ), FILES_EXISTS,
+                    Converters.toFiles( MULTI_FILE_DELIMITER, Converters.regexFiles( true ) ), FILES_EXISTS,
                     Validators.<File>atLeast( "--" + key, 1 ) );
         }
     };
 
-    private static final Validator<File[]> FILES_EXISTS = new Validator<File[]>()
+    static final Validator<File[]> FILES_EXISTS = new Validator<File[]>()
     {
         @Override
         public void validate( File[] files )
@@ -617,12 +617,12 @@ public class ImportTool
                             file.getName() + "). Please put such directly on the key, f.ex. " +
                             Options.NODE_DATA.argument() + ":MyLabel" );
                 }
-                Validators.FILE_EXISTS.validate( file );
+                Validators.REGEX_FILE_EXISTS.validate( file );
             }
         }
     };
 
-    private static void warn( String warning )
+    static void warn( String warning )
     {
         System.err.println( warning );
     }
