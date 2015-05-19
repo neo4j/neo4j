@@ -45,8 +45,8 @@
     <docs-plugin.skip>false</docs-plugin.skip>
     <attach-docs-phase>verify</attach-docs-phase>
     <remote-csv-upload>http://neo4j.com/docs/${project.version}/csv</remote-csv-upload>
-    <scala.version>2.10.5</scala.version>
-    <scala.binary.version>2.10</scala.binary.version>
+    <scala.version>2.11.6</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
   <dependencies>
@@ -65,7 +65,7 @@
 
     <dependency>
       <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_2.10</artifactId>
+      <artifactId>scalatest_2.11</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -76,7 +76,7 @@
     </dependency>
     <dependency>
       <groupId>org.scalautils</groupId>
-      <artifactId>scalautils_2.10</artifactId>
+      <artifactId>scalautils_2.11</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>

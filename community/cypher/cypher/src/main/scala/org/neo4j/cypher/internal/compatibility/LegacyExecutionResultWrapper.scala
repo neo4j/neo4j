@@ -20,15 +20,21 @@
 package org.neo4j.cypher.internal.compatibility
 
 import java.io.PrintWriter
+import java.util
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.AmendedRootPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{Rows, DbHits}
 import org.neo4j.cypher.internal.compiler.v2_3.{InterpretedRuntimeName, RulePlannerName}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.iteratorToVisitable
+import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
+import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{PlanDescription => PlanDescription_v1_9}
+import scala.collection.JavaConverters._
 
 case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionRequested: Boolean, version: CypherVersion)
                                        (implicit monitor: QueryExecutionMonitor, session: QuerySession) extends ExtendedExecutionResult {
@@ -88,8 +94,14 @@ case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionR
 
   def executionPlanDescription(): PlanDescription = {
     val description = inner.executionPlanDescription() match {
-      case extended: ExtendedPlanDescription => extended
-      case other => ExtendedPlanDescriptionWrapper(other)
+      case extended: ExtendedPlanDescription =>
+        extended
+
+      case legacy: org.neo4j.cypher.internal.compiler.v1_9.executionplan.PlanDescription =>
+        CompatibilityPlanDescriptionFor1_9(legacy, planDescriptionRequested)
+
+      case other =>
+        ExtendedPlanDescriptionWrapper(other)
     }
 
     new AmendedRootPlanDescription(description, version, RulePlannerName, InterpretedRuntimeName)
@@ -131,13 +143,47 @@ case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionR
       stats.constraintsRemoved > 0)
 }
 
+// This is carefully tiptoeing around calling abstract methods that have changed between 2.3 and 2.0
+// (i.e. if you touch this be very sure to not unintentionally introduce an AbstractMethodError)
+case class CompatibilityPlanDescriptionFor1_9(legacy: PlanDescription_v1_9, planDescriptionRequested: Boolean) extends ExtendedPlanDescription {
+  self =>
+
+  def identifiers: Set[String] = Set.empty
+
+  override def children: Seq[PlanDescription] = legacy.children.map(CompatibilityPlanDescriptionFor1_9(_, planDescriptionRequested))
+
+  def extendedChildren: Seq[ExtendedPlanDescription] = legacy.children.map(CompatibilityPlanDescriptionFor1_9(_, planDescriptionRequested))
+
+  override def asJava: javacompat.PlanDescription = new javacompat.PlanDescription {
+    def getProfilerStatistics: ProfilerStatistics = legacy.asJava.getProfilerStatistics
+
+    def getName: String = name
+    def getIdentifiers: util.Set[String] = identifiers.asJava
+    def getArguments: util.Map[String, AnyRef] = self.arguments.asJava
+    def getChildren: util.List[javacompat.PlanDescription] = extendedChildren.toList.map(_.asJava).asJava
+
+    def hasProfilerStatistics: Boolean = self.hasProfilerStatistics
+
+    override def toString: String = self.toString
+  }
+
+  def arguments: Map[String, AnyRef] = legacy.args.toMap
+
+  override def hasProfilerStatistics = planDescriptionRequested
+
+  def name: String = legacy.name
+
+  override def toString = legacy.toString
+}
+
 case class ExtendedPlanDescriptionWrapper(inner: PlanDescription) extends ExtendedPlanDescription {
   def extendedChildren = inner.children.map(ExtendedPlanDescriptionWrapper)
   def identifiers = Set.empty
   def asJava = inner.asJava
-  def children = inner.children
+  override def children = inner.children
   def arguments = inner.arguments
-  def hasProfilerStatistics = inner.hasProfilerStatistics
+  override def hasProfilerStatistics = inner.hasProfilerStatistics
   def name = inner.name
+
   override def toString = inner.toString
 }

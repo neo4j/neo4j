@@ -221,6 +221,5 @@ class CypherCompatibilityTest extends CypherFunSuite {
     } finally {
       graph.shutdown()
     }
-
   }
 }

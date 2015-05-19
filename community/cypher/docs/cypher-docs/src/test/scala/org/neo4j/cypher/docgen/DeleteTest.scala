@@ -29,9 +29,9 @@ class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
   override def graphDescription = List("Andres KNOWS Tobias", "Andres KNOWS Peter")
 
   override val properties = Map(
-    "Andres" -> Map("name"->"Andres", "age" -> 36l),
-    "Tobias" -> Map("name"->"Tobias", "age" -> 25l),
-    "Peter"  -> Map("name"->"Peter",  "age" -> 34l)
+    "Andres" -> Map[String, Any]("name"->"Andres", "age" -> 36l),
+    "Tobias" -> Map[String, Any]("name"->"Tobias", "age" -> 25l),
+    "Peter"  -> Map[String, Any]("name"->"Peter",  "age" -> 34l)
   )
 
   override protected def getGraphvizStyle: GraphStyle =

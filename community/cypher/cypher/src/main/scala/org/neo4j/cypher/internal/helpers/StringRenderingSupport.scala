@@ -17,11 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
+package org.neo4j.cypher.internal.helpers
 
-import scala.collection.immutable.BitSet
+/**
+ * Subclasses prefer to use StringBuilders to render themselves
+ */
+// TODO: This is only here for accomodating cypher-compiler-1.9. Do not touch, do not import, purge it with fire post 2.3
+trait StringRenderingSupport {
+  override def toString = {
+    val builder = new StringBuilder
+    render(builder)
+    builder.toString()
+  }
 
-package object idp {
-  type Goal = BitSet
-  type Seed[SolvableItem, Result] = Iterable[(Set[SolvableItem], Result)]
+  def render(builder: StringBuilder) {
+    builder ++= super.toString
+  }
 }
+

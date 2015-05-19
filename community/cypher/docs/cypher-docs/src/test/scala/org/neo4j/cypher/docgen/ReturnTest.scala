@@ -28,13 +28,13 @@ import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 class ReturnTest extends DocumentingTestBase {
   override def graphDescription = List("A KNOWS B", "A BLOCKS B")
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
-  
+
   def section = "Return"
 
   override val properties =
-    Map("A" -> Map("happy" -> "Yes!", "age" -> 55))
+    Map("A" -> Map[String, Any]("happy" -> "Yes!", "age" -> 55))
 
   @Test def returnNode() {
     testQuery(

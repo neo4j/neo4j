@@ -33,9 +33,9 @@ class UsingTest extends DocumentingTestBase {
   override val setupConstraintQueries: List[String] = List("CREATE INDEX ON :Swedish(surname)", "CREATE INDEX ON :German(surname)")
 
   override val properties = Map(
-    "Andres" -> Map("age" -> 36l, "awesome" -> true, "surname" -> "Taylor"),
-    "Peter" -> Map("age" -> 34l),
-    "Stefan" -> Map("surname" -> "Plantikow")
+    "Andres" -> Map[String, Any]("age" -> 36l, "awesome" -> true, "surname" -> "Taylor"),
+    "Peter" -> Map[String, Any]("age" -> 34l),
+    "Stefan" -> Map[String, Any]("surname" -> "Plantikow")
   )
 
   def section = "Using"

@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 class CastSupportTest extends CypherFunSuite {
 
   test("siftTest") {
-    val given = Seq(1, 2, "a", 3, "b", 42, "z")
+    val given = Seq[Any](1, 2, "a", 3, "b", 42, "z")
     val then  = helpers.CastSupport.sift[String](given)
     then should equal(Seq("a", "b", "z"))
   }
 
   test("siftComplexTest") {
-    val given = Seq(1, 2, List("a"), 3, "b", 42, List("z"))
+    val given = Seq[Any](1, 2, List("a"), 3, "b", 42, List("z"))
     val then  = helpers.CastSupport.sift[List[String]](given)
     then should equal(Seq(List("a"), List("z")))
   }

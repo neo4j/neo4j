@@ -42,8 +42,8 @@ class CaseTest extends RefcardTest with QueryStatisticsTestSupport {
   }
 
   override val properties = Map(
-    "A" -> Map("name" -> "Alice", "age" -> 38, "eyes" -> "brown"),
-    "B" -> Map("name" -> "Beth", "age" -> 38, "eyes" -> "blue"))
+    "A" -> Map[String, Any]("name" -> "Alice", "age" -> 38, "eyes" -> "brown"),
+    "B" -> Map[String, Any]("name" -> "Beth", "age" -> 38, "eyes" -> "blue"))
 
   def text = """
 ###assertion=simple

@@ -120,7 +120,7 @@ class MapPropertySetActionTest extends GraphDatabaseFunSuite with QueryStateTest
   }
 
   test("explicit null removes values") {
-    val from = Map("a" -> 1, "b" -> null)
+    val from = Map[String, Any]("a" -> 1, "b" -> null)
     val to = createNode("a" -> "A", "b" -> "B", "c" -> "C")
 
     withCountsQueryState { queryState =>

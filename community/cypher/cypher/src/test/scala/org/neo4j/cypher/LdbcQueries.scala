@@ -174,24 +174,27 @@ object LdbcQueries {
 
     def params = Map("1" -> 0, "2" -> "name0", "3" -> 6)
 
-    def expectedResult = List(
-      Map("creationDate" -> 2, "gender" -> "gender2", "distance" -> 1, "unis" -> List(List("uni2", 3, "city0")), "locationIp" -> "ip2",
-        "languages" -> List("friend2language0", "friend2language1"), "birthday" -> 2, "cityName" -> "city1",
-        "lastName" -> "last0-ᚠさ丵פش", "id" -> 2, "emails" -> Seq.empty, "browser" -> "browser2", "companies" -> Seq.empty),
-      Map("creationDate" -> 3, "gender" -> "gender3", "distance" -> 1, "unis" -> Seq.empty, "locationIp" -> "ip3",
-        "languages" -> List("friend3language0"), "birthday" -> 3, "cityName" -> "city1", "lastName" -> "last0-ᚠさ丵פش",
-        "id" -> 3, "emails" -> List("friend3email1", "friend3email2"), "browser" -> "browser3",
-        "companies" -> List(List("company0", 1, "country0"))),
-      Map("creationDate" -> 1, "gender" -> "gender1", "distance" -> 1,
-        "unis" -> List(List("uni0", 0, "city1")), "locationIp" -> "ip1", "languages" -> List("friend1language0"),
-        "birthday" -> 1, "cityName" -> "city0", "lastName" -> "last1-ᚠさ丵פش", "id" -> 1,
-        "emails" -> List("friend1email1", "friend1email2"), "browser" -> "browser1", "companies" -> List(List("company0", 0, "country0"))),
-      Map("creationDate" -> 11, "gender" -> "gender11", "distance" -> 2, "unis" -> List(List("uni2", 2, "city0"),
-        List("uni1", 1, "city0")), "locationIp" -> "ip11", "languages" -> Seq.empty, "birthday" -> 11, "cityName" -> "city0",
-        "lastName" -> "last11-ᚠさ丵פش", "id" -> 11, "emails" -> Seq.empty, "browser" -> "browser11", "companies" -> Seq.empty),
-      Map("creationDate" -> 31, "gender" -> "gender31", "distance" -> 2, "unis" -> Seq.empty, "locationIp" -> "ip31",
-        "languages" -> Seq.empty, "birthday" -> 31, "cityName" -> "city1", "lastName" -> "last31-ᚠさ丵פش", "id" -> 31,
-        "emails" -> Seq.empty, "browser" -> "browser31", "companies" -> Seq.empty))
+    def expectedResult: List[Map[String, Any]] = {
+      List(
+        Map("creationDate" -> 2, "gender" -> "gender2", "distance" -> 1, "unis" -> List(List[Any]("uni2", 3, "city0")), "locationIp" -> "ip2",
+          "languages" -> List("friend2language0", "friend2language1"), "birthday" -> 2, "cityName" -> "city1",
+          "lastName" -> "last0-ᚠさ丵פش", "id" -> 2, "emails" -> Seq.empty, "browser" -> "browser2", "companies" -> Seq.empty),
+        Map("creationDate" -> 3, "gender" -> "gender3", "distance" -> 1, "unis" -> Seq.empty, "locationIp" -> "ip3",
+          "languages" -> List("friend3language0"), "birthday" -> 3, "cityName" -> "city1", "lastName" -> "last0-ᚠさ丵פش",
+          "id" -> 3, "emails" -> List("friend3email1", "friend3email2"), "browser" -> "browser3",
+          "companies" -> List(List[Any]("company0", 1, "country0"))),
+        Map("creationDate" -> 1, "gender" -> "gender1", "distance" -> 1,
+          "unis" -> List(List[Any]("uni0", 0, "city1")), "locationIp" -> "ip1", "languages" -> List("friend1language0"),
+          "birthday" -> 1, "cityName" -> "city0", "lastName" -> "last1-ᚠさ丵פش", "id" -> 1,
+          "emails" -> List("friend1email1", "friend1email2"), "browser" -> "browser1", "companies" -> List(List[Any]("company0", 0, "country0"))),
+        Map("creationDate" -> 11, "gender" -> "gender11", "distance" -> 2, "unis" -> List(List[Any]("uni2", 2, "city0"),
+          List[Any]("uni1", 1, "city0")), "locationIp" -> "ip11", "languages" -> Seq.empty, "birthday" -> 11, "cityName" -> "city0",
+          "lastName" -> "last11-ᚠさ丵פش", "id" -> 11, "emails" -> Seq.empty, "browser" -> "browser11", "companies" -> Seq.empty),
+        Map("creationDate" -> 31, "gender" -> "gender31", "distance" -> 2, "unis" -> Seq.empty, "locationIp" -> "ip31",
+          "languages" -> Seq.empty, "birthday" -> 31, "cityName" -> "city1", "lastName" -> "last31-ᚠさ丵פش", "id" -> 31,
+          "emails" -> Seq.empty, "browser" -> "browser31", "companies" -> Seq.empty)
+      )
+    }
   }
 
   object Query2 extends LdbcQuery {

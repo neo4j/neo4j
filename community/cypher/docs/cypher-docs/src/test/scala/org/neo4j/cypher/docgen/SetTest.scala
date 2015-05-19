@@ -35,8 +35,8 @@ class SetTest extends DocumentingTestBase with QueryStatisticsTestSupport with S
     "Emil KNOWS Peter")
 
   override val properties = Map(
-    "Andres" -> Map("age" -> 36l, "hungry" -> true),
-    "Peter" -> Map("age" -> 34l))
+    "Andres" -> Map[String, Any]("age" -> 36l, "hungry" -> true),
+    "Peter" -> Map[String, Any]("age" -> 34l))
 
   def section = "Set"
 

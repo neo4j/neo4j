@@ -17,11 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_3.executionplan;
 
-import scala.collection.immutable.BitSet
+import java.util.List;
 
-package object idp {
-  type Goal = BitSet
-  type Seed[SolvableItem, Result] = Iterable[(Set[SolvableItem], Result)]
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
+import org.neo4j.graphdb.Result;
+
+public interface GeneratedQueryExecution
+{
+    List<String> javaColumns();
+
+    <E extends Exception> void accept( final Result.ResultVisitor<E> visitor ) throws E;
+
+    ExecutionMode executionMode();
+
+    InternalPlanDescription executionPlanDescription();
+
+    void setSuccessfulCloseable( SuccessfulCloseable closeable );
 }

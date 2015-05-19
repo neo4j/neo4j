@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenerator, QueryExecutionTracer, setStaticField}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.tracer
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionResult, GeneratedQueryExecution, CompiledPlan, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
@@ -88,21 +88,21 @@ trait CodeGenSugar extends MockitoSugar {
     rows
   }
 
-  def compile(instructions: Instruction*): Class[InternalExecutionResult] =
+  def compile(instructions: Instruction*): Class[GeneratedQueryExecution] =
     CodeGenerator.generateClass(instructions.toSeq)._1
 
   def generateSource(instructions: Instruction*): String =
     CodeGenerator.generateClass(instructions.toSeq)._2
 
-  def newInstance(clazz: Class[InternalExecutionResult],
+  def newInstance(clazz: Class[GeneratedQueryExecution],
                   taskCloser: TaskCloser = new TaskCloser,
                   statement: Statement = mock[Statement],
                   graphdb: GraphDatabaseService = null,
                   executionMode: ExecutionMode = null,
                   supplier: Supplier[InternalPlanDescription] = null,
                   queryExecutionTracer: QueryExecutionTracer = QueryExecutionTracer.NONE,
-                  params: Map[String, Any] = Map.empty): InternalExecutionResult =
-    clazz.getConstructor(
+                  params: Map[String, Any] = Map.empty): InternalExecutionResult = {
+    val generated = clazz.getConstructor(
       classOf[TaskCloser],
       classOf[Statement],
       classOf[GraphDatabaseService],
@@ -111,8 +111,11 @@ trait CodeGenSugar extends MockitoSugar {
       classOf[QueryExecutionTracer],
       classOf[java.util.Map[String, Object]]
     ).newInstance(taskCloser, statement, graphdb, executionMode, supplier, queryExecutionTracer, JavaConversions.mapAsJavaMap(params))
+    new CompiledExecutionResult(taskCloser, statement, generated, supplier)
+  }
 
-  def insertStatic(clazz: Class[InternalExecutionResult], mappings: (String, Id)*) = mappings.foreach {
+
+  def insertStatic(clazz: Class[GeneratedQueryExecution], mappings: (String, Id)*) = mappings.foreach {
     case (name, id) => setStaticField(clazz, name, id)
   }
 }

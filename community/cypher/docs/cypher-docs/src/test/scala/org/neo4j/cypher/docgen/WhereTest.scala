@@ -31,12 +31,12 @@ class WhereTest extends DocumentingTestBase {
     "Andres:Swedish KNOWS Peter")
 
   override val properties = Map(
-    "Andres" -> Map("age" -> 36l, "belt" -> "white"),
-    "Tobias" -> Map("age" -> 25l),
-    "Peter" -> Map("age" -> 34l)
+    "Andres" -> Map[String, Any]("age" -> 36l, "belt" -> "white"),
+    "Tobias" -> Map[String, Any]("age" -> 25l),
+    "Peter"  -> Map[String, Any]("age" -> 34l)
   )
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   def section = "Where"

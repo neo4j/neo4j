@@ -67,7 +67,7 @@ class AmendedRootPlanDescription(inner: ExtendedPlanDescription, version: Cypher
     s"Compiler $version \n\n$planner\n\n$runtime\n\n$innerToString"
   }
 
-  def children: Seq[PlanDescription] = inner.children
+  override def children: Seq[PlanDescription] = inner.children
 
   def extendedChildren: Seq[ExtendedPlanDescription] = inner.extendedChildren
 
@@ -75,5 +75,5 @@ class AmendedRootPlanDescription(inner: ExtendedPlanDescription, version: Cypher
 
   def identifiers: Set[String] = inner.identifiers
 
-  def hasProfilerStatistics: Boolean = inner.hasProfilerStatistics
+  override def hasProfilerStatistics: Boolean = inner.hasProfilerStatistics
 }

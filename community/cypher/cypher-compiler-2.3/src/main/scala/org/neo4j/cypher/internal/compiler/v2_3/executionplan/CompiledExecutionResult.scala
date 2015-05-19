@@ -37,13 +37,21 @@ import org.neo4j.kernel.api.Statement
 
 import scala.collection.{Map, mutable}
 
+trait SuccessfulCloseable {
+  def success(): Unit
+  def close(): Unit
+}
+
 /**
- * Base class for compiled execution results, implements everything in InternalExecutionResult
- * except `javaColumns` and `accept` which should be implemented by the generated classes.
+ * Main class for compiled execution results, implements everything in InternalExecutionResult
+ * except `javaColumns` and `accept` which delegates to the injected compiled code.
  */
-abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Statement,
-                                       executionMode:ExecutionMode, description:Supplier[InternalPlanDescription])
-  extends InternalExecutionResult {
+class CompiledExecutionResult(taskCloser: TaskCloser,
+                              statement: Statement,
+                              compiledCode: GeneratedQueryExecution,
+                              description: Supplier[InternalPlanDescription])
+  extends InternalExecutionResult with SuccessfulCloseable  {
+
   self =>
 
   import scala.collection.JavaConverters._
@@ -54,9 +62,11 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
     list.iterator()
   }
 
+  compiledCode.setSuccessfulCloseable(self)
+
   override def columns: List[String] = javaColumns.asScala.toList
 
-  def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
+  override final def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
     def hasNext = self.hasNext
     def next() = extractJavaColumn(column, innerIterator.next()).asInstanceOf[T]
   }
@@ -94,7 +104,7 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
       populateDumpToStringResults(dumpToStringBuilder)(row)
     }
     val iterator = result.iterator()
-    new CompiledExecutionResult(taskCloser, statement, executionMode, description) {
+    new CompiledExecutionResult(taskCloser, statement, compiledCode, description) {
 
       override def javaColumns: util.List[String] = self.javaColumns
 
@@ -116,15 +126,14 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
   override def queryStatistics() = InternalQueryStatistics()
 
   private var successful = false
-  protected def success() = {
+
+  def success() = {
     successful = true
   }
 
   override def close() = {
     taskCloser.close(success = successful)
   }
-
-  override def executionPlanDescription() = description.get()
 
   val mode = executionMode
 
@@ -235,5 +244,18 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
     def remove() { Collections.emptyIterator[T]().remove() }
     def close() { self.close() }
   }
+
+  // *** Delegate to compiled code
+
+  def executionMode: ExecutionMode = compiledCode.executionMode()
+
+  override def javaColumns: util.List[String] = compiledCode.javaColumns()
+
+  //todo this should not depend on external visitor
+  override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit =
+    compiledCode.accept(visitor)
+
+  override def executionPlanDescription(): InternalPlanDescription =
+    compiledCode.executionPlanDescription()
 }
 

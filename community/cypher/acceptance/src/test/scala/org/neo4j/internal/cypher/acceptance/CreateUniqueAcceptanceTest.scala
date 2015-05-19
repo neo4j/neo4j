@@ -165,8 +165,8 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
 
   test("should_be_able_to_handle_two_params") {
     createNode()
-    val props1 = Map("name"->"Andres", "position"->"Developer")
-    val props2 = Map("name"->"Lasse", "awesome"->true)
+    val props1 = Map[String, Any]("name"->"Andres", "position"->"Developer")
+    val props2 = Map[String, Any]("name"->"Lasse", "awesome"->true)
 
     val result = execute("match (n) where id(n) = 0 create unique n-[:REL]->(a {props1})-[:LER]->(b {props2}) return a,b", "props1"->props1, "props2"->props2)
 
@@ -184,8 +184,8 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
   test("should_be_able_to_handle_two_params_without_named_nodes") {
     createNode()
 
-    val props1 = Map("name"->"Andres", "position"->"Developer")
-    val props2 = Map("name"->"Lasse", "awesome"->true)
+    val props1 = Map[String, Any]("name"->"Andres", "position"->"Developer")
+    val props2 = Map[String, Any]("name"->"Lasse", "awesome"->true)
 
     val result = execute("match (n) where id(n) = 0 create unique p=n-[:REL]->({props1})-[:LER]->({props2}) return p", "props1"->props1, "props2"->props2)
 

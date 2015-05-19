@@ -34,11 +34,11 @@ class FunctionsTest extends DocumentingTestBase {
     "B MARRIED E:Spouse")
 
   override val properties = Map(
-    "A" -> Map("name" -> "Alice", "age" -> 38, "eyes" -> "brown"),
-    "B" -> Map("name" -> "Bob", "age" -> 25, "eyes" -> "blue"),
-    "C" -> Map("name" -> "Charlie", "age" -> 53, "eyes" -> "green"),
-    "D" -> Map("name" -> "Daniel", "age" -> 54, "eyes" -> "brown"),
-    "E" -> Map("name" -> "Eskil", "age" -> 41, "eyes" -> "blue", "array" -> Array("one", "two", "three"))
+    "A" -> Map[String, Any]("name" -> "Alice", "age" -> 38, "eyes" -> "brown"),
+    "B" -> Map[String, Any]("name" -> "Bob", "age" -> 25, "eyes" -> "blue"),
+    "C" -> Map[String, Any]("name" -> "Charlie", "age" -> 53, "eyes" -> "green"),
+    "D" -> Map[String, Any]("name" -> "Daniel", "age" -> 54, "eyes" -> "brown"),
+    "E" -> Map[String, Any]("name" -> "Eskil", "age" -> 41, "eyes" -> "blue", "array" -> Array("one", "two", "three"))
   )
 
   override protected def getGraphvizStyle: GraphStyle =

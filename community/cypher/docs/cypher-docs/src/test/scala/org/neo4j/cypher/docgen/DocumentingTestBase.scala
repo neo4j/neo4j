@@ -525,8 +525,8 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
 trait ResetStrategy {
   def reset() {}
-  def hardReset()
-  def softReset()
+  def hardReset() {}
+  def softReset() {}
 }
 
 trait HardReset extends ResetStrategy {

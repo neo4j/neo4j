@@ -298,7 +298,8 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
   extends ExtendedPlanDescription {
 
   self =>
-  def children = extendedChildren
+
+  override def children = extendedChildren
 
   def extendedChildren = exceptionHandlerFor2_3.runSafely {
     inner.children.toSeq.map(CompatibilityPlanDescriptionFor2_3.apply(_, version, planner, runtime))
@@ -310,7 +311,7 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
 
   def identifiers = exceptionHandlerFor2_3.runSafely { inner.orderedIdentifiers.toSet }
 
-  def hasProfilerStatistics = exceptionHandlerFor2_3.runSafely { inner.arguments.exists(_.isInstanceOf[DbHits]) }
+  override def hasProfilerStatistics = exceptionHandlerFor2_3.runSafely { inner.arguments.exists(_.isInstanceOf[DbHits]) }
 
   def name = exceptionHandlerFor2_3.runSafely { inner.name }
 

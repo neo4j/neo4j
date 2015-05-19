@@ -198,9 +198,9 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
         |return collect(nodes(p)) as paths, length(p) as l order by length(p)""".stripMargin)
 
     val expected =
-      List(Map("l" -> 1, "paths" -> List(List(a, b), List(c, d), List(d, e), List(e, f))),
-           Map("l" -> 2, "paths" -> List(List(c, d, e), List(d, e, f))),
-           Map("l" -> 3, "paths" -> List(List(c, d, e, f))))
+      List(Map[String, Any]("l" -> 1, "paths" -> List(List(a, b), List(c, d), List(d, e), List(e, f))),
+           Map[String, Any]("l" -> 2, "paths" -> List(List(c, d, e), List(d, e, f))),
+           Map[String, Any]("l" -> 3, "paths" -> List(List(c, d, e, f))))
 
     result.toList should be (expected)
   }
