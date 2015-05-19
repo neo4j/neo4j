@@ -30,7 +30,6 @@ import java.util.Random;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.core;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -31,10 +30,7 @@ import java.io.Writer;
 import java.nio.ByteBuffer;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
-import org.neo4j.io.fs.FileLock;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -43,7 +39,6 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;

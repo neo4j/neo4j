@@ -47,7 +47,6 @@ import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
 import org.neo4j.index.impl.lucene.MyStandardAnalyzer;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
