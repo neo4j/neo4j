@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ReadsNodes, Effects}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
-import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.{Node, Relationship}
 
 case class ProjectEndpointsPipe(source: Pipe, relName: String,

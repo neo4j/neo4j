@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.graphdb._
 

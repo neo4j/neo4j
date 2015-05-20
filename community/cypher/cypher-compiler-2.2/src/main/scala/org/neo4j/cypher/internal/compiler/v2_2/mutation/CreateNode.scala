@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
-import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 import scala.collection.Map
 

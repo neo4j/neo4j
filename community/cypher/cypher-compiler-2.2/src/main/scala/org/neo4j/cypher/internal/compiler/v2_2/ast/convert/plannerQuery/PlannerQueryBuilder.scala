@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, QueryGraph, QueryHorizon}
-import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 
 case class PlannerQueryBuilder(private val q: PlannerQuery)

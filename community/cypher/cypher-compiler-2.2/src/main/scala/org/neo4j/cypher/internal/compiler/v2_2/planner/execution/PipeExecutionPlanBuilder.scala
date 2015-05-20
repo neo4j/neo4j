@@ -30,13 +30,13 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Aggregation
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{EntityProducerFactory, Predicate => CommandPredicate, True}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeInfo, PlanFingerprint}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{LazyTypes, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{CantHandleQueryException, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.helpers.Eagerly
 import org.neo4j.graphdb.Relationship
 import org.neo4j.helpers.Clock
 

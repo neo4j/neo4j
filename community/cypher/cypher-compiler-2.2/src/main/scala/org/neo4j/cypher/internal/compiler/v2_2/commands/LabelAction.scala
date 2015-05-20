@@ -23,10 +23,11 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{Effect, WritesLabel, Effects}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.{CollectionSupport, CastSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.mutation.{GraphElementPropertyFunctions, UpdateAction}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
-import org.neo4j.cypher.internal.helpers._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers._
 import org.neo4j.graphdb.Node
 
 sealed abstract class LabelOp

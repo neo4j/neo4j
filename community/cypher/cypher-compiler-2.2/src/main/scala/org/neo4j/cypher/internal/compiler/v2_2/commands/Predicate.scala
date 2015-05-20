@@ -23,9 +23,10 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import commands.expressions.{Literal, Expression}
 import commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ReadsRelationshipProperty, ReadsLabel, ReadsNodeProperty, Effects}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.{IsCollection, CollectionSupport, CastSupport}
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.internal.helpers._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers._
 import org.neo4j.graphdb._
 
 abstract class Predicate extends Expression {

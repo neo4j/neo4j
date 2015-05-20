@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.helpers
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import commands.values.{TokenType, KeyToken}
-import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 object LabelSupport extends CollectionSupport {
   def labelCollection(elems: String*): Seq[KeyToken] = Seq(elems.map(KeyToken.Unresolved(_, TokenType.Label)): _*)

@@ -132,8 +132,6 @@ case class WrappedMonitors(kernelMonitors: KernelMonitors) extends Monitors {
 
 
 trait CompatibilityFor2_2 {
-  import org.neo4j.cypher.internal.compatibility.helpers._
-
   val graph: GraphDatabaseService
   val queryCacheSize: Int
   val kernelMonitors: KernelMonitors

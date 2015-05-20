@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import java.util.{Map => JavaMap}
 
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.LRUCache
 import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserMonitor
 import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.v2_2._

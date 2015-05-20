@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.LRUCache
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.LRUCache
 
 trait CacheAccessor[K, T] {
   def getOrElseUpdate(cache: LRUCache[K, T])(key: K, f: => T): T

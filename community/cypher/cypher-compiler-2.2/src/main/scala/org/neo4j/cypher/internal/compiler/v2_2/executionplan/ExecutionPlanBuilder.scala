@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.internal.{ProfileMode, ExecutionMode}
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.commands._

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
-import org.neo4j.cypher.internal.PathImpl
+import org.neo4j.cypher.internal.compiler.v2_2.PathImpl
 import org.neo4j.graphdb.{Direction, Node, PropertyContainer, Relationship}
 import org.neo4j.helpers.ThisShouldNotHappenError
 

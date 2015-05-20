@@ -23,6 +23,7 @@ import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
 import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
+import org.neo4j.cypher.internal.compiler.v2_2.{ProfileMode, NormalMode, ExecutionMode}
 import org.neo4j.cypher.internal.spi.v1_9.{GDSBackedQueryContext => QueryContext_v1_9}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -49,10 +50,10 @@ case class CompatibilityFor1_9(graph: GraphDatabaseService, queryCacheSize: Int,
     private def queryContext(graph: GraphDatabaseAPI) =
       new QueryContext_v1_9(graph)
 
-    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, exeuctionMode: ExecutionMode, params: Map[String, Any], session: QuerySession) = exeuctionMode match {
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any], session: QuerySession) = executionMode match {
       case NormalMode   => execute(graph, txInfo, params, session)
       case ProfileMode  => profile(graph, txInfo, params, session)
-      case _            => throw new UnsupportedOperationException(s"${CypherVersion.v1_9.name}: $exeuctionMode is unsupported")
+      case _            => throw new UnsupportedOperationException(s"${CypherVersion.v1_9.name}: $executionMode is unsupported")
     }
 
     private def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any], session: QuerySession) = {

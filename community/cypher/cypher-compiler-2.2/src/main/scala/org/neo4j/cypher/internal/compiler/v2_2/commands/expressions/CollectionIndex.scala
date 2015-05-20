@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.{CollectionSupport, CastSupport}
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.internal.helpers._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers._
 
 case class CollectionIndex(collection: Expression, index: Expression) extends NullInNullOutExpression(collection)
 with CollectionSupport {

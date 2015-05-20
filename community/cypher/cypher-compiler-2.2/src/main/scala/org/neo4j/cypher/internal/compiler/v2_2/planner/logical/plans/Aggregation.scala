@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.helpers.Eagerly
 
 case class Aggregation(left: LogicalPlan,
                        groupingExpressions: Map[String, Expression],

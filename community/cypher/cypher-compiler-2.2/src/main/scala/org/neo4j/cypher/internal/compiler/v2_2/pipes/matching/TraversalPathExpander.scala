@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.DynamicJavaIterable
 import pipes.QueryState
-import org.neo4j.cypher.internal.helpers._
 import org.neo4j.graphdb.{Relationship, Path, PathExpander}
 import org.neo4j.graphdb.traversal.BranchState
 import java.lang.{Iterable => JIterable}

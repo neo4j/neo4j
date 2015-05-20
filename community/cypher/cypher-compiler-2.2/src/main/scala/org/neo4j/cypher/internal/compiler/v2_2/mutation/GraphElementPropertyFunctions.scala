@@ -23,8 +23,9 @@ import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.{CollectionSupport, CastSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
-import org.neo4j.cypher.internal.helpers._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers._
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.JavaConverters._

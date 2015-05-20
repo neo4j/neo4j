@@ -31,11 +31,12 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{GreaterThan, True}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.LRUCache
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.matching._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.CTInteger
-import org.neo4j.cypher.internal.{ExecutionPlan, LRUCache, CypherCompiler => Compiler}
+import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI

@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.Predicate
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
-import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 case class FilterFunction(collection: Expression, id: String, predicate: Predicate)
   extends NullInNullOutExpression(collection)

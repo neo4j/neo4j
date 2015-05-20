@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.TypeSafeMathSupport
 import pipes.QueryState
-import org.neo4j.cypher.internal.helpers._
 
 class AvgFunction(val value: Expression)
   extends AggregationFunction

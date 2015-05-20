@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.{TypeSafeMathSupport, IsCollection}
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.internal.helpers.{TypeSafeMathSupport, IsCollection}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers._
 
 case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMathSupport {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = {

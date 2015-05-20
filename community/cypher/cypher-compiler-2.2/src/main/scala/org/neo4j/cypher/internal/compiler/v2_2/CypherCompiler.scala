@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.LRUCache
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.LRUCache
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.LogicalPlanRewriter
