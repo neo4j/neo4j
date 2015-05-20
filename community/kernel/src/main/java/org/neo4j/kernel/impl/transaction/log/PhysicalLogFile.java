@@ -195,10 +195,21 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     {
         final File fileToOpen = logFiles.getLogFileForVersion( version );
 
-        if (!fileSystem.fileExists( fileToOpen ))
-            throw new FileNotFoundException(  );
+        if ( !fileSystem.fileExists( fileToOpen ) )
+        {
+            throw new FileNotFoundException( String.format( "File does not exist [%s]", fileToOpen.getCanonicalPath() ) );
+        }
 
-        final StoreChannel rawChannel = fileSystem.open( fileToOpen, "rw" );
+        StoreChannel rawChannel;
+        try
+        {
+            rawChannel = fileSystem.open( fileToOpen, "rw" );
+        }
+        catch ( FileNotFoundException e )
+        {
+            throw new FileNotFoundException( String.format( "File could not be opened [%s]", fileToOpen.getCanonicalPath() ) );
+        }
+
         ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
         LogHeader header = readLogHeader( buffer, rawChannel, true );
         assert header.logVersion == version;
