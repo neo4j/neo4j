@@ -300,6 +300,7 @@ module.exports = (grunt) ->
     uglify:
       options: {
         mangle: false
+        ASCIIOnly: true
       },
       dist:
         files:
