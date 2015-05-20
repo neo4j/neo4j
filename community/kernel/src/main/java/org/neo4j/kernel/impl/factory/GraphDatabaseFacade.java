@@ -135,7 +135,7 @@ public class GraphDatabaseFacade
      * @param editionModule
      * @param dataSourceModule
      */
-    public void init(PlatformModule platformModule, EditionModule editionModule, DataSourceModule dataSourceModule)
+    public void init( PlatformModule platformModule, EditionModule editionModule, DataSourceModule dataSourceModule )
     {
         this.platformModule = platformModule;
         this.editionModule = editionModule;
@@ -269,7 +269,7 @@ public class GraphDatabaseFacade
     @Override
     public void shutdown()
     {
-        if (initialized)
+        if ( initialized )
         {
             try
             {

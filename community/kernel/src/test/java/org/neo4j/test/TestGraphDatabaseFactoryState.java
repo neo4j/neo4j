@@ -20,12 +20,13 @@
 package org.neo4j.test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
+import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.LogProvider;
 
 public class TestGraphDatabaseFactoryState extends GraphDatabaseFactoryState
 {
-    private FileSystemAbstraction fileSystem;
+    private Provider<FileSystemAbstraction> fileSystem;
     private LogProvider internalLogProvider;
 
     public TestGraphDatabaseFactoryState()
@@ -41,17 +42,15 @@ public class TestGraphDatabaseFactoryState extends GraphDatabaseFactoryState
         internalLogProvider = previous.internalLogProvider;
     }
 
-    public FileSystemAbstraction getFileSystem()
+    public Provider<FileSystemAbstraction> getFileSystem()
     {
         return fileSystem;
     }
 
-
-    public void setFileSystem( FileSystemAbstraction fileSystem )
+    public void setFileSystem( Provider<FileSystemAbstraction> fileSystem )
     {
         this.fileSystem = fileSystem;
     }
-
 
     public LogProvider getInternalLogProvider()
     {

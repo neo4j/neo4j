@@ -41,7 +41,7 @@ public class LifeSupport
     private volatile List<LifecycleInstance> instances = new ArrayList<LifecycleInstance>();
     private volatile LifecycleStatus status = LifecycleStatus.NONE;
     private final List<LifecycleListener> listeners = new ArrayList<LifecycleListener>();
-    
+
     public LifeSupport()
     {
     }
@@ -307,12 +307,29 @@ public class LifeSupport
      * @return the instance itself
      * @throws LifecycleException if the instance could not be transitioned properly
      */
-    public synchronized <T> T add( T instance )
+    public synchronized <T> T add( final T instance )
             throws LifecycleException
     {
+        Lifecycle lifecycle = null;
         if ( instance instanceof Lifecycle )
         {
-            LifecycleInstance newInstance = new LifecycleInstance( (Lifecycle) instance );
+            lifecycle = (Lifecycle) instance;
+        }
+        else if ( instance instanceof AutoCloseable )
+        {
+            lifecycle = new LifecycleAdapter()
+            {
+                @Override
+                public void shutdown() throws Throwable
+                {
+                    ((AutoCloseable)instance).close();
+                }
+            };
+        }
+
+        if ( lifecycle != null )
+        {
+            LifecycleInstance newInstance = new LifecycleInstance( lifecycle );
             List<LifecycleInstance> tmp = new ArrayList<>( instances );
             tmp.add(newInstance);
             instances = tmp;
@@ -417,7 +434,7 @@ public class LifeSupport
         {
             return exception;
         }
-        
+
         Throwable current = exception;
         while ( current.getCause() != null )
         {

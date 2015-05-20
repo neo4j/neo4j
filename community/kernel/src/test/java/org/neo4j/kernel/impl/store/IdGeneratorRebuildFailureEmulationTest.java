@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,6 +27,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -224,11 +224,11 @@ public class IdGeneratorRebuildFailureEmulationTest
             //Collection<String> open = openFiles();
             //assertTrue( "Open files: " + open, open.isEmpty() );
             assertNoOpenFiles();
-            super.shutdown();
+            super.close();
         }
 
         @Override
-        public void shutdown()
+        public void close()
         {
             // no-op, it's pretty odd to have EphemeralFileSystemAbstraction implement Lifecycle by default
         }

@@ -189,16 +189,15 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     public File[] listFiles( File directory )
     {
         List<File> files = new ArrayList<>();
-        try
+
+        // Reason for not using Path and Files.newDirectoryStream is that JimFS 1.0 doesn't support it.
+        File[] fileListing = directory.listFiles();
+        if ( fileListing != null )
         {
-            for ( Path path : Files.newDirectoryStream( path( directory ) ) )
+            for ( File file : directory.listFiles() )
             {
-                files.add( path.toFile() );
+                files.add( file );
             }
-        }
-        catch ( IOException e )
-        {
-            return null;
         }
         return files.toArray( new File[files.size()] );
     }
@@ -287,5 +286,26 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
             thirdPartyFs.put( clazz, otherFs );
         }
         return otherFs;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        fs.close();
+    }
+
+    @Override
+    protected void finalize() throws Throwable
+    {
+        // We implement finalize because many tests (in kernel) sets a custom file system and then
+        // potentially forgets to close it, since FSA historically haven't been closeable.
+        try
+        {
+            close();
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 }

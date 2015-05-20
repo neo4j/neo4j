@@ -31,21 +31,22 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstraction
 {
-    private final EphemeralFileSystemAbstraction ephemeralFileSystem;
+    private final FileSystemAbstraction ephemeralFileSystem;
     private final int sizePerJump;
 
     public JumpingFileSystemAbstraction( int sizePerJump )
@@ -53,13 +54,13 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
         this( new EphemeralFileSystemAbstraction(), sizePerJump );
     }
 
-    private JumpingFileSystemAbstraction( EphemeralFileSystemAbstraction ephemeralFileSystem, int sizePerJump )
+    private JumpingFileSystemAbstraction( FileSystemAbstraction ephemeralFileSystem, int sizePerJump )
     {
         super( ephemeralFileSystem );
         this.ephemeralFileSystem = ephemeralFileSystem;
         this.sizePerJump = sizePerJump;
     }
-    
+
     @Override
     public StoreChannel open( File fileName, String mode ) throws IOException
     {
@@ -72,18 +73,18 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
                 fileName.getName().equals( "neostore.propertystore.db.strings" ) ||
                 fileName.getName().equals( "neostore.propertystore.db.arrays" ) ||
                 fileName.getName().equals( "neostore.relationshipgroupstore.db" ) )
-        {        
+        {
             return new JumpingFileChannel( channel, recordSizeFor( fileName ) );
         }
         return channel;
     }
-    
+
     @Override
     public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
     {
         return new ChannelOutputStream( open( fileName, "rw" ), append );
     }
-    
+
     @Override
     public InputStream openAsInputStream( File fileName ) throws IOException
     {
@@ -95,7 +96,7 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
     {
         return new InputStreamReader( openAsInputStream( fileName ), encoding );
     }
-    
+
     @Override
     public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
     {
@@ -107,7 +108,7 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
     {
         return open( fileName, "rw" );
     }
-    
+
     private int recordSizeFor( File fileName )
     {
         if ( fileName.getName().endsWith( "nodestore.db" ) )
@@ -142,17 +143,17 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
         }
         throw new IllegalArgumentException( fileName.getPath() );
     }
-    
+
     public class JumpingFileChannel extends StoreFileChannel
     {
         private final int recordSize;
-        
+
         public JumpingFileChannel( StoreFileChannel actual, int recordSize )
         {
             super( actual );
             this.recordSize = recordSize;
         }
-        
+
         private long translateIncoming( long position )
         {
             return translateIncoming( position, false );
@@ -174,7 +175,7 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
                 return offsettedRecord*recordSize;
             }
         }
-        
+
         private long translateOutgoing( long offsettedPosition )
         {
             long offsettedRecord = offsettedPosition/recordSize;
@@ -253,8 +254,9 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
         }
     }
 
-    public void shutdown()
+    @Override
+    public void close() throws IOException
     {
-        ephemeralFileSystem.shutdown();
+        ephemeralFileSystem.close();
     }
 }

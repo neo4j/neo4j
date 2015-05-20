@@ -195,4 +195,9 @@ public class DefaultFileSystemAbstraction
         }
         return clazz.cast( fileSystem );
     }
+
+    @Override
+    public void close() throws IOException
+    {   // Nothing to close
+    }
 }

@@ -19,14 +19,14 @@
  */
 package org.neo4j.io.pagecache.impl;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -53,7 +53,7 @@ public class SingleFilePageSwapperTest
     @After
     public void tearDown()
     {
-        fs.shutdown();
+        fs.close();
     }
 
     @Test

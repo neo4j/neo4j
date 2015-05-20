@@ -70,7 +70,7 @@ public abstract class PageSwappingTest
     @AfterClass
     public static void tearDown()
     {
-        fs.shutdown();
+        fs.close();
     }
 
     @Parameterized.Parameters
