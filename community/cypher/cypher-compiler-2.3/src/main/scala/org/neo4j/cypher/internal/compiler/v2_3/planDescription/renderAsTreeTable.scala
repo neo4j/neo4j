@@ -20,8 +20,6 @@
 
 package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 
-import java.lang.Runtime
-
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 
 import scala.collection.{Map, mutable}
