@@ -24,6 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -202,10 +203,21 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     {
         final File fileToOpen = logFiles.getLogFileForVersion( version );
 
-        if (!fileSystem.fileExists( fileToOpen ))
-            throw new FileNotFoundException(  );
+        if ( !fileSystem.fileExists( fileToOpen ) )
+        {
+            throw new FileNotFoundException( String.format( "File does not exist [%s]", fileToOpen.getCanonicalPath() ) );
+        }
 
-        final StoreChannel rawChannel = fileSystem.open( fileToOpen, "rw" );
+        StoreChannel rawChannel;
+        try
+        {
+            rawChannel = fileSystem.open( fileToOpen, "rw" );
+        }
+        catch ( FileNotFoundException cause )
+        {
+            throw Exceptions.withCause( new FileNotFoundException( String.format( "File could not be opened [%s]", fileToOpen.getCanonicalPath() ) ), cause );
+        }
+
         ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
         LogHeader header = readLogHeader( buffer, rawChannel, true );
         assert header.logVersion == version;
