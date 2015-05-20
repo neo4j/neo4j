@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_2.commands
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import expressions.{Closure, Expression}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.CollectionSupport
 import pipes.QueryState
 import collection.Seq
-import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 abstract class InCollection(collection: Expression, id: String, predicate: Predicate)
   extends Predicate

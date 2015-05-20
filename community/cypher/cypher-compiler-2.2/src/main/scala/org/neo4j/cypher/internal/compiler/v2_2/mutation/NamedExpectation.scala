@@ -24,12 +24,10 @@ import commands.expressions._
 import commands.values.KeyToken
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.internal.helpers._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.Operations
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import collection.Map
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.IsMap
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator
+import org.neo4j.cypher.internal.compiler.v2_2.helpers._
 
 object NamedExpectation {
   def apply(name: String): NamedExpectation = NamedExpectation(name, Map.empty)

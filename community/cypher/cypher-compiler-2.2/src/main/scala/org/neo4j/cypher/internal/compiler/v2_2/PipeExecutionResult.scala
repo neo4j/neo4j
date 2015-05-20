@@ -24,11 +24,11 @@ import java.util
 import java.util.Collections
 
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.{Eagerly, CollectionSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.internal.helpers.{CollectionSupport, Eagerly}
-import org.neo4j.cypher.internal.{ExplainMode, ExecutionMode, ProfileMode}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers._
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
 import org.neo4j.graphdb.ResourceIterator
 

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementConverters
@@ -30,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_2.{Scope, Monitors, PreparedQuery}
+import org.neo4j.cypher.internal.compiler.v2_2.{NormalMode, Scope, Monitors, PreparedQuery}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class RulePipeBuilderTest extends CypherFunSuite {

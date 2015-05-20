@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.QueryExpression
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{LazyLabel, SortDescription}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
@@ -28,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.Cardinali
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, ast}
-import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.Direction
 
 

@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes.matching
 import SingleStep.FilteringIterator
 import org.neo4j.cypher.internal.compiler.v2_2._
 import commands._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.DynamicIterable
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{LazyTypes, QueryState}
-import org.neo4j.cypher.internal.helpers._
 import org.neo4j.graphdb.{Node, Relationship, Direction}
 
 case class SingleStep(id: Int,

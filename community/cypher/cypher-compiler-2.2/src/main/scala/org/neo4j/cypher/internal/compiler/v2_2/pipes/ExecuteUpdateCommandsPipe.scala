@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Identifier
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_2.mutation._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
-import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.NotInTransactionException
 
 import scala.collection.mutable

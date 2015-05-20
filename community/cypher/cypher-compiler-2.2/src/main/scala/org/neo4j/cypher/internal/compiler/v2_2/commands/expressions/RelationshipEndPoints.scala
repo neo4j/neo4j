@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_2._
 import commands.AstNode
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ReadsRelationships, Effects}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.CastSupport
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.internal.helpers.CastSupport.castOrFail
+import CastSupport.castOrFail
 import org.neo4j.graphdb.Relationship
 
 case class RelationshipEndPoints(relExpression: Expression, start: Boolean) extends Expression {

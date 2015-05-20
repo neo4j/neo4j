@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.ParameterExpression
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ReadsNodes, Effects}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.{IsCollection, CollectionSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CTNode, SymbolTable}
-import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 
 sealed trait EntityByIdRhs {
   def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any]

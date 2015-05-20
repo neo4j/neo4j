@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
 import org.neo4j.cypher.internal.compiler.v2_2.ast.NodePattern
 import org.neo4j.cypher.internal.compiler.v2_2.ast.RelationshipPattern
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
@@ -28,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.MapExpression
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Property
 import org.neo4j.cypher.internal.compiler.v2_2.InputPosition
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.FreshIdNameGenerator
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.{PartialFunctionSupport, FreshIdNameGenerator}
 
 trait MatchPredicateNormalizer {
   val extract: PartialFunction[AnyRef, Vector[Expression]]

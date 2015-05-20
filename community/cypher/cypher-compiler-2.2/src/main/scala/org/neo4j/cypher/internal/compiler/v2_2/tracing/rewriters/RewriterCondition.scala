@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters
 
-import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.CollectionSupport
 
 final case class RewriterCondition(name: String, condition: Any => Seq[String])
   extends (Any => Option[RewriterConditionFailure]) with CollectionSupport {

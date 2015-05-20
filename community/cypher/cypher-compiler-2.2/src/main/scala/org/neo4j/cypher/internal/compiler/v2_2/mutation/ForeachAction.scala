@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_2.mutation
 import org.neo4j.cypher.internal.compiler.v2_2._
 import commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.CollectionSupport
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 case class ForeachAction(collection: Expression, id: String, actions: Seq[UpdateAction])
   extends UpdateAction

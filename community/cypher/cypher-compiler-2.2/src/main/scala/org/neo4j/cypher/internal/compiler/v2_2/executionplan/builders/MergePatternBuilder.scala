@@ -24,11 +24,11 @@ import commands.{AllIdentifiers, Pattern, Query}
 import commands.expressions.Identifier
 import executionplan.{ExecutionPlanInProgress, Phase, PartiallySolvedQuery, PlanBuilder}
 import mutation._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import pipes._
 import spi.PlanContext
 import symbols._
-import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 /*
 This class solves MERGE for patterns. It does this by creating an execution plan that uses normal pattern matching

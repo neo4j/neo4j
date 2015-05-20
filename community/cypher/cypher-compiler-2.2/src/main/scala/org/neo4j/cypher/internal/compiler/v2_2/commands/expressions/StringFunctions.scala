@@ -24,11 +24,11 @@ import commands.values.KeyToken
 import org.neo4j.helpers.Platforms
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.internal.helpers._
+import org.neo4j.cypher.internal.compiler.v2_2.helpers._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import scala.collection.Map
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.IsMap
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.{IsCollection, CollectionSupport, IsMap}
 import scala.annotation.tailrec
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) with StringHelper with CollectionSupport {

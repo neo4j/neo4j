@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
-import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)
                      (val estimatedCardinality: Option[Double] = None)(implicit monitor: PipeMonitor)

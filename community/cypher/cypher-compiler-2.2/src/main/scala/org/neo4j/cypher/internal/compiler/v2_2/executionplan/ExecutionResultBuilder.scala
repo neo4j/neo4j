@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
-import org.neo4j.cypher.internal.ExecutionMode
-import org.neo4j.cypher.internal.compiler.v2_2.CypherException
+import org.neo4j.cypher.internal.compiler.v2_2.{ExecutionMode, CypherException}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.graphdb.GraphDatabaseService
