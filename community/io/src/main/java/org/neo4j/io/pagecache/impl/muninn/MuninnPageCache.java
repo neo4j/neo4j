@@ -89,6 +89,9 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
  */
 public class MuninnPageCache implements PageCache
 {
+    public static final byte ZERO_BYTE =
+            (byte) (Boolean.getBoolean( "org.neo4j.io.pagecache.impl.muninn.MuninnPage.brandedZeroByte" )? 0x0F : 0);
+
     // Keep this many pages free and ready for use in faulting.
     // This will be truncated to be no more than half of the number of pages
     // in the cache.

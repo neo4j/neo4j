@@ -326,7 +326,10 @@ final class MuninnPage extends StampedLock implements Page
             while ( read != -1 && (readTotal += read) < length );
 
             // Zero-fill the rest.
-            UnsafeUtil.setMemory( pointer + readTotal, length - readTotal, (byte) 0 );
+            assert readTotal >= 0 && length <= getCachePageSize() && readTotal <= length: format(
+                    "pointer = %h, readTotal = %s, length = %s, page size = %s",
+                    pointer, readTotal, length, getCachePageSize() );
+            UnsafeUtil.setMemory( pointer + readTotal, length - readTotal, MuninnPageCache.ZERO_BYTE );
             return readTotal;
         }
         catch ( ClosedChannelException e )
@@ -370,7 +373,7 @@ final class MuninnPage extends StampedLock implements Page
     @Override
     public void clear()
     {
-        UnsafeUtil.setMemory( pointer, getCachePageSize(), (byte) 0 );
+        UnsafeUtil.setMemory( pointer, getCachePageSize(), MuninnPageCache.ZERO_BYTE );
     }
 
     /**
@@ -497,6 +500,7 @@ final class MuninnPage extends StampedLock implements Page
         {
             pointer = UnsafeUtil.malloc( getCachePageSize() );
             memoryReleaser.registerPointer( pointer );
+            clear();
         }
     }
 

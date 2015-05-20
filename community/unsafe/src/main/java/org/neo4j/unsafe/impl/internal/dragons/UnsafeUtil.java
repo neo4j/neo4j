@@ -321,9 +321,7 @@ public final class UnsafeUtil
      */
     public static long malloc( long sizeInBytes )
     {
-        long pointer = unsafe.allocateMemory( sizeInBytes );
-        unsafe.setMemory( pointer, sizeInBytes, (byte) 0 );
-        return pointer;
+        return unsafe.allocateMemory( sizeInBytes );
     }
 
     /**

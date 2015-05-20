@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 public class StandardRecordFormat extends RecordFormat
 {
@@ -63,8 +64,11 @@ public class StandardRecordFormat extends RecordFormat
     @Override
     public Record zeroRecord()
     {
-        byte z = 0;
-        return new StandardRecord( z, z, z, z, z );
+        byte z = MuninnPageCache.ZERO_BYTE;
+        short sz = (short) ((z << 8) + z);
+        int iz = (sz << 16) + sz;
+        long lz = (((long) iz) << 32) + iz;
+        return new StandardRecord( z, z, sz, iz, lz );
     }
 
     @Override
