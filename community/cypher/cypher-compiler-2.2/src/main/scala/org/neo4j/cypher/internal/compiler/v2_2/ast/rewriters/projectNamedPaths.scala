@@ -28,54 +28,73 @@ import scala.annotation.tailrec
 
 case object projectNamedPaths extends Rewriter {
 
-  private def projectNamedPathsRewriter(paths: Map[Identifier, PathExpression], blacklist: IdentityMap[Identifier, Boolean]) =
-    Rewriter.lift {
-      case NamedPatternPart(identifier, part) if paths.contains(identifier) =>
-        part
-      case identifier: Identifier if !blacklist.contains(identifier) && paths.contains(identifier) =>
-        paths(identifier).endoRewrite(copyIdentifiers)
+  case class Projectibles(paths: Map[Identifier, PathExpression] = Map.empty,
+                          protectedIdentifiers: Set[Ref[Identifier]] = Set.empty,
+                          identifierRewrites: Map[Ref[Identifier], PathExpression] = Map.empty) {
+
+    self =>
+
+    def withoutNamedPaths = copy(paths = Map.empty)
+
+    def withProtectedIdentifier(ident: Ref[Identifier]) = copy(protectedIdentifiers = protectedIdentifiers + ident)
+
+    def withNamedPath(entry: (Identifier, PathExpression)) = copy(paths = paths + entry)
+
+    def withRewrittenIdentifier(entry: (Ref[Identifier], PathExpression)) = {
+      val (ref, pathExpr) = entry
+      copy(identifierRewrites = identifierRewrites + (ref -> pathExpr.endoRewrite(copyIdentifiers)))
     }
 
-  /**
-   * In order to safely project named paths we must also cary along the dependencies of the paths
-   */
-  private def projectDependenciesRewriter(paths: Map[Identifier, PathExpression]) = replace(replacer => {
-    case expr: Expression =>
-      replacer.stop(expr)
+    def returnItems = paths.map {
+      case (ident, pathExpr) => AliasedReturnItem(pathExpr, ident)(ident.position)
+    }.toSeq
 
-    case clause@With(_, ri: ReturnItems, _, _, _, _) if !ri.containsAggregate =>
-      val pathDependencies = clause.treeFold(Set.empty[Identifier]) {
-        case step:PathStep => (acc, children) => children(acc ++ step.dependencies)
-        case _ => (acc, children) => children(acc)
+    def withIdentifierRewritesForExpression(expr: Expression) =
+      expr.treeFold(self) {
+        case ident: Identifier =>
+          (acc, children) =>
+            acc.paths.get(ident) match {
+              case Some(pathExpr) => children(acc.withRewrittenIdentifier(Ref(ident) -> pathExpr))
+              case None => children(acc)
+            }
       }
-
-      //add dependencies coming from paths, without duplication
-      val newDeps = (ri.items.toSet ++ pathDependencies.map(a => AliasedReturnItem(a, a)(a.position))).toSeq
-      val newRi = ri.copy(items = newDeps)(ri.position)
-
-      clause.copy(returnItems = newRi)(clause.position).endoRewrite(copyIdentifiers)
-
-    case astNode =>
-      replacer.expand(astNode)
-  })
-
-  private def collectNamedPaths(input: AnyRef): Map[Identifier, PathExpression] = {
-    input.treeFold(Map.empty[Identifier, PathExpression]) {
-      case NamedPatternPart(_, part: ShortestPaths) =>
-        (acc, children) => children(acc)
-      case part @ NamedPatternPart(identifier, patternPart) =>
-        (acc, children) => children(acc + (identifier ->
-          PathExpression(patternPartPathExpression(patternPart))(part.position)))
-    }
   }
 
-  private def collectUninlinableIdentifiers(input: AnyRef): IdentityMap[Identifier, Boolean] = {
-    IdentityMap(input.treeFold(Seq.empty[Identifier]) {
-      case AliasedReturnItem(_, alias) =>
-        (acc, children) => children(acc :+ alias)
-      case NamedPatternPart(identifier, _) =>
-        (acc, children) => children(acc :+ identifier)
-    }.map(_ -> true): _*)
+  object Projectibles {
+    val empty = Projectibles()
+  }
+
+  private def collectProjectibles(input: AnyRef): Projectibles = input.treeFold(Projectibles.empty) {
+    case aliased: AliasedReturnItem =>
+      (acc, children) =>
+        children(acc.withProtectedIdentifier(Ref(aliased.identifier)))
+
+    case ident: Identifier =>
+      (acc, children) =>
+        acc.paths.get(ident) match {
+          case Some(pathExpr) => children(acc.withRewrittenIdentifier(Ref(ident) -> pathExpr))
+          case None => children(acc)
+        }
+
+    // TODO: Project for use in WHERE
+    // TODO: Pull out common subexpressions for path expr using WITH *, ... and run expand star again
+    // TODO: Plan level rewriting to delay computation of unused projections
+
+    case projection: With =>
+      (acc, children) =>
+        val projectedIdentifiers = projection.returnItems.items.flatMap(_.alias).toSet
+        val projectedAcc = projection.returnItems.items.map(_.expression).foldLeft(acc) {
+          (acc, expr) => acc.withIdentifierRewritesForExpression(expr)
+        }
+        children(projectedAcc.withoutNamedPaths)
+
+    case NamedPatternPart(_, part: ShortestPaths) =>
+      (acc, children) => children(acc)
+
+    case part @ NamedPatternPart(identifier, patternPart) =>
+      (acc, children) =>
+        val pathExpr = PathExpression(patternPartPathExpression(patternPart))(part.position)
+        children(acc.withNamedPath(identifier -> pathExpr).withProtectedIdentifier(Ref(identifier)))
   }
 
   def patternPartPathExpression(patternPart: AnonymousPatternPart): PathStep = patternPart match {
@@ -100,12 +119,44 @@ case object projectNamedPaths extends Rewriter {
   }
 
   def apply(input: AnyRef): AnyRef = {
-    val namedPaths = collectNamedPaths(input)
-    val blacklist = collectUninlinableIdentifiers(input)
+    val Projectibles(paths, protectedIdentifiers, identifierRewrites) = collectProjectibles(input)
+    val applicator = Rewriter.lift {
+      case namedPart@NamedPatternPart(_, _: ShortestPaths) =>
+        namedPart
 
-    bottomUp(inSequence(
-      projectNamedPathsRewriter(namedPaths, blacklist),
-      projectDependenciesRewriter(namedPaths))
-    )(input)
+//      case query @ SingleQuery(clauses) =>
+//        val newClauses = clauses.flatMap {
+//          case matchClause@Match(_, pattern, _, Some(where)) =>
+//            val namedPaths = pattern.patternParts.flatMap {
+//              case NamedPatternPart(_, _: ShortestPaths) => None
+//              case part: NamedPatternPart                => Some(part.identifier)
+//            }
+//            val newMatchClause = matchClause.copy(where = None)(matchClause.position)
+//            val extraReturnItems = namedPaths.map { ident =>
+//              AliasedReturnItem(paths(ident), ident.copyId)(ident.position)
+//            }
+//            val pathNames = namedPaths.toSet
+//            val newWhere = bottomUp(Rewriter.lift {
+//              case ident: Identifier if pathNames(ident) => ident.copyId
+//            })(where).asInstanceOf[Where]
+//            val newWithClause = With(distinct = false, ReturnItems(includeExisting = true, extraReturnItems)(where.position), None, None, None, Some(newWhere))(where.position)
+//            Seq(newMatchClause, newWithClause)
+//
+//          case clause =>
+//            Seq(clause)
+//        }
+//        query.copy(clauses = newClauses)(query.position)
+
+      case NamedPatternPart(_, part) =>
+        part
+
+      case expr: PathExpression =>
+        expr
+
+      case (ident: Identifier) if !protectedIdentifiers(Ref(ident))=>
+        identifierRewrites.getOrElse(Ref(ident), ident)
+    }
+    val result = topDown(applicator)(input)
+    result
   }
 }
