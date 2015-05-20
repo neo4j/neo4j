@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.{replace, InternalException, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp, replace}
 
 /**
  * This rewriter ensures that WITH clauses containing a ORDER BY or WHERE are split, such that the ORDER BY or WHERE does not

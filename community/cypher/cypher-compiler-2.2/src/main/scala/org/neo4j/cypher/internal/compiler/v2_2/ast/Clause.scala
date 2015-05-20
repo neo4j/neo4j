@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
   def name: String
+
+  def noteCurrentScope: SemanticCheck = s => SemanticCheckResult.success(s.noteCurrentScope(this))
 }
 
 sealed trait UpdateClause extends Clause
@@ -70,7 +72,8 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
     hints.semanticCheck chain
     uniqueHints chain
     where.semanticCheck chain
-    checkHints
+    checkHints chain
+    noteCurrentScope
 
   private def uniqueHints: SemanticCheck = {
     val errors = hints.groupBy(_.identifier).collect {
@@ -230,9 +233,7 @@ case class Unwind(expression: Expression, identifier: Identifier)(val position: 
 }
 
 sealed trait HorizonClause extends Clause with SemanticChecking {
-  def semanticCheck = s =>
-    SemanticCheckResult.success(s.noteCurrentScope(this))
-
+  def semanticCheck = noteCurrentScope
   def semanticCheckContinuation(previousScope: Scope): SemanticCheck
 }
 
