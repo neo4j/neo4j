@@ -3,6 +3,14 @@
 o Ability to skip duplicate nodes (nodes w/ duplicate input ids within the same id space).
   For this --skip-duplication-nodes as well as --skip-bad-relationships have been added.
   Number of bad entries to tolerate collectively is still controlled using --bad-tolerance
+o Improved user feedback on common and import errors and user mistakes like forgetting to
+  specify input files or leaving out mandatory header information etc. In some cases also
+  points out a place in the manual for further information about a particular problem.
+o Removes the --bad option which previously could specify the location and file name of
+  the log containing bad input entries after an import. Now that log file will always be
+  <into>/bad.log
+o Input file names can now contain regular expressions and therefore match multiple files.
+  Matching files will be correctly ordered according to any and all numbers found in their file names.
 
 2.2.1
 -----

@@ -1,3 +1,9 @@
+2.2.2
+-----
+o Fixes an issue in the high-performance cache, HPC, where the array would be much bigger than intended
+  in JVMs with very large heap. This would result in failure to start the database.
+o Aborts attempt to join cluster on recognizing foreign store, instead of forever trying and failing.
+
 2.2.1
 -----
 o Fixes a GC problem where memory could be indefinitely and unnecessarily kept after role switch

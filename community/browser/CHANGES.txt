@@ -1,3 +1,9 @@
+2.2.2
+-----
+o Added :sysinfo as a shorthand for :play sysinfo
+o Added <id> as a caption option on relationships.
+o Added <id> to graph items property list in inspector.
+
 2.2.1
 -----
 o Shows to user that a result is empty and why it might be empty

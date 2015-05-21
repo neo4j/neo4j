@@ -1,3 +1,8 @@
+2.2.2
+-----
+o ShortestPath optimization where the traversal can abort earlier than before if detecting that
+  one side is exhausted and the two sides are disconnected.
+
 2.0.4
 -----
 o Ability to return paths with diminishing cost from Dijkstra/Traversal AStar

@@ -3,6 +3,10 @@
 o Fixes problem when using named paths and aggregation
 o Fixes #4462 - RULE planner inconsistent in order of path elements
 o Fixes problem with COST planner and ()-[*0..0]->() patterns
+o Fixes problem when ordering on an aggregation function
+o Fixes planning around indexes in COST planner
+o Fixes planning of disconnected shortestpath in RULE planner
+o Fixes type of varlength identifier to be collection of relationships
 
 2.2.1
 -----
