@@ -106,12 +106,12 @@ class CypherCompatibilityTest extends CypherFunSuite {
     }
   }
 
-  private def shouldHaveWarnings(result: ExtendedExecutionResult, statusCodes: List[Status.Statement]) {
+  private def shouldHaveWarnings(result: ExtendedExecutionResult, statusCodes: List[Status]) {
     val resultCodes = result.notifications.map(_.getCode)
     statusCodes.foreach(statusCode => resultCodes should contain(statusCode.code.serialize()))
   }
 
-  private def shouldHaveWarning(result: ExtendedExecutionResult, notification: Status.Statement) {
+  private def shouldHaveWarning(result: ExtendedExecutionResult, notification: Status) {
     shouldHaveWarnings(result, List(notification))
   }
 
@@ -185,7 +185,59 @@ class CypherCompatibilityTest extends CypherFunSuite {
   test("should not fail nor generate a warning if asked to execute query without specifying runtime, knowing that compiled is default but will fallback silently to interpreted") {
     runWithConfig() {
       engine =>
-        shouldHaveNoWarnings(engine.execute(s"EXPLAIN CYPHER $querySupportedByCostButNotCompiledRuntime"))
+        shouldHaveNoWarnings(engine.execute(s"EXPLAIN $querySupportedByCostButNotCompiledRuntime"))
+    }
+  }
+
+  test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING INDEX' which can be fulfilled") {
+    runWithConfig() {
+      engine =>
+        engine.execute("CREATE INDEX ON :Person(name)")
+        shouldHaveNoWarnings(engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"))
+    }
+  }
+
+  test("should generate a warning if executing a query using a 'USING INDEX' which cannot be fulfilled") {
+    runWithConfig() {
+      engine =>
+        shouldHaveWarning(engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"), Status.Schema.NoSuchIndex)
+    }
+  }
+
+  test("should generate a warning if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned off") {
+    runWithConfig("dbms.cypher.hints.error" -> "false") {
+      engine =>
+        shouldHaveWarning(engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"), Status.Schema.NoSuchIndex)
+    }
+  }
+
+  test("should generate an error if executing a query using EXPLAIN and a 'USING INDEX' which cannot be fulfilled, and hint errors are turned on") {
+    runWithConfig("dbms.cypher.hints.error" -> "true") {
+      engine =>
+        intercept[IndexHintException](engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"))
+    }
+  }
+
+  test("should generate an error if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned on") {
+    runWithConfig("dbms.cypher.hints.error" -> "true") {
+      engine =>
+        intercept[IndexHintException](engine.execute(s"MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"))
+    }
+  }
+
+  test("should generate an error if executing a query using a 'USING INDEX' for an existing index but which cannot be fulfilled for the query, and hint errors are turned on") {
+    runWithConfig("dbms.cypher.hints.error" -> "true") {
+      engine =>
+        engine.execute("CREATE INDEX ON :Person(email)")
+        intercept[SyntaxException](engine.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n"))
+    }
+  }
+
+  test("should generate an error if executing a query using a 'USING INDEX' for an existing index but which cannot be fulfilled for the query, even when hint errors are not turned on") {
+    runWithConfig() {
+      engine =>
+        engine.execute("CREATE INDEX ON :Person(email)")
+        intercept[SyntaxException](engine.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n"))
     }
   }
 

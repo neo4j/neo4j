@@ -116,9 +116,12 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                         new GreedyQueryGraphSolver(expandsOnly)
                                       ),
                                       cardinality: Cardinality = Cardinality(1),
-                                      strictness: Option[StrictnessMode] = None): LogicalPlanningContext =
+                                      strictness: Option[StrictnessMode] = None,
+                                      notificationLogger: InternalNotificationLogger = devNullLogger,
+                                      useErrorsOverWarnings: Boolean = false): LogicalPlanningContext =
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality), metrics, semanticTable,
-      strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness))
+      strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
+      notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings)
 
   def newMockedStatistics = mock[GraphStatistics]
   def hardcodedStatistics = HardcodedGraphStatistics
@@ -138,8 +141,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     )
   }
 
-  def newMockedLogicalPlan(idNames: Set[IdName], cardinality: Cardinality = Cardinality(1)): LogicalPlan = {
-    val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*)
+  def newMockedLogicalPlan(idNames: Set[IdName], cardinality: Cardinality = Cardinality(1), hints: Set[Hint] = Set[Hint]()): LogicalPlan = {
+    val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints)
     FakePlan(idNames)(CardinalityEstimation.lift(PlannerQuery(qg), cardinality))
   }
 
@@ -163,7 +166,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       rewriterSequencer = rewriterSequencer,
       plannerName = None,
       runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, monitors), CompiledPlanBuilder(Clock.SYSTEM_CLOCK)),
-      semanticChecker = semanticChecker)
+      semanticChecker = semanticChecker,
+      useErrorsOverWarnings = false)
   }
 
   def produceLogicalPlan(queryText: String)(implicit planner: CostBasedExecutablePlanBuilder, planContext: PlanContext): LogicalPlan = {
@@ -175,7 +179,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       case (ast: Query, newTable) =>
         val semanticState = semanticChecker.check(queryText, ast, devNullLogger, mkException)
         tokenResolver.resolve(ast)(newTable, planContext)
-        val (logicalPlan, _) = planner.produceLogicalPlan(ast, newTable)(planContext)
+        val (logicalPlan, _) = planner.produceLogicalPlan(ast, newTable)(planContext, devNullLogger)
         logicalPlan
 
       case _ =>

@@ -35,3 +35,5 @@ case object LegacyPlannerNotification extends InternalNotification
 case object PlannerUnsupportedNotification extends InternalNotification
 
 case object RuntimeUnsupportedNotification extends InternalNotification
+
+case object IndexHintUnfulfillableNotification extends InternalNotification

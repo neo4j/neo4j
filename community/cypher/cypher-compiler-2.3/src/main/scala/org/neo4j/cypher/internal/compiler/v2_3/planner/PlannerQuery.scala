@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{StrictnessMode, IdName, PatternRelationship}
 
 import scala.annotation.tailrec
+import scala.collection.GenTraversableOnce
 
 case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean)
 
@@ -48,6 +49,8 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
     case None => copy(tail = Some(newTail))
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
+
+  def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]) = copy(graph = graph.withoutHints(hintsToIgnore))
 
   def withHorizon(horizon: QueryHorizon): PlannerQuery = copy(horizon = horizon)
 
