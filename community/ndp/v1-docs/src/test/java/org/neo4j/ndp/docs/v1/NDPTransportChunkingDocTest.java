@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.ndp.transport.socket.Chunker;
+
 import static java.lang.Integer.parseInt;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;

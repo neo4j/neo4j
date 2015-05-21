@@ -61,7 +61,7 @@ public class ChunkedInput implements PackInput
         return this;
     }
 
-    public void addChunk( ByteBuf chunk )
+    public void append( ByteBuf chunk )
     {
         if ( chunk.readableBytes() > 0 )
         {

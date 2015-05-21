@@ -54,7 +54,7 @@ public class SocketProtocolV1 implements SocketProtocol
     private final Log log;
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
 
-    enum State
+    public enum State
     {
         AWAITING_CHUNK,
         IN_CHUNK,
@@ -127,20 +127,22 @@ public class SocketProtocolV1 implements SocketProtocol
                     if ( chunkSize < data.readableBytes() )
                     {
                         // Current packet is larger than current chunk, slice of the chunk
-                        input.addChunk( data.readSlice( chunkSize ) );
+                        input.append( data.readSlice( chunkSize ) );
                         state = State.AWAITING_CHUNK;
                     }
                     else if ( chunkSize == data.readableBytes() )
                     {
                         // Current packet perfectly maps to current chunk
-                        input.addChunk( data );
+                        input.append( data );
                         state = State.AWAITING_CHUNK;
+                        return;
                     }
                     else
                     {
                         // Current packet is smaller than the chunk we're reading, split the current chunk itself up
                         chunkSize -= data.readableBytes();
-                        input.addChunk( data );
+                        input.append( data );
+                        return;
                     }
                     break;
                 }
@@ -174,6 +176,11 @@ public class SocketProtocolV1 implements SocketProtocol
         session.close();
     }
 
+    public State state()
+    {
+        return state;
+    }
+
     private void handleHeader( ChannelHandlerContext channelContext )
     {
         if(chunkSize == 0)
@@ -188,7 +195,7 @@ public class SocketProtocolV1 implements SocketProtocol
         }
     }
 
-    public void processCollectedMessage( final ChannelHandlerContext channelContext )
+    private void processCollectedMessage( final ChannelHandlerContext channelContext )
     {
         output.setTargetChannel( channelContext );
         try

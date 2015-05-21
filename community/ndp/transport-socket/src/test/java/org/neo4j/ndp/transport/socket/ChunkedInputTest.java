@@ -35,9 +35,9 @@ public class ChunkedInputTest
         // Given
         ChunkedInput ch = new ChunkedInput();
 
-        ch.addChunk( wrappedBuffer( new byte[]{1, 2} ) );
-        ch.addChunk( wrappedBuffer( new byte[]{3} ) );
-        ch.addChunk( wrappedBuffer( new byte[]{4, 5} ) );
+        ch.append( wrappedBuffer( new byte[]{1, 2} ) );
+        ch.append( wrappedBuffer( new byte[]{3} ) );
+        ch.append( wrappedBuffer( new byte[]{4, 5} ) );
 
         // When
         byte[] bytes = new byte[5];
@@ -54,11 +54,11 @@ public class ChunkedInputTest
         byte[] bytes = new byte[3];
         ChunkedInput ch = new ChunkedInput();
 
-        ch.addChunk( wrappedBuffer( new byte[]{1, 2} ) );
-        ch.addChunk( wrappedBuffer( new byte[]{3} ) );
-        ch.addChunk( wrappedBuffer( new byte[]{4} ) );
-        ch.addChunk( wrappedBuffer( new byte[]{5} ) );
-        ch.addChunk( wrappedBuffer( new byte[]{6, 7} ) );
+        ch.append( wrappedBuffer( new byte[]{1, 2} ) );
+        ch.append( wrappedBuffer( new byte[]{3} ) );
+        ch.append( wrappedBuffer( new byte[]{4} ) );
+        ch.append( wrappedBuffer( new byte[]{5} ) );
+        ch.append( wrappedBuffer( new byte[]{6, 7} ) );
 
         // When I read {1,2,3}
         ch.get( bytes, 0, 3 );
@@ -88,9 +88,9 @@ public class ChunkedInputTest
         // Given
         ChunkedInput ch = new ChunkedInput();
 
-        ch.addChunk( wrappedBuffer( new byte[]{1, 2} ) );
-        ch.addChunk( wrappedBuffer( new byte[]{3} ) );
-        ch.addChunk( wrappedBuffer( new byte[]{4, 5} ) );
+        ch.append( wrappedBuffer( new byte[]{1, 2} ) );
+        ch.append( wrappedBuffer( new byte[]{3} ) );
+        ch.append( wrappedBuffer( new byte[]{4, 5} ) );
 
         // When
         byte[] bytes = new byte[5];
