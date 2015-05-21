@@ -24,7 +24,7 @@ package org.neo4j.function;
  *
  * @param <R> the type of the result of the function
  */
-public interface IntFunction<R> extends ThrowingIntFunction<R, RuntimeException>, org.neo4j.function.primitive.FunctionFromPrimitiveInt<R>
+public interface IntFunction<R> extends ThrowingIntFunction<R,RuntimeException>, org.neo4j.function.primitive.FunctionFromPrimitiveInt<R>
 {
     /**
      * Applies this function to the given argument.

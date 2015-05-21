@@ -24,7 +24,7 @@ package org.neo4j.function;
  *
  * @param <T> the type of the input to the function
  */
-public interface ToLongFunction<T> extends ThrowingToLongFunction<T, RuntimeException>
+public interface ToLongFunction<T> extends ThrowingToLongFunction<T,RuntimeException>
 {
     /**
      * Applies this function to the given argument.

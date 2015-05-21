@@ -57,19 +57,19 @@ public class Predicates
         }
     };
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> alwaysTrue()
     {
         return (Predicate<T>) TRUE;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> alwaysFalse()
     {
         return (Predicate<T>) FALSE;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> notNull()
     {
         return (Predicate<T>) NOT_NULL;

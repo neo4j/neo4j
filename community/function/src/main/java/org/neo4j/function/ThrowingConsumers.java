@@ -24,7 +24,8 @@ package org.neo4j.function;
  */
 public final class ThrowingConsumers
 {
-    private static final ThrowingConsumer<?, ?> NOOP = new ThrowingConsumer() {
+    private static final ThrowingConsumer<?,?> NOOP = new ThrowingConsumer()
+    {
         @Override
         public void accept( Object value )
         {
@@ -37,8 +38,8 @@ public final class ThrowingConsumers
      * @return a {@link ThrowingConsumer} that does nothing.
      */
     @SuppressWarnings( "unchecked" )
-    public static <T, E extends Exception> ThrowingConsumer<T, E> noop()
+    public static <T, E extends Exception> ThrowingConsumer<T,E> noop()
     {
-        return (ThrowingConsumer<T, E>) NOOP;
+        return (ThrowingConsumer<T,E>) NOOP;
     }
 }

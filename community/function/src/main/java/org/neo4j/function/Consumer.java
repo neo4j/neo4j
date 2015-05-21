@@ -20,11 +20,12 @@
 package org.neo4j.function;
 
 /**
- * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional interfaces, Consumer is expected to operate via side-effects.
+ * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional interfaces, Consumer is expected to operate
+ * via side-effects.
  *
  * @param <T> the type of the input to the operation
  */
-public interface Consumer<T> extends ThrowingConsumer<T, RuntimeException>
+public interface Consumer<T> extends ThrowingConsumer<T,RuntimeException>
 {
     /**
      * Performs this operation on the given argument.

@@ -24,7 +24,8 @@ package org.neo4j.function;
  */
 public final class Consumers
 {
-    private static final Consumer<?> NOOP = new Consumer() {
+    private static final Consumer<?> NOOP = new Consumer()
+    {
         @Override
         public void accept( Object value )
         {

@@ -20,14 +20,15 @@
 package org.neo4j.function;
 
 /**
- * Represents an operation upon two long-valued operands and producing a long-valued result. This is the primitive type specialization of {@link BinaryOperator} for long.
+ * Represents an operation upon two long-valued operands and producing a long-valued result. This is the primitive type specialization of {@link BinaryOperator}
+ * for long.
  */
 public interface LongBinaryOperator extends ThrowingLongBinaryOperator<RuntimeException>
 {
     /**
      * Applies this operator to the given operand.
      *
-     * @param left  the first operand
+     * @param left the first operand
      * @param right the second operand
      * @return the operator result
      */

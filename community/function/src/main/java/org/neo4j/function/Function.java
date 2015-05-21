@@ -25,7 +25,7 @@ package org.neo4j.function;
  * @param <T> the type of the input to the function
  * @param <R> the type of the result of the function
  */
-public interface Function<T, R> extends ThrowingFunction<T, R, RuntimeException>, RawFunction<T, R, RuntimeException>
+public interface Function<T, R> extends ThrowingFunction<T,R,RuntimeException>, RawFunction<T,R,RuntimeException>
 {
     /**
      * Apply a value to this function

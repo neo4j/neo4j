@@ -33,8 +33,8 @@ public final class IOFunctions
         }
     };
 
-    @SuppressWarnings("unchecked")
-    public static <T> IOFunction<T, T> identity()
+    @SuppressWarnings( "unchecked" )
+    public static <T> IOFunction<T,T> identity()
     {
         return IDENTITY;
     }
