@@ -40,7 +40,7 @@ import org.neo4j.stream.ImmutableRecord;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.ndp.docs.v1.Chunker.chunk;
+import static org.neo4j.ndp.transport.socket.Chunker.chunk;
 
 /**
  * Takes human-readable value descriptions and packs them to binary data, and vice versa.
@@ -232,7 +232,7 @@ public class DocSerialization
             int chunkSize = buf.readUnsignedShort();
             if ( chunkSize > 0 )
             {
-                input.addChunk( buf.readSlice( chunkSize ) );
+                input.append( buf.readSlice( chunkSize ) );
             }
             else
             {
