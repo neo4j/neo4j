@@ -1,3 +1,8 @@
+2.2.2
+-----
+o Network exceptions that gets logged are now throttled, i.e. logged every N seconds at most,
+  instead of for every occurence. This to remove fix an issue where a tight loop could fill up a log very fast.
+
 2.1.5
 -----
 o Fixes issue where responses to learn requests from cluster

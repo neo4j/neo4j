@@ -34,6 +34,76 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
   using --bad-tolerance=<max bad entries>. Skipping of bad relationships/nodes can be enabled/disabled
   individually with --skip-duplicate-nodes and --skip-bad-relationships.
 
+2.2.2
+-----
+General:
+o Added support for Java 8
+
+Browser:
+o Added :sysinfo as a shorthand for :play sysinfo
+o Added <id> as a caption option on relationships.
+o Added <id> to graph items property list in inspector.
+
+Csv:
+o Fixes an issue in multi-line quotes values where a value ending with a newline could corrupt the next value.
+
+Cypher:
+o Fixes problem when using named paths and aggregation
+o Fixes #4462 - RULE planner inconsistent in order of path elements
+o Fixes problem with COST planner and ()-[*0..0]->() patterns
+o Fixes problem when ordering on an aggregation function
+o Fixes planning around indexes in COST planner
+o Fixes planning of disconnected shortestpath in RULE planner
+o Fixes type of varlength identifier to be collection of relationships
+
+Graph algo:
+o ShortestPath optimization where the traversal can abort earlier than before if detecting that
+  one side is exhausted and the two sides are disconnected.
+
+Import tool:
+o Ability to skip duplicate nodes (nodes w/ duplicate input ids within the same id space).
+  For this --skip-duplication-nodes as well as --skip-bad-relationships have been added.
+  Number of bad entries to tolerate collectively is still controlled using --bad-tolerance
+o Improved user feedback on common and import errors and user mistakes like forgetting to
+  specify input files or leaving out mandatory header information etc. In some cases also
+  points out a place in the manual for further information about a particular problem.
+o Removes the --bad option which previously could specify the location and file name of
+  the log containing bad input entries after an import. Now that log file will always be
+  <into>/bad.log
+o Input file names can now contain regular expressions and therefore match multiple files.
+  Matching files will be correctly ordered according to any and all numbers found in their file names.
+
+Kernel:
+o Parallelized relationship import stage in the batch importer for better scalability
+o Much better memory usage of :ID batch importer index, specifically around conflict resolutions.
+o Properly propagates exceptions during startup of a database, regardless of whether or not shutdown throws exception.
+o Much faster recovery after a non-clean shutdown or crash, due to transactions getting applied in batches.
+o Fixes batch import issue with anonymous nodes, i.e. imported nodes w/o :ID. They could previously
+  cause random failures during preparation of the IdMapper index.
+o Reduced contention of updates to label scan store by using batching of concurrent transactions,
+  similar to batched writes to the transaction log.
+o Label scan store is built in parallel by the batch importer, to avoid waiting for it to build the first startup.
+o Fixes an IdMapper encoding issue when using INTEGER id type which resulted in many unnecessary index conflicts,
+  which in turn resulted in an unnecessarily high IdMapper memory consumption.
+
+Desktop:
+o Fixes issue with starting/stopping databases multiple times, where seemingly
+  log lines where logged as many times as the database had been restarted.
+
+Lucene index:
+o Reduces memory usage during querying for legacy lucene indexes. Previously there would be a set
+  potentially containing all ids returned in the query, now it will only contain ids from transaction state.
+o Faster recovery of legacy lucene indexes, due to batching of transactions.
+
+Cluster:
+o Network exceptions that gets logged are now throttled, i.e. logged every N seconds at most,
+  instead of for every occurence. This to remove fix an issue where a tight loop could fill up a log very fast.
+
+HA:
+o Fixes an issue in the high-performance cache, HPC, where the array would be much bigger than intended
+  in JVMs with very large heap. This would result in failure to start the database.
+o Aborts attempt to join cluster on recognizing foreign store, instead of forever trying and failing.
+
 2.2.1
 -----
 Cypher:

@@ -17,6 +17,20 @@ o Replaced use of logback for internal logging with neo4j-logging API
 o Allow GraphDatabaseFactory to accept a LogProvider for user logging, allowing
   programatic customization of user log output.
 
+2.2.2
+-----
+o Parallelized relationship import stage in the batch importer for better scalability
+o Much better memory usage of :ID batch importer index, specifically around conflict resolutions.
+o Properly propagates exceptions during startup of a database, regardless of whether or not shutdown throws exception.
+o Much faster recovery after a non-clean shutdown or crash, due to transactions getting applied in batches.
+o Fixes batch import issue with anonymous nodes, i.e. imported nodes w/o :ID. They could previously
+  cause random failures during preparation of the IdMapper index.
+o Reduced contention of updates to label scan store by using batching of concurrent transactions,
+  similar to batched writes to the transaction log.
+o Label scan store is built in parallel by the batch importer, to avoid waiting for it to build the first startup.
+o Fixes an IdMapper encoding issue when using INTEGER id type which resulted in many unnecessary index conflicts,
+  which in turn resulted in an unnecessarily high IdMapper memory consumption.
+
 2.2.1
 -----
 o Fixed issue where counts could get not up to date values in db created with importer

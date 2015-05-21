@@ -1,3 +1,9 @@
+2.2.2
+-----
+o Reduces memory usage during querying for legacy lucene indexes. Previously there would be a set
+  potentially containing all ids returned in the query, now it will only contain ids from transaction state.
+o Faster recovery of legacy lucene indexes, due to batching of transactions.
+
 2.1.8
 -----
 o Track and prevent overflowing the per-index document limit of Lucene.
