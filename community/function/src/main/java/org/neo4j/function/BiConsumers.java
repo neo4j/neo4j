@@ -20,20 +20,26 @@
 package org.neo4j.function;
 
 /**
- * Represents a function that accepts two arguments and produces a result. This is the two-arity specialization of {@link Function}.
- *
- * @param <T> the type of the first argument to the function
- * @param <U> the type of the second argument to the function
- * @param <R> the type of the result of the function
+ * Constructors for basic {@link BiConsumer} types
  */
-public interface BiFunction<T, U, R> extends ThrowingBiFunction<T,U,R,RuntimeException>
+public final class BiConsumers
 {
+    private static final BiConsumer<?,?> NOOP = new BiConsumer()
+    {
+        @Override
+        public void accept( Object t, Object u )
+        {
+            // noop
+        }
+    };
+
     /**
-     * Map a single item from one type to another
-     *
-     * @param t the first input item
-     * @param u the second input item
-     * @return the mapped item
+     * @param <T> The type to be consumed
+     * @return a {@link BiConsumers} that does nothing.
      */
-    R apply( T t, U u );
+    @SuppressWarnings( "unchecked" )
+    public static <T, U> BiConsumer<T,U> noop()
+    {
+        return (BiConsumer<T,U>) NOOP;
+    }
 }

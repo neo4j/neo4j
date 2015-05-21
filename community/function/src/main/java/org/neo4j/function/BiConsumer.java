@@ -20,20 +20,18 @@
 package org.neo4j.function;
 
 /**
- * Represents a function that accepts two arguments and produces a result. This is the two-arity specialization of {@link Function}.
+ * Represents an operation that accepts two arguments and returns no result.
+ * Unlike most other functional interfaces, BiConsumer is expected to operate via side-effects.
  *
- * @param <T> the type of the first argument to the function
- * @param <U> the type of the second argument to the function
- * @param <R> the type of the result of the function
+ * @param <T> the type of the input to the operation
  */
-public interface BiFunction<T, U, R> extends ThrowingBiFunction<T,U,R,RuntimeException>
+public interface BiConsumer<T, U> extends ThrowingBiConsumer<T,U,RuntimeException>
 {
     /**
-     * Map a single item from one type to another
+     * Performs this operation on the given arguments.
      *
-     * @param t the first input item
-     * @param u the second input item
-     * @return the mapped item
+     * @param t the first input argument
+     * @param u the second input argument
      */
-    R apply( T t, U u );
+    void accept( T t, U u );
 }

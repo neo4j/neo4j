@@ -30,7 +30,7 @@ package org.neo4j.function;
 public interface ThrowingBiFunction<T, U, R, E extends Exception>
 {
     /**
-     * Map a single item from one type to another
+     * Applies this function to the given arguments.
      *
      * @param t the first input item
      * @param u the second input item

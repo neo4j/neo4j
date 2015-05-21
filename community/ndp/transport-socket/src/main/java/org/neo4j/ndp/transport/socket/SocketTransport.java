@@ -28,8 +28,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.function.BiConsumer;
 import org.neo4j.function.Factory;
-import org.neo4j.helpers.BiConsumer;
 import org.neo4j.helpers.HostnamePort;
 
 /**

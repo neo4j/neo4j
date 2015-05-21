@@ -36,6 +36,7 @@ public final class Consumers
      * @param <T> The type to be consumed
      * @return a {@link Consumer} that does nothing.
      */
+    @SuppressWarnings( "unchecked" )
     public static <T> Consumer<T> noop()
     {
         return (Consumer<T>) NOOP;
