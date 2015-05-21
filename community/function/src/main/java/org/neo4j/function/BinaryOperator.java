@@ -20,10 +20,11 @@
 package org.neo4j.function;
 
 /**
- * Represents an operation on a single operand that produces a result of the same type as its operand. This is a specialization of {@link BiFunction} for the case where the operand and result are of the same type.
+ * Represents an operation on a single operand that produces a result of the same type as its operand. This is a specialization of {@link BiFunction} for the
+ * case where the operand and result are of the same type.
  *
  * @param <T> the type of the operand and result of the operator
  */
-public interface BinaryOperator<T> extends BiFunction<T, T, T>, ThrowingBinaryOperator<T, RuntimeException>
+public interface BinaryOperator<T> extends BiFunction<T,T,T>, ThrowingBinaryOperator<T,RuntimeException>
 {
 }

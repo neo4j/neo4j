@@ -20,20 +20,26 @@
 package org.neo4j.function;
 
 /**
- * Represents an operation upon two long-valued operands and producing a long-valued result. This is the primitive type specialization of {@link
- * ThrowingBinaryOperator} for long.
- *
- * @param <E> the type of exception that may be thrown from the operator
+ * Constructors for basic {@link BiConsumer} types
  */
-public interface ThrowingLongBinaryOperator<E extends Exception>
+public final class BiConsumers
 {
+    private static final BiConsumer<?,?> NOOP = new BiConsumer()
+    {
+        @Override
+        public void accept( Object t, Object u )
+        {
+            // noop
+        }
+    };
+
     /**
-     * Applies this operator to the given operand.
-     *
-     * @param left the first operand
-     * @param right the second operand
-     * @return the operator result
-     * @throws E an exception if the operator fails
+     * @param <T> The type to be consumed
+     * @return a {@link BiConsumers} that does nothing.
      */
-    long applyAsLong( long left, long right ) throws E;
+    @SuppressWarnings( "unchecked" )
+    public static <T, U> BiConsumer<T,U> noop()
+    {
+        return (BiConsumer<T,U>) NOOP;
+    }
 }

@@ -26,7 +26,14 @@ package org.neo4j.function;
  * @param <U> the type of the second argument to the function
  * @param <R> the type of the result of the function
  */
-public interface BiFunction<T, U, R> extends ThrowingBiFunction<T, U, R, RuntimeException>
+public interface BiFunction<T, U, R> extends ThrowingBiFunction<T,U,R,RuntimeException>
 {
+    /**
+     * Map a single item from one type to another
+     *
+     * @param t the first input item
+     * @param u the second input item
+     * @return the mapped item
+     */
     R apply( T t, U u );
 }

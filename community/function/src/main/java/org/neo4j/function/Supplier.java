@@ -24,7 +24,7 @@ package org.neo4j.function;
  *
  * @param <T> the type of results supplied by this supplier
  */
-public interface Supplier<T> extends ThrowingSupplier<T, RuntimeException>
+public interface Supplier<T> extends ThrowingSupplier<T,RuntimeException>
 {
     /**
      * Gets a result.

@@ -33,15 +33,15 @@ public final class ThrowingFunctions
         }
     };
 
-    @SuppressWarnings("unchecked")
-    public static <T, E extends Exception> ThrowingUnaryOperator<T, E> identity()
+    @SuppressWarnings( "unchecked" )
+    public static <T, E extends Exception> ThrowingUnaryOperator<T,E> identity()
     {
         return IDENTITY;
     }
 
-    public static <T, E extends Exception> ThrowingFunction<T, Void, E> fromConsumer( final ThrowingConsumer<T, E> consumer )
+    public static <T, E extends Exception> ThrowingFunction<T,Void,E> fromConsumer( final ThrowingConsumer<T,E> consumer )
     {
-        return new ThrowingFunction<T, Void, E>()
+        return new ThrowingFunction<T,Void,E>()
         {
             @Override
             public Void apply( T t ) throws E
@@ -52,9 +52,9 @@ public final class ThrowingFunctions
         };
     }
 
-    public static <T, E extends Exception> ThrowingFunction<Void, T, E> fromSupplier( final ThrowingSupplier<T, E> supplier )
+    public static <T, E extends Exception> ThrowingFunction<Void,T,E> fromSupplier( final ThrowingSupplier<T,E> supplier )
     {
-        return new ThrowingFunction<Void, T, E>()
+        return new ThrowingFunction<Void,T,E>()
         {
             @Override
             public T apply( Void t ) throws E

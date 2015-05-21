@@ -24,7 +24,8 @@ package org.neo4j.function;
  */
 public final class Consumers
 {
-    private static final Consumer<?> NOOP = new Consumer() {
+    private static final Consumer<?> NOOP = new Consumer()
+    {
         @Override
         public void accept( Object value )
         {
@@ -36,6 +37,7 @@ public final class Consumers
      * @param <T> The type to be consumed
      * @return a {@link Consumer} that does nothing.
      */
+    @SuppressWarnings( "unchecked" )
     public static <T> Consumer<T> noop()
     {
         return (Consumer<T>) NOOP;

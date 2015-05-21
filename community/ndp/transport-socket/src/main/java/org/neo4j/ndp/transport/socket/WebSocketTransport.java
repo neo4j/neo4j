@@ -31,8 +31,8 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.function.BiConsumer;
 import org.neo4j.function.Factory;
-import org.neo4j.helpers.BiConsumer;
 import org.neo4j.helpers.HostnamePort;
 
 /**

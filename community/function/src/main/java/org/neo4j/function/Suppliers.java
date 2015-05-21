@@ -28,7 +28,7 @@ public final class Suppliers
      * Creates a {@link Supplier} that returns a single object
      *
      * @param instance The object to return
-     * @param <T>      The object type
+     * @param <T> The object type
      * @return A {@link Supplier} returning the specified object instance
      */
     public static <T> Supplier<T> singleton( final T instance )
@@ -47,7 +47,7 @@ public final class Suppliers
      * Creates a lazy initialized {@link Supplier} of a single object
      *
      * @param supplier A supplier that will provide the object when required
-     * @param <T>      The object type
+     * @param <T> The object type
      * @return A {@link Supplier} returning the specified object instance
      */
     public static <T> Supplier<T> lazySingleton( final Supplier<T> supplier )
@@ -64,7 +64,7 @@ public final class Suppliers
                     return instance;
                 }
 
-                synchronized (this)
+                synchronized ( this )
                 {
                     if ( instance == null )
                     {
@@ -87,7 +87,7 @@ public final class Suppliers
      * @param <T> The result object type
      * @return A {@link Supplier} of objects
      */
-    public static <T, V> Supplier<T> adapted( final Supplier<V> supplier, final Function<V, T> adaptor )
+    public static <T, V> Supplier<T> adapted( final Supplier<V> supplier, final Function<V,T> adaptor )
     {
         return new Supplier<T>()
         {
@@ -104,7 +104,7 @@ public final class Suppliers
                 }
 
                 T adaptedValue = adaptor.apply( value );
-                synchronized (this)
+                synchronized ( this )
                 {
                     if ( value != lastValue )
                     {

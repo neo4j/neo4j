@@ -23,6 +23,6 @@ package org.neo4j.function;
  * @deprecated use {@link ThrowingFunction} instead
  */
 @Deprecated
-public interface RawFunction<T, R, E extends Exception> extends ThrowingFunction<T, R, E>
+public interface RawFunction<T, R, E extends Exception> extends ThrowingFunction<T,R,E>
 {
 }

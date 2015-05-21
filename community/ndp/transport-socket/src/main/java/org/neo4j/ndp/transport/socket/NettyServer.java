@@ -24,7 +24,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.util.Collection;
 
-import org.neo4j.helpers.BiConsumer;
+import org.neo4j.function.BiConsumer;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
