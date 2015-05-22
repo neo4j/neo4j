@@ -23,8 +23,17 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.{AstRewritingMonitor, Rewriter}
+
 class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
   def rewriter: Rewriter = CNFNormalizer()(mock[AstRewritingMonitor])
+
+  test("should not touch a simple predicate") {
+    P <=> P
+  }
+
+  test("should lift plain AND") {
+    and(P, Q) <=> ands(P, Q)
+  }
 
   test("should flatten multiple ANDs in a ANDS") {
     and(P, and(R, S)) <=> ands(P, R, S)

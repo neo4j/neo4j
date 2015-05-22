@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{RewriterStep, ApplyRewriter, RewriterCondition, RewriterStepSequencer}
 import org.neo4j.helpers.Clock
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
@@ -43,13 +43,19 @@ case class CostBasedPipeBuilder(monitors: Monitors,
                                 queryPlanner: QueryPlanner,
                                 queryGraphSolver: QueryGraphSolver,
                                 plannerName: CostBasedPlannerName,
-                                rewriterSequencer: (String) => RewriterStepSequencer)
+                                rewriterSequencer: (String) => RewriterStepSequencer,
+                                semanticChecker: SemanticChecker)
   extends PipeBuilder {
 
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
+
+    // Planner rewriting
     val statement = CostBasedPipeBuilder.rewriteStatement(inputQuery.statement, inputQuery.scopeTree,
-                                                          inputQuery.semanticTable, rewriterSequencer, inputQuery.conditions,
+                                                          inputQuery.semanticTable, rewriterSequencer,
+                                                          semanticChecker, inputQuery.conditions,
                                                           monitors.newMonitor[AstRewritingMonitor]())
+
+    // Planning
     statement match {
       case (ast: Query, rewrittenSemanticTable) =>
         monitor.startedPlanning(inputQuery.queryText)
@@ -84,31 +90,49 @@ case class CostBasedPipeBuilder(monitors: Monitors,
   }
 }
 
+// M p = () WHERE pred1 AND pred2 AND pred3 AND pred4 =>
+// M () WHERE pred3 AND pred4 WITH ..., PathExpr AS p WHERE pred1 AND pred2
+
+
 object CostBasedPipeBuilder {
   import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
-  def rewriteStatement(statement: Statement, scopeTree: Scope, semanticTable: SemanticTable, rewriterSequencer: (String) => RewriterStepSequencer, preConditions: Set[RewriterCondition], monitor: AstRewritingMonitor): (Statement, SemanticTable) = {
+  def rewriteStatement(statement: Statement,
+                       scopeTree: Scope,
+                       semanticTable: SemanticTable,
+                       rewriterSequencer: (String) => RewriterStepSequencer,
+                       semanticChecker: SemanticChecker,
+                       preConditions: Set[RewriterCondition],
+                       monitor: AstRewritingMonitor): (Statement, SemanticTable) =
+  {
+    val statementRewriter = StatementRewriter(rewriterSequencer, preConditions, monitor)
     val namespacer = Namespacer(statement, scopeTree)
-    val newStatement = rewriteStatement(namespacer, statement, rewriterSequencer, preConditions, monitor)
-    val newSemanticTable = namespacer.tableRewriter(semanticTable)
-    (newStatement, newSemanticTable)
+    val namespacedStatement = statementRewriter.rewriteStatement(statement)(
+      ApplyRewriter("Namespacer", namespacer.statementRewriter),
+      rewriteEqualityToInCollection,
+      CNFNormalizer()(monitor)
+    )
+//    val namespacedSemanticTable = namespacer.tableRewriter(semanticTable)
+    val state = semanticChecker.check(namespacedStatement.toString, namespacedStatement, (msg, pos) => throw new InternalException(s"Unexpected error during late semantic checking: $msg"))
+    val table = semanticTable.copy(types = state.typeTable, recordedScopes = state.recordedScopes)
+
+    val predicateSplitter = PredicateSplitter(table, namespacedStatement)
+    val newStatement = statementRewriter.rewriteStatement(namespacedStatement)(
+      ApplyRewriter("PredicateSplitter", predicateSplitter.statementRewriter),
+      collapseInCollections,
+      nameUpdatingClauses /* this is actually needed as a precondition for projectedNamedPaths even though we do not handle updates in Ronja */,
+      projectNamedPaths,
+      enableCondition(containsNamedPathOnlyForShortestPath),
+      projectFreshSortExpressions
+    )
+    (newStatement, table)
   }
 
-  private def rewriteStatement(namespacer: Namespacer, statement: Statement, rewriterSequencer: (String) => RewriterStepSequencer, preConditions: Set[RewriterCondition], monitor: AstRewritingMonitor): Statement = {
-    val rewriter =
-      rewriterSequencer("Planner")
-        .withPrecondition(preConditions)(
-          ApplyRewriter("namespaceIdentifiers", namespacer.astRewriter),
-          rewriteEqualityToInCollection,
-          CNFNormalizer()(monitor),
-          collapseInCollections,
-          nameUpdatingClauses /* this is actually needed as a precondition for projectedNamedPaths even though we do not handle updates in Ronja */,
-          projectNamedPaths,
-          enableCondition(containsNamedPathOnlyForShortestPath),
-          projectFreshSortExpressions
-        ).rewriter
-
-    statement.endoRewrite(rewriter)
+  case class StatementRewriter(rewriterSequencer: (String) => RewriterStepSequencer, preConditions: Set[RewriterCondition], monitor: AstRewritingMonitor) {
+    def rewriteStatement(statement: Statement)(steps: RewriterStep*): Statement = {
+      val rewriter = rewriterSequencer("Planner").withPrecondition(preConditions)(steps: _*).rewriter
+      statement.endoRewrite(rewriter)
+    }
   }
 }
 

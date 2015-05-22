@@ -21,11 +21,30 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
 
 import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+
+  test("combines aggregation and named path") {
+    val node1 = createNode("num" -> 1)
+    val node2 = createNode("num" -> 2)
+    val node3 = createNode("num" -> 3)
+    val node4 = createNode("num" -> 4)
+    relate(node1, node2)
+    relate(node3, node4)
+
+    val result = executeWithCostPlannerOnly(
+      """MATCH p=()-[*]->()
+        |WITH count(*) AS count, p AS p
+        |WITH nodes(p) AS nodes
+        |RETURN *""".stripMargin)
+
+    result.toSet should equal(Set(
+      Map("nodes" -> Seq(node1, node2)),
+      Map("nodes" -> Seq(node3, node4))
+    ))
+  }
 
   test("a merge following a delete of multiple rows should not match on a deleted entity") {
     // GIVEN

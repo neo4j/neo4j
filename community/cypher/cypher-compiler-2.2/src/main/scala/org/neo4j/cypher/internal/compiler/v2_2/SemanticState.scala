@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, ASTAnnotationMap}
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.{TreeElem, TreeZipper}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
@@ -29,6 +29,7 @@ import scala.collection.immutable.HashMap
 case class SymbolUse(name: String, position: InputPosition) {
   override def toString = s"SymbolUse($nameWithPosition)"
 
+  def asIdentifier = Identifier(name)(position)
   def nameWithPosition = s"$name@${position.toOffsetString}"
 }
 

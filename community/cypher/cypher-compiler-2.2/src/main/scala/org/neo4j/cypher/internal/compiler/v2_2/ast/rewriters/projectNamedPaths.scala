@@ -35,11 +35,8 @@ case object projectNamedPaths extends Rewriter {
     self =>
 
     def withoutNamedPaths = copy(paths = Map.empty)
-
     def withProtectedIdentifier(ident: Ref[Identifier]) = copy(protectedIdentifiers = protectedIdentifiers + ident)
-
     def withNamedPath(entry: (Identifier, PathExpression)) = copy(paths = paths + entry)
-
     def withRewrittenIdentifier(entry: (Ref[Identifier], PathExpression)) = {
       val (ref, pathExpr) = entry
       copy(identifierRewrites = identifierRewrites + (ref -> pathExpr.endoRewrite(copyIdentifiers)))
@@ -64,6 +61,26 @@ case object projectNamedPaths extends Rewriter {
     val empty = Projectibles()
   }
 
+  def apply(input: AnyRef): AnyRef = {
+    val Projectibles(paths, protectedIdentifiers, identifierRewrites) = collectProjectibles(input)
+    val applicator = Rewriter.lift {
+
+      case (ident: Identifier) if !protectedIdentifiers(Ref(ident)) =>
+        identifierRewrites.getOrElse(Ref(ident), ident)
+
+      case namedPart@NamedPatternPart(_, _: ShortestPaths) =>
+        namedPart
+
+      case NamedPatternPart(_, part) =>
+        part
+
+      case expr: PathExpression =>
+        expr
+    }
+    val result = topDown(applicator)(input)
+    result
+  }
+
   private def collectProjectibles(input: AnyRef): Projectibles = input.treeFold(Projectibles.empty) {
     case aliased: AliasedReturnItem =>
       (acc, children) =>
@@ -75,6 +92,15 @@ case object projectNamedPaths extends Rewriter {
           case Some(pathExpr) => children(acc.withRewrittenIdentifier(Ref(ident) -> pathExpr))
           case None => children(acc)
         }
+
+    // Optimization 1
+    //
+    // M p = ... WHERE ..., p, p, ...
+    // M p = ... WITH a AS a, b AS b, PathExpr AS p WHERE ...
+
+    // Optimization 2
+    //
+    // plan rewriter for pushing projections up the tree
 
     // TODO: Project for use in WHERE
     // TODO: Pull out common subexpressions for path expr using WITH *, ... and run expand star again
@@ -116,47 +142,5 @@ case object projectNamedPaths extends Rewriter {
           flip(relChain, MultiRelationshipPathStep(rel.get, direction, step))
       }
     }
-  }
-
-  def apply(input: AnyRef): AnyRef = {
-    val Projectibles(paths, protectedIdentifiers, identifierRewrites) = collectProjectibles(input)
-    val applicator = Rewriter.lift {
-      case namedPart@NamedPatternPart(_, _: ShortestPaths) =>
-        namedPart
-
-//      case query @ SingleQuery(clauses) =>
-//        val newClauses = clauses.flatMap {
-//          case matchClause@Match(_, pattern, _, Some(where)) =>
-//            val namedPaths = pattern.patternParts.flatMap {
-//              case NamedPatternPart(_, _: ShortestPaths) => None
-//              case part: NamedPatternPart                => Some(part.identifier)
-//            }
-//            val newMatchClause = matchClause.copy(where = None)(matchClause.position)
-//            val extraReturnItems = namedPaths.map { ident =>
-//              AliasedReturnItem(paths(ident), ident.copyId)(ident.position)
-//            }
-//            val pathNames = namedPaths.toSet
-//            val newWhere = bottomUp(Rewriter.lift {
-//              case ident: Identifier if pathNames(ident) => ident.copyId
-//            })(where).asInstanceOf[Where]
-//            val newWithClause = With(distinct = false, ReturnItems(includeExisting = true, extraReturnItems)(where.position), None, None, None, Some(newWhere))(where.position)
-//            Seq(newMatchClause, newWithClause)
-//
-//          case clause =>
-//            Seq(clause)
-//        }
-//        query.copy(clauses = newClauses)(query.position)
-
-      case NamedPatternPart(_, part) =>
-        part
-
-      case expr: PathExpression =>
-        expr
-
-      case (ident: Identifier) if !protectedIdentifiers(Ref(ident))=>
-        identifierRewrites.getOrElse(Ref(ident), ident)
-    }
-    val result = topDown(applicator)(input)
-    result
   }
 }

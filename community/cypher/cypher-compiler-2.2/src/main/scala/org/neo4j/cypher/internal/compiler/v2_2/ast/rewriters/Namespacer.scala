@@ -76,7 +76,7 @@ object Namespacer {
 }
 
 case class Namespacer(renamings: IdentifierRenamings) {
-  val astRewriter = bottomUp(Rewriter.lift {
+  val statementRewriter: Rewriter = bottomUp(Rewriter.lift {
     case i: Identifier =>
       renamings.get(Ref(i)) match {
         case Some(newIdentifier) => newIdentifier

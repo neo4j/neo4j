@@ -113,13 +113,13 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
     ))
   }
 
-  val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating _, mock[AstRewritingMonitor], false)
+  val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, mock[AstRewritingMonitor], false)
 
   private def assertRewritten(from: String, to: String) = {
     val fromAst = parseAndRewrite(from)
     val state = fromAst.semanticState
     val namespacer = Namespacer(fromAst, state.scopeTree)
-    val namespacedAst = fromAst.endoRewrite(namespacer.astRewriter)
+    val namespacedAst = fromAst.endoRewrite(namespacer.statementRewriter)
 
     val expectedAst = parseAndRewrite(to)
 

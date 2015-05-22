@@ -156,7 +156,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newPlanner(metricsFactory: MetricsFactory): CostBasedPipeBuilder = {
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
-    CostBasedPipeBuilderFactory(monitors, metricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK, queryPlanner, rewriterSequencer)
+    CostBasedPipeBuilderFactory(monitors, metricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK, queryPlanner, rewriterSequencer, semanticChecker)
   }
 
   def produceLogicalPlan(queryText: String)(implicit planner: CostBasedPipeBuilder, planContext: PlanContext): LogicalPlan = {
@@ -164,7 +164,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
     val semanticState = semanticChecker.check(queryText, parsedStatement, mkException)
     val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryText, parsedStatement, semanticState)
-    CostBasedPipeBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable), rewriterSequencer, postConditions, monitors.newMonitor[AstRewritingMonitor]()) match {
+    CostBasedPipeBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable), rewriterSequencer, semanticChecker, postConditions, monitors.newMonitor[AstRewritingMonitor]()) match {
       case (ast: Query, newTable)=>
         val semanticState = semanticChecker.check(queryText, ast, mkException)
         tokenResolver.resolve(ast)(newTable, planContext)

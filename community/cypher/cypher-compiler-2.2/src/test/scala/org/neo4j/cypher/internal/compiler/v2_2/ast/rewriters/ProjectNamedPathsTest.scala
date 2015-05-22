@@ -69,7 +69,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos)
         ))(pos), None, None, None, None)(pos)
 
-    val RETURN=
+    val RETURN =
       Return(distinct = false,
         ReturnItems(includeExisting = false, Seq(
           AliasedReturnItem(p, p)(pos)
