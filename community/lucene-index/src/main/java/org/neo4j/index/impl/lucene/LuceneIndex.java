@@ -406,25 +406,43 @@ public abstract class LuceneIndex implements LegacyIndex
         @Override
         public LegacyIndexHits get( String key, Object value, long startNode, long endNode )
         {
-            throw new UnsupportedOperationException( "Please implement" );
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public LegacyIndexHits query( String key, Object queryOrQueryObject, long startNode, long endNode )
         {
-            throw new UnsupportedOperationException( "Please implement" );
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public LegacyIndexHits query( Object queryOrQueryObject, long startNode, long endNode )
         {
-            throw new UnsupportedOperationException( "Please implement" );
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public void addRelationship( long entity, String key, Object value, long startNode, long endNode )
         {
-            throw new UnsupportedOperationException( "Please implement" );
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void removeRelationship( long entity, String key, Object value, long startNode, long endNode )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void removeRelationship( long entity, String key, long startNode, long endNode )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void removeRelationship( long entity, long startNode, long endNode )
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -446,10 +464,11 @@ public abstract class LuceneIndex implements LegacyIndex
         public void addRelationship( long entity, String key, Object value, long startNode, long endNode )
         {
             assertValidKey( key );
+            RelationshipId id = RelationshipId.of( entity, startNode, endNode );
             for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
             {
                 oneValue = getCorrectValue( oneValue );
-                transaction.add( this, RelationshipId.of( entity, startNode, endNode ), key, oneValue );
+                transaction.add( this, id, key, oneValue );
                 commandFactory.addRelationship( identifier.indexName, entity, key, oneValue, startNode, endNode );
             }
         }
@@ -490,6 +509,36 @@ public abstract class LuceneIndex implements LegacyIndex
             addIfAssigned( query, startNode, KEY_START_NODE_ID );
             addIfAssigned( query, endNode, KEY_END_NODE_ID );
             return query( query, null, null, context );
+        }
+
+        @Override
+        public void removeRelationship( long entity, String key, Object value, long startNode, long endNode )
+        {
+            assertValidKey( key );
+            RelationshipId id = RelationshipId.of( entity, startNode, endNode );
+            for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
+            {
+                oneValue = getCorrectValue( oneValue );
+                transaction.remove( this, id, key, oneValue );
+                addRemoveCommand( entity, key, oneValue );
+            }
+        }
+
+        @Override
+        public void removeRelationship( long entity, String key, long startNode, long endNode )
+        {
+            assertValidKey( key );
+            RelationshipId id = RelationshipId.of( entity, startNode, endNode );
+            transaction.remove( this, id, key );
+            addRemoveCommand( entity, key, null );
+        }
+
+        @Override
+        public void removeRelationship( long entity, long startNode, long endNode )
+        {
+            RelationshipId id = RelationshipId.of( entity, startNode, endNode );
+            transaction.remove( this, id );
+            addRemoveCommand( entity, null, null );
         }
 
         private static void addIfAssigned( BooleanQuery query, long node, String field )

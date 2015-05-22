@@ -81,7 +81,6 @@ public class DummyIndexImplementation implements IndexImplementation
 
     private static class EmptyLegacyIndex implements LegacyIndex
     {
-
         private final boolean failing;
 
         private EmptyLegacyIndex( boolean failing )
@@ -157,6 +156,24 @@ public class DummyIndexImplementation implements IndexImplementation
 
         @Override
         public void addNode( long entity, String key, Object value )
+        {
+            mutate();
+        }
+
+        @Override
+        public void removeRelationship( long entity, String key, Object value, long startNode, long endNode )
+        {
+            mutate();
+        }
+
+        @Override
+        public void removeRelationship( long entity, String key, long startNode, long endNode )
+        {
+            mutate();
+        }
+
+        @Override
+        public void removeRelationship( long entity, long startNode, long endNode )
         {
             mutate();
         }
