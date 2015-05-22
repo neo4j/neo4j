@@ -19,8 +19,11 @@
  */
 package org.neo4j.ext;
 
+import io.netty.channel.Channel;
+
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.Factory;
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
@@ -55,7 +58,7 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
 {
     public static class Settings
     {
-        @Description("Max time that sessions can be idle, after this interval a session will get closed.")
+        @Description("Enable Neo4j Data Protocol")
         public static final Setting<Boolean> ndp_enabled = setting( "experimental.ndp.enabled", BOOLEAN,
                 "false" );
 
@@ -99,13 +102,13 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
         {
             final Sessions sessions = life.add( new StandardSessions( api, log ) );
 
-            PrimitiveLongObjectMap<Factory<SocketProtocol>> availableVersions = longObjectMap();
-            availableVersions.put( SocketProtocolV1.VERSION, new Factory<SocketProtocol>()
+            PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> availableVersions = longObjectMap();
+            availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel, SocketProtocol>()
             {
                 @Override
-                public SocketProtocol newInstance()
+                public SocketProtocol apply( Channel channel )
                 {
-                    return new SocketProtocolV1( log, sessions.newSession() );
+                    return new SocketProtocolV1( log, sessions.newSession(), channel );
                 }
             } );
 

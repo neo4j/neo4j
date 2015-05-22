@@ -192,5 +192,8 @@ public class StateMachineErrorTest
         // And when I know run some other operation
         machine.run( "src/test", EMPTY_PARAMS, null, messages );
 
+        // Then
+        assertThat( messages.next(), success() );
+
     }
 }

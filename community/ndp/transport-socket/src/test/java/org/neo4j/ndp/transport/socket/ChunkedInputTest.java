@@ -41,7 +41,7 @@ public class ChunkedInputTest
 
         // When
         byte[] bytes = new byte[5];
-        ch.get( bytes, 0, 5 );
+        ch.readBytes( bytes, 0, 5 );
 
         // Then
         assertThat( bytes, equalTo( new byte[]{1, 2, 3, 4, 5} ) );
@@ -61,14 +61,14 @@ public class ChunkedInputTest
         ch.append( wrappedBuffer( new byte[]{6, 7} ) );
 
         // When I read {1,2,3}
-        ch.get( bytes, 0, 3 );
+        ch.readBytes( bytes, 0, 3 );
 
         // Then
         assertThat( bytes, equalTo( new byte[]{1, 2, 3} ) );
 
 
         // When I read {4,5,6}
-        ch.get( bytes, 0, 3 );
+        ch.readBytes( bytes, 0, 3 );
 
         // Then
         assertThat( bytes, equalTo( new byte[]{4, 5, 6} ) );
@@ -76,7 +76,7 @@ public class ChunkedInputTest
 
         // When I read {7}
         Arrays.fill( bytes, (byte) 0 );
-        ch.get( bytes, 0, 1 );
+        ch.readBytes( bytes, 0, 1 );
 
         // Then
         assertThat( bytes, equalTo( new byte[]{7, 0, 0} ) );
@@ -94,7 +94,7 @@ public class ChunkedInputTest
 
         // When
         byte[] bytes = new byte[5];
-        ch.get( bytes, 0, 5 );
+        ch.readBytes( bytes, 0, 5 );
 
         // Then
         assertThat( bytes, equalTo( new byte[]{1, 2, 3, 4, 5} ) );

@@ -24,6 +24,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ReadableByteChannel;
 
+/**
+ * An {@link PackInput} implementation that reads from an input channel into an internal buffer.
+ */
 public class BufferedChannelInput implements PackInput
 {
     private final ByteBuffer buffer;
@@ -43,26 +46,14 @@ public class BufferedChannelInput implements PackInput
     }
 
     @Override
-    public PackInput ensure( int numBytes ) throws IOException
+    public boolean hasMoreData() throws IOException
     {
-        if ( !attempt( numBytes ) )
-        {
-            throw new PackStream.EndOfStream( "Unexpected end of stream while trying to read " + numBytes + " bytes." );
-        }
-        return this;
+        return attempt( 1 );
     }
 
-    @Override
-    public PackInput attemptUpTo( int numBytes ) throws IOException
+    private boolean attempt( int numBytes ) throws IOException
     {
-        attempt( Math.min( numBytes, buffer.capacity() ) );
-        return this;
-    }
-
-    @Override
-    public boolean attempt( int numBytes ) throws IOException
-    {
-        if ( remaining() >= numBytes )
+        if ( buffer.remaining() >= numBytes )
         {
             return true;
         }
@@ -89,51 +80,74 @@ public class BufferedChannelInput implements PackInput
     }
 
     @Override
-    public byte get()
+    public byte readByte() throws IOException
     {
+        ensure( 1 );
         return buffer.get();
     }
 
     @Override
-    public int remaining()
+    public short readShort() throws IOException
     {
-        return buffer.remaining();
-    }
-
-    @Override
-    public short getShort()
-    {
+        ensure( 2 );
         return buffer.getShort();
     }
 
     @Override
-    public int getInt()
+    public int readInt() throws IOException
     {
+        ensure( 4 );
         return buffer.getInt();
     }
 
     @Override
-    public long getLong()
+    public long readLong() throws IOException
     {
+        ensure( 8 );
         return buffer.getLong();
     }
 
     @Override
-    public double getDouble()
+    public double readDouble() throws IOException
     {
+        ensure( 8 );
         return buffer.getDouble();
     }
 
     @Override
-    public PackInput get( byte[] into, int offset, int toRead )
+    public PackInput readBytes( byte[] into, int index, int toRead ) throws IOException
     {
-        buffer.get( into, offset, toRead );
+        int endIndex = index + toRead;
+        while ( index < endIndex)
+        {
+            toRead = Math.min( buffer.remaining(), endIndex - index );
+            buffer.get( into, index, toRead );
+            index += toRead;
+            if ( buffer.remaining() == 0 && index < endIndex )
+            {
+                attempt( endIndex - index );
+                if ( buffer.remaining() == 0 )
+                {
+                    throw new PackStream.EndOfStream( "Expected " + (endIndex - index) + " bytes available, " +
+                                                      "but no more bytes accessible from underlying stream." );
+                }
+            }
+        }
         return this;
     }
 
     @Override
-    public byte peek()
+    public byte peekByte() throws IOException
     {
+        ensure( 1 );
         return buffer.get( buffer.position() );
+    }
+
+    private void ensure( int numBytes ) throws IOException
+    {
+        if ( !attempt( numBytes ) )
+        {
+            throw new PackStream.EndOfStream( "Unexpected end of stream while trying to read " + numBytes + " bytes." );
+        }
     }
 }

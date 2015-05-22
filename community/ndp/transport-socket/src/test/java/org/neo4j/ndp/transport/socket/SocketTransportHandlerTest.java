@@ -21,11 +21,13 @@ package org.neo4j.ndp.transport.socket;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.Factory;
+import org.neo4j.function.Function;
 import org.neo4j.logging.NullLog;
 import org.neo4j.ndp.runtime.Session;
 
@@ -42,9 +44,12 @@ public class SocketTransportHandlerTest
     {
         // Given
         Session session = mock(Session.class);
+        Channel ch = mock( Channel.class );
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
+        when(ctx.channel()).thenReturn( ch );
 
-        when(ctx.alloc()).thenReturn( UnpooledByteBufAllocator.DEFAULT );
+        when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
+        when( ctx.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
 
         SocketTransportHandler handler = new SocketTransportHandler( protocolChooser( session ) );
 
@@ -60,13 +65,13 @@ public class SocketTransportHandlerTest
 
     private SocketTransportHandler.ProtocolChooser protocolChooser( final Session session )
     {
-        PrimitiveLongObjectMap<Factory<SocketProtocol>> availableVersions = longObjectMap();
-        availableVersions.put( SocketProtocolV1.VERSION, new Factory<SocketProtocol>()
+        PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> availableVersions = longObjectMap();
+        availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel, SocketProtocol>()
         {
             @Override
-            public SocketProtocol newInstance()
+            public SocketProtocol apply( Channel channel )
             {
-                return new SocketProtocolV1( NullLog.getInstance(), session );
+                return new SocketProtocolV1( NullLog.getInstance(), session, channel );
             }
         } );
 

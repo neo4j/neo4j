@@ -19,12 +19,18 @@
  */
 package org.neo4j.ndp.messaging.v1.message;
 
+import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.stream.Record;
 
 public class Messages
 {
+    private static final PullAllMessage PULL_ALL = new PullAllMessage();
+    private static final DiscardAllMessage DISCARD_ALL = new DiscardAllMessage();
+    private static final AcknowledgeFailureMessage ACK_FAILURE = new AcknowledgeFailureMessage();
+    private static final SuccessMessage SUCCESS = new SuccessMessage( Collections.EMPTY_MAP );
+
     public static Message run( String statement )
     {
         return new RunMessage( statement );
@@ -37,17 +43,17 @@ public class Messages
 
     public static Message pullAll()
     {
-        return new PullAllMessage();
+        return PULL_ALL;
     }
 
     public static Message discardAll()
     {
-        return new DiscardAllMessage();
+        return DISCARD_ALL;
     }
 
-    public static Message ackF()
+    public static Message ackFailure()
     {
-        return new AcknowledgeFailureMessage();
+        return ACK_FAILURE;
     }
 
     public static Message record( Record value )
@@ -57,6 +63,10 @@ public class Messages
 
     public static Message success( Map<String,Object> metadata )
     {
+        if( metadata.size() == 0 )
+        {
+            return SUCCESS;
+        }
         return new SuccessMessage( metadata );
     }
 }

@@ -20,7 +20,9 @@
 package org.neo4j.ndp.transport.socket;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.junit.Before;
@@ -36,20 +38,19 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 public class ChunkedOutputTest
 {
-    private final ChannelHandlerContext ch = mock( ChannelHandlerContext.class );
+    private final Channel ch = mock( Channel.class );
     private final ByteBuffer writtenData = ByteBuffer.allocate( 1024 );
-    private final ChunkedOutput out = new ChunkedOutput( 16 );
+    private ChunkedOutput out ;
 
     @Test
     public void shouldChunkSingleMessage() throws Throwable
     {
         // When
-        out.ensure( 3 ).put( (byte) 1 ).putShort( (short) 2 );
+        out.writeByte( (byte) 1 ).writeShort( (short) 2 );
         out.messageBoundaryHook().run();
         out.flush();
 
@@ -63,9 +64,7 @@ public class ChunkedOutputTest
     public void shouldChunkMessageSpanningMultipleChunks() throws Throwable
     {
         // When
-        out.ensure( 8 ).putLong( 1 )
-                .ensure( 8 ).putLong( 2 )
-                .ensure( 8 ).putLong( 3 );
+        out.writeLong( 1 ).writeLong( 2 ).writeLong( 3 );
         out.messageBoundaryHook().run();
         out.flush();
 
@@ -91,7 +90,6 @@ public class ChunkedOutputTest
                 return null;
             }
         } );
-
-        out.setTargetChannel( ch );
+        this.out = new ChunkedOutput( ch, 16 );
     }
 }

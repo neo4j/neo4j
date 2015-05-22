@@ -22,25 +22,28 @@ package org.neo4j.packstream;
 import java.io.IOException;
 
 /**
- * Client is responsible for calling {@link #ensure(int)} before any calls to 'put' operations,
- * other than to {@link #put(byte[], int, int)}.
+ * This is where {@link PackStream} writes its output to.
  */
 public interface PackOutput
 {
-    /** Ensure at least the given set of bytes can be written. Size will never exceed 16 */
-    PackOutput ensure( int size ) throws IOException;
-
+    /** If implementation has been buffering data, it should flush those buffers now. */
     PackOutput flush() throws IOException;
 
-    PackOutput put( byte value );
+    /** Produce a single byte */
+    PackOutput writeByte( byte value ) throws IOException;
 
-    PackOutput put( byte[] data, int offset, int amountToWrite ) throws IOException;
+    /** Produce binary data */
+    PackOutput writeBytes( byte[] data, int offset, int amountToWrite ) throws IOException;
 
-    PackOutput putShort( short value );
+    /** Produce a 4-byte signed integer */
+    PackOutput writeShort( short value ) throws IOException;
 
-    PackOutput putInt( int value );
+    /** Produce a 4-byte signed integer */
+    PackOutput writeInt( int value ) throws IOException;
 
-    PackOutput putLong( long value );
+    /** Produce an 8-byte signed integer */
+    PackOutput writeLong( long value ) throws IOException;
 
-    PackOutput putDouble( double value );
+    /** Produce an 8-byte IEEE 754 "double format" floating-point number */
+    PackOutput writeDouble( double value ) throws IOException;
 }

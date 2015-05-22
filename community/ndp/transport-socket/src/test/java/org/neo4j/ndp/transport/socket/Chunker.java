@@ -21,6 +21,7 @@ package org.neo4j.ndp.transport.socket;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.mockito.invocation.InvocationOnMock;
@@ -28,8 +29,6 @@ import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import org.neo4j.ndp.transport.socket.ChunkedOutput;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -40,10 +39,9 @@ public class Chunker
 {
     public static byte[] chunk( int maxChunkSize, byte[][] messages ) throws IOException
     {
-        ChunkedOutput out = new ChunkedOutput( maxChunkSize + 2 /* for chunk header */ );
         final ByteBuffer outputBuffer = ByteBuffer.allocate( 512 );
 
-        ChannelHandlerContext ch = mock( ChannelHandlerContext.class );
+        Channel ch = mock( Channel.class );
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
         when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).then( new Answer<Object>()
         {
@@ -56,11 +54,12 @@ public class Chunker
                 return null;
             }
         } );
-        out.setTargetChannel( ch );
+
+        ChunkedOutput out = new ChunkedOutput( ch, maxChunkSize + 2 /* for chunk header */ );
 
         for ( byte[] message : messages )
         {
-            out.put( message, 0, message.length );
+            out.writeBytes( message, 0, message.length );
             out.messageBoundaryHook().run();
         }
         out.flush();

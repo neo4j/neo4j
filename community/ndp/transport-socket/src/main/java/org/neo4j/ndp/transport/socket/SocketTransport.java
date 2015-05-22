@@ -21,6 +21,7 @@ package org.neo4j.ndp.transport.socket;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -30,6 +31,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.BiConsumer;
 import org.neo4j.function.Factory;
+import org.neo4j.function.Function;
 import org.neo4j.helpers.HostnamePort;
 
 /**
@@ -38,9 +40,9 @@ import org.neo4j.helpers.HostnamePort;
 public class SocketTransport implements BiConsumer<EventLoopGroup, EventLoopGroup>
 {
     private final HostnamePort address;
-    private final PrimitiveLongObjectMap<Factory<SocketProtocol>> protocolVersions;
+    private final PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> protocolVersions;
 
-    public SocketTransport( HostnamePort address, PrimitiveLongObjectMap<Factory<SocketProtocol>> protocolVersions)
+    public SocketTransport( HostnamePort address, PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> protocolVersions)
     {
         this.address = address;
         this.protocolVersions = protocolVersions;

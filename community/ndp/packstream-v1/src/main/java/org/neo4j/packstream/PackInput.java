@@ -21,39 +21,33 @@ package org.neo4j.packstream;
 
 import java.io.IOException;
 
+/**
+ * This is what {@link PackStream} uses to ingest data, implement this on top of any data source of your choice to
+ * deserialize the stream with {@link PackStream}.
+ */
 public interface PackInput
 {
-    /**
-     * Ensure the specified number of bytes are available for reading
-     *
-     * @throws org.neo4j.packstream.PackStream.EndOfStream if there are not enough bytes available
-     */
-    PackInput ensure( int numBytes ) throws IOException;
+    /** True if there is at least one more consumable byte */
+    boolean hasMoreData() throws IOException;
 
-    /** Attempt to make up to the specified bytes available for reading */
-    PackInput attemptUpTo( int numBytes ) throws IOException;
+    /** Consume one byte */
+    byte readByte() throws IOException;
 
-    /** Attempt to make the specified number of bytes available for reading. */
-    boolean attempt( int numBytes ) throws IOException;
+    /** Consume a 2-byte signed integer */
+    short readShort() throws IOException;
 
-    byte get();
+    /** Consume a 4-byte signed integer */
+    int readInt() throws IOException;
 
-    /**
-     * Number of bytes immediately readable. This differs from {@link #ensure(int)} and {@link #attempt(int)} in that
-     * this does not load more bytes from any underlying source.
-     */
-    int remaining();
+    /** Consume an 8-byte signed integer */
+    long readLong() throws IOException;
 
-    short getShort();
+    /** Consume an 8-byte IEEE 754 "double format" floating-point number */
+    double readDouble() throws IOException;
 
-    int getInt();
-
-    long getLong();
-
-    double getDouble();
-
-    PackInput get( byte[] into, int offset, int toRead );
+    /** Consume a specified number of bytes */
+    PackInput readBytes( byte[] into, int offset, int toRead ) throws IOException;
 
     /** Get the next byte without forwarding the internal pointer */
-    byte peek();
+    byte peekByte() throws IOException;
 }
