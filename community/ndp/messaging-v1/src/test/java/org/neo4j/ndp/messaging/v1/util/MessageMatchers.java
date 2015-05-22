@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.util.HexPrinter;
+import org.neo4j.ndp.messaging.v1.MessageFormat;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
 import org.neo4j.ndp.messaging.v1.RecordingMessageHandler;
@@ -179,8 +180,7 @@ public class MessageMatchers
     public static byte[] serialize( Message... messages ) throws IOException
     {
         final RecordingByteChannel rawData = new RecordingByteChannel();
-        final PackStreamMessageFormatV1.Writer packer = new PackStreamMessageFormatV1.Writer().reset(
-                rawData );
+        final MessageFormat.Writer packer = new PackStreamMessageFormatV1().newWriter().reset( rawData );
 
         for ( Message message : messages )
         {

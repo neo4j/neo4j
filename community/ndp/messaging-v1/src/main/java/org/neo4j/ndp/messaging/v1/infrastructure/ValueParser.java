@@ -17,32 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.messaging.v1.msgprocess;
+package org.neo4j.ndp.messaging.v1.infrastructure;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.logging.Log;
-import org.neo4j.ndp.runtime.StatementMetadata;
-
-public class RunCallback extends MessageProcessingCallback<StatementMetadata>
+public class ValueParser
 {
-    private final Map<String,Object> successMetadata = new HashMap<>();
+    private ValueParser(){}
 
-    public RunCallback( Log log )
+    public static long parseId( String urn )
     {
-        super( log );
-    }
-
-    @Override
-    public void result( StatementMetadata result, Void none ) throws Exception
-    {
-        successMetadata.put( "fields", result.fieldNames() );
-    }
-
-    @Override
-    protected Map<String,Object> successMetadata()
-    {
-        return successMetadata;
+        String[] split = urn.split( "/" );
+        return Long.parseLong( split[split.length - 1] );
     }
 }

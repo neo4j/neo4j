@@ -28,7 +28,7 @@ import org.neo4j.ndp.messaging.v1.MessageHandler;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
 
-public class MessageProcessingCallback<T> implements Session.Callback<T,Void>
+public class MessageProcessingCallback<T> extends Session.Callback.Adapter<T,Void>
 {
     protected final Log log;
 
@@ -51,11 +51,6 @@ public class MessageProcessingCallback<T> implements Session.Callback<T,Void>
         this.onCompleted = onCompleted;
         clearState();
         return this;
-    }
-
-    @Override
-    public void result( T result, Void none ) throws Exception
-    {
     }
 
     @Override
@@ -103,9 +98,9 @@ public class MessageProcessingCallback<T> implements Session.Callback<T,Void>
     }
 
     /** Allow sub-classes to override this to provide custom metadata */
-    protected Map successMetadata()
+    protected Map<String,Object> successMetadata()
     {
-        return Collections.EMPTY_MAP;
+        return Collections.emptyMap();
     }
 
     private void clearState()

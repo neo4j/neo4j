@@ -41,7 +41,6 @@ public class PullAllMessage implements Message
         return 1;
     }
 
-
     @Override
     public String toString()
     {

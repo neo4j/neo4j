@@ -21,7 +21,6 @@ package org.neo4j.ndp.messaging.v1.infrastructure;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -42,17 +41,6 @@ public class ValueRelationship implements Relationship
         this.endNode = to;
         this.type = type;
         this.props = props;
-    }
-
-    public ValueRelationship( String id, String from, String to, String type, Map<String,Object> map )
-    {
-        this( toLong( id ), toLong( from ), toLong( to ), DynamicRelationshipType.withName( type ), map );
-    }
-
-    private static long toLong( String urn )
-    {
-        String[] split = urn.split( "/" );
-        return Long.parseLong( split[split.length - 1] );
     }
 
     @Override

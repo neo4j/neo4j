@@ -148,7 +148,6 @@ public class MessageFormatTest
 
     private <T extends Message> T serializeAndDeserialize( T msg ) throws IOException
     {
-
         MessageFormat.Reader reader = format.newReader();
         MessageFormat.Writer writer = format.newWriter();
         RecordingByteChannel channel = new RecordingByteChannel();

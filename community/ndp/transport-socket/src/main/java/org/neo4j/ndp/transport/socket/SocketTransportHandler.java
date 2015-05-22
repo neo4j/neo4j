@@ -118,7 +118,6 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
                     .close();
             return;
         case PARTIAL_HANDSHAKE:
-            return;
         }
     }
 

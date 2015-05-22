@@ -65,7 +65,7 @@ public interface Session extends AutoCloseable
         /** Called when the state machine ignores an operation, because it is waiting for an error to be acknowledged */
         void ignored( A attachment );
 
-        public static abstract class Adapter<V, A> implements Callback<V,A>
+        abstract class Adapter<V, A> implements Callback<V,A>
         {
             @Override
             public void result( V result, A attachment ) throws Exception
@@ -93,7 +93,7 @@ public interface Session extends AutoCloseable
         }
     }
 
-    public static class Callbacks
+    class Callbacks
     {
         private Callbacks()
         {

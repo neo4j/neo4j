@@ -45,8 +45,7 @@ public interface MessageHandler<E extends Exception>
     class Adapter<E extends Exception> implements MessageHandler<E>
     {
         @Override
-        public void handleRunMessage( String statement, Map<String,Object> params )
-                throws E
+        public void handleRunMessage( String statement, Map<String,Object> params ) throws E
         {
 
         }
