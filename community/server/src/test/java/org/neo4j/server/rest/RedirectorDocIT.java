@@ -19,21 +19,14 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import org.junit.Before;
-import org.junit.Test;
-
 public class RedirectorDocIT extends AbstractRestFunctionalTestBase
 {
-    @Before
-    public void cleanTheDatabase()
-    {
-        cleanDatabase();
-    }
-
     @Test
     public void shouldRedirectRootToWebadmin() throws Exception {
         JaxRsResponse response = new RestRequest(server().baseUri()).get();

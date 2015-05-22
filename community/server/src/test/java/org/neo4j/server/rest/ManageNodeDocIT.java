@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -26,10 +29,6 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
-
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.metatest.TestJavaTestDocsGenerator;
@@ -59,13 +58,6 @@ public class ManageNodeDocIT extends AbstractRestFunctionalTestBase
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
-    @Before
-    public void cleanTheDatabase()
-    {
-        cleanDatabase();
-    }
-
-
     @Test
     public void create_node() throws Exception
     {
@@ -94,7 +86,7 @@ public class ManageNodeDocIT extends AbstractRestFunctionalTestBase
                 .matches( NODE_URI_PATTERN ) );
         checkGeneratedFiles();
     }
-    
+
     private void checkGeneratedFiles()
     {
         String requestDocs, responseDocs, graphDocs;
@@ -143,7 +135,7 @@ public class ManageNodeDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Property values can not be null.
-     * 
+     *
      * This example shows the response you get when trying to set a property to
      * +null+.
      */
@@ -247,7 +239,7 @@ public class ManageNodeDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Nodes with relationships cannot be deleted.
-     * 
+     *
      * The relationships on a node has to be deleted before the node can be
      * deleted.
      */

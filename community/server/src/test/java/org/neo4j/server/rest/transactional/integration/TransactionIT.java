@@ -25,7 +25,6 @@ import java.io.PrintStream;
 import java.io.Reader;
 import java.net.Socket;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -35,8 +34,11 @@ import java.util.concurrent.Future;
 import org.codehaus.jackson.JsonNode;
 import org.junit.Test;
 
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
@@ -145,7 +147,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         // begin and execute
         Response begin = http.POST( "/db/data/transaction", quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' " +
-                "} ] }" ) );
+                                                                        "} ] }" ) );
 
         String commitResource = begin.stringFromContent( "commit" );
 
@@ -161,7 +163,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
         String json = "{ \"statements\": [ { \"statement\": \"LOAD CSV WITH HEADERS FROM " +
-                "\\\"xx file://C:/countries.csvxxx\\\\\" as csvLine MERGE (c:Country { Code: csvLine.Code })\" } ] }";
+                      "\\\"xx file://C:/countries.csvxxx\\\\\" as csvLine MERGE (c:Country { Code: csvLine.Code })\" " +
+                      "} ] }";
 
         // begin and execute
         Response begin = http.POST( "/db/data/transaction", quotedJson( json ) );
@@ -194,7 +197,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         // execute
         Response execute2 = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
-                " }" ) );
+                                                                     " }" ) );
 
         assertThat( execute2.status(), equalTo( 404 ) );
         assertThat( execute2, hasErrors( Status.Transaction.UnknownId ) );
@@ -207,7 +210,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         // begin and execute and commit
         Response begin = http.POST( "/db/data/transaction/commit", quotedJson( "{ 'statements': [ { 'statement': " +
-                "'CREATE n' } ] }" ) );
+                                                                               "'CREATE n' } ] }" ) );
 
         assertThat( begin.status(), equalTo( 200 ) );
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
@@ -218,7 +221,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     {
         // begin and execute and commit "resultDataContents":["REST"]
         HTTP.RawPayload payload = quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n {a: 1}) return n', " +
-                "'resultDataContents' : ['REST'] } ] }" );
+                                              "'resultDataContents' : ['REST'] } ] }" );
         Response begin = http.POST( "/db/data/transaction/commit", payload );
 
         assertThat( begin.status(), equalTo( 200 ) );
@@ -239,7 +242,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
         String json = "{ \"statements\": [ { \"statement\": \"LOAD CSV WITH HEADERS FROM " +
-                "\\\"xx file://C:/countries.csvxxx\\\\\" as csvLine MERGE (c:Country { Code: csvLine.Code })\" } ] }";
+                      "\\\"xx file://C:/countries.csvxxx\\\\\" as csvLine MERGE (c:Country { Code: csvLine.Code })\" " +
+                      "} ] }";
         // begin and execute and commit
         Response begin = http.POST( "/db/data/transaction/commit", quotedJson( json ) );
 
@@ -263,7 +267,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                 Response response = http.POST(
                         "/db/data/transaction/commit",
                         quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                url + "\\\" AS line CREATE ()' } ] }" )
+                                    url + "\\\" AS line CREATE ()' } ] }" )
                 );
 
                 assertThat( response.status(), equalTo( 200 ) );
@@ -287,7 +291,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                 Response response = http.POST(
                         "/db/data/transaction/commit",
                         quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
+                                    url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
                 );
 
                 assertThat( response.status(), equalTo( 200 ) );
@@ -343,7 +347,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                 Response response = http.POST(
                         "/db/data/transaction/commit",
                         quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                url + "\\\" AS line CREATE (n {id: 23}) RETURN n' }, { 'statement': 'RETURN 1' } ] }" )
+                                    url +
+                                    "\\\" AS line CREATE (n {id: 23}) RETURN n' }, { 'statement': 'RETURN 1' } ] }" )
                 );
 
                 assertThat( response.status(), equalTo( 200 ) );
@@ -377,8 +382,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                 Response response = http.POST(
                         "/db/data/transaction/commit",
                         quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' }, " +
-                                "{ 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" + url + "\\\" AS line " +
-                                "CREATE ()' } ] }" )
+                                    "{ 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" + url + "\\\" AS line " +
+                                    "CREATE ()' } ] }" )
                 );
 
                 assertThat( response, hasErrors( Status.Statement.InvalidSemantics ) );
@@ -402,7 +407,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
                 // execute
                 Response response = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'USING" +
-                        " PERIODIC COMMIT LOAD CSV FROM \\\"" + url + "\\\" AS line CREATE ()' } ] }" ) );
+                                                                             " PERIODIC COMMIT LOAD CSV FROM \\\"" +
+                                                                             url + "\\\" AS line CREATE ()' } ] }" ) );
 
                 assertThat( response, hasErrors( Status.Statement.InvalidSemantics ) );
             }
@@ -421,7 +427,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                 Response begin = http.POST(
                         "/db/data/transaction",
                         quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                url + "\\\" AS line CREATE ()' } ] }" )
+                                    url + "\\\" AS line CREATE ()' } ] }" )
                 );
 
                 assertThat( begin, hasErrors( Status.Statement.InvalidSemantics ) );
@@ -441,7 +447,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         // execute
         http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' }, " +
-                "{ 'statement': 'CREATE n' } ] }" ) );
+                                                 "{ 'statement': 'CREATE n' } ] }" ) );
 
         // commit
         Response commit = http.POST( commitResource );
@@ -461,11 +467,11 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         // execute
         http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
-                " }" ) );
+                                                 " }" ) );
 
         // execute
         http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ]" +
-                " }" ) );
+                                                 " }" ) );
 
         // commit
         http.POST( commitResource );
@@ -485,16 +491,17 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         long nodesInDatabaseBeforeTransaction = countNodes();
         Response response = http.POST( "/db/data/transaction/commit",
                 rawPayload( "{ \"statements\" : [{\"statement\" : \"CREATE (n0:DecibelEntity :AlbumGroup{DecibelID : " +
-                        "'34a2201b-f4a9-420f-87ae-00a9c691cc5c', Title : 'Dance With Me', " +
-                        "ArtistString : 'Ra Ra Riot', MainArtistAlias : 'Ra Ra Riot', " +
-                        "OriginalReleaseDate : '2013-01-08', IsCanon : 'False'}) return id(n0)\"}, " +
-                        "{\"statement\" : \"CREATE (n1:DecibelEntity :AlbumRelease{DecibelID : " +
-                        "'9ed529fa-7c19-11e2-be78-bcaec5bea3c3', Title : 'Dance With Me', " +
-                        "ArtistString : 'Ra Ra Riot', MainArtistAlias : 'Ra Ra Riot', LabelName : 'Barsuk Records', " +
-                        "FormatNames : 'File', TrackCount : '3', MediaCount : '1', Duration : '460.000000', " +
-                        "ReleaseDate : '2013-01-08', ReleaseYear : '2013', ReleaseRegion : 'USA', " +
-                        "Cline : 'Barsuk Records', Pline : 'Barsuk Records', CYear : '2013', PYear : '2013', " +
-                        "ParentalAdvisory : 'False', IsLimitedEdition : 'False'}) return id(n1)\"}]}" ) );
+                            "'34a2201b-f4a9-420f-87ae-00a9c691cc5c', Title : 'Dance With Me', " +
+                            "ArtistString : 'Ra Ra Riot', MainArtistAlias : 'Ra Ra Riot', " +
+                            "OriginalReleaseDate : '2013-01-08', IsCanon : 'False'}) return id(n0)\"}, " +
+                            "{\"statement\" : \"CREATE (n1:DecibelEntity :AlbumRelease{DecibelID : " +
+                            "'9ed529fa-7c19-11e2-be78-bcaec5bea3c3', Title : 'Dance With Me', " +
+                            "ArtistString : 'Ra Ra Riot', MainArtistAlias : 'Ra Ra Riot', LabelName : 'Barsuk " +
+                            "Records', " +
+                            "FormatNames : 'File', TrackCount : '3', MediaCount : '1', Duration : '460.000000', " +
+                            "ReleaseDate : '2013-01-08', ReleaseYear : '2013', ReleaseRegion : 'USA', " +
+                            "Cline : 'Barsuk Records', Pline : 'Barsuk Records', CYear : '2013', PYear : '2013', " +
+                            "ParentalAdvisory : 'False', IsLimitedEdition : 'False'}) return id(n1)\"}]}" ) );
         assertEquals( 200, response.status() );
         JsonNode everything = jsonNode( response.rawContent() );
         JsonNode result = everything.get( "results" ).get( 0 );
@@ -569,7 +576,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             {
                 latch.countDown();
                 Response response = http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
-                        statement + "' } ] }" ) );
+                                                                            statement + "' } ] }" ) );
                 assertThat( response.status(), equalTo( 200 ) );
                 return response;
 
@@ -622,7 +629,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             throws Exception
     {
         // given
-        cleanDatabase();
+        long initialNodes = countNodes();
         TransactionCounters txMonitor = ((GraphDatabaseAPI) graphdb()).getDependencyResolver().resolveDependency(
                 TransactionCounters.class );
         long initialTerminations = txMonitor.getNumberOfTerminatedTransactions();
@@ -633,7 +640,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         String output = quotedJson(
                 "{ 'statements': [ { 'statement': 'WITH * UNWIND range(0, 9999) AS i CREATE (n {i: i}) RETURN n' } ] " +
-                        "}" ).get();
+                "}" ).get();
         out.print( "POST /db/data/transaction/commit HTTP/1.1\r\n" );
         out.print( "Host: localhost:7474\r\n" );
         out.print( "Content-type: application/json; charset=utf-8\r\n" );
@@ -654,7 +661,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         try ( Transaction ignored = graphdb().beginTx() )
         {
-            assertEquals( 0, countNodes() );
+            assertEquals( initialNodes, countNodes() );
         }
 
         // then soon the transaction should have been terminated
@@ -679,19 +686,21 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     @Test
     public void should_include_graph_format_when_requested() throws Exception
     {
+        long initialData = countNodes( "Foo" );
+
         // given
         http.POST( "/db/data/transaction/commit", singleStatement( "CREATE (n:Foo:Bar)" ) );
 
         // when
         Response response = http.POST( "/db/data/transaction/commit", quotedJson(
                 "{ 'statements': [ { 'statement': 'MATCH (n:Foo) RETURN n', 'resultDataContents':['row'," +
-                        "'graph'] } ] }" ) );
+                "'graph'] } ] }" ) );
 
         // then
         assertThat( response.status(), equalTo( 200 ) );
         JsonNode data = response.get( "results" ).get( 0 ).get( "data" );
         assertTrue( "data is a list", data.isArray() );
-        assertEquals( "one entry", 1, data.size() );
+        assertEquals( "one entry", initialData + 1, data.size() );
         JsonNode entry = data.get( 0 );
         assertTrue( "entry has row", entry.has( "row" ) );
         assertTrue( "entry has graph", entry.has( "graph" ) );
@@ -753,7 +762,10 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     public void shouldSerializeMapsCorrectlyInRestFormat() throws Exception
     {
         Response response = http.POST( "/db/data/transaction/commit", quotedJson( "{ 'statements': [ { 'statement': " +
-                "'RETURN {one:{two:[true, {three: 42}]}}', 'resultDataContents':['rest'] } ] }" ) );
+                                                                                  "'RETURN {one:{two:[true, {three: " +
+                                                                                  "42}]}}', " +
+                                                                                  "'resultDataContents':['rest'] } ] " +
+                                                                                  "}" ) );
 
         // then
         assertThat( response.status(), equalTo( 200 ) );
@@ -797,7 +809,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertPath( restNode.get( "incoming_relationships" ), "/node/\\d+/relationships/in", hostname, scheme );
         assertPath( restNode.get( "create_relationship" ), "/node/\\d+/relationships", hostname, scheme );
         assertPath( restNode.get( "paged_traverse" ), "/node/\\d+/paged/traverse/\\{returnType\\}\\{\\?pageSize," +
-                "leaseTime\\}", "localhost", scheme );
+                                                      "leaseTime\\}", "localhost", scheme );
         assertPath( restNode.get( "all_relationships" ), "/node/\\d+/relationships/all", hostname, scheme );
         assertPath( restNode.get( "incoming_typed_relationships" ),
                 "/node/\\d+/relationships/in/\\{-list\\|&\\|types\\}", hostname, scheme );
@@ -814,7 +826,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         Response rs = http.withHeaders( XForwardUtil.X_FORWARD_HOST_HEADER_KEY, hostname )
                 .POST( "/db/data/transaction/commit", quotedJson(
                         "{ 'statements': [ { 'statement': 'CREATE (n:Foo:Bar) RETURN n', " +
-                                "'resultDataContents':['rest'] } ] }"
+                        "'resultDataContents':['rest'] } ] }"
                 ) );
 
         // then
@@ -833,7 +845,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertPath( restNode.get( "incoming_relationships" ), "/node/\\d+/relationships/in", hostname, scheme );
         assertPath( restNode.get( "create_relationship" ), "/node/\\d+/relationships", hostname, scheme );
         assertPath( restNode.get( "paged_traverse" ), "/node/\\d+/paged/traverse/\\{returnType\\}\\{\\?pageSize," +
-                "leaseTime\\}", hostname, scheme );
+                                                      "leaseTime\\}", hostname, scheme );
         assertPath( restNode.get( "all_relationships" ), "/node/\\d+/relationships/all", hostname, scheme );
         assertPath( restNode.get( "incoming_typed_relationships" ),
                 "/node/\\d+/relationships/in/\\{-list\\|&\\|types\\}", hostname, scheme );
@@ -842,7 +854,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     private void assertPath( JsonNode jsonURIString, String path, String hostname, final String scheme )
     {
         assertTrue( "Expected a uri matching '" + scheme + "://" + hostname + ":\\d+/db/data" + path + "', " +
-                        "but got '" + jsonURIString.asText() + "'.",
+                    "but got '" + jsonURIString.asText() + "'.",
                 jsonURIString.asText().matches( scheme + "://" + hostname + ":\\d+/db/data" + path ) );
     }
 
@@ -852,20 +864,30 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         return rawPayload( "{\"statements\":[{\"statement\":\"" + statement + "\"}]}" );
     }
 
-    private long countNodes()
+    private long countNodes( String... labels )
     {
+        Set<Label> givenLabels = new HashSet<>( labels.length );
+        for ( String label : labels )
+        {
+            givenLabels.add( DynamicLabel.label( label ) );
+        }
+
         try ( Transaction transaction = graphdb().beginTx() )
         {
             long count = 0;
-            for ( Iterator<Node> allNodes = GlobalGraphOperations.at( graphdb() ).getAllNodes().iterator();
-                  allNodes.hasNext(); allNodes.next() )
+            for ( Node node : GlobalGraphOperations.at( graphdb() ).getAllNodes() )
             {
-                count++;
+                Set<Label> nodeLabels = IteratorUtil.asSet( node.getLabels() );
+                if ( nodeLabels.containsAll( givenLabels ) )
+                {
+                    count++;
+                }
             }
             transaction.failure();
             return count;
         }
     }
+
 
     private void assertHasTxLocation( Response begin )
     {

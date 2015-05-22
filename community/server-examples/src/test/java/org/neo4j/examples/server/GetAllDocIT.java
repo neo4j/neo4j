@@ -18,20 +18,22 @@
  */
 package org.neo4j.examples.server;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
 import org.neo4j.examples.server.plugins.GetAll;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 
 public class GetAllDocIT extends AbstractPluginTestBase
 {
@@ -43,18 +45,17 @@ public class GetAllDocIT extends AbstractPluginTestBase
         return "rest-api";
     }
 
+    @Before
+    public void setup()
+    {
+        cleanDatabase();
+    }
+
     @Test
     public void testName() throws Exception
     {
         Map<String, Object> map = getDatabaseLevelPluginMetadata( GetAll.class );
-        assertTrue( map.keySet()
-                .size() > 0 );
-    }
-
-    @Test
-    public void canGetExtensionDataForGetAllNodes() throws Exception
-    {
-        checkDatabaseLevelExtensionMetadata( GetAll.class, GET_ALL_NODES, "/ext/%s/graphdb/%s" );
+        assertFalse( map.isEmpty() );
     }
 
     /**
@@ -77,9 +78,9 @@ public class GetAllDocIT extends AbstractPluginTestBase
     }
 
     @Test
-    public void canGetExtensionDataForGetAllRelationships() throws Exception
+    public void canGetExtensionDataForGetAllNodes() throws Exception
     {
-        checkDatabaseLevelExtensionMetadata( GetAll.class, GET_ALL_RELATIONSHIPS, "/ext/%s/graphdb/%s" );
+        checkDatabaseLevelExtensionMetadata( GetAll.class, GET_ALL_NODES, "/ext/%s/graphdb/%s" );
     }
 
     /**
@@ -99,5 +100,11 @@ public class GetAllDocIT extends AbstractPluginTestBase
         assertThat( list.size(), equalTo( 1 ) );
         Map<String, Object> map = list.get( 0 );
         assertThat( map.get( "data" ), notNullValue() );
+    }
+
+    @Test
+    public void canGetExtensionDataForGetAllRelationships() throws Exception
+    {
+        checkDatabaseLevelExtensionMetadata( GetAll.class, GET_ALL_RELATIONSHIPS, "/ext/%s/graphdb/%s" );
     }
 }

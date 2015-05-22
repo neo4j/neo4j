@@ -19,14 +19,13 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-import java.util.Collections;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Collections;
+import javax.ws.rs.core.MediaType;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -37,25 +36,19 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
 {
     private static FunctionalTestHelper functionalTestHelper;
-    private RestRequest req;
+    private RestRequest req = RestRequest.req();
 
     @BeforeClass
     public static void setupServer() throws IOException
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
-    }
-
-    @Before
-    public void cleanTheDatabase()
-    {
-        cleanDatabase();
-        req = RestRequest.req();
     }
 
     /**

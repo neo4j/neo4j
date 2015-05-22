@@ -19,16 +19,15 @@
  */
 package org.neo4j.server.rest;
 
+import org.hamcrest.MatcherAssert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
-
-import org.hamcrest.MatcherAssert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -55,13 +54,11 @@ public class GetRelationshipPropertiesDocIT extends AbstractRestFunctionalTestBa
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
+        setupTheDatabase();
     }
 
-    @Before
-    public void setupTheDatabase()
+    private static void setupTheDatabase()
     {
-        cleanDatabase();
-
         long relationship = helper.createRelationship( "LIKES" );
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "foo", "bar" );
