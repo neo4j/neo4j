@@ -222,7 +222,7 @@ public class IndexTxStateLookupTest
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.schema().awaitIndexesOnline( 1, SECONDS );
+            graphDb.schema().awaitIndexesOnline( 5, SECONDS );
             tx.success();
         }
     }
