@@ -73,7 +73,7 @@ describe 'Service: Frame', () ->
   describe "create", ->
     it "should invoke the exec function when when match", ->
       intr = Frame.interpreterFor('help')
-      spyOn(intr, 'exec').andCallThrough()
+      spyOn(intr, 'exec').and.callThrough()
       Frame.create(input: 'help').exec()
       expect(intr.exec).toHaveBeenCalled()
 
