@@ -204,4 +204,25 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
 
     result.toList should be (expected)
   }
+
+  test("combine min with aggregation") {
+    // given
+    val a = createLabeledNode(Map("name" -> "a"), "T")
+    val b = createLabeledNode(Map("name" -> "b"), "T")
+    val c = createLabeledNode(Map("name" -> "c"), "T")
+    relate(a, b, "R")
+    relate(a, c, "R")
+    relate(c, b, "R")
+
+    // when
+    val query =
+      """MATCH p=(a:T {name: "a"})-[:R*]-(other: T)
+        |WHERE other <> a WITH a, other, min(length(p)) AS len
+        |RETURN a.name as name, collect(other.name) AS others, len;""".stripMargin
+    val result = executeWithAllPlanners(query)
+
+    //then
+    result.toList should equal(Seq(Map("name" -> "a", "others" -> Seq("c", "b"), "len" -> 1 )))
+  }
+
 }
