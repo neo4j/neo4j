@@ -28,6 +28,8 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
+import org.neo4j.udc.UsageData;
+import org.neo4j.udc.UsageDataKeys;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,12 +47,17 @@ public class CollectUserAgentFilterIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldRecordUserAgent() throws Exception {
+    public void shouldRecordUserAgent() throws Exception
+    {
+        // When
         sendRequest( "test/1.0" );
-        assertThat(CollectUserAgentFilter.instance().getUserAgents(), hasItem( USER_AGENT ));
+
+        // Then
+        assertThat( resolveDependency( UsageData.class ).get( UsageDataKeys.clientNames ), hasItem( USER_AGENT ) );
     }
 
-    private void sendRequest(String userAgent) {
+    private void sendRequest(String userAgent)
+    {
         String url = functionalTestHelper.baseUri().toString();
         JaxRsResponse resp = RestRequest.req().header( "User-Agent", userAgent ).get(url);
         String json = resp.getEntity();

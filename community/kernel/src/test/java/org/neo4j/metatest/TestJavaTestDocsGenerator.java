@@ -19,18 +19,19 @@
  */
 package org.neo4j.metatest;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.Map;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;

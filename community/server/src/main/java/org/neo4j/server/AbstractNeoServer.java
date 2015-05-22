@@ -115,11 +115,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected final ConfigurationBuilder configurator;
     protected final LogProvider logProvider;
-    protected Database database;
-    protected CypherExecutor cypherExecutor;
-    protected WebServer webServer;
-
-    protected AuthManager authManager;
+    protected final Log log;
 
     private final PreFlightTasks preFlight;
 
@@ -128,9 +124,13 @@ public abstract class AbstractNeoServer implements NeoServer
     private final Config dbConfig;
     private final LifeSupport life = new LifeSupport();
 
-    private InterruptThreadTimer interruptStartupTimer;
+    protected Database database;
+    protected CypherExecutor cypherExecutor;
+    protected WebServer webServer;
+
+    protected AuthManager authManager;
+
     private DatabaseActions databaseActions;
-    protected final Log log;
 
     private RoundRobinJobScheduler rrdDbScheduler;
     private RrdDbWrapper rrdDbWrapper;
@@ -174,7 +174,8 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public void start() throws ServerStartupException
     {
-        interruptStartupTimer = dependencyResolver.satisfyDependency(createInterruptStartupTimer());
+        InterruptThreadTimer interruptStartupTimer =
+                dependencyResolver.satisfyDependency( createInterruptStartupTimer() );
 
         try
         {

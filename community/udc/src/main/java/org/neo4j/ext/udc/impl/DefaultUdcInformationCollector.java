@@ -19,6 +19,8 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import com.sun.management.OperatingSystemMXBean;
+
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -31,19 +33,17 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
-import com.sun.management.OperatingSystemMXBean;
-
-import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.StartupStatistics;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.udc.UsageData;
+import org.neo4j.udc.UsageDataKeys;
 
 import static org.neo4j.ext.udc.UdcConstants.CLUSTER_HASH;
 import static org.neo4j.ext.udc.UdcConstants.DATABASE_MODE;
@@ -72,21 +72,20 @@ import static org.neo4j.ext.udc.UdcConstants.VERSION;
 public class DefaultUdcInformationCollector implements UdcInformationCollector
 {
     private final Config config;
+    private final UsageData usageData;
     @SuppressWarnings("deprecation")
-    private final KernelData kernel;
     private final IdGeneratorFactory idGeneratorFactory;
+
     private String storeId;
     private boolean crashPing;
 
     public DefaultUdcInformationCollector( Config config, DataSourceManager xadsm,
-                                           @SuppressWarnings("deprecation") KernelData kernel )
+            IdGeneratorFactory idGeneratorFactory, StartupStatistics startupStats, UsageData usageData )
     {
         this.config = config;
-        this.kernel = kernel;
-        idGeneratorFactory = kernel.graphDatabase().getDependencyResolver()
-                .resolveDependency( IdGeneratorFactory.class );
-        final StartupStatistics startupStatistics = kernel.graphDatabase().getDependencyResolver().resolveDependency(
-                StartupStatistics.class );
+        this.usageData = usageData;
+        this.idGeneratorFactory = idGeneratorFactory;
+        final StartupStatistics startupStatistics = startupStats;
 
         if ( xadsm != null )
         {
@@ -126,20 +125,21 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         Map<String, String> udcFields = new HashMap<>();
 
         add( udcFields, ID, storeId );
-        add( udcFields, VERSION, filterVersionForUDC( kernel.version().getReleaseVersion() ) );
-        add( udcFields, REVISION, filterVersionForUDC( kernel.version().getRevision() ) );
+        add( udcFields, VERSION, filterVersionForUDC( usageData.get( UsageDataKeys.version ) ) );
+        add( udcFields, REVISION, filterVersionForUDC( usageData.get( UsageDataKeys.revision ) ) );
 
-        add( udcFields, EDITION, determineEdition( classPath ) );
-        add( udcFields, TAGS, determineTags( jarNamesForTags, classPath ) );
-        add( udcFields, CLUSTER_HASH, determineClusterNameHash() );
+        add( udcFields, EDITION, usageData.get( UsageDataKeys.edition ).name().toLowerCase() );
         add( udcFields, SOURCE, config.get( UdcSettings.udc_source ) );
         add( udcFields, REGISTRATION, config.get( UdcSettings.udc_registration_key ) );
-        add( udcFields, DISTRIBUTION, determineOsDistribution() );
-        add( udcFields, DATABASE_MODE, determineMode() );
-        add( udcFields, SERVER_ID, determineServerId() );
-        add( udcFields, USER_AGENTS, determineUserAgents() );
+        add( udcFields, DATABASE_MODE, usageData.get( UsageDataKeys.operationalMode ).name() );
+        add( udcFields, SERVER_ID, usageData.get( UsageDataKeys.serverId ) );
+        add( udcFields, USER_AGENTS, toCommaString( usageData.get( UsageDataKeys.clientNames ) ) );
+
+        add( udcFields, TAGS, determineTags( jarNamesForTags, classPath ) );
+        add( udcFields, CLUSTER_HASH, determineClusterNameHash() );
 
         add( udcFields, MAC, determineMacAddress() );
+        add( udcFields, DISTRIBUTION, determineOsDistribution() );
         add( udcFields, NUM_PROCESSORS, determineNumberOfProcessors() );
         add( udcFields, TOTAL_MEMORY, determineTotalMemory() );
         add( udcFields, HEAP_SIZE, determineHeapSize() );
@@ -162,33 +162,6 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         else
         {
             return UNKNOWN_DIST;
-        }
-    }
-
-    private String determineMode()
-    {
-        try
-        {
-            String databaseType = kernel.graphDatabase().getClass().getSimpleName();
-            return "HighlyAvailableGraphDatabase".equals( databaseType ) ? "ha" : "single";
-        }
-        catch ( Exception e )
-        {
-            return null;
-        }
-    }
-
-    private String determineServerId()
-    {
-        try
-        {
-            Class<?> settings = Class.forName( "org.neo4j.cluster.ClusterSettings" );
-            Setting setting = (Setting) settings.getField( "server_id" ).get( null );
-            return config.get( setting ).toString();
-        }
-        catch ( Exception e )
-        {
-            return null;
         }
     }
 
@@ -225,31 +198,6 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         {
             return null;
         }
-    }
-
-    private org.neo4j.ext.udc.Edition determineEdition( String classPath )
-    {
-        try
-        {
-            getClass().getClassLoader().loadClass( "org.neo4j.kernel.ha.HighlyAvailableGraphDatabase" );
-            return Edition.enterprise;
-        }
-        catch ( ClassNotFoundException e )
-        {
-            // Not Enterprise
-        }
-
-        try
-        {
-            getClass().getClassLoader().loadClass( "org.neo4j.management.Neo4jManager" );
-            return Edition.advanced;
-        }
-        catch ( ClassNotFoundException e )
-        {
-            // Not Advanced
-        }
-
-        return Edition.community;
     }
 
     private final Map<String, String> jarNamesForTags = MapUtil.stringMap( "spring-", "spring",
@@ -312,25 +260,6 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         }
 
         return formattedMac;
-    }
-
-    private String determineUserAgents()
-    {
-        try
-        {
-            Class<?> filterClass = Class.forName( "org.neo4j.server.rest.web.CollectUserAgentFilter" );
-            Object filterInstance = filterClass.getMethod( "instance" ).invoke( null );
-
-            Object agents = filterClass.getMethod( "getUserAgents" ).invoke( filterInstance );
-            String result = toCommaString( agents );
-
-            filterClass.getMethod( "reset" ).invoke( filterInstance );
-            return result;
-        }
-        catch ( Exception e )
-        {
-            return null;
-        }
     }
 
     private int determineNumberOfProcessors()

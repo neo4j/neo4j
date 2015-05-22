@@ -32,6 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
@@ -127,6 +128,11 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     public GraphDatabaseService graphdb()
     {
         return server().getDatabase().getGraph();
+    }
+
+    public <T> T resolveDependency( Class<T> cls )
+    {
+        return ((GraphDatabaseAPI)graphdb()).getDependencyResolver().resolveDependency( cls );
     }
 
     protected String getDataUri()
