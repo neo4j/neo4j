@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -94,4 +95,11 @@ public class ChunkedOutputTest
 
         out.setTargetChannel( ch );
     }
+
+    @After
+    public void teardown()
+    {
+        out.close();
+    }
+
 }
