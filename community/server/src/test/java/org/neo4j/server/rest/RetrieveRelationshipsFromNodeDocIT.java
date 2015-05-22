@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -33,6 +28,11 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -67,12 +67,6 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalTe
 
     @Before
     public void setupTheDatabase()
-    {
-        cleanDatabase();
-        createSimpleGraph();
-    }
-
-    private void createSimpleGraph()
     {
         nodeWithRelationships = helper.createNode();
         likes = helper.createRelationship( "LIKES", nodeWithRelationships, helper.createNode() );
@@ -203,7 +197,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalTe
 
     /**
      * Get typed relationships.
-     * 
+     *
      * Note that the "+&+" needs to be encoded like "+%26+" for example when
      * using http://curl.haxx.se/[cURL] from the terminal.
      */

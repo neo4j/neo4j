@@ -19,23 +19,23 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.util.Collections;
-
-import javax.ws.rs.core.Response.Status;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Collections;
+import javax.ws.rs.core.Response.Status;
+
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class CompactJsonDocIT extends AbstractRestFunctionalTestBase
 {
@@ -56,7 +56,6 @@ public class CompactJsonDocIT extends AbstractRestFunctionalTestBase
     @Before
     public void setupTheDatabase()
     {
-        cleanDatabase();
         createTheMatrix();
     }
 

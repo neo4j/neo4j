@@ -19,18 +19,18 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import static org.junit.Assert.assertThat;
-import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.allOf;
+import static org.junit.Assert.assertThat;
 
 public class DatabaseMetadataServiceDocIT extends AbstractRestFunctionalTestBase
 {
@@ -42,12 +42,6 @@ public class DatabaseMetadataServiceDocIT extends AbstractRestFunctionalTestBase
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
-    }
-
-    @Before
-    public void cleanTheDatabase()
-    {
-        cleanDatabase();
     }
 
     /**

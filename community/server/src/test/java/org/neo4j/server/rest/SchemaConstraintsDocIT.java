@@ -19,12 +19,13 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
@@ -34,10 +35,8 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.getConstraints;
@@ -50,6 +49,12 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
 {
+    @Before
+    public void setup()
+    {
+        cleanDatabase();
+    }
+
     /**
      * Create uniqueness constraint.
      * Create a uniqueness constraint on a property.

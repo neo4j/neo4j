@@ -19,21 +19,20 @@
  */
 package org.neo4j.server.rest.repr;
 
-import java.io.IOException;
-import javax.ws.rs.core.MediaType;
-
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
+import javax.ws.rs.core.MediaType;
+
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -56,7 +55,6 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     @Before
     public void setupTheDatabase()
     {
-        cleanDatabase();
         helper.createRelationship( "RELATES_TO", helper.createNode(), helper.createNode() );
     }
 

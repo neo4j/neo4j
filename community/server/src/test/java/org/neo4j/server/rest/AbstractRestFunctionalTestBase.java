@@ -56,8 +56,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     protected static final String NODES = "http://localhost:7474/db/data/node/";
 
     public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
-            this, true ) );
+    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
     public @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
@@ -65,7 +64,6 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     @Before
     public void setUp()
     {
-        cleanDatabase();
         gen().setSection( getDocumentationSectionName() );
         gen().setGraph( graphdb() );
     }
@@ -91,17 +89,6 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
                 .payload( queryString )
                 .description( AsciidocHelper.createAsciiDocSnippet( "cypher", snippet ) );
         return gen().post( endpoint ).entity();
-    }
-
-    protected String formatJavaScript( String script )
-    {
-        script = script.replace( ";", "\n" );
-        if ( !script.endsWith( "\n" ) )
-        {
-            script += "\n";
-        }
-        return "_Raw script source_\n\n" + "[source, javascript]\n" + "----\n"
-               + script + "----\n";
     }
 
     private Long idFor( String name )

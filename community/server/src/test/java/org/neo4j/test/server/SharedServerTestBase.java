@@ -34,7 +34,6 @@ import static org.neo4j.test.Mute.muteAll;
 public class SharedServerTestBase
 {
     private static boolean useExternal = Boolean.valueOf( System.getProperty( "neo-server.external", "false" ) );
-    private static String externalURL = System.getProperty( "neo-server.external.url", "http://localhost:7474" );
 
     protected static NeoServer server()
     {
@@ -43,23 +42,13 @@ public class SharedServerTestBase
 
     protected final void cleanDatabase()
     {
-        if ( useExternal )
-        {
-            // TODO
-        }
-        else
+        if ( !useExternal )
         {
             ServerHelper.cleanTheDatabase( server );
         }
     }
 
     private static NeoServer server;
-    private static String serverUrl;
-
-    public static String getServerURL()
-    {
-        return serverUrl;
-    }
 
 	@Rule
 	public Mute mute = muteAll();
@@ -67,11 +56,7 @@ public class SharedServerTestBase
     @BeforeClass
     public static void allocateServer() throws Throwable
     {
-        if ( useExternal )
-        {
-            serverUrl = externalURL;
-        }
-        else
+        if ( !useExternal )
         {
             muteAll().call( new Callable<Void>()
             {
@@ -79,7 +64,6 @@ public class SharedServerTestBase
                 public Void call() throws Exception
                 {
                     server = ServerHolder.allocate();
-                    serverUrl = server.baseUri().toString();
                     return null;
                 }
             } );

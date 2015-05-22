@@ -19,12 +19,13 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Neo4jMatchers;
 import org.neo4j.graphdb.Transaction;
@@ -34,11 +35,9 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -49,6 +48,12 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
 {
+    @Before
+    public void setup()
+    {
+        cleanDatabase();
+    }
+
     /**
      * Create index.
      *
@@ -63,7 +68,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     public void create_index() throws JsonParseException
     {
         data.get();
-        
+
         String labelName = "person", propertyKey = "name";
         Map<String, Object> definition = map( "property_keys", asList( propertyKey ) );
 
@@ -73,12 +78,12 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
             .payload( createJsonFrom( definition ) )
             .post( getSchemaIndexLabelUri( labelName ) )
             .entity();
-        
+
         Map<String, Object> serialized = jsonToMap( result );
         assertEquals( labelName, serialized.get( "label" ) );
         assertEquals( asList( propertyKey ), serialized.get( "property_keys" ) );
     }
-    
+
     /**
      * List indexes for a label.
      */
@@ -88,7 +93,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     public void get_indexes_for_label() throws JsonParseException
     {
         data.get();
-        
+
         String labelName = "user", propertyKey = "name";
         createIndex( labelName, propertyKey );
         Map<String, Object> definition = map( "property_keys", asList( propertyKey ) );
@@ -99,7 +104,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
             .payload( createJsonFrom( definition ) )
             .get( getSchemaIndexLabelUri( labelName ) )
             .entity();
-        
+
         List<Map<String, Object>> serializedList = jsonToList( result );
         assertEquals( 1, serializedList.size() );
         Map<String, Object> serialized = serializedList.get( 0 );
@@ -168,7 +173,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
 
         assertThat( Neo4jMatchers.getIndexes( graphdb(), label( labelName ) ), not( containsOnly( schemaIndex ) ) );
     }
-    
+
     /**
      * Create an index for a label and property key which already exists.
      */
@@ -185,7 +190,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
             .payload( createJsonFrom( definition ) )
             .post( getSchemaIndexLabelUri( labelName ) );
     }
-    
+
     @Test
     public void drop_non_existent_index() throws Exception
     {
@@ -212,7 +217,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
                 .payload( createJsonFrom( definition ) )
                 .post( getSchemaIndexLabelUri( "a_label" ) );
     }
-    
+
     private IndexDefinition createIndex( String labelName, String propertyKey )
     {
         try ( Transaction tx = graphdb().beginTx() )
