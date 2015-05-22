@@ -228,11 +228,7 @@ public class CommunityServerBuilder
         {
             File databaseTuningPropertyFile = createTempPropertyFile();
             Map<String, String> properties = MapUtil.stringMap(
-                    "neostore.nodestore.db.mapped_memory", "25M",
-                    "neostore.relationshipstore.db.mapped_memory", "50M",
-                    "neostore.propertystore.db.mapped_memory", "90M",
-                    "neostore.propertystore.db.strings.mapped_memory", "130M",
-                    "neostore.propertystore.db.arrays.mapped_memory", "130M" );
+                    "dbms.pagecache.memory", "8m" );
             writePropertiesToFile( properties, databaseTuningPropertyFile );
             writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY,
                     databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile );
