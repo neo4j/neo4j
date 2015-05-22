@@ -4,6 +4,18 @@
 module.exports = function(config) {
   config.set({
 
+    preprocessors: {
+      'app/scripts/**/*.coffee': ['coffee'],
+      'test/spec/**/*.coffee': ['coffee']
+    },
+
+    plugins: [
+      'karma-coffee-preprocessor',
+      'karma-jasmine',
+      'karma-requirejs',
+      'karma-phantomjs-launcher',
+      'karma-junit-reporter'
+    ],
     // global config for SauceLabs
     sauceLabs: {
       username: 'neo4j-account-is-needed',
