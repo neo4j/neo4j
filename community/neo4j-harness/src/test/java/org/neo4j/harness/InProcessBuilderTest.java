@@ -44,7 +44,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -52,6 +51,7 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -62,7 +62,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 
 public class InProcessBuilderTest
@@ -165,7 +164,7 @@ public class InProcessBuilderTest
         try
         {
 
-            GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dir.toString() );
+            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.toString() );
             try
             {
                 db.execute( "create ()" );
@@ -193,7 +192,7 @@ public class InProcessBuilderTest
             }
 
             // Then: we still only have one node since the server is supposed to work on a copy
-            db = new GraphDatabaseFactory().newEmbeddedDatabase( dir.toString() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.toString() );
             try
             {
                 try ( Transaction tx = db.beginTx() )
