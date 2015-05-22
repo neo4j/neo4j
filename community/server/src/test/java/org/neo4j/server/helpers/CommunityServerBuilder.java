@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
@@ -228,7 +229,7 @@ public class CommunityServerBuilder
         {
             File databaseTuningPropertyFile = createTempPropertyFile();
             Map<String, String> properties = MapUtil.stringMap(
-                    "dbms.pagecache.memory", "8m" );
+                    GraphDatabaseSettings.pagecache_memory.name(), "8m" );
             writePropertiesToFile( properties, databaseTuningPropertyFile );
             writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY,
                     databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile );
