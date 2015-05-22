@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.logging.NullLog;
+import org.neo4j.ndp.messaging.v1.MessageFormat;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
 import org.neo4j.ndp.messaging.v1.message.Message;
@@ -69,7 +70,7 @@ public class FragmentedMessageDeliveryTest
     // Only test one message for now. This can be parameterized later to test lots of different ones
     private Message[] messages = new Message[]{run( "Mjölnir" )};
 
-    private PackStreamMessageFormatV1.Writer format = new PackStreamMessageFormatV1.Writer();
+    private MessageFormat.Writer format = new PackStreamMessageFormatV1().newWriter();
 
     @Test
     public void testFragmentedMessageDelivery() throws Throwable
