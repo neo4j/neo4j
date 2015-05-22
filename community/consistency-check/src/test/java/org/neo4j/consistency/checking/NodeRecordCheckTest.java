@@ -27,8 +27,10 @@ import org.junit.Test;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PreAllocatedRecords;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -309,6 +311,108 @@ public class NodeRecordCheckTest
 
         // then
         verify( report ).labelDuplicate( 11 );
+    }
+
+    @Test
+    public void shouldReportOutOfOrderLabels() throws Exception
+    {
+        // given
+        NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
+        // We need to do this override so we can put the labels unsorted, since InlineNodeLabels always sorts on insert
+        new InlineNodeLabels( node.getLabelField(), node )
+        {
+            @Override
+            public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator
+                    allocator )
+            {
+                return putSorted( labelIds, nodeStore, allocator );
+            }
+        }.put( new long[]{3, 1, 2}, null, null );
+        LabelTokenRecord label1 = inUse( new LabelTokenRecord( 1 ) );
+        LabelTokenRecord label2 = inUse( new LabelTokenRecord( 2 ) );
+        LabelTokenRecord label3 = inUse( new LabelTokenRecord( 3 ) );
+
+        add( label1 );
+        add( label2 );
+        add( label3 );
+        add( node );
+
+        // when
+        ConsistencyReport.NodeConsistencyReport report = check( node );
+
+        // then
+        verify( report ).labelsOutOfOrder( 3, 1 );
+    }
+
+    @Test
+    public void shouldProperlyReportOutOfOrderLabelsThatAreFarAway() throws Exception
+    {
+        // given
+        NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
+        // We need to do this override so we can put the labels unsorted, since InlineNodeLabels always sorts on insert
+        new InlineNodeLabels( node.getLabelField(), node )
+        {
+            @Override
+            public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator
+                    allocator )
+            {
+                return putSorted( labelIds, nodeStore, allocator );
+            }
+        }.put( new long[]{1, 18, 13, 14, 15, 16, 12}, null, null );
+        LabelTokenRecord label1 = inUse( new LabelTokenRecord( 1 ) );
+        LabelTokenRecord label12 = inUse( new LabelTokenRecord( 12 ) );
+        LabelTokenRecord label13 = inUse( new LabelTokenRecord( 13 ) );
+        LabelTokenRecord label14 = inUse( new LabelTokenRecord( 14 ) );
+        LabelTokenRecord label15 = inUse( new LabelTokenRecord( 15 ) );
+        LabelTokenRecord label16 = inUse( new LabelTokenRecord( 16 ) );
+        LabelTokenRecord label18 = inUse( new LabelTokenRecord( 18 ) );
+
+        add( label1 );
+        add( label12 );
+        add( label13 );
+        add( label14 );
+        add( label15 );
+        add( label16 );
+        add( label18 );
+        add( node );
+
+        // when
+        ConsistencyReport.NodeConsistencyReport report = check( node );
+
+        // then
+        verify( report ).labelsOutOfOrder( 18, 13 );
+        verify( report ).labelsOutOfOrder( 16, 12 );
+    }
+
+    @Test
+    public void shouldReportOutOfOrderDynamicLabels() throws Exception
+    {
+        // given
+        long[] labelIds = createLabels( 100 );
+
+        NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
+        add( node );
+
+        DynamicRecord labelsRecord1 = inUse( array( new DynamicRecord( 1 ) ) );
+        DynamicRecord labelsRecord2 = inUse( array( new DynamicRecord( 2 ) ) );
+        Collection<DynamicRecord> labelRecords = asList( labelsRecord1, labelsRecord2 );
+
+        long temp = labelIds[12];
+        labelIds[12] = labelIds[11];
+        labelIds[11] = temp;
+        DynamicArrayStore.allocateFromNumbers( new ArrayList<DynamicRecord>(), labelIds, labelRecords.iterator(),
+                new PreAllocatedRecords( 52 ) );
+        assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
+        node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
+
+        addNodeDynamicLabels( labelsRecord1 );
+        addNodeDynamicLabels( labelsRecord2 );
+
+        // when
+        ConsistencyReport.NodeConsistencyReport report = check( node );
+
+        // then
+        verify( report ).labelsOutOfOrder( labelIds[11], labelIds[12] );
     }
 
     @Test

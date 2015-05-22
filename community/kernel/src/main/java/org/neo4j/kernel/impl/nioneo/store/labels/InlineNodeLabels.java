@@ -70,7 +70,7 @@ public class InlineNodeLabels implements NodeLabels
         return putSorted( labelIds, nodeStore, allocator );
     }
 
-    Collection<DynamicRecord> putSorted( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator )
+    protected Collection<DynamicRecord> putSorted( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator )
     {
         if ( tryInlineInNodeRecord( labelIds, node.getDynamicLabelRecords() ) )
         {
