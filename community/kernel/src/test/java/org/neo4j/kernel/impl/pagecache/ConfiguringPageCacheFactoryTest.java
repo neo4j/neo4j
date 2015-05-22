@@ -22,7 +22,10 @@ package org.neo4j.kernel.impl.pagecache;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLog;
@@ -30,8 +33,10 @@ import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConfiguringPageCacheFactoryTest
@@ -51,17 +56,64 @@ public class ConfiguringPageCacheFactoryTest
         // When
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fsRule.get(), config, PageCacheTracer.NULL, NullLog.getInstance() );
-        PageCache cache = pageCacheFactory.getOrCreatePageCache();
 
         // Then
-        try
+        try ( PageCache cache = pageCacheFactory.getOrCreatePageCache() )
         {
             assertThat( cache.pageSize(), equalTo( 4096 ) );
             assertThat( cache.maxCachedPages(), equalTo( 16 ) );
         }
-        finally
+    }
+
+    @Test
+    public void mustUseConfiguredPageSwapper() throws Exception
+    {
+        // Given
+        Config config = new Config();
+        config.applyChanges( stringMap(
+                pagecache_memory.name(), "8m",
+                pagecache_swapper.name(), "test" ) );
+
+        // When
+        new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL, NullLog.getInstance() );
+
+        // Then
+        assertThat( PageSwapperFactoryForTesting.countCreatedPageSwapperFactories(), is( 1 ) );
+        assertThat( PageSwapperFactoryForTesting.countConfiguredPageSwapperFactories(), is( 1 ) );
+    }
+
+    public static class PageSwapperFactoryForTesting
+            extends SingleFilePageSwapperFactory
+            implements ConfigurablePageSwapperFactory
+    {
+        private static final AtomicInteger createdCounter = new AtomicInteger();
+        private static final AtomicInteger configuredCounter = new AtomicInteger();
+
+        public static int countCreatedPageSwapperFactories()
         {
-            cache.close();
+            return createdCounter.get();
+        }
+
+        public static int countConfiguredPageSwapperFactories()
+        {
+            return configuredCounter.get();
+        }
+
+        public PageSwapperFactoryForTesting()
+        {
+            createdCounter.getAndIncrement();
+        }
+
+        @Override
+        public String implementationName()
+        {
+            return "test";
+        }
+
+        @Override
+        public void configure( Config config )
+        {
+            configuredCounter.getAndIncrement();
         }
     }
 }

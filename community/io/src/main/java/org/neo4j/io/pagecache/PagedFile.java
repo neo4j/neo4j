@@ -36,7 +36,7 @@ public interface PagedFile extends AutoCloseable
      *
      * This cannot be combined with PF_EXCLUSIVE_LOCK.
      */
-    public static final int PF_SHARED_LOCK = 1;
+    int PF_SHARED_LOCK = 1;
     /**
      * Pin the pages with an exclusive lock.
      *
@@ -45,25 +45,25 @@ public interface PagedFile extends AutoCloseable
      *
      * This cannot be combined with PF_SHARED_LOCK.
      */
-    public static final int PF_EXCLUSIVE_LOCK = 1 << 1;
+    int PF_EXCLUSIVE_LOCK = 1 << 1;
     /**
      * Disallow pinning and navigating to pages outside the range of the
      * underlying file.
      */
-    public static final int PF_NO_GROW = 1 << 2;
+    int PF_NO_GROW = 1 << 2;
     /**
      * Read-ahead hint for sequential forward scanning.
      */
-    public static final int PF_READ_AHEAD = 1 << 3; // TBD
+    int PF_READ_AHEAD = 1 << 3; // TBD
     /**
      * Do not load in the page if it is not loaded already. Only useful with
      * exclusive locking when you want to overwrite the whole page anyway.
      */
-    public static final int PF_NO_FAULT = 1 << 4; // TBD
+    int PF_NO_FAULT = 1 << 4; // TBD
     /**
      * Do not update page access statistics.
      */
-    public static final int PF_TRANSIENT = 1 << 5;
+    int PF_TRANSIENT = 1 << 5;
 
     /**
      * Initiate an IO interaction with the contents of the paged file.

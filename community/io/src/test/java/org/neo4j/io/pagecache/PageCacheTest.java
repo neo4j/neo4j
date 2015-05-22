@@ -145,7 +145,8 @@ public abstract class PageCacheTest<T extends PageCache>
             int pageSize,
             PageCacheTracer tracer )
     {
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
+        swapperFactory.setFileSystemAbstraction( fs );
         return createPageCache( swapperFactory, maxPages, pageSize, tracer );
     }
 
@@ -3735,7 +3736,7 @@ public abstract class PageCacheTest<T extends PageCache>
     public void mustFlushDirtyPagesInTheBackground() throws Exception
     {
         final CountDownLatch swapOutLatch = new CountDownLatch( 1 );
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs )
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory()
         {
             @Override
             public PageSwapper createPageSwapper( File file, int filePageSize, PageEvictionCallback onEviction )
@@ -3759,6 +3760,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 };
             }
         };
+        swapperFactory.setFileSystemAbstraction( fs );
 
         try ( PageCache pageCache = createPageCache(
                 swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL );

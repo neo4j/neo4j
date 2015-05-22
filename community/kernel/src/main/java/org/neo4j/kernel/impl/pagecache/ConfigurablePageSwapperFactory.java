@@ -17,17 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache;
+package org.neo4j.kernel.impl.pagecache;
+
+import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.kernel.configuration.Config;
 
 /**
- * These callback implementations are produced by the page cache and given to the page swappers, so that the correct
- * translation tables can be updated when pages are evicted. The PageSwapper implementations are responsible for
- * delegating their {@link PageSwapper#evicted(long, Page)} calls to these callback objects.
+ * A PageSwapperFactory that can take additional configurations.
+ *
+ * The configuration options should be name-spaced under <code>dbms.pagecache.swapper.{implementationName}</code>.
  */
-public interface PageEvictionCallback
+public interface ConfigurablePageSwapperFactory extends PageSwapperFactory
 {
     /**
-     * Notify that the file/memory page has been evicted.
+     * Apply the given configuration to this PageSwapperFactory.
+     *
+     * This must be called before the factory creates its first PageSwapper.
      */
-    void onEvict( long filePageId, Page page );
+    void configure( Config config );
 }

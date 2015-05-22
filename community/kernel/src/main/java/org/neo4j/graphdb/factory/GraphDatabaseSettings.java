@@ -253,6 +253,11 @@ public abstract class GraphDatabaseSettings
         return "2g";
     }
 
+    @Description( "Specify which page swapper should use to do paged IO. " +
+                  "This is only used when integrating with proprietary storage technology." )
+    public static final Setting<String> pagecache_swapper =
+            setting( "dbms.pagecache.swapper", STRING, (String) null );
+
     @Deprecated
     @Obsoleted( "This is no longer used" )
     @Description( "Log memory mapping statistics regularly." )
