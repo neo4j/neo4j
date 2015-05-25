@@ -62,15 +62,16 @@ public class Start extends TransactionProvidingApp
 
         if ( isComplete( query ) )
         {
+            final long startTime = System.currentTimeMillis();
             try
             {
-                final long startTime = System.currentTimeMillis();
                 Result result = getResult( trimQuery( query ), session );
                 handleResult( out, result, startTime );
             }
             catch ( QueryExecutionKernelException e )
             {
-                throw ShellException.wrapCause( e );
+                handleException( out, e, startTime );
+                return Continuation.EXCEPTION_CAUGHT;
             }
             return Continuation.INPUT_COMPLETE;
         }
@@ -106,6 +107,14 @@ public class Start extends TransactionProvidingApp
             out.println();
             out.println( result.getExecutionPlanDescription().toString() );
         }
+    }
+
+    protected void handleException( Output out, QueryExecutionKernelException exception, long startTime )
+            throws RemoteException
+    {
+        out.println( (now() - startTime) + " ms" );
+        out.println();
+        out.println("WARNING: " + exception.getMessage());
     }
 
     protected Map<String, Object> getParameters(Session session) throws ShellException

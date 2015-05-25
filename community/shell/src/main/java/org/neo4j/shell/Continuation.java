@@ -23,5 +23,6 @@ public enum Continuation
 {
     INPUT_COMPLETE,
     INPUT_INCOMPLETE,
+    EXCEPTION_CAUGHT,
     EXIT;
 }
