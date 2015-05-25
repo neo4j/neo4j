@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.ndp.transport.socket.client.Connection;
+import org.neo4j.test.RepeatRule;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;

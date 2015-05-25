@@ -29,6 +29,9 @@ import java.util.List;
 import org.neo4j.packstream.PackInput;
 import org.neo4j.packstream.PackStream;
 
+/**
+ * A {@link PackInput} that accepts data fragments and exposes them as a continuous stream to {@link PackStream}.
+ */
 public class ChunkedInput implements PackInput
 {
     private List<ByteBuf> chunks = new ArrayList<>();
@@ -71,52 +74,30 @@ public class ChunkedInput implements PackInput
     }
 
     @Override
-    public PackInput ensure( int numBytes ) throws IOException
+    public boolean hasMoreData() throws IOException
     {
-        if ( !attempt( numBytes ) )
-        {
-            throw new PackStream.EndOfStream( "Unexpected end of stream while trying to read " + numBytes + " bytes." );
-        }
-        return this;
+        return remaining > 0;
     }
 
     @Override
-    public PackInput attemptUpTo( int numBytes ) throws IOException
-    {
-        return this;
-    }
-
-    @Override
-    public boolean attempt( int numBytes ) throws IOException
-    {
-        return remaining >= numBytes;
-    }
-
-    @Override
-    public int remaining()
-    {
-        return remaining;
-    }
-
-    @Override
-    public byte get()
-    {
-        ensureChunkAvailable();
-        remaining -= 1;
-        return currentChunk.readByte();
-    }
-
-    @Override
-    public byte peek()
+    public byte peekByte()
     {
         ensureChunkAvailable();
         return currentChunk.getByte( currentChunk.readerIndex() );
     }
 
     @Override
-    public short getShort()
+    public byte readByte() throws IOException
     {
-        ensureChunkAvailable();
+        ensure( 1 );
+        remaining -= 1;
+        return currentChunk.readByte();
+    }
+
+    @Override
+    public short readShort() throws IOException
+    {
+        ensure( 2 );
         if ( currentChunk.readableBytes() >= 2 )
         {
             remaining -= 2;
@@ -125,14 +106,14 @@ public class ChunkedInput implements PackInput
         else
         {
             // Short is crossing chunk boundaries, use slow route
-            return (short) (get() << 8 & get());
+            return (short) (readByte() << 8 & readByte());
         }
     }
 
     @Override
-    public int getInt()
+    public int readInt() throws IOException
     {
-        ensureChunkAvailable();
+        ensure( 4 );
         if ( currentChunk.readableBytes() >= 4 )
         {
             remaining -= 4;
@@ -141,14 +122,14 @@ public class ChunkedInput implements PackInput
         else
         {
             // int is crossing chunk boundaries, use slow route
-            return ((int) getShort() << 16) & getShort();
+            return ((int) readShort() << 16) & readShort();
         }
     }
 
     @Override
-    public long getLong()
+    public long readLong() throws IOException
     {
-        ensureChunkAvailable();
+        ensure( 8 );
         if ( currentChunk.readableBytes() >= 8 )
         {
             remaining -= 8;
@@ -157,14 +138,14 @@ public class ChunkedInput implements PackInput
         else
         {
             // long is crossing chunk boundaries, use slow route
-            return ((long) getInt() << 32) & getInt();
+            return ((long) readInt() << 32) & readInt();
         }
     }
 
     @Override
-    public double getDouble()
+    public double readDouble() throws IOException
     {
-        ensureChunkAvailable();
+        ensure( 8 );
         if ( currentChunk.readableBytes() >= 8 )
         {
             remaining -= 8;
@@ -173,12 +154,12 @@ public class ChunkedInput implements PackInput
         else
         {
             // double is crossing chunk boundaries, use slow route
-            return Double.longBitsToDouble( getLong() );
+            return Double.longBitsToDouble( readLong() );
         }
     }
 
     @Override
-    public PackInput get( byte[] into, int offset, int toRead )
+    public PackInput readBytes( byte[] into, int offset, int toRead )
     {
         ensureChunkAvailable();
         int toReadFromChunk = Math.min( toRead, currentChunk.readableBytes() );
@@ -191,10 +172,19 @@ public class ChunkedInput implements PackInput
         if ( toReadFromChunk < toRead )
         {
             // More data can be read into the buffer, keep reading from the next chunk
-            get( into, offset + toReadFromChunk, toRead - toReadFromChunk );
+            readBytes( into, offset + toReadFromChunk, toRead - toReadFromChunk );
         }
 
         return this;
+    }
+
+    private void ensure( int numBytes ) throws IOException
+    {
+        ensureChunkAvailable();
+        if ( remaining < numBytes )
+        {
+            throw new PackStream.EndOfStream( "Unexpected end of stream while trying to read " + numBytes + " bytes." );
+        }
     }
 
     private void ensureChunkAvailable()

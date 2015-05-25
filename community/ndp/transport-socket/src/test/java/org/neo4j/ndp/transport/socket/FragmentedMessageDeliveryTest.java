@@ -20,6 +20,8 @@
 package org.neo4j.ndp.transport.socket;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
@@ -41,6 +43,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.ndp.messaging.v1.message.Messages.run;
 import static org.neo4j.ndp.transport.socket.SocketProtocolV1.State.AWAITING_CHUNK;
 
@@ -106,14 +109,20 @@ public class FragmentedMessageDeliveryTest
         // Given
         // System.out.println( "Testing fragmentation:" + describeFragments( fragments ) );
         Session sess = mock( Session.class );
-        ChannelHandlerContext ch = mock( ChannelHandlerContext.class );
-        SocketProtocolV1 protocol = new SocketProtocolV1( NullLog.getInstance(), sess );
+
+        Channel ch = mock( Channel.class );
+        when(ch.alloc()).thenReturn( UnpooledByteBufAllocator.DEFAULT );
+
+        ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
+        when(ctx.channel()).thenReturn( ch );
+
+        SocketProtocolV1 protocol = new SocketProtocolV1( NullLog.getInstance(), sess, ch );
 
         // When data arrives split up according to the current permutation
         for ( ByteBuf fragment : fragments )
         {
             fragment.readerIndex( 0 ).retain();
-            protocol.handle( ch, fragment );
+            protocol.handle( ctx, fragment );
         }
 
         // Then the session should've received the specified messages, and the protocol should be in a nice clean state

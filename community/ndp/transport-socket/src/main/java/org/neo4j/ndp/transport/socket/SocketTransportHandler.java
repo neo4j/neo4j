@@ -20,6 +20,7 @@
 package org.neo4j.ndp.transport.socket;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -28,6 +29,7 @@ import java.nio.ByteOrder;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.Factory;
+import org.neo4j.function.Function;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
@@ -92,7 +94,7 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
 
     private void chooseProtocolVersion( ChannelHandlerContext ctx, ByteBuf buffer ) throws Exception
     {
-        switch ( protocolChooser.handleVersionHandshakeChunk( buffer ) )
+        switch ( protocolChooser.handleVersionHandshakeChunk( buffer, ctx.channel() ) )
         {
         case PROTOCOL_CHOSEN:
             protocol = protocolChooser.chosenProtocol();
@@ -139,7 +141,7 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
      */
     public static class ProtocolChooser
     {
-        private final PrimitiveLongObjectMap<Factory<SocketProtocol>> availableVersions;
+        private final PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> availableVersions;
         private final ByteBuffer suggestedVersions = ByteBuffer.allocateDirect( 4 * 4 ).order( ByteOrder.BIG_ENDIAN );
 
         private SocketProtocol protocol;
@@ -147,12 +149,12 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
         /**
          * @param availableVersions version -> protocol mapping
          */
-        public ProtocolChooser( PrimitiveLongObjectMap<Factory<SocketProtocol>> availableVersions )
+        public ProtocolChooser( PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> availableVersions )
         {
             this.availableVersions = availableVersions;
         }
 
-        public HandshakeOutcome handleVersionHandshakeChunk( ByteBuf buffer )
+        public HandshakeOutcome handleVersionHandshakeChunk( ByteBuf buffer, Channel ch )
         {
             if ( suggestedVersions.remaining() > buffer.readableBytes() )
             {
@@ -173,7 +175,7 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
                     long suggestion = suggestedVersions.getInt() & 0xFFFFFFFFL;
                     if ( availableVersions.containsKey( suggestion ) )
                     {
-                        protocol = availableVersions.get( suggestion ).newInstance();
+                        protocol = availableVersions.get( suggestion ).apply( ch );
                         return HandshakeOutcome.PROTOCOL_CHOSEN;
                     }
                 }

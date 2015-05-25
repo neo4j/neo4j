@@ -19,12 +19,14 @@
  */
 package org.neo4j.ndp.transport.socket.integration;
 
+import io.netty.channel.Channel;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.Factory;
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -70,13 +72,13 @@ public class Neo4jWithSocket implements TestRule
 
                 final Sessions sessions = life.add( new StandardSessions( api, log ) );
 
-                PrimitiveLongObjectMap<Factory<SocketProtocol>> availableVersions = longObjectMap();
-                availableVersions.put( SocketProtocolV1.VERSION, new Factory<SocketProtocol>()
+                PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> availableVersions = longObjectMap();
+                availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel, SocketProtocol>()
                 {
                     @Override
-                    public SocketProtocol newInstance()
+                    public SocketProtocol apply( Channel channel )
                     {
-                        return new SocketProtocolV1( log, sessions.newSession() );
+                        return new SocketProtocolV1( log, sessions.newSession(), channel );
                     }
                 } );
 

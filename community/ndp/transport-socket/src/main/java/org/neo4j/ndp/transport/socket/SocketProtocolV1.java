@@ -20,6 +20,8 @@
 package org.neo4j.ndp.transport.socket;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.io.IOException;
@@ -43,6 +45,7 @@ import org.neo4j.packstream.PackStream;
 public class SocketProtocolV1 implements SocketProtocol
 {
     public static final int VERSION = 1;
+    public static final int DEFAULT_BUFFER_SIZE = 8192;
 
     private final ChunkedInput input;
     private final ChunkedOutput output;
@@ -66,11 +69,11 @@ public class SocketProtocolV1 implements SocketProtocol
     private State state = State.AWAITING_CHUNK;
     private int chunkSize = 0;
 
-    public SocketProtocolV1( final Log log, Session session )
+    public SocketProtocolV1( final Log log, Session session, Channel channel )
     {
         this.log = log;
         this.session = session;
-        this.output = new ChunkedOutput();
+        this.output = new ChunkedOutput( channel, DEFAULT_BUFFER_SIZE );
         this.input = new ChunkedInput();
         this.packer = new PackStreamMessageFormatV1.Writer( new PackStream.Packer( output ), output.messageBoundaryHook() );
         this.unpacker = new PackStreamMessageFormatV1.Reader( input );
@@ -198,7 +201,6 @@ public class SocketProtocolV1 implements SocketProtocol
 
     private void processCollectedMessage( final ChannelHandlerContext channelContext )
     {
-        output.setTargetChannel( channelContext );
         try
         {
             onMessageStarted();

@@ -21,6 +21,7 @@ package org.neo4j.ndp.transport.socket;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -33,6 +34,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.BiConsumer;
 import org.neo4j.function.Factory;
+import org.neo4j.function.Function;
 import org.neo4j.helpers.HostnamePort;
 
 /**
@@ -41,10 +43,12 @@ import org.neo4j.helpers.HostnamePort;
  */
 public class WebSocketTransport implements BiConsumer<EventLoopGroup,EventLoopGroup>
 {
-    private final HostnamePort address;
-    private final PrimitiveLongObjectMap<Factory<SocketProtocol>> availableVersions;
+    private static final int MAX_WEBSOCKET_HANDSHAKE_SIZE = 65536;
 
-    public WebSocketTransport( HostnamePort address, PrimitiveLongObjectMap<Factory<SocketProtocol>> protocolVersions )
+    private final HostnamePort address;
+    private final PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> availableVersions;
+
+    public WebSocketTransport( HostnamePort address, PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> protocolVersions )
     {
         this.address = address;
         this.availableVersions = protocolVersions;
@@ -64,7 +68,7 @@ public class WebSocketTransport implements BiConsumer<EventLoopGroup,EventLoopGr
                     {
                         ch.pipeline().addLast(
                                 new HttpServerCodec(),
-                                new HttpObjectAggregator(65536),
+                                new HttpObjectAggregator( MAX_WEBSOCKET_HANDSHAKE_SIZE ),
                                 new WebSocketServerProtocolHandler( "" ),
                                 new WebSocketFrameTranslator(),
                                 new SocketTransportHandler(
