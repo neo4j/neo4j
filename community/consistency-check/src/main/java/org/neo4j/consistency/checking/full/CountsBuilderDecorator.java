@@ -293,9 +293,8 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                         }
                     }
                 }
-
-                inner.check( record, engine, records );
             }
+            inner.check( record, engine, records );
         }
 
         @Override
