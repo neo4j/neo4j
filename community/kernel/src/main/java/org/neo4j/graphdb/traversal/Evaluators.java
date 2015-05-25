@@ -444,4 +444,44 @@ public abstract class Evaluators
             }
         };
     }
+
+    public static PathEvaluator endNodeIsAtDepth( final int depth, Node... possibleEndNodes )
+    {
+        if ( possibleEndNodes.length == 1 )
+        {
+            final Node target = possibleEndNodes[0];
+            return new PathEvaluator.Adapter()
+            {
+                @Override
+                public Evaluation evaluate( Path path, BranchState state )
+                {
+                    if ( path.length() == depth )
+                    {
+                        return target.equals( path.endNode() ) ? Evaluation.INCLUDE_AND_PRUNE : Evaluation.EXCLUDE_AND_PRUNE;
+                    }
+                    else
+                    {
+                        return Evaluation.EXCLUDE_AND_CONTINUE;
+                    }
+                }
+            };
+        }
+
+        final Set<Node> endNodes = new HashSet<Node>( asList( possibleEndNodes ) );
+        return new PathEvaluator.Adapter()
+        {
+            @Override
+            public Evaluation evaluate( Path path, BranchState state )
+            {
+                if ( path.length() == depth )
+                {
+                    return endNodes.contains( path.endNode() ) ? Evaluation.INCLUDE_AND_PRUNE : Evaluation.EXCLUDE_AND_PRUNE;
+                }
+                else
+                {
+                    return Evaluation.EXCLUDE_AND_CONTINUE;
+                }
+            }
+        };
+    }
 }
