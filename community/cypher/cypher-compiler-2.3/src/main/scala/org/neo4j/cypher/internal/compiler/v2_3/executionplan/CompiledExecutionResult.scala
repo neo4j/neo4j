@@ -51,7 +51,6 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
                               compiledCode: GeneratedQueryExecution,
                               description: Supplier[InternalPlanDescription])
   extends InternalExecutionResult with SuccessfulCloseable  {
-
   self =>
 
   import scala.collection.JavaConverters._
@@ -198,12 +197,16 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
   }.mkString("{", ", ", "}")
 
   private def doInAccept[T](body: ResultRow => T) = {
-    accept(new ResultVisitor[RuntimeException] {
-      override def visit(row: ResultRow): Boolean = {
-        body(row)
-        true
-      }
-    })
+    if (!taskCloser.isClosed) {
+      accept(new ResultVisitor[RuntimeException] {
+        override def visit(row: ResultRow): Boolean = {
+          body(row)
+          true
+        }
+      })
+    } else {
+      throw new IllegalStateException("Unable to accept visitors after resources have been closed.")
+    }
   }
 
   private def materializeAsScala(v: Any): Any = {
