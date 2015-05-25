@@ -1235,7 +1235,6 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         kernelModule.kernelTransactions().disposeAll();
     }
 
-    @SuppressWarnings( "deprecation" )
     public static abstract class Configuration
     {
         public static final Setting<String> keep_logical_logs = GraphDatabaseSettings.keep_logical_logs;

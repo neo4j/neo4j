@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.util.Arrays;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -163,7 +163,7 @@ public class SchemaIndexAcceptanceTest
     {
         EphemeralFileSystemAbstraction snapshot = fs.snapshot();
         db.shutdown();
-        fs.shutdown();
+        fs.close();
         fs = snapshot;
         db = newDb();
     }

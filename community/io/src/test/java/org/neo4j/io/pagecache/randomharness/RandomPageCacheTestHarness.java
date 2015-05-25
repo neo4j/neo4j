@@ -67,7 +67,7 @@ public class RandomPageCacheTestHarness
     private int filePageSize;
     private PageCacheTracer tracer;
     private int commandCount;
-    private double[] commandProbabilityFactors;
+    private final double[] commandProbabilityFactors;
     private long randomSeed;
     private boolean fixedRandomSeed;
     private EphemeralFileSystemAbstraction fs;
@@ -414,7 +414,7 @@ public class RandomPageCacheTestHarness
             executor.awaitTermination( deadlineMillis - now, TimeUnit.MILLISECONDS );
             plan.close();
             cache.close();
-            this.fs.shutdown();
+            this.fs.close();
         }
     }
 

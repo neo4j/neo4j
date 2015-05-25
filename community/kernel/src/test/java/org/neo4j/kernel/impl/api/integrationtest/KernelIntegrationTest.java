@@ -121,7 +121,7 @@ public abstract class KernelIntegrationTest
     public void cleanup() throws Exception
     {
         stopDb();
-        fs.shutdown();
+        fs.close();
     }
 
     protected void startDb(String cacheType)

@@ -127,8 +127,8 @@ public class PlatformModule
 
         // If no logging was passed in from the outside then create logging and register
         // with this life
-        logging = life.add(dependencies.satisfyDependency(createLogService(externalDependencies.userLogProvider())));
-
+        logging = life.add( dependencies.satisfyDependency(
+                createLogService( externalDependencies.userLogProvider() ) ) );
         config.setLogger( logging.getInternalLog( Config.class ) );
 
         StoreLockerLifecycleAdapter storeLocker = life.add( dependencies.satisfyDependency( new StoreLockerLifecycleAdapter(
@@ -215,7 +215,7 @@ public class PlatformModule
         {
             throw new RuntimeException( ex );
         }
-        return life.add( logService );
+        return logService;
     }
 
     protected Neo4jJobScheduler createJobScheduler()

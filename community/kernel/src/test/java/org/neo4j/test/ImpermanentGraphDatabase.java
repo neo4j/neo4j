@@ -19,15 +19,17 @@
  */
 package org.neo4j.test;
 
+import com.google.common.jimfs.Jimfs;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.DelegateFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -200,7 +202,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         @Override
         protected FileSystemAbstraction createFileSystemAbstraction()
         {
-            return new EphemeralFileSystemAbstraction();
+            return new DelegateFileSystemAbstraction( Jimfs.newFileSystem() );
         }
 
         @Override
@@ -210,7 +212,8 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
             try
             {
                 logService = new StoreLogService( NullLogProvider.getInstance(), fileSystem, storeDir, jobScheduler );
-            } catch ( IOException e )
+            }
+            catch ( IOException e )
             {
                 throw new RuntimeException( e );
             }

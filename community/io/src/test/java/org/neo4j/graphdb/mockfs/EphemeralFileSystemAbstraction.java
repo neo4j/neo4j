@@ -57,6 +57,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.function.Function;
+import org.neo4j.io.fs.DelegateFileSystemAbstraction;
 import org.neo4j.io.fs.FileLock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -68,6 +69,10 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Arrays.asList;
 
+/**
+ * @deprecated in favor of {@link DelegateFileSystemAbstraction} with something like JimFS.
+ */
+@Deprecated
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 {
     interface Positionable
@@ -93,7 +98,8 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         this.directories.addAll( directories );
     }
 
-    public synchronized void shutdown()
+    @Override
+    public synchronized void close()
     {
         for ( EphemeralFileData file : files.values() )
         {
@@ -112,8 +118,14 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     protected void finalize() throws Throwable
     {
-        shutdown();
-        super.finalize();
+        try
+        {
+            close();
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     public void assertNoOpenFiles() throws Exception

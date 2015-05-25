@@ -26,8 +26,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertTrue;
 
@@ -96,7 +96,7 @@ public class LabelRecoveryTest
         {
             database.shutdown();
         }
-        fs.shutdown();
+        fs.close();
     }
 
     public final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();

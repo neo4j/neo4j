@@ -19,20 +19,20 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.kernel.impl.store.NodeStore.RECORD_SIZE;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.junit.Test;
-
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.JumpingFileSystemAbstraction.JumpingFileChannel;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.kernel.impl.store.NodeStore.RECORD_SIZE;
 
 public class TestJumpingIdGenerator
 {
@@ -46,7 +46,7 @@ public class TestJumpingIdGenerator
         {
             assertEquals( i, generator.nextId() );
         }
-        
+
         for ( int i = 0; i < sizePerJump-1; i++ )
         {
             long expected = 0x100000000L-sizePerJump/2+i;
@@ -67,7 +67,7 @@ public class TestJumpingIdGenerator
             assertEquals( 0x300000000L-sizePerJump/2+i, generator.nextId() );
         }
     }
-    
+
     @Test
     public void testOffsettedFileChannel() throws Exception
     {
@@ -77,23 +77,23 @@ public class TestJumpingIdGenerator
         offsettedFileSystem.mkdirs( fileName.getParentFile() );
         IdGenerator idGenerator = new JumpingIdGeneratorFactory( 10 ).get( IdType.NODE );
         JumpingFileChannel channel = (JumpingFileChannel) offsettedFileSystem.open( fileName, "rw" );
-        
+
         for ( int i = 0; i < 16; i++ )
         {
             writeSomethingLikeNodeRecord( channel, idGenerator.nextId(), i );
         }
-        
+
         channel.close();
         channel = (JumpingFileChannel) offsettedFileSystem.open( fileName, "rw" );
         idGenerator = new JumpingIdGeneratorFactory( 10 ).get( IdType.NODE );
-        
+
         for ( int i = 0; i < 16; i++ )
         {
             assertEquals( i, readSomethingLikeNodeRecord( channel, idGenerator.nextId() ) );
         }
-        
+
         channel.close();
-        offsettedFileSystem.shutdown();
+        offsettedFileSystem.close();
     }
 
     private byte readSomethingLikeNodeRecord( JumpingFileChannel channel, long id ) throws IOException

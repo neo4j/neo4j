@@ -27,6 +27,8 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.NonClosingFileSystemAbstraction;
+import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -95,17 +97,47 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return new TestGraphDatabaseFactoryState( getCurrentState() );
     }
 
-    public FileSystemAbstraction getFileSystem()
+    public Provider<FileSystemAbstraction> getFileSystem()
     {
         return getCurrentState().getFileSystem();
     }
 
-    public TestGraphDatabaseFactory setFileSystem( FileSystemAbstraction fileSystem )
+    /**
+     * Assigns a custom file system, which created graph databases will use.
+     *
+     * IMPORTANT to note is that the caller of this method is responsible for
+     * {@link FileSystemAbstraction#close() closing} this file system when this graph database factory is done
+     * and should be used no more. Reason is that a {@link GraphDatabaseFactory} can create multiple database
+     * instances and sometimes it's the intention that each database instance has the same file system,
+     * without having it closed.
+     */
+    public TestGraphDatabaseFactory setFileSystem( final FileSystemAbstraction fileSystem )
+    {
+        return setFileSystem( new Provider<FileSystemAbstraction>()
+        {
+            @Override
+            public FileSystemAbstraction instance()
+            {
+                // Knowing that the graph database will close this file system in GDS#shutdown()
+                // and also knowing that we'd like to keep this file system up and running until
+                // closed externally, potentially after multiple database instances have lived with
+                // this file system.
+                return new NonClosingFileSystemAbstraction( fileSystem );
+            }
+        } );
+    }
+
+    /**
+     * Assigns a custom file system {@link Provider}, which created graph databases will use, or rather
+     * whatever this provider {@link Provider#instance() provides} every time a new database is instantiated.
+     */
+    public TestGraphDatabaseFactory setFileSystem( Provider<FileSystemAbstraction> fileSystem )
     {
         getCurrentState().setFileSystem( fileSystem );
         return this;
     }
 
+    @Override
     public GraphDatabaseFactory setMonitors( Monitors monitors )
     {
         getCurrentState().setMonitors( monitors );
@@ -171,10 +203,10 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()
                             {
-                                FileSystemAbstraction fs = state.getFileSystem();
+                                Provider<FileSystemAbstraction> fs = state.getFileSystem();
                                 if ( fs != null )
                                 {
-                                    return fs;
+                                    return fs.instance();
                                 }
                                 else
                                 {
