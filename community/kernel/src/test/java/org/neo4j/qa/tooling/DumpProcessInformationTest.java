@@ -19,14 +19,15 @@
  */
 package org.neo4j.qa.tooling;
 
+import org.junit.Test;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
-
-import org.junit.Test;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.logging.NullLogProvider;
@@ -34,11 +35,11 @@ import org.neo4j.test.TargetDirectory;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.getProperty;
-
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
+import static org.junit.Assume.assumeThat;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -57,7 +58,13 @@ public class DumpProcessInformationTest
         // WHEN
         // dumping process information for that spawned process (knowing it's in the expected position)
         DumpProcessInformation dumper = new DumpProcessInformation( NullLogProvider.getInstance(), directory );
-        Pair<Long, String> pid = single( dumper.getJPids( containsString( DumpableProcess.class.getSimpleName() ) ) );
+        Collection<Pair<Long,String>> pids =
+                dumper.getJPids( containsString( DumpableProcess.class.getSimpleName() ) );
+
+        // bail if our Java installation is wonky and `jps` doesn't work
+        assumeThat( pids.size(), greaterThan( 0 ) );
+
+        Pair<Long, String> pid = single( pids );
         File threaddumpFile = dumper.doThreadDump( pid );
         process.destroy();
 
