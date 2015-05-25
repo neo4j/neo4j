@@ -39,46 +39,46 @@ public abstract class AbstractSelectorOrderer<T> implements SideSelector
             return null;
         }
     };
-    
+
     private final BranchSelector[] selectors;
     @SuppressWarnings( "unchecked" )
     private final T[] states = (T[]) new Object[2];
     private int selectorIndex;
-    
+
     public AbstractSelectorOrderer( BranchSelector startSelector, BranchSelector endSelector )
     {
         selectors = new BranchSelector[] { startSelector, endSelector };
         states[0] = initialState();
         states[1] = initialState();
     }
-    
+
     protected T initialState()
     {
         return null;
     }
-    
+
     protected void setStateForCurrentSelector( T state )
     {
         states[selectorIndex] = state;
     }
-    
+
     protected T getStateForCurrentSelector()
     {
         return states[selectorIndex];
     }
-    
+
     protected TraversalBranch nextBranchFromCurrentSelector( TraversalContext metadata,
             boolean switchIfExhausted )
     {
         return nextBranchFromSelector( metadata, selectors[selectorIndex], switchIfExhausted );
     }
-    
+
     protected TraversalBranch nextBranchFromNextSelector( TraversalContext metadata,
             boolean switchIfExhausted )
     {
         return nextBranchFromSelector( metadata, nextSelector(), switchIfExhausted );
     }
-    
+
     private TraversalBranch nextBranchFromSelector( TraversalContext metadata,
             BranchSelector selector, boolean switchIfExhausted )
     {
@@ -97,7 +97,7 @@ public abstract class AbstractSelectorOrderer<T> implements SideSelector
         }
         return result;
     }
-    
+
     protected BranchSelector nextSelector()
     {
         selectorIndex = (selectorIndex+1)%2;

@@ -121,7 +121,8 @@ public class ParallelBatchImporterTest
         public int maxNumberOfProcessors()
         {
             // Let's really crank up the number of threads to try and flush out all and any parallelization issues.
-            return random.intBetween( Runtime.getRuntime().availableProcessors(), 100 );
+            int cores = Runtime.getRuntime().availableProcessors();
+            return random.intBetween( cores, cores + 100 );
         }
     };
     private final Function<Configuration,WriterFactory> writerFactory;

@@ -83,9 +83,10 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
         // A little chicken-and-egg problem. This happens when constructing the start/end
         // selectors and they initially call evaluate() and isUniqueFirst, where the selector is used.
         // Solved this way for now, to have it return the start side to begin with.
-        this.selector = alwaysOutgoingSide();
+        this.selector = fixedSide( Direction.OUTGOING );
         BranchSelector startSelector = start.branchOrdering.create(
                 new AsOneStartBranch( this, startNodes, start.initialState, start.uniqueness ), start.expander );
+        this.selector = fixedSide( Direction.INCOMING );
         BranchSelector endSelector = end.branchOrdering.create(
                 new AsOneStartBranch( this, endNodes, end.initialState, start.uniqueness ), end.expander );
 
@@ -121,8 +122,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
         return (BidirectionalUniquenessFilter) uniqueness;
     }
 
-    private SideSelector alwaysOutgoingSide()
-    {
+    private SideSelector fixedSide( final Direction direction )    {
         return new SideSelector()
         {
             @Override
@@ -134,7 +134,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
             @Override
             public Direction currentSide()
             {
-                return Direction.OUTGOING;
+                return direction;
             }
         };
     }
