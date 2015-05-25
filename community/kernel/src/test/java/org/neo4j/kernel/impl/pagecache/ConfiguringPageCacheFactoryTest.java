@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.NullLog;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -49,7 +50,7 @@ public class ConfiguringPageCacheFactoryTest
 
         // When
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fsRule.get(), config, PageCacheTracer.NULL );
+                fsRule.get(), config, PageCacheTracer.NULL, NullLog.getInstance() );
         PageCache cache = pageCacheFactory.getOrCreatePageCache();
 
         // Then

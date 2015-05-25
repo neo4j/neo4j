@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.perftest.enterprise.generator.DataGenerator;
 import org.neo4j.perftest.enterprise.util.Configuration;
@@ -120,7 +121,7 @@ public class ConsistencyPerformanceCheck
         Config tuningConfiguration = buildTuningConfiguration( configuration );
         fileSystem = new DefaultFileSystemAbstraction();
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, tuningConfiguration, PageCacheTracer.NULL );
+                fileSystem, tuningConfiguration, PageCacheTracer.NULL, NullLog.getInstance() );
         pageCache = pageCacheFactory.getOrCreatePageCache();
         DirectStoreAccess directStoreAccess = createScannableStores( storeDir, tuningConfiguration );
 

@@ -3193,7 +3193,7 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( "expect EOF", inputStream.read(), is( -1 ) );
     }
 
-    @Test( timeout = 1000 )
+    @Test( timeout = 10000 )
     public void freshlyCreatedPagesMustContainAllZeros() throws IOException
     {
         File fileA = new File( "a" );

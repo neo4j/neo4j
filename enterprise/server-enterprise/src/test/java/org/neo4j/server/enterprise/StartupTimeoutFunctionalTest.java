@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -26,11 +30,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLog;
@@ -141,16 +142,18 @@ public class StartupTimeoutFunctionalTest
     private ConfigurationBuilder buildProperties() throws IOException
     {
         //noinspection ResultOfMethodCallIgnored
-        new File( target.directory(), "conf" ).mkdir();
+        File conf = new File( target.directory(), "conf" );
+        conf.mkdir();
 
         Properties databaseProperties = new Properties();
-        String databasePropertiesFileName = new File( target.directory(), "conf/neo4j.properties" ).getAbsolutePath();
+        String databasePropertiesFileName = new File( conf, "neo4j.properties" ).getAbsolutePath();
         databaseProperties.setProperty( ClusterSettings.server_id.name(), "1" );
         databaseProperties.setProperty( ClusterSettings.initial_hosts.name(), ":5001,:5002,:5003" );
+        databaseProperties.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         databaseProperties.store( new FileWriter( databasePropertiesFileName ), null );
 
         Properties serverProperties = new Properties();
-        String serverPropertiesFilename = new File( target.directory(), "conf/neo4j-server.properties" ).getAbsolutePath();
+        String serverPropertiesFilename = new File( conf, "neo4j-server.properties" ).getAbsolutePath();
         serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY,
                 new File( target.directory(), "data/graph.db" ).getAbsolutePath() );
         serverProperties.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, databasePropertiesFileName );

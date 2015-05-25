@@ -57,6 +57,7 @@ public class ServerManagementTest
         ConfigurationBuilder config = new PropertyFileConfigurator(
                 AdvancedServerBuilder
                         .server()
+                        .withDefaultDatabaseTuning()
                         .usingDatabaseDir( dbDirectory1 )
                         .createPropertiesFiles(), NullLog.getInstance() );
 

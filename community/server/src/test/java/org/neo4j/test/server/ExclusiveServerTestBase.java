@@ -19,15 +19,16 @@
  */
 package org.neo4j.test.server;
 
-import static org.neo4j.test.Mute.muteAll;
-
-import java.util.concurrent.Callable;
-
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+
+import java.util.concurrent.Callable;
+
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
+
+import static org.neo4j.test.Mute.muteAll;
 
 public class ExclusiveServerTestBase
 {
@@ -39,7 +40,7 @@ public class ExclusiveServerTestBase
     public TestName name = new TestName();
 
     @BeforeClass
-    public static final void ensureServerNotRunning() throws Exception
+    public static void ensureServerNotRunning() throws Exception
     {
         muteAll().call( new Callable<Void>()
         {

@@ -19,19 +19,22 @@
  */
 package org.neo4j.server;
 
-import java.io.File;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.Mute;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 {
@@ -47,7 +50,6 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         if ( bootstrapper != null )
         {
             String baseDir = bootstrapper.getServer().getDatabase().getLocation();
-            System.out.println( baseDir );
             bootstrapper.stop();
             FileUtils.deleteRecursively( new File( baseDir ) );
         }

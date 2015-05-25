@@ -38,6 +38,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.logging.NullLog;
 import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Conversion;
 import org.neo4j.perftest.enterprise.util.Parameters;
@@ -121,7 +122,8 @@ public class DataGenerator
             batchInserter.shutdown();
         }
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                new DefaultFileSystemAbstraction(), new Config( config ), PageCacheTracer.NULL );
+                new DefaultFileSystemAbstraction(), new Config( config ), PageCacheTracer.NULL,
+                NullLog.getInstance() );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
         StoreAccess stores = new StoreAccess( pageCache, storeDir );
         try

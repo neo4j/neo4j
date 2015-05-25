@@ -76,7 +76,7 @@ public class ConsistencyCheckService
         Log log = logProvider.getLog( getClass() );
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, tuningConfiguration, PageCacheTracer.NULL );
+                fileSystem, tuningConfiguration, PageCacheTracer.NULL, logProvider.getLog( PageCache.class ) );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         try
