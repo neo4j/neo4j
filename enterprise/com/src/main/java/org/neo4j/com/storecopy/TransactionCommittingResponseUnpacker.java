@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -203,7 +202,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     @Override
     public void start() throws Throwable
     {
-        this.appender = resolver.resolveDependency( LogicalTransactionStore.class ).getAppender();
+        this.appender = resolver.resolveDependency( TransactionAppender.class );
         this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class );
         this.indexUpdatesValidator = resolver.resolveDependency( IndexUpdatesValidator.class );
         this.transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );

@@ -205,6 +205,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         LogRotationControl logRotationControl();
 
         LogRotation logRotation();
+
+        TransactionAppender transactionAppender();
     }
 
     private interface KernelModule
@@ -470,7 +472,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                     transactionLogModule.logFiles(), transactionLogModule.logRotationControl(), startupStatistics );
 
             KernelModule kernelModule = buildKernel( indexingModule.integrityValidator(),
-                    transactionLogModule.logicalTransactionStore(), neoStoreModule.neoStore(),
+                    transactionLogModule.transactionAppender(), neoStoreModule.neoStore(),
                     transactionLogModule.storeApplier(), indexingModule.indexingService(),
                     indexingModule.indexUpdatesValidator(),
                     storeLayerModule.storeLayer(),
@@ -774,10 +776,10 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         final LogRotation logRotation = new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ),
                 logFile, logRotationControl, kernelHealth, logProvider );
 
-        TransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
+        final TransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
                 transactionMetadataCache, neoStore, legacyIndexTransactionOrdering, kernelHealth );
         final LogicalTransactionStore logicalTransactionStore = new PhysicalLogicalTransactionStore( logFile,
-                transactionMetadataCache, appender );
+                transactionMetadataCache );
 
         life.add( logFile );
         life.add( appender );
@@ -824,6 +826,12 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             public LogRotation logRotation()
             {
                 return logRotation;
+            }
+
+            @Override
+            public TransactionAppender transactionAppender()
+            {
+                return appender;
             }
         };
     }
@@ -913,15 +921,14 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         } );
     }
 
-    private KernelModule buildKernel( IntegrityValidator integrityValidator,
-            LogicalTransactionStore logicalTransactionStore,
-            NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
-            IndexingService indexingService, IndexUpdatesValidator indexUpdatesValidator, StoreReadLayer storeLayer,
+    private KernelModule buildKernel( IntegrityValidator integrityValidator, TransactionAppender appender,
+            NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier, IndexingService indexingService,
+            IndexUpdatesValidator indexUpdatesValidator, StoreReadLayer storeLayer,
             UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
             SchemaIndexProviderMap schemaIndexProviderMap )
     {
         final TransactionCommitProcess transactionCommitProcess =
-                commitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore, storeApplier,
+                commitProcessFactory.create( appender, kernelHealth, neoStore, storeApplier,
                         new NeoStoreInjectedTransactionValidator( integrityValidator ), indexUpdatesValidator,
                         TransactionApplicationMode.INTERNAL, config );
 

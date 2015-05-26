@@ -39,21 +39,13 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
 {
     private final LogFile logFile;
     private final TransactionMetadataCache transactionMetadataCache;
-    private TransactionAppender appender;
 
-    public PhysicalLogicalTransactionStore( LogFile logFile, TransactionMetadataCache transactionMetadataCache,
-            TransactionAppender appender )
+    public PhysicalLogicalTransactionStore( LogFile logFile, TransactionMetadataCache transactionMetadataCache )
     {
         this.logFile = logFile;
         this.transactionMetadataCache = transactionMetadataCache;
-        this.appender = appender;
     }
 
-    @Override
-    public TransactionAppender getAppender()
-    {
-        return appender;
-    }
 
     @Override
     public IOCursor<CommittedTransactionRepresentation> getTransactions( final long transactionIdToStartFrom )

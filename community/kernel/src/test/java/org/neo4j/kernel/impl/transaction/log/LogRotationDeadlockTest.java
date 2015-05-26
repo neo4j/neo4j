@@ -98,9 +98,7 @@ public class LogRotationDeadlockTest
         life.start();
 
         // commit process
-        LogicalTransactionStore txStore = mock( LogicalTransactionStore.class );
-        when( txStore.getAppender() ).thenReturn( appender );
-        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( txStore,
+        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( appender,
                 health, txIdStore, mock( TransactionRepresentationStoreApplier.class ),
                 mock( IndexUpdatesValidator.class ), TransactionApplicationMode.INTERNAL );
 

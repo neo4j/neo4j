@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
@@ -62,9 +61,7 @@ public class TransactionRepresentationCommitProcessTest
     public void shouldNotIncrementLastCommittedTxIdIfAppendFails() throws Exception
     {
         // GIVEN
-        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
         TransactionAppender appender = mock( TransactionAppender.class );
-        when( logicalTransactionStore.getAppender() ).thenReturn( appender );
         long txId = 11;
         IOException rootCause = new IOException( "Mock exception" );
         doThrow( new IOException( rootCause ) ).when( appender ).append( any( TransactionRepresentation.class ),
@@ -72,7 +69,7 @@ public class TransactionRepresentationCommitProcessTest
         KernelHealth kernelHealth = mock( KernelHealth.class );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
-        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( logicalTransactionStore,
+        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( appender,
                 kernelHealth, transactionIdStore, storeApplier, mockedIndexUpdatesValidator(), INTERNAL );
 
         // WHEN
@@ -94,19 +91,17 @@ public class TransactionRepresentationCommitProcessTest
     public void shouldCloseTransactionRegardlessOfWhetherOrNotItAppliedCorrectly() throws Exception
     {
         // GIVEN
-        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
         TransactionAppender appender = mock( TransactionAppender.class );
         long txId = 11;
         when( appender.append(
                 any( TransactionRepresentation.class ), any( LogAppendEvent.class ) ) ).thenReturn( txId );
-        when( logicalTransactionStore.getAppender() ).thenReturn( appender );
         IOException rootCause = new IOException( "Mock exception" );
         KernelHealth kernelHealth = mock( KernelHealth.class );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
         doThrow( new IOException( rootCause ) ).when( storeApplier ).apply( any( TransactionRepresentation.class ),
                 any( ValidatedIndexUpdates.class ), any( LockGroup.class ), eq( txId ), eq( INTERNAL ) );
-        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( logicalTransactionStore,
+        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( appender,
                 kernelHealth, transactionIdStore, storeApplier, mockedIndexUpdatesValidator(), INTERNAL );
         TransactionRepresentation transaction = mockedTransaction();
 
@@ -137,7 +132,7 @@ public class TransactionRepresentationCommitProcessTest
                 .thenThrow( error );
 
         TransactionRepresentationCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
-                mock( LogicalTransactionStore.class ), mock( KernelHealth.class ), mock( TransactionIdStore.class ),
+                mock( TransactionAppender.class ), mock( KernelHealth.class ), mock( TransactionIdStore.class ),
                 mock( TransactionRepresentationStoreApplier.class ), indexUpdatesValidator, INTERNAL );
 
         try ( LockGroup lockGroup = new LockGroup() )

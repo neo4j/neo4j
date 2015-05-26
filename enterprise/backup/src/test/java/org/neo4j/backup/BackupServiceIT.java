@@ -19,6 +19,12 @@
  */
 package org.neo4j.backup;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -26,12 +32,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,7 +43,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
@@ -78,7 +77,6 @@ import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -88,8 +86,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-
 import static org.neo4j.backup.BackupServiceStressTestingBuilder.untilTimeExpired;
 
 public class BackupServiceIT
@@ -663,7 +659,7 @@ public class BackupServiceIT
         // Assert last committed transaction can be found in tx log and is the last tx in the log
         LifeSupport life = new LifeSupport();
         LogicalTransactionStore transactionStore =
-                life.add( new ReadOnlyTransactionStore( fileSystem, backupDir, monitors, mock( KernelHealth.class ) ) );
+                life.add( new ReadOnlyTransactionStore( fileSystem, backupDir, monitors ) );
         life.start();
         try ( IOCursor<CommittedTransactionRepresentation> cursor =
                 transactionStore.getTransactions( txId ) )

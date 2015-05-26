@@ -135,11 +135,11 @@ public class MasterClientTest
         LogFile logFile = mock( LogFile.class );
 
         when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( txStore );
+        when( resolver.resolveDependency( TransactionAppender.class ) ).thenReturn( txAppender );
         when( resolver.resolveDependency( TransactionRepresentationStoreApplier.class ) ).thenReturn( txApplier );
         when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
         when( resolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
         when( resolver.resolveDependency( LogRotation.class ) ).thenReturn( mock(LogRotation.class) );
-        when( txStore.getAppender() ).thenReturn( txAppender );
         IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
                 any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );

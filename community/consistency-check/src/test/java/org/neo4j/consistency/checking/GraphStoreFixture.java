@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -58,10 +57,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -352,7 +352,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
             TransactionRepresentationCommitProcess commitProcess =
                     new TransactionRepresentationCommitProcess(
-                            dependencyResolver.resolveDependency( LogicalTransactionStore.class ),
+                            dependencyResolver.resolveDependency( TransactionAppender.class ),
                             dependencyResolver.resolveDependency( KernelHealth.class ),
                             dependencyResolver.resolveDependency( NeoStoreSupplier.class ).get(),
                             dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ),

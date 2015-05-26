@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -116,7 +117,7 @@ public class CommunityEditionModule
         return new CommitProcessFactory()
             {
                 @Override
-                public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
+                public TransactionCommitProcess create( TransactionAppender appender,
                                                         KernelHealth kernelHealth, NeoStore neoStore,
                                                         TransactionRepresentationStoreApplier storeApplier,
                                                         NeoStoreInjectedTransactionValidator txValidator,
@@ -129,7 +130,7 @@ public class CommunityEditionModule
                     }
                     else
                     {
-                        return new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
+                        return new TransactionRepresentationCommitProcess( appender, kernelHealth,
                                 neoStore, storeApplier, indexUpdatesValidator, mode );
                     }
                 }

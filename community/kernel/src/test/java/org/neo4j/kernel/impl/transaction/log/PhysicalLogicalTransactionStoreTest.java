@@ -257,9 +257,7 @@ public class PhysicalLogicalTransactionStoreTest
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
                 transactionIdStore, mock( LogVersionRepository.class ), monitor,
                 positionCache ) );
-        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
-                positionCache, transactionIdStore, BYPASS, kernelHealth ) );
-        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile, positionCache, appender );
+        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile, positionCache );
 
         // WHEN
         life.start();
@@ -286,13 +284,10 @@ public class PhysicalLogicalTransactionStoreTest
         // GIVEN
         LogFile logFile = mock( LogFile.class );
         TransactionMetadataCache cache = new TransactionMetadataCache( 10, 10 );
-        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
 
         LifeSupport life = new LifeSupport();
 
-        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
-                cache, txIdStore, BYPASS, kernelHealth ) );
-        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache, appender );
+        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache );
 
         try
         {
@@ -316,7 +311,6 @@ public class PhysicalLogicalTransactionStoreTest
     {
         // GIVEN
         LogFile logFile = mock( LogFile.class );
-        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         // a missing file
         when( logFile.getReader( any( LogPosition.class) ) ).thenThrow( new FileNotFoundException() );
         // Which is nevertheless in the metadata cache
@@ -325,9 +319,7 @@ public class PhysicalLogicalTransactionStoreTest
 
         LifeSupport life = new LifeSupport();
 
-        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
-                cache, txIdStore, BYPASS, kernelHealth ) );
-        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache, appender );
+        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache );
 
         try
         {

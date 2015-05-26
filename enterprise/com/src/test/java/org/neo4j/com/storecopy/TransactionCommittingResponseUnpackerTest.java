@@ -104,8 +104,8 @@ public class TransactionCommittingResponseUnpackerTest
         when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
 
         TransactionAppender appender = mockedTransactionAppender();
+        when( dependencyResolver.resolveDependency( TransactionAppender.class )).thenReturn( appender );
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
-        when( logicalTransactionStore.getAppender() ).thenReturn( appender );
         when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) )
                 .thenReturn( logicalTransactionStore );
 
@@ -169,8 +169,8 @@ public class TransactionCommittingResponseUnpackerTest
         when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
 
         TransactionAppender appender = mockedTransactionAppender();
+        when( dependencyResolver.resolveDependency( TransactionAppender.class )).thenReturn( appender );
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
-        when( logicalTransactionStore.getAppender() ).thenReturn( appender );
         when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) )
                 .thenReturn( logicalTransactionStore );
 
@@ -209,9 +209,7 @@ public class TransactionCommittingResponseUnpackerTest
         TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
 
-        TransactionAppender appender = mock( TransactionAppender.class );
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
-        when( logicalTransactionStore.getAppender() ).thenReturn( appender );
         when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) )
                 .thenReturn( logicalTransactionStore );
 
@@ -241,8 +239,8 @@ public class TransactionCommittingResponseUnpackerTest
         when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
 
         TransactionAppender appender = mock( TransactionAppender.class );
+        when( dependencyResolver.resolveDependency( TransactionAppender.class )).thenReturn( appender );
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
-        when( logicalTransactionStore.getAppender() ).thenReturn( appender );
         when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) )
                 .thenReturn( logicalTransactionStore );
 
@@ -288,9 +286,9 @@ public class TransactionCommittingResponseUnpackerTest
         when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( mock( TransactionIdStore.class ) );
         KernelHealth kernelHealth = mock( KernelHealth.class );
         when( resolver.resolveDependency( KernelHealth.class ) ).thenReturn( kernelHealth );
-        LogicalTransactionStore txStore = mock( LogicalTransactionStore.class );
         TransactionAppender appender = mockedTransactionAppender();
-        when( txStore.getAppender() ).thenReturn( appender );
+        when( resolver.resolveDependency( TransactionAppender.class )).thenReturn( appender );
+        LogicalTransactionStore txStore = mock( LogicalTransactionStore.class );
         when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( txStore );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
         when( resolver.resolveDependency( TransactionRepresentationStoreApplier.class ) ).thenReturn( storeApplier );
@@ -341,8 +339,9 @@ public class TransactionCommittingResponseUnpackerTest
         LogRotation logRotation = LogRotation.NO_ROTATION;
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
                 transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS, health ) );
+        when( resolver.resolveDependency( TransactionAppender.class )).thenReturn( appender );
         LogicalTransactionStore logicalTransactionStore = new PhysicalLogicalTransactionStore( logFile,
-                transactionMetadataCache, appender );
+                transactionMetadataCache );
         IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
                 any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );
