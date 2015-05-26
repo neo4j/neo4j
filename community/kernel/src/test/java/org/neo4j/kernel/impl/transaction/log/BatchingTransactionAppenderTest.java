@@ -75,7 +75,7 @@ import static org.mockito.Mockito.when;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.neo4j.helpers.Exceptions.contains;
-import static org.neo4j.kernel.impl.transaction.log.LogRotation.NO_ROTATION;
+import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
 public class BatchingTransactionAppenderTest

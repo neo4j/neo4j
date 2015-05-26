@@ -61,32 +61,32 @@ public interface TransactionEvent extends AutoCloseable
     /**
      * The transaction was marked as successful.
      */
-    public void setSuccess( boolean success );
+    void setSuccess( boolean success );
 
     /**
      * The transaction was marked as failed.
      */
-    public void setFailure( boolean failure );
+    void setFailure( boolean failure );
 
     /**
      * Begin the process of committing the transaction.
      */
-    public CommitEvent beginCommitEvent();
+    CommitEvent beginCommitEvent();
 
     /**
      * Mark the end of the transaction, after it has been committed or rolled back.
      */
     @Override
-    public void close();
+    void close();
 
     /**
      * Set the type of the transaction, as given by
      * {@link org.neo4j.kernel.impl.api.KernelTransactionImplementation.TransactionType}.
      */
-    public void setTransactionType( String transactionTypeName );
+    void setTransactionType( String transactionTypeName );
 
     /**
      * Specify that the transaction was read-only.
      */
-    public void setReadOnly( boolean wasReadOnly );
+    void setReadOnly( boolean wasReadOnly );
 }
