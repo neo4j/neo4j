@@ -87,7 +87,7 @@ public class InputGroupsDeserializerTest
 
     private Configuration lowBufferSize( Configuration conf )
     {
-        return new Configuration.OverrideFromConfig( conf )
+        return new Configuration.Overriden( conf )
         {
             @Override
             public int bufferSize()
