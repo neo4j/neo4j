@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, NormalMode, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v2_3.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.function.Supplier
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
@@ -44,7 +44,7 @@ trait CodeGenSugar extends MockitoSugar {
     val statistics: GraphStatistics = mock[GraphStatistics]
     val context = mock[PlanContext]
     doReturn(statistics).when(context).statistics
-    new CodeGenerator().generate(plan, context, Clock.SYSTEM_CLOCK, mock[SemanticTable])
+    new CodeGenerator().generate(plan, context, Clock.SYSTEM_CLOCK, mock[SemanticTable], CostBasedPlannerName.default)
   }
 
   def compileAndExecute(plan: LogicalPlan,

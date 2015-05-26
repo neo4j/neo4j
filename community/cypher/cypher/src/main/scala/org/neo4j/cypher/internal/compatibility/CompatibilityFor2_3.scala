@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, CypherException => CypherException_v2_3, DPPlannerName, ExplainMode => ExplainModev2_3, GreedyPlannerName, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev2_3, PlannerName, ProfileMode => ProfileModev2_3, _}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, CypherExecutionException, _}
+import org.neo4j.cypher.{ArithmeticException, CypherExecutionException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.impl.notification.NotificationCode
 import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, QueryExecutionType, ResourceIterator}
@@ -189,7 +189,9 @@ trait CompatibilityFor2_3 {
   }
 }
 
-case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner: PlannerName, runtime: RuntimeName)(implicit monitor: QueryExecutionMonitor, session: QuerySession) extends ExtendedExecutionResult {
+case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner: PlannerName, runtime: RuntimeName)
+                                       (implicit monitor: QueryExecutionMonitor, session: QuerySession)
+  extends ExtendedExecutionResult {
 
   import org.neo4j.cypher.internal.compatibility.helpers._
   def planDescriptionRequested = exceptionHandlerFor2_3.runSafely {inner.planDescriptionRequested}
@@ -298,7 +300,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
   }
 }
 
-case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, version: CypherVersion, planner: PlannerName, runtime: RuntimeName)
+case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, version: CypherVersion,
+                                              planner: PlannerName, runtime: RuntimeName)
   extends ExtendedPlanDescription {
 
   self =>
@@ -371,9 +374,8 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
   protected val compiler = {
     val plannerName = planner match {
       case CypherPlanner.default => None
-      case CypherPlanner.cost => Some(IDPPlannerName)
+      case CypherPlanner.cost | CypherPlanner.idp => Some(IDPPlannerName)
       case CypherPlanner.greedy => Some(GreedyPlannerName)
-      case CypherPlanner.idp => Some(IDPPlannerName)
       case CypherPlanner.dp => Some(DPPlannerName)
       case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
     }

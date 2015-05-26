@@ -19,37 +19,30 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner
 
-import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhase.{LOGICAL_PLANNING,PIPE_BUILDING,CODE_GENERATION}
+import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutablePlanBuilder, NewRuntimeSuccessRateMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.closing
-import org.neo4j.cypher.internal.compiler.v2_3.notification.RuntimeUnsupportedNotification
-import org.neo4j.cypher.internal.compiler.v2_3.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
-import org.neo4j.cypher.internal.compiler.v2_3.{CompiledRuntimeName, InterpretedRuntimeName, _}
-import org.neo4j.helpers.Clock
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class CostBasedExecutablePlanBuilder(monitors: Monitors,
-                                metricsFactory: MetricsFactory,
-                                clock: Clock,
-                                tokenResolver: SimpleTokenResolver,
-                                executionPlanBuilder: PipeExecutionPlanBuilder,
-                                queryPlanner: QueryPlanner,
-                                queryGraphSolver: QueryGraphSolver,
-                                rewriterSequencer: (String) => RewriterStepSequencer,
-                                plannerName: CostBasedPlannerName,
-                                runtimeName: RuntimeName,
-                                useErrorsOverWarnings: Boolean,
-                                showWarnings: Boolean)
+                                          metricsFactory: MetricsFactory,
+                                          tokenResolver: SimpleTokenResolver,
+                                          queryPlanner: QueryPlanner,
+                                          queryGraphSolver: QueryGraphSolver,
+                                          rewriterSequencer: (String) => RewriterStepSequencer,
+                                          plannerName: CostBasedPlannerName,
+                                          runtimeBuilder: RuntimeBuilder)
   extends ExecutablePlanBuilder {
 
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer) = {
@@ -70,41 +63,15 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
         val (logicalPlan, pipeBuildContext) = closing(tracer.beginPhase(LOGICAL_PLANNING)) {
           produceLogicalPlan(ast, rewrittenSemanticTable)(planContext)
         }
-        try {
-            runtimeName match {
-              case InterpretedRuntimeName => produceInterpretedPlan(logicalPlan, pipeBuildContext, planContext, tracer)
-              case _ => produceCompiledPlan(logicalPlan, rewrittenSemanticTable, planContext, planBuilderMonitor, tracer)
-            }
-        } catch {
-          //fallback on interpreted plans
-          case e: CantCompileQueryException =>
-            planBuilderMonitor.unableToHandlePlan(logicalPlan, e)
-            if (useErrorsOverWarnings) {
-              throw new InvalidArgumentException("The given query is not currently supported in the selected runtime")
-            } else {
-              if (showWarnings) inputQuery.notificationLogger.log(RuntimeUnsupportedNotification)
-                produceInterpretedPlan(logicalPlan, pipeBuildContext, planContext, tracer)
-            }
-        }
+        runtimeBuilder(logicalPlan, pipeBuildContext, planContext, tracer, rewrittenSemanticTable, planBuilderMonitor,
+                      plannerName, inputQuery)
       case _ =>
         throw new CantHandleQueryException
     }
   }
 
-  private def produceInterpretedPlan(logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext, planContext: PlanContext, tracer: CompilationPhaseTracer) =
-    closing(tracer.beginPhase(PIPE_BUILDING)) {
-      Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
-    }
-
-  private def produceCompiledPlan(logicalPlan: LogicalPlan, semanticTable: SemanticTable, planContext: PlanContext, monitor: NewRuntimeSuccessRateMonitor, tracer: CompilationPhaseTracer) = {
-    monitor.newPlanSeen(logicalPlan)
-    closing(tracer.beginPhase(CODE_GENERATION)) {
-      val codeGen = new CodeGenerator
-      Left(codeGen.generate(logicalPlan, planContext, clock, semanticTable))
-    }
-  }
-
-  def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): (LogicalPlan, PipeExecutionBuilderContext) = {
+  def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)
+                        (planContext: PlanContext): (LogicalPlan, PipeExecutionBuilderContext) = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
     val unionQuery = ast.asUnionQuery
 
@@ -113,12 +80,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, semanticTable, queryGraphSolver)
     val plan = queryPlanner.plan(unionQuery)(context)
 
-    val costPlannerName = plannerName match {
-      case FallbackPlannerName => GreedyPlannerName
-      case _                   => plannerName
-    }
-
-    val pipeBuildContext = PipeExecutionBuilderContext(metrics.cardinality, semanticTable, costPlannerName)
+    val pipeBuildContext = PipeExecutionBuilderContext(metrics.cardinality, semanticTable, plannerName)
 
     (plan, pipeBuildContext)
   }

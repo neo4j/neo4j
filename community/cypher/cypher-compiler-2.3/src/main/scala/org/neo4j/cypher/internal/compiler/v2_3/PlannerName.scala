@@ -31,6 +31,11 @@ sealed abstract class CostBasedPlannerName extends PlannerName {
   val toTextOutput = "COST"
 }
 
+object CostBasedPlannerName {
+  // This is the defining place for default used cost planner
+  def default = IDPPlannerName
+}
+
 /**
  * Rule based query planner, default in all versions below 2.2
  */
@@ -63,26 +68,17 @@ case object DPPlannerName extends CostBasedPlannerName {
   val name = "DP"
 }
 
-/**
- * Hybrid planner that uses the Cost based planner for most of its operations but falls back to
- * Rule based planner for classes of queries where the cost based planner might end up with suboptimal plans.
- */
-case object FallbackPlannerName extends CostBasedPlannerName {
-  val name = "FALLBACK"
-}
-
 object PlannerName {
 
-  val default = FallbackPlannerName
-
   def apply(name: String): PlannerName = name.toUpperCase match {
-    case "RULE" => RulePlannerName
-    case "GREEDY" => GreedyPlannerName
-    case "IDP" => IDPPlannerName
-    case "DP" => DPPlannerName
-    case "FALLBACK" => FallbackPlannerName
+    case RulePlannerName.name => RulePlannerName
+    case GreedyPlannerName.name => GreedyPlannerName
+    case IDPPlannerName.name => IDPPlannerName
+    case DPPlannerName.name => DPPlannerName
 
     // Note that conservative planner is not exposed to end users.
-    case n => throw new IllegalArgumentException(s"$n is not a a valid planner, valid options are GREEDY, IDP and RULE")
+    case n => throw new IllegalArgumentException(s"""$n is not a a valid planner, valid options are
+                                                   ${GreedyPlannerName.name}, ${IDPPlannerName.name},
+                                                   ${DPPlannerName.name} and ${RulePlannerName.name}""")
   }
 }

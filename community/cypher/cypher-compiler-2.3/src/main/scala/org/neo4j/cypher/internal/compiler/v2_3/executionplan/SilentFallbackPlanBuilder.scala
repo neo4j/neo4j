@@ -25,11 +25,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.notification.PlannerUnsupportedNo
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 
-class LegacyVsNewExecutablePlanBuilder(oldBuilder: ExecutablePlanBuilder,
-                             newBuilder: ExecutablePlanBuilder,
-                             monitor: NewLogicalPlanSuccessRateMonitor,
-                             showWarning: Boolean) extends ExecutablePlanBuilder {
-  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer): Either[CompiledPlan, PipeInfo] = {
+trait FallbackBuilder extends ExecutablePlanBuilder {
+
+  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext,
+                  tracer: CompilationPhaseTracer): Either[CompiledPlan, PipeInfo] = {
     val queryText = inputQuery.queryText
     val statement = inputQuery.statement
     try {
@@ -44,8 +43,8 @@ class LegacyVsNewExecutablePlanBuilder(oldBuilder: ExecutablePlanBuilder,
     } catch {
       case e: CantHandleQueryException =>
         monitor.unableToHandleQuery(queryText, statement, e)
-        if (showWarning) inputQuery.notificationLogger.log(PlannerUnsupportedNotification)
-          oldBuilder.producePlan(inputQuery, planContext, tracer)
+        warn(inputQuery)
+        oldBuilder.producePlan(inputQuery, planContext, tracer)
     }
   }
 
@@ -53,4 +52,28 @@ class LegacyVsNewExecutablePlanBuilder(oldBuilder: ExecutablePlanBuilder,
     case _: UpdateClause => true
   }
 
+  def oldBuilder: ExecutablePlanBuilder
+
+  def newBuilder: ExecutablePlanBuilder
+
+  def monitor: NewLogicalPlanSuccessRateMonitor
+
+  def warn(preparedQuery: PreparedQuery): Unit
+
 }
+
+case class SilentFallbackPlanBuilder(oldBuilder: ExecutablePlanBuilder,
+                                     newBuilder: ExecutablePlanBuilder,
+                                     monitor: NewLogicalPlanSuccessRateMonitor) extends FallbackBuilder {
+
+  override def warn(preparedQuery: PreparedQuery): Unit = {}
+}
+
+case class WarningFallbackPlanBuilder(oldBuilder: ExecutablePlanBuilder,
+                                      newBuilder: ExecutablePlanBuilder,
+                                      monitor: NewLogicalPlanSuccessRateMonitor) extends FallbackBuilder {
+
+  override def warn(preparedQuery: PreparedQuery): Unit = preparedQuery.notificationLogger
+    .log(PlannerUnsupportedNotification)
+}
+

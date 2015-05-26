@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{InstrumentedGraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, GreedyPlannerName, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, PlannerName, TaskCloser}
 import org.neo4j.function.Supplier
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
@@ -223,7 +223,7 @@ class CodeGenerator {
 
   import scala.collection.JavaConverters._
 
-  def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable) = {
+  def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable, plannerName: PlannerName) = {
     plan match {
       case res: ProduceResult =>
         val idMap = LogicalPlanIdentificationBuilder(plan)
@@ -253,7 +253,7 @@ class CodeGenerator {
         }
 
         val columns = res.nodes ++ res.relationships ++ res.other
-        CompiledPlan(updating = false, None, fp, GreedyPlannerName, description, columns, builder)
+        CompiledPlan(updating = false, None, fp, plannerName, description, columns, builder)
 
       case _ => throw new CantCompileQueryException("Can only compile plans with ProduceResult on top")
     }
