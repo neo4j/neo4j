@@ -64,6 +64,9 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
     ,
     "START root=node:Person(id='deevian') RETURN id(root) as id UNION START root=node:Person(id='retophy') RETURN id(root) as id" ->
     "START `  root@6`=node:Person(id='deevian') RETURN id(`  root@6`) as id UNION START `  root@71`=node:Person(id='retophy') RETURN id(`  root@71`) as id"
+    ,
+    "WITH 1 AS p, count(*) AS rng RETURN p ORDER BY rng" ->
+    "WITH 1 AS `  p@10`, count(*) AS rng WITH `  p@10`  AS `  FRESHID36` ORDER BY rng RETURN `  FRESHID36` AS p"
   )
 
   tests.foreach {

@@ -248,24 +248,35 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     returnItems.semanticCheck
 
   def semanticCheckContinuation(previousScope: Scope): SemanticCheck =  (s: SemanticState) => {
-    val specialStateForShuffle = {
-      // ORDER BY lives in this special scope that has access to things in scope before the RETURN/WITH clause,
-      // but also to the identifiers introduced by RETURN/WITH. This is most easily done by turning
-      // RETURN a, b, c => RETURN *, a, b, c
-
-      // Except when we are doing DISTINCT or aggregation, in which case we only see the scope introduced by the
-      // projecting clause
-      val includePreviousScope = !(returnItems.containsAggregate || distinct)
-      val specialReturnItems = returnItems.copy(includeExisting = includePreviousScope)(returnItems.position)
-      specialReturnItems.declareIdentifiers(previousScope)(s).state
-    }
-    val shuffleErrors = (orderBy.semanticCheck chain checkSkip chain checkLimit)(specialStateForShuffle).errors
+    val specialReturnItems = createSpecialReturnItems(previousScope, s)
+    val specialStateForShuffle = specialReturnItems.declareIdentifiers(previousScope)(s).state
+    val shuffleResult = (orderBy.semanticCheck chain checkSkip chain checkLimit)(specialStateForShuffle)
+    val shuffleErrors = shuffleResult.errors
 
     // We still need to declare the return items, and register the use of identifiers in the ORDER BY clause. But we
     // don't want to see errors from ORDER BY - we'll get them through shuffleErrors instead
     val orderByResult = (returnItems.declareIdentifiers(previousScope) chain ignoreErrors(orderBy.semanticCheck))(s)
+    val fixedOrderByResult =
+      if (specialReturnItems.includeExisting) {
+        val shuffleScope = shuffleResult.state.currentScope.scope
+        val definedHere = specialReturnItems.items.map(_.name).toSet
+        orderByResult.copy(orderByResult.state.mergeScope(shuffleScope, definedHere))
+      } else
+        orderByResult
 
-    SemanticCheckResult(orderByResult.state, orderByResult.errors ++ shuffleErrors)
+    SemanticCheckResult(fixedOrderByResult.state, fixedOrderByResult.errors ++ shuffleErrors)
+  }
+
+  private def createSpecialReturnItems(previousScope: Scope, s: SemanticState): ReturnItems = {
+    // ORDER BY lives in this special scope that has access to things in scope before the RETURN/WITH clause,
+    // but also to the identifiers introduced by RETURN/WITH. This is most easily done by turning
+    // RETURN a, b, c => RETURN *, a, b, c
+
+    // Except when we are doing DISTINCT or aggregation, in which case we only see the scope introduced by the
+    // projecting clause
+    val includePreviousScope = !(returnItems.containsAggregate || distinct)
+    val specialReturnItems = returnItems.copy(includeExisting = includePreviousScope)(returnItems.position)
+    specialReturnItems
   }
 
   // use an empty state when checking skip & limit, as these have entirely isolated context

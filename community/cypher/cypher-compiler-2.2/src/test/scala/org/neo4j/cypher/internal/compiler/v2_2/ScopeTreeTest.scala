@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.symbols.TypeSpec
 
 class ScopeTreeTest extends CypherFunSuite {
 
@@ -228,6 +229,21 @@ class ScopeTreeTest extends CypherFunSuite {
       scope(nodeSymbol("n", 29, 41), nodeSymbol("x", 21, 32, 49))(),
       scope(nodeSymbol("n", 29, 41, 46), nodeSymbol("x", 21, 32, 49, 54))()
     ))
+  }
+
+  //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
+  //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+  test("with 1 as p, count(*) as rng return p order by rng ==> { {} { with 1 as p, count(*) as rng return p } { order by rng } }") {
+    val ast = parser.parse("with 1 as p, count(*) as rng return p order by rng")
+
+    val actual = ast.scope
+    val expected = scope()(
+      scope()(),
+      scope(intSymbol("p", 10, 36), intSymbol("rng", 25))(),
+      scope(intSymbol("p", 10, 36, 37), typedSymbol("rng", TypeSpec.all, 25, 47))()
+    )
+
+    actual should equal(expected)
   }
 }
 

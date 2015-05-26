@@ -35,7 +35,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.{replace, InternalException, Rewr
  */
 case object projectFreshSortExpressions extends Rewriter {
 
-  def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
+  def apply(that: AnyRef): AnyRef = {
+    bottomUp(instance).apply(that)
+  }
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
     case clause @ With(_, _, None, _, _, None) =>
@@ -45,10 +47,11 @@ case object projectFreshSortExpressions extends Rewriter {
       val duplicateProjection = ri.items.map(item =>
         item.alias.fold(item)(alias => AliasedReturnItem(alias.copyId, alias.copyId)(item.position))
       )
-      Seq(
+      val result = Seq(
         clause.copy(orderBy = None, skip = None, limit = None, where = None)(clause.position),
         clause.copy(distinct = false, returnItems = ri.copy(items = duplicateProjection)(ri.position))(clause.position)
       )
+      result
 
     case clause =>
       Seq(clause)
@@ -84,3 +87,4 @@ case object projectFreshSortExpressions extends Rewriter {
     (requiredIdentifiers -- preservedIdentifiers).nonEmpty
   }
 }
+
