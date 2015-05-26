@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
@@ -105,7 +105,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     {
         this.channel = logFile.getWriter();
         this.indexCommandDetector = new IndexCommandDetector( new CommandWriter( channel ) );
-        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriterv1( channel, indexCommandDetector ) );
+        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriterV1( channel, indexCommandDetector ) );
     }
 
     @Override
@@ -113,9 +113,11 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     {
         long transactionId = -1;
         int phase = 0;
+
         // We put log rotation check outside the private append method since it must happen before
         // we generate the next transaction id
-        logAppendEvent.setLogRotated( logRotation.rotateLogIfNeeded( logAppendEvent ) );
+        boolean logRotated = logRotation.rotateLogIfNeeded( logAppendEvent );
+        logAppendEvent.setLogRotated( logRotated );
 
         TransactionCommitment commit;
         try
@@ -197,8 +199,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
      * @return A TransactionCommitment instance with metadata about the committed transaction, such as whether or not this transaction
      * contains any legacy index changes.
      */
-    private TransactionCommitment appendToLog(
-            TransactionRepresentation transaction, long transactionId ) throws IOException
+    private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId ) throws IOException
     {
         // Reset command writer so that we, after we've written the transaction, can ask it whether or
         // not any legacy index command was written. If so then there's additional ordering to care about below.

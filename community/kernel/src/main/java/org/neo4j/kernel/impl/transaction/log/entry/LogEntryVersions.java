@@ -30,7 +30,10 @@ public class LogEntryVersions
     public static final byte LEGACY_LOG_ENTRY_VERSION = (byte) 0;
     // version -1 for Neo4j 2.1
     public static final byte LOG_ENTRY_VERSION_2_1 = (byte) -1;
-    // version -2 for Neo4j 2.2
+    // version -2 for Neo4j 2.2 - remove 2 phase commit
     public static final byte LOG_ENTRY_VERSION_2_2 = (byte) -2;
-    public static final byte CURRENT_LOG_ENTRY_VERSION = LOG_ENTRY_VERSION_2_2;
+    // version -3 for Neo4j 2.3 - add check point
+    public static final byte LOG_ENTRY_VERSION_2_3 = (byte) -3;
+
+    public static final byte CURRENT_LOG_ENTRY_VERSION = LOG_ENTRY_VERSION_2_3;
 }

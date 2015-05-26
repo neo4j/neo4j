@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -235,7 +235,7 @@ public class StoreCopyClient
             // use a TransactionAppender, since it has checks for which transactions one can append.
             WritableLogChannel channel = logFile.getWriter();
             final TransactionLogWriter writer = new TransactionLogWriter(
-                    new LogEntryWriterv1( channel, new CommandWriter( channel ) ) );
+                    new LogEntryWriterV1( channel, new CommandWriter( channel ) ) );
             final AtomicLong firstTxId = new AtomicLong( BASE_TX_ID );
 
             response.accept( new Response.Handler()

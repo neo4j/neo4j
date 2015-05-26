@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Test;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -57,14 +57,12 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
 
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
-
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
 /**
@@ -76,7 +74,7 @@ public class LogTruncationTest
     private final InMemoryLogChannel inMemoryChannel = new InMemoryLogChannel();
     private final LogEntryReader<ReadableLogChannel> logEntryReader = new LogEntryReaderFactory().create();
     private final CommandWriter serializer = new CommandWriter( inMemoryChannel );
-    private final LogEntryWriterv1 writer = new LogEntryWriterv1( inMemoryChannel, serializer );
+    private final LogEntryWriterV1 writer = new LogEntryWriterV1( inMemoryChannel, serializer );
     /** Stores all known commands, and an arbitrary set of different permutations for them */
     private final Map<Class<?>, Command[]> permutations = new HashMap<>();
     {

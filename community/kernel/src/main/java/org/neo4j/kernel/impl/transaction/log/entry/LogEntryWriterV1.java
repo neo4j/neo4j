@@ -25,19 +25,21 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.COMMAND;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_1P_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
 
-public class LogEntryWriterv1 implements LogEntryWriter
+public class LogEntryWriterV1 implements LogEntryWriter
 {
     private final WritableLogChannel channel;
     private final Visitor<Command,IOException> serializer;
 
-    public LogEntryWriterv1( WritableLogChannel channel, final NeoCommandHandler commandWriter )
+    public LogEntryWriterV1( WritableLogChannel channel, final NeoCommandHandler commandWriter )
     {
         this.channel = channel;
         this.serializer = new Visitor<Command,IOException>()
@@ -59,23 +61,36 @@ public class LogEntryWriterv1 implements LogEntryWriter
 
     @Override
     public void writeStartEntry( int masterId, int authorId, long timeWritten, long latestCommittedTxWhenStarted,
-                                 byte[] additionalHeaderData ) throws IOException
+            byte[] additionalHeaderData ) throws IOException
     {
         writeLogEntryHeader( TX_START );
-        channel.putInt( masterId ).putInt( authorId ).putLong( timeWritten ).putLong( latestCommittedTxWhenStarted )
-               .putInt( additionalHeaderData.length ).put( additionalHeaderData, additionalHeaderData.length );
+        channel.putInt( masterId ).putInt( authorId ).
+                putLong( timeWritten ).
+                putLong( latestCommittedTxWhenStarted ).
+                putInt( additionalHeaderData.length ).
+                put( additionalHeaderData, additionalHeaderData.length );
     }
 
     @Override
     public void writeCommitEntry( long transactionId, long timeWritten ) throws IOException
     {
         writeLogEntryHeader( TX_1P_COMMIT );
-        channel.putLong( transactionId ).putLong( timeWritten );
+        channel.putLong( transactionId ).
+                putLong( timeWritten );
     }
 
     @Override
     public void serialize( TransactionRepresentation tx ) throws IOException
     {
         tx.accept( serializer );
+    }
+
+    @Override
+    public void writeCheckPointEntry( long transactionId, LogPosition logPosition ) throws IOException
+    {
+        writeLogEntryHeader( CHECK_POINT );
+        channel.putLong( transactionId ).
+                putLong( logPosition.getLogVersion() ).
+                putLong( logPosition.getByteOffset() );
     }
 }

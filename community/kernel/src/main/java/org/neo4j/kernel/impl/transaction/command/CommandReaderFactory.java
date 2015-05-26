@@ -29,10 +29,12 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.LEGACY_LOG_ENTRY_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.LOG_ENTRY_VERSION_2_1;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.LOG_ENTRY_VERSION_2_2;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.LOG_ENTRY_VERSION_2_3;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_1_9;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_0;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_1;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_2;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_3;
 
 public abstract class CommandReaderFactory
 {
@@ -64,27 +66,29 @@ public abstract class CommandReaderFactory
         {
             switch ( logEntryVersion )
             {
-                // These are not thread safe, so if they are to be cached it has to be done in an object pool
-                case LEGACY_LOG_ENTRY_VERSION:
-                    switch ( logFormatVersion )
-                    {
-                        case LOG_VERSION_2_0:
-                            return new PhysicalLogNeoCommandReaderV0_20();
-                        case LOG_VERSION_1_9:
-                            return new PhysicalLogNeoCommandReaderV0_19();
-                    }
-                case LOG_ENTRY_VERSION_2_1:
-                case LOG_ENTRY_VERSION_2_2:
-                    switch ( logFormatVersion )
-                    {
-                        case LOG_VERSION_2_1:
-                            return new PhysicalLogNeoCommandReaderV1();
-                        case LOG_VERSION_2_2:
-                            return new PhysicalLogNeoCommandReaderV2();
-                    }
+            // These are not thread safe, so if they are to be cached it has to be done in an object pool
+            case LEGACY_LOG_ENTRY_VERSION:
+                switch ( logFormatVersion )
+                {
+                case LOG_VERSION_2_0:
+                    return new PhysicalLogNeoCommandReaderV0_20();
+                case LOG_VERSION_1_9:
+                    return new PhysicalLogNeoCommandReaderV0_19();
+                }
+            case LOG_ENTRY_VERSION_2_1:
+            case LOG_ENTRY_VERSION_2_2:
+            case LOG_ENTRY_VERSION_2_3:
+                switch ( logFormatVersion )
+                {
+                case LOG_VERSION_2_1:
+                    return new PhysicalLogNeoCommandReaderV1();
+                case LOG_VERSION_2_2:
+                case LOG_VERSION_2_3:
+                    return new PhysicalLogNeoCommandReaderV2();
+                }
             }
             throw new IllegalArgumentException( "Unknown log format version (" + logFormatVersion + ") and " +
-                    "log entry version (" + logEntryVersion + ")" );
+                                                "log entry version (" + logEntryVersion + ")" );
 
         }
     }
@@ -96,43 +100,43 @@ public abstract class CommandReaderFactory
 
     public static final DynamicRecordAdder<PropertyBlock> PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER =
             new DynamicRecordAdder<PropertyBlock>()
-    {
-        @Override
-        public void add( PropertyBlock target, DynamicRecord record )
-        {
-            record.setCreated();
-            target.addValueRecord( record );
-        }
-    };
+            {
+                @Override
+                public void add( PropertyBlock target, DynamicRecord record )
+                {
+                    record.setCreated();
+                    target.addValueRecord( record );
+                }
+            };
 
     public static final DynamicRecordAdder<Collection<DynamicRecord>> COLLECTION_DYNAMIC_RECORD_ADDER =
             new DynamicRecordAdder<Collection<DynamicRecord>>()
-    {
-        @Override
-        public void add( Collection<DynamicRecord> target, DynamicRecord record )
-        {
-            target.add( record );
-        }
-    };
+            {
+                @Override
+                public void add( Collection<DynamicRecord> target, DynamicRecord record )
+                {
+                    target.add( record );
+                }
+            };
 
     public static final DynamicRecordAdder<PropertyRecord> PROPERTY_DELETED_DYNAMIC_RECORD_ADDER =
             new DynamicRecordAdder<PropertyRecord>()
-    {
-        @Override
-        public void add( PropertyRecord target, DynamicRecord record )
-        {
-            assert !record.inUse() : record + " is kinda weird";
-            target.addDeletedRecord( record );
-        }
-    };
+            {
+                @Override
+                public void add( PropertyRecord target, DynamicRecord record )
+                {
+                    assert !record.inUse() : record + " is kinda weird";
+                    target.addDeletedRecord( record );
+                }
+            };
 
     public static final DynamicRecordAdder<PropertyKeyTokenRecord> PROPERTY_INDEX_DYNAMIC_RECORD_ADDER =
             new DynamicRecordAdder<PropertyKeyTokenRecord>()
-    {
-        @Override
-        public void add( PropertyKeyTokenRecord target, DynamicRecord record )
-        {
-            target.addNameRecord( record );
-        }
-    };
+            {
+                @Override
+                public void add( PropertyKeyTokenRecord target, DynamicRecord record )
+                {
+                    target.addNameRecord( record );
+                }
+            };
 }

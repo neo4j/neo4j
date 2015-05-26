@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
 
 /**
  * Contains the logic for serializing requests and deserializing responses. Still missing the inverse, serializing
@@ -328,7 +328,7 @@ public abstract class Protocol
             channel.putLong( tx.getTimeCommitted() );
             channel.putInt( tx.additionalHeader().length );
             channel.put( tx.additionalHeader(), tx.additionalHeader().length );
-            new LogEntryWriterv1( channel, new CommandWriter( channel ) ).serialize( tx );
+            new LogEntryWriterV1( channel, new CommandWriter( channel ) ).serialize( tx );
         }
     }
 }
