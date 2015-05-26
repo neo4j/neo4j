@@ -244,6 +244,10 @@ public interface ConsistencyReport
         @Documented
         void labelDuplicate( long labelId );
 
+        /** The label id array is not ordered */
+        @Documented
+        void labelsOutOfOrder( long largest, long smallest );
+
         /** The dynamic label record is not in use. */
         @Documented
         void dynamicLabelRecordNotInUse( DynamicRecord record );
