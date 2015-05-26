@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.checksum;
 
@@ -42,7 +43,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.checksum
  * Concurrently appends transactions to the transaction log, while coordinating with the log rotation and forcing the
  * log file in batches.
  */
-class BatchingTransactionAppender implements TransactionAppender
+public class BatchingTransactionAppender extends LifecycleAdapter implements TransactionAppender
 {
     private static class ThreadLink
     {
@@ -73,16 +74,17 @@ class BatchingTransactionAppender implements TransactionAppender
     private final IdOrderingQueue legacyIndexTransactionOrdering;
 
     private final AtomicReference<ThreadLink> threadLinkHead = new AtomicReference<>( ThreadLink.END );
-    private final WritableLogChannel channel;
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogFile logFile;
     private final LogRotation logRotation;
     private final TransactionIdStore transactionIdStore;
-    private final TransactionLogWriter transactionLogWriter;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
-    private final IndexCommandDetector indexCommandDetector;
     private final KernelHealth kernelHealth;
-    private final Lock forceLock;
+    private final Lock forceLock = new ReentrantLock();
+
+    private WritableLogChannel channel;
+    private TransactionLogWriter transactionLogWriter;
+    private IndexCommandDetector indexCommandDetector;
 
     public BatchingTransactionAppender( LogFile logFile, LogRotation logRotation,
                                         TransactionMetadataCache transactionMetadataCache,
@@ -95,11 +97,15 @@ class BatchingTransactionAppender implements TransactionAppender
         this.transactionIdStore = transactionIdStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         this.kernelHealth = kernelHealth;
-        this.channel = logFile.getWriter();
         this.transactionMetadataCache = transactionMetadataCache;
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        this.channel = logFile.getWriter();
         this.indexCommandDetector = new IndexCommandDetector( new CommandWriter( channel ) );
         this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriterv1( channel, indexCommandDetector ) );
-        forceLock = new ReentrantLock();
     }
 
     @Override

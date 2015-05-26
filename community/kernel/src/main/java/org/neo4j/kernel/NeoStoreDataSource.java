@@ -102,6 +102,7 @@ import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogFileRecoverer;
@@ -117,13 +118,13 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy;
-import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
@@ -153,6 +154,7 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
 public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexProviders
 {
@@ -327,8 +329,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
      * core API are now slowly accumulating in the Kernel implementation. Over time, these components should be
      * refactored into bigger components that wrap the very granular things we depend on here.
      */
-    public NeoStoreDataSource( File storeDir, Config config, StoreFactory sf, LogProvider logProvider, JobScheduler scheduler,
-            TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
+    public NeoStoreDataSource( File storeDir, Config config, StoreFactory sf, LogProvider logProvider,
+            JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
             PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens, Locks lockManager,
             SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
@@ -450,8 +452,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                     labelTokens, relationshipTypeTokens, propertyKeyTokenHolder );
 
             IndexingModule indexingModule = buildIndexing( config, scheduler, indexProvider, lockService,
-                    tokenNameLookup,
-                    logProvider, indexingServiceMonitor, neoStoreModule.neoStore(), cacheModule.updateableSchemaState() );
+                    tokenNameLookup, logProvider, indexingServiceMonitor,
+                    neoStoreModule.neoStore(), cacheModule.updateableSchemaState() );
 
             StoreLayerModule storeLayerModule = buildStoreLayer( config, neoStoreModule.neoStore(),
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
@@ -757,8 +759,12 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         final LogFileInformation logFileInformation =
                 new PhysicalLogFileInformation( logFiles, transactionMetadataCache, neoStore, logInformation );
 
-        LogPruneStrategy logPruneStrategy = LogPruneStrategyFactory.fromConfigValue( fs, logFileInformation,
-                logFiles, neoStore, config.get( config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral) ? GraphDatabaseFacadeFactory.Configuration.ephemeral_keep_logical_logs : GraphDatabaseSettings.keep_logical_logs ) );
+        String pruningConf = config.get(
+                config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral )
+                ? GraphDatabaseFacadeFactory.Configuration.ephemeral_keep_logical_logs
+                : GraphDatabaseSettings.keep_logical_logs );
+
+        LogPruneStrategy logPruneStrategy = fromConfigValue( fs, logFileInformation, logFiles, neoStore, pruningConf );
 
         monitors.addMonitorListener( new LogPruning( logPruneStrategy, logProvider ) );
 
@@ -768,11 +774,13 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         final LogRotation logRotation = new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ),
                 logFile, logRotationControl, kernelHealth, logProvider );
 
+        TransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
+                transactionMetadataCache, neoStore, legacyIndexTransactionOrdering, kernelHealth );
         final LogicalTransactionStore logicalTransactionStore = new PhysicalLogicalTransactionStore( logFile,
-                logRotation, transactionMetadataCache, neoStore, legacyIndexTransactionOrdering, kernelHealth );
+                transactionMetadataCache, appender );
 
         life.add( logFile );
-        life.add( logicalTransactionStore );
+        life.add( appender );
 
         return new TransactionLogModule()
         {

@@ -19,11 +19,11 @@
  */
 package org.neo4j.com.storecopy;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
@@ -112,7 +113,7 @@ public class TransactionCommittingResponseUnpackerTest
                 .thenReturn( mock( TransactionRepresentationStoreApplier.class ) );
         LogFile logFile = mock( LogFile.class );
         when( dependencyResolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
-        LogRotation logRotation = mock(LogRotation.class);
+        LogRotation logRotation = mock( LogRotation.class );
         when( dependencyResolver.resolveDependency( LogRotation.class ) ).thenReturn( logRotation );
 
         setUpIndexUpdatesValidatorMocking( dependencyResolver );
@@ -132,7 +133,8 @@ public class TransactionCommittingResponseUnpackerTest
         // When
         unpacker.start();
         long committingTransactionId = BASE_TX_ID + 1;
-        DummyTransactionResponse response = new DummyTransactionResponse( committingTransactionId, 1, appender, maxBatchSize );
+        DummyTransactionResponse response = new DummyTransactionResponse( committingTransactionId, 1, appender,
+                maxBatchSize );
         unpacker.unpackResponse( response, stoppingTxHandler );
 
         // Then
@@ -143,13 +145,13 @@ public class TransactionCommittingResponseUnpackerTest
         verify( logRotation, times( 1 ) ).rotateLogIfNeeded( logAppendEvent );
 
         // Then
-          // The txhandler has stopped the unpacker. It should not allow any more transactions to go through
+        // The txhandler has stopped the unpacker. It should not allow any more transactions to go through
         try
         {
             unpacker.unpackResponse( mock( Response.class ), stoppingTxHandler );
             fail( "A stopped transaction unpacker should not allow transactions to be applied" );
         }
-        catch( IllegalStateException e)
+        catch ( IllegalStateException e )
         {
             // good
         }
@@ -180,7 +182,7 @@ public class TransactionCommittingResponseUnpackerTest
         LogFile logFile = mock( LogFile.class );
         when( dependencyResolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
 
-        LogRotation logRotation = mock(LogRotation.class);
+        LogRotation logRotation = mock( LogRotation.class );
         when( dependencyResolver.resolveDependency( LogRotation.class ) ).thenReturn( logRotation );
 
         int maxBatchSize = 3;
@@ -253,7 +255,7 @@ public class TransactionCommittingResponseUnpackerTest
         when( dependencyResolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
         KernelHealth kernelHealth = mock( KernelHealth.class );
         when( dependencyResolver.resolveDependency( KernelHealth.class ) ).thenReturn( kernelHealth );
-        LogRotation logRotation = mock(LogRotation.class);
+        LogRotation logRotation = mock( LogRotation.class );
         when( dependencyResolver.resolveDependency( LogRotation.class ) ).thenReturn( logRotation );
         final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
                 dependencyResolver );
@@ -265,7 +267,7 @@ public class TransactionCommittingResponseUnpackerTest
         try
         {
             unpacker.unpackResponse(
-                    new DummyTransactionResponse( BASE_TX_ID+1, 1, appender, 10 ), NO_OP_TX_HANDLER );
+                    new DummyTransactionResponse( BASE_TX_ID + 1, 1, appender, 10 ), NO_OP_TX_HANDLER );
             fail( "Should have failed" );
         }
         catch ( IOException e )
@@ -337,14 +339,14 @@ public class TransactionCommittingResponseUnpackerTest
                 logVersionRepository, new PhysicalLogFile.Monitor.Adapter(), transactionMetadataCache ) );
         KernelHealth health = mock( KernelHealth.class );
         LogRotation logRotation = LogRotation.NO_ROTATION;
-        LogicalTransactionStore logicalTransactionStore = life.add( new PhysicalLogicalTransactionStore( logFile,
-                logRotation, transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS,
-                health ) );
+        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
+                transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS, health ) );
+        LogicalTransactionStore logicalTransactionStore = new PhysicalLogicalTransactionStore( logFile,
+                transactionMetadataCache, appender );
         IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
                 any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );
         life.start();
-        TransactionAppender appender = logicalTransactionStore.getAppender();
         when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( logicalTransactionStore );
         when( resolver.resolveDependency( IndexUpdatesValidator.class ) ).thenReturn( indexUpdatesValidator );
         when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( transactionIdStore );
@@ -363,7 +365,7 @@ public class TransactionCommittingResponseUnpackerTest
         // WHEN packing up a transaction response
         try
         {
-            unpacker.unpackResponse( new DummyTransactionResponse( BASE_TX_ID+1, 1, appender, 5 ), NO_OP_TX_HANDLER );
+            unpacker.unpackResponse( new DummyTransactionResponse( BASE_TX_ID + 1, 1, appender, 5 ), NO_OP_TX_HANDLER );
             fail( "Should have failed" );
         }
         catch ( Exception e )
@@ -377,7 +379,8 @@ public class TransactionCommittingResponseUnpackerTest
     private TransactionAppender mockedTransactionAppender() throws IOException
     {
         TransactionAppender appender = mock( TransactionAppender.class );
-        when( appender.append( any( TransactionRepresentation.class ), anyLong() ) ).thenReturn( mock( Commitment.class ) );
+        when( appender.append( any( TransactionRepresentation.class ), anyLong() ) ).thenReturn( mock( Commitment
+                .class ) );
         return appender;
     }
 
@@ -437,7 +440,8 @@ public class TransactionCommittingResponseUnpackerTest
         private final TransactionAppender appender;
         private final int maxBatchSize;
 
-        public DummyTransactionResponse( long startingAtTxId, int txCount, TransactionAppender appender, int maxBatchSize )
+        public DummyTransactionResponse( long startingAtTxId, int txCount, TransactionAppender appender, int
+                maxBatchSize )
         {
             super( new Object(), StoreId.DEFAULT, mock( TransactionStream.class ), ResourceReleaser.NO_OP );
             this.startingAtTxId = startingAtTxId;
@@ -453,7 +457,7 @@ public class TransactionCommittingResponseUnpackerTest
             when( mockCommitEntry.getTxId() ).thenReturn( id );
             when( tx.getCommitEntry() ).thenReturn( mockCommitEntry );
             LogEntryStart mockStartEntry = mock( LogEntryStart.class );
-            when( mockStartEntry.checksum() ).thenReturn( id*10 );
+            when( mockStartEntry.checksum() ).thenReturn( id * 10 );
             when( tx.getStartEntry() ).thenReturn( mockStartEntry );
             TransactionRepresentation txRepresentation = mock( TransactionRepresentation.class );
             when( txRepresentation.additionalHeader() ).thenReturn( new byte[0] );
@@ -466,12 +470,13 @@ public class TransactionCommittingResponseUnpackerTest
         {
             for ( int i = 0; i < txCount; i++ )
             {
-                handler.transactions().visit( tx( startingAtTxId+i ) );
-                if ( (i+1) % maxBatchSize == 0 )
+                handler.transactions().visit( tx( startingAtTxId + i ) );
+                if ( (i + 1) % maxBatchSize == 0 )
                 {
                     try
                     {
-                        verify( appender, times( maxBatchSize ) ).append( any( TransactionRepresentation.class ), anyLong() );
+                        verify( appender, times( maxBatchSize ) ).append( any( TransactionRepresentation.class ),
+                                anyLong() );
                         verify( appender, times( 1 ) ).force();
                     }
                     catch ( IOException e )

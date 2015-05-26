@@ -35,30 +35,29 @@ import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.transaction.log.LogRotation.NO_ROTATION;
+import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
 public class TestStoreRecoverer
 {
     @Test
     public void shouldNotWantToRecoverIntactStore() throws Exception
     {
-        File store = null;
-        store = createIntactStore();
+        File store = createIntactStore();
 
         StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
 
@@ -112,14 +111,12 @@ public class TestStoreRecoverer
                 new DeadSimpleLogVersionRepository( util.getLogVersion() ), mock( PhysicalLogFile.Monitor.class ),
                 positionCache ) );
         life.start();
-
         try
         {
-            PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFile,
-                    LogRotation.NO_ROTATION, positionCache, transactionIdStore, IdOrderingQueue.BYPASS,
-                    mock( KernelHealth.class ) );
-            life.add( transactionStore );
-            TransactionAppender appender = transactionStore.getAppender();
+
+            TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
+                    positionCache, transactionIdStore, BYPASS, mock( KernelHealth.class ) ) );
+            life.add( appender );
             appender.append( singleNodeTransaction(), LogAppendEvent.NULL );
         }
         finally

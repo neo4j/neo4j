@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -82,7 +83,7 @@ public class LogRotationDeadlockTest
                 rotationControl, health, NullLogProvider.getInstance() );
 
         // controlled batching transaction appender that will halt a committer
-        TransactionAppender appender = new BatchingTransactionAppender( logFile, rotation,
+        TransactionAppender appender =life.add( new BatchingTransactionAppender( logFile, rotation,
                 new TransactionMetadataCache( 10, 10 ), txIdStore, mock( IdOrderingQueue.class ),
                 health )
         {
@@ -92,7 +93,9 @@ public class LogRotationDeadlockTest
                 inBetweenCommittedAndClosed.reached();
                 super.forceAfterAppend( logAppendEvent );
             }
-        };
+        } );
+
+        life.start();
 
         // commit process
         LogicalTransactionStore txStore = mock( LogicalTransactionStore.class );
@@ -141,4 +144,5 @@ public class LogRotationDeadlockTest
 
     public final @Rule OtherThreadRule<Void> committer = new OtherThreadRule<>( "COMMITTER" );
     public final @Rule OtherThreadRule<Void> rotator = new OtherThreadRule<>( "ROTATOR" );
+    public final @Rule LifeRule life = new LifeRule();
 }

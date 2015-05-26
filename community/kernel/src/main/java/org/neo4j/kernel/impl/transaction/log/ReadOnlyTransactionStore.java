@@ -49,9 +49,9 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
         PhysicalLogFile logFile = life.add(new PhysicalLogFile( fs, logFiles, 0,
                 transactionIdStore, new ReadOnlyLogVersionRepository(fs, fromPath),
                 monitors.newMonitor( PhysicalLogFile.Monitor.class ), transactionMetadataCache));
-
-        physicalStore = life.add( new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION,
+        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, LogRotation.NO_ROTATION,
                 transactionMetadataCache, transactionIdStore, BYPASS, kernelHealth ) );
+        physicalStore = new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, appender );
     }
 
     @Override

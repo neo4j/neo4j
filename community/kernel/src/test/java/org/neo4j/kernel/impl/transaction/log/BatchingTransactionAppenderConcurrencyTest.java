@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -33,9 +34,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 
 import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.lifecycle.LifeRule;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -68,6 +70,10 @@ public class BatchingTransactionAppenderConcurrencyTest
         executor.shutdown();
         executor = null;
     }
+
+
+    @Rule
+    public final LifeRule life = new LifeRule();
 
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private LogFile logFile;
@@ -144,10 +150,11 @@ public class BatchingTransactionAppenderConcurrencyTest
     }
 
     @Test
-    public void shouldForceLogChannel() throws Exception
+    public void shouldForceLogChannel() throws Throwable
     {
-        BatchingTransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
-                transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth );
+        BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
+                transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth ) );
+        life.start();
 
         appender.forceAfterAppend( logAppendEvent );
 
@@ -157,7 +164,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     }
 
     @Test
-    public void shouldWaitForOngoingForceToCompleteBeforeForcingAgain() throws Exception
+    public void shouldWaitForOngoingForceToCompleteBeforeForcingAgain() throws Throwable
     {
         channelCommandQueue = new LinkedBlockingQueue<>( 2 );
         channelCommandQueue.put( ChannelCommand.dummy );
@@ -165,8 +172,9 @@ public class BatchingTransactionAppenderConcurrencyTest
         // The 'emptyBuffer...' command will be put into the queue, and then it'll block on 'force' because the queue
         // will be at capacity.
 
-        final BatchingTransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
-                transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth );
+        final BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
+                transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth ) );
+        life.start();
 
         Runnable runnable = createForceAfterAppendRunnable( appender );
         Future<?> future = executor.submit( runnable );
@@ -187,7 +195,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     }
 
     @Test
-    public void shouldBatchUpMultipleWaitingForceRequests() throws Exception
+    public void shouldBatchUpMultipleWaitingForceRequests() throws Throwable
     {
         channelCommandQueue = new LinkedBlockingQueue<>( 2 );
         channelCommandQueue.put( ChannelCommand.dummy );
@@ -195,8 +203,9 @@ public class BatchingTransactionAppenderConcurrencyTest
         // The 'emptyBuffer...' command will be put into the queue, and then it'll block on 'force' because the queue
         // will be at capacity.
 
-        final BatchingTransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
-                transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth );
+        final BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
+                transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth ) );
+        life.start();
 
         Runnable runnable = createForceAfterAppendRunnable( appender );
         Future<?> future = executor.submit( runnable );
