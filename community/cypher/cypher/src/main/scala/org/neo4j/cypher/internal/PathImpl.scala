@@ -19,18 +19,19 @@
  */
 package org.neo4j.cypher.internal
 
-import java.util.{Iterator => JavaIterator}
 import java.lang.{Iterable => JavaIterable}
-import collection.JavaConverters._
-import collection.mutable
+import java.util.{Iterator => JavaIterator}
+
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.CypherArray
+import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.Traversal
-import org.neo4j.graphdb.{Path, Relationship, PropertyContainer, Node}
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 // TODO: This is only here for accomodating cypher-compiler-1.9. Do not touch, do not import, purge it with fire post 2.3
 case class PathImpl(pathEntities: PropertyContainer*)
-  extends org.neo4j.graphdb.Path
-  with Traversable[PropertyContainer]
-  with CypherArray {
+  extends org.neo4j.graphdb.Path with Traversable[PropertyContainer] with CypherArray {
 
   val (nodeList,relList) = {
     if (pathEntities.size % 2 == 0) throw new IllegalArgumentException("Tried to construct a path that is not built like a path: even number of elements.");

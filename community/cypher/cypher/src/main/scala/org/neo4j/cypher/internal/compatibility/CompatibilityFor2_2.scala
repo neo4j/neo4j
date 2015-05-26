@@ -362,7 +362,7 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
 
     CypherCompilerFactory.costBasedCompiler(
       graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors),
-      StringInfoLogger2_2(log), plannerName, rewriterSequencer
+      StringInfoLogger2_2(log), Some(plannerName), rewriterSequencer
     )
   }
 }

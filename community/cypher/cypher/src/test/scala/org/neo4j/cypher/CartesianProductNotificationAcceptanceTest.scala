@@ -21,7 +21,6 @@ package org.neo4j.cypher
 
 import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
-import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.compatibility.{StringInfoLogger2_3, WrappedMonitors2_3}
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.notification.CartesianProductNotification
