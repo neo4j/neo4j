@@ -19,12 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import org.neo4j.csv.reader.BufferedCharSeeker;
-
 /**
  * Configuration for {@link CsvInput}.
  */
-public interface Configuration
+public interface Configuration extends org.neo4j.csv.reader.Configuration
 {
     /**
      * Delimiting character between each values in a CSV input line.
@@ -37,29 +35,11 @@ public interface Configuration
      */
     char arrayDelimiter();
 
-    /**
-     * Character to regard as quotes. Quoted values can contain newline characters and even delimiters.
-     */
-    char quotationCharacter();
-
-    int bufferSize();
-
-    public static abstract class Default implements Configuration
+    abstract class Default extends org.neo4j.csv.reader.Configuration.Default implements Configuration
     {
-        @Override
-        public char quotationCharacter()
-        {
-            return BufferedCharSeeker.DEFAULT_QUOTE_CHAR;
-        }
-
-        @Override
-        public int bufferSize()
-        {
-            return BufferedCharSeeker.DEFAULT_BUFFER_SIZE;
-        }
     }
 
-    public static final Configuration COMMAS = new Default()
+    Configuration COMMAS = new Default()
     {
         @Override
         public char delimiter()
@@ -74,7 +54,7 @@ public interface Configuration
         }
     };
 
-    public static final Configuration TABS = new Default()
+    Configuration TABS = new Default()
     {
         @Override
         public char delimiter()
@@ -89,12 +69,13 @@ public interface Configuration
         }
     };
 
-    public static class OverrideFromConfig implements Configuration
+    class Overriden extends org.neo4j.csv.reader.Configuration.Overridden implements Configuration
     {
         private final Configuration defaults;
 
-        public OverrideFromConfig( Configuration defaults )
+        public Overriden( Configuration defaults )
         {
+            super( defaults );
             this.defaults = defaults;
         }
 
@@ -108,18 +89,6 @@ public interface Configuration
         public char arrayDelimiter()
         {
             return defaults.arrayDelimiter();
-        }
-
-        @Override
-        public char quotationCharacter()
-        {
-            return defaults.quotationCharacter();
-        }
-
-        @Override
-        public int bufferSize()
-        {
-            return defaults.bufferSize();
         }
     }
 }

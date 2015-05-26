@@ -18,6 +18,10 @@ o Removes the --bad option which previously could specify the location and file 
   <into>/bad.log
 o Input file names can now contain regular expressions and therefore match multiple files.
   Matching files will be correctly ordered according to any and all numbers found in their file names.
+o Ability to allow/disallow multi-line fields, i.e. fields containing new-line characters.
+  This to have a better default defense against missing end quotes.
+  Default is to disallow multi-line fields. While being a change in behavior, this option
+  will most likely result in less surprising handling of fields missing end quotes..
 
 2.2.1
 -----

@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Map.Entry;
 
 import org.neo4j.function.BiFunction;
+import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
@@ -117,6 +118,9 @@ public class ImportTool
                         + "`\"\\\"Go away\\\", he said.\"` are supported. "
                         + "If you have set \"`'`\" to be used as the quotation character, "
                         + "you could write the previous example like this instead: " + "`'\"Go away\", he said.'`" ),
+        MULTILINE_FIELDS( "multiline-fields", org.neo4j.csv.reader.Configuration.DEFAULT.multilineFields(),
+                "<true/false>",
+                "Whether or not fields from input source can span multiple lines, i.e. contain newline characters." ),
         ID_TYPE( "id-type", IdType.STRING,
                 "<id-type>",
                 "One out of " + Arrays.toString( IdType.values() )
@@ -162,7 +166,6 @@ public class ImportTool
                         + "whereas consecutive such nodes will be skipped. "
                         + "Skipped nodes will be logged"
                         + ", containing at most number of entites specified by " + BAD_TOLERANCE.key() + "." );
-
 
         private final String key;
         private final Object defaultValue;
@@ -419,6 +422,11 @@ public class ImportTool
         };
     }
 
+    private static String manualReference( String page )
+    {
+        return " http://neo4j.com/docs/" + Version.getKernel().getVersion() + "/" + page;
+    }
+
     /**
      * Method name looks strange, but look at how it's used and you'll see why it's named like that.
      * @param stackTrace whether or not to also print the stack trace of the error.
@@ -427,10 +435,15 @@ public class ImportTool
     {
         if ( e.getClass().equals( DuplicateInputIdException.class ) )
         {
-            System.err.println( "Duplicate input ids that would otherwise clash can be put into separate id space,"
-                    + " read more about how to use id spaces in the manual:"
-                    + " http://neo4j.com/docs/" + Version.getKernel().getVersion() +
-                    "/import-tool-header-format.html#_id_spaces" );
+            System.err.println( "Duplicate input ids that would otherwise clash can be put into separate id space," +
+                    " read more about how to use id spaces in the manual:" +
+                    manualReference( "import-tool-header-format.html#_id_spaces" ) );
+        }
+        else if ( e.getClass().equals( IllegalMultilineFieldException.class ) )
+        {
+            System.err.println( "Detected field which spanned multiple lines for an import where " +
+                    Options.MULTILINE_FIELDS.argument() + "=false. If you know that your input data include " +
+                    "fields containing new-line characters then import with this option set to true." );
         }
 
         System.err.println( typeOfError + ": " + e.getMessage() );

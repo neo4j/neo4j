@@ -31,7 +31,7 @@ import org.neo4j.function.Supplier;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.UpdateBehaviour;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.OverrideFromConfig;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.Overriden;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -136,9 +136,9 @@ public class ExternalPropertiesDecoratorTest
         };
     }
 
-    private OverrideFromConfig config()
+    private Overriden config()
     {
-        return new Configuration.OverrideFromConfig( Configuration.COMMAS )
+        return new Configuration.Overriden( Configuration.COMMAS )
         {
             @Override
             public int bufferSize()

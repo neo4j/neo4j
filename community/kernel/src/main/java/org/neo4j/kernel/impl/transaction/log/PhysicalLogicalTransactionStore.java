@@ -109,7 +109,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
         catch ( FileNotFoundException e )
         {
             throw new NoSuchTransactionException( transactionIdToStartFrom,
-                    "Log position acquired, but couldn't find the log file itself. Perhaps it just recently was deleted?" );
+                    "Log position acquired, but couldn't find the log file itself. Perhaps it just recently was deleted? [" + e.getMessage() + "]" );
         }
     }
 
