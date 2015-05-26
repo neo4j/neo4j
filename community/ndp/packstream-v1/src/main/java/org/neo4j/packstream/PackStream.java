@@ -21,7 +21,6 @@ package org.neo4j.packstream;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 
 import static java.lang.Integer.toHexString;
@@ -172,16 +171,6 @@ public class PackStream
         public Packer( PackOutput out )
         {
             this.out = out;
-        }
-
-        public void reset( PackOutput out )
-        {
-            this.out = out;
-        }
-
-        public void reset( WritableByteChannel channel )
-        {
-            ((BufferedChannelOutput) out).reset( channel );
         }
 
         public void flush() throws IOException
@@ -369,27 +358,9 @@ public class PackStream
 
         private PackInput in;
 
-        public Unpacker( ReadableByteChannel channel )
-        {
-            this( DEFAULT_BUFFER_CAPACITY );
-            reset( channel );
-        }
-
-        public Unpacker( int bufferCapacity )
-        {
-            assert bufferCapacity >= 8 : "Buffer must be at least 8 bytes.";
-            this.in = new BufferedChannelInput( bufferCapacity );
-        }
-
         public Unpacker( PackInput in )
         {
             this.in = in;
-        }
-
-        public Unpacker reset( ReadableByteChannel ch )
-        {
-            ((BufferedChannelInput) in).reset( ch );
-            return this;
         }
 
         public boolean hasNext() throws IOException

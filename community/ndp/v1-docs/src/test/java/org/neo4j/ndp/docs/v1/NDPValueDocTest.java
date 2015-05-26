@@ -39,6 +39,8 @@ import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
 import org.neo4j.ndp.messaging.v1.message.RecordMessage;
 import org.neo4j.ndp.messaging.v1.util.ArrayByteChannel;
+import org.neo4j.packstream.BufferedChannelInput;
+import org.neo4j.packstream.BufferedChannelOutput;
 import org.neo4j.packstream.PackStream;
 import org.neo4j.packstream.PackType;
 
@@ -50,6 +52,7 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.ndp.docs.v1.DocTable.table;
 import static org.neo4j.ndp.docs.v1.DocsRepository.docs;
+import static org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1.Writer.NO_OP;
 import static org.neo4j.stream.Records.record;
 
 /** This tests that Neo4j value mappings described in the documentation work the way we say they do. */
@@ -87,15 +90,8 @@ public class NDPValueDocTest
             @Override
             protected boolean matchesSafely( byte[] recordWithValue )
             {
-                if ( packStreamType.equalsIgnoreCase( "identity" ) )
-                {
-                    // TODO: Skipping this for now, the docs are in fact out of sync with reality, need to resolve
-                    // outside of this documentation PR
-                    return true;
-                }
-
-                PackStream.Unpacker unpacker = new PackStream.Unpacker( 64 );
-                unpacker.reset( new ArrayByteChannel( recordWithValue ) );
+                PackStream.Unpacker unpacker = new PackStream.Unpacker(
+                        new BufferedChannelInput( 11 ).reset( new ArrayByteChannel( recordWithValue ) ) );
 
                 try
                 {
@@ -201,12 +197,12 @@ public class NDPValueDocTest
 
     private byte[] serialize( Object neoValue ) throws IOException
     {
-        MessageFormat format = new PackStreamMessageFormatV1();
-        RecordMessage msg = new RecordMessage( record( neoValue ) );
-        MessageFormat.Writer writer = format.newWriter();
         RecordingByteChannel channel = new RecordingByteChannel();
+        RecordMessage msg = new RecordMessage( record( neoValue ) );
+        MessageFormat.Writer writer = new PackStreamMessageFormatV1.Writer(
+                new PackStream.Packer( new BufferedChannelOutput( channel ) ), NO_OP );
 
-        writer.reset( channel ).write( msg ).flush();
+        writer.write( msg ).flush();
 
         channel.eof();
         return channel.getBytes();
