@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.AstConstructionTestSupport
 class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
   val rewriterUnderTest: Rewriter = projectFreshSortExpressions
 
-  test("dont adjust WITH without ORDER BY or WHERE") {
+  test("don't adjust WITH without ORDER BY or WHERE") {
     assertRewrite(
       """MATCH n
         |WITH n AS n
@@ -48,6 +48,21 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
         |WITH n.prop AS prop
         |WITH prop AS prop ORDER BY prop
         |RETURN prop
+      """.stripMargin)
+  }
+
+  test("duplicate WITH containing ORDER BY that refers to previous identifier") {
+    assertRewrite(
+      """MATCH n
+        |WITH n.prop AS prop ORDER BY prop + n.x
+        |RETURN prop
+      """.stripMargin,
+      """MATCH n
+        |WITH n AS n, n.prop AS prop
+        |WITH prop AS prop, prop + n.x AS `  FRESHID42`
+        |WITH prop AS prop, `  FRESHID42` AS `  FRESHID42` ORDER BY `  FRESHID42`
+        |WITH prop AS prop
+        |RETURN prop AS prop
       """.stripMargin)
   }
 

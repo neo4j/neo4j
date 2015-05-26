@@ -49,7 +49,7 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
   test("ORDER BY of an column introduced in RETURN should work well") {
     executeWithAllPlanners("WITH 1 AS p, count(*) AS rng RETURN p ORDER BY rng").toList should
       equal(List(Map("p" -> 1)))
- }
+  }
 
   test("renaming columns before ORDER BY is not confusing") {
     createNode("prop" -> 1)
