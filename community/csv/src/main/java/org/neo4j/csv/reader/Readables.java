@@ -19,11 +19,10 @@
  */
 package org.neo4j.csv.reader;
 
-import java.io.DataInputStream;
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
@@ -52,11 +51,6 @@ import org.neo4j.function.RawFunction;
  */
 public class Readables
 {
-    /** First 4 bytes of a ZIP file have this signature. */
-    private static final int ZIP_MAGIC = 0x504b0304;
-    /** First 2 bytes of a GZIP file have this signature. */
-    private static final int GZIP_MAGIC = 0x1f8b;
-
     private Readables()
     {
         throw new AssertionError( "No instances allowed" );
@@ -133,8 +127,8 @@ public class Readables
         @Override
         public Reader apply( final File file ) throws IOException
         {
-            int magic = magic( file );
-            if ( magic == ZIP_MAGIC )
+            Magic magic = Magic.of( file );
+            if ( magic == Magic.ZIP )
             {   // ZIP file
                 ZipFile zipFile = new ZipFile( file );
                 ZipEntry entry = getSingleSuitableEntry( zipFile );
@@ -147,7 +141,7 @@ public class Readables
                     }
                 };
             }
-            else if ( (magic >>> 16) == GZIP_MAGIC )
+            else if ( magic == Magic.GZIP )
             {   // GZIP file. GZIP isn't an archive like ZIP, so this is purely data that is compressed.
                 // Although a very common way of compressing with GZIP is to use TAR which can combine many
                 // files into one blob, which is then compressed. If that's the case then
@@ -163,15 +157,25 @@ public class Readables
                     }
                 };
             }
-
-            return new InputStreamReader( new FileInputStream( file ), charset )
+            else
             {
-                @Override
-                public String toString()
+                InputStream in = new FileInputStream( file );
+                Charset usedCharset = this.charset;
+                if ( magic.impliesEncoding() )
                 {
-                    return file.getPath();
+                    // Read (and skip) the magic (BOM in this case) from the file we're returning out
+                    in.skip( magic.length() );
+                    usedCharset = magic.encoding();
                 }
-            };
+                return new InputStreamReader( in, usedCharset )
+                {
+                    @Override
+                    public String toString()
+                    {
+                        return file.getPath();
+                    }
+                };
+            }
         }
 
         private ZipEntry getSingleSuitableEntry( ZipFile zipFile ) throws IOException
@@ -204,18 +208,6 @@ public class Readables
                                 " Although found these unsuitable entries " + unsuitableEntries : "" ) );
             }
             return found;
-        }
-
-        private int magic( File file ) throws IOException
-        {
-            try ( DataInputStream in = new DataInputStream( new FileInputStream( file ) ) )
-            {
-                return in.readInt();
-            }
-            catch ( EOFException e )
-            {
-                return -1;
-            }
         }
     }
 
