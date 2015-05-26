@@ -35,17 +35,17 @@ import org.neo4j.tooling.GlobalGraphOperations;
  * implementation is the {@link EmbeddedGraphDatabase} class, which is used to
  * embed Neo4j in an application. Typically, you would create an
  * <code>EmbeddedGraphDatabase</code> instance as follows:
- * <p/>
+ * <p>
  * <pre>
  * <code>GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( "var/graphDb" );
  * // ... use Neo4j
  * graphDb.{@link #shutdown() shutdown()};</code>
  * </pre>
- * <p/>
+ * <p>
  * GraphDatabaseService provides operations to {@link #createNode() create
  * nodes}, {@link #getNodeById(long) get nodes given an id} and ultimately {@link #shutdown()
  * shutdown Neo4j}.
- * <p/>
+ * <p>
  * Please note that all operations on the graph must be invoked in a
  * {@link Transaction transactional context}. Failure to do so will result in a
  * {@link NotInTransactionException} being thrown.
@@ -102,17 +102,17 @@ public interface GraphDatabaseService
      * Returns all nodes having the label, and the wanted property value.
      * If an online index is found, it will be used to look up the requested
      * nodes.
-     * <p/>
+     * <p>
      * If no indexes exist for the label/property combination, the database will
      * scan all labeled nodes looking for the property value.
-     * <p/>
+     * <p>
      * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
      * other 42 numbers, indifferently of if they are encoded as Integer, Long, Float, Short, Byte or Double.
-     * <p/>
+     * <p>
      * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
-     * <p/>
+     * <p>
      * Finally - arrays also follow these rules. An int[] {1,2,3} is equal to a double[] {1.0, 2.0, 3.0}
-     * <p/>
+     * <p>
      * Please ensure that the returned {@link ResourceIterator} is closed correctly and as soon as possible
      * inside your transaction to avoid potential blocking of write operations.
      *
@@ -125,7 +125,7 @@ public interface GraphDatabaseService
 
     /**
      * Equivalent to {@link #findNodes(Label, String, Object)}, however it must find no more than one
-     * @{link Node node} or it will throw an exception.
+     * {@link Node node} or it will throw an exception.
      *
      * @param label consider nodes with this label
      * @param key   required property key
@@ -150,17 +150,17 @@ public interface GraphDatabaseService
      * Returns all nodes having the label, and the wanted property value.
      * If an online index is found, it will be used to look up the requested
      * nodes.
-     * <p/>
+     * <p>
      * If no indexes exist for the label/property combination, the database will
      * scan all labeled nodes looking for the property value.
-     * <p/>
+     * <p>
      * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
      * other 42 numbers, indifferently of if they are encoded as Integer, Long, Float, Short, Byte or Double.
-     * <p/>
+     * <p>
      * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
-     * <p/>
+     * <p>
      * Finally - arrays also follow these rules. An int[] {1,2,3} is equal to a double[] {1.0, 2.0, 3.0}
-     * <p/>
+     * <p>
      * Please ensure that the returned {@link ResourceIterable} is closed correctly and as soon as possible
      * inside your transaction to avoid potential blocking of write operations.
      *
@@ -206,12 +206,12 @@ public interface GraphDatabaseService
 
     /**
      * Starts a new {@link Transaction transaction} and associates it with the current thread.
-     * <p/>
+     * <p>
      * <em>All database operations must be wrapped in a transaction.</em>
-     * <p/>
+     * <p>
      * If you attempt to access the graph outside of a transaction, those operations will throw
      * {@link NotInTransactionException}.
-     * <p/>
+     * <p>
      * Please ensure that any returned {@link ResourceIterable} is closed correctly and as soon as possible
      * inside your transaction to avoid potential blocking of write operations.
      *

@@ -51,7 +51,7 @@ import static org.neo4j.server.rest.domain.JsonHelper.writeValue;
  * <li>{@link #transactionStatus(long expiryDate)}{@code ?}</li>
  * <li>{@link #finish() finish}</li>
  * </ul>
- * <p/>
+ * <p>
  * Where {@code ?} means invoke at most once, and {@code *} means invoke zero or more times.
  */
 public class ExecutionResultSerializer

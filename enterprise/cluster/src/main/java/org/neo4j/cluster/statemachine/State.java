@@ -27,7 +27,7 @@ import org.neo4j.cluster.com.message.MessageType;
  * Implemented by states in a state machine. Each state must
  * implement the handle method, to perform different things depending
  * on the message that comes in. This should only be implemented as enums.
- * <p/>
+ * <p>
  * A state is guaranteed to only have one handle at a time, i.e. access is serialized.
  */
 public interface State<CONTEXT, MESSAGETYPE extends MessageType>

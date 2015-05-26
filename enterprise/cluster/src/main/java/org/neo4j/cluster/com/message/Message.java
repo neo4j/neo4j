@@ -26,7 +26,7 @@ import java.util.Map;
 
 /**
  * Message for state machines which can be sent out to instances in the cluster as well.
- * <p/>
+ * <p>
  * These are typically produced and consumed by a {@link org.neo4j.cluster.statemachine.StateMachine}.
  */
 public class Message<MESSAGETYPE extends MessageType>

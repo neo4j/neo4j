@@ -46,14 +46,14 @@ import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
  * Implementations need to provide all these methods of course, but it is expected that they will delegate
  * the actual work to implementations that hold related functionality together, using a Facade pattern.
  * For example, it is conceivable that a CommandWriterHandler would use a NeoCommandHandler and a SchemaCommandHandler.
- * <p/>
+ * <p>
  * The order in which the methods of a NeoCommandHandler is expected to be called is this:
  * <ol>
  * <li>zero or more calls to visit??? methods</li>
  * <li>{@link #apply()}</li>
  * <li>{@link #close()}</li>
  * </ol>
- * <p/>
+ * <p>
  * The boolean returned from visit methods is false for continuing traversal, and true for breaking traversal.
  */
 public interface NeoCommandHandler extends AutoCloseable

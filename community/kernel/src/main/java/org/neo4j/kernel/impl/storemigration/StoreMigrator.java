@@ -107,10 +107,10 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.wit
 
 /**
  * Migrates a neo4j kernel database from one version to the next.
- * <p/>
+ * <p>
  * Since only one store migration is supported at any given version (migration from the previous store version)
  * the migration code is specific for the current upgrade and changes with each store format version.
- * <p/>
+ * <p>
  * Just one out of many potential participants in a {@link StoreUpgrader migration}.
  *
  * @see StoreUpgrader

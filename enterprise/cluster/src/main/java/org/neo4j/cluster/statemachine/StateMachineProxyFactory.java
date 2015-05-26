@@ -37,7 +37,7 @@ import org.neo4j.cluster.com.message.MessageType;
 /**
  * Used to generate dynamic proxies whose methods are backed by a {@link StateMachine}. Method
  * calls will be translated to the corresponding message, and the parameters are set as payload.
- * <p/>
+ * <p>
  * Methods in the interface to be proxied can either return void or Future<T>. If a method returns
  * a future, then the value of it will be set when a message named nameResponse or nameFailure is created,
  * where "name" corresponds to the name of the method.

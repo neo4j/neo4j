@@ -30,12 +30,12 @@ import static org.junit.Assert.assertEquals;
 /**
  * The classes that extend AbstractNeoServer are currently known to be:
  * CommunityNeoServer, AdvancedNeoServer, and EnterpriseNeoServer
- * <p/>
+ * <p>
  * This test asserts that those names won't change, for example during an
  * otherwise perfectly reasonable refactoring. Changing those names will cause
  * problems for the server which relies on those names to yield the correct
  * Neo4j edition (community, advanced, enterprise) to the Web UI and other clients.
- * <p/>
+ * <p>
  * Although this test asserts naming against classes in other modules (neo4j,
  * neo4j-advanced) it lives in neo4j-enterprise because otherwise the CommunityNeoServer
  * and AdvancedNeoServer would not be visible.

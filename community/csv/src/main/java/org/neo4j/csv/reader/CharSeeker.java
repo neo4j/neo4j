@@ -63,18 +63,18 @@ public interface CharSeeker extends Closeable, SourceTraceability
     boolean seek( Mark mark, int untilChar ) throws IOException;
 
     /**
-     * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int[])}.
+     * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int)}.
      * @param mark the {@link Mark} specifying which part of a bigger piece of data contains the found value.
      * @param extractor {@link Extractor} capable of extracting the value.
      * @return the supplied {@link Extractor}, which after the call carries the extracted value itself,
      * where either {@link Extractor#value()} or a more specific accessor method can be called to access the value.
-     * @throws IllegalStateException if the {@link Extractor#extract(char[], int, int) extraction}
+     * @throws IllegalStateException if the {@link Extractor#extract(char[], int, int, boolean) extraction}
      * returns {@code false}.
      */
     <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor );
 
     /**
-     * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int[])}.
+     * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int)}.
      * @param mark the {@link Mark} specifying which part of a bigger piece of data contains the found value.
      * @param extractor {@link Extractor} capable of extracting the value.
      * @return {@code true} if a value was extracted, otherwise {@code false}. Probably the only reason for

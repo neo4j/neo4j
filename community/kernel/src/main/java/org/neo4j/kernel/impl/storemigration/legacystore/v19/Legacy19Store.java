@@ -46,10 +46,10 @@ import static org.neo4j.kernel.impl.store.CommonAbstractStore.buildTypeDescripto
 
 /**
  * Reader for a database in an older store format version.
- * <p/>
+ * <p>
  * Since only one store migration is supported at any given version (migration from the previous store version)
  * the reader code is specific for the current upgrade and changes with each store format version.
- * <p/>
+ * <p>
  * {@link #LEGACY_VERSION} marks which version it's able to read.
  */
 public class Legacy19Store implements LegacyStore

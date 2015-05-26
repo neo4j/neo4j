@@ -28,12 +28,12 @@ import static java.lang.reflect.Modifier.isStatic;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
 /**
- * Common implementations of {@link Extractor}. Since array values can have a delimiter of user choice this isn't
+ * Common implementations of {@link Extractor}. Since array values can have a delimiter of user choice that isn't
  * an enum, but a regular class with a constructor where that delimiter can be specified.
  *
  * The common {@link Extractor extractors} can be accessed using the accessor methods, like {@link #string()},
  * {@link #long_()} and others. Specific classes are declared as return types for those providing additional
- * value accessors, f.ex {@link LongExtractor#primitive()}.
+ * value accessors, f.ex {@link LongExtractor#longValue()}.
  *
  * Typically an instance of {@link Extractors} would be instantiated along side a {@link BufferedCharSeeker},
  * assumed to be used by a single thread, since each {@link Extractor} it has is stateful. Example:

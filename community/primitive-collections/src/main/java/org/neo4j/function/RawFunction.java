@@ -21,7 +21,7 @@ package org.neo4j.function;
 
 /**
  * Generic function interface to map from one type to another.
- * <p/>
+ * <p>
  * This can be used with the Iterables methods to transform lists of objects.
  */
 public interface RawFunction<FROM,TO,EXCEPTION extends Exception>
@@ -31,7 +31,7 @@ public interface RawFunction<FROM,TO,EXCEPTION extends Exception>
      *
      * @param from the input item
      * @return the mapped item
-     * @throws an exception if the function fails.
+     * @throws EXCEPTION if the function fails.
      */
     TO apply( FROM from ) throws EXCEPTION;
 }

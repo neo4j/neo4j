@@ -120,15 +120,15 @@ public class PageCacheStressTest
      * Target page size is 8192 which is what the product uses by default
      *
      * 8 threads => 8*8 bytes for counters + 8 bytes for checksum = 72 bytes per record
-     * <p/>
+     * <p>
      * 8192 bytes per page / 72 bytes per record = 113 records per page
-     * <p/>
+     * <p>
      * 8192 bytes per page - 72 bytes per record * 113 records per page =
      * 8192 bytes per page - 8136 bytes for the records in the page =
      * 56 bytes padding
-     * <p/>
+     * <p>
      * 8136 bytes per page * 100,000 pages = 776 MB for the whole file
-     * <p/>
+     * <p>
      * 8192 bytes per page * 10,000 pages = 78 MB cache in memory
      *
      * 8 threads * 1 counter per thread per record * 100,000 pages * 113 records per page * 8 bytes per counter =

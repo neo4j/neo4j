@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
  * Visits commands targeted towards the {@link NeoStore} and update corresponding stores.
  * What happens in here is what will happen in a "internal" transaction, i.e. a transaction that has been
  * forged in this database, with transaction state, a KernelTransaction and all that and is now committing.
- * <p/>
+ * <p>
  * For other modes of application, like recovery or external there are other, added functionality, decorated
  * outside this applier.
  */

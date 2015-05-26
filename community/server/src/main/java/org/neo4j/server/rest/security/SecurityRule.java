@@ -47,7 +47,7 @@ public interface SecurityRule
      *         '/' character), meaning <code>/myExtension/*</code> is not the
      *         same as <code>/myExtension*</code> and implementers should take
      *         care to ensure their implementations are tested accordingly.
-     *         <p/>
+     *         <p>
      *         Final note: the only wildcard supported is '*' and there is no
      *         support for regular expression syntax.
      */

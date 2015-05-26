@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * records. Each record has a fixed size (<CODE>getRecordSize()</CODE>) so
  * the position for a record can be calculated by
  * <CODE>id * getRecordSize()</CODE>.
- * <p/>
+ * <p>
  * A store has an {@link IdGenerator} managing the records that are free or in
  * use.
  */

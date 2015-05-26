@@ -40,7 +40,7 @@ import org.neo4j.kernel.logging.Logging;
 
 /**
  * Context that implements all the context interfaces used by the Paxos state machines.
- * <p/>
+ * <p>
  * The design here is that all shared state is handled in a common class, {@link CommonContextState}, while all
  * state specific to some single context is contained within the specific context classes.
  */

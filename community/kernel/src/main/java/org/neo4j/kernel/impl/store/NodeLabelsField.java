@@ -24,11 +24,11 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 /**
  * Logic for parsing and constructing {@link NodeRecord#getLabelField()} and dynamic label
  * records in {@link NodeRecord#getDynamicLabelRecords()} from label ids.
- * <p/>
+ * <p>
  * Each node has a label field of 5 bytes, where labels will be stored, if sufficient space
  * (max bits required for storing each label id is considered). If not then the field will
  * point to a dynamic record where the labels will be stored in the format of an array property.
- * <p/>
+ * <p>
  * [hhhh,bbbb][bbbb,bbbb][bbbb,bbbb][bbbb,bbbb][bbbb,bbbb]
  * h: header
  * - 0x0<=h<=0x7 (leaving high bit reserved): number of in-lined labels in the body

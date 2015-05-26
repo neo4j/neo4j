@@ -145,7 +145,7 @@ public class KeyValueStoreFile implements Closeable
     private final int totalEntries;
     /**
      * The page catalogue is used to find the appropriate (first) page without having to do I/O.
-     * <p/>
+     * <p>
      * <b>Content:</b> {@code (minKey, maxKey)+}, one entry (at {@code 2 x} {@link #keySize}) for each page.
      */
     private final byte[] pageCatalogue;

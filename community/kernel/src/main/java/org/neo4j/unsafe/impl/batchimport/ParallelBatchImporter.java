@@ -62,7 +62,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.wit
  * {@link BatchImporter} which tries to exercise as much of the available resources to gain performance.
  * Or rather ensure that the slowest resource (usually I/O) is fully saturated and that enough work is
  * being performed to keep that slowest resource saturated all the time.
- * <p/>
+ * <p>
  * Overall goals: split up processing cost by parallelizing. Keep CPUs busy, keep I/O busy and writing sequentially.
  * I/O is only allowed to be read to and written from sequentially, any random access drastically reduces performance.
  * Goes through multiple stages where each stage has one or more steps executing in parallel, passing

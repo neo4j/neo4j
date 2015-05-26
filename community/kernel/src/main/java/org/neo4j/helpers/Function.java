@@ -21,7 +21,7 @@ package org.neo4j.helpers;
 
 /**
  * Generic function interface to map from one type to another.
- * <p/>
+ * <p>
  * This can be used with the Iterables methods to transform lists of objects.
  *
  * This is deprecated, use {@link org.neo4j.function.Function} instead.

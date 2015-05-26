@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 
 /**
  * A HighAvailabilityListener is listening for events from elections and availability state.
- * <p/>
+ * <p>
  * These are invoked by translating atomic broadcast messages to methods on this interface.
  */
 public interface ClusterMemberListener

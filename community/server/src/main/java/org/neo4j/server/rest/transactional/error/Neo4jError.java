@@ -28,11 +28,11 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * This is an initial move towards unified errors - it should not live here in the server, but should probably
  * exist in the kernel or similar, where it can be shared across surfaces other than the server.
- * <p/>
+ * <p>
  * It's put in place here in order to enforce that the {@link org.neo4j.server.rest.web.TransactionalService}
  * is strictly tied down towards what errors it handles and returns to the client, to create a waterproof abstraction
  * between the runtime-exception landscape that lives below, and the errors we send to the user.
- * <p/>
+ * <p>
  * This way, we make it easy to transition this service over to a unified error code based error scheme.
  */
 public class Neo4jError

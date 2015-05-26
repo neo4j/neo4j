@@ -52,7 +52,7 @@ import static org.neo4j.server.configuration.Configurator.NEO_SERVER_CONFIG_FILE
  * Wrapper around a {@link ClusterClient} to fit the environment of the Neo4j server,
  * mostly regarding the use of the server config file passed in from the script starting
  * this class. That server config file will be parsed and necessary parts passed on.
- * <p/>
+ * <p>
  * Configuration of the cluster client can be specified by
  * <ol>
  * <li>reading from a db tuning file (neo4j.properties) appointed by the neo4j server configuration file,

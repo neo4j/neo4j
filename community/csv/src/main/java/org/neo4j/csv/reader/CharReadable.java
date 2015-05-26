@@ -30,7 +30,7 @@ import java.nio.CharBuffer;
  * every call. However {@link Reader#read(char[], int, int)} doesn't, and so leaves no garbage.
  *
  * The fact that this is a separate interface means that {@link Readable} instances need to be wrapped,
- * but that's fine since the buffer size should be reasonably big such that {@link #read(char[], int, int)}
+ * but that's fine since the buffer size should be reasonably big such that {@link #read(SectionedCharBuffer, int)}
  * isn't called too often. Therefore the wrapping overhead should not be noticeable at all.
  *
  * Also took the opportunity to let {@link CharReadable} extends {@link Closeable}, something that

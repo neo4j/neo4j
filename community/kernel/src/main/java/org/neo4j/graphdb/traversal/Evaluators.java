@@ -232,7 +232,7 @@ public abstract class Evaluators
      *                          it's considered a match.
      * @return an {@link Evaluator} which compares the type of the last relationship
      *         in a {@link Path} to a given set of relationship types.
-     * @see #lastRelationshipTypeIs(Evaluation, Evaluation, RelationshipType, RelationshipType...).
+     * @see #lastRelationshipTypeIs(Evaluation, Evaluation, RelationshipType, RelationshipType...)
      *      Uses {@link Evaluation#INCLUDE_AND_CONTINUE} for {@code evaluationIfMatch}
      *      and {@link Evaluation#EXCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
      */
@@ -251,7 +251,7 @@ public abstract class Evaluators
      *                          it's considered a match.
      * @return an {@link Evaluator} which compares the type of the last relationship
      *         in a {@link Path} to a given set of relationship types.
-     * @see #lastRelationshipTypeIs(Evaluation, Evaluation, RelationshipType, RelationshipType...).
+     * @see #lastRelationshipTypeIs(Evaluation, Evaluation, RelationshipType, RelationshipType...)
      *      Uses {@link Evaluation#INCLUDE_AND_PRUNE} for {@code evaluationIfMatch}
      *      and {@link Evaluation#INCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
      */

@@ -29,17 +29,17 @@ package org.neo4j.concurrent;
  * </p>
  * <ul>
  *     <li>
- *         <strong>Commutativity</strong><br/>
+ *         <strong>Commutativity</strong><br>
  *         The order of operands must not matter:
  *         <code>a.combine(b)  =  b.combine(a)</code>
  *     </li>
  *     <li>
- *         <strong>Associativity</strong><br/>
+ *         <strong>Associativity</strong><br>
  *         The order of operations must not matter:
  *         <code>a.combine(b.combine(c))  =  a.combine(b).combine(c)</code>
  *     </li>
  *     <li>
- *         <strong>Effect Transitivity</strong><br/>
+ *         <strong>Effect Transitivity</strong><br>
  *         Work-combining must not change work outcome:
  *         <code>a.combine(b).apply(m)  =  { a.apply(m) ; b.apply(m) }</code>
  *     </li>

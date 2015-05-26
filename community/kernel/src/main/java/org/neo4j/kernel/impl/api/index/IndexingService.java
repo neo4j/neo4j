@@ -77,13 +77,13 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * transactionality. Each index has an {@link org.neo4j.kernel.impl.store.record.IndexRule}, which it uses to filter
  * changes that come into the database. Changes that apply to the the rule are indexed. This way, "normal" changes to
  * the database can be replayed to perform recovery after a crash.
- * <p/>
+ * <p>
  * <h3>Recovery procedure</h3>
- * <p/>
+ * <p>
  * Each index has a state, as defined in {@link org.neo4j.kernel.api.index.InternalIndexState}, which is used during
  * recovery. If an index is anything but {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}, it will simply be
  * destroyed and re-created.
- * <p/>
+ * <p>
  * If, however, it is {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}, the index provider is required to
  * also guarantee that the index had been flushed to disk.
  */

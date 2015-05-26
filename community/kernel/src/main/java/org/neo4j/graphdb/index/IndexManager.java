@@ -74,7 +74,7 @@ public interface IndexManager
      *
      * @param indexName the name of the index to create.
      * @param customConfiguration configuration for the index being created.
-     * Use the <bold>provider</bold> key to control which index implementation,
+     * Use the <b>provider</b> key to control which index implementation,
      * i.e. the {@link IndexImplementation} to use for this index if it's created. The
      * value represents the service name corresponding to the {@link IndexImplementation}.
      * Other options can f.ex. say that the index will be a fulltext index and that it
@@ -126,7 +126,7 @@ public interface IndexManager
      *
      * @param indexName the name of the index to create.
      * @param customConfiguration configuration for the index being created.
-     * Use the <bold>provider</bold> key to control which index implementation,
+     * Use the <b>provider</b> key to control which index implementation,
      * i.e. the {@link IndexImplementation} to use for this index if it's created. The
      * value represents the service name corresponding to the {@link IndexImplementation}.
      * Other options can f.ex. say that the index will be a fulltext index and that it
