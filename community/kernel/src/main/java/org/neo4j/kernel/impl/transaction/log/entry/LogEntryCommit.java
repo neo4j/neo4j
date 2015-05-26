@@ -72,21 +72,7 @@ public abstract class LogEntryCommit extends AbstractLogEntry
         }
 
         LogEntryCommit commit = (LogEntryCommit) o;
-
-        if ( timeWritten != commit.timeWritten )
-        {
-            return false;
-        }
-        if ( txId != commit.txId )
-        {
-            return false;
-        }
-        if ( !name.equals( commit.name ) )
-        {
-            return false;
-        }
-
-        return true;
+        return timeWritten == commit.timeWritten && txId == commit.txId && name.equals( commit.name );
     }
 
     @Override

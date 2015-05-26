@@ -26,5 +26,5 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 
 public interface LogReader<T extends ReadableLogChannel>
 {
-    public IOCursor<LogEntry> logEntries( T channel );
+    IOCursor<LogEntry> logEntries( T channel );
 }

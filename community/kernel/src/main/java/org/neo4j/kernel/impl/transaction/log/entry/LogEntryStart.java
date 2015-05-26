@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.TimeZone;
 
 import org.neo4j.helpers.Format;
-import org.neo4j.kernel.impl.transaction.command.LogHandler;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
@@ -124,12 +122,6 @@ public class LogEntryStart extends AbstractLogEntry
     }
 
     @Override
-    public void accept( LogHandler handler ) throws IOException
-    {
-        handler.startEntry( this );
-    }
-
-    @Override
     public String toString( TimeZone timeZone )
     {
         return "Start[" +
@@ -163,32 +155,10 @@ public class LogEntryStart extends AbstractLogEntry
 
         LogEntryStart start = (LogEntryStart) o;
 
-        if ( authorId != start.authorId )
-        {
-            return false;
-        }
-        if ( lastCommittedTxWhenTransactionStarted != start.lastCommittedTxWhenTransactionStarted )
-        {
-            return false;
-        }
-        if ( masterId != start.masterId )
-        {
-            return false;
-        }
-        if ( timeWritten != start.timeWritten )
-        {
-            return false;
-        }
-        if ( !Arrays.equals( additionalHeader, start.additionalHeader ) )
-        {
-            return false;
-        }
-        if ( !startPosition.equals( start.startPosition ) )
-        {
-            return false;
-        }
-
-        return true;
+        return authorId == start.authorId &&
+               lastCommittedTxWhenTransactionStarted == start.lastCommittedTxWhenTransactionStarted &&
+               masterId == start.masterId && timeWritten == start.timeWritten &&
+               Arrays.equals( additionalHeader, start.additionalHeader ) && startPosition.equals( start.startPosition );
     }
 
     @Override

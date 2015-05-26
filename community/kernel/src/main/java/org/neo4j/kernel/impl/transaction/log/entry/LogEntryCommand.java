@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.io.IOException;
-
-import org.neo4j.kernel.impl.transaction.command.LogHandler;
-
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.COMMAND;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
 
@@ -53,12 +49,6 @@ public class LogEntryCommand extends AbstractLogEntry
     }
 
     @Override
-    public void accept( LogHandler handler ) throws IOException
-    {
-        handler.commandEntry( this );
-    }
-
-    @Override
     public <T extends LogEntry> T as()
     {
         return (T) this;
@@ -77,13 +67,7 @@ public class LogEntryCommand extends AbstractLogEntry
         }
 
         LogEntryCommand command1 = (LogEntryCommand) o;
-
-        if ( !command.equals( command1.command ) )
-        {
-            return false;
-        }
-
-        return true;
+        return command.equals( command1.command );
     }
 
     @Override
