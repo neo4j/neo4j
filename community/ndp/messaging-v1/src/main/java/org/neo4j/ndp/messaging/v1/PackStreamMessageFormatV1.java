@@ -20,8 +20,6 @@
 package org.neo4j.ndp.messaging.v1;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,9 +42,6 @@ import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
 import org.neo4j.ndp.messaging.v1.message.Message;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
-import org.neo4j.packstream.BufferedChannelInput;
-import org.neo4j.packstream.BufferedChannelOutput;
-import org.neo4j.packstream.PackInput;
 import org.neo4j.packstream.PackStream;
 import org.neo4j.packstream.PackType;
 import org.neo4j.stream.Record;
@@ -61,18 +56,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     public static final char NODE = 'N';
     public static final char RELATIONSHIP = 'R';
     public static final char PATH = 'P';
-
-    @Override
-    public MessageFormat.Writer newWriter()
-    {
-        return new Writer( new PackStream.Packer( new BufferedChannelOutput( 8192 ) ), Writer.NO_OP );
-    }
-
-    @Override
-    public MessageFormat.Reader newReader()
-    {
-        return new Reader();
-    }
 
     @Override
     public int version()
@@ -115,13 +98,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             this.packer = packer;
             this.onMessageComplete = onMessageComplete;
-        }
-
-        @Override
-        public Writer reset( WritableByteChannel channel )
-        {
-            packer.reset( channel );
-            return this;
         }
 
         @Override
@@ -401,14 +377,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     {
         private final PackStream.Unpacker unpacker;
 
-        public Reader()
+        public Reader( PackStream.Unpacker input )
         {
-            this( new BufferedChannelInput( 8192 ) );
-        }
-
-        public Reader( PackInput input )
-        {
-            unpacker = new PackStream.Unpacker( input );
+            unpacker = input;
         }
 
         @Override
@@ -454,13 +425,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             default:
                 throw new IOException( "Unknown message type: " + type );
             }
-        }
-
-        @Override
-        public Reader reset( ReadableByteChannel channel )
-        {
-            this.unpacker.reset( channel );
-            return this;
         }
 
         private <E extends Exception> void unpackAckFailureMessage( MessageHandler<E> output )

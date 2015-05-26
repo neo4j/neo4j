@@ -42,18 +42,20 @@ import org.neo4j.ndp.messaging.v1.message.RecordMessage;
 import org.neo4j.ndp.messaging.v1.message.RunMessage;
 import org.neo4j.ndp.messaging.v1.message.SuccessMessage;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
+import org.neo4j.packstream.BufferedChannelInput;
+import org.neo4j.packstream.BufferedChannelOutput;
+import org.neo4j.packstream.PackStream;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1.Writer.NO_OP;
 import static org.neo4j.stream.Records.record;
 
 public class MessageFormatTest
 {
-    public MessageFormat format = new PackStreamMessageFormatV1();
-
     @Test
     public void shouldHandleCommonMessages() throws Throwable
     {
@@ -148,11 +150,13 @@ public class MessageFormatTest
 
     private <T extends Message> T serializeAndDeserialize( T msg ) throws IOException
     {
-        MessageFormat.Reader reader = format.newReader();
-        MessageFormat.Writer writer = format.newWriter();
         RecordingByteChannel channel = new RecordingByteChannel();
+        MessageFormat.Reader reader = new PackStreamMessageFormatV1.Reader(
+                new PackStream.Unpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
+        MessageFormat.Writer writer = new PackStreamMessageFormatV1.Writer(
+                new PackStream.Packer( new BufferedChannelOutput( channel ) ), NO_OP );
 
-        writer.reset( channel ).write( msg ).flush();
+        writer.write( msg ).flush();
 
         channel.eof();
         return unpack( reader, channel );
@@ -165,7 +169,7 @@ public class MessageFormatTest
         RecordingMessageHandler messages = new RecordingMessageHandler();
         try
         {
-            reader.reset( channel ).read( messages );
+            reader.read( messages );
         }
         catch ( Throwable e )
         {

@@ -36,6 +36,8 @@ import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
 import org.neo4j.ndp.messaging.v1.message.Message;
 import org.neo4j.ndp.runtime.Session;
+import org.neo4j.packstream.BufferedChannelOutput;
+import org.neo4j.packstream.PackStream;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.junit.Assert.assertEquals;
@@ -44,6 +46,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1.Writer.NO_OP;
 import static org.neo4j.ndp.messaging.v1.message.Messages.run;
 import static org.neo4j.ndp.transport.socket.SocketProtocolV1.State.AWAITING_CHUNK;
 
@@ -72,8 +75,6 @@ public class FragmentedMessageDeliveryTest
 
     // Only test one message for now. This can be parameterized later to test lots of different ones
     private Message[] messages = new Message[]{run( "Mjölnir" )};
-
-    private MessageFormat.Writer format = new PackStreamMessageFormatV1().newWriter();
 
     @Test
     public void testFragmentedMessageDelivery() throws Throwable
@@ -159,7 +160,10 @@ public class FragmentedMessageDeliveryTest
         for ( int i = 0; i < msgs.length; i++ )
         {
             RecordingByteChannel channel = new RecordingByteChannel();
-            format.reset( channel ).write( msgs[i] ).flush();
+
+            PackStreamMessageFormatV1.Writer format = new PackStreamMessageFormatV1.Writer(
+                    new PackStream.Packer( new BufferedChannelOutput( channel ) ), NO_OP );
+            format.write( msgs[i] ).flush();
             serialized[i] = channel.getBytes();
         }
         return Chunker.chunk( chunkSize, serialized );

@@ -31,6 +31,7 @@ import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
 import org.neo4j.ndp.messaging.v1.RecordingMessageHandler;
 import org.neo4j.ndp.messaging.v1.util.ArrayByteChannel;
+import org.neo4j.packstream.BufferedChannelInput;
 import org.neo4j.packstream.BufferedChannelOutput;
 import org.neo4j.packstream.PackStream;
 
@@ -79,8 +80,9 @@ public class NDPMessageStructsDocTest
 
         // Then it should get interpreted as the documented message
         RecordingMessageHandler messages = new RecordingMessageHandler();
-        PackStreamMessageFormatV1.Reader reader = new PackStreamMessageFormatV1.Reader();
-        reader.reset( new ArrayByteChannel( ch.getBytes() ) );
+        PackStreamMessageFormatV1.Reader reader = new PackStreamMessageFormatV1.Reader(
+                new PackStream.Unpacker(
+                        new BufferedChannelInput( 128 ).reset( new ArrayByteChannel( ch.getBytes() ) ) ) );
         reader.read( messages );
 
         // Hello, future traveler. The assertion below is not strictly necessary. What we're trying to do here

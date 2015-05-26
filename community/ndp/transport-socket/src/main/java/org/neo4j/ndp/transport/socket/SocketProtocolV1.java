@@ -76,7 +76,7 @@ public class SocketProtocolV1 implements SocketProtocol
         this.output = new ChunkedOutput( channel, DEFAULT_BUFFER_SIZE );
         this.input = new ChunkedInput();
         this.packer = new PackStreamMessageFormatV1.Writer( new PackStream.Packer( output ), output.messageBoundaryHook() );
-        this.unpacker = new PackStreamMessageFormatV1.Reader( input );
+        this.unpacker = new PackStreamMessageFormatV1.Reader( new PackStream.Unpacker( input ) );
         this.bridge = new TransportBridge( log ).reset( session, packer, new Runnable()
         {
             @Override

@@ -39,11 +39,15 @@ import org.neo4j.ndp.messaging.v1.message.Message;
 import org.neo4j.ndp.messaging.v1.message.RecordMessage;
 import org.neo4j.ndp.messaging.v1.message.SuccessMessage;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
+import org.neo4j.packstream.BufferedChannelInput;
+import org.neo4j.packstream.BufferedChannelOutput;
+import org.neo4j.packstream.PackStream;
 import org.neo4j.stream.Record;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1.Writer.NO_OP;
 
 public class MessageMatchers
 {
@@ -180,7 +184,8 @@ public class MessageMatchers
     public static byte[] serialize( Message... messages ) throws IOException
     {
         final RecordingByteChannel rawData = new RecordingByteChannel();
-        final MessageFormat.Writer packer = new PackStreamMessageFormatV1().newWriter().reset( rawData );
+        final MessageFormat.Writer packer = new PackStreamMessageFormatV1.Writer( new PackStream.Packer( new
+                BufferedChannelOutput( rawData )), NO_OP );
 
         for ( Message message : messages )
         {
@@ -193,13 +198,11 @@ public class MessageMatchers
 
     public static List<Message> messages( byte[] bytes ) throws IOException
     {
-        PackStreamMessageFormatV1.Reader unpacker = new PackStreamMessageFormatV1.Reader();
+        PackStreamMessageFormatV1.Reader unpacker = reader( bytes );
         RecordingMessageHandler consumer = new RecordingMessageHandler();
 
         try
         {
-            unpacker.reset( new ArrayByteChannel( bytes ) );
-
             while ( unpacker.hasNext() )
             {
                 unpacker.read( consumer );
@@ -218,13 +221,11 @@ public class MessageMatchers
 
     public static Message message( byte[] bytes ) throws IOException
     {
-        PackStreamMessageFormatV1.Reader unpacker = new PackStreamMessageFormatV1.Reader();
+        PackStreamMessageFormatV1.Reader unpacker = reader( bytes );
         RecordingMessageHandler consumer = new RecordingMessageHandler();
 
         try
         {
-            unpacker.reset( new ArrayByteChannel( bytes ) );
-
             if ( unpacker.hasNext() )
             {
                 unpacker.read( consumer );
@@ -240,6 +241,12 @@ public class MessageMatchers
                                    "Raw data: \n" +
                                    HexPrinter.hex( bytes ), e );
         }
+    }
+
+    private static PackStreamMessageFormatV1.Reader reader( byte[] bytes )
+    {
+        return new PackStreamMessageFormatV1.Reader(
+                    new PackStream.Unpacker( new BufferedChannelInput( 128 ).reset( new ArrayByteChannel( bytes ) ) ) );
     }
 
 }
