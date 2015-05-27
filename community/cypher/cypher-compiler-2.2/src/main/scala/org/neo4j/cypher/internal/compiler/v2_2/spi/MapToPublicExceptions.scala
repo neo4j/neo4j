@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.spi
 import org.neo4j.cypher.internal.compiler.v2_2.CypherException
 
 trait MapToPublicExceptions[T <: Throwable] {
+
   def failedIndexException(indexName: String): T
 
   def periodicCommitInOpenTransactionException(): T
@@ -39,6 +40,8 @@ trait MapToPublicExceptions[T <: Throwable] {
   def mergeConstraintConflictException(message: String): T
 
   def invalidSemanticException(message: String): T
+
+  def hintException(s: String): T
 
   def indexHintException(identifier: String, label: String, property: String, message: String): T
 
