@@ -83,13 +83,18 @@ case class Query(returns: Return,
       case None            => acc :+ query
     }
 
+    def isMergeAction(action: UpdateAction) =
+      action.isInstanceOf[MergeNodeAction] || action.isInstanceOf[MergePatternAction]
+
     allTails(Vector.empty, this).reduceRight[Query] {
       case (head, remaining) =>
         if (head.compactableStart &&
-            remaining.compactableTail &&
-            // If we have updating actions, we can't merge with a tail part that has updating start items
-            // That would mess with the order of actions
-            !(head.updatedCommands.nonEmpty && remaining.start.exists(_.mutating))) {
+          remaining.compactableTail &&
+          // Merges are both reads and writes, and can't be compacted with something else
+          !remaining.updatedCommands.exists(isMergeAction) &&
+          // If we have updating actions, we can't merge with a tail part that has updating start items
+          // That would mess with the order of actions
+          !(head.updatedCommands.nonEmpty && remaining.start.exists(_.mutating))) {
           head.compactWith(remaining)
         } else
           head.copy(tail = Some(remaining))
