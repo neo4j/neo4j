@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexPopulation;
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexPopulation;
 
 
 public class PopulatingIndexProxy implements IndexProxy

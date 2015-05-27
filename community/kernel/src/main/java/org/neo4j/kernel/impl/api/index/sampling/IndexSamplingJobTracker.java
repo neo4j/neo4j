@@ -69,7 +69,7 @@ public class IndexSamplingJobTracker
             }
 
             executingJobDescriptors.add( descriptor );
-            jobScheduler.schedule( JobScheduler.Group.indexSampling, new Runnable()
+            jobScheduler.schedule( JobScheduler.Groups.indexSampling, new Runnable()
             {
                 @Override
                 public void run()
