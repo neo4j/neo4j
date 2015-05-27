@@ -22,7 +22,6 @@ package org.neo4j.ext;
 import io.netty.channel.Channel;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
@@ -33,11 +32,13 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.ndp.runtime.Sessions;
 import org.neo4j.ndp.runtime.internal.StandardSessions;
+import org.neo4j.ndp.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.ndp.transport.socket.NettyServer;
 import org.neo4j.ndp.transport.socket.SocketProtocol;
 import org.neo4j.ndp.transport.socket.SocketProtocolV1;
@@ -78,6 +79,8 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
         Config config();
 
         GraphDatabaseService db();
+
+        JobScheduler scheduler();
     }
 
     public NDPKernelExtension()
@@ -100,7 +103,10 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
 
         if ( config.get( Settings.ndp_enabled ) )
         {
-            final Sessions sessions = life.add( new StandardSessions( api, log ) );
+            final Sessions sessions = life.add( new ThreadedSessions(
+                    life.add( new StandardSessions( api, log ) ),
+                    dependencies.scheduler(),
+                    dependencies.logService() ) );
 
             PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> availableVersions = longObjectMap();
             availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel, SocketProtocol>()
@@ -115,7 +121,7 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
             // Start services
             life.add( new NettyServer( asList(
                     new SocketTransport( socketAddress, availableVersions ),
-                    new WebSocketTransport( webSocketAddress, availableVersions ))) );
+                    new WebSocketTransport( webSocketAddress, availableVersions ) ) ) );
             log.info( "NDP Server extension loaded." );
         }
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.server;
 
+import org.apache.commons.configuration.Configuration;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -29,8 +31,6 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.Filter;
 
-import org.apache.commons.configuration.Configuration;
-
 import org.neo4j.function.Function;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
@@ -38,9 +38,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.RunCarefully;
 import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -93,10 +93,9 @@ import org.neo4j.shell.ShellSettings;
 import static java.lang.Math.round;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.serverTransactionTimeout;
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.serverTransactionTimeout;
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 
 /**
@@ -285,7 +284,8 @@ public abstract class AbstractNeoServer implements NeoServer
         // ensure that this is > 0
         long runEvery = round( timeoutMillis / 2.0 );
 
-        resolveDependency( JobScheduler.class ).scheduleRecurring( serverTransactionTimeout, new Runnable()
+        resolveDependency( JobScheduler.class ).scheduleRecurring( serverTransactionTimeout, new
+                Runnable()
         {
             @Override
             public void run()
