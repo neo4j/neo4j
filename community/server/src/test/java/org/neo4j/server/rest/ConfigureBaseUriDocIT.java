@@ -19,20 +19,20 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.net.URI;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.net.URI;
+
 import org.neo4j.server.helpers.FunctionalTestHelper;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ConfigureBaseUriDocIT extends AbstractRestFunctionalTestBase
 {
@@ -42,12 +42,6 @@ public class ConfigureBaseUriDocIT extends AbstractRestFunctionalTestBase
     public static void setupServer() throws IOException
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
-    }
-
-    @Before
-    public void setupTheDatabase()
-    {
-        cleanDatabase();
     }
 
     @Test

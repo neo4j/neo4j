@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -33,6 +28,11 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -60,7 +60,6 @@ public class RetrieveNodeDocIT extends AbstractRestFunctionalTestBase
     @Before
     public void cleanTheDatabaseAndInitialiseTheNodeUri() throws Exception
     {
-        cleanDatabase();
         nodeUri = new URI( functionalTestHelper.nodeUri() + "/"
                 + new GraphDbHelper( server().getDatabase() ).createNode() );
     }
@@ -111,7 +110,7 @@ public class RetrieveNodeDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Get node.
-     * 
+     *
      * Note that the response contains URI/templates for the available
      * operations for getting properties and relationships.
      */
@@ -127,7 +126,7 @@ public class RetrieveNodeDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Get node -- compact.
-     * 
+     *
      * Specifying the subformat in the requests media type yields a more compact
      * JSON response without metadata and templates.
      */

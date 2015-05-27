@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,15 +30,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response.Status;
-
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -54,7 +53,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
@@ -78,7 +76,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         gen().setGraph( server().getDatabase().getGraph() );
     }
 
-    long createNode()
+    private long createNode()
     {
         GraphDatabaseAPI graphdb = server().getDatabase().getGraph();
         try ( Transaction tx = graphdb.beginTx() )
@@ -175,11 +173,11 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Add node to index.
-     * 
+     *
      * Associates a node with the given key/value pair in the given index.
-     * 
+     *
      * NOTE: Spaces in the URI have to be encoded as +%20+.
-     * 
+     *
      * CAUTION: This does *not* overwrite previous entries. If you index the
      * same key/value/item combination twice, two index entries are created. To
      * do update-type operations, you need to delete the old entry before adding
@@ -220,7 +218,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Find node by exact match.
-     * 
+     *
      * NOTE: Spaces in the URI have to be encoded as +%20+.
      */
     @Documented
@@ -248,19 +246,19 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Find node by query.
-     * 
+     *
      * The query language used here depends on what type of index you are
      * querying. The default index type is Lucene, in which case you should use
      * the Lucene query language here. Below an example of a fuzzy search over
      * multiple keys.
-     * 
+     *
      * See: {lucene-base-uri}/queryparsersyntax.html
-     * 
+     *
      * Getting the results with a predefined ordering requires adding the
      * parameter
-     * 
+     *
      * `order=ordering`
-     * 
+     *
      * where ordering is one of index, relevance or score. In this case an
      * additional field will be added to each result, named score, that holds
      * the float value that is the score reported by the query result.
@@ -707,7 +705,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Get or create unique node (create).
-     * 
+     *
      * The node is created if it doesn't exist in the unique index already.
      */
     @Documented
@@ -763,7 +761,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Get or create unique node (existing).
-     * 
+     *
      * Here,
      * a node is not created but the existing unique node returned, since another node
      * is indexed with the same data already. The node data returned is then that of the
@@ -803,7 +801,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Create a unique node or return fail (create).
-     * 
+     *
      * Here, in case
      * of an already existing node, an error should be returned. In this
      * example, no existing indexed node is found and a new node is created.
@@ -830,10 +828,10 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 1, data.get( "sequence" ) );
     }
 
-    
+
     /**
      * Create a unique node or return fail (fail).
-     * 
+     *
      * Here, in case
      * of an already existing node, an error should be returned. In this
      * example, an existing node indexed with the same data
@@ -847,7 +845,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
         GraphDatabaseService graphdb = graphdb();
         helper.createNodeIndex( index );
-        
+
         try ( Transaction tx = graphdb.beginTx() )
         {
             Node peter = graphdb.createNode();
@@ -857,9 +855,9 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
             tx.success();
         }
-       
+
         RestRequest.req();
-        
+
         ResponseEntity response = gen.get().noGraph()
                                     .expectedStatus( 409 /* conflict */)
                                      .payloadType( MediaType.APPLICATION_JSON_TYPE )
@@ -878,10 +876,10 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Add an existing node to unique index (not indexed).
-     * 
+     *
      * Associates a node with the given key/value pair in the given unique
      * index.
-     * 
+     *
      * In this example, we are using `create_or_fail` uniqueness.
      */
     @Documented
@@ -909,10 +907,10 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Add an existing node to unique index (already indexed).
-     * 
+     *
      * In this case, the node already exists in the index, and thus we get a `HTTP 409` status response,
      * as we have set the uniqueness to `create_or_fail`.
-     * 
+     *
      */
     @Documented
     @Test
@@ -942,7 +940,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
     /**
      * Backward Compatibility Test (using old syntax ?unique)
      * Put node if absent - Create.
-     * 
+     *
      * Add a node to an index unless a node already exists for the given index data. In
      * this case, a new node is created since nothing existing is found in the index.
      */

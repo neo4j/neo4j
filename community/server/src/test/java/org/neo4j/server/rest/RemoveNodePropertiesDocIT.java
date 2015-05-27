@@ -19,18 +19,18 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
+
+import static org.junit.Assert.assertEquals;
 
 public class RemoveNodePropertiesDocIT extends AbstractRestFunctionalTestBase
 {
@@ -42,12 +42,6 @@ public class RemoveNodePropertiesDocIT extends AbstractRestFunctionalTestBase
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
-    }
-
-    @Before
-    public void cleanTheDatabase()
-    {
-        cleanDatabase();
     }
 
     private String getPropertiesUri( final long nodeId )

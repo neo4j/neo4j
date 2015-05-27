@@ -19,10 +19,10 @@
  */
 package org.neo4j.server;
 
-import javax.ws.rs.core.MediaType;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import javax.ws.rs.core.MediaType;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
@@ -40,9 +40,8 @@ public class NeoServerDocIT extends AbstractRestFunctionalTestBase
     private FunctionalTestHelper functionalTestHelper;
 
     @Before
-    public void cleanTheDatabase()
+    public void setUp()
     {
-        cleanDatabase();
         functionalTestHelper = new FunctionalTestHelper( server() );
     }
 

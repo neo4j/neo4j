@@ -19,22 +19,22 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.util.Collections;
-
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Collections;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
+
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.RelationshipDirection;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class HtmlDocIT extends AbstractRestFunctionalTestBase
 {
@@ -54,12 +54,6 @@ public class HtmlDocIT extends AbstractRestFunctionalTestBase
 
     @Before
     public void setupTheDatabase()
-    {
-        cleanDatabase();
-        createTheMatrix();
-    }
-
-    private void createTheMatrix()
     {
         // Create the matrix example
         thomasAnderson = createAndIndexNode( "Thomas Anderson" );

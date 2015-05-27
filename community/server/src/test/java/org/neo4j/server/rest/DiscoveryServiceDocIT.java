@@ -19,12 +19,11 @@
  */
 package org.neo4j.server.rest;
 
+import com.sun.jersey.api.client.Client;
+import org.junit.Test;
+
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
-
-import com.sun.jersey.api.client.Client;
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.server.rest.domain.JsonHelper;
 
@@ -36,12 +35,6 @@ import static org.junit.Assert.assertTrue;
 
 public class DiscoveryServiceDocIT extends AbstractRestFunctionalTestBase
 {
-    @Before
-    public void cleanTheDatabase()
-    {
-        cleanDatabase();
-    }
-
     @Test
     public void shouldRespondWith200WhenRetrievingDiscoveryDocument() throws Exception
     {

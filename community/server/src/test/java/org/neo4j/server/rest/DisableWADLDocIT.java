@@ -19,20 +19,20 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.IOException;
-import java.net.URI;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.net.URI;
+
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
+
+import static org.junit.Assert.assertEquals;
 
 public class DisableWADLDocIT extends AbstractRestFunctionalTestBase
 {
@@ -44,12 +44,6 @@ public class DisableWADLDocIT extends AbstractRestFunctionalTestBase
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
-    }
-
-    @Before
-    public void setupTheDatabase()
-    {
-        cleanDatabase();
     }
 
     @Test

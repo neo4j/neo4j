@@ -19,20 +19,20 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -46,8 +46,11 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
+
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
 public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
@@ -73,18 +76,6 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
     public void cleanTheDatabase()
     {
         cleanDatabase();
-    }
-
-    /**
-     * GET ${org.neo4j.server.rest.web}/index/relationship/
-     * <p/>
-     * TODO: could be abstract
-     *
-     * @return the Reponse
-     */
-    public JaxRsResponse httpGetIndexRelationshipRoot()
-    {
-        return httpGet( functionalTestHelper.relationshipIndexUri() );
     }
 
     /**
@@ -342,14 +333,14 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
                 corruptJson );
         assertEquals( 400, response.getStatus() );
     }
-    
+
     /**
      * Get or create unique relationship (create).
-     * 
+     *
      * Create a unique relationship in an index.
      * If a relationship matching the given key and value already exists in the index, it will be returned.
      * If not, a new relationship will be created.
-     * 
+     *
      * NOTE: The type and direction of the relationship is not regarded when determining uniqueness.
      */
     @Documented
@@ -373,7 +364,7 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Get or create unique relationship (existing).
-     * 
+     *
      * Here, in case
      * of an already existing relationship, the sent data is ignored and the
      * existing relationship returned.
@@ -407,7 +398,7 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
 
     /**
     * Create a unique relationship or return fail (create).
-    * 
+    *
     * Here, in case
     * of an already existing relationship, an error should be returned. In this
     * example, no existing relationship is found and a new relationship is created.
@@ -436,7 +427,7 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Create a unique relationship or return fail (fail).
-     * 
+     *
      * Here, in case
      * of an already existing relationship, an error should be returned. In this
      * example, an existing relationship is found and an error is returned.

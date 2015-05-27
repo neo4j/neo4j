@@ -19,9 +19,10 @@
  */
 package org.neo4j.server.rest;
 
-import java.util.List;
-
+import org.junit.Before;
 import org.junit.Test;
+
+import java.util.List;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -39,6 +40,12 @@ import static org.junit.Assert.assertTrue;
 
 public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
 {
+    @Before
+    public void setup()
+    {
+        cleanDatabase();
+    }
+
     /**
      * Find node by query from an automatic index.
      *
