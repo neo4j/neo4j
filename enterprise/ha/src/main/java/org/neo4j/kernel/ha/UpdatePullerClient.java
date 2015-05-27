@@ -28,6 +28,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.pullUpdates;
+
 public class UpdatePullerClient extends LifecycleAdapter
 {
     private final JobScheduler scheduler;
@@ -63,7 +65,7 @@ public class UpdatePullerClient extends LifecycleAdapter
     {
         if ( pullIntervalMillis > 0 )
         {
-            intervalJobHandle = scheduler.scheduleRecurring( JobScheduler.Group.pullUpdates, new Runnable()
+            intervalJobHandle = scheduler.scheduleRecurring( pullUpdates, new Runnable()
             {
                 @Override
                 public void run()

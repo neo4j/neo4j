@@ -54,7 +54,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
                             JobScheduler jobScheduler, final Consumer<LogProvider> rotationListener ) throws IOException
     {
         this( userLogProvider, fileSystem, storeDirectory, internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives,
-                jobScheduler.executor( JobScheduler.Group.internalLogRotation ), rotationListener );
+                jobScheduler.executor( JobScheduler.Groups.internalLogRotation ), rotationListener );
     }
 
     public StoreLogService( LogProvider userLogProvider, FileSystemAbstraction fileSystem, File storeDirectory,

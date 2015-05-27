@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingController;
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexSamplingController;
 
 public class IndexSamplingController
 {
