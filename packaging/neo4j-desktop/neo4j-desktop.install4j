@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<install4j version="5.1.6" transformSequenceNumber="4">
-  <directoryPresets config="./src/main/install4j/install.properties" />
-  <application name="Neo4j Community" distributionSourceDir="" applicationId="8478-6373-2628-9929" mediaDir="." mediaFilePattern="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" compression="9" lzmaCompression="true" pack200Compression="false" excludeSignedFromPacking="true" commonExternalFiles="false" createMd5Sums="false" shrinkRuntime="true" shortName="neo4j-community" publisher="Neo Technology" publisherWeb="http://neotechnology.com" version="@NEO4J_VERSION@" allPathsRelative="true" backupOnSave="false" autoSave="false" convertDotsToUnderscores="true" macSignature="????" installerName="" javaMinVersion="1.7" javaMaxVersion="1.7" allowBetaVM="false" jdkMode="runtimeJre" jdkName="JDK 1.6">
+<install4j version="6.0.2" transformSequenceNumber="5">
+  <directoryPresets config="." />
+  <application name="Neo4j Community" distributionSourceDir="" applicationId="8478-6373-2628-9929" mediaDir="." mediaFilePattern="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" compression="9" lzmaCompression="true" pack200Compression="false" excludeSignedFromPacking="true" commonExternalFiles="false" createMd5Sums="false" shrinkRuntime="true" shortName="neo4j-community" publisher="Neo Technology" publisherWeb="http://neotechnology.com" version="@NEO4J_VERSION@" allPathsRelative="true" backupOnSave="false" autoSave="false" convertDotsToUnderscores="true" macSignature="????" macVolumeId="e07442ebbe7e691b" javaMinVersion="1.7" javaMaxVersion="1.7" allowBetaVM="false" jdkMode="runtimeJre" jdkName="JDK 1.6">
     <languages skipLanguageSelection="false" languageSelectionInPrincipalLanguage="false">
       <principalLanguage id="en" customLocalizationFile="./src/main/install4j/messages_en.utf8" />
       <additionalLanguages />
@@ -13,7 +13,7 @@
     </searchSequence>
     <variables />
     <mergedProjects />
-    @CODE_SIGNING@
+    <codeSigning macEnabled="false" macPkcs12File="" windowsEnabled="false" windowsKeySource="pkcs12" windowsPvkFile="" windowsSpcFile="" windowsPkcs12File="" />
   </application>
   <files keepModificationTimes="false" missingFilesStrategy="warn" globalExcludeSuffixes="" defaultOverwriteMode="4" defaultUninstallMode="0" launcherOverwriteMode="3" defaultFileMode="644" defaultDirMode="755">
     <filesets />
@@ -27,8 +27,8 @@
       <fileEntry mountPoint="262" file="./target/neo4j-desktop-@NEO4J_VERSION@.jar" overwriteMode="4" shared="true" fileMode="644" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="true" overrideUninstallMode="true" />
       <fileEntry mountPoint="262" file="./src/main/install4j/neo4j-community.vmoptions" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="./src/main/install4j/install.properties" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
-      <fileEntry mountPoint="262" file="./target/shell-scripts/neo4j-import" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
-      <fileEntry mountPoint="262" file="./target/shell-scripts/neo4j-shell" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="./target/shell-scripts/neo4j-import" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="./target/shell-scripts/neo4j-shell" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="./target/shell-scripts/Neo4jImport.bat" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="./target/shell-scripts/Neo4jShell.bat" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="386" file="./target/plugins/README.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
@@ -78,14 +78,14 @@
     </components>
   </files>
   <launchers>
-    <launcher name="neo4j-community" id="24" customizedId="" external="false" excludeFromMenu="false" unixMode="755" menuName="Neo4j Community" icnsFile="" customMacBundleIdentifier="false" macBundleIdentifier="" swtApp="false" fileset="" macBundleBinary="JavaApplicationStub" addMacEntitlements="false" macEntitlementsFile="">
-      <executable name="neo4j-community" type="1" iconSet="true" iconFile="./src/main/resources/neo4j.ico" executableDir="bin" redirectStderr="true" stderrFile="${installer:sys.appdataDir}/${compiler:sys.fullName}/logs/console.log" stderrMode="overwrite" redirectStdout="true" stdoutFile="${installer:sys.appdataDir}/${compiler:sys.fullName}/logs/console.log" stdoutMode="overwrite" failOnStderrOutput="true" executableMode="1" changeWorkingDirectory="true" workingDirectory="." singleInstance="true" serviceStartType="2" serviceDependencies="" serviceDescription="" jreLocation="" executionLevel="asInvoker" checkConsoleParameter="false" globalSingleInstance="false">
+    <launcher name="neo4j-community" id="24" customizedId="" external="false" excludeFromMenu="false" unixMode="755" menuName="Neo4j Community" icnsFile="./src/main/resources/iconbuilder.icns" customMacBundleIdentifier="false" macBundleIdentifier="" swtApp="false" fileset="" macBundleBinary="JavaApplicationStub" addMacEntitlements="false" macEntitlementsFile="" useCustomMacosExecutableName="false" customMacosExecutableName="">
+      <executable name="neo4j-community" type="1" iconSet="true" iconFile="./src/main/resources/neo4j.ico" executableDir="bin" redirectStderr="true" stderrFile="${installer:sys.appdataDir}/${compiler:sys.fullName}/logs/console.log" stderrMode="overwrite" redirectStdout="true" stdoutFile="${installer:sys.appdataDir}/${compiler:sys.fullName}/logs/console.log" stdoutMode="overwrite" failOnStderrOutput="true" executableMode="1" changeWorkingDirectory="true" workingDirectory="." singleInstance="true" serviceStartType="2" serviceDependencies="" serviceDescription="" jreLocation="" executionLevel="asInvoker" checkConsoleParameter="false" globalSingleInstance="false" singleInstanceActivate="true" dpiAware="false">
         <versionInfo include="false" fileVersion="" fileDescription="" legalCopyright="" internalName="" productName="" />
       </executable>
-      <splashScreen show="false" autoOff="true" alwaysOnTop="true" width="0" height="0" bitmapFile="" java6SplashScreen="false">
+      <splashScreen show="false" width="0" height="0" bitmapFile="" windowsNative="false" textOverlay="false">
         <text>
-          <statusLine x="20" y="20" text="" font="Arial" fontSize="8" fontColor="0,0,0" fontWeight="500" />
-          <versionLine x="20" y="40" text="version ${compiler:sys.version}" font="Arial" fontSize="8" fontColor="0,0,0" fontWeight="500" />
+          <statusLine x="20" y="20" text="" fontSize="8" fontColor="0,0,0" bold="false" />
+          <versionLine x="20" y="40" text="version ${compiler:sys.version}" fontSize="8" fontColor="0,0,0" bold="false" />
         </text>
       </splashScreen>
       <java mainClass="org.neo4j.desktop.Neo4jDesktop" vmParameters="" arguments="" allowVMPassthroughParameters="true" preferredVM="server" bundleRuntime="true">
@@ -112,6 +112,7 @@
     </launcher>
   </launchers>
   <installerGui installerType="1" addOnAppId="" suggestPreviousLocations="true" autoUpdateDescriptorUrl="" useAutoUpdateBaseUrl="false" autoUpdateBaseUrl="">
+    <staticMembers script="" />
     <customCode />
     <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
       <commentFiles />
@@ -121,7 +122,7 @@
       <application name="" id="installer" customizedId="" beanClass="com.install4j.runtime.beans.applications.InstallerApplication" enabled="true" commentSet="false" comment="" actionElevationType="none" fileset="" customIcnsFile="" customIcoFile="./src/main/resources/neo4j.ico" macEntitlementsFile="" automaticLauncherIntegration="false" launchMode="startupFirstWindow" launchInNewProcess="false" launchSchedule="updateSchedule" allLaunchers="true">
         <serializedBean>
           <java class="java.beans.XMLDecoder">
-            <object class="com.install4j.runtime.beans.applications.InstallerApplication">
+            <object class="com.install4j.runtime.beans.applications.InstallerApplication" id="InstallerApplication0">
               <void property="customHeaderImage">
                 <object class="com.install4j.api.beans.ExternalFile">
                   <string>./src/main/resources/neo4j-logo.png</string>
@@ -201,7 +202,10 @@
                     </object>
                   </void>
                   <void property="bannerImageAnchor">
-                    <object class="com.install4j.api.beans.Anchor" field="CENTER" />
+                    <object class="java.lang.Enum" method="valueOf">
+                      <class>com.install4j.api.beans.Anchor</class>
+                      <string>CENTER</string>
+                    </object>
                   </void>
                   <void property="bannerImageFile">
                     <object class="com.install4j.api.beans.ExternalFile">
@@ -238,8 +242,8 @@
           <screen name="" id="107" customizedId="" beanClass="com.install4j.runtime.beans.screens.LicenseScreen" enabled="true" commentSet="false" comment="" actionElevationType="inherit" rollbackBarrier="false" backButton="2" finishScreen="false" wizardIndexChangeType="unchanged" wizardIndexKey="">
             <serializedBean>
               <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.LicenseScreen">
-                  <void property="displayedTextFile">
+                <object class="com.install4j.runtime.beans.screens.LicenseScreen" id="LicenseScreen0">
+                  <void id="LocalizedExternalFile0" property="displayedTextFile">
                     <void property="languageIdToExternalFile">
                       <void method="put">
                         <string>en</string>
@@ -408,7 +412,10 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
                     </object>
                   </void>
                   <void property="bannerImageAnchor">
-                    <object class="com.install4j.api.beans.Anchor" field="CENTER" />
+                    <object class="java.lang.Enum" method="valueOf">
+                      <class>com.install4j.api.beans.Anchor</class>
+                      <string>CENTER</string>
+                    </object>
                   </void>
                   <void property="bannerImageFile">
                     <object class="com.install4j.api.beans.ExternalFile">
@@ -463,7 +470,7 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
       <application name="" id="uninstaller" customizedId="" beanClass="com.install4j.runtime.beans.applications.UninstallerApplication" enabled="true" commentSet="false" comment="" actionElevationType="none" fileset="" customIcnsFile="" customIcoFile="./src/main/resources/neo4j.ico" macEntitlementsFile="" automaticLauncherIntegration="false" launchMode="startupFirstWindow" launchInNewProcess="false" launchSchedule="updateSchedule" allLaunchers="true">
         <serializedBean>
           <java class="java.beans.XMLDecoder">
-            <object class="com.install4j.runtime.beans.applications.UninstallerApplication">
+            <object class="com.install4j.runtime.beans.applications.UninstallerApplication" id="UninstallerApplication0">
               <void property="customIconImageFiles">
                 <void method="add">
                   <object class="com.install4j.api.beans.ExternalFile">
@@ -471,7 +478,13 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
                   </object>
                 </void>
               </void>
+              <void property="customMacosExecutableName">
+                <string>${i18n:UninstallerMenuEntry(${compiler:sys.fullName})}</string>
+              </void>
               <void property="useCustomIcon">
+                <boolean>true</boolean>
+              </void>
+              <void property="useCustomMacosExecutableName">
                 <boolean>true</boolean>
               </void>
               <void property="watermark">
@@ -528,7 +541,10 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
                     </object>
                   </void>
                   <void property="bannerImageAnchor">
-                    <object class="com.install4j.api.beans.Anchor" field="CENTER" />
+                    <object class="java.lang.Enum" method="valueOf">
+                      <class>com.install4j.api.beans.Anchor</class>
+                      <string>CENTER</string>
+                    </object>
                   </void>
                   <void property="bannerImageFile">
                     <object class="com.install4j.api.beans.ExternalFile">
@@ -644,7 +660,10 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
                     </object>
                   </void>
                   <void property="bannerImageAnchor">
-                    <object class="com.install4j.api.beans.Anchor" field="CENTER" />
+                    <object class="java.lang.Enum" method="valueOf">
+                      <class>com.install4j.api.beans.Anchor</class>
+                      <string>CENTER</string>
+                    </object>
                   </void>
                   <void property="bannerImageFile">
                     <object class="com.install4j.api.beans.ExternalFile">
@@ -666,7 +685,7 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
     </applications>
   </installerGui>
   <mediaSets>
-    <windows name="Windows64" id="25" customizedId="" mediaFileName="" installDir="Neo4j Community" overridePrincipalLanguage="false" jreBitType="64" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="windows-amd64-1.7.0_45" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="true" customInstallBaseDir="" contentFilesType="1" downloadURL="" verifyIntegrity="true">
+    <windows name="Windows64" id="25" customizedId="" mediaFileName="" installDir="Neo4j Community" overridePrincipalLanguage="false" jreBitType="64" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="windows-amd64-1.7.0_80" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="true" customInstallBaseDir="" contentFilesType="1" downloadURL="" verifyIntegrity="true">
       <excludedLaunchers />
       <excludedBeans />
       <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
@@ -681,7 +700,7 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
       </excludedComponents>
       <includedDownloadableComponents />
     </windows>
-    <windows name="Windows32" id="26" customizedId="" mediaFileName="" installDir="Neo4j Community" overridePrincipalLanguage="false" jreBitType="32" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="windows-x86-1.7.0_45" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="true" customInstallBaseDir="" contentFilesType="1" downloadURL="" verifyIntegrity="true">
+    <windows name="Windows32" id="26" customizedId="" mediaFileName="" installDir="Neo4j Community" overridePrincipalLanguage="false" jreBitType="32" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="windows-x86-1.7.0_80" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="true" customInstallBaseDir="" contentFilesType="1" downloadURL="" verifyIntegrity="true">
       <excludedLaunchers />
       <excludedBeans />
       <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
@@ -696,9 +715,24 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
       </excludedComponents>
       <includedDownloadableComponents />
     </windows>
+    <macosArchive name="MacOS" id="444" customizedId="" mediaFileName="" installDir="neo4j-community" overridePrincipalLanguage="false" jreBitType="all" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="macosx-amd64-1.7.0_80_unpacked" manualJREEntry="false" appleJre="false" archiveType="dmg" volumeName="${compiler:sys.shortName}" launcherId="24">
+      <excludedBeans />
+      <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
+      <exclude />
+      <variables />
+      <autoUpdate useMinUpdatableVersion="false" minUpdatableVersion="" useMaxUpdatableVersion="false" maxUpdatableVersion="">
+        <commentFiles />
+        <customAttributes />
+      </autoUpdate>
+      <topLevelFiles>
+        <file name=".DS_Store" file="./src/main/distribution/DS_Store" />
+        <file name=".background/background.png" file="./src/main/distribution/.background/graph_background.png" />
+        <symlink name="Applications" target="/Applications" />
+      </topLevelFiles>
+    </macosArchive>
   </mediaSets>
   <buildIds buildAll="false">
-    <mediaSet refId="27" />
+    <mediaSet refId="444" />
   </buildIds>
-  <buildOptions verbose="true" faster="false" disableSigning="false" debug="false" />
+  <buildOptions verbose="true" faster="false" disableSigning="false" disableJreBundling="false" debug="false" />
 </install4j>
