@@ -19,15 +19,28 @@
  */
 package org.neo4j.packstream;
 
+/**
+ * These are the primitive types that PackStream can represent. They map to the non-graph primitives of the Neo4j
+ * type system. Graph primitives and rich composite types are represented as {@link #STRUCT}.
+ */
 public enum PackType
 {
+    /** The absence of a value */
     NULL,
+    /** You know what this is */
     BOOLEAN,
+    /** 64-bit signed integer */
     INTEGER,
+    /** 64-bit floating point number */
     FLOAT,
+    /** Binary data */
     BYTES,
+    /** Unicode text */
     TEXT,
+    /** Sequence of zero or more values */
     LIST,
+    /** Sequence of zero or more key/value pairs, keys are unique */
     MAP,
+    /** A composite data structure, made up of zero or more packstream values and a type signature. */
     STRUCT
 }

@@ -216,7 +216,8 @@ public class DocSerialization
     public static List<Message> unpackChunked( byte[] data ) throws Exception
     {
         ChunkedInput input = new ChunkedInput();
-        PackStreamMessageFormatV1.Reader reader = new PackStreamMessageFormatV1.Reader( input );
+        PackStreamMessageFormatV1.Reader reader =
+                new PackStreamMessageFormatV1.Reader( new PackStream.Unpacker(  input ) );
         RecordingMessageHandler messages = new RecordingMessageHandler();
 
         ByteBuf buf = Unpooled.wrappedBuffer( data );

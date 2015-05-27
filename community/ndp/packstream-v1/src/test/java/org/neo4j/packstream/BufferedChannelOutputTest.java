@@ -17,31 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.messaging.v1;
+package org.neo4j.packstream;
+
+import junit.framework.TestCase;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 
-import org.neo4j.ndp.messaging.v1.message.Message;
-
-public interface MessageFormat
+public class BufferedChannelOutputTest
 {
-    int version();
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
-    interface Writer extends MessageHandler<IOException>
+    @Test
+    public void shouldThrowWhenAskedToWriteMoreThanGiven() throws Throwable
     {
-        Writer write( Message msg ) throws IOException;
+        // Given
+        BufferedChannelOutput out = new BufferedChannelOutput( 12 );
 
-        void flush() throws IOException;
-    }
+        // Expect
+        exception.expect( IOException.class );
+        exception.expectMessage( "Asked to write 2 bytes, but there is only 1 bytes available in data provided." );
 
-    interface Reader
-    {
-        /** Return true if there is another message in the underlying buffer */
-        boolean hasNext() throws IOException;
-
-        <E extends Exception> void read( MessageHandler<E> consumer ) throws IOException, E;
-
+        // When
+        out.writeBytes( new byte[]{1}, 0, 2 );
     }
 }
