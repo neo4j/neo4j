@@ -43,12 +43,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
       override def toString = url.toString
     })
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
-    val config = new Configuration() {
-      def quotationCharacter(): Char = CSVResources.DEFAULT_QUOTE_CHAR
-      def bufferSize(): Int = CSVResources.DEFAULT_BUFFER_SIZE
-      def multilineFields(): Boolean = true
-    }
-    val seeker = CharSeekers.charSeeker(reader, config, true)
+    val seeker = CharSeekers.charSeeker(reader, CSVResources.DEFAULT_BUFFER_SIZE, true, CSVResources.DEFAULT_QUOTE_CHAR)
     val extractor = new Extractors(delimiter).string()
     val intDelimiter = delimiter.toInt
     val mark = new Mark

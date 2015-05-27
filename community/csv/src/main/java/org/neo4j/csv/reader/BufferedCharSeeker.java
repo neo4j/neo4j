@@ -30,8 +30,12 @@ import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
 /**
  * Much like a {@link BufferedReader} for a {@link Reader}.
  */
-public class BufferedCharSeeker implements CharSeeker
+public class BufferedCharSeeker implements CharSeeker, SourceTraceability
 {
+    private static final int KB = 1024, MB = KB * KB;
+    public static final int DEFAULT_BUFFER_SIZE = 4 * MB;
+    public static final char DEFAULT_QUOTE_CHAR = '"';
+
     private static final char EOL_CHAR = '\n';
     private static final char EOL_CHAR_2 = '\r';
     private static final char EOF_CHAR = (char) -1;
@@ -61,18 +65,26 @@ public class BufferedCharSeeker implements CharSeeker
     // this absolute position + bufferPos is the current position in the source we're reading
     private long absoluteBufferStartPosition;
     private String sourceDescription;
-    private final boolean multilineFields;
 
-    public BufferedCharSeeker( CharReadable reader, Configuration config )
+    public BufferedCharSeeker( CharReadable reader )
+    {
+        this( reader, DEFAULT_BUFFER_SIZE, DEFAULT_QUOTE_CHAR );
+    }
+
+    public BufferedCharSeeker( CharReadable reader, int bufferSize )
+    {
+        this( reader, bufferSize, DEFAULT_QUOTE_CHAR );
+    }
+
+    public BufferedCharSeeker( CharReadable reader, int bufferSize, char quoteChar )
     {
         this.reader = reader;
-        this.charBuffer = new SectionedCharBuffer( config.bufferSize() );
+        this.charBuffer = new SectionedCharBuffer( bufferSize );
         this.buffer = charBuffer.array();
         this.bufferPos = this.bufferEnd = charBuffer.pivot();
-        this.quoteChar = config.quotationCharacter();
+        this.quoteChar = quoteChar;
         this.lineStartPos = this.bufferPos;
         this.sourceDescription = reader.sourceDescription();
-        this.multilineFields = config.multilineFields();
     }
 
     @Override
@@ -134,8 +146,11 @@ public class BufferedCharSeeker implements CharSeeker
                     {   // Found an ending quote of sorts, although the next char isn't a delimiter, newline, or EOF
                         // so it looks like there's data characters after this end quote. We don't really support that.
                         // So circle this back to the user saying there's something wrong with the field.
-                        throw new DataAfterQuoteException( this,
-                                new String( buffer, seekStartPos, bufferPos-seekStartPos ) );
+                        throw new IllegalStateException( "At " + sourceDescription() + ":" + lineNumber() +
+                                " there's a field starting with a quote and whereas it ends that quote there seems " +
+                                " to be characters in that field after that ending quote. That isn't supported." +
+                                " This is what I read: '" +
+                                new String( buffer, seekStartPos, bufferPos-seekStartPos ) + "'" );
                     }
                     else
                     {   // Found an ending quote, skip it and switch mode
@@ -144,12 +159,7 @@ public class BufferedCharSeeker implements CharSeeker
                     }
                 }
                 else if ( isNewLine( ch ) )
-                {   // Found a new line inside a quotation...
-                    if ( !multilineFields )
-                    {   // ...but we are configured to disallow it
-                        throw new IllegalMultilineFieldException( this );
-                    }
-                    // ... it's OK, just keep going
+                {   // Found a new line, just keep going
                     if ( ch == EOL_CHAR )
                     {
                         lineNumber++;

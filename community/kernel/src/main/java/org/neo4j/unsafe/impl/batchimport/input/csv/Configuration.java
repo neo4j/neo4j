@@ -19,10 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import org.neo4j.csv.reader.BufferedCharSeeker;
+
 /**
  * Configuration for {@link CsvInput}.
  */
-public interface Configuration extends org.neo4j.csv.reader.Configuration
+public interface Configuration
 {
     /**
      * Delimiting character between each values in a CSV input line.
@@ -35,11 +37,29 @@ public interface Configuration extends org.neo4j.csv.reader.Configuration
      */
     char arrayDelimiter();
 
-    abstract class Default extends org.neo4j.csv.reader.Configuration.Default implements Configuration
+    /**
+     * Character to regard as quotes. Quoted values can contain newline characters and even delimiters.
+     */
+    char quotationCharacter();
+
+    int bufferSize();
+
+    public static abstract class Default implements Configuration
     {
+        @Override
+        public char quotationCharacter()
+        {
+            return BufferedCharSeeker.DEFAULT_QUOTE_CHAR;
+        }
+
+        @Override
+        public int bufferSize()
+        {
+            return BufferedCharSeeker.DEFAULT_BUFFER_SIZE;
+        }
     }
 
-    Configuration COMMAS = new Default()
+    public static final Configuration COMMAS = new Default()
     {
         @Override
         public char delimiter()
@@ -54,7 +74,7 @@ public interface Configuration extends org.neo4j.csv.reader.Configuration
         }
     };
 
-    Configuration TABS = new Default()
+    public static final Configuration TABS = new Default()
     {
         @Override
         public char delimiter()
@@ -69,13 +89,12 @@ public interface Configuration extends org.neo4j.csv.reader.Configuration
         }
     };
 
-    class Overriden extends org.neo4j.csv.reader.Configuration.Overridden implements Configuration
+    public static class OverrideFromConfig implements Configuration
     {
         private final Configuration defaults;
 
-        public Overriden( Configuration defaults )
+        public OverrideFromConfig( Configuration defaults )
         {
-            super( defaults );
             this.defaults = defaults;
         }
 
@@ -89,6 +108,18 @@ public interface Configuration extends org.neo4j.csv.reader.Configuration
         public char arrayDelimiter()
         {
             return defaults.arrayDelimiter();
+        }
+
+        @Override
+        public char quotationCharacter()
+        {
+            return defaults.quotationCharacter();
+        }
+
+        @Override
+        public int bufferSize()
+        {
+            return defaults.bufferSize();
         }
     }
 }

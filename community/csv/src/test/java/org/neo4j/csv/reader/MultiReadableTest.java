@@ -43,7 +43,7 @@ public class MultiReadableTest
                 {"and here comes", "the third line"}
         };
         RawIterator<Reader,IOException> readers = readerIteratorFromStrings( data, null );
-        CharSeeker seeker = CharSeekers.charSeeker( new MultiReadable( readers ), CONFIG, true );
+        CharSeeker seeker = CharSeekers.charSeeker( new MultiReadable( readers ), 200, true, '"' );
 
         // WHEN/THEN
         for ( String[] line : data )
@@ -65,7 +65,7 @@ public class MultiReadableTest
 
         // WHEN
         RawIterator<Reader,IOException> readers = readerIteratorFromStrings( data, '\n' );
-        CharSeeker seeker = CharSeekers.charSeeker( Readables.sources( readers ), CONFIG, true );
+        CharSeeker seeker = CharSeekers.charSeeker( Readables.sources( readers ), 200, true, '"' );
 
         // WHEN/THEN
         for ( String[] line : data )
@@ -104,15 +104,6 @@ public class MultiReadableTest
         reader.read( buffer, buffer.front() );
         assertFalse( buffer.hasAvailable() );
     }
-
-    private static final Configuration CONFIG = new Configuration.Overridden( Configuration.DEFAULT )
-    {
-        @Override
-        public int bufferSize()
-        {
-            return 200;
-        }
-    };
 
     private void assertNextLine( String[] line, CharSeeker seeker, Mark mark, Extractors extractors ) throws IOException
     {

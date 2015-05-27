@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -596,39 +595,6 @@ public class ImportToolTest
             assertEquals( anonymousCount, count( filter( nodeFilter( "" ), allNodes.iterator() ) ) );
             tx.success();
         }
-    }
-
-    @Test
-    public void shouldDisallowMultilineFieldsByDefault() throws Exception
-    {
-        // GIVEN
-        File data = data( ":ID,name", "1,\"This is a line with\nnewlines in\"" );
-
-        // WHEN
-        try
-        {
-            importTool(
-                    "--into",  dbRule.getStoreDir().getAbsolutePath(),
-                    "--nodes", data.getAbsolutePath() );
-        }
-        catch ( Exception e )
-        {
-            // THEN
-            assertExceptionContains( e, "Multi-line", IllegalMultilineFieldException.class );
-        }
-    }
-
-    private File data( String... lines ) throws Exception
-    {
-        File file = file( fileName( "data.csv" ) );
-        try ( PrintStream writer = writer( file, Charset.defaultCharset() ) )
-        {
-            for ( String line : lines )
-            {
-                writer.println( line );
-            }
-        }
-        return file;
     }
 
     private Predicate<Node> nodeFilter( final String id )

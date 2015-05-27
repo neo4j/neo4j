@@ -297,24 +297,14 @@ public class DataFactoriesTest
         }
     }
 
-    private static final org.neo4j.csv.reader.Configuration SEEKER_CONFIG =
-            new org.neo4j.csv.reader.Configuration.Overridden( new org.neo4j.csv.reader.Configuration.Default() )
-    {
-        @Override
-        public int bufferSize()
-        {
-            return 1_000;
-        }
-    };
-
     private CharSeeker seeker( String data )
     {
-        return new BufferedCharSeeker( wrap( new StringReader( data ) ), SEEKER_CONFIG );
+        return new BufferedCharSeeker( wrap( new StringReader( data ) ), BUFFER_SIZE );
     }
 
     private static Configuration withBufferSize( Configuration config, final int bufferSize )
     {
-        return new Configuration.Overriden( config )
+        return new Configuration.OverrideFromConfig( config )
         {
             @Override
             public int bufferSize()

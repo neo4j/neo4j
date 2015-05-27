@@ -78,7 +78,8 @@ public class DataFactories
                     {
                         try
                         {
-                            return charSeeker( files( charset, files ), config, true );
+                            return charSeeker( files( charset, files ), config.bufferSize(),
+                                               true, config.quotationCharacter() );
                         }
                         catch ( IOException e )
                         {
@@ -114,7 +115,8 @@ public class DataFactories
                     @Override
                     public CharSeeker stream()
                     {
-                        return charSeeker( readable.newInstance(), config, true );
+                        return charSeeker( readable.newInstance(), config.bufferSize(),
+                                           true, config.quotationCharacter() );
                     }
 
                     @Override
@@ -236,7 +238,7 @@ public class DataFactories
         @Override
         public CharSeeker open( CharSeeker seeker, Configuration config ) throws IOException
         {
-            return charSeeker( readable, config, true );
+            return charSeeker( readable, config.bufferSize(), true, config.quotationCharacter() );
         }
     }
 
