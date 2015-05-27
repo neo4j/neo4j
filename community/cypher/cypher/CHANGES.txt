@@ -2,6 +2,10 @@
 -------
 
 Cypher:
+o Removed support for Cypher version 2.0 and 2.1, as announced
+o Produces error or warning if a query cannot be solved using the specified planner
+o Switched to using a new planner based on Iterative Dynamic Programming (IDP)
+o Switched to using Scala 2.11
 o Cypher now supports two new operators for string pattern matching: LIKE and ILIKE
 o It is now possible to escape '_' and '%' in string literals using backslash (for use with LIKE)
 o Specifying a default Cypher planner in the settings now only applies to the default language version / parser
