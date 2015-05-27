@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -28,15 +30,15 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
-
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
 
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
+    private static final Map<String, String> NO_METADATA = Collections.EMPTY_MAP;
     private final String id;
 
-    private ExecutorService executor;
+    private ExecutorService globalPool;
     private ScheduledThreadPoolExecutor scheduledExecutor;
 
     public Neo4jJobScheduler()
@@ -52,8 +54,8 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     @Override
     public void init()
     {
-        this.executor = newCachedThreadPool( daemon( "Neo4j " + id + trackTest() ) );
-        this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2, daemon( "Scheduled Neo4j " + id + trackTest() ) );
+        this.globalPool = newCachedThreadPool( daemon( "neo4j.pooled/" + id + trackTest() ) );
+        this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2, daemon( "neo4j.scheduled/" + id + trackTest() ) );
     }
 
     @Override
@@ -72,7 +74,24 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     @Override
     public JobHandle schedule( Group group, Runnable job )
     {
-        return new Handle( this.executor.submit( job ) );
+        return schedule( group, job, NO_METADATA );
+    }
+
+    @Override
+    public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
+    {
+        switch( group.strategy() )
+        {
+        case POOLED:
+            return new PooledJobHandle( this.globalPool.submit( job ) );
+        case NEW_THREAD:
+            Thread thread = new Thread( null, job, group.threadName( metadata ) );
+            thread.setDaemon( true );
+            thread.start();
+            return new SingleThreadHandle( thread );
+        default:
+            throw new IllegalArgumentException( "Unsupported strategy for scheduling job: " + group.strategy() );
+        }
     }
 
     @Override
@@ -85,7 +104,13 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     public JobHandle scheduleRecurring( Group group, final Runnable runnable, long initialDelay, long period,
                                         TimeUnit timeUnit )
     {
-        return new Handle( scheduledExecutor.scheduleAtFixedRate( runnable, initialDelay, period, timeUnit ) );
+        switch ( group.strategy() )
+        {
+        case POOLED:
+            return new PooledJobHandle( scheduledExecutor.scheduleAtFixedRate( runnable, initialDelay, period, timeUnit ) );
+        default:
+            throw new IllegalArgumentException( "Unsupported strategy to use for recurring jobs: " + group.strategy() );
+        }
     }
 
     @Override
@@ -94,11 +119,11 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         RuntimeException exception = null;
         try
         {
-            if(executor != null)
+            if( globalPool != null)
             {
-                executor.shutdownNow();
-                executor.awaitTermination( 5, TimeUnit.SECONDS );
-                executor = null;
+                globalPool.shutdownNow();
+                globalPool.awaitTermination( 5, TimeUnit.SECONDS );
+                globalPool = null;
             }
         } catch(RuntimeException e)
         {
@@ -132,11 +157,11 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         }
     }
 
-    private class Handle implements JobHandle
+    private static class PooledJobHandle implements JobHandle
     {
         private final Future<?> job;
 
-        public Handle( Future<?> job )
+        public PooledJobHandle( Future<?> job )
         {
             this.job = job;
         }
@@ -145,6 +170,25 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         public void cancel( boolean mayInterruptIfRunning )
         {
             job.cancel( mayInterruptIfRunning );
+        }
+    }
+
+    private static class SingleThreadHandle implements JobHandle
+    {
+        private final Thread thread;
+
+        public SingleThreadHandle( Thread thread )
+        {
+            this.thread = thread;
+        }
+
+        @Override
+        public void cancel( boolean mayInterruptIfRunning )
+        {
+            if(mayInterruptIfRunning)
+            {
+                thread.interrupt();
+            }
         }
     }
 }

@@ -24,6 +24,8 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.kernel.api.exceptions.Status;
@@ -231,6 +233,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession();
+        final CountDownLatch pullAllCallbackCalled = new CountDownLatch( 1 );
         final AtomicReference<Neo4jError> error = new AtomicReference<>();
 
         // When something fails while publishing the result stream
@@ -248,9 +251,16 @@ public class SessionIT
             {
                 error.set( err );
             }
+
+            @Override
+            public void completed( Object attachment )
+            {
+                pullAllCallbackCalled.countDown();
+            }
         } );
 
         // Then
+        pullAllCallbackCalled.await( 30, TimeUnit.SECONDS );
         assertThat( error.get(), equalTo( new Neo4jError( Status.General.UnknownFailure,
                 "An unexpected failure occurred: 'Ooopsies!'." ) ) );
     }
