@@ -54,7 +54,7 @@ import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
 import org.neo4j.kernel.impl.util.collection.TimedRepository;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.slaveLocksTimeout;
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.slaveLocksTimeout;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -153,7 +153,9 @@ public class MasterImpl extends LifecycleAdapter implements Master
                     value.close();
                 }
             }, config.get( HaSettings.lock_read_timeout ) + TX_TIMEOUT_ADDITION, Clock.SYSTEM_CLOCK );
-        staleSlaveReaperJob = spi.scheduleRecurringJob( slaveLocksTimeout, unfinishedSessionsCheckInterval, slaveLockSessions );
+        staleSlaveReaperJob = spi.scheduleRecurringJob( slaveLocksTimeout,
+                unfinishedSessionsCheckInterval,
+                slaveLockSessions );
     }
 
     @Override
