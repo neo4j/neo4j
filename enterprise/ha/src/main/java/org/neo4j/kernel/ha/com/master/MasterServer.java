@@ -82,30 +82,4 @@ public class MasterServer extends Server<Master, Void>
         }
     }
 
-    public Map<Integer, Collection<RequestContext>> getSlaveInformation()
-    {
-        // Which slaves are connected a.t.m?
-        Set<Integer> machineIds = new HashSet<>();
-        Map<Channel, RequestContext> channels = getConnectedSlaveChannels();
-        synchronized ( channels )
-        {
-            for ( RequestContext context : channels.values() )
-            {
-                machineIds.add( context.machineId() );
-            }
-        }
-
-        // Insert missing slaves into the map so that all connected slave
-        // are in the returned map
-        Map<Integer, Collection<RequestContext>> ongoingTransactions =
-                ((MasterImpl) getRequestTarget()).getOngoingTransactions();
-        for ( Integer machineId : machineIds )
-        {
-            if ( !ongoingTransactions.containsKey( machineId ) )
-            {
-                ongoingTransactions.put( machineId, Collections.<RequestContext>emptyList() );
-            }
-        }
-        return new TreeMap<>( ongoingTransactions );
-    }
 }

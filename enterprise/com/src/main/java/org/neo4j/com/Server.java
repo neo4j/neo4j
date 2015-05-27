@@ -23,14 +23,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -54,7 +52,6 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -89,8 +86,13 @@ import static org.neo4j.helpers.NamedThreadFactory.named;
  *
  * @see Client
  */
-public abstract class Server<T, R> extends SimpleChannelHandler implements ChannelPipelineFactory, Lifecycle
+public abstract class Server<T, R> extends SimpleChannelHandler implements ChannelPipelineFactory, Lifecycle,
+        ChannelCloser
 {
+
+    private final LogProvider logProvider;
+    private ScheduledExecutorService silentChannelExecutor;
+
     public interface Configuration
     {
         long getOldChannelThreshold();
@@ -109,8 +111,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     static final byte INTERNAL_PROTOCOL_VERSION = 2;
     private static final String INADDR_ANY = "0.0.0.0";
     private final T requestTarget;
-    private final Map<Channel,Pair<RequestContext,AtomicLong /*time last heard of*/>> connectedSlaveChannels =
-            new ConcurrentHashMap<>();
+    private IdleChannelReaper connectedSlaveChannels;
     private final Log msgLog;
     private final Map<Channel,PartialRequest> partialRequests = new ConcurrentHashMap<>();
     private final Configuration config;
@@ -128,11 +129,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     // Executor for channels that we know should be finished, but can't due to being
     // active at the moment.
     private ExecutorService unfinishedTransactionExecutor;
-    // This is because there's a bug in Netty causing some channelClosed/channelDisconnected
-    // events to not be sent. This is merely a safety net to catch the remained of the closed
-    // channels that netty doesn't tell us about.
-    private ScheduledExecutorService silentChannelExecutor;
-    private long oldChannelThresholdMillis;
     private int chunkSize;
 
     public Server( T requestTarget, Configuration config, LogProvider logProvider, int frameLength,
@@ -143,11 +139,14 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         this.config = config;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = protocolVersion.getApplicationProtocol();
-        this.msgLog = logProvider.getLog( getClass() );
+        this.logProvider = logProvider;
+        this.msgLog = this.logProvider.getLog( getClass() );
         this.txVerifier = txVerifier;
         this.clock = clock;
         this.byteCounterMonitor = byteCounterMonitor;
         this.requestMonitor = requestMonitor;
+
+        this.connectedSlaveChannels = new IdleChannelReaper( this, logProvider, clock, config.getOldChannelThreshold() );
     }
 
     private static void writeStoreId( StoreId storeId, ChannelBuffer targetBuffer )
@@ -167,7 +166,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     @Override
     public void start() throws Throwable
     {
-        this.oldChannelThresholdMillis = config.getOldChannelThreshold();
         chunkSize = config.getChunkSize();
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
 
@@ -176,7 +174,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         targetCallExecutor = newCachedThreadPool( named( className + ":" + config.getServerAddress().getPort() ) );
         unfinishedTransactionExecutor = newScheduledThreadPool( 2, named( "Unfinished transactions" ) );
         silentChannelExecutor = newSingleThreadScheduledExecutor( named( "Silent channel reaper" ) );
-        silentChannelExecutor.scheduleWithFixedDelay( silentChannelFinisher(), 5, 5, TimeUnit.SECONDS );
+        silentChannelExecutor.scheduleWithFixedDelay( connectedSlaveChannels, 5, 5, TimeUnit.SECONDS );
 
         ExecutorService bossExecutor = newCachedThreadPool( daemon( "Boss-" + className ) );
         ExecutorService workerExecutor = newCachedThreadPool( daemon( "Worker-" + className ) );
@@ -241,6 +239,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         targetCallExecutor.awaitTermination( 10, TimeUnit.SECONDS );
         unfinishedTransactionExecutor.shutdown();
         unfinishedTransactionExecutor.awaitTermination( 10, TimeUnit.SECONDS );
+
         silentChannelExecutor.shutdown();
         silentChannelExecutor.awaitTermination( 10, TimeUnit.SECONDS );
 
@@ -257,46 +256,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     public InetSocketAddress getSocketAddress()
     {
         return socketAddress;
-    }
-
-    private Runnable silentChannelFinisher()
-    {
-        // This poller is here because sometimes Netty doesn't tell us when channels are
-        // closed or disconnected. Most of the time it does, but this acts as a safety
-        // net for those we don't get notifications for. When the bug is fixed remove this.
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                Map<Channel,Boolean/*starting to get old?*/> channels = new HashMap<>();
-                synchronized ( connectedSlaveChannels )
-                {
-                    for ( Map.Entry<Channel,Pair<RequestContext,AtomicLong>> channel : connectedSlaveChannels
-                            .entrySet() )
-                    {   // Has this channel been silent for a while?
-                        long age = System.currentTimeMillis() - channel.getValue().other().get();
-                        if ( age > oldChannelThresholdMillis )
-                        {
-                            msgLog.info( "Found a silent channel " + channel + ", " + age );
-                            channels.put( channel.getKey(), Boolean.TRUE );
-                        }
-                        else if ( age > oldChannelThresholdMillis / 2 )
-                        {   // Then add it to a list to check
-                            channels.put( channel.getKey(), Boolean.FALSE );
-                        }
-                    }
-                }
-                for ( Map.Entry<Channel,Boolean> channel : channels.entrySet() )
-                {
-                    if ( channel.getValue() || !channel.getKey().isOpen() || !channel.getKey().isConnected() ||
-                         !channel.getKey().isBound() )
-                    {
-                        tryToFinishOffChannel( channel.getKey() );
-                    }
-                }
-            }
-        };
     }
 
     /**
@@ -342,7 +301,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             writeFailureResponse( e, buffer );
 
             ctx.getChannel().close();
-            tryToFinishOffChannel( ctx.getChannel() );
+            tryToCloseChannel( ctx.getChannel() );
             throw Exceptions.launderedException( e );
         }
     }
@@ -357,10 +316,8 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
          * but it is more sanitary and leaves less exceptions in the logs
          * Each time a write completes, simply update the corresponding channel's timestamp.
          */
-        Pair<RequestContext,AtomicLong> slave = connectedSlaveChannels.get( ctx.getChannel() );
-        if ( slave != null )
+        if ( connectedSlaveChannels.update( ctx.getChannel() ) )
         {
-            slave.other().set( clock.currentTimeMillis() );
             super.writeComplete( ctx, e );
         }
     }
@@ -373,7 +330,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
         if ( !ctx.getChannel().isOpen() )
         {
-            tryToFinishOffChannel( ctx.getChannel() );
+            tryToCloseChannel( ctx.getChannel() );
         }
 
         channelGroup.remove( e.getChannel() );
@@ -387,7 +344,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
         if ( !ctx.getChannel().isConnected() )
         {
-            tryToFinishOffChannel( ctx.getChannel() );
+            tryToCloseChannel( ctx.getChannel() );
         }
     }
 
@@ -397,15 +354,15 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         msgLog.warn( "Exception from Netty", e.getCause() );
     }
 
-    protected void tryToFinishOffChannel( Channel channel )
+    @Override
+    public void tryToCloseChannel( Channel channel )
     {
-        Pair<RequestContext,AtomicLong> slave;
-        slave = unmapSlave( channel );
-        if ( slave == null )
+        IdleChannelReaper.Request request = unmapSlave( channel );
+        if ( request == null )
         {
             return;
         }
-        tryToFinishOffChannel( channel, slave.first() );
+        tryToFinishOffChannel( channel, request.getRequestContext());
     }
 
     protected void tryToFinishOffChannel( Channel channel, RequestContext slave )
@@ -594,33 +551,18 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     protected ChannelBuffer mapSlave( Channel channel, RequestContext slave )
     {
-        synchronized ( connectedSlaveChannels )
+        // Checking for machineId -1 excludes the "empty" slave contexts
+        // which some communication points pass in as context.
+        if ( slave != null && slave.machineId() != RequestContext.EMPTY.machineId() )
         {
-            // Checking for machineId -1 excludes the "empty" slave contexts
-            // which some communication points pass in as context.
-            if ( slave != null && slave.machineId() != RequestContext.EMPTY.machineId() )
-            {
-                Pair<RequestContext,AtomicLong> previous = connectedSlaveChannels.get( channel );
-                if ( previous != null )
-                {
-                    previous.other().set( System.currentTimeMillis() );
-                }
-                else
-                {
-                    connectedSlaveChannels.put( channel,
-                            Pair.of( slave, new AtomicLong( System.currentTimeMillis() ) ) );
-                }
-            }
+            connectedSlaveChannels.add( channel, slave );
         }
         return ChannelBuffers.dynamicBuffer();
     }
 
-    protected Pair<RequestContext,AtomicLong> unmapSlave( Channel channel )
+    protected IdleChannelReaper.Request unmapSlave( Channel channel )
     {
-        synchronized ( connectedSlaveChannels )
-        {
-            return connectedSlaveChannels.remove( channel );
-        }
+        return connectedSlaveChannels.remove( channel );
     }
 
     protected T getRequestTarget()
@@ -629,19 +571,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     protected abstract void finishOffChannel( Channel channel, RequestContext context );
-
-    public Map<Channel,RequestContext> getConnectedSlaveChannels()
-    {
-        Map<Channel,RequestContext> result = new HashMap<>();
-        synchronized ( connectedSlaveChannels )
-        {
-            for ( Map.Entry<Channel,Pair<RequestContext,AtomicLong>> entry : connectedSlaveChannels.entrySet() )
-            {
-                result.put( entry.getKey(), entry.getValue().first() );
-            }
-        }
-        return result;
-    }
 
     private ChunkingChannelBuffer newChunkingBuffer( Channel channel )
     {

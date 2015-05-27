@@ -52,7 +52,7 @@ public class ServerTest
     private final RecordingChannel channel = new RecordingChannel();
 
     @Test
-    public void shouldSendExceptionBackToClientOnInvalidChecksum() throws Exception
+    public void shouldSendExceptionBackToClientOnInvalidChecksum() throws Throwable
     {
         // Given
         Server<Object, Object> server = newServer( checksumVerifier );
