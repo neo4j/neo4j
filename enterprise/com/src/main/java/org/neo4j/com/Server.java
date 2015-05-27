@@ -34,7 +34,6 @@ import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -109,7 +108,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     // actual work. So this is more like a core Netty I/O pool worker size.
     public final static int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
     static final byte INTERNAL_PROTOCOL_VERSION = 2;
-    private static final String INADDR_ANY = "0.0.0.0";
     private final T requestTarget;
     private IdleChannelReaper connectedSlaveChannels;
     private final Log msgLog;
@@ -182,38 +180,18 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                 bossExecutor, workerExecutor, config.getMaxConcurrentTransactions() ) );
         bootstrap.setPipelineFactory( this );
 
-        Channel channel = null;
-        socketAddress = null;
-
-        // Try binding to any port in the port range
-        int[] ports = config.getServerAddress().getPorts();
-
-        ChannelException ex = null;
-
-        for ( int port = ports[0]; port <= ports[1]; port++ )
+        PortRangeSocketBinder portRangeSocketBinder = new PortRangeSocketBinder( bootstrap );
+        try
         {
-            if ( config.getServerAddress().getHost() == null ||
-                 config.getServerAddress().getHost().equals( INADDR_ANY ) )
-            {
-                socketAddress = new InetSocketAddress( port );
-            }
-            else
-            {
-                socketAddress = new InetSocketAddress( config.getServerAddress().getHost(), port );
-            }
-            try
-            {
-                channel = bootstrap.bind( socketAddress );
-                ex = null;
-                break;
-            }
-            catch ( ChannelException e )
-            {
-                ex = e;
-            }
-        }
+            Connection connection = portRangeSocketBinder.bindToFirstAvailablePortInRange( config.getServerAddress() );
+            Channel channel = connection.getChannel();
+            socketAddress = connection.getSocketAddress();
 
-        if ( ex != null )
+            channelGroup = new DefaultChannelGroup();
+            channelGroup.add( channel );
+            msgLog.info( className + " communication server started and bound to " + socketAddress );
+        }
+        catch ( Exception ex )
         {
             msgLog.error( "Failed to bind server to " + socketAddress, ex );
             bootstrap.releaseExternalResources();
@@ -222,10 +200,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             silentChannelExecutor.shutdownNow();
             throw new IOException( ex );
         }
-
-        channelGroup = new DefaultChannelGroup();
-        channelGroup.add( channel );
-        msgLog.info( className + " communication server started and bound to " + socketAddress );
     }
 
     @Override
