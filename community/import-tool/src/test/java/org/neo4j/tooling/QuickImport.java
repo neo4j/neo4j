@@ -114,6 +114,13 @@ public class QuickImport
     private static CharSeeker seeker( String definition, Configuration config )
     {
         return CharSeekers.charSeeker( Readables.wrap( new StringReader( definition ) ),
-                10_000, false, config.quotationCharacter() );
+                new org.neo4j.csv.reader.Configuration.Overridden( config )
+        {
+            @Override
+            public int bufferSize()
+            {
+                return 10_000;
+            }
+        }, false );
     }
 }

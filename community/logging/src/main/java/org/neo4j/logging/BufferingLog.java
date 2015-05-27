@@ -19,12 +19,12 @@
  */
 package org.neo4j.logging;
 
-import org.neo4j.function.Consumer;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.LinkedList;
 import java.util.Queue;
+
+import org.neo4j.function.Consumer;
 
 /**
  * Buffers all messages sent to it, and is able to replay those messages into
@@ -103,7 +103,7 @@ public class BufferingLog extends AbstractLog
         }
     }
 
-    private Logger debugLogger = new BufferingLogger()
+    private final Logger debugLogger = new BufferingLogger()
     {
         @Override
         public LogMessage buildMessage( final String message )
@@ -164,7 +164,7 @@ public class BufferingLog extends AbstractLog
         }
     };
 
-    private Logger infoLogger = new BufferingLogger()
+    private final Logger infoLogger = new BufferingLogger()
     {
         @Override
         public LogMessage buildMessage( final String message )
@@ -225,7 +225,7 @@ public class BufferingLog extends AbstractLog
         }
     };
 
-    private Logger warnLogger = new BufferingLogger()
+    private final Logger warnLogger = new BufferingLogger()
     {
         @Override
         public LogMessage buildMessage( final String message )
@@ -286,7 +286,7 @@ public class BufferingLog extends AbstractLog
         }
     };
 
-    private Logger errorLogger = new BufferingLogger()
+    private final Logger errorLogger = new BufferingLogger()
     {
         @Override
         public LogMessage buildMessage( final String message )
