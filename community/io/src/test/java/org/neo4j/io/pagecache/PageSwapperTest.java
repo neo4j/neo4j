@@ -24,28 +24,24 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.function.Factory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.impl.ByteBufferPage;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-@RunWith( Parameterized.class )
-public abstract class PageSwappingTest
+public abstract class PageSwapperTest
 {
     private static PageEvictionCallback NO_CALLBACK = new PageEvictionCallback()
     {
@@ -55,10 +51,8 @@ public abstract class PageSwappingTest
         }
     };
 
-    private static EphemeralFileSystemAbstraction fs;
-
-    private final PageSwapperFactory swapperFactory;
-    private final int cachePageSize = 32;
+    protected static EphemeralFileSystemAbstraction fs;
+    protected static final int cachePageSize = 32;
 
     @BeforeClass
     public static void setUp()
@@ -73,41 +67,12 @@ public abstract class PageSwappingTest
         fs.shutdown();
     }
 
-    @Parameterized.Parameters
-    public static Iterable<Object[]> dataPoints()
+    protected abstract PageSwapperFactory swapperFactory( FileSystemAbstraction fs );
+
+    private ByteBufferPage createPage( int cachePageSize )
     {
-        Factory<PageSwapperFactory> singleFileSwapper = new Factory<PageSwapperFactory>()
-        {
-            @Override
-            public PageSwapperFactory newInstance()
-            {
-                return new SingleFilePageSwapperFactory( fs );
-            }
-        };
-
-        return Arrays.asList( new Object[][]{
-                { singleFileSwapper }
-                } );
+        return new ByteBufferPage( ByteBuffer.allocateDirect( cachePageSize ) );
     }
-
-    public PageSwappingTest( Factory<PageSwapperFactory> fixture )
-    {
-        swapperFactory = fixture.newInstance();
-    }
-
-    protected abstract Page createPage( int cachePageSize );
-
-    protected abstract long writeLock( Page page );
-
-    protected abstract void unlockWrite( Page page, long stamp );
-
-    protected abstract long getLong( Page page, int offset );
-
-    protected abstract int getInt( Page page, int offset );
-
-    protected abstract void putLong( Page page, long value, int offset );
-
-    protected abstract void putInt( Page page, int value, int offset );
 
     @Before
     @After
@@ -122,21 +87,14 @@ public abstract class PageSwappingTest
         File file = new File( "a" );
         fs.create( file ).close();
 
-        Page page = createPage( cachePageSize );
+        ByteBufferPage page = createPage( cachePageSize );
+        PageSwapperFactory swapperFactory = swapperFactory( fs );
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
 
         Thread.currentThread().interrupt();
 
-        long stamp = writeLock( page );
-        try
-        {
-            swapper.write( 0, page );
-            assertTrue( Thread.currentThread().isInterrupted() );
-        }
-        finally
-        {
-            unlockWrite( page, stamp );
-        }
+        swapper.write( 0, page );
+        assertTrue( Thread.currentThread().isInterrupted() );
     }
 
     @Test
@@ -145,6 +103,7 @@ public abstract class PageSwappingTest
         File file = new File( "a" );
         fs.create( file ).close();
 
+        PageSwapperFactory swapperFactory = swapperFactory( fs );
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
 
         Thread.currentThread().interrupt();
@@ -159,7 +118,7 @@ public abstract class PageSwappingTest
         long y = ThreadLocalRandom.current().nextLong();
         int z = ThreadLocalRandom.current().nextInt();
 
-        Page page = createPage( cachePageSize );
+        ByteBufferPage page = createPage( cachePageSize );
         File file = new File( "a" );
         StoreChannel channel = fs.create( file );
         ByteBuffer buf = ByteBuffer.allocate( cachePageSize );
@@ -170,26 +129,19 @@ public abstract class PageSwappingTest
         channel.writeAll( buf );
         channel.close();
 
+        PageSwapperFactory swapperFactory = swapperFactory( fs );
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
 
         Thread.currentThread().interrupt();
 
-        long stamp = writeLock( page );
-        try
-        {
-            swapper.read( 0, page );
-        }
-        finally
-        {
-            unlockWrite( page, stamp );
-        }
+        swapper.read( 0, page );
 
         // Clear the interrupted flag and assert that it was still raised
         assertTrue( Thread.interrupted() );
 
-        assertThat( getLong( page, 0 ), is( x ) );
-        assertThat( getLong( page, 8 ), is( y ) );
-        assertThat( getInt( page, 16 ), is( z ) );
+        assertThat( page.getLong( 0 ), is( x ) );
+        assertThat( page.getLong( 8 ), is( y ) );
+        assertThat( page.getInt( 16 ), is( z ) );
 
         // This must not throw because we should still have a usable channel
         swapper.force();
@@ -202,26 +154,19 @@ public abstract class PageSwappingTest
         long y = ThreadLocalRandom.current().nextLong();
         int z = ThreadLocalRandom.current().nextInt();
 
-        Page page = createPage( cachePageSize );
-        putLong( page, x, 0 );
-        putLong( page, y, 8 );
-        putInt( page, z, 16 );
+        ByteBufferPage page = createPage( cachePageSize );
+        page.putLong( x, 0 );
+        page.putLong( y, 8 );
+        page.putInt( z, 16 );
         File file = new File( "a" );
         fs.create( file ).close();
 
+        PageSwapperFactory swapperFactory = swapperFactory( fs );
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
 
         Thread.currentThread().interrupt();
 
-        long stamp = writeLock( page );
-        try
-        {
-            swapper.write( 0, page );
-        }
-        finally
-        {
-            unlockWrite( page, stamp );
-        }
+        swapper.write( 0, page );
 
         // Clear the interrupted flag and assert that it was still raised
         assertTrue( Thread.interrupted() );
@@ -246,6 +191,7 @@ public abstract class PageSwappingTest
         File file = new File( "a" );
         fs.create( file ).close();
 
+        PageSwapperFactory swapperFactory = swapperFactory( fs );
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
 
         for ( int i = 0; i < 10; i++ )
@@ -269,11 +215,11 @@ public abstract class PageSwappingTest
         channel.writeAll( buf );
         channel.close();
 
-        Page page = createPage( cachePageSize );
+        ByteBufferPage page = createPage( cachePageSize );
+        PageSwapperFactory swapperFactory = swapperFactory( fs );
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
         swapper.close();
 
-        long stamp = writeLock( page );
         try
         {
             swapper.read( 0, page );
@@ -283,10 +229,6 @@ public abstract class PageSwappingTest
         {
             // This is fine.
         }
-        finally
-        {
-            unlockWrite( page, stamp );
-        }
     }
 
     @Test
@@ -295,11 +237,11 @@ public abstract class PageSwappingTest
         File file = new File( "a" );
         fs.create( file ).close();
 
-        Page page = createPage( cachePageSize );
+        ByteBufferPage page = createPage( cachePageSize );
+        PageSwapperFactory swapperFactory = swapperFactory( fs );
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
         swapper.close();
 
-        long stamp = writeLock( page );
         try
         {
             swapper.write( 0, page );
@@ -309,10 +251,6 @@ public abstract class PageSwappingTest
         {
             // This is fine.
         }
-        finally
-        {
-            unlockWrite( page, stamp );
-        }
     }
 
     @Test
@@ -321,6 +259,7 @@ public abstract class PageSwappingTest
         File file = new File( "a" );
         fs.create( file ).close();
 
+        PageSwapperFactory swapperFactory = swapperFactory( fs );
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
         swapper.close();
 

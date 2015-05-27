@@ -34,9 +34,10 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
  */
 public class SingleFilePageSwapperFactory implements PageSwapperFactory
 {
-    private final FileSystemAbstraction fs;
+    private FileSystemAbstraction fs;
 
-    public SingleFilePageSwapperFactory( FileSystemAbstraction fs )
+    @Override
+    public void setFileSystemAbstraction( FileSystemAbstraction fs )
     {
         this.fs = fs;
     }
@@ -48,5 +49,11 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
             PageEvictionCallback onEviction ) throws IOException
     {
         return new SingleFilePageSwapper( file, fs, filePageSize, onEviction );
+    }
+
+    @Override
+    public String implementationName()
+    {
+        return "striped";
     }
 }

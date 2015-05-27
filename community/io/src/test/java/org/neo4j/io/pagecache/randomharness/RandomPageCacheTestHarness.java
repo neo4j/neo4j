@@ -355,7 +355,8 @@ public class RandomPageCacheTestHarness
             fs = new AdversarialFileSystemAbstraction( adversary, fs );
         }
 
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
+        swapperFactory.setFileSystemAbstraction( fs );
         MuninnPageCache cache = new MuninnPageCache( swapperFactory, cachePageCount, cachePageSize, tracer );
         cache.setPrintExceptionsOnClose( false );
         Map<File,PagedFile> fileMap = new HashMap<>( files.length );

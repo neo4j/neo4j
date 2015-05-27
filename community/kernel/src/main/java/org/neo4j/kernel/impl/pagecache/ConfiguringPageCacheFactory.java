@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.pagecache;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 
+import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
@@ -33,6 +34,7 @@ import org.neo4j.logging.Log;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
 
 public class ConfiguringPageCacheFactory
 {
@@ -45,10 +47,36 @@ public class ConfiguringPageCacheFactory
     public ConfiguringPageCacheFactory(
             FileSystemAbstraction fs, Config config, PageCacheTracer tracer, Log log )
     {
-        this.swapperFactory = new SingleFilePageSwapperFactory( fs );
+        this.swapperFactory = createAndConfigureSwapperFactory( fs, config );
         this.config = config;
         this.tracer = tracer;
         this.log = log;
+    }
+
+    private PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, Config config )
+    {
+        String desiredImplementation = config.get( pagecache_swapper );
+
+        if ( desiredImplementation != null )
+        {
+            for ( PageSwapperFactory factory : Service.load( PageSwapperFactory.class ) )
+            {
+                if ( factory.implementationName().equals( desiredImplementation ) )
+                {
+                    factory.setFileSystemAbstraction( fs );
+                    if ( factory instanceof ConfigurablePageSwapperFactory )
+                    {
+                        ConfigurablePageSwapperFactory cfactory = (ConfigurablePageSwapperFactory) factory;
+                        cfactory.configure( config );
+                    }
+                    return factory;
+                }
+            }
+        }
+
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
+        factory.setFileSystemAbstraction( fs );
+        return factory;
     }
 
     public synchronized PageCache getOrCreatePageCache()

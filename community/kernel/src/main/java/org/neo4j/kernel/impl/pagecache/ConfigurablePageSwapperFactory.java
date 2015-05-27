@@ -17,26 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache;
+package org.neo4j.kernel.impl.pagecache;
+
+import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.kernel.configuration.Config;
 
 /**
- * A page in the page cache. Always represents a concrete page in memory, and may
- * represent a particular page in a file, if that file-page has been swapped into the
- * page.
+ * A PageSwapperFactory that can take additional configurations.
+ *
+ * The configuration options should be name-spaced under <code>dbms.pagecache.swapper.{implementationName}</code>.
  */
-public interface Page
+public interface ConfigurablePageSwapperFactory extends PageSwapperFactory
 {
     /**
-     * Get the size of the cache page in bytes.
+     * Apply the given configuration to this PageSwapperFactory.
      *
-     * Don't access memory beyond address() + size().
+     * This must be called before the factory creates its first PageSwapper.
      */
-    int size();
-
-    /**
-     * Get the memory address of the beginning of the page.
-     *
-     * Don't access memory beyond address() + size().
-     */
-    long address();
+    void configure( Config config );
 }

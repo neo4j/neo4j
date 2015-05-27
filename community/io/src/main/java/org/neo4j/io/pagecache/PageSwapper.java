@@ -34,9 +34,6 @@ public interface PageSwapper
      * Read the page with the given filePageId, from the concrete file on the
      * file system, into the given page.
      *
-     * This should be implemented using the
-     * {@link Page#swapIn(org.neo4j.io.fs.StoreChannel, long, int)} method.
-     *
      * Returns the number of bytes read in from the file. May be zero if the
      * requested page was beyond the end of the file. If less than the file
      * page size, then the rest of the page will contain zeros.
@@ -51,9 +48,6 @@ public interface PageSwapper
     /**
      * Write the contents of the given page, to the concrete file on the file
      * system, at the located indicated by the given filePageId.
-     *
-     * This should be implemented using the
-     * {@link Page#swapOut(org.neo4j.io.fs.StoreChannel, long, int)} method.
      *
      * Returns the number of bytes written to the file.
      *

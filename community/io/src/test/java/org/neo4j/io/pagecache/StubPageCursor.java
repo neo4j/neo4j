@@ -41,7 +41,7 @@ public class StubPageCursor implements PageCursor
     {
         this.pageId = initialPageId;
         this.pageSize = pageSize;
-        this.page = new ByteBufferPage( ByteBuffer.allocate(pageSize) );
+        this.page = new ByteBufferPage( ByteBuffer.allocateDirect(pageSize) );
     }
 
     public StubPageCursor( long initialPageId, ByteBuffer buffer )

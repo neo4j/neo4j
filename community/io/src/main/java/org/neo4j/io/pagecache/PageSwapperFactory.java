@@ -22,6 +22,8 @@ package org.neo4j.io.pagecache;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+
 /**
  * Creates PageSwappers for the given files.
  *
@@ -31,6 +33,18 @@ import java.io.IOException;
  */
 public interface PageSwapperFactory
 {
+    /**
+     * Configure the FileSystemAbstraction to use.
+     *
+     * This must be called before the first PageSwapper is created.
+     */
+    void setFileSystemAbstraction( FileSystemAbstraction fs );
+
+    /**
+     * Get the name of this PageSwapperFactory implementation, for configuration purpose.
+     */
+    String implementationName();
+
     /**
      * Create a PageSwapper for the given file.
      * @param file The file that the PageSwapper will move file pages in and
@@ -43,7 +57,7 @@ public interface PageSwapperFactory
      * @throws IOException If the PageSwapper could not be created, for
      * instance if the underlying file could not be opened.
      */
-    public PageSwapper createPageSwapper(
+    PageSwapper createPageSwapper(
             File file,
             int filePageSize,
             PageEvictionCallback onEviction ) throws IOException;
