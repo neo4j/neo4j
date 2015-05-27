@@ -155,6 +155,29 @@ public class ReadablesTest
         shouldComplyWithSpecifiedCharset( Charset.forName( "iso-8859-1" ) );
     }
 
+    @Test
+    public void shouldSkipBOM() throws Exception
+    {
+        // GIVEN
+        String text = "abcdefghijklmnop";
+
+        // THEN/WHEN
+        shouldReadableTextFromFileWithBom( Magic.BOM_UTF_32_BE, text );
+        shouldReadableTextFromFileWithBom( Magic.BOM_UTF_32_LE, text );
+        shouldReadableTextFromFileWithBom( Magic.BOM_UTF_16_BE, text );
+        shouldReadableTextFromFileWithBom( Magic.BOM_UTF_16_LE, text );
+        shouldReadableTextFromFileWithBom( Magic.BOM_UTF_8, text );
+    }
+
+    private void shouldReadableTextFromFileWithBom( Magic bom, String text ) throws IOException
+    {
+        // GIVEN
+        File file = writeToFile( bom.bytes(), text, bom.encoding() );
+
+        // THEN
+        assertReadText( file, text );
+    }
+
     private void shouldComplyWithSpecifiedCharset( Charset charset ) throws Exception
     {
         // GIVEN
@@ -181,6 +204,18 @@ public class ReadablesTest
         File file = new File( directory.directory(), "text-" + charset.name() );
         try ( Writer writer = new OutputStreamWriter( new FileOutputStream( file ), charset ) )
         {
+            writer.append( data );
+        }
+        return file;
+    }
+
+    private File writeToFile( byte[] header, String data, Charset charset ) throws IOException
+    {
+        File file = new File( directory.directory(), "text-" + charset.name() );
+        try ( OutputStream out = new FileOutputStream( file );
+              Writer writer = new OutputStreamWriter( out, charset ) )
+        {
+            out.write( header );
             writer.append( data );
         }
         return file;
