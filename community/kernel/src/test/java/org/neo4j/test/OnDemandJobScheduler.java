@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
@@ -47,6 +48,12 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
     {
         this.job = job;
         return new OnDemandJobHandle();
+    }
+
+    @Override
+    public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
+    {
+        return schedule( group, job );
     }
 
     @Override
