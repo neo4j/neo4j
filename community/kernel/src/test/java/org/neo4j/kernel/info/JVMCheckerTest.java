@@ -42,6 +42,17 @@ public class JVMCheckerTest
     }
 
     @Test
+    public void shouldNotIssueWarningWhenUsingHotspotServerVmVersion8() throws Exception
+    {
+        BufferingLogger bufferingLogger = new BufferingLogger();
+
+        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
+                "1.8.0_45" ) ).checkJvmCompatibilityAndIssueWarning();
+
+        assertTrue( bufferingLogger.toString().isEmpty() );
+    }
+
+    @Test
     public void shouldNotIssueWarningWhenUsingHotspotServerVmVersion7InThe32BitVersion() throws Exception
     {
         BufferingLog bufferingLogger = new BufferingLog();
