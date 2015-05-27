@@ -75,7 +75,6 @@ class StringDeserialization implements Deserialization<String>
         else if ( value.getClass().isArray() )
         {
             int length = Array.getLength( value );
-            builder.append( '[' );
             for ( int i = 0; i < length; i++ )
             {
                 Object item = Array.get( value, i );
@@ -85,7 +84,6 @@ class StringDeserialization implements Deserialization<String>
                 }
                 stringify( entry, item );
             }
-            builder.append( ']' );
         }
         else if ( value instanceof Number )
         {
