@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphalgo.path;
 
-import org.junit.Ignore;
-import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -33,9 +31,7 @@ import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.kernel.Traversal;
 
-import static org.junit.Assert.fail;
 import common.Neo4jAlgoTestCase;
-import common.Neo4jAlgoTestCase.MyRelTypes;
 import static org.junit.Assert.assertNotNull;
 
 public class TestExactDepthPathFinder extends Neo4jAlgoTestCase

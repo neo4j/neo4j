@@ -33,11 +33,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -134,7 +132,7 @@ public class BufferedCharSeekerTest
     public void shouldSeekThroughAdditionalBufferRead() throws Exception
     {
         // GIVEN
-        seeker = seeker( "1234,5678,9012,3456", 12 );
+        seeker = seeker( "1234,5678,9012,3456", config( 12 ) );
         // read more here             ^
 
         // WHEN/THEN
@@ -218,7 +216,7 @@ public class BufferedCharSeekerTest
     public void shouldNotLetEolCharSkippingMessUpPositionsInMark() throws Exception
     {
         // GIVEN
-        seeker = seeker( "12,34,56\n789,901,23", 9 );
+        seeker = seeker( "12,34,56\n789,901,23", config( 9 ) );
         // read more here          ^        ^
 
         // WHEN
@@ -243,7 +241,7 @@ public class BufferedCharSeekerTest
     public void shouldSeeEofEvenIfBufferAlignsWithEnd() throws Exception
     {
         // GIVEN
-        seeker = seeker( "123,56", 6 );
+        seeker = seeker( "123,56", config( 6 ) );
 
         // WHEN
         assertTrue( seeker.seek( mark, COMMA ) );
@@ -368,7 +366,7 @@ public class BufferedCharSeekerTest
     public void shouldReadQuotedValuesWithNewLinesInside() throws Exception
     {
         // GIVEN
-        seeker = seeker( "value one\t\"value\ntwo\"\tvalue three" );
+        seeker = seeker( "value one\t\"value\ntwo\"\tvalue three", config( 1_000, true ) );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -543,11 +541,10 @@ public class BufferedCharSeekerTest
             seeker.seek( mark, COMMA );
             fail( "Should've failed" );
         }
-        catch ( IllegalStateException e )
+        catch ( DataAfterQuoteException e )
         {
             // THEN good
-            assertThat( e.getMessage(), containsString( ":0" ) );
-            assertThat( e.getMessage(), containsString( "after that ending quote" ) );
+            assertEquals( 0, e.source().lineNumber() );
         }
     }
 
@@ -576,7 +573,7 @@ public class BufferedCharSeekerTest
                 "",
                 "Quux\"",
                 "" );
-        seeker = seeker( data );
+        seeker = seeker( data, config( 1_000, true ) );
 
         // THEN
         assertNextValue( seeker, mark, COMMA, "1" );
@@ -700,22 +697,45 @@ public class BufferedCharSeekerTest
 
     private CharSeeker seeker( CharReadable readable )
     {
-        return seeker( readable, 1_000 );
+        return seeker( readable, config( 1_000 ) );
     }
 
-    private CharSeeker seeker( CharReadable readable, int bufferSize )
+    private CharSeeker seeker( CharReadable readable, Configuration config )
     {
-        return charSeeker( readable, bufferSize, useThreadAhead, '"' );
+        return charSeeker( readable, config, useThreadAhead );
     }
 
     private CharSeeker seeker( String data )
     {
-        return seeker( data, 1_000 );
+        return seeker( data, config( 1_000 ) );
     }
 
-    private CharSeeker seeker( String data, int bufferSize )
+    private CharSeeker seeker( String data, Configuration config )
     {
-        return seeker( wrap( new StringReader( data ) ), bufferSize );
+        return seeker( wrap( new StringReader( data ) ), config );
+    }
+
+    private static Configuration config( final int bufferSize )
+    {
+        return config( bufferSize, Configuration.DEFAULT.multilineFields() );
+    }
+
+    private static Configuration config( final int bufferSize, final boolean multiline )
+    {
+        return new Configuration.Overridden( Configuration.DEFAULT )
+        {
+            @Override
+            public boolean multilineFields()
+            {
+                return multiline;
+            }
+
+            @Override
+            public int bufferSize()
+            {
+                return bufferSize;
+            }
+        };
     }
 
     private static final int TAB = '\t';
