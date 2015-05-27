@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.neo4j.ndp</groupId>
+    <groupId>org.neo4j</groupId>
     <artifactId>neo4j-data-protocol-parent</artifactId>
     <version>2.3-SNAPSHOT</version>
     <relativePath>../</relativePath>
@@ -25,13 +25,13 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.neo4j.ndp</groupId>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ndp-packstream-v1</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.neo4j.ndp</groupId>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ndp-runtime</artifactId>
       <version>${project.version}</version>
     </dependency>

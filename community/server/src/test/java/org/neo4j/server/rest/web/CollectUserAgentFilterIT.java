@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.rest.web;
 
-import java.io.IOException;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;

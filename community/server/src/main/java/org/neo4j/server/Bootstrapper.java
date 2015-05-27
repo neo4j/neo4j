@@ -217,11 +217,6 @@ public abstract class Bootstrapper
                 .addShutdownHook( shutdownHook );
     }
 
-    protected Configurator createConfigurator( Log log )
-    {
-        return new ConfigurationBuilder.ConfigurationBuilderWrappingConfigurator( createConfigurationBuilder( log ) );
-    }
-
     protected ConfigurationBuilder createConfigurationBuilder( Log log )
     {
         File configFile = new File( System.getProperty(

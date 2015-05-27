@@ -170,6 +170,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-ndp-transport-socket</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-browser</artifactId>
       <version>${project.version}</version>
