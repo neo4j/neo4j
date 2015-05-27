@@ -40,7 +40,6 @@ public class ErrorTranslator
 
     public Neo4jError translate( Throwable any )
     {
-        any.printStackTrace();
         if ( any instanceof KernelException )
         {
             return new Neo4jError( ((KernelException) any).status(), any.getMessage() );

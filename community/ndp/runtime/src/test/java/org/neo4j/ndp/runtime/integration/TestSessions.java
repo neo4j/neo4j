@@ -53,9 +53,9 @@ public class TestSessions implements TestRule, Sessions
             public void evaluate() throws Throwable
             {
                 gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-                Neo4jJobScheduler scheduler = life.add(new Neo4jJobScheduler());
+                Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
                 StandardSessions sessions = life.add(
-                        new StandardSessions( (GraphDatabaseAPI) gdb, NullLog.getInstance() ));
+                        new StandardSessions( (GraphDatabaseAPI) gdb, NullLog.getInstance() ) );
                 actual = life.add( new ThreadedSessions(
                         sessions,
                         scheduler, NullLogService.getInstance() ) );

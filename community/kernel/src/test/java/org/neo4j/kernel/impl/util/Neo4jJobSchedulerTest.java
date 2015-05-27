@@ -137,12 +137,12 @@ public class Neo4jJobSchedulerTest
             String threadName = "neo4j.MyGroup/MyTestThread";
             for ( String name : threadNames() )
             {
-                if(name.equals( threadName ))
+                if ( name.equals( threadName ) )
                 {
                     return;
                 }
             }
-            fail("Expected a thread named '" + threadName + "' in " + threadNames() );
+            fail( "Expected a thread named '" + threadName + "' in " + threadNames() );
 
         }
         finally

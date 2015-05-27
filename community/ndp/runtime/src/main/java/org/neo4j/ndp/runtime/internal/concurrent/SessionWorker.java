@@ -59,7 +59,7 @@ public class SessionWorker implements Runnable
     }
 
     /**
-     * Accept a command to be executed at some point in the future. This will get queued and executd as soon as
+     * Accept a command to be executed at some point in the future. This will get queued and executed as soon as
      * possible.
      * @param command an operation to be performed on the session
      */
@@ -83,7 +83,7 @@ public class SessionWorker implements Runnable
                 {
                     execute( work );
 
-                    for ( int items = 1; keepRunning && items > 0;
+                    for ( int items = workQueue.drainTo( batch ); keepRunning && items > 0;
                           items = workQueue.drainTo( batch ) )
                     {
                         executeBatch( batch );
@@ -91,7 +91,7 @@ public class SessionWorker implements Runnable
                 }
             }
         }
-        catch(Throwable e)
+        catch ( Throwable e )
         {
             log.error( "Worker for session '" + session.key() + "' crashed: " + e.getMessage(), e );
             userLog.error( "Fatal, worker for session '" + session.key() + "' crashed. Please" +
@@ -114,7 +114,7 @@ public class SessionWorker implements Runnable
 
     private void execute( Consumer<Session> work )
     {
-        if(work == SHUTDOWN)
+        if ( work == SHUTDOWN )
         {
             session.close();
             keepRunning = false;

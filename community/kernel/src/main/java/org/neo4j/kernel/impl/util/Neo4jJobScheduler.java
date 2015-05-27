@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -32,10 +31,10 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.NO_METADATA;
 
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
-    private static final Map<String, String> NO_METADATA = Collections.EMPTY_MAP;
     private final String id;
 
     private ExecutorService globalPool;
@@ -185,7 +184,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         @Override
         public void cancel( boolean mayInterruptIfRunning )
         {
-            if(mayInterruptIfRunning)
+            if ( mayInterruptIfRunning )
             {
                 thread.interrupt();
             }

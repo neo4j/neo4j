@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +49,7 @@ public interface JobScheduler extends Lifecycle
     class Group
     {
         public static final String THREAD_ID = "thread-id";
+        public static final Map<String, String> NO_METADATA = Collections.EMPTY_MAP;
 
         private final String name;
         private final SchedulingStrategy strategy;
@@ -76,7 +78,7 @@ public interface JobScheduler extends Lifecycle
          */
         public String threadName( Map<String, String> metadata )
         {
-            if(metadata.containsKey( THREAD_ID ))
+            if ( metadata.containsKey( THREAD_ID ) )
             {
                 return "neo4j." + name() + "/" + metadata.get( THREAD_ID );
             }

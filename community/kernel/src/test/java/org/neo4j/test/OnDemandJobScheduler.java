@@ -26,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.*;
+
 public class OnDemandJobScheduler extends LifecycleAdapter implements JobScheduler
 {
     private Runnable job;
@@ -46,14 +48,14 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
     @Override
     public JobHandle schedule( Group group, Runnable job )
     {
-        this.job = job;
-        return new OnDemandJobHandle();
+        return this.schedule( group, job, NO_METADATA );
     }
 
     @Override
     public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
     {
-        return schedule( group, job );
+        this.job = job;
+        return new OnDemandJobHandle();
     }
 
     @Override
