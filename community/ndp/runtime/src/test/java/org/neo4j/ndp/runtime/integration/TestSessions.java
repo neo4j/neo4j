@@ -27,11 +27,14 @@ import java.util.LinkedList;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.Sessions;
 import org.neo4j.ndp.runtime.internal.StandardSessions;
+import org.neo4j.ndp.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TestSessions implements TestRule, Sessions
@@ -50,7 +53,13 @@ public class TestSessions implements TestRule, Sessions
             public void evaluate() throws Throwable
             {
                 gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-                actual = life.add( new StandardSessions( (GraphDatabaseAPI) gdb, NullLog.getInstance() ) );
+                Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
+                StandardSessions sessions = life.add(
+                        new StandardSessions( (GraphDatabaseAPI) gdb, NullLog.getInstance() ) );
+                actual = life.add( new ThreadedSessions(
+                        sessions,
+                        scheduler, NullLogService.getInstance() ) );
+
                 life.start();
                 try
                 {

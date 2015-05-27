@@ -19,11 +19,14 @@
  */
 package org.neo4j.test;
 
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.*;
 
 public class OnDemandJobScheduler extends LifecycleAdapter implements JobScheduler
 {
@@ -44,6 +47,12 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
 
     @Override
     public JobHandle schedule( Group group, Runnable job )
+    {
+        return this.schedule( group, job, NO_METADATA );
+    }
+
+    @Override
+    public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
     {
         this.job = job;
         return new OnDemandJobHandle();

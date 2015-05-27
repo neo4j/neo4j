@@ -34,7 +34,7 @@ import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.masterTransactionPushing;
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.masterTransactionPushing;
 
 public class CommitPusher extends LifecycleAdapter
 {
