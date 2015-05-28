@@ -20,10 +20,8 @@
 package org.neo4j.ndp.transport.socket;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.junit.After;
 import org.junit.Before;
@@ -31,6 +29,7 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.impl.util.HexPrinter;
@@ -74,6 +73,36 @@ public class ChunkedOutputTest
         assertThat( HexPrinter.hex( writtenData, 0, 32 ),
                 equalTo( "00 08 00 00 00 00 00 00    00 01 00 08 00 00 00 00    " +
                          "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00" ) );
+    }
+
+    @Test
+    public void shouldReserveSpaceForChunkHeaderWhenWriteDataToNewChunk() throws IOException
+    {
+        // Given 2 bytes left in buffer + chunk is closed
+        out.writeBytes( new byte[10], 0, 10 );  // 2 (header) + 10
+        out.messageBoundaryHook().run();        // 2 (ending)
+
+        // When write 2 bytes
+        out.writeShort( (short) 33 );           // 2 (header) + 2
+
+        // Then the buffer should auto flash if space left (2) is smaller than new data and chunk header (2 + 2)
+        assertThat( writtenData.limit(), equalTo( 14 ) );
+        assertThat( HexPrinter.hex( writtenData, 0, 14 ),
+                equalTo( "00 0A 00 00 00 00 00 00    00 00 00 00 00 00" ) );
+    }
+
+    @Test
+    public void shouldChunkDataWhoseSizeIsGreaterThanOutputBufferCapacity() throws IOException
+    {
+        // Given
+        out.writeBytes( new byte[16], 0, 16 ); // 2 + 16 is greater than the default max size 16
+        out.messageBoundaryHook().run();
+        out.flush();
+
+        // When & Then
+        assertThat( writtenData.limit(), equalTo( 22 ) );
+        assertThat( HexPrinter.hex( writtenData, 0, 22 ),
+                equalTo( "00 0E 00 00 00 00 00 00    00 00 00 00 00 00 00 00    00 02 00 00 00 00" ) );
     }
 
     @Before
