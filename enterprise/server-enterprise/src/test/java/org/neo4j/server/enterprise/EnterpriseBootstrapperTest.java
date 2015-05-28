@@ -25,12 +25,6 @@ import org.neo4j.server.Bootstrapper;
 public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
 {
     @Override
-    protected Class<? extends Bootstrapper> bootstrapperClass()
-    {
-        return EnterpriseBootstrapper.class;
-    }
-
-    @Override
     protected Bootstrapper newBootstrapper()
     {
         return new EnterpriseBootstrapper();

@@ -1,4 +1,4 @@
-${product.fullname} System Libraries
+#{product.fullname} System Libraries
 =======================================
 
 Nobody really knows what these things are for, but if anything

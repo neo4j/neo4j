@@ -190,14 +190,14 @@ startit() {
       su $NEO4J_USER -c "\"$JAVACMD\" -cp '$CLASSPATH' $JAVA_OPTS \
         -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
         -Dfile.encoding=UTF-8 \
-        org.neo4j.server.Bootstrapper >> \"${CONSOLE_LOG}\" 2>&1 & echo \$! > \"$PID_FILE\" "
+        #{neo4j.mainClass} >> \"${CONSOLE_LOG}\" 2>&1 & echo \$! > \"$PID_FILE\" "
     else
       checkwriteaccess
       echo "WARNING: not changing user"
       "$JAVACMD" -cp "${CLASSPATH}" $JAVA_OPTS  \
         -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
         -Dfile.encoding=UTF-8 \
-        org.neo4j.server.Bootstrapper >> "${CONSOLE_LOG}" 2>&1 & echo $! > "${PID_FILE}"
+        #{neo4j.mainClass} >> "${CONSOLE_LOG}" 2>&1 & echo $! > "${PID_FILE}"
     fi
 
     STARTED_PID=$( cat "$PID_FILE" )
@@ -269,12 +269,10 @@ console() {
     checkwriteaccess
     checkandrepairenv
 
-    echo "Using additional JVM arguments: " $JAVA_OPTS
-
     "$JAVACMD" -cp "${CLASSPATH}" $JAVA_OPTS \
         -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
         -Dfile.encoding=UTF-8 \
-        org.neo4j.server.Bootstrapper
+        #{neo4j.mainClass}
 
   else
     echo "$FRIENDLY_NAME already running with pid $NEO4J_PID"

@@ -25,6 +25,9 @@
 	  <url>https://github.com/neo4j/neo4j/tree/master/packaging/standalone/standalone-enterprise</url>
   </scm>
 
+  <properties>
+    <neo4j.mainClass>org.neo4j.server.enterprise.EnterpriseBootstrapper</neo4j.mainClass>
+  </properties>
 
   <licenses>
     <license>
@@ -69,11 +72,17 @@ terms of the relevant Commercial Agreement.
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
+        <version>2.5.4</version>
         <configuration>
           <attach>false</attach>
           <finalName>${product.shortname}-enterprise-${project.version}</finalName>
           <appendAssemblyId>true</appendAssemblyId>
           <outputDirectory>${project.parent.build.directory}</outputDirectory>
+          <delimiters>
+            <!-- Because we are filtering shell scripts, which use '@' on windows and '${}' on *nix, change the
+                 parameter substitution pattern to not clash with those. -->
+            <delimiter>#{*}</delimiter>
+          </delimiters>
         </configuration>
         <executions>
           <execution>
