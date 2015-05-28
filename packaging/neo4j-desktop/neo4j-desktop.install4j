@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install4j version="6.0.2" transformSequenceNumber="5">
-  <directoryPresets config="." />
+  <directoryPresets config="./src/main/resources" />
   <application name="Neo4j Community" distributionSourceDir="" applicationId="8478-6373-2628-9929" mediaDir="." mediaFilePattern="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" compression="9" lzmaCompression="true" pack200Compression="false" excludeSignedFromPacking="true" commonExternalFiles="false" createMd5Sums="false" shrinkRuntime="true" shortName="neo4j-community" publisher="Neo Technology" publisherWeb="http://neotechnology.com" version="@NEO4J_VERSION@" allPathsRelative="true" backupOnSave="false" autoSave="false" convertDotsToUnderscores="true" macSignature="????" macVolumeId="e07442ebbe7e691b" javaMinVersion="1.7" javaMaxVersion="1.7" allowBetaVM="false" jdkMode="runtimeJre" jdkName="JDK 1.6">
     <languages skipLanguageSelection="false" languageSelectionInPrincipalLanguage="false">
       <principalLanguage id="en" customLocalizationFile="./src/main/install4j/messages_en.utf8" />
@@ -725,9 +725,9 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
         <customAttributes />
       </autoUpdate>
       <topLevelFiles>
-        <file name=".DS_Store" file="./src/main/distribution/DS_Store" />
-        <file name=".background/background.png" file="./src/main/distribution/.background/graph_background.png" />
         <symlink name="Applications" target="/Applications" />
+        <file name=".DS_Store" file="./src/main/resources/DS_Store" />
+        <file name=".background/background.png" file="./src/main/resources/.background/background.png" />
       </topLevelFiles>
     </macosArchive>
   </mediaSets>
