@@ -182,6 +182,9 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     public void toString( PrintWriter writer )
     {
         inner.dumpToString( writer ); // legacy method - don't convert exceptions...
+        for (Notification notification : scala.collection.JavaConversions.asJavaIterable( inner.notifications() )) {
+            writer.println( notification.getDescription() );
+        }
     }
 
     /**

@@ -221,7 +221,14 @@ public abstract class TransactionProvidingApp extends AbstractApp
         {
             getServer().registerTopLevelTransactionInProgress( session.getId() );
             Continuation result = this.exec( parser, session, out );
-            tx.success();
+            if ( result == Continuation.EXCEPTION_CAUGHT )
+            {
+                tx.failure();
+            }
+            else
+            {
+                tx.success();
+            }
             return result;
         }
     }
