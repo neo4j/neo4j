@@ -98,6 +98,12 @@ public abstract class StringLogger
         }
     }
 
+    public static StringLogger logger( FileSystemAbstraction fileSystem, File logFile,
+            int rotationThreshold, boolean debugEnabled )
+    {
+        return new ActualStringLogger( fileSystem, logFile.getPath(), rotationThreshold, debugEnabled );
+    }
+
     public static StringLogger loggerDirectory( FileSystemAbstraction fileSystem, File logDirectory )
     {
         return loggerDirectory( fileSystem, logDirectory, DEFAULT_THRESHOLD_FOR_ROTATION, false );

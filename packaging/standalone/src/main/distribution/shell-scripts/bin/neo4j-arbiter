@@ -46,6 +46,9 @@ function findBaseDirAndCdThere {
   done
   NEO4J_HOME=`cd $( dirname "$SCRIPT" )/.. && dirs -l +0`
   NEO4J_INSTANCE=$NEO4J_HOME
+  [ -n "$NEO4J_CONFIG" ] || NEO4J_CONFIG=$NEO4J_HOME/conf
+  [ -n "$NEO4J_LOG" ] || NEO4J_LOG=$NEO4J_HOME/data/log
+  [ -n "$NEO4J_PIDFILE" ] || NEO4J_PIDFILE=$NEO4J_HOME/data/neo4j-arbiter.pid
 
   cd "$NEO4J_HOME"
 }
@@ -53,11 +56,11 @@ function findBaseDirAndCdThere {
 function parseConfig {
   if [ ${BASH_VERSINFO[0]} -eq 3 ] ; then
     if [ ${BASH_VERSINFO[1]} -lt 2 ] ; then
-      getconfigquoted "${NEO4J_INSTANCE}/conf/arbiter-wrapper.conf"
+      getconfigquoted "${NEO4J_CONFIG}/arbiter-wrapper.conf"
       return
     fi
   fi
-  getconfig "${NEO4J_INSTANCE}/conf/arbiter-wrapper.conf"
+  getconfig "${NEO4J_CONFIG}/arbiter-wrapper.conf"
 }
 
 findBaseDirAndCdThere
@@ -66,7 +69,7 @@ parseConfig
 
 JAVA_OPTS="-server ${wrapper_java_additional}"
 
-wrapper_user=`( egrep "^wrapper.user=" "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf" ) | sed -e 's/^.*=//'`
+wrapper_user=`( egrep "^wrapper.user=" "$NEO4J_CONFIG/neo4j-wrapper.conf" ) | sed -e 's/^.*=//'`
 if [ -z "${wrapper_user}" ]; then
   NEO4J_USER=`id -un`
 else
@@ -79,10 +82,10 @@ LAUNCHD_DIR=~/Library/LaunchAgents/
 
 TIMEOUT=20
 
-PID_FILE=${NEO4J_INSTANCE}/data/neo4j-arbiter.pid
+PID_FILE=${NEO4J_PIDFILE}
 
 buildclasspath() {
-  CLASSPATH="$NEO4J_HOME/lib/*:$NEO4J_HOME/system/lib/*:$NEO4J_HOME/conf/"
+  CLASSPATH="$NEO4J_HOME/lib/*:$NEO4J_HOME/system/lib/*:$NEO4J_CONFIG"
 }
 
 
@@ -114,19 +117,19 @@ startit() {
     if [ $UID == 0 ] ; then
       su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS \
 	  -DconfigFile=conf/arbiter-wrapper.conf \
-      -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
-	  -Dorg.neo4j.cluster.logdirectory="${NEO4J_INSTANCE}/data/log" \
+      -Dorg.neo4j.server.properties="${NEO4J_CONFIG}/neo4j-server.properties" \
+	  -Dorg.neo4j.cluster.logdirectory="${NEO4J_LOG}" \
       -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
-      org.neo4j.server.enterprise.StandaloneClusterClient >> "$NEO4J_INSTANCE/data/log/arbiter-console.log" 2>&1 & echo \$! > \"$PID_FILE\" "
+      org.neo4j.server.enterprise.StandaloneClusterClient >> "$NEO4J_LOG/arbiter-console.log" 2>&1 & echo \$! > \"$PID_FILE\" "
           else
       checkwriteaccess
       echo "WARNING: not changing user"
       $JAVACMD -cp ${CLASSPATH} $JAVA_OPTS \
 	    -DconfigFile=conf/arbiter-wrapper.conf \
-      -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
-	    -Dorg.neo4j.cluster.logdirectory="${NEO4J_INSTANCE}/data/log" \
+      -Dorg.neo4j.server.properties="${NEO4J_CONFIG}/neo4j-server.properties" \
+	    -Dorg.neo4j.cluster.logdirectory="${NEO4J_LOG}" \
       -Dneo4j.home="${NEO4J_HOME}" \
-      -Dneo4j.instance="${NEO4J_INSTANCE}" org.neo4j.server.enterprise.StandaloneClusterClient  >> "$NEO4J_INSTANCE/data/log/arbiter-console.log" 2>&1 & echo $! > "${PID_FILE}"
+      -Dneo4j.instance="${NEO4J_INSTANCE}" org.neo4j.server.enterprise.StandaloneClusterClient  >> "$NEO4J_LOG/arbiter-console.log" 2>&1 & echo $! > "${PID_FILE}"
     fi
     STARTED_PID=$( cat "$PID_FILE" )
 
@@ -161,8 +164,8 @@ console() {
 
     $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -DconfigFile=conf/arbiter-wrapper.conf \
 	  -DconfigFile=conf/arbiter-wrapper.conf \
-      -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
-	  -Dorg.neo4j.cluster.logdirectory="${NEO4J_INSTANCE}/data/log" \
+      -Dorg.neo4j.server.properties="${NEO4J_CONFIG}/neo4j-server.properties" \
+	  -Dorg.neo4j.cluster.logdirectory="${NEO4J_LOG}" \
       -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
       org.neo4j.server.enterprise.StandaloneClusterClient
 
@@ -177,16 +180,16 @@ console() {
 # pass in "true" for created to mark that the user was created (instead than pre-existing)
 modify_user_config() {
   created=${2:-"false"}
-  if `grep -q "wrapper\.user=" "$NEO4J_INSTANCE/conf/arbiter-wrapper.conf"` ; then
-    sed -i -e "s/^.*wrapper\.user=.*$/wrapper\.user=$1/" "$NEO4J_INSTANCE/conf/arbiter-wrapper.conf"
+  if `grep -q "wrapper\.user=" "$NEO4J_CONFIG/arbiter-wrapper.conf"` ; then
+    sed -i -e "s/^.*wrapper\.user=.*$/wrapper\.user=$1/" "$NEO4J_CONFIG/arbiter-wrapper.conf"
   else
-    echo "wrapper.user=$1" >> "$NEO4J_INSTANCE/conf/arbiter-wrapper.conf"
+    echo "wrapper.user=$1" >> "$NEO4J_CONFIG/arbiter-wrapper.conf"
   fi
 
-  if `grep -q "wrapper\.user\.created=" "$NEO4J_INSTANCE/conf/arbiter-wrapper.conf"` ; then
-    sed -i -e "s/^.*wrapper\.user\.created=.*$/wrapper\.user\.created=${created}/" "$NEO4J_INSTANCE/conf/arbiter-wrapper.conf"
+  if `grep -q "wrapper\.user\.created=" "$NEO4J_CONFIG/arbiter-wrapper.conf"` ; then
+    sed -i -e "s/^.*wrapper\.user\.created=.*$/wrapper\.user\.created=${created}/" "$NEO4J_CONFIG/arbiter-wrapper.conf"
   else
-    echo "wrapper.user.created=${created}" >> "$NEO4J_INSTANCE/conf/arbiter-wrapper.conf"
+    echo "wrapper.user.created=${created}" >> "$NEO4J_CONFIG/arbiter-wrapper.conf"
   fi
 }
 

@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.logging;
 
+import java.io.File;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
@@ -38,8 +41,17 @@ public class ClassicLoggingService extends SingleLoggingService
 
     public ClassicLoggingService( Config config, boolean debugEnabled )
     {
-        super( StringLogger.loggerDirectory( new DefaultFileSystemAbstraction(),
-                config.get( InternalAbstractGraphDatabase.Configuration.store_dir ),
+        super( StringLogger.logger( new DefaultFileSystemAbstraction(), logFile( config ),
                 DEFAULT_THRESHOLD_FOR_ROTATION, debugEnabled ) );
+    }
+
+    private static File logFile( Config config )
+    {
+        final File location = config.get( GraphDatabaseSettings.internal_log_location );
+        if (location != null)
+        {
+            return location;
+        }
+        return new File( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ), StringLogger.DEFAULT_NAME );
     }
 }
