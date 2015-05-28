@@ -84,6 +84,10 @@ class UnknownLabelException(labelName: String) extends CypherException {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.unknownLabelException(labelName, this)
 }
 
+class HintException(message: String) extends CypherException {
+  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.hintException(message, this)
+}
+
 class IndexHintException(identifier: String, label: String, property: String, message: String) extends CypherException {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.indexHintException(identifier, label, property, message, this)
 }

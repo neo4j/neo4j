@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, IndexHintException, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, IndexHintException, NewPlannerTestSupport, SyntaxException, HintException}
 
 class UsingInAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -75,5 +75,24 @@ class UsingInAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
     // WHEN
     intercept[SyntaxException](
       executeWithAllPlanners("match n-->() using index n:Person(name) where n.name IN ['kabam'] OR n.name = 'kaboom' return n"))
+  }
+
+  test("when failing to support all hints we should provide an understandable error message") {
+    // GIVEN
+    graph.createIndex("LocTag", "id")
+
+    // WHEN
+    val query = """CYPHER planner=greedy MATCH (t1:LocTag {id:1642})-[:Child*0..]->(:LocTag)
+                  |     <-[:Tagged]-(s1:Startup)<-[r1:Role]-(u:User)
+                  |     -[r2:Role]->(s2:Startup)-[:Tagged]->(:LocTag)
+                  |     <-[:Child*0..]-(t2:LocTag {id:1642})
+                  |USING INDEX t1:LocTag(id)
+                  |USING INDEX t2:LocTag(id)
+                  |RETURN count(u)""".stripMargin
+
+
+    val error = intercept[HintException](innerExecute(query))
+
+    error.getMessage should equal("The current planner cannot satisfy all hints in the query, please try removing hints or try with another planner")
   }
 }

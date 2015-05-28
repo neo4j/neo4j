@@ -20,14 +20,13 @@
 package org.neo4j.com;
 
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelException;
 
 import java.net.InetSocketAddress;
 
 public class Connection
 {
-    private Channel channel;
-    private InetSocketAddress socketAddress;
+    private final Channel channel;
+    private final InetSocketAddress socketAddress;
 
     public Connection( InetSocketAddress socketAddress, Channel channel )
     {

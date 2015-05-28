@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy
 
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.Converge.iterateUntilConverged
+import org.neo4j.cypher.internal.compiler.v2_3.{HintException, IndexHintException}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.solveOptionalMatches
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.Converge.iterateUntilConverged
 
 class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable],
                              val config: QueryPlannerConfiguration = QueryPlannerConfiguration.default)
@@ -83,9 +84,12 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable],
     val leaves: GreedyPlanTable = generateLeafPlanTable()
     val afterCombiningPlans = iterateUntilConverged(findBestPlan(planCombiner))(leaves)
 
-    if (stillHasOverlappingPlans(afterCombiningPlans, leafPlan.map(_.availableSymbols).getOrElse(Set.empty)))
-      None
-    else {
+    if (stillHasOverlappingPlans(afterCombiningPlans, leafPlan.map(_.availableSymbols).getOrElse(Set.empty))) {
+      if (!afterCombiningPlans.m.keys.forall(_.allHints == queryGraph.allHints) )
+        throw new HintException("The current planner cannot satisfy all hints in the query, please try removing hints or try with another planner")
+      else
+        None
+    } else {
       val afterCartesianProduct = iterateUntilConverged(solveOptionalAndCartesianProducts)(afterCombiningPlans)
       Some(afterCartesianProduct.uniquePlan)
     }

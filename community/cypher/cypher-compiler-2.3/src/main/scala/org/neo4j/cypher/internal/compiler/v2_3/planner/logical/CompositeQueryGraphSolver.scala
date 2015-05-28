@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_3.HintException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy.GreedyPlanTable
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
+
+import scala.util.{Failure, Success, Try}
 
 class CompositeQueryGraphSolver(solver1: TentativeQueryGraphSolver, solver2: TentativeQueryGraphSolver,
                                 val config: QueryPlannerConfiguration = QueryPlannerConfiguration.default)
@@ -35,7 +38,17 @@ class CompositeQueryGraphSolver(solver1: TentativeQueryGraphSolver, solver2: Ten
 
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]) = {
     val pickBest = config.pickBestCandidate(context)
-    val availableSolutions = solver1.tryPlan(queryGraph).toSeq ++ solver2.tryPlan(queryGraph)
+
+    val solution1 = Try(solver1.tryPlan(queryGraph))
+    val solution2 = Try(solver2.tryPlan(queryGraph))
+
+    val availableSolutions = (solution1, solution2) match {
+      case (Success(s1), Success(s2)) => s1.toSeq ++ s2.toSeq
+      case (Failure(_:HintException), Success(s2)) => s2.toSeq
+      case (Success(s1), Failure(_:HintException)) => s1.toSeq
+      case (Failure(e), _) => throw e
+      case (_, Failure(e)) => throw e
+    }
 
     pickBest(availableSolutions)
   }

@@ -42,6 +42,8 @@ trait MapToPublicExceptions[T <: Throwable] {
 
   def indexHintException(identifier: String, label: String, property: String, message: String, cause: Throwable): T
 
+  def hintException(s: String, cause: Throwable): T
+
   def labelScanHintException(identifier: String, label: String, message: String, cause: Throwable): T
 
   def unknownLabelException(s: String, cause: Throwable): T

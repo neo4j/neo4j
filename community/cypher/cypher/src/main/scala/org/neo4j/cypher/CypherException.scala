@@ -95,10 +95,14 @@ class UnknownLabelException(labelName: String, cause: Throwable) extends CypherE
   def this(labelName: String) = this(labelName, null)
 }
 
+class HintException(message: String, cause: Throwable)
+  extends CypherException(message, cause) {
+  val status = Status.Schema.NoSuchIndex
+}
+
 class IndexHintException(identifier: String, label: String, property: String, message: String, cause: Throwable)
   extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`", cause) {
-  val status = Status.Schema.NoSuchIndex
-  def this(identifier: String, label: String, property: String, message: String) = this(identifier, label, property, message, null)
+  val status = Status.Statement.ExecutionFailure
 }
 
 class LabelScanHintException(identifier: String, label: String, message: String, cause: Throwable)
