@@ -25,15 +25,6 @@ trait Instruction {
   def init[E](generator: MethodStructure[E]): Unit = children.foreach(_.init(generator))
   def body[E](generator: MethodStructure[E]): Unit = ???
 
-  // Actual code produced by element
-  def generateCode(): String
-
-  //Initialises necessary data-structures. Is inserted at the top of the generated method
-  def generateInit(): String
-
-  //generate class level members
-  def members(): String
-
   protected def children: Seq[Instruction]
 
   private def treeView: Seq[Instruction] = {
@@ -41,22 +32,9 @@ trait Instruction {
   }
 
   // Aggregating methods -- final to prevent overriding
-  final def allImportedClasses: Set[String] = treeView.flatMap(_.importedClasses).toSet
-
-  final def allMethods: Seq[Method] = treeView.flatMap(_.method)
-
-  final def allExceptions: Set[ExceptionCodeGen] = treeView.flatMap(_.exceptions).toSet
-
   final def allOperatorIds: Set[String] = treeView.flatMap(_.operatorId).toSet
 
   final def allColumns: Set[String] = treeView.flatMap(_.columnNames).toSet
-
-  // Override these
-  protected def importedClasses: Set[String] = Set.empty
-
-  protected def method: Option[Method] = None
-
-  protected def exceptions: Set[ExceptionCodeGen] = Set.empty
 
   protected def operatorId: Option[String] = None
 
@@ -67,12 +45,6 @@ object Instruction {
 
   val empty = new Instruction {
     override def body[E](generator: MethodStructure[E]) = {}
-
-    override def generateCode() = ""
-
-    override def members() = ""
-
-    override def generateInit() = ""
 
     override protected def children = Seq.empty
   }

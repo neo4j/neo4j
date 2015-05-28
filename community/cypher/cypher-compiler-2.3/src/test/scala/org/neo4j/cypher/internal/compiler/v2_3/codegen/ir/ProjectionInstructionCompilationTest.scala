@@ -30,7 +30,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
     def adding(lhs: ProjectionInstruction, rhs: ProjectionInstruction) = {
     val addition = add(lhs, rhs)
     evaluate(
-      Project(Seq.empty, AcceptVisitor("id", Map("result" -> addition.projectedVariable.copy(generator=Some(addition))))))
+      Project(Seq.empty, AcceptVisitor("id", Map("result" -> addition))))
   }
 
 
@@ -41,7 +41,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
 
   { // parameter + parameter
     val addition: ProjectionInstruction = add(parameter("lhs"), parameter("rhs"))
-    val clazz = compile(Project(Seq(addition), AcceptVisitor("id", Map("result" -> addition.projectedVariable.copy(generator=Some(addition))))))
+    val clazz = compile(Project(Seq(addition), AcceptVisitor("id", Map("result" -> addition))))
 
     def adding(lhs: Any, rhs: Any) = evaluate(newInstance(clazz, params = Map("lhs" -> lhs, "rhs" -> rhs)))
 
@@ -53,7 +53,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
   { // literal + parameter
     def adding(lhs: ProjectionInstruction, rhs: Any) = {
       val addition: ProjectionInstruction = add(lhs, parameter("rhs"))
-      evaluate(newInstance(compile(Project(Seq(addition), AcceptVisitor("id", Map("result" -> addition.projectedVariable.copy(generator=Some(addition)))))), params = Map("rhs" -> rhs)))
+      evaluate(newInstance(compile(Project(Seq(addition), AcceptVisitor("id", Map("result" -> addition)))), params = Map("rhs" -> rhs)))
 
     }
 
@@ -68,7 +68,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
     def adding(lhs: Any, rhs: ProjectionInstruction) = {
       val addition: ProjectionInstruction = add(parameter("lhs"), rhs)
       evaluate(newInstance(compile(Project(Seq(addition),
-        AcceptVisitor("id", Map("result" -> addition.projectedVariable.copy(generator=Some(addition)))))), params = Map("lhs" -> lhs)))
+        AcceptVisitor("id", Map("result" -> addition)))), params = Map("lhs" -> lhs)))
     }
 
     verifyAddition(adding, new Operands[Any, ProjectionInstruction]("parameter", "literal") {
@@ -84,7 +84,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
     def subtracting(lhs: ProjectionInstruction, rhs: ProjectionInstruction) = {
     val subtraction = sub(lhs, rhs)
     evaluate(
-      Project(Seq.empty, AcceptVisitor("id", Map("result" -> subtraction.projectedVariable.copy(generator = Some(subtraction))))))
+      Project(Seq.empty, AcceptVisitor("id", Map("result" -> subtraction))))
   }
 
     verifySubtraction(subtracting, new SimpleOperands[ProjectionInstruction]("literal") {
@@ -94,7 +94,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
 
   { // parameter - parameter
     val subtraction: ProjectionInstruction = sub(parameter("lhs"), parameter("rhs"))
-    val clazz = compile(Project(Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction.projectedVariable.copy(generator=Some(subtraction))))))
+    val clazz = compile(Project(Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction))))
     def subtracting(lhs: Any, rhs: Any) = evaluate(newInstance(clazz, params = Map("lhs" -> lhs, "rhs" -> rhs)))
 
     verifySubtraction(subtracting, new SimpleOperands[Any]("parameter") {
@@ -106,7 +106,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
     def subtracting(lhs: ProjectionInstruction, rhs: Any) = {
       val subtraction: ProjectionInstruction = sub(lhs, parameter("rhs"))
       evaluate(newInstance(compile(Project(Seq(subtraction),
-        AcceptVisitor("id", Map("result" -> subtraction.projectedVariable.copy(generator=Some(subtraction)))))), params = Map("rhs" -> rhs)))
+        AcceptVisitor("id", Map("result" ->  subtraction)))), params = Map("rhs" -> rhs)))
 
     }
 
@@ -121,7 +121,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
     def subtracting(lhs: Any, rhs: ProjectionInstruction) = {
       val subtraction: ProjectionInstruction = sub(parameter("lhs"), rhs)
       evaluate(newInstance(compile(Project(Seq(subtraction),
-        AcceptVisitor("id", Map("result" -> subtraction.projectedVariable.copy(generator=Some(subtraction)))))), params = Map("lhs" -> lhs)))
+        AcceptVisitor("id", Map("result" ->  subtraction)))), params = Map("lhs" -> lhs)))
     }
 
     verifySubtraction(subtracting, new Operands[Any, ProjectionInstruction]("parameter", "literal") {

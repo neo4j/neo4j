@@ -82,9 +82,9 @@ trait MethodStructure[E] {
 
   def load(varName: String): E
 
-  def add(lhsType: String, lhs: E, rhsType: String, rhs: E): E
+  def add(lhs: E, rhs: E): E
 
-  def sub(lhsType: String, lhs: E, rhsType: String, rhs: E): E
+  def sub(lhs: E, rhs: E): E
 
   def constant(value: Object): E
 
@@ -352,14 +352,13 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def load(varName: String) = generator.load(varName)
 
-  override def add(lhsType: String, lhs: Expression, rhsType: String, rhs: Expression) = math(Methods.mathAdd, lhsType, lhs, rhsType, rhs)
+  override def add(lhs: Expression, rhs: Expression) = math(Methods.mathAdd, lhs, rhs)
 
-  override def sub(lhsType: String, lhs: Expression, rhsType: String, rhs: Expression) = math(Methods.mathSub, lhsType, lhs, rhsType, rhs)
+  override def sub(lhs: Expression, rhs: Expression) = math(Methods.mathSub, lhs, rhs)
 
-  private def math(method: MethodReference, lhsType: String, lhs: Expression, rhsType: String, rhs: Expression): Expression = (lhsType, rhsType) match {
+  private def math(method: MethodReference, lhs: Expression, rhs: Expression): Expression =
     // TODO: generate specialized versions for specific types
-    case (_, _) => Expression.invoke(method, lhs, rhs)
-  }
+    Expression.invoke(method, lhs, rhs)
 
   private def readOperations = Expression.get(generator.self(), fields.ro)
 

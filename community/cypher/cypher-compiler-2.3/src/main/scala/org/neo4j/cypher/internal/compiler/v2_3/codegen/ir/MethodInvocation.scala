@@ -19,61 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
 import org.neo4j.cypher.internal.compiler.v2_3.codegen._
 
 case class MethodInvocation(override val operatorId: Option[String],
-                            symbol:JavaSymbol,
+                            symbol:JoinTableMethod,
                             methodName: String,
                             statements: Seq[Instruction]) extends Instruction {
 
   override def init[E](generator: MethodStructure[E]) = {}
 
   override def body[E](generator: MethodStructure[E]) = {
-    generator.method(symbol.tableType.get, symbol.name, methodName) { body =>
+    generator.method(symbol.tableType, symbol.name, methodName) { body =>
       statements.foreach(_.init(body))
       statements.foreach(_.body(body))
     }
   }
 
-  def generateCode() = operatorId match {
-    case Some(id) =>
-      s"""final ${symbol.javaType} ${symbol.name};
-         |try ( QueryExecutionEvent event_$id = tracer.executeOperator( $id ) )
-         |{
-         |${symbol.name} = $methodName();
-         |}
-       """.stripMargin
-    case None => s"final ${symbol.javaType} ${symbol.name} = $methodName();"
-  }
-
   override def children = statements
-
-  def generateInit() = ""
-
-  def members() = statements.map(_.members()).reduce(_ + n + _)
-
-  override protected def method = Some(new Method {
-    def generateCode = {
-      val init = statements.map(_.generateInit()).reduce(_ + n + _)
-      val methodBody = statements.map(_.generateCode()).reduce(_ + n + _)
-      val exceptions = statements.flatMap(_.allExceptions).map(_.throwClause)
-      val throwClause = if (exceptions.isEmpty) "" else exceptions.mkString("throws ", ",", "")
-
-      s"""private ${symbol.javaType} $methodName() throws KernelException
-         |{
-         |$init
-         |$methodBody
-         |return ${symbol.name};
-         |}""".
-        stripMargin
-    }
-
-    def name = methodName
-  })
-
-  override protected def exceptions = Set(KernelExceptionCodeGen)
-
-  override protected def importedClasses = Set("org.neo4j.kernel.api.exceptions.KernelException")
 }

@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
 
-case class ScanAllNodes(id: String) extends Instruction with LoopDataGenerator {
+case class ScanAllNodes(id: String) extends LoopDataGenerator {
+
+  override def init[E](generator: MethodStructure[E]) = {}
 
   override def produceIterator[E](iterVar: String, generator: MethodStructure[E]) = {
     generator.allNodesScan(iterVar)
@@ -30,16 +32,6 @@ case class ScanAllNodes(id: String) extends Instruction with LoopDataGenerator {
 
   override def produceNext[E](nextVar: String, iterVar: String, generator: MethodStructure[E]) =
     generator.nextNode(nextVar, iterVar)
-
-  def generateCode() = "ro.nodesGetAll()"
-
-  def generateVariablesAndAssignment() = ""
-
-  def generateInit() = ""
-
-  override protected def importedClasses = Set("org.neo4j.collection.primitive.PrimitiveLongIterator")
-
-  def javaType = "PrimitiveLongIterator"
 
   override protected def children = Seq.empty
 }

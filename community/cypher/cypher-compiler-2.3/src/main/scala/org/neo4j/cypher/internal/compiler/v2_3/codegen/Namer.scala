@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
-
 class Namer(classNameCounter: AtomicInteger) {
 
   private var methodNameCounter = 0
@@ -43,8 +41,6 @@ class Namer(classNameCounter: AtomicInteger) {
     opNameCounter += 1
     s"OP${opNameCounter}_$planName"
   }
-
-  def newVarName(typ: String): JavaSymbol = JavaSymbol(newVarName(), typ)
 }
 
 object Namer {

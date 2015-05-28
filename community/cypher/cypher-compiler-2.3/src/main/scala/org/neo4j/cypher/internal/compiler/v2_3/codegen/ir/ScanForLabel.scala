@@ -19,38 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaString
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
 
-case class ScanForLabel(id: String, labelName: String, labelVar: JavaSymbol)
-  extends Instruction with LoopDataGenerator {
+case class ScanForLabel(id: String, labelName: String, labelVar: String) extends LoopDataGenerator {
 
-  override def init[E](generator: MethodStructure[E]) = generator.lookupLabelId(labelVar.name, labelName)
+  override def init[E](generator: MethodStructure[E]) = generator.lookupLabelId(labelVar, labelName)
 
   override def produceIterator[E](iterVar: String, generator: MethodStructure[E]) = {
-    generator.labelScan(iterVar, labelVar.name)
+    generator.labelScan(iterVar, labelVar)
     generator.incrementDbHits()
   }
 
   override def produceNext[E](nextVar: String, iterVar: String, generator: MethodStructure[E]) = generator.nextNode(nextVar, iterVar)
-
-  def generateCode() = s"""ro.nodesGetForLabel( ${labelVar.name} )"""
-
-  def generateVariablesAndAssignment() = ""
-
-  //TODO only generate this if label token not known at compile time
-  def generateInit() =
-    s"""if ( ${labelVar.name} == -1 )
-       |{
-       |${labelVar.name} = ro.labelGetForName( "${labelName.toJava}" );
-       |}""".stripMargin
-
-  override def members() = s"private ${labelVar.javaType} ${labelVar.name} = -1;"
-
-  override protected def importedClasses = Set("org.neo4j.collection.primitive.PrimitiveLongIterator")
-
-  def javaType = "PrimitiveLongIterator"
 
   override protected def children = Seq.empty
 }

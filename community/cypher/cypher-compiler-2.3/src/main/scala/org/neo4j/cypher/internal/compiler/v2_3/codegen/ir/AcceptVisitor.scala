@@ -19,60 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.{JavaString, JavaSymbol}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
 
-case class AcceptVisitor(id: String, columns: Map[String, JavaSymbol]) extends Instruction {
-
+case class AcceptVisitor(id: String, columns: Map[String, ProjectionInstruction]) extends Instruction {
 
   override protected def columnNames = columns.keys
 
   override def body[E](generator: MethodStructure[E]) = generator.trace(id) { body =>
     columns.foreach { case (k, v) =>
-      body.setInRow(k, v.generate(body))
+      body.setInRow(k, v.generateExpression(body))
     }
     body.visitRow()
     body.incrementRows()
   }
 
-  def generateCode() = {
-    val eventVar = "event_" + id
-    s"""${columns.toSeq.map { case (k, v) => s"""row.set( "${k.toJava}", ${v.materialize.name} );""" }.mkString(n)}
-       |try ( QueryExecutionEvent $eventVar = tracer.executeOperator( $id ) )
-       |{
-       |if ( !visitor.visit(row) )
-       |{
-       |success();
-       |return;
-       |}
-       |$eventVar.row();
-       |}""".stripMargin
-  }
-
-  def generateInit() = ""
-
-  def members() = {
-    val columnsList = columns.keys.map(_.toJava) match {
-      case Nil => "Collections.emptyList()"
-      case lst => s"Arrays.asList( ${lst.mkString("\"", "\", \"", "\"")} )"
-    }
-
-    s"""private final List<String> javaColumns = $columnsList;
-       |
-       |@Override
-       |public List<String> javaColumns( )
-       |{
-       |return this.javaColumns;
-       |}""".
-      stripMargin
-  }
-
   override protected def operatorId = Some(id)
-
-  override protected def importedClasses = Set(
-    "java.util.List", "java.util.Arrays", "java.util.Collections"
-  )
 
   override protected def children = Seq.empty
 }

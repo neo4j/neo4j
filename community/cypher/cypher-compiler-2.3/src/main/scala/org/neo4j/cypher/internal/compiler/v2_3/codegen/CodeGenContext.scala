@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.CodeThunk
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.{JoinData, ProjectionInstruction}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
@@ -30,26 +29,33 @@ import scala.collection.{immutable, mutable}
 // STATEFUL!
 class CodeGenContext(val semanticTable: SemanticTable, idMap: immutable.Map[LogicalPlan, Id]) {
 
-  private val variables: mutable.Map[String, JavaSymbol] = mutable.Map()
-  private val probeTables: mutable.Map[CodeGenPlan, CodeThunk] = mutable.Map()
+  private val variables: mutable.Map[String, String] = mutable.Map()
+  private val projections: mutable.Map[String, ProjectionInstruction] = mutable.Map()
+  private val probeTables: mutable.Map[CodeGenPlan, JoinData] = mutable.Map()
   private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
   val operatorIds: mutable.Map[Id, String] = mutable.Map()
 
   val namer = Namer()
 
-  def addVariable(name: String, symbol: JavaSymbol) {
+  def addVariable(name: String, symbol: String) {
     variables.put(name, symbol)
   }
 
-  def getVariable(name: String): JavaSymbol = variables(name)
+  def addProjection(name: String, projection: ProjectionInstruction) {
+    projections.put(name, projection)
+  }
+
+  def getVariable(name: String): String = variables(name)
+
+  def getProjection(name: String): ProjectionInstruction = projections(name)
 
   def variableNames(): Set[String] = variables.keySet.toSet
 
-  def addProbeTable(plan: CodeGenPlan, codeThunk: CodeThunk) {
+  def addProbeTable(plan: CodeGenPlan, codeThunk: JoinData) {
     probeTables.put(plan, codeThunk)
   }
 
-  def getProbeTable(plan: CodeGenPlan): CodeThunk = probeTables(plan)
+  def getProbeTable(plan: CodeGenPlan): JoinData = probeTables(plan)
 
   def pushParent(plan: CodeGenPlan) {
     if (plan.isInstanceOf[LeafCodeGenPlan]) {

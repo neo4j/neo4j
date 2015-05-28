@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.Instruction
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 
@@ -27,13 +26,16 @@ trait CodeGenPlan {
 
   val logicalPlan: LogicalPlan
 
-  def produce(context: CodeGenContext): (Option[JavaSymbol], Seq[Instruction])
+  def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction])
 
-  def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JavaSymbol], Instruction)
+  def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction)
 }
 
 trait LeafCodeGenPlan extends CodeGenPlan {
 
-  override final def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JavaSymbol], Instruction) =
+  override final def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) =
     throw new UnsupportedOperationException("Leaf plan does not consume")
 }
+
+case class JoinTableMethod(name: String, tableType: JoinTableType)
+
