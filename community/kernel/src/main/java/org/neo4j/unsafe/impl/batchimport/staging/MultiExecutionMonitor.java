@@ -63,11 +63,11 @@ public class MultiExecutionMonitor implements ExecutionMonitor
     }
 
     @Override
-    public void done( long totalTimeMillis )
+    public void done( long totalTimeMillis, String additionalInformation )
     {
         for ( ExecutionMonitor monitor : monitors )
         {
-            monitor.done( totalTimeMillis );
+            monitor.done( totalTimeMillis, additionalInformation );
         }
     }
 

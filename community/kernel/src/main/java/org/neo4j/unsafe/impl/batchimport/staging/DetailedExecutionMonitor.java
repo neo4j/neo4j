@@ -34,7 +34,7 @@ import static org.neo4j.helpers.Format.duration;
  * An {@link ExecutionMonitor} that prints very detailed information about each {@link Stage} and the
  * {@link Step steps} therein.
  */
-public class DetailedExecutionMonitor extends ExecutionMonitor.Adpter
+public class DetailedExecutionMonitor extends ExecutionMonitor.Adapter
 {
     private final PrintStream out;
 

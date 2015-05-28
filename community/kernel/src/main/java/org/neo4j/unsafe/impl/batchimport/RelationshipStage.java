@@ -40,7 +40,8 @@ public class RelationshipStage extends Stage
 {
     public RelationshipStage( Configuration config, IoMonitor writeMonitor, WriterFactory writerFactory,
             InputIterable<InputRelationship> relationships, IdMapper idMapper,
-            BatchingNeoStore neoStore, NodeRelationshipCache cache, boolean specificIds )
+            BatchingNeoStore neoStore, NodeRelationshipCache cache, boolean specificIds,
+            EntityStoreUpdaterStep.Monitor storeUpdateMonitor )
     {
         super( "Relationships", config, ORDER_SEND_DOWNSTREAM | ORDER_PROCESS );
         add( new InputIteratorBatcherStep<>( control(), config, relationships.iterator(), InputRelationship.class ) );
@@ -53,6 +54,6 @@ public class RelationshipStage extends Stage
         add( new RelationshipEncoderStep( control(), config,
                 neoStore.getRelationshipTypeRepository(), cache, specificIds ) );
         add( new EntityStoreUpdaterStep<>( control(), config,
-                relationshipStore, propertyStore, writeMonitor, writerFactory ) );
+                relationshipStore, propertyStore, writeMonitor, writerFactory, storeUpdateMonitor ) );
     }
 }
