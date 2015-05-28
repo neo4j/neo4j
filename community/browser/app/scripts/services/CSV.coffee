@@ -48,7 +48,9 @@ angular.module('neo.csv', [])
         output: -> @_output
 
         _escape: (string) ->
+          return '' unless string?
           string = JSON.stringify(string) unless angular.isString(string)
+          return '""' unless string.length
           if string.indexOf(@options.delimiter) > 0 or string.indexOf('"') >= 0
             string = '"' + string.replace(/"/g, '""') + '"'
 
