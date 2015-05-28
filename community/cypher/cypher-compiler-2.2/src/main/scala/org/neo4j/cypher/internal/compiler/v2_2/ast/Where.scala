@@ -23,6 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import symbols._
 
 case class Where(expression: Expression)(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable {
+
+  def dependencies = expression.dependencies
+
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) chain
     expression.expectType(CTBoolean.covariant)

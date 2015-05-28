@@ -66,6 +66,19 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
       """.stripMargin)
   }
 
+  test("duplicate RETURN containing ORDER BY after WITH") {
+    assertRewrite(
+      """WITH 1 AS p, count(*) AS rng
+        |RETURN p ORDER BY rng
+      """.stripMargin,
+      """WITH 1 AS p, count(*) AS rng
+        |WITH p AS `  FRESHID36`, rng AS rng
+        |WITH `  FRESHID36` AS `  FRESHID36` ORDER BY rng
+        |RETURN `  FRESHID36` AS p
+      """.stripMargin
+    )
+  }
+
   test("duplicate WITH containing WHERE") {
     assertRewrite(
       """MATCH n

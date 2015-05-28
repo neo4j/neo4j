@@ -51,6 +51,8 @@ case class Identifier(name: String)(val position: InputPosition) extends Express
   def renameId(newName: String) = copy(name = newName)(position)
 
   def bumpId = copy()(position.bumped())
+
+  def asAlias = AliasedReturnItem(this.copyId, this.copyId)(this.position)
 }
 
 object Identifier {
