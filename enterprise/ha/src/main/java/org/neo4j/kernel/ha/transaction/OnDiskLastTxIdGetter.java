@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -27,11 +27,11 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 
 public class OnDiskLastTxIdGetter implements LastTxIdGetter
 {
-    private final GraphDatabaseAPI graphdb;
+    private final DependencyResolver deps;
 
-    public OnDiskLastTxIdGetter( GraphDatabaseAPI graphdb )
+    public OnDiskLastTxIdGetter( DependencyResolver deps )
     {
-        this.graphdb = graphdb;
+        this.deps = deps;
     }
 
     @Override
@@ -50,8 +50,6 @@ public class OnDiskLastTxIdGetter implements LastTxIdGetter
         // if we cache it.
         // We avoid this problem by simply not caching it, and instead looking it up
         // every time.
-        NeoStoreSupplier neoStoreSupplier =
-                graphdb.getDependencyResolver().resolveDependency( NeoStoreSupplier.class );
-        return neoStoreSupplier.get();
+        return deps.resolveDependency( NeoStoreSupplier.class ).get();
     }
 }

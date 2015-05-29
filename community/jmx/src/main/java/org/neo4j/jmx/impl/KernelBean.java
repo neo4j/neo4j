@@ -37,24 +37,21 @@ public class KernelBean extends Neo4jMBean implements Kernel
     private final ObjectName query;
     private final String instanceId;
 
-    private final DataSourceInfo dataSourceInfo;
     private boolean isReadOnly;
     private long storeCreationDate = -1;
     private long storeId = -1;
     private String storeDir = null;
     private long storeLogVersion;
 
-    KernelBean( KernelData kernel, ManagementSupport support ) throws NotCompliantMBeanException
+    KernelBean( KernelData kernel, DataSourceManager dsm, ManagementSupport support ) throws NotCompliantMBeanException
     {
         super( Kernel.class, kernel, support );
-        dataSourceInfo = new DataSourceInfo();
-        kernel.graphDatabase().getDependencyResolver().resolveDependency( DataSourceManager.class )
-                .addListener( dataSourceInfo );
         this.kernelVersion = kernel.version().toString();
         this.instanceId = kernel.instanceId();
         this.query = support.createMBeanQuery( instanceId );
 
         kernelStartTime = new Date().getTime();
+        dsm.addListener( new DataSourceInfo() );
     }
 
     String getInstanceId()
@@ -110,8 +107,7 @@ public class KernelBean extends Neo4jMBean implements Kernel
         return storeDir;
     }
 
-    private class DataSourceInfo
-            implements DataSourceManager.Listener
+    private class DataSourceInfo implements DataSourceManager.Listener
     {
         @Override
         public void registered( NeoStoreDataSource ds )

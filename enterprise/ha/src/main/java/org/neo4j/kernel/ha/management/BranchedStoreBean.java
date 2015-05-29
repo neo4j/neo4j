@@ -30,7 +30,6 @@ import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.management.BranchedStore;
@@ -50,27 +49,22 @@ public final class BranchedStoreBean extends ManagementBeanProvider
     protected Neo4jMBean createMXBean( ManagementData management )
             throws NotCompliantMBeanException
     {
-        if ( !isHA( management ) )
+        if ( management.isHAMode() )
         {
-            return null;
+            return new BranchedStoreImpl( management, true );
         }
-        return new BranchedStoreImpl( management, true );
+        return null;
     }
 
     @Override
     protected Neo4jMBean createMBean( ManagementData management )
             throws NotCompliantMBeanException
     {
-        if ( !isHA( management ) )
+        if ( management.isHAMode() )
         {
-            return null;
+            return new BranchedStoreImpl( management );
         }
-        return new BranchedStoreImpl( management );
-    }
-
-    private static boolean isHA( ManagementData management )
-    {
-        return management.getKernelData().graphDatabase() instanceof HighlyAvailableGraphDatabase;
+        return null;
     }
 
     private static class BranchedStoreImpl extends Neo4jMBean implements BranchedStore
@@ -122,7 +116,7 @@ public final class BranchedStoreBean extends ManagementBeanProvider
 
         private FileSystemAbstraction getFilesystem( ManagementData management )
         {
-            return management.getKernelData().getFilesystemAbstraction();
+            return management.resolveDependency( FileSystemAbstraction.class );
         }
 
         private File getStorePath( ManagementData management )

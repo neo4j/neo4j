@@ -69,6 +69,12 @@ public class HighlyAvailableKernelData extends KernelData implements Lifecycle
     }
 
     @Override
+    public boolean isHAMode()
+    {
+        return true;
+    }
+
+    @Override
     public void shutdown()
     {
         super.shutdown();

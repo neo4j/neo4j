@@ -80,8 +80,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         IdAllocation allocateIds( IdType idType );
 
-        StoreId storeId();
-
         long applyPreparedTransaction( TransactionRepresentation preparedTransaction )
                 throws IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException;
 

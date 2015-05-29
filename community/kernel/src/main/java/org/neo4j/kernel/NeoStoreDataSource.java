@@ -196,19 +196,13 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
 
         PhysicalLogFiles logFiles();
 
-        LogFileInformation logFileInformation();
-
         LogFile logFile();
 
         LogRotationControl logRotationControl();
-
-        LogRotation logRotation();
     }
 
     private interface KernelModule
     {
-        TransactionCommitProcess transactionCommitProcess();
-
         KernelTransactions kernelTransactions();
 
         KernelAPI kernelAPI();
@@ -558,7 +552,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                         neoStoreModule.neoStore().getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
                 relationshipTypeTokens.setInitialTokens(
                         neoStoreModule.neoStore().getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
-                labelTokens.setInitialTokens( neoStoreModule.neoStore().getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
+                labelTokens.setInitialTokens(
+                        neoStoreModule.neoStore().getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
 
                 neoStore.rebuildCountStoreIfNeeded(); // TODO: move this to lifecycle
             }
@@ -789,12 +784,6 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             }
 
             @Override
-            public LogFileInformation logFileInformation()
-            {
-                return logFileInformation;
-            }
-
-            @Override
             public PhysicalLogFiles logFiles()
             {
                 return logFiles;
@@ -812,11 +801,6 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 return logRotationControl;
             }
 
-            @Override
-            public LogRotation logRotation()
-            {
-                return logRotation;
-            }
         };
     }
 
@@ -962,11 +946,6 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
 
         return new KernelModule()
         {
-            @Override
-            public TransactionCommitProcess transactionCommitProcess()
-            {
-                return transactionCommitProcess;
-            }
 
             @Override
             public KernelAPI kernelAPI()

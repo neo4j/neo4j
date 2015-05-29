@@ -120,7 +120,7 @@ public class MasterClientTest
     public void clientShouldReadAndApplyTransactionLogsOnNewLockSessionRequest() throws Throwable
     {
         // Given
-        MasterImpl master = spy( newMasterImpl( mockMasterImplSpiWith( StoreId.DEFAULT ) ) );
+        MasterImpl master = spy( newMasterImpl( mockMasterSPI() ) );
         doReturn( voidResponseWithTransactionLogs() ).when( master ).newLockSession( any( RequestContext.class ) );
 
         cleanupRule.add( newMasterServer( master ) );
@@ -161,9 +161,9 @@ public class MasterClientTest
         verify( txIdStore, times( TX_LOG_COUNT ) ).transactionClosed( anyLong() );
     }
 
-    private static MasterImpl.SPI mockMasterImplSpiWith( StoreId storeId )
+    private static MasterImpl.SPI mockMasterSPI()
     {
-        return when( mock( MasterImpl.SPI.class ).storeId() ).thenReturn( storeId ).getMock();
+        return mock( MasterImpl.SPI.class );
     }
 
     private MasterServer newMasterServer( MasterImpl.SPI masterImplSPI ) throws Throwable

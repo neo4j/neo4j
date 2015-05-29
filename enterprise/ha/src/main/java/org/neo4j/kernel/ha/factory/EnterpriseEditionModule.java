@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.ha.factory;
 
+import org.jboss.netty.logging.InternalLoggerFactory;
+
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -206,7 +206,7 @@ public class EnterpriseEditionModule
                 new NotElectableElectionCredentialsProvider() :
                 new DefaultElectionCredentialsProvider(
                         config.get( ClusterSettings.server_id ),
-                        new OnDiskLastTxIdGetter( platformModule.graphDatabaseFacade ),
+                        new OnDiskLastTxIdGetter( platformModule.dependencies ),
                         new HighAvailabilityMemberInfoProvider()
                         {
                             @Override
@@ -341,7 +341,9 @@ public class EnterpriseEditionModule
                 monitors.newMonitor( SwitchToSlave.Monitor.class ),
                 monitors.newMonitor( StoreCopyClient.Monitor.class ) );
 
-        SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, platformModule.graphDatabaseFacade,
+        SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging,
+                platformModule.storeDir, platformModule.availabilityGuard,
+                platformModule.fileSystem, platformModule.monitors,
                 (HaIdGeneratorFactory) idGeneratorFactory, config, dependencies.provideDependency( SlaveFactory.class ),
                 masterDelegateInvocationHandler, clusterMemberAvailability, platformModule.dataSourceManager,
                 monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ),
@@ -400,7 +402,8 @@ public class EnterpriseEditionModule
                 createRelationshipTypeCreator( config, memberStateMachine, masterDelegateInvocationHandler,
                         requestContextFactory, kernelProvider ) ) ) );
 
-        life.add( dependencies.satisfyDependency(createKernelData( fs, storeDir, config, platformModule.graphDatabaseFacade, members, lastUpdateTime ) ));
+        life.add( dependencies.satisfyDependency(createKernelData( fs, platformModule.dependencies, storeDir, config,
+                platformModule.graphDatabaseFacade, members, lastUpdateTime ) ));
 
         commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, life,
                 clusterClient, members, platformModule.jobScheduler, master, requestContextFactory, memberStateMachine );
@@ -589,9 +592,10 @@ public class EnterpriseEditionModule
         }
     }
 
-    protected KernelData createKernelData( FileSystemAbstraction fileSystem, File storeDir, Config config, GraphDatabaseAPI graphDb, ClusterMembers members, LastUpdateTime lastUpdateTime)
+    protected KernelData createKernelData( FileSystemAbstraction fileSystem, DependencyResolver deps, File storeDir,
+            Config config, GraphDatabaseAPI graphDb, ClusterMembers members, LastUpdateTime lastUpdateTime)
     {
-        OnDiskLastTxIdGetter txIdGetter = new OnDiskLastTxIdGetter( graphDb );
+        OnDiskLastTxIdGetter txIdGetter = new OnDiskLastTxIdGetter( deps );
         ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider(
                 members, txIdGetter, lastUpdateTime );
         return new HighlyAvailableKernelData( graphDb, members, databaseInfo, fileSystem, storeDir, config );

@@ -19,10 +19,12 @@
  */
 package org.neo4j.jmx.impl;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 @Service.Implementation(KernelExtensionFactory.class)
@@ -33,6 +35,10 @@ public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensi
         KernelData getKernelData();
 
         LogService getLogService();
+
+        DependencyResolver getDependencyResolver();
+
+        DataSourceManager getDataSourceManager();
     }
 
 
@@ -46,6 +52,7 @@ public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensi
     @Override
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        return new JmxKernelExtension( dependencies.getKernelData(), dependencies.getLogService().getInternalLogProvider() );
+        return new JmxKernelExtension( dependencies.getKernelData(), dependencies.getDataSourceManager(),
+                dependencies.getDependencyResolver(), dependencies.getLogService().getInternalLogProvider() );
     }
 }

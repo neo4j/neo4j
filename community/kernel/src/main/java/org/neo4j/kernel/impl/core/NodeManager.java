@@ -32,8 +32,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static java.lang.System.currentTimeMillis;
-
 public class NodeManager extends LifecycleAdapter implements EntityFactory
 {
     private final ThreadToStatementContextBridge threadToTransactionBridge;
@@ -43,7 +41,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
 
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
-    private long epoch;
     private GraphDatabaseService graphDatabaseService;
     private RelationshipTypeTokenHolder relationshipTypeTokenHolder;
 
@@ -61,17 +58,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         // so we use the thread-safe CopyOnWriteArrayList.
         this.nodePropertyTrackers = new CopyOnWriteArrayList<>();
         this.relationshipPropertyTrackers = new CopyOnWriteArrayList<>();
-    }
-
-    @Override
-    public void init()
-    {   // Nothing to initialize
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-        epoch = currentTimeMillis();
     }
 
     @Override

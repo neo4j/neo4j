@@ -28,25 +28,32 @@ import java.util.List;
 import javax.management.MBeanServer;
 import javax.management.remote.JMXServiceURL;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 public class JmxKernelExtension implements Lifecycle
 {
-    private KernelData kernelData;
-    private Log log;
+    private final KernelData kernelData;
+    private final DataSourceManager dsm;
+    private final DependencyResolver deps;
+    private final Log log;
     private List<Neo4jMBean> beans;
     private MBeanServer mbs;
     private ManagementSupport support;
     private JMXServiceURL url;
 
-    public JmxKernelExtension( KernelData kernelData, LogProvider logProvider )
+    public JmxKernelExtension( KernelData kernelData, DataSourceManager dsm, DependencyResolver deps,
+            LogProvider logProvider )
     {
         this.kernelData = kernelData;
+        this.dsm = dsm;
+        this.deps = deps;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -54,12 +61,12 @@ public class JmxKernelExtension implements Lifecycle
     public void init() throws Throwable
     {
         support = ManagementSupport.load();
-        url = support.getJMXServiceURL( kernelData );
+        url = support.getJMXServiceURL( kernelData, log );
         mbs = support.getMBeanServer();
         beans = new LinkedList<>();
         try
         {
-            Neo4jMBean bean = new KernelBean( kernelData, support );
+            Neo4jMBean bean = new KernelBean( kernelData, dsm, support );
             mbs.registerMBean( bean, bean.objectName );
             beans.add( bean );
         }
@@ -72,7 +79,7 @@ public class JmxKernelExtension implements Lifecycle
         {
             try
             {
-                for ( Neo4jMBean bean : provider.loadBeans( kernelData, support ) )
+                for ( Neo4jMBean bean : provider.loadBeans( kernelData, deps, support ) )
                 {
                     mbs.registerMBean( bean, bean.objectName );
                     beans.add( bean );
