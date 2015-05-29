@@ -20,14 +20,13 @@
 package org.neo4j.ndp.transport.socket;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
 
 import java.io.IOException;
 
 import org.neo4j.packstream.PackOutput;
+
+import static java.lang.Math.max;
 
 public class ChunkedOutput implements PackOutput
 {
@@ -77,9 +76,9 @@ public class ChunkedOutput implements PackOutput
     public ChunkedOutput( Channel ch, int bufferSize )
     {
         this.channel = ch;
-        this.bufferSize = bufferSize;
-        this.maxChunkSize = bufferSize - CHUNK_HEADER_SIZE;
-        this.buffer = channel.alloc().buffer( bufferSize, bufferSize );
+        this.bufferSize = max( 16, bufferSize );
+        this.maxChunkSize = this.bufferSize - CHUNK_HEADER_SIZE;
+        this.buffer = channel.alloc().buffer( this.bufferSize, this.bufferSize );
     }
 
     @Override
@@ -156,7 +155,8 @@ public class ChunkedOutput implements PackOutput
     {
         assert size <= maxChunkSize : size + " > " + maxChunkSize;
 
-        if ( buffer.writableBytes() < size )
+        int toWriteSize = chunkOpen ? size : size + CHUNK_HEADER_SIZE;
+        if ( buffer.writableBytes() < toWriteSize )
         {
             flush();
         }
