@@ -69,7 +69,7 @@ case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(
 
   def sourceSymbols: SymbolTable = source.symbols
 
-  override def localEffects = commands.effects(symbols)
+  override def localEffects = commands.effects(sourceSymbols)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

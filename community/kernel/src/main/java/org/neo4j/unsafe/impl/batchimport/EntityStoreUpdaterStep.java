@@ -52,11 +52,19 @@ import static java.lang.Math.max;
 public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends InputEntity>
         extends ProcessorStep<Batch<INPUT,RECORD>>
 {
+    public interface Monitor
+    {
+        void entitiesWritten( Class<? extends PrimitiveRecord> type, long count );
+
+        void propertiesWritten( long count );
+    }
+
     private final AbstractRecordStore<RECORD> entityStore;
     private final PropertyStore propertyStore;
-    private final IoMonitor monitor;
+    private final IoMonitor ioMonitor;
     private final WriterFactory writerFactory;
     private final PropertyCreator propertyCreator;
+    private final Monitor monitor;
 
     // Reusable instances for less GC
     private final BatchingPropertyRecordAccess propertyRecords = new BatchingPropertyRecordAccess();
@@ -64,15 +72,17 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
 
     EntityStoreUpdaterStep( StageControl control, Configuration config,
             AbstractRecordStore<RECORD> entityStore,
-            PropertyStore propertyStore, IoMonitor monitor, WriterFactory writerFactory )
+            PropertyStore propertyStore, IoMonitor ioMonitor, WriterFactory writerFactory,
+            Monitor monitor )
     {
-        super( control, "v", config, 1, monitor );
+        super( control, "v", config, 1, ioMonitor );
         this.entityStore = entityStore;
         this.propertyStore = propertyStore;
         this.writerFactory = writerFactory;
-        this.propertyCreator = new PropertyCreator( propertyStore, null );
         this.monitor = monitor;
-        this.monitor.reset();
+        this.propertyCreator = new PropertyCreator( propertyStore, null );
+        this.ioMonitor = ioMonitor;
+        this.ioMonitor.reset();
     }
 
     @Override
@@ -84,7 +94,12 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         // Write the entity records, and at the same time allocate property records for its property blocks.
         long highestId = 0;
         RECORD[] records = batch.records;
-        int propertyBlockCursor = 0;
+        if ( records.length == 0 )
+        {
+            return;
+        }
+
+        int propertyBlockCursor = 0, skipped = 0;
         for ( int i = 0; i < records.length; i++ )
         {
             RECORD record = records[i];
@@ -114,6 +129,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
             else
             {   // Here we have a relationship that refers to missing nodes. It's within the tolerance levels
                 // of number of bad relationships. Just don't import this relationship.
+                skipped++;
             }
             propertyBlockCursor += propertyBlockCount;
         }
@@ -124,6 +140,9 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         {
             propertyStore.updateRecord( propertyRecord );
         }
+
+        monitor.entitiesWritten( records[0].getClass(), records.length-skipped );
+        monitor.propertiesWritten( propertyBlockCursor );
     }
 
     private void reassignDynamicRecordIds( PropertyBlock[] blocks, int offset, int length )
@@ -172,7 +191,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         // Stop the I/O monitor, since the stats in there is based on time passed since the start
         // and bytes written. NodeStage and CalculateDenseNodesStage can be run in parallel so if
         // NodeStage completes before CalculateDenseNodesStage then we want to stop the time in the I/O monitor.
-        monitor.stop();
+        ioMonitor.stop();
     }
 
     // Below we override the "parallizable" methods to go directly towards the I/O writer, since

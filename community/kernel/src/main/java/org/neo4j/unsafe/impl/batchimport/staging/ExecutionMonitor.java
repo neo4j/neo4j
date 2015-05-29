@@ -42,7 +42,7 @@ public interface ExecutionMonitor
     /**
      * Signals the end of the import as a whole
      */
-    void done( long totalTimeMillis );
+    void done( long totalTimeMillis, String additionalInformation );
 
     /**
      * @return next time stamp when this monitor would like to check that status of current execution.
@@ -57,18 +57,18 @@ public interface ExecutionMonitor
     /**
      * Base implementation with most methods defaulting to not doing anything.
      */
-    public abstract class Adpter implements ExecutionMonitor
+    public abstract class Adapter implements ExecutionMonitor
     {
         private final Clock clock;
         private final long intervalMillis;
 
-        public Adpter( Clock clock, long time, TimeUnit unit )
+        public Adapter( Clock clock, long time, TimeUnit unit )
         {
             this.clock = clock;
             this.intervalMillis = unit.toMillis( time );
         }
 
-        public Adpter( long time, TimeUnit unit )
+        public Adapter( long time, TimeUnit unit )
         {
             this( Clock.SYSTEM_CLOCK, time, unit );
         }
@@ -90,7 +90,7 @@ public interface ExecutionMonitor
         }
 
         @Override
-        public void done( long totalTimeMillis )
+        public void done( long totalTimeMillis, String additionalInformation )
         {   // Do nothing by default
         }
     }

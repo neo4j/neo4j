@@ -124,6 +124,7 @@ public class ParallelBatchImporter implements BatchImporter
         long startTime = currentTimeMillis();
         boolean hasBadEntries = false;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
+        CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
               writeMonitor, logService, monitors, writerFactory, additionalInitialIds );
               OutputStream badOutput = new BufferedOutputStream( fileSystem.openAsOutputStream( badFile, false ) );
@@ -142,7 +143,8 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Stage 1 -- nodes, properties, labels
             NodeStage nodeStage = new NodeStage( config, writeMonitor, writerFactory,
-                    nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(), memoryUsageStats );
+                    nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(),
+                    storeUpdateMonitor, memoryUsageStats );
 
             // Stage 2 -- calculate dense node threshold
             CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( config, relationships,
@@ -168,7 +170,7 @@ public class ParallelBatchImporter implements BatchImporter
             // Stage 3 -- relationships, properties
             final RelationshipStage relationshipStage = new RelationshipStage( config, writeMonitor, writerFactory,
                     relationships.supportsMultiplePasses() ? relationships : inputCache.relationships(),
-                    idMapper, neoStore, nodeRelationshipCache, input.specificRelationshipIds() );
+                    idMapper, neoStore, nodeRelationshipCache, input.specificRelationshipIds(), storeUpdateMonitor );
             executeStages( relationshipStage );
             nodeRelationshipCache.fixateGroups();
 
@@ -200,9 +202,10 @@ public class ParallelBatchImporter implements BatchImporter
                     neoStore.getRelationshipTypeRepository().getHighId(), countsUpdater, AUTO ) );
 
             // We're done, do some final logging about it
+            writerFactory.awaitEverythingWritten();
             long totalTimeMillis = currentTimeMillis() - startTime;
-            executionMonitor.done( totalTimeMillis );
-            log.info( "Import completed, took " + Format.duration( totalTimeMillis ) );
+            executionMonitor.done( totalTimeMillis, storeUpdateMonitor.toString() );
+            log.info( "Import completed, took " + Format.duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
             hasBadEntries = badCollector.badEntries() > 0;
             if ( hasBadEntries )
             {

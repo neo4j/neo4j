@@ -27,6 +27,101 @@ import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("a merge following a delete of multiple rows should not match on a deleted entity") {
+    // GIVEN
+    val a = createLabeledNode("A")
+    val branches = 2
+    val b = (0 until branches).map(n => createLabeledNode(Map("value" -> n), "B"))
+    val c = (0 until branches).map(_ => createLabeledNode("C"))
+    (0 until branches).foreach(n => {
+      relate(a, b(n))
+      relate(b(n), c(n))
+    })
+
+    val query =
+      """
+        |MATCH (a:A) -[ab]-> (b:B) -[bc]-> (c:C)
+        |DELETE ab, bc, b, c
+        |MERGE (newB:B { value: 1 })
+        |MERGE (a) -[:REL]->  (newB)
+        |MERGE (newC:C)
+        |MERGE (newB) -[:REL]-> (newC)
+      """.stripMargin
+
+    // WHEN
+    executeWithRulePlanner(query)
+
+    // THEN
+    assert(true)
+  }
+
+  test("identifiers of deleted nodes should not be able to cause errors in later merge actions that do not refer to them") {
+    // GIVEN
+    val a = createLabeledNode("A")
+    val b = createLabeledNode("B")
+    val c = createLabeledNode("C")
+    relate(a, b)
+    relate(b, c)
+
+    val query =
+      """
+        |MATCH (a:A) -[ab]-> (b:B) -[bc]-> (c:C)
+        |DELETE ab, bc, b, c
+        |MERGE (newB:B)
+        |MERGE (a) -[:REL]->  (newB)
+        |MERGE (newC:C)
+        |MERGE (newB) -[:REL]-> (newC)
+      """.stripMargin
+
+    // WHEN
+    executeWithRulePlanner(query)
+
+    // THEN query should not crash
+    assert(true)
+  }
+
+  test("merges should not be able to match on deleted nodes") {
+    // GIVEN
+    val node1 = createLabeledNode(Map("value" -> 1), "A")
+    val node2 = createLabeledNode(Map("value" -> 2), "A")
+
+    val query = """
+                  |MATCH (a:A)
+                  |DELETE a
+                  |MERGE (a2:A)
+                  |RETURN a2
+                """.stripMargin
+
+    // WHEN
+    val result = executeWithRulePlanner(query)
+
+    // THEN
+    result.toList should not contain Map("a2" -> node1)
+    result.toList should not contain Map("a2" -> node2)
+  }
+
+  test("merges should not be able to match on deleted relationships") {
+    // GIVEN
+    val a = createNode()
+    val b = createNode()
+    val rel1 = relate(a, b, "T")
+    val rel2 = relate(a, b, "T")
+
+    val query = """
+                  |MATCH (a)-[t:T]->(b)
+                  |DELETE t
+                  |MERGE (a)-[t2:T]->(b)
+                  |RETURN t2
+                """.stripMargin
+
+    // WHEN
+    val result = executeWithRulePlanner(query)
+
+    // THEN
+    result.toList should not contain Map("t2" -> rel1)
+    result.toList should not contain Map("t2" -> rel2)
+  }
+
   test("comparing numbers should work nicely") {
     val n1 = createNode(Map("x" -> 50))
     val n2 = createNode(Map("x" -> 50l))

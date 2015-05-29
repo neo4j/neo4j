@@ -46,6 +46,7 @@ public class NodeStage extends Stage
     public NodeStage( Configuration config, IoMonitor writeMonitor, WriterFactory writerFactory,
             InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
             BatchingNeoStore neoStore, InputCache inputCache, LabelScanStore labelScanStore,
+            EntityStoreUpdaterStep.Monitor storeUpdateMonitor,
             StatsProvider memoryUsage ) throws IOException
     {
         super( "Nodes", config, ORDER_SEND_DOWNSTREAM );
@@ -62,6 +63,6 @@ public class NodeStage extends Stage
                 neoStore.getLabelRepository(), nodeStore, memoryUsage ) );
         add( new LabelScanStorePopulationStep( control(), config, labelScanStore ) );
         add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore,
-                writeMonitor, writerFactory ) );
+                writeMonitor, writerFactory, storeUpdateMonitor ) );
     }
 }

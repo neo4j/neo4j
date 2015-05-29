@@ -72,7 +72,7 @@ public class MultiExecutionMonitorTest
 
     public final @Rule CleanupRule cleanup = new CleanupRule();
 
-    private static class TestableMonitor extends ExecutionMonitor.Adpter
+    private static class TestableMonitor extends ExecutionMonitor.Adapter
     {
         private int timesPolled;
         private final String name;

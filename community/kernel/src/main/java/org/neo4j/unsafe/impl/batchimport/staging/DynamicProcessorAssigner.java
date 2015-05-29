@@ -46,7 +46,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * {@link Configuration#maxNumberOfProcessors()}.</li>
  * </ul>
  */
-public class DynamicProcessorAssigner extends ExecutionMonitor.Adpter
+public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
 {
     private final Configuration config;
     private final Map<Step<?>,Long/*done batches*/> lastChangedProcessors = new HashMap<>();

@@ -31,7 +31,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.last;
 /**
  * {@link ExecutionMonitor} that prints progress, e.g. a dot every N batches completed.
  */
-public class CoarseUnboundedProgressExecutionMonitor extends ExecutionMonitor.Adpter
+public class CoarseUnboundedProgressExecutionMonitor extends ExecutionMonitor.Adapter
 {
     private int prevN = 0;
     private final int dotEveryN;
@@ -81,7 +81,7 @@ public class CoarseUnboundedProgressExecutionMonitor extends ExecutionMonitor.Ad
     }
 
     @Override
-    public void done( long totalTimeMillis )
+    public void done( long totalTimeMillis, String additionalInformation )
     {
         out.println();
     }

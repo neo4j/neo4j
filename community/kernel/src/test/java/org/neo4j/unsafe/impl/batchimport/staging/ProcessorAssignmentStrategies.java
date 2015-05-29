@@ -119,7 +119,7 @@ public class ProcessorAssignmentStrategies
         };
     }
 
-    private static abstract class AbstractAssigner extends ExecutionMonitor.Adpter
+    private static abstract class AbstractAssigner extends ExecutionMonitor.Adapter
     {
         private final Map<String,Map<String,Integer>> processors = new HashMap<>();
 

@@ -146,7 +146,7 @@ public class TestPerformUpgradeIfNecessary
         order.verify( monitor, times( 1 ) ).migrationCompleted();
         order.verifyNoMoreInteractions();
 
-        assertableLogProvider.assertContainsMessageContaining( "Migration completed" );
+        assertableLogProvider.assertContainsMessageContaining( "IMPORT DONE" );
     }
 
     private Config buildProperties(boolean allowStoreUpgrade) throws IOException

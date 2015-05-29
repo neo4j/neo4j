@@ -26,7 +26,11 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     val nodesInterfere = from.contains(ReadsNodes) && to.contains(WritesNodes)
     val relsInterfere = from.contains(ReadsRelationships) && to.contains(WritesRelationships)
 
-    nodesInterfere || relsInterfere ||
+    val readWriteInterfereNodes = from.contains(WritesNodes) && to.contains(WritesNodes) && to.contains(ReadsNodes)
+    val readWriteInterfereRelationships = from.contains(WritesRelationships) && to.contains(WritesRelationships) &&
+      to.contains(ReadsRelationships)
+
+    nodesInterfere || relsInterfere || readWriteInterfereNodes || readWriteInterfereRelationships ||
       nodePropertiesInterfere(from, to) || relationshipPropertiesInterfere(from, to) || labelsInterfere(from, to)
   }
 
