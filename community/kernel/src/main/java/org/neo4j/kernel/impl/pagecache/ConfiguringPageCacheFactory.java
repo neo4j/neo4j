@@ -90,14 +90,16 @@ public class ConfiguringPageCacheFactory
 
     protected PageCache createPageCache()
     {
+        int cachePageSize = calculatePageSize( config, swapperFactory );
+        int maxPages = calculateMaxPages( config, cachePageSize );
         return new MuninnPageCache(
                 swapperFactory,
-                calculateMaxPages( config ),
-                calculatePageSize( config ),
+                maxPages,
+                cachePageSize,
                 tracer );
     }
 
-    public int calculateMaxPages( Config config )
+    public int calculateMaxPages( Config config, int cachePageSize )
     {
         long pageCacheMemory = config.get( pagecache_memory );
         long maxHeap = Runtime.getRuntime().maxMemory();
@@ -107,22 +109,29 @@ public class ConfiguringPageCacheFactory
                       "10 KiB of heap memory, for every 1 MiB of page cache memory. The current configuration is " +
                       "allocating %s bytes for the page cache, and %s bytes for the heap.", pageCacheMemory, maxHeap );
         }
-        long pageSize = config.get( mapped_memory_page_size );
-        long pageCount = pageCacheMemory / pageSize;
+        long pageCount = pageCacheMemory / cachePageSize;
         return (int) Math.min( Integer.MAX_VALUE - 2000, pageCount );
     }
 
-    public int calculatePageSize( Config config )
+    public int calculatePageSize( Config config, PageSwapperFactory swapperFactory )
     {
-        return config.get( mapped_memory_page_size ).intValue();
+        int pageSwappersPageSizeHint = swapperFactory.getCachePageSizeHint();
+        int configuredPageSize = config.get( mapped_memory_page_size ).intValue();
+        if ( configuredPageSize == 0 || swapperFactory.isCachePageSizeHintStrict() )
+        {
+            return pageSwappersPageSizeHint;
+        }
+        return configuredPageSize;
     }
 
     public void dumpConfiguration()
     {
+        int cachePageSize = calculatePageSize( config, swapperFactory );
+        int maxPages = calculateMaxPages( config, cachePageSize );
         long totalPhysicalMemory = totalPhysicalMemory();
         String totalPhysicalMemMb = totalPhysicalMemory == -1? "?" : "" + totalPhysicalMemory / 1024 / 1024;
         long maxVmUsageMb = Runtime.getRuntime().maxMemory() / 1024 / 1024;
-        long pageCacheMb = (calculateMaxPages( config ) * calculatePageSize( config )) / 1024 / 1024;
+        long pageCacheMb = (maxPages * cachePageSize) / 1024 / 1024;
         String msg = "Physical mem: " + totalPhysicalMemMb + " MiB," +
                      " Heap size: " + maxVmUsageMb + " MiB," +
                      " Page cache size: " + pageCacheMb + " MiB.";

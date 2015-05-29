@@ -207,9 +207,10 @@ public abstract class GraphDatabaseSettings
     @Description( "Use memory mapped buffers for accessing the native storage layer." )
     public static final Setting<Boolean> use_memory_mapped_buffers = setting( "use_memory_mapped_buffers", BOOLEAN, Boolean.toString(!Settings.osIsWindows()));
 
-    @Description("Target size for pages of mapped memory.")
+    @Description("Target size for pages of mapped memory. If set to 0, then a reasonable default is chosen, " +
+                 "depending on the storage device used.")
     @Internal
-    public static final Setting<Long> mapped_memory_page_size = setting( "dbms.pagecache.pagesize", BYTES, "8192" );
+    public static final Setting<Long> mapped_memory_page_size = setting( "dbms.pagecache.pagesize", BYTES, "0" );
 
     @SuppressWarnings( "unchecked" )
     @Description( "The amount of memory to use for mapping the store files, in bytes (or kilobytes with the 'k' " +
