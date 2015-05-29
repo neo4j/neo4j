@@ -82,8 +82,7 @@ object LogicalPlanConverter {
       context.pushParent(this)
       val (Some(symbol), leftInstructions) = logicalPlan.lhs.get.asCodeGenPlan.produce(context)
       val opName = context.registerOperator(logicalPlan)
-      val lhsMethod = MethodInvocation(Some(opName),
-        symbol.name, symbol.javaType, context.namer.newMethodName(), leftInstructions)
+      val lhsMethod = MethodInvocation(Some(opName), symbol, context.namer.newMethodName(), leftInstructions)
 
       context.pushParent(this)
       val (otherSymbol, rightInstructions) = logicalPlan.rhs.get.asCodeGenPlan.produce(context)
@@ -103,7 +102,7 @@ object LogicalPlanConverter {
 
         val opName = context.registerOperator(logicalPlan)
         val probeTable = BuildProbeTable(opName, probeTableName, nodeId.name, symbols, context.namer)
-        val probeTableSymbol = JavaSymbol(probeTableName, probeTable.producedType)
+        val probeTableSymbol = JavaSymbol(probeTableName, probeTable.producedType, tableType=Some(probeTable.tableType))
 
         context.addProbeTable(this, probeTable.generateFetchCode)
 
@@ -164,8 +163,8 @@ object LogicalPlanConverter {
       val fromNodeVar = context.getVariable(logicalPlan.from.name)
       val typeVar2TypeName = logicalPlan.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(logicalPlan)
-      val expand = ExpandC(opName, fromNodeVar.name, relVar.name, logicalPlan.dir, typeVar2TypeName, toNodeVar.name, action)
-      (methodHandle, WhileLoop(relVar, expand, Instruction.empty))
+      val expand = ExpandC(opName, fromNodeVar.name, relVar.name, logicalPlan.dir, typeVar2TypeName, toNodeVar.name, Instruction.empty)
+      (methodHandle, WhileLoop(relVar, expand, action))
     }
   }
 
@@ -180,7 +179,7 @@ object LogicalPlanConverter {
       val projectionInstructions = logicalPlan.expressions.map {
         case (identifier, expression) =>
           val instruction = createProjectionInstruction(logicalPlan, expression, context)
-          context.addVariable(identifier, instruction.projectedVariable)
+          context.addVariable(identifier, instruction.projectedVariable.copy(generator = Some(instruction)))
           instruction
       }.toSeq
 
@@ -207,22 +206,23 @@ object LogicalPlanConverter {
 
         case Property(rel@Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
           val token = propKey.id(context.semanticTable).map(_.id)
-          ProjectRelProperty(token, propKey.name, context.getVariable(name).name, context.namer)
+          val opName = context.registerOperator(logicalPlan)
+          ProjectRelProperty(opName, token, propKey.name, context.getVariable(name).name, context.namer)
 
         case Parameter(name) => ProjectParameter(name)
 
         case lit: IntegerLiteral =>
           val value = if (lit.value != null) s"${lit.value.toString}L" else "null"
-          ProjectLiteral(JavaSymbol(value, LONG))
+          ProjectLiteral(JavaSymbol(value, LONG), lit.value)
 
         case lit: DoubleLiteral =>
-          ProjectLiteral(JavaSymbol(safeToString(lit.value), DOUBLE))
+          ProjectLiteral(JavaSymbol(safeToString(lit.value), DOUBLE), lit.value)
 
         case lit: StringLiteral =>
-          ProjectLiteral(JavaSymbol( s""""${safeToString(lit.value)}"""", STRING))
+          ProjectLiteral(JavaSymbol( s""""${safeToString(lit.value)}"""", STRING), lit.value)
 
         case lit: Literal =>
-          ProjectLiteral(JavaSymbol(safeToString(lit.value), OBJECT))
+          ProjectLiteral(JavaSymbol(safeToString(lit.value), OBJECT), lit.value)
 
         case Collection(exprs) =>
           ProjectCollection(exprs.map(e => createProjectionInstruction(logicalPlan, e, context)))

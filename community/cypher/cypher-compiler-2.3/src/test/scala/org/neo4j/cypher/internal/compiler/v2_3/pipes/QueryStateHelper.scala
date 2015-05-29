@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_3.{devNullLogger, ExecutionContext}
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 
 object QueryStateHelper {
   def empty: QueryState = emptyWith()
 
-  def emptyWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalResource = null,
+  def emptyWith(query: QueryContext = null, resources: ExternalResource = null,
                 params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None) =
-    QueryState(db = db, query = query, resources = resources, params = params, decorator = decorator,
+    QueryState(query = query, resources = resources, params = params, decorator = decorator,
       initialContext = initialContext)
 }

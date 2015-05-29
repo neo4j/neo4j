@@ -60,7 +60,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     graph.withTx { tx =>
       val resources: ExternalResource = mock[ExternalResource]
       val queryContext = new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI], tx, true, graph.statement)
-      val state = QueryState(graph, queryContext, resources, params = Map.empty, decorator = NullPipeDecorator)
+      val state = QueryState(queryContext, resources, params = Map.empty, decorator = NullPipeDecorator)
 
       for (x <- 0 to 30) {
         for ((name, pipe) <- pipes) {

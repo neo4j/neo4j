@@ -21,9 +21,19 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaString
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
 
 case class ScanForLabel(id: String, labelName: String, labelVar: JavaSymbol)
   extends Instruction with LoopDataGenerator {
+
+  override def init[E](generator: MethodStructure[E]) = generator.lookupLabelId(labelVar.name, labelName)
+
+  override def produceIterator[E](iterVar: String, generator: MethodStructure[E]) = {
+    generator.labelScan(iterVar, labelVar.name)
+    generator.incrementDbHits()
+  }
+
+  override def produceNext[E](nextVar: String, iterVar: String, generator: MethodStructure[E]) = generator.nextNode(nextVar, iterVar)
 
   def generateCode() = s"""ro.nodesGetForLabel( ${labelVar.name} )"""
 

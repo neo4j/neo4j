@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.{JavaSymbol, JavaString}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaTypes.{DOUBLE, LIST, LONG, MAP, NUMBER, OBJECT, STRING}
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenerator, KernelExceptionCodeGen, Namer}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.{JavaString, JavaSymbol}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenerator, KernelExceptionCodeGen, MethodStructure, Namer}
 
-sealed trait ProjectionInstruction extends Instruction {
+// TODO: these objects are not really Instruction - should not extend it!
+trait ProjectionInstruction extends Instruction {
+  def generateExpression[E](structure: MethodStructure[E]): E
 
   def projectedVariable: JavaSymbol
 
@@ -32,11 +34,11 @@ sealed trait ProjectionInstruction extends Instruction {
 
 object ProjectionInstruction {
 
-  def literal(value: Long): ProjectionInstruction = ProjectLiteral(JavaSymbol(value.toString + "L", LONG))
+  def literal(value: Long): ProjectionInstruction = ProjectLiteral(JavaSymbol(value.toString + "L", LONG), java.lang.Long.valueOf(value))
 
-  def literal(value: Double): ProjectionInstruction = ProjectLiteral(JavaSymbol(value.toString, DOUBLE))
+  def literal(value: Double): ProjectionInstruction = ProjectLiteral(JavaSymbol(value.toString, DOUBLE), java.lang.Double.valueOf(value))
 
-  def literal(value: String): ProjectionInstruction = ProjectLiteral(JavaSymbol(s""""$value"""", STRING))
+  def literal(value: String): ProjectionInstruction = ProjectLiteral(JavaSymbol(s""""$value"""", STRING), value)
 
   def parameter(key: String): ProjectionInstruction = ProjectParameter(key)
 
@@ -50,6 +52,22 @@ case class ProjectNodeProperty(id: String, token: Option[Int], propName: String,
 
   private val propKeyVar = token.map(_.toString).getOrElse(namer.newVarName())
   private val methodName = namer.newMethodName()
+
+  override def init[E](generator: MethodStructure[E]) = if (token.isEmpty) generator.lookupPropertyKey(propName, propKeyVar)
+
+  override def generateExpression[E](structure: MethodStructure[E]): E = {
+    val localName = namer.newVarName()
+    structure.declareProperty(localName)
+    structure.trace(id) { body =>
+      if (token.isEmpty)
+        body.nodeGetPropertyForVar(nodeIdVar, propKeyVar, localName)
+      else
+        body.nodeGetPropertyById(nodeIdVar, token.get, localName)
+      body.incrementRows()
+      body.incrementDbHits()
+    }
+    structure.load(localName)
+  }
 
   def generateInit() = if (token.isEmpty)
     s"""if ( $propKeyVar == -1 )
@@ -90,12 +108,30 @@ case class ProjectNodeProperty(id: String, token: Option[Int], propName: String,
   })
 
   override protected def children = Seq.empty
+
 }
 
-case class ProjectRelProperty(token: Option[Int], propName: String, relIdVar: String, namer: Namer)
+//TODO this should do tracing
+case class ProjectRelProperty(id:String, token: Option[Int], propName: String, relIdVar: String, namer: Namer)
   extends ProjectionInstruction {
 
   private val propKeyVar = token.map(_.toString).getOrElse(namer.newVarName())
+
+  override def init[E](generator: MethodStructure[E]) = if (token.isEmpty) generator.lookupPropertyKey(propName, propKeyVar)
+
+  override def generateExpression[E](structure: MethodStructure[E]): E = {
+    val localName = namer.newVarName()
+    structure.declareProperty(localName)
+    structure.trace(id) { body =>
+      if (token.isEmpty)
+        body.relationshipGetPropertyForVar(relIdVar, propKeyVar, localName)
+      else
+        body.relationshipGetPropertyById(relIdVar, token.get, localName)
+      body.incrementRows()
+      body.incrementDbHits()
+    }
+    structure.load(localName)
+  }
 
   def generateInit() =
     if (token.isEmpty)
@@ -113,10 +149,16 @@ case class ProjectRelProperty(token: Option[Int], propName: String, relIdVar: St
 
   override protected def exceptions = Set(KernelExceptionCodeGen)
 
+  override protected def operatorId = Some(id)
+
   override protected def children = Seq.empty
 }
 
 case class ProjectParameter(key: String) extends ProjectionInstruction {
+
+  override def init[E](generator: MethodStructure[E]) = generator.expectParameter(key)
+
+  override def generateExpression[E](structure: MethodStructure[E]): E = structure.parameter(key)
 
   def generateInit() =
     s"""if( !params.containsKey( "${key.toJava}" ) )
@@ -134,7 +176,9 @@ case class ProjectParameter(key: String) extends ProjectionInstruction {
   override protected def children = Seq.empty
 }
 
-case class ProjectLiteral(projectedVariable: JavaSymbol) extends ProjectionInstruction {
+case class ProjectLiteral(projectedVariable: JavaSymbol, value:Object) extends ProjectionInstruction {
+
+  override def generateExpression[E](structure: MethodStructure[E]) = structure.constant(value)
 
   def generateInit() = ""
 
@@ -144,6 +188,8 @@ case class ProjectLiteral(projectedVariable: JavaSymbol) extends ProjectionInstr
 }
 
 case class ProjectNode(nodeIdVar: JavaSymbol) extends ProjectionInstruction {
+
+  override def generateExpression[E](structure: MethodStructure[E]) = structure.materializeNode(nodeIdVar.name)
 
   def projectedVariable = nodeIdVar.withProjectedSymbol(CodeGenerator.getNodeById(nodeIdVar.name))
 
@@ -156,6 +202,9 @@ case class ProjectNode(nodeIdVar: JavaSymbol) extends ProjectionInstruction {
 
 case class ProjectRelationship(relId: JavaSymbol) extends ProjectionInstruction {
 
+  override def generateExpression[E](structure: MethodStructure[E]) = structure.materializeRelationship(relId.name)
+
+
   def projectedVariable = relId.withProjectedSymbol(CodeGenerator.getRelationshipById(relId.name))
 
   def generateInit() = ""
@@ -166,6 +215,12 @@ case class ProjectRelationship(relId: JavaSymbol) extends ProjectionInstruction 
 }
 
 case class ProjectAddition(lhs: ProjectionInstruction, rhs: ProjectionInstruction) extends ProjectionInstruction {
+
+  override def generateExpression[E](structure: MethodStructure[E]) = {
+    structure.add(
+      lhs.projectedVariable.javaType, lhs.generateExpression(structure),
+      rhs.projectedVariable.javaType, rhs.generateExpression(structure))
+  }
 
   def projectedVariable: JavaSymbol = {
     val leftTerm = lhs.projectedVariable
@@ -198,6 +253,12 @@ case class ProjectAddition(lhs: ProjectionInstruction, rhs: ProjectionInstructio
 
 case class ProjectSubtraction(lhs: ProjectionInstruction, rhs: ProjectionInstruction) extends ProjectionInstruction {
 
+  override def generateExpression[E](structure: MethodStructure[E]) = {
+    structure.sub(
+      lhs.projectedVariable.javaType, lhs.generateExpression(structure),
+      rhs.projectedVariable.javaType, rhs.generateExpression(structure))
+  }
+
   def projectedVariable: JavaSymbol = {
     val leftTerm = lhs.projectedVariable
     val rightTerm = rhs.projectedVariable
@@ -223,6 +284,8 @@ case class ProjectSubtraction(lhs: ProjectionInstruction, rhs: ProjectionInstruc
 
 case class ProjectCollection(instructions: Seq[ProjectionInstruction]) extends ProjectionInstruction {
 
+  override def generateExpression[E](structure: MethodStructure[E]) = structure.asList(instructions.map(_.generateExpression(structure)))
+
   override def children: Seq[Instruction] = instructions
 
   def generateInit() = ""
@@ -240,6 +303,9 @@ case class ProjectCollection(instructions: Seq[ProjectionInstruction]) extends P
 
 case class ProjectMap(instructions: Map[String, ProjectionInstruction]) extends ProjectionInstruction {
 
+  override def generateExpression[E](structure: MethodStructure[E]) =
+    structure.asMap(instructions.mapValues(_.generateExpression(structure)))
+
   override def children: Seq[Instruction] = instructions.values.toSeq
 
   def generateInit() = ""
@@ -256,6 +322,8 @@ case class ProjectMap(instructions: Map[String, ProjectionInstruction]) extends 
 }
 
 case class Project(projections: Seq[ProjectionInstruction], parent: Instruction) extends Instruction {
+
+  override def body[E](generator: MethodStructure[E]) = parent.body(generator)
 
   override def generateCode() = generate(_.generateCode())
 

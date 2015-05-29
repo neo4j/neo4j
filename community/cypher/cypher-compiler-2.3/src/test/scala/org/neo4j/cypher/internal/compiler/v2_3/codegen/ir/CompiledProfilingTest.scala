@@ -113,10 +113,10 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
       AcceptVisitor("bar", Map.empty))
 
     // when
-    val source = generateSource(instruction)
+    val clazz = compile(instruction)
 
     // then
-    source should include("public static Id foo;")
-    source should include("public static Id bar;")
+    clazz.getDeclaredField("foo").getType should equal(classOf[Id])
+    clazz.getDeclaredField("bar").getType should equal(classOf[Id])
   }
 }

@@ -19,11 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaString
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.{JavaString, JavaSymbol}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
 
 case class AcceptVisitor(id: String, columns: Map[String, JavaSymbol]) extends Instruction {
+
+
+  override protected def columnNames = columns.keys
+
+  override def body[E](generator: MethodStructure[E]) = generator.trace(id) { body =>
+    columns.foreach { case (k, v) =>
+      body.setInRow(k, v.generate(body))
+    }
+    body.visitRow()
+    body.incrementRows()
+  }
 
   def generateCode() = {
     val eventVar = "event_" + id

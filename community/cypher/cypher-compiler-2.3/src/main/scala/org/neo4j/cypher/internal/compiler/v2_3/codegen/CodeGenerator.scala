@@ -43,14 +43,18 @@ object CodeGenerator {
 
   def generateClass(instructions: Seq[Instruction]) = {
     val className = Namer.newClassName()
-    val source = generateCodeFromInstructions(className, instructions)
+    if (false) println(indentNicely(generateCodeFromInstructions(className, instructions))) // what does the old version do?
 
-    (Javac.compile(s"$packageName.$className", source), source)
+    CodeStructure.__TODO__MOVE_IMPLEMENTATION.generateQuery(packageName, className,
+      instructions.flatMap(_.allColumns), instructions.flatMap(_.allOperatorIds)) { acceptMethod =>
+      instructions.foreach(insn => insn.init(acceptMethod))
+      instructions.foreach(insn => insn.body(acceptMethod))
+    }
   }
 
   private val packageName = "org.neo4j.cypher.internal.compiler.v2_3.generated"
 
-  //TODO these methods should be move out of 2.3 together with everyting that touches Statement
+  //TODO these methods should be move out of 2.3 together with everything that touches Statement
   def getNodeById(v: String) = JavaSymbol(s"""db.getNodeById( $v )""", JavaTypes.NODE)
 
   def getRelationshipById(v: String) = JavaSymbol(s"""db.getRelationshipById( $v )""", JavaTypes.RELATIONSHIP)
@@ -82,7 +86,7 @@ object CodeGenerator {
 
   def n = System.lineSeparator()
 
-  private def generateCodeFromInstructions(className: String, instructions: Seq[Instruction]) = {
+  private def generateCodeFromInstructions[T](className: String, instructions: Seq[Instruction]) = {
     val importLines = instructions.map(_.allImportedClasses).reduceOption(_ ++ _).getOrElse(Set.empty)
 
     val imports = if (importLines.nonEmpty)
@@ -96,6 +100,7 @@ object CodeGenerator {
     val privateMethodText = privateMethods.map(_.generateCode.trim).reduceOption(_ + n + _).getOrElse("").trim
     val exceptions = instructions.flatMap(_.allExceptions).toSet
     val opIds = instructions.flatMap(_.allOperatorIds).map(s => s"public static Id $s;").mkString(n)
+
 
     s"""package $packageName;
        |
@@ -228,7 +233,7 @@ class CodeGenerator {
       case res: ProduceResult =>
         val idMap = LogicalPlanIdentificationBuilder(plan)
         val (instructions, operatorMap) = createInstructions(plan, semanticTable, idMap)
-        val clazz = generateClass(instructions)._1
+        val clazz = generateClass(instructions)
         operatorMap.foreach {
           case (id, name) => setStaticField(clazz, name, id)
         }
@@ -247,7 +252,7 @@ class CodeGenerator {
                     descriptionProvider: (InternalPlanDescription) => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer]),
                     params: immutable.Map[String, Any], closer: TaskCloser): InternalExecutionResult = {
             val (supplier, tracer) = descriptionProvider(description)
-            Javac.newInstance(clazz, closer, statement, db, execMode, supplier,
+            GeneratedCodeLoader.newInstance(clazz, closer, statement, db, execMode, supplier,
                               tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
           }
         }

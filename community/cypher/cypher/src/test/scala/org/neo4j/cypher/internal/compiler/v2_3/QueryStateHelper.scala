@@ -32,7 +32,7 @@ object QueryStateHelper {
 
   def emptyWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalResource = null,
                 params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator) =
-    QueryState(db = db, query = query, resources = resources, params = params, decorator = decorator)
+    QueryState(query = query, resources = resources, params = params, decorator = decorator)
 
   def queryStateFrom(db: GraphDatabaseAPI, tx: Transaction): QueryState = {
     val statement: Statement = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()

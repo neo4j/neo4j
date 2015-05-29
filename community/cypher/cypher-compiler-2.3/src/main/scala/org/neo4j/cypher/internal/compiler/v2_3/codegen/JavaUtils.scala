@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
 import org.apache.commons.lang3.StringEscapeUtils
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.ProjectionInstruction
 
 object JavaUtils {
 
@@ -40,8 +41,9 @@ object JavaUtils {
     val RELATIONSHIP = "org.neo4j.graph.Relationship"
   }
 
-  case class JavaSymbol(name: String, javaType: String, materializedSymbol: Option[JavaSymbol] = None) {
+  case class JavaSymbol(name: String, javaType: String, materializedSymbol: Option[JavaSymbol] = None, generator:Option[ProjectionInstruction]=None, tableType: Option[JoinTableType] = None) {
     self =>
+    def generate[E](structure: MethodStructure[E]):E = generator.map(_.generateExpression(structure)).getOrElse(structure.load(name))
 
     def materialize = materializedSymbol.getOrElse(self)
 

@@ -646,8 +646,11 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private def relationshipIterator(longs: Seq[Long]) = new RelationshipIterator {
 
-    //todo
-    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean = ???
+    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
+      val rel = relMap(relationshipId)
+      visitor.visit(relationshipId, -1, rel.from.getId, rel.to.getId)
+      false
+    }
 
     val inner = longs.toIterator
 

@@ -20,23 +20,32 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{ExceptionCodeGen, KernelExceptionCodeGen}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
+import org.neo4j.cypher.internal.compiler.v2_3.codegen._
 
 case class MethodInvocation(override val operatorId: Option[String],
-                            resultVariable: String,
-                            resultType: String,
+                            symbol:JavaSymbol,
                             methodName: String,
                             statements: Seq[Instruction]) extends Instruction {
 
+  override def init[E](generator: MethodStructure[E]) = {}
+
+  override def body[E](generator: MethodStructure[E]) = {
+    generator.method(symbol.tableType.get, symbol.name, methodName) { body =>
+      statements.foreach(_.init(body))
+      statements.foreach(_.body(body))
+    }
+  }
+
   def generateCode() = operatorId match {
     case Some(id) =>
-      s"""final $resultType $resultVariable;
+      s"""final ${symbol.javaType} ${symbol.name};
          |try ( QueryExecutionEvent event_$id = tracer.executeOperator( $id ) )
          |{
-         |$resultVariable = $methodName();
+         |${symbol.name} = $methodName();
          |}
        """.stripMargin
-    case None => s"final $resultType $resultVariable = $methodName();"
+    case None => s"final ${symbol.javaType} ${symbol.name} = $methodName();"
   }
 
   override def children = statements
@@ -52,11 +61,11 @@ case class MethodInvocation(override val operatorId: Option[String],
       val exceptions = statements.flatMap(_.allExceptions).map(_.throwClause)
       val throwClause = if (exceptions.isEmpty) "" else exceptions.mkString("throws ", ",", "")
 
-      s"""private $resultType $methodName() throws KernelException
+      s"""private ${symbol.javaType} $methodName() throws KernelException
          |{
          |$init
          |$methodBody
-         |return $resultVariable;
+         |return ${symbol.name};
          |}""".
         stripMargin
     }

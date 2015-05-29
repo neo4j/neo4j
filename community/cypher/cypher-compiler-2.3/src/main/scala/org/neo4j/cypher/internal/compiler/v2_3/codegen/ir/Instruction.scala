@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.ExceptionCodeGen
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{ExceptionCodeGen, MethodStructure}
 
 trait Instruction {
+  def init[E](generator: MethodStructure[E]): Unit = children.foreach(_.init(generator))
+  def body[E](generator: MethodStructure[E]): Unit = ???
 
   // Actual code produced by element
   def generateCode(): String
@@ -47,6 +49,8 @@ trait Instruction {
 
   final def allOperatorIds: Set[String] = treeView.flatMap(_.operatorId).toSet
 
+  final def allColumns: Set[String] = treeView.flatMap(_.columnNames).toSet
+
   // Override these
   protected def importedClasses: Set[String] = Set.empty
 
@@ -55,11 +59,15 @@ trait Instruction {
   protected def exceptions: Set[ExceptionCodeGen] = Set.empty
 
   protected def operatorId: Option[String] = None
+
+  protected def columnNames: Iterable[String] = None
 }
 
 object Instruction {
 
   val empty = new Instruction {
+    override def body[E](generator: MethodStructure[E]) = {}
+
     override def generateCode() = ""
 
     override def members() = ""

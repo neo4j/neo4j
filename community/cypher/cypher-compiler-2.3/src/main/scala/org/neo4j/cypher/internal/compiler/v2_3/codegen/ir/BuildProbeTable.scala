@@ -21,14 +21,19 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.Namer
+import org.neo4j.cypher.internal.compiler.v2_3.codegen._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 sealed trait BuildProbeTable extends Instruction {
+
+  override def init[E](generator: MethodStructure[E]) = generator.allocateProbeTable(name, tableType)
 
   def producedType: String
 
   def generateFetchCode: CodeThunk
 
+  protected val name:String
+  val tableType: JoinTableType
 }
 
 object BuildProbeTable {
@@ -36,12 +41,20 @@ object BuildProbeTable {
   def apply(id: String, name: String, node: String, valueSymbols: Map[String, JavaSymbol],
             namer: Namer): BuildProbeTable = {
     if (valueSymbols.isEmpty) BuildCountingProbeTable(id, name, node, namer)
-    else BuildRecordingProbeTable(name, node, valueSymbols, namer)
+    else BuildRecordingProbeTable(id, name, node, valueSymbols, namer)
   }
 }
 
-case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Map[String, JavaSymbol], namer: Namer)
+case class BuildRecordingProbeTable(id:String, name: String, node: String, valueSymbols: Map[String, JavaSymbol], namer: Namer)
   extends BuildProbeTable {
+
+  override def body[E](generator: MethodStructure[E]): Unit = {
+    val value = generator.newTableValue(namer.newVarName(), valueTypeStructure)
+    valueSymbols.foreach {
+      case (fieldName, JavaSymbol(localName, "long", _, _, _)) => generator.putField(valueTypeStructure, value, CTNode, fieldName, localName)
+    }
+    generator.updateProbeTable(valueTypeStructure, name, node, value)
+  }
 
   private val valueType = s"ValueTypeIn$name"
 
@@ -53,26 +66,36 @@ case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Ma
 
   def members() = innerClassDeclaration
 
-  def generateInit() = s"final $producedType $name = Primitive.longObjectMap( );"
+  def generateInit() = s"final $producedType $name = Primitive.longObjectMap();"
 
   def generateCode() = {
     val listName = namer.newVarName()
     val elemName = namer.newVarName()
-    s"""ArrayList<$valueType> $listName = $name.get( $node );
+    s"""$valueType $elemName  = new $valueType();
+       |${valueSymbols.map(s => s"$elemName.${s._1} = ${s._2.name};").mkString(n)}
+       |ArrayList<$valueType> $listName = $name.get( $node );
        |if ( null == $listName )
        |{
        |$name.put( $node, ($listName = new ArrayList<>( ) ) );
        |}
-       |$valueType $elemName  = new $valueType();
-       |${valueSymbols.map(s => s"$elemName.${s._1} = ${s._2.name};").mkString(n)}
        |$listName.add( $elemName );""".stripMargin
   }
 
-  val generateFetchCode: CodeThunk = {
-    val symbols = valueSymbols.map {
-      case (id, symbol) => id -> namer.newVarName(symbol.javaType)
-    }
+  private val valueTypeField2VarName = valueSymbols.map {
+    case (fieldName, symbol) => fieldName -> namer.newVarName(symbol.javaType)
+  }
 
+  private val valueTypeStructure: Map[String, CypherType] = valueSymbols.mapValues {
+    case JavaSymbol(_, "long", _, _, _) => CTNode
+  }
+
+  private val varName2ValueTypeField = valueTypeField2VarName.map {
+    case (fieldName, JavaSymbol(localName, "long", _, _, _)) => localName -> fieldName
+  }
+
+  override val tableType = LongToListTable(valueTypeStructure,varName2ValueTypeField)
+
+  val generateFetchCode: CodeThunk = {
     val listName = namer.newVarName()
     val elemName = namer.newVarName()
     val code = (key: String, action: Instruction) => {
@@ -81,12 +104,12 @@ case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Ma
           |{
           |for ($valueType $elemName : $listName )
           |{
-          |${symbols.map { case (id, symbol) => s"final ${symbol.javaType} ${symbol.name} = $elemName.$id;"}.mkString(n)}
+          |${valueTypeField2VarName.map { case (fieldName, symbol) => s"final ${symbol.javaType} ${symbol.name} = $elemName.$fieldName;"}.mkString(n)}
           |${action.generateCode()}
           |}
           |}""".stripMargin
     }
-    CodeThunk(symbols, code)
+    CodeThunk(valueTypeField2VarName, code, name, tableType, id)
   }
 
   override protected def importedClasses = Set(
@@ -100,6 +123,8 @@ case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Ma
 }
 
 case class BuildCountingProbeTable(id: String, name: String, node: String, namer: Namer) extends BuildProbeTable {
+
+  override def body[E](generator: MethodStructure[E]) = generator.updateProbeTableCount(name, node)
 
   def generateInit() = s"final PrimitiveLongIntMap $name = Primitive.longIntMap();"
 
@@ -126,6 +151,8 @@ case class BuildCountingProbeTable(id: String, name: String, node: String, namer
 
   def valueType = "int"
 
+  override val tableType = LongToCountTable
+
   override def generateFetchCode = {
     val timesSeen = namer.newVarName()
     val eventVar = s"event_$id"
@@ -145,13 +172,13 @@ case class BuildCountingProbeTable(id: String, name: String, node: String, namer
          |}"""
         .stripMargin
     }
-    CodeThunk(Map.empty, code)
+    CodeThunk(Map.empty, code, name, tableType, id)
   }
 
   override protected def children = Seq.empty
 }
 
-case class CodeThunk(vars: Map[String, JavaSymbol], generator: (String, Instruction) => String) {
+case class CodeThunk(vars: Map[String, JavaSymbol], generator: (String, Instruction) => String, tableVar:String, tableType:JoinTableType, id:String) {
 
   def apply(key: String, instruction: Instruction) = generator(key, instruction)
 }

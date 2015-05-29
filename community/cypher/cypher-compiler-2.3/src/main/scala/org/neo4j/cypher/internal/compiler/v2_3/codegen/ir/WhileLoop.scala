@@ -21,8 +21,22 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
 
 case class WhileLoop(id: JavaSymbol, producer: LoopDataGenerator, action: Instruction) extends Instruction {
+
+  override def body[E](generator: MethodStructure[E]) = {
+    val iterator = s"${id.name}Iter"
+    generator.trace(producer.id) { body =>
+      producer.produceIterator(iterator, body)
+      body.whileLoop(body.hasNext(iterator)) { loopBody =>
+        loopBody.incrementDbHits()
+        loopBody.incrementRows()
+        producer.produceNext(id.name, iterator, loopBody)
+        action.body(loopBody)
+      }
+    }
+  }
 
   def generateCode(): String = {
     val iterator = s"${id.name}Iter"

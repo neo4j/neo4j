@@ -24,11 +24,8 @@ import java.util.UUID
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.GraphDatabaseAPI
 
-case class QueryState(db: GraphDatabaseService,
-                      query: QueryContext,
+case class QueryState(query: QueryContext,
                       resources: ExternalResource,
                       params: Map[String, Any],
                       decorator: PipeDecorator,
@@ -47,11 +44,6 @@ case class QueryState(db: GraphDatabaseService,
   }
 
   def readTimeStamp(): Long = timeReader.getTime
-
-  def graphDatabaseAPI: GraphDatabaseAPI = db match {
-    case i: GraphDatabaseAPI => i
-    case _                   => throw new IllegalStateException("Graph database does not implement GraphDatabaseAPI")
-  }
 
   def getParam(key: String): Any =
     params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))

@@ -19,8 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
+
 // Generates the code that moves data into local variables from the iterator being consumed
+// TODO: these aren't really Instruction objects, should not extend it
 trait LoopDataGenerator extends Instruction {
+  def produceNext[E](nextVar: String, iterVar: String, generator: MethodStructure[E]): Unit = ???
+
+  def produceIterator[E](iterVar: String, generator: MethodStructure[E]): Unit = ???
 
   def generateVariablesAndAssignment(): String
 

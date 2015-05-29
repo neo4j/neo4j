@@ -19,7 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
+
 case class ScanAllNodes(id: String) extends Instruction with LoopDataGenerator {
+
+  override def produceIterator[E](iterVar: String, generator: MethodStructure[E]) = {
+    generator.allNodesScan(iterVar)
+    generator.incrementDbHits()
+  }
+
+  override def produceNext[E](nextVar: String, iterVar: String, generator: MethodStructure[E]) =
+    generator.nextNode(nextVar, iterVar)
 
   def generateCode() = "ro.nodesGetAll()"
 

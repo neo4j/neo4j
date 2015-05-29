@@ -89,10 +89,7 @@ trait CodeGenSugar extends MockitoSugar {
   }
 
   def compile(instructions: Instruction*): Class[GeneratedQueryExecution] =
-    CodeGenerator.generateClass(instructions.toSeq)._1
-
-  def generateSource(instructions: Instruction*): String =
-    CodeGenerator.generateClass(instructions.toSeq)._2
+    CodeGenerator.generateClass(instructions.toSeq)
 
   def newInstance(clazz: Class[GeneratedQueryExecution],
                   taskCloser: TaskCloser = new TaskCloser,
