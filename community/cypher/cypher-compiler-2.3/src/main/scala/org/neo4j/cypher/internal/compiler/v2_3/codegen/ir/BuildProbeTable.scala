@@ -19,139 +19,69 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.Namer
+import org.neo4j.cypher.internal.compiler.v2_3.codegen._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 sealed trait BuildProbeTable extends Instruction {
 
-  def producedType: String
+  override def init[E](generator: MethodStructure[E]) = generator.allocateProbeTable(name, tableType)
 
-  def generateFetchCode: CodeThunk
+  def joinData: JoinData
 
+  protected val name:String
+  val tableType: JoinTableType
+  override protected def children = Seq.empty
 }
 
 object BuildProbeTable {
 
-  def apply(id: String, name: String, node: String, valueSymbols: Map[String, JavaSymbol],
+  def apply(id: String, name: String, node: String, valueSymbols: Map[String, String],
             namer: Namer): BuildProbeTable = {
     if (valueSymbols.isEmpty) BuildCountingProbeTable(id, name, node, namer)
-    else BuildRecordingProbeTable(name, node, valueSymbols, namer)
+    else BuildRecordingProbeTable(id, name, node, valueSymbols, namer)
   }
 }
 
-case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Map[String, JavaSymbol], namer: Namer)
+case class BuildRecordingProbeTable(id:String, name: String, node: String, valueSymbols: Map[String, String], namer: Namer)
   extends BuildProbeTable {
 
-  private val valueType = s"ValueTypeIn$name"
-
-  private val innerClassDeclaration =
-    s"""static class $valueType
-        |{
-        |${valueSymbols.map { case (k, v) => s"${v.javaType} $k;" }.mkString(n)}
-        |}""".stripMargin
-
-  def members() = innerClassDeclaration
-
-  def generateInit() = s"final $producedType $name = Primitive.longObjectMap( );"
-
-  def generateCode() = {
-    val listName = namer.newVarName()
-    val elemName = namer.newVarName()
-    s"""ArrayList<$valueType> $listName = $name.get( $node );
-       |if ( null == $listName )
-       |{
-       |$name.put( $node, ($listName = new ArrayList<>( ) ) );
-       |}
-       |$valueType $elemName  = new $valueType();
-       |${valueSymbols.map(s => s"$elemName.${s._1} = ${s._2.name};").mkString(n)}
-       |$listName.add( $elemName );""".stripMargin
+  override def body[E](generator: MethodStructure[E]): Unit = {
+    val value = generator.newTableValue(namer.newVarName(), valueTypeStructure)
+    valueSymbols.foreach {
+      case (fieldName, localName) => generator.putField(valueTypeStructure, value, CTNode, fieldName, localName)
+    }
+    generator.updateProbeTable(valueTypeStructure, name, node, value)
   }
 
-  val generateFetchCode: CodeThunk = {
-    val symbols = valueSymbols.map {
-      case (id, symbol) => id -> namer.newVarName(symbol.javaType)
-    }
-
-    val listName = namer.newVarName()
-    val elemName = namer.newVarName()
-    val code = (key: String, action: Instruction) => {
-      s"""ArrayList<$valueType> $listName = $name.get( $key);
-          |if ( $listName!= null )
-          |{
-          |for ($valueType $elemName : $listName )
-          |{
-          |${symbols.map { case (id, symbol) => s"final ${symbol.javaType} ${symbol.name} = $elemName.$id;"}.mkString(n)}
-          |${action.generateCode()}
-          |}
-          |}""".stripMargin
-    }
-    CodeThunk(symbols, code)
+  private val valueTypeField2VarName = valueSymbols.map {
+    case (fieldName, symbol) => fieldName -> namer.newVarName()
   }
 
-  override protected def importedClasses = Set(
-    "org.neo4j.collection.primitive.PrimitiveLongObjectMap",
-    "java.util.ArrayList"
-  )
+  private val valueTypeStructure: Map[String, CypherType] = valueSymbols.mapValues {
+    case _ => CTNode
+  }
 
-  def producedType: String = s"PrimitiveLongObjectMap<ArrayList<$valueType>>"
+  private val varName2ValueTypeField = valueTypeField2VarName.map {
+    case (fieldName, localName) => localName -> fieldName
+  }
 
-  override protected def children = Seq.empty
+  override val tableType = LongToListTable(valueTypeStructure,varName2ValueTypeField)
+
+  val joinData: JoinData = JoinData(valueTypeField2VarName, name, tableType, id)
+
 }
 
 case class BuildCountingProbeTable(id: String, name: String, node: String, namer: Namer) extends BuildProbeTable {
 
-  def generateInit() = s"final PrimitiveLongIntMap $name = Primitive.longIntMap();"
-
-  def generateCode() =
-    s"""int count = $name.get( $node );
-       |if ( count == LongKeyIntValueTable.NULL )
-       |{
-       |$name.put( $node, 1 );
-       |}
-       |else
-       |{
-       |$name.put( $node, count + 1 );
-       |}""".stripMargin
-
-  override protected def importedClasses = Set(
-    "org.neo4j.collection.primitive.PrimitiveLongIntMap",
-    "org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable")
+  override def body[E](generator: MethodStructure[E]) = generator.updateProbeTableCount(name, node)
 
   override protected def operatorId = Some(id)
 
-  def producedType: String = "PrimitiveLongIntMap"
+  override val tableType = LongToCountTable
 
-  def members() = ""
-
-  def valueType = "int"
-
-  override def generateFetchCode = {
-    val timesSeen = namer.newVarName()
-    val eventVar = s"event_$id"
-    val code = (key: String, action: Instruction) => {
-      s"""
-         |try ( QueryExecutionEvent $eventVar = tracer.executeOperator( $id ) )
-         |{
-         |int $timesSeen = $name.get( $key );
-         |if ( $timesSeen != LongKeyIntValueTable.NULL )
-         |{
-         |for ( int i = 0; i < $timesSeen; i++ )
-         |{
-         |$eventVar.row();
-         |${action.generateCode()}
-         |}
-         |}
-         |}"""
-        .stripMargin
-    }
-    CodeThunk(Map.empty, code)
+  override def joinData = {
+    JoinData(Map.empty, name, tableType, id)
   }
-
-  override protected def children = Seq.empty
 }
 
-case class CodeThunk(vars: Map[String, JavaSymbol], generator: (String, Instruction) => String) {
-
-  def apply(key: String, instruction: Instruction) = generator(key, instruction)
-}
+case class JoinData(vars: Map[String, String], tableVar:String, tableType:JoinTableType, id:String)

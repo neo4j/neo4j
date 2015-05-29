@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaTypes._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
@@ -47,7 +45,7 @@ object LogicalPlanConverter {
 
   private implicit class SingleRowCodeGen(val logicalPlan: SingleRow) extends LeafCodeGenPlan {
 
-    override def produce(context: CodeGenContext): (Option[JavaSymbol], Seq[Instruction]) = {
+    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
       val (methodHandle, actions) = context.popParent().consume(context, this)
       (methodHandle, Seq(actions))
     }
@@ -55,8 +53,8 @@ object LogicalPlanConverter {
 
   private implicit class AllNodesScanCodeGen(val logicalPlan: AllNodesScan) extends LeafCodeGenPlan {
 
-    override def produce(context: CodeGenContext): (Option[JavaSymbol], Seq[Instruction]) = {
-      val variable = JavaSymbol(context.namer.newVarName(), LONG)
+    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
+      val variable = context.namer.newVarName()
       context.addVariable(logicalPlan.idName.name, variable)
       val (methodHandle, actions) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
@@ -66,9 +64,9 @@ object LogicalPlanConverter {
 
   private implicit class NodeByLabelScanCodeGen(val logicalPlan: NodeByLabelScan) extends LeafCodeGenPlan {
 
-    override def produce(context: CodeGenContext): (Option[JavaSymbol], Seq[Instruction]) = {
-      val nodeVar = JavaSymbol(context.namer.newVarName(), LONG)
-      val labelVar = JavaSymbol(context.namer.newVarName(), INT)
+    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
+      val nodeVar = context.namer.newVarName()
+      val labelVar = context.namer.newVarName()
       context.addVariable(logicalPlan.idName.name, nodeVar)
       val (methodHandle, actions) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
@@ -78,19 +76,18 @@ object LogicalPlanConverter {
 
   private implicit class NodeHashJoinCodeGen(val logicalPlan: NodeHashJoin) extends CodeGenPlan {
 
-    override def produce(context: CodeGenContext): (Option[JavaSymbol], Seq[Instruction]) = {
+    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
       context.pushParent(this)
       val (Some(symbol), leftInstructions) = logicalPlan.lhs.get.asCodeGenPlan.produce(context)
       val opName = context.registerOperator(logicalPlan)
-      val lhsMethod = MethodInvocation(Some(opName),
-        symbol.name, symbol.javaType, context.namer.newMethodName(), leftInstructions)
+      val lhsMethod = MethodInvocation(Some(opName), symbol, context.namer.newMethodName(), leftInstructions)
 
       context.pushParent(this)
       val (otherSymbol, rightInstructions) = logicalPlan.rhs.get.asCodeGenPlan.produce(context)
       (otherSymbol, lhsMethod +: rightInstructions)
     }
 
-    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JavaSymbol], Instruction) = {
+    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
       if (child.logicalPlan eq logicalPlan.lhs.get) {
 
         val nodeId = context.getVariable(logicalPlan.nodes.head.name)
@@ -102,10 +99,10 @@ object LogicalPlanConverter {
         val symbols = notNodeSymbols.map(s => s -> context.getVariable(s)).toMap
 
         val opName = context.registerOperator(logicalPlan)
-        val probeTable = BuildProbeTable(opName, probeTableName, nodeId.name, symbols, context.namer)
-        val probeTableSymbol = JavaSymbol(probeTableName, probeTable.producedType)
+        val probeTable = BuildProbeTable(opName, probeTableName, nodeId, symbols, context.namer)
+        val probeTableSymbol = JoinTableMethod(probeTableName, probeTable.tableType)
 
-        context.addProbeTable(this, probeTable.generateFetchCode)
+        context.addProbeTable(this, probeTable.joinData)
 
         (Some(probeTableSymbol), probeTable)
 
@@ -118,7 +115,7 @@ object LogicalPlanConverter {
 
         val (methodHandle, actions) = context.popParent().consume(context, this)
 
-        (methodHandle, GetMatchesFromProbeTable(nodeId.name, thunk, actions))
+        (methodHandle, GetMatchesFromProbeTable(nodeId, thunk, actions))
       }
       else {
 
@@ -129,15 +126,15 @@ object LogicalPlanConverter {
 
   private implicit class ProduceResultCodeGen(val logicalPlan: ProduceResult) extends CodeGenPlan {
 
-    override def produce(context: CodeGenContext): (Option[JavaSymbol], Seq[Instruction]) = {
+    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
       context.pushParent(this)
       logicalPlan.lhs.get.asCodeGenPlan.produce(context)
     }
 
-    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JavaSymbol], Instruction) = {
-      val nodeVars = logicalPlan.nodes.map(n => n -> context.getVariable(n))
-      val relVars = logicalPlan.relationships.map(r => r -> context.getVariable(r))
-      val otherVars = logicalPlan.other.map(o => o -> context.getVariable(o))
+    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+      val nodeVars = logicalPlan.nodes.map(n => n -> context.getProjection(n))
+      val relVars = logicalPlan.relationships.map(r => r -> context.getProjection(r))
+      val otherVars = logicalPlan.other.map(o => o -> context.getProjection(o))
       val opName = context.registerOperator(logicalPlan)
       (None, AcceptVisitor(opName, nodeVars.toMap ++ relVars.toMap ++ otherVars.toMap))
     }
@@ -149,14 +146,14 @@ object LogicalPlanConverter {
       throw new CantCompileQueryException(s"Expand ${logicalPlan.mode} not yet supported")
     }
 
-    override def produce(context: CodeGenContext): (Option[JavaSymbol], Seq[Instruction]) = {
+    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
       context.pushParent(this)
       logicalPlan.lhs.get.asCodeGenPlan.produce(context)
     }
 
-    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JavaSymbol], Instruction) = {
-      val relVar = context.namer.newVarName(LONG)
-      val toNodeVar = context.namer.newVarName(LONG)
+    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+      val relVar = context.namer.newVarName()
+      val toNodeVar = context.namer.newVarName()
       context.addVariable(logicalPlan.relName.name, relVar)
       context.addVariable(logicalPlan.to.name, toNodeVar)
 
@@ -164,23 +161,24 @@ object LogicalPlanConverter {
       val fromNodeVar = context.getVariable(logicalPlan.from.name)
       val typeVar2TypeName = logicalPlan.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(logicalPlan)
-      val expand = ExpandC(opName, fromNodeVar.name, relVar.name, logicalPlan.dir, typeVar2TypeName, toNodeVar.name, action)
-      (methodHandle, WhileLoop(relVar, expand, Instruction.empty))
+      val expand = ExpandC(opName, fromNodeVar, relVar, logicalPlan.dir, typeVar2TypeName, toNodeVar, Instruction.empty)
+      (methodHandle, WhileLoop(relVar, expand, action))
     }
   }
 
   private implicit class ProjectionCodeGen(val logicalPlan: Projection) extends CodeGenPlan {
 
-    override def produce(context: CodeGenContext): (Option[JavaSymbol], Seq[Instruction]) = {
+    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
       context.pushParent(this)
       logicalPlan.lhs.get.asCodeGenPlan.produce(context)
     }
 
-    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JavaSymbol], Instruction) = {
+    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
       val projectionInstructions = logicalPlan.expressions.map {
         case (identifier, expression) =>
           val instruction = createProjectionInstruction(logicalPlan, expression, context)
-          context.addVariable(identifier, instruction.projectedVariable)
+
+          context.addProjection(identifier, instruction)
           instruction
       }.toSeq
 
@@ -190,8 +188,6 @@ object LogicalPlanConverter {
     }
 
     private def createProjectionInstruction(logicalPlan: Projection, expression: Expression, context: CodeGenContext): ProjectionInstruction = {
-
-      def safeToString(a: Any) = if (a != null) a.toString else "null"
 
       expression match {
         case node@Identifier(name) if context.semanticTable.isNode(node) =>
@@ -203,26 +199,22 @@ object LogicalPlanConverter {
         case Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
           val token = propKey.id(context.semanticTable).map(_.id)
           val opName = context.registerOperator(logicalPlan)
-          ProjectNodeProperty(opName, token, propKey.name, context.getVariable(name).name, context.namer)
+          ProjectNodeProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
 
         case Property(rel@Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
           val token = propKey.id(context.semanticTable).map(_.id)
-          ProjectRelProperty(token, propKey.name, context.getVariable(name).name, context.namer)
+          val opName = context.registerOperator(logicalPlan)
+          ProjectRelProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
 
         case Parameter(name) => ProjectParameter(name)
 
-        case lit: IntegerLiteral =>
-          val value = if (lit.value != null) s"${lit.value.toString}L" else "null"
-          ProjectLiteral(JavaSymbol(value, LONG))
+        case lit: IntegerLiteral => ProjectLiteral(lit.value)
 
-        case lit: DoubleLiteral =>
-          ProjectLiteral(JavaSymbol(safeToString(lit.value), DOUBLE))
+        case lit: DoubleLiteral => ProjectLiteral(lit.value)
 
-        case lit: StringLiteral =>
-          ProjectLiteral(JavaSymbol( s""""${safeToString(lit.value)}"""", STRING))
+        case lit: StringLiteral => ProjectLiteral(lit.value)
 
-        case lit: Literal =>
-          ProjectLiteral(JavaSymbol(safeToString(lit.value), OBJECT))
+        case lit: Literal => ProjectLiteral(lit.value)
 
         case Collection(exprs) =>
           ProjectCollection(exprs.map(e => createProjectionInstruction(logicalPlan, e, context)))

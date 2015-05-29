@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
 import java.util
-import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.{JavaSymbol, JavaTypes}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, PlanFingerprint, _}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
@@ -42,169 +40,14 @@ import scala.collection.{Map, immutable, mutable}
 object CodeGenerator {
 
   def generateClass(instructions: Seq[Instruction]) = {
-    val className = Namer.newClassName()
-    val source = generateCodeFromInstructions(className, instructions)
-
-    (Javac.compile(s"$packageName.$className", source), source)
+    CodeStructure.__TODO__MOVE_IMPLEMENTATION.generateQuery(packageName, Namer.newClassName(),
+      instructions.flatMap(_.allColumns), instructions.flatMap(_.allOperatorIds)) { acceptMethod =>
+      instructions.foreach(insn => insn.init(acceptMethod))
+      instructions.foreach(insn => insn.body(acceptMethod))
+    }
   }
 
   private val packageName = "org.neo4j.cypher.internal.compiler.v2_3.generated"
-
-  //TODO these methods should be move out of 2.3 together with everyting that touches Statement
-  def getNodeById(v: String) = JavaSymbol(s"""db.getNodeById( $v )""", JavaTypes.NODE)
-
-  def getRelationshipById(v: String) = JavaSymbol(s"""db.getRelationshipById( $v )""", JavaTypes.RELATIONSHIP)
-
-  private val nameCounter = new AtomicInteger(0)
-
-  def indentNicely(in: String): String = {
-
-    var indent = 0
-
-    in.split(n).flatMap {
-      line =>
-        val l = line.stripPrefix(" ")
-        if (l == "")
-          None
-        else {
-          if (l == "}")
-            indent = indent - 1
-
-          val result = "  " * indent + l
-
-          if (l == "{")
-            indent = indent + 1
-
-          Some(result)
-        }
-    }.mkString(n)
-  }
-
-  def n = System.lineSeparator()
-
-  private def generateCodeFromInstructions(className: String, instructions: Seq[Instruction]) = {
-    val importLines = instructions.map(_.allImportedClasses).reduceOption(_ ++ _).getOrElse(Set.empty)
-
-    val imports = if (importLines.nonEmpty)
-      importLines.toSeq.sorted.mkString("import ", s";${n}import ", ";")
-    else
-      ""
-    val members = instructions.map(_.members().trim).mkString(n).trim
-    val init = instructions.map(_.generateInit().trim).mkString(n).trim
-    val methodBody = instructions.map(_.generateCode().trim).reduce(_ + n + _).trim
-    val privateMethods = instructions.flatMap(_.allMethods).distinct.sortBy(_.name)
-    val privateMethodText = privateMethods.map(_.generateCode.trim).reduceOption(_ + n + _).getOrElse("").trim
-    val exceptions = instructions.flatMap(_.allExceptions).toSet
-    val opIds = instructions.flatMap(_.allOperatorIds).map(s => s"public static Id $s;").mkString(n)
-
-    s"""package $packageName;
-       |
-       |import org.neo4j.helpers.collection.Visitor;
-       |import org.neo4j.function.Supplier;
-       |import org.neo4j.graphdb.GraphDatabaseService;
-       |import org.neo4j.kernel.api.exceptions.KernelException;
-       |import org.neo4j.kernel.api.ReadOperations;
-       |import org.neo4j.kernel.api.Statement;
-       |import org.neo4j.cypher.internal.compiler.v2_3.CypherException;
-       |import org.neo4j.cypher.internal.compiler.v2_3.codegen.ResultRowImpl;
-       |import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompiledExecutionResult;
-       |import org.neo4j.cypher.internal.compiler.v2_3.executionplan.GeneratedQueryExecution;
-       |import org.neo4j.cypher.internal.compiler.v2_3.executionplan.SuccessfulCloseable;
-       |import org.neo4j.graphdb.Result.ResultRow;
-       |import org.neo4j.graphdb.Result.ResultVisitor;
-       |import org.neo4j.graphdb.Result;
-       |import org.neo4j.graphdb.Transaction;
-       |import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id;
-       |import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
-       |import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
-       |import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser;
-       |import org.neo4j.cypher.internal.compiler.v2_3.codegen.QueryExecutionTracer;
-       |import org.neo4j.cypher.internal.compiler.v2_3.codegen.QueryExecutionEvent;
-       |import java.util.Map;
-       |import java.util.List;
-       |
-       |$imports
-       |
-       |public class $className implements GeneratedQueryExecution, SuccessfulCloseable
-       |{
-       |private final TaskCloser closer;
-       |private final ReadOperations ro;
-       |private final GraphDatabaseService db;
-       |private final ExecutionMode executionMode;
-       |private final Supplier<InternalPlanDescription> description;
-       |private final QueryExecutionTracer tracer;
-       |private final Map<String, Object> params;
-       |
-       |private SuccessfulCloseable closeable;
-       |
-       |$opIds
-       |
-       |public $className( TaskCloser closer, Statement statement, GraphDatabaseService db, ExecutionMode executionMode, Supplier<InternalPlanDescription> description, QueryExecutionTracer tracer, Map<String, Object> params )
-       |{
-       |  this.closer = closer;
-       |  this.ro = statement.readOperations();
-       |  this.db = db;
-       |  this.executionMode = executionMode;
-       |  this.description = description;
-       |  this.tracer = tracer;
-       |  this.params = params;
-       |}
-       |
-       |$members
-       |
-       |@Override
-       |public void setSuccessfulCloseable( SuccessfulCloseable closeable )
-       |{
-       |  this.closeable = closeable;
-       |}
-       |
-       |@Override
-       |public ExecutionMode executionMode()
-       |{
-       |  return this.executionMode;
-       |}
-       |
-       |@Override
-       |public InternalPlanDescription executionPlanDescription()
-       |{
-       |  return this.description.get();
-       |}
-       |
-       |@Override
-       |public void success() {
-       |  closeable.success();
-       |}
-       |
-       |@Override
-       |public void close() {
-       |  closeable.close();
-       |}
-       |
-       |@Override
-       |public <E extends Exception> void accept(final ResultVisitor<E> visitor) throws E
-       |{
-       |final ResultRowImpl row = new ResultRowImpl();
-       |$init
-       |try
-       |{
-       |$init
-       |$methodBody
-       |success();
-       |}
-       |${exceptions.map(_.catchClause).mkString(n).trim}
-       |finally
-       |{
-       |close();
-       |}
-       |}
-       |$privateMethodText
-       |@Override
-       |public String toString()
-       |{
-       |return "$className";
-       |}
-       |}""".stripMargin
-  }
 
   private def createInstructions(plan: LogicalPlan, semanticTable: SemanticTable,
                                  idMap: immutable.Map[LogicalPlan, Id]): (Seq[Instruction], mutable.Map[Id, String]) = {
@@ -228,7 +71,7 @@ class CodeGenerator {
       case res: ProduceResult =>
         val idMap = LogicalPlanIdentificationBuilder(plan)
         val (instructions, operatorMap) = createInstructions(plan, semanticTable, idMap)
-        val clazz = generateClass(instructions)._1
+        val clazz = generateClass(instructions)
         operatorMap.foreach {
           case (id, name) => setStaticField(clazz, name, id)
         }
@@ -247,7 +90,7 @@ class CodeGenerator {
                     descriptionProvider: (InternalPlanDescription) => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer]),
                     params: immutable.Map[String, Any], closer: TaskCloser): InternalExecutionResult = {
             val (supplier, tracer) = descriptionProvider(description)
-            Javac.newInstance(clazz, closer, statement, db, execMode, supplier,
+            GeneratedCodeLoader.newInstance(clazz, closer, statement, db, execMode, supplier,
                               tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
           }
         }

@@ -19,18 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
+import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v2_3.ProfileMode
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
+import org.neo4j.cypher.internal.compiler.v2_3.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, IdName, NodeHashJoin, ProduceResult}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.function.Supplier
+import org.neo4j.graphdb.{GraphDatabaseService, Node}
 import org.neo4j.kernel.api._
 import org.neo4j.test.ImpermanentGraphDatabase
 
@@ -41,13 +43,16 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val id1 = new Id()
     val id2 = new Id()
 
-    val compiled = compile(WhileLoop(JavaSymbol("name", "Object"),
+    val projectNode = ProjectNode("name")
+    val compiled = compile(WhileLoop("name",
       ScanAllNodes("OP1"),
-      Project(List(ProjectNode(JavaSymbol("foo", "Node"))),
-      AcceptVisitor("OP2", Map("n" -> JavaSymbol("name", "Node"))))))
+      Project(List(projectNode),
+      AcceptVisitor("OP2", Map("n" -> projectNode)))))
 
     val statement = mock[Statement]
     val readOps = mock[ReadOperations]
+    val db = mock[GraphDatabaseService]
+    when(db.getNodeById(anyLong())).thenReturn(mock[Node])
     when(statement.readOperations()).thenReturn(readOps)
     when(readOps.nodesGetAll()).thenReturn(new PrimitiveLongIterator {
       private var counter = 0
@@ -69,7 +74,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
     // when
     val tracer = new ProfilingTracer()
-    newInstance(compiled, statement = statement, supplier = supplier, queryExecutionTracer = tracer).size
+    newInstance(compiled, statement = statement, graphdb = db, supplier = supplier, queryExecutionTracer = tracer).size
 
     // then
     tracer.dbHitsOf(id1) should equal(3)
@@ -94,7 +99,8 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val lhs = AllNodesScan(IdName("a"), Set.empty)(solved)
     val rhs = AllNodesScan(IdName("a"), Set.empty)(solved)
     val join = NodeHashJoin(Set(IdName("a")), lhs, rhs)(solved)
-    val plan = ProduceResult(List("a"), List.empty, List.empty, join)
+    val projection = Projection(join, Map("foo" -> SignedDecimalIntegerLiteral("1")(null)))(solved)
+    val plan = ProduceResult(List.empty, List.empty, List("foo"), projection)
 
     // when
     val result = compileAndExecute(plan, graphDb, mode = ProfileMode)
@@ -108,15 +114,15 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
   test("should generate operator id fields") {
     // given
-    val instruction = WhileLoop(JavaSymbol("name", "Object"),
+    val instruction = WhileLoop("name",
       ScanAllNodes("foo"),
       AcceptVisitor("bar", Map.empty))
 
     // when
-    val source = generateSource(instruction)
+    val clazz = compile(instruction)
 
     // then
-    source should include("public static Id foo;")
-    source should include("public static Id bar;")
+    clazz.getDeclaredField("foo").getType should equal(classOf[Id])
+    clazz.getDeclaredField("bar").getType should equal(classOf[Id])
   }
 }

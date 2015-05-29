@@ -62,6 +62,7 @@ BSD - seedrandom.js
   seedrandom.js
 
 BSD License
+  ASM Core
   Commons Compiler
   D3.js
   Easing Equations (in easing.js)

@@ -24,10 +24,12 @@ public class RelationshipDataExtractor implements RelationshipVisitor<RuntimeExc
     private int type;
     private long startNode;
     private long endNode;
+    private long relId;
 
     @Override
     public void visit( long relId, int type, long startNode, long endNode )
     {
+        this.relId = relId;
         this.type = type;
         this.startNode = startNode;
         this.endNode = endNode;
@@ -46,5 +48,10 @@ public class RelationshipDataExtractor implements RelationshipVisitor<RuntimeExc
     public long endNode()
     {
         return endNode;
+    }
+
+    public long relationship()
+    {
+        return relId;
     }
 }

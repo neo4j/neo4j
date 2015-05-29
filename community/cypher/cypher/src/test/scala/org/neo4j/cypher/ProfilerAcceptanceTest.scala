@@ -143,7 +143,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(2)(result)("AllNodesScan")
   }
 
-
   test("tracks optional matches") {
     //GIVEN
     createNode()

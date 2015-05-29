@@ -19,39 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.n
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.JavaUtils.JavaSymbol
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
 
-case class WhileLoop(id: JavaSymbol, producer: LoopDataGenerator, action: Instruction) extends Instruction {
+case class WhileLoop(id: String, producer: LoopDataGenerator, action: Instruction) extends Instruction {
 
-  def generateCode(): String = {
-    val iterator = s"${id.name}Iter"
-    val eventVar = s"event_${producer.id}"
-
-    s"""try ( QueryExecutionEvent $eventVar = tracer.executeOperator( ${producer.id} ) )
-       |{
-       |${producer.javaType} $iterator = ${producer.generateCode()};
-       |$eventVar.dbHit();
-       |while ( $iterator.hasNext() )
-       |{
-       |$eventVar.dbHit();
-       |$eventVar.row();
-       |final ${id.javaType} ${id.name} = $iterator.next();
-       |${producer.generateVariablesAndAssignment()}
-       |${action.generateCode()}
-       |}
-       |}
-       |""".stripMargin
+  override def body[E](generator: MethodStructure[E]) = {
+    val iterator = s"${id}Iter"
+    generator.trace(producer.id) { body =>
+      producer.produceIterator(iterator, body)
+      body.whileLoop(body.hasNext(iterator)) { loopBody =>
+        loopBody.incrementDbHits()
+        loopBody.incrementRows()
+        producer.produceNext(id, iterator, loopBody)
+        action.body(loopBody)
+      }
+    }
   }
 
-  override protected def importedClasses = Set(
-    "org.neo4j.collection.primitive.PrimitiveLongIterator",
-    "org.neo4j.collection.primitive.Primitive")
-
   override def children = Seq(producer, action)
-
-  // Initialises necessary data-structures. Is inserted at the top of the generated method
-  def generateInit() = producer.generateInit() + n + action.generateInit()
-
-  def members() = producer.members() + n + action.members()
 }

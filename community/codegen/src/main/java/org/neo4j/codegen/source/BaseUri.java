@@ -17,9 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
+package org.neo4j.codegen.source;
 
-trait Method {
-  def name: String
-  def generateCode: String
+import java.net.URI;
+import java.nio.file.Path;
+import javax.tools.JavaFileObject;
+
+final class BaseUri
+{
+    static final BaseUri DEFAULT_SOURCE_BASE = new BaseUri( "compiler:/" );
+    private final String prefix;
+
+    BaseUri( String prefix )
+    {
+        this.prefix = prefix;
+    }
+
+    public BaseUri( Path path )
+    {
+        this( path.toUri().toString() );
+    }
+
+    public URI uri( String packageName, String simpleClassName, JavaFileObject.Kind kind )
+    {
+        return URI.create( prefix + packageName.replace( '.', '/' ) + "/" + simpleClassName + kind.extension );
+    }
 }

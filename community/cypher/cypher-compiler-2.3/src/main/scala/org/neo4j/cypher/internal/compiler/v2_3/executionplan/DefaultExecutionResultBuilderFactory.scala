@@ -58,7 +58,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
 
     def build(graph: GraphDatabaseService, queryId: AnyRef, planType: ExecutionMode, params: Map[String, Any], notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
       taskCloser.addTask(queryContext.close)
-      val state = new QueryState(graph, queryContext, externalResource, params, pipeDecorator, queryId = queryId)
+      val state = new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId)
       try {
         try {
           createResults(state, planType, notificationLogger)

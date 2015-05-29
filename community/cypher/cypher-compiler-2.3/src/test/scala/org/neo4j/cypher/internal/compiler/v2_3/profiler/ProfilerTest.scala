@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, Intern
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.GraphDatabaseService
 
 import scala.collection.immutable.::
 
@@ -166,7 +165,7 @@ class ProfilerTest extends CypherFunSuite {
 
     val pipe1 = SingleRowPipe()
     val ctx1 = mock[QueryContext]
-    val state1 = QueryState(mock[GraphDatabaseService], ctx1, mock[ExternalResource], Map.empty, mock[PipeDecorator])
+    val state1 = QueryState(ctx1, mock[ExternalResource], Map.empty, mock[PipeDecorator])
 
     val profiled1 = profiler.decorate(pipe1, state1)
     profiled1.query.createNode()
@@ -174,7 +173,7 @@ class ProfilerTest extends CypherFunSuite {
 
     val pipe2 = SingleRowPipe()
     val ctx2 = mock[QueryContext]
-    val state2 = QueryState(mock[GraphDatabaseService], ctx2, mock[ExternalResource], Map.empty, mock[PipeDecorator])
+    val state2 = QueryState(ctx2, mock[ExternalResource], Map.empty, mock[PipeDecorator])
 
     val profiled2 = profiler.decorate(pipe2, state2)
     profiled2.query.createNode()

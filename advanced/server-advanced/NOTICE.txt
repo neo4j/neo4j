@@ -55,6 +55,7 @@ BSD - Scala License
   Scala Library
 
 BSD License
+  ASM Core
   Commons Compiler
   Janino
   Scala Compiler

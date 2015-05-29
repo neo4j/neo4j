@@ -19,69 +19,30 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.KernelExceptionCodeGen
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{MethodStructure, KernelExceptionCodeGen}
 import org.neo4j.graphdb.Direction
 
 case class ExpandC(id: String, fromVar: String, relVar: String, dir: Direction,
                    types: Map[String, String], toVar: String, inner: Instruction)
   extends LoopDataGenerator {
 
-  private val theBody =
-    if (dir == Direction.OUTGOING)
-      s"""$toVar = rel.endNode();
-       """.stripMargin
-    else if (dir == Direction.INCOMING)
-      s"""$toVar = rel.startNode();
-       """.stripMargin
-    else {
-      s"""if ( $fromVar == rel.startNode() )
-         |{
-         |$toVar = rel.endNode();
-         |}
-         |else
-         |{
-         |$toVar = rel.startNode();
-         |}
-       """.stripMargin
+  override def init[E](generator: MethodStructure[E]) = {
+    types.foreach {
+      case (typeVar,relType) => generator.lookupRelationshipTypeId(typeVar, relType)
     }
+    inner.init(generator)
+  }
 
-  def generateCode() =
-    if (types.isEmpty)
-      s"ro.nodeGetRelationships( $fromVar, Direction.$dir )"
+  override def produceIterator[E](iterVar: String, generator: MethodStructure[E]) = {
+    if(types.isEmpty)
+      generator.nodeGetAllRelationships(iterVar, fromVar, dir)
     else
-      s"ro.nodeGetRelationships( $fromVar, Direction.$dir, ${types.map(_._1).mkString(",")} )"
+      generator.nodeGetRelationships(iterVar, fromVar, dir, types.keys.toSeq)
+    generator.incrementDbHits()
+  }
 
-  def generateVariablesAndAssignment() =
-    s"""long $toVar;
-       |{
-       |RelationshipDataExtractor rel = new RelationshipDataExtractor();
-       |ro.relationshipVisit( $relVar, rel );
-       |$theBody
-       |}
-       |${inner.generateCode()}""".stripMargin
-
-  override protected def importedClasses = Set(
-    "org.neo4j.graphdb.Direction",
-    "org.neo4j.collection.primitive.PrimitiveLongIterator",
-    "org.neo4j.kernel.impl.api.RelationshipDataExtractor")
-
-  override protected def exceptions = Set(KernelExceptionCodeGen)
-
-  def javaType = "org.neo4j.kernel.impl.api.store.RelationshipIterator"
-
-  //TODO we should only add this when name is not resolved, otherwise inline it
-  def generateInit() =
-    s"""${types.map(s =>
-      s"""if ( ${s._1} == -1 )
-         |{
-         |${s._1} = ro.relationshipTypeGetForName( "${s._2}" );
-         |}""".stripMargin).mkString("\n")}
-       |${inner.generateInit()}""".stripMargin
-
-  override def members() =
-    s"""${types.map(s => s"int ${s._1} = -1;").mkString("\n")}
-       |${inner.members()}""".stripMargin
+  override def produceNext[E](nextVar: String, iterVar: String, generator: MethodStructure[E]) =
+    generator.nextRelationshipNode(toVar, iterVar, dir, fromVar, relVar)
 
   override def children = Seq(inner)
-
 }

@@ -196,8 +196,11 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("label scan + expand incoming") { // // MATCH (a:T1)<-[r]-(b) RETURN a, b
   //given
   val plan = ProduceResult(List("a", "b"), List.empty, List.empty,
-      Expand(
-        NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
+              Projection(
+                Expand(
+                  NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"),
+                  Direction.INCOMING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved),
+                  Map("a" -> ident("a"), "b" -> ident("b")))(solved))
 
     //when
     val compiled = compileAndExecute(plan)
@@ -646,8 +649,11 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private def relationshipIterator(longs: Seq[Long]) = new RelationshipIterator {
 
-    //todo
-    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean = ???
+    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
+      val rel = relMap(relationshipId)
+      visitor.visit(relationshipId, -1, rel.from.getId, rel.to.getId)
+      false
+    }
 
     val inner = longs.toIterator
 
