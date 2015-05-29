@@ -226,7 +226,7 @@
 
                     <!--suppress MavenModelInspection -->
                     <install4j projectfile="${project.basedir}/target/install4j/neo4j-desktop.install4j"
-                               mediatypes="windows"
+                               mediatypes="windows,macosArchive"
                                verbose="true"
                                release="${project.version}"
                                winKeystorePassword="${install4j.win.key.store.password}"
