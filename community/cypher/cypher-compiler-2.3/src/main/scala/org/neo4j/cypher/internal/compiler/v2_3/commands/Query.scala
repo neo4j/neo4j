@@ -99,18 +99,6 @@ case class Query(returns: Return,
         } else
           head.copy(tail = Some(remaining))
     }
-
-    allTails(Vector.empty, this).reduceRight[Query] {
-      case (head, remaining) =>
-        if (head.compactableStart &&
-            remaining.compactableTail &&
-            // If we have updating actions, we can't merge with a tail part that has updating start items
-            // That would mess with the order of actions
-            !(head.updatedCommands.nonEmpty && remaining.start.exists(_.mutating))) {
-          head.compactWith(remaining)
-        } else
-          head.copy(tail = Some(remaining))
-    }
   }
 
   private def compactableStart =
