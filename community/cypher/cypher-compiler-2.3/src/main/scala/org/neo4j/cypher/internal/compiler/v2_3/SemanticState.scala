@@ -19,16 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{ASTAnnotationMap, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{TreeElem, TreeZipper}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 import scala.collection.immutable.HashMap
+import scala.language.postfixOps
 
 // A symbol use represents the occurrence of a symbol at a position
 case class SymbolUse(name: String, position: InputPosition) {
   override def toString = s"SymbolUse($nameWithPosition)"
 
+  def asIdentifier = Identifier(name)(position)
   def nameWithPosition = s"$name@${position.toOffsetString}"
 }
 
@@ -84,6 +86,11 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
 
   def updateIdentifier(identifier: String, types: TypeSpec, positions: Set[InputPosition]) =
     copy(symbolTable = symbolTable.updated(identifier, Symbol(identifier, positions, types)))
+
+  def mergePositions(identifier: String, positions: Set[InputPosition]) = symbolTable.get(identifier) match {
+    case Some(symbol) => copy(symbolTable = symbolTable.updated(identifier, symbol.copy(positions = positions ++ symbol.positions)))
+    case None => self
+  }
 
   def allSymbolDefinitions: Map[String, Set[SymbolUse]] = {
     val allScopes1 = allScopes
@@ -162,8 +169,16 @@ object SemanticState {
 
     def importScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation = location.replace(scope.importScope(other, exclude))
 
+    def mergeScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation = other.symbolTable.values.foldLeft(location) {
+      case (loc, sym) if exclude(sym.name) => loc
+      case (loc, sym)                      => loc.replace(loc.scope.mergePositions(sym.name, sym.positions))
+    }
+
     def updateIdentifier(identifier: String, types: TypeSpec, positions: Set[InputPosition]): ScopeLocation =
       location.replace(scope.updateIdentifier(identifier, types, positions))
+
+    def mergePositions(identifier: String, positions: Set[InputPosition]): ScopeLocation =
+      location.replace(scope.mergePositions(identifier, positions))
   }
 }
 import org.neo4j.cypher.internal.compiler.v2_3.SemanticState.ScopeLocation
@@ -181,7 +196,11 @@ case class SemanticState(currentScope: ScopeLocation,
   def symbol(name: String): Option[Symbol] = currentScope.symbol(name)
   def symbolTypes(name: String) = symbol(name).map(_.types).getOrElse(TypeSpec.all)
 
-  def importScope(scope: Scope, exclude: Set[String] = Set.empty) = copy(currentScope = currentScope.importScope(scope, exclude))
+  def importScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
+    copy(currentScope = currentScope.importScope(scope, exclude))
+
+  def mergeScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
+    copy(currentScope = currentScope.mergeScope(scope, exclude))
 
   def declareIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(identifier.name) match {

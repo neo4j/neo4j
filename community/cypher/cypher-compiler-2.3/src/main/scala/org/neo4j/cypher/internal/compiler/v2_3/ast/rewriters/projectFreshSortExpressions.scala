@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.{replace, InternalException, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.compiler.v2_3.{Rewriter, bottomUp, replace}
 
 /**
  * This rewriter ensures that WITH clauses containing a ORDER BY or WHERE are split, such that the ORDER BY or WHERE does not
@@ -35,20 +35,38 @@ import org.neo4j.cypher.internal.compiler.v2_3.{replace, InternalException, Rewr
  */
 case object projectFreshSortExpressions extends Rewriter {
 
-  def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
+  def apply(that: AnyRef): AnyRef = {
+    bottomUp(instance).apply(that)
+  }
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
     case clause @ With(_, _, None, _, _, None) =>
       Seq(clause)
 
-    case clause @ With(_, ri, orderBy, _, _, where) if requiresBarrier(orderBy, where, ri.items) =>
-      val duplicateProjection = ri.items.map(item =>
-        item.alias.fold(item)(alias => AliasedReturnItem(alias.copyId, alias.copyId)(item.position))
-      )
-      Seq(
-        clause.copy(orderBy = None, skip = None, limit = None, where = None)(clause.position),
-        clause.copy(distinct = false, returnItems = ri.copy(items = duplicateProjection)(ri.position))(clause.position)
-      )
+    case clause @ With(_, ri, orderBy, skip, limit, where) =>
+      val allAliases = ri.aliases
+      val passedThroughAliases = ri.passedThrough
+      val evaluatedAliases = allAliases -- passedThroughAliases
+
+      if (evaluatedAliases.isEmpty) {
+        Seq(clause)
+      } else {
+        val nonItemDependencies =
+          orderBy.extract(_.dependencies) ++
+            skip.extract(_.dependencies) ++
+            limit.extract(_.dependencies) ++
+            where.extract(_.dependencies)
+        val dependenciesFromPreviousScope = nonItemDependencies -- allAliases
+
+        val passedItems = dependenciesFromPreviousScope.map(_.asAlias)
+        val outputItems = allAliases.toSeq.map(_.asAlias)
+
+        val result = Seq(
+          clause.copy(returnItems = ri.mapItems(originalItems => originalItems ++ passedItems), orderBy = None, skip = None, limit = None, where = None)(clause.position),
+          clause.copy(distinct = false, returnItems = ri.mapItems(_ => outputItems))(clause.position)
+        )
+        result
+      }
 
     case clause =>
       Seq(clause)
@@ -66,21 +84,9 @@ case object projectFreshSortExpressions extends Rewriter {
       replacer.expand(astNode)
   })
 
-  private def orderByIdentifiers(orderBy: OrderBy): Set[Identifier] = orderBy.sortItems.flatMap {
-    case item: SortItem => item.expression.dependencies
-  }.toSet
-
-  private def whereIdentifiers(where: Where): Set[Identifier] = where.expression.dependencies
-
-  private def requiresBarrier(orderBy: Option[OrderBy], where: Option[Where], items: Seq[ReturnItem]): Boolean = {
-    val requiredIdentifiers: Set[Identifier] =
-      orderBy.map(orderByIdentifiers).getOrElse(Set.empty) ++
-      where.map(whereIdentifiers).getOrElse(Set.empty)
-
-    val preservedIdentifiers = items.collect {
-      case item: AliasedReturnItem if item.identifier == item.expression => item.identifier
-    }.toSet
-
-    (requiredIdentifiers -- preservedIdentifiers).nonEmpty
+  private implicit class ItemSetContainer[T](input: Option[T]) {
+    def extract[K](f: T => Set[K]): Set[K] =
+      input.map(f).getOrElse(Set.empty)
   }
 }
+

@@ -23,6 +23,7 @@ import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CustomMatchers
 
 class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers with NewPlannerTestSupport {
+
   test("should support ORDER BY") {
     createNode("prop" -> 1)
     createNode("prop" -> 3)
@@ -48,9 +49,9 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
   }
 
   test("ORDER BY of an column introduced in RETURN should work well") {
-    executeWithAllPlanners("WITH 1 AS p, count(*) AS rng RETURN p ORDER BY rng").toList should
-      equal(List(Map("p" -> 1)))
- }
+    executeWithAllPlanners("WITH [0, 1] AS prows, [[2], [3, 4]] AS qrows UNWIND prows AS p UNWIND qrows[p] AS q WITH p, count(q) AS rng RETURN p ORDER BY rng").toList should
+      equal(List(Map("p" -> 0), Map("p" -> 1)))
+  }
 
   test("renaming columns before ORDER BY is not confusing") {
     createNode("prop" -> 1)

@@ -26,8 +26,8 @@ object SemanticCheckResult {
   def error(state: SemanticState, error: SemanticError): SemanticCheckResult = SemanticCheckResult(state, Vector(error))
   def error(state: SemanticState, error: Option[SemanticError]): SemanticCheckResult = SemanticCheckResult(state, error.toVector)
 }
-case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticError])
 
+case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticError])
 
 trait SemanticChecking {
   protected def when(condition: Boolean)(check: => SemanticCheck): SemanticCheck = state =>
@@ -59,7 +59,6 @@ class TraversableOnceSemanticChecking[A](val traversable: TraversableOnce[A]) ex
   }
 }
 
-
 class ChainableSemanticCheck(val check: SemanticCheck) extends AnyVal {
   def chain(next: SemanticCheck): SemanticCheck = state => {
     val r1 = check(state)
@@ -75,7 +74,6 @@ class ChainableSemanticCheck(val check: SemanticCheck) extends AnyVal {
       next(r1.state)
   }
 }
-
 
 trait SemanticCheckable {
   def semanticCheck: SemanticCheck

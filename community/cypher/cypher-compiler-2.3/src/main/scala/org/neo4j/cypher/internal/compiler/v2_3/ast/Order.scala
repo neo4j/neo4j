@@ -23,6 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 
 case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable {
   def semanticCheck = sortItems.semanticCheck
+
+  def dependencies: Set[Identifier] =
+    sortItems.foldLeft(Set.empty[Identifier]) { case (acc, item) => acc ++ item.expression.dependencies }
 }
 
 sealed trait SortItem extends ASTNode with ASTPhrase with SemanticCheckable {

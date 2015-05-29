@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.closing
-import org.neo4j.cypher.internal.compiler.v2_3.notification.PlannerUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.LogicalPlanRewriter
@@ -79,9 +78,15 @@ object CypherCompilerFactory {
     // Pick runtime based on input
     val runtimeBuilder = RuntimeBuilder.create(runtimeName, interpretedPlanBuilder, compiledPlanBuilder, useErrorsOverWarnings)
 
-    val costPlanProducer = CostBasedPipeBuilderFactory
-      .create(monitors = monitors, metricsFactory = metricsFactory, queryPlanner = queryPlanner,
-              rewriterSequencer = rewriterSequencer, plannerName = plannerName, runtimeBuilder = runtimeBuilder)
+    val costPlanProducer = CostBasedPipeBuilderFactory.create(
+      monitors = monitors,
+      metricsFactory = metricsFactory,
+      queryPlanner = queryPlanner,
+      rewriterSequencer = rewriterSequencer,
+      plannerName = plannerName,
+      runtimeBuilder = runtimeBuilder,
+      semanticChecker = checker
+    )
     val rulePlanProducer = new LegacyExecutablePlanBuilder(monitors, rewriterSequencer)
 
     // Pick planner based on input

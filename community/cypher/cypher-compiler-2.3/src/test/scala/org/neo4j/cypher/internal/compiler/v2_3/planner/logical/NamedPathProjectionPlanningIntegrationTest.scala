@@ -42,36 +42,49 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
   test("should build plans containing path projections and path selections") {
     val pathExpr = PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep)))_
 
-    planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a RETURN b").plan should equal(
+    val result = planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a RETURN b").plan
+
+    result should equal(
       Projection(
         Selection(
           Seq(Equals(
-            FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, pathExpr) _) _,
-            Identifier("a") _
-          ) _),
-          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING, Seq.empty, "b", "r")(solved)
-        )(solved), Map("b" -> ident("b")))(solved)
+            FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, ident("p"))_)_,
+            ident("a")
+          )_),
+          Projection(
+            Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING,  Seq.empty, "b", "r")(solved),
+            expressions = Map("a" -> ident("a"), "b" -> ident("b"), "p" -> pathExpr, "r" -> ident("r")))(solved)
+        )(solved),
+        expressions = Map("b" -> ident("b"))
+      )(solved)
     )
   }
 
   test("should build plans containing multiple path projections and path selections") {
     val pathExpr = PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep)))_
 
-    planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a AND length(p) > 10 RETURN b").plan should equal(
+    val result = planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a AND length(p) > 10 RETURN b").plan
+
+    result should equal(
       Projection(
         Selection(
           Seq(
             GreaterThan(
-              FunctionInvocation(FunctionName("length") _, pathExpr) _,
-              SignedDecimalIntegerLiteral("10") _
-            ) _,
+              FunctionInvocation(FunctionName("length")_, ident("p"))_,
+              SignedDecimalIntegerLiteral("10")_
+            )_,
             Equals(
-              FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, pathExpr) _) _,
-              Identifier("a") _
-            ) _
+              FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, ident("p"))_)_,
+              Identifier("a")_
+            )_
           ),
-          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING, Seq.empty, "b", "r")(solved)
-        )(solved), Map("b" -> ident("b")))(solved)
+          Projection(
+            Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING,  Seq.empty, "b", "r")(solved),
+            expressions = Map("a" -> ident("a"), "b" -> ident("b"), "p" -> pathExpr, "r" -> ident("r"))
+          )(solved)
+        )(solved),
+        expressions = Map("b" -> Identifier("b") _)
+      )(solved)
     )
   }
 }

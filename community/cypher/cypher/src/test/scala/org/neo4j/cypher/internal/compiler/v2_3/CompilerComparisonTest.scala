@@ -290,13 +290,15 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(metricsFactoryInput)
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
-    val planner = CostBasedPipeBuilderFactory.create(monitors = monitors, metricsFactory = metricsFactory,
-                                                     plannerName = Some(plannerName),
-                                                     rewriterSequencer = rewriterSequencer,
-                                                     queryPlanner = queryPlanner,
-                                                     runtimeBuilder = SilentFallbackRuntimeBuilder(
-                                                       InterpretedPlanBuilder(clock, monitors),
-                                                       CompiledPlanBuilder(clock)))
+    val planner = CostBasedPipeBuilderFactory.create(
+      monitors = monitors,
+      metricsFactory = metricsFactory,
+      plannerName = Some(plannerName),
+      rewriterSequencer = rewriterSequencer,
+      queryPlanner = queryPlanner,
+      runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(clock, monitors), CompiledPlanBuilder(clock)),
+      semanticChecker = checker
+    )
     val pipeBuilder = new SilentFallbackPlanBuilder(new LegacyExecutablePlanBuilder(monitors, rewriterSequencer), planner,
                                                     planBuilderMonitor)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)

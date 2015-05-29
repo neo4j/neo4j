@@ -156,11 +156,14 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newPlanner(metricsFactory: MetricsFactory): CostBasedExecutablePlanBuilder = {
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
-    CostBasedPipeBuilderFactory.create(monitors, metricsFactory, queryPlanner, rewriterSequencer,
-                                       plannerName = None,
-                                       runtimeBuilder = SilentFallbackRuntimeBuilder(
-                                         InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, monitors),
-                                         CompiledPlanBuilder(Clock.SYSTEM_CLOCK)))
+    CostBasedPipeBuilderFactory.create(
+      monitors = monitors,
+      metricsFactory = metricsFactory,
+      queryPlanner = queryPlanner,
+      rewriterSequencer = rewriterSequencer,
+      plannerName = None,
+      runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, monitors), CompiledPlanBuilder(Clock.SYSTEM_CLOCK)),
+      semanticChecker = semanticChecker)
   }
 
   def produceLogicalPlan(queryText: String)(implicit planner: CostBasedExecutablePlanBuilder, planContext: PlanContext): LogicalPlan = {
@@ -168,7 +171,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
     val semanticState = semanticChecker.check(queryText, parsedStatement, devNullLogger, mkException)
     val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryText, parsedStatement, semanticState)
-    CostBasedExecutablePlanBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable), rewriterSequencer, postConditions, monitors.newMonitor[AstRewritingMonitor]()) match {
+    CostBasedExecutablePlanBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable), rewriterSequencer, semanticChecker, postConditions, monitors.newMonitor[AstRewritingMonitor]()) match {
       case (ast: Query, newTable) =>
         val semanticState = semanticChecker.check(queryText, ast, devNullLogger, mkException)
         tokenResolver.resolve(ast)(newTable, planContext)

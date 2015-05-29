@@ -188,6 +188,86 @@ class SemanticStateTest extends CypherFunSuite {
     s2.symbolTypes("foo") should equal(CTRelationship.invariant)
   }
 
+  test("should be able to merge scopes") {
+    val s1 =
+      SemanticState.clean
+      .declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
+      .declareIdentifier(ast.Identifier("bar")(DummyPosition(1)), CTNode).right.get
+
+
+    val s2 =
+      SemanticState.clean
+        .declareIdentifier(ast.Identifier("foo")(DummyPosition(1)), CTNode).right.get
+        .declareIdentifier(ast.Identifier("baz")(DummyPosition(4)), CTNode).right.get
+
+    s2.mergeScope(s1.scopeTree) should equal(
+      SemanticState.clean
+        .declareIdentifier(ast.Identifier("foo")(DummyPosition(1)), CTNode, Set(DummyPosition(0))).right.get
+        .declareIdentifier(ast.Identifier("baz")(DummyPosition(4)), CTNode).right.get
+    )
+  }
+
+  test("should be able to merge scopes and honor excludes") {
+    val s1 =
+      SemanticState.clean
+        .declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
+        .declareIdentifier(ast.Identifier("bar")(DummyPosition(1)), CTNode).right.get
+
+    val s2 =
+      SemanticState.clean
+        .declareIdentifier(ast.Identifier("foo")(DummyPosition(1)), CTNode).right.get
+        .declareIdentifier(ast.Identifier("baz")(DummyPosition(4)), CTNode).right.get
+
+    s2.mergeScope(s1.scopeTree, Set("foo")) should equal(s2)
+  }
+
+  test("should be able to import scopes") {
+    val s1 =
+      SemanticState.clean
+        .declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
+        .declareIdentifier(ast.Identifier("bar")(DummyPosition(1)), CTNode).right.get
+
+
+    val s2 =
+      SemanticState.clean
+        .declareIdentifier(ast.Identifier("foo")(DummyPosition(1)), CTNode).right.get
+        .declareIdentifier(ast.Identifier("baz")(DummyPosition(4)), CTNode).right.get
+
+    val actual = s1.importScope(s2.scopeTree)
+    val expected =
+      SemanticState.clean
+        .declareIdentifier(ast.Identifier("foo")(DummyPosition(1)), CTNode).right.get
+        .declareIdentifier(ast.Identifier("bar")(DummyPosition(1)), CTNode).right.get
+        .declareIdentifier(ast.Identifier("baz")(DummyPosition(4)), CTNode).right.get
+
+
+    actual.scopeTree should equal(expected.scopeTree)
+  }
+
+  test("should be able to import scopes and honor excludes") {
+    val s1 =
+      SemanticState.clean
+        .declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
+        .declareIdentifier(ast.Identifier("bar")(DummyPosition(1)), CTNode).right.get
+
+
+    val s2 =
+      SemanticState.clean
+        .declareIdentifier(ast.Identifier("foo")(DummyPosition(1)), CTNode).right.get
+        .declareIdentifier(ast.Identifier("baz")(DummyPosition(4)), CTNode).right.get
+        .declareIdentifier(ast.Identifier("frob")(DummyPosition(5)), CTNode).right.get
+
+    val actual = s1.importScope(s2.scopeTree, Set("foo", "frob"))
+    val expected =
+      SemanticState.clean
+        .declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
+        .declareIdentifier(ast.Identifier("bar")(DummyPosition(1)), CTNode).right.get
+        .declareIdentifier(ast.Identifier("baz")(DummyPosition(4)), CTNode).right.get
+
+
+    actual.scopeTree should equal(expected.scopeTree)
+  }
+
   implicit class ChainableSemanticStateEither(either: Either[SemanticError, SemanticState]) {
     def chain(next: SemanticState => Either[SemanticError, SemanticState]): Either[SemanticError, SemanticState] = {
       either match {
