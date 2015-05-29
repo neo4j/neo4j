@@ -26,6 +26,14 @@ case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val pos
     items.semanticCheck chain
     ensureProjectedToUniqueIds
 
+  def aliases: Set[Identifier] = items.flatMap(_.alias).toSet
+
+  def passedThrough: Set[Identifier] = items.collect {
+    case item => item.alias.collect { case ident if ident == item.expression => ident }
+  }.flatten.toSet
+
+  def mapItems(f: Seq[ReturnItem] => Seq[ReturnItem]) = copy(items = f(items))(position)
+
   def declareIdentifiers(previousScope: Scope) =
     when (includeExisting) {
       s => SemanticCheckResult.success(s.importScope(previousScope))

@@ -56,7 +56,7 @@ class RulePipeBuilderTest
   val ast = mock[Statement]
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
-  val planner = CostBasedPipeBuilderFactory(mock[Monitors], SimpleMetricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK, queryPlanner, rewriterSequencer)
+  val planner = CostBasedPipeBuilderFactory(mock[Monitors], SimpleMetricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK, queryPlanner, rewriterSequencer, mock[SemanticChecker])
 
   class FakePreparedQuery(q: AbstractQuery)
     extends PreparedQuery(mock[Statement], "q", Map.empty)(SemanticTable(), Set.empty, Scope(Map.empty, Seq.empty)) {

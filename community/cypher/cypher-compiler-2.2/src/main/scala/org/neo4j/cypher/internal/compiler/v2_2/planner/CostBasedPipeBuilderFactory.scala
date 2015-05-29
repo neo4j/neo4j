@@ -36,6 +36,7 @@ object CostBasedPipeBuilderFactory {
             clock: Clock,
             queryPlanner: QueryPlanner,
             rewriterSequencer: (String) => RewriterStepSequencer,
+            semanticChecker: SemanticChecker,
             tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
             maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
             plannerName: CostBasedPlannerName = PlannerName.default
@@ -59,6 +60,6 @@ object CostBasedPipeBuilderFactory {
         )
     }
 
-    CostBasedPipeBuilder(monitors, metricsFactory, monitor, clock, tokenResolver, executionPlanBuilder, queryPlanner, queryGraphSolver, plannerName, rewriterSequencer)
+    CostBasedPipeBuilder(monitors, metricsFactory, monitor, clock, tokenResolver, executionPlanBuilder, queryPlanner, queryGraphSolver, plannerName, rewriterSequencer, semanticChecker)
   }
 }

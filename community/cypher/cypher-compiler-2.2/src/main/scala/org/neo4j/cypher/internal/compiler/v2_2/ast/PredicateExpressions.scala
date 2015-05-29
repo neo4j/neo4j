@@ -30,7 +30,12 @@ case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
 }
 
 case class Ands(exprs: Set[Expression])(val position: InputPosition) extends Expression with MultiOperatorExpression {
-  override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
+
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = {
+    (state: SemanticState) =>
+      val totalCheck = exprs.foldLeft(SemanticCheckResult.success) { case (check, expr) => check chain expr.semanticCheck(ctx) }
+      totalCheck(state)
+  }
 
   override def canonicalOperatorSymbol = "AND"
 }

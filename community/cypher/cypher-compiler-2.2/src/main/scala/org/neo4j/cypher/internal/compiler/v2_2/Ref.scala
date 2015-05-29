@@ -23,7 +23,7 @@ object Ref {
   def apply[T <: AnyRef](v: T) = new Ref[T](v)
 }
 
-final class Ref[T <: AnyRef](val value: T) {
+final class Ref[+T <: AnyRef](val value: T) {
   if (value == null)
     throw new InternalException("Attempt to instantiate Ref(null)")
 

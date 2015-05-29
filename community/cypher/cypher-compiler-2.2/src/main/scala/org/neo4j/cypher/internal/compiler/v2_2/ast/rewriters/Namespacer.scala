@@ -65,7 +65,7 @@ object Namespacer {
     }
 
   private def identifierRenamings(statement: Statement, identifierDefinitions: Map[SymbolUse, SymbolUse],
-                          ambiguousNames: Set[String], protectedIdentifiers: Set[Ref[Identifier]]): IdentifierRenamings =
+                                  ambiguousNames: Set[String], protectedIdentifiers: Set[Ref[Identifier]]): IdentifierRenamings =
     statement.treeFold(Map.empty[Ref[Identifier], Identifier]) {
       case i: Identifier if ambiguousNames(i.name) && !protectedIdentifiers(Ref(i)) =>
         val symbolDefinition = identifierDefinitions(i.toSymbolUse)
@@ -76,7 +76,7 @@ object Namespacer {
 }
 
 case class Namespacer(renamings: IdentifierRenamings) {
-  val astRewriter = bottomUp(Rewriter.lift {
+  val statementRewriter: Rewriter = bottomUp(Rewriter.lift {
     case i: Identifier =>
       renamings.get(Ref(i)) match {
         case Some(newIdentifier) => newIdentifier
