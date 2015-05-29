@@ -19,6 +19,11 @@
  */
 package org.neo4j.storeupgrade;
 
+import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -28,11 +33,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
-
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionN
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.server.Bootstrapper;
+import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
@@ -67,7 +68,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -166,7 +166,7 @@ public class StoreUpgradeIntegrationTest
             {
                 System.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, configFile.getAbsolutePath() );
 
-                Bootstrapper bootstrapper = Bootstrapper.loadMostDerivedBootstrapper();
+                Bootstrapper bootstrapper = new CommunityBootstrapper();
                 bootstrapper.start();
                 try
                 {

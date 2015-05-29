@@ -1,7 +1,7 @@
-${product.fullname} Configuration
+#{product.fullname} Configuration
 =======================================
 
-${product.fullname} configuration files.
+#{product.fullname} configuration files.
 
 * neo4j-http-logging.xml             -- logging system configuration for the HTTP REST server
                                         using standard logback options

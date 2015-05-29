@@ -27,6 +27,15 @@ import org.neo4j.server.configuration.ConfigurationBuilder;
 
 public class AdvancedBootstrapper extends CommunityBootstrapper
 {
+	public static void main( String[] args )
+	{
+		Integer exit = new AdvancedBootstrapper().start();
+		if ( exit != 0 )
+		{
+			System.exit( exit );
+		}
+	}
+
 	@Override
 	protected NeoServer createNeoServer( ConfigurationBuilder configurator, GraphDatabaseDependencies dependencies, LogProvider userLogProvider )
 	{

@@ -24,7 +24,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.kernel.info.JvmChecker;
@@ -64,37 +63,9 @@ public abstract class Bootstrapper
 
     public static void main( String[] args )
     {
-        Bootstrapper bootstrapper = loadMostDerivedBootstrapper();
-        Integer exit = bootstrapper.start();
-        if ( exit != 0 )
-        {
-            System.exit( exit );
-        }
-    }
-
-    public static Bootstrapper loadMostDerivedBootstrapper()
-    {
-        Bootstrapper winner = new CommunityBootstrapper();
-        for ( Bootstrapper candidate : Service.load( Bootstrapper.class ) )
-        {
-            if ( candidate.isMoreDerivedThan( winner ) )
-            {
-                winner = candidate;
-            }
-        }
-        return winner;
-    }
-
-    // TODO: method not used and WrapperListener interface does no exist. Check if it is safe to remove it
-    public void controlEvent( int arg )
-    {
-        // Do nothing, required by the WrapperListener interface
-    }
-
-    // TODO: args are not used, check if it is safe to remove this method
-    public Integer start( String[] args )
-    {
-        return start();
+        throw new UnsupportedOperationException(
+                "Invoking Bootstrapper#main() is no longer supported. If you see this error, please contact Neo4j " +
+                "support." );
     }
 
     public Integer start()
@@ -151,12 +122,6 @@ public abstract class Bootstrapper
     }
 
     protected abstract NeoServer createNeoServer( ConfigurationBuilder configurator, GraphDatabaseDependencies dependencies, LogProvider userLogProvider );
-
-    // TODO: stopArg is not used, check if it is safe to remove this method
-    public void stop( int stopArg )
-    {
-        stop();
-    }
 
     public int stop()
     {
@@ -229,10 +194,4 @@ public abstract class Bootstrapper
         return new PropertyFileConfigurator( configFile, log );
     }
 
-    protected boolean isMoreDerivedThan( Bootstrapper other )
-    {
-        // Default implementation just checks if this is a subclass of other
-        return other.getClass()
-                .isAssignableFrom( getClass() );
-    }
 }

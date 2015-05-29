@@ -21,7 +21,7 @@ set serviceName=Neo4j-Server
 set serviceDisplayName=Neo4j-Server
 set serviceStartType=auto
 set classpath="-DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/**/*.jar;./conf*"
-set mainclass="-DserverMainClass=org.neo4j.server.Bootstrapper"
+set mainclass="-DserverMainClass=#{neo4j.mainClass}"
 set configFile="conf\neo4j-wrapper.conf"
 
 call "%~dps0base.bat" %1 %2 %3 %4 %5

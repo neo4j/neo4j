@@ -54,7 +54,7 @@ goto:eof
       set javaPath=%%P
   )
 
-  set wrapperJarFilename=${windows-wrapper.filename}
+  set wrapperJarFilename=#{windows-wrapper.filename}
   set command=""
   call:parseConfig "%~dps0..\%configFile%"
 

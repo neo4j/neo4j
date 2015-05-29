@@ -66,24 +66,12 @@
       <lineEnding>unix</lineEnding>
       <fileMode>0755</fileMode>
       <excludes>
-        <exclude>bin/neo4j</exclude>
         <exclude>**/*.bat</exclude>
         <exclude>**/neo4j-backup*</exclude>
         <exclude>**/neo4j-coord*</exclude>
         <exclude>**/*arbiter*</exclude>
       </excludes>
       <filtered>true</filtered>
-    </fileSet>
-    <!-- treat the neo4j script as special so we don't filter shell variables -->
-    <fileSet>
-      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
-      <outputDirectory>/</outputDirectory>
-      <lineEnding>unix</lineEnding>
-      <fileMode>0755</fileMode>
-      <includes>
-        <include>**/neo4j</include>
-      </includes>
-      <filtered>false</filtered>
     </fileSet>
     <!--add MacOS *.plist installer files -->
     <fileSet>

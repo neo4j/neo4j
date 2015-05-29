@@ -1,4 +1,4 @@
-${product.fullname} Logs
+#{product.fullname} Logs
 =======================================
 
 Server logs, including:

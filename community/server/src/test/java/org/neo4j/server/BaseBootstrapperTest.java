@@ -30,11 +30,8 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.Mute;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 
 public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 {
@@ -55,15 +52,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         }
     }
 
-    protected abstract Class<? extends Bootstrapper> bootstrapperClass();
-
     protected abstract Bootstrapper newBootstrapper();
-
-    @Test
-    public void shouldLoadAppropriateBootstrapper()
-    {
-        assertThat( Bootstrapper.loadMostDerivedBootstrapper(), is( instanceOf( bootstrapperClass() ) ) );
-    }
 
     @Test
     public void shouldStartStopNeoServerWithoutAnyConfigFiles()
