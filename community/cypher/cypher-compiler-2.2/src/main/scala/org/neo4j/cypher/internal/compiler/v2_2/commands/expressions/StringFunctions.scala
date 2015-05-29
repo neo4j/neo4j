@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import commands.values.KeyToken
-import org.neo4j.helpers.Platforms
-import pipes.QueryState
-import symbols._
-import org.neo4j.cypher.internal.compiler.v2_2.helpers._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.{CollectionSupport, IsCollection, IsMap}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
-import scala.collection.Map
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.{IsCollection, CollectionSupport, IsMap}
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.helpers.Platforms
+
 import scala.annotation.tailrec
+import scala.collection.Map
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) with StringHelper with CollectionSupport {
   def innerExpectedType = CTString
@@ -113,7 +113,10 @@ trait StringHelper {
 }
 
 case class StrFunction(argument: Expression) extends StringFunction(argument) with StringHelper  {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = text(argument(m), state.query)
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = argument(m) match {
+    case x: String => x
+    case x => text(x, state.query)
+  }
 
   def rewrite(f: (Expression) => Expression) = f(StrFunction(argument.rewrite(f)))
 }

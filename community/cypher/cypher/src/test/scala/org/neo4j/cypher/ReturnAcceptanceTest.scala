@@ -32,6 +32,10 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers w
     result should equal(0)
   }
 
+  test("toInt(str('4'))") {
+    executeScalar[Number]("return toint(str('4'))") should equal(4)
+  }
+
   test("should accept skip zero") {
     val result = executeWithAllPlanners("match n where 1 = 0 return n skip 0")
 
