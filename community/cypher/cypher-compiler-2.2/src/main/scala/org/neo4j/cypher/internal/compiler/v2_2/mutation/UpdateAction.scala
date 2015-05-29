@@ -46,7 +46,7 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
     val collector = new EffectsCollector(localEffects(symbols), self, symbols)
     visitFirst {
       case (effectful: Effectful) => collector.register(effectful).withEffects(effectful.localEffects.toWriteEffects())
-      case (effectfulAst: EffectfulAstNode[_]) => collector.register(effectfulAst).withEffects(effectfulAst.localEffects(symbols).toWriteEffects())
+      case (effectfulAst: EffectfulAstNode[_]) => collector.register(effectfulAst).withEffects(effectfulAst.localEffects(updateSymbols(symbols)).toWriteEffects())
       case (update: UpdateAction) =>
         val oldSymbols = collector.symbols(update)
         collector
