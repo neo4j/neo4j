@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.LabelId
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{AstConstructionTestSupport, HasLabels, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.IndependenceCombiner
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{VarPatternLength, IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanConstructionTestSupport, Predicate, Selections, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
@@ -67,5 +67,22 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
     result should equal(Selectivity(42))
+  }
+
+  test("handles variable length paths over 32 in length") {
+    val stats: GraphStatistics = mock[GraphStatistics]
+    when(stats.nodesWithLabelCardinality(any())).thenReturn(Cardinality(1))
+    when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(3))
+
+    val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
+    val relationship = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, VarPatternLength(33, Some(33)))
+
+    val label = LabelName("L")(pos)
+
+    implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
+    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(ident("a"), Seq(label))(pos))))
+    val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
+
+    result should equal(Selectivity(Math.pow(3, 32)))
   }
 }

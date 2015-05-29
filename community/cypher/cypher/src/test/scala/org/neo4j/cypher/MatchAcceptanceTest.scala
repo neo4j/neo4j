@@ -162,6 +162,24 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     executeScalarWithAllPlanners[Int]("MATCH (a:X) RETURN length(a-[:REL|AFFE]->())") should equal(4)
   }
 
+  test("Fetches really long paths") {
+    val length = 100
+
+    // Create linked list of nodes of length 32
+    val nodes = for (i <- 1 to length) yield {
+      createNode()
+    }
+
+    nodes.foldLeft(createNode()) {
+      case (last, node) =>
+        relate(last, node)
+        node
+    }
+
+    executeWithAllPlanners(s"MATCH p = (a)-[*$length]->(b) RETURN length(p)").toList should equal(
+      List(Map("length(p)" -> length)))
+  }
+
   test("should be able to use multiple MATCH clauses to do a cartesian product") {
     createNode("value" -> 1)
     createNode("value" -> 2)
