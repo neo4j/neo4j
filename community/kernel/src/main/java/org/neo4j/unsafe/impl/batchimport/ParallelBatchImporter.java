@@ -205,7 +205,7 @@ public class ParallelBatchImporter implements BatchImporter
             writerFactory.awaitEverythingWritten();
             long totalTimeMillis = currentTimeMillis() - startTime;
             executionMonitor.done( totalTimeMillis, storeUpdateMonitor.toString() );
-            log.info( "Import completed, took " + Format.duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
+            log.info( "IMPORT DONE in " + Format.duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
             hasBadEntries = badCollector.badEntries() > 0;
             if ( hasBadEntries )
             {
