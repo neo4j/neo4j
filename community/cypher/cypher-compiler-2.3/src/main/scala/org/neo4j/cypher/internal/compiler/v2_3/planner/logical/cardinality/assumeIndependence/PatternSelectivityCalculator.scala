@@ -61,10 +61,10 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
         case SimplePatternLength =>
           calculateSelectivityForSingleRelHop(types, labelsOnLhs, labelsOnRhs, pattern.dir, lhsCardinality * rhsCardinality)
 
-        case VarPatternLength(min, optMax) =>
+        case VarPatternLength(suppliedMin, optMax) =>
 
           val max = Math.min(optMax.getOrElse(MAX_VAR_LENGTH), MAX_VAR_LENGTH)
-
+          val min = Math.min(suppliedMin, max)
           /*
           How to calculate var-length path selectivity can be exemplified like this
 
