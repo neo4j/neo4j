@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import java.io.File;
 import java.net.URI;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -30,7 +31,8 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
@@ -47,16 +49,20 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.Log;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 
 public class SwitchToMaster implements AutoCloseable
 {
+    private final File storeDir;
+    private final AvailabilityGuard availabilityGuard;
+    private final FileSystemAbstraction fs;
+    private final Monitors monitors;
     private LogService logService;
     private Log userLog;
-    private GraphDatabaseAPI graphDb;
     private HaIdGeneratorFactory idGeneratorFactory;
     private Config config;
     private Supplier<SlaveFactory> slaveFactorySupplier;
@@ -67,14 +73,21 @@ public class SwitchToMaster implements AutoCloseable
     private ByteCounterMonitor masterByteCounterMonitor;
     private RequestMonitor masterRequestMonitor;
 
-    public SwitchToMaster( LogService logService, GraphDatabaseAPI graphDb,
+    // The size of this constructor is a smell, sniff it out if you've got the time!
+    public SwitchToMaster( LogService logService, File storeDir, AvailabilityGuard availabilityGuard,
+            FileSystemAbstraction fs, Monitors monitors,
             HaIdGeneratorFactory idGeneratorFactory, Config config, Supplier<SlaveFactory> slaveFactorySupplier,
-            DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
-            DataSourceManager dataSourceManager, ByteCounterMonitor masterByteCounterMonitor, RequestMonitor masterRequestMonitor, MasterImpl.Monitor masterImplMonitor)
+            DelegateInvocationHandler<Master> masterDelegateHandler,
+            ClusterMemberAvailability clusterMemberAvailability,
+            DataSourceManager dataSourceManager, ByteCounterMonitor masterByteCounterMonitor,
+            RequestMonitor masterRequestMonitor, MasterImpl.Monitor masterImplMonitor )
     {
         this.logService = logService;
+        this.storeDir = storeDir;
+        this.availabilityGuard = availabilityGuard;
+        this.fs = fs;
+        this.monitors = monitors;
         this.userLog = logService.getUserLog( getClass() );
-        this.graphDb = graphDb;
         this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
         this.slaveFactorySupplier = slaveFactorySupplier;
@@ -103,21 +116,26 @@ public class SwitchToMaster implements AutoCloseable
          * going to break things. Synchronizing on the xaDSM as HaKPH does solves this.
          */
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        // TODO: HaKernelPanicHandler no longer exists, evaluate why this block is just commented out and not removed
 //        synchronized ( xaDataSourceManager )
         {
 
             idGeneratorFactory.switchToMaster();
-            NeoStoreDataSource neoStoreXaDataSource = dataSourceManager.getDataSource();
-            neoStoreXaDataSource.afterModeSwitch();
+            NeoStoreDataSource neoStoreDS = dataSourceManager.getDataSource();
+            neoStoreDS.afterModeSwitch();
+            DependencyResolver resolver = neoStoreDS.getDependencyResolver();
 
-            MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb );
+            // Dynamically resolved here because these services are restarted on role switch
+            TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+            LogicalTransactionStore transactionStore = resolver.resolveDependency( LogicalTransactionStore.class );
+            TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup( transactionIdStore,
+                    transactionStore );
+
+            MasterImpl.SPI spi = new DefaultMasterImplSPI( storeDir, availabilityGuard, resolver, neoStoreDS, fs,
+                    monitors, transactionIdStore, transactionStore );
 
             MasterImpl masterImpl = new MasterImpl( spi, masterImplMonitor, config );
 
-            DependencyResolver resolver = neoStoreXaDataSource.getDependencyResolver();
-            TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup(
-                    resolver.resolveDependency( TransactionIdStore.class ),
-                    resolver.resolveDependency( LogicalTransactionStore.class ) );
             MasterServer masterServer = new MasterServer( masterImpl, logService.getInternalLogProvider(), serverConfig(),
                     new BranchDetectingTxVerifier( logService.getInternalLogProvider(),
                             txChecksumLookup ), masterByteCounterMonitor, masterRequestMonitor );
@@ -128,10 +146,10 @@ public class SwitchToMaster implements AutoCloseable
             haCommunicationLife.start();
 
             URI masterHaURI = getMasterUri( me, masterServer );
-            clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, neoStoreXaDataSource.getStoreId() );
+            clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, neoStoreDS.getStoreId() );
             userLog.info( "I am %s, successfully moved to master", myId() );
 
-            slaveFactorySupplier.get().setStoreId( neoStoreXaDataSource.getStoreId() );
+            slaveFactorySupplier.get().setStoreId( neoStoreDS.getStoreId() );
 
             return masterHaURI;
         }
@@ -189,7 +207,6 @@ public class SwitchToMaster implements AutoCloseable
     {
         logService = null;
         userLog = null;
-        graphDb = null;
         idGeneratorFactory = null;
         config = null;
         slaveFactorySupplier = null;

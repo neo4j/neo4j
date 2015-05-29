@@ -31,7 +31,7 @@ import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -60,43 +59,45 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
 {
     private static final int ID_GRAB_SIZE = 1000;
     private final DependencyResolver dependencyResolver;
-    private final GraphDatabaseAPI graphDb;
-    private final LogicalTransactionStore txStore;
     private final TransactionIdStore transactionIdStore;
     private final TransactionChecksumLookup txChecksumLookup;
     private final FileSystemAbstraction fileSystem;
     private final File storeDir;
     private final ResponsePacker responsePacker;
     private final Monitors monitors;
+    private final AvailabilityGuard availabilityGuard;
+    private final NeoStoreDataSource dataSource;
 
-    public DefaultMasterImplSPI( final GraphDatabaseAPI graphDb )
+    public DefaultMasterImplSPI( File storeDir, AvailabilityGuard availabilityGuard,
+            DependencyResolver dependencyResolver,
+            final NeoStoreDataSource ds, FileSystemAbstraction fs, Monitors monitors,
+            // Be careful about the following dependencies, they change on role-switch.
+            TransactionIdStore transactionIds, LogicalTransactionStore transactions )
     {
-        this.graphDb = graphDb;
-        this.dependencyResolver = graphDb.getDependencyResolver();
+        this.availabilityGuard = availabilityGuard;
+        this.dependencyResolver = dependencyResolver;
+        this.fileSystem = fs;
+        this.storeDir = storeDir;
+        this.transactionIdStore = transactionIds;
+        this.monitors = monitors;
+        this.dataSource = ds;
 
-        // Hmm, fetching the dependencies here instead of handing them in the constructor directly feels bad,
-        // but it seems like there's some intricate usage and need for the db's dependency resolver.
-        this.transactionIdStore = dependencyResolver.resolveDependency( TransactionIdStore.class );
-        this.fileSystem = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
-        this.storeDir = new File( graphDb.getStoreDir() );
-        this.txStore = dependencyResolver.resolveDependency( LogicalTransactionStore.class );
-        this.txChecksumLookup = new TransactionChecksumLookup( transactionIdStore, txStore );
-        this.responsePacker = new ResponsePacker( txStore, transactionIdStore, new Supplier<StoreId>()
+        this.txChecksumLookup = new TransactionChecksumLookup( transactionIdStore, transactions );
+        this.responsePacker = new ResponsePacker( transactions, transactionIdStore, new Supplier<StoreId>()
         {
             @Override
             public StoreId get()
             {
-                return graphDb.storeId();
+                return ds.getStoreId();
             }
         } );
-        this.monitors = dependencyResolver.resolveDependency( Monitors.class );
     }
 
     @Override
     public boolean isAccessible()
     {
         // Wait for 5s for the database to become available, if not already so
-        return graphDb.isAvailable( 5000 );
+        return availabilityGuard.isAvailable( 5000 );
     }
 
     @Override
@@ -128,20 +129,13 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     }
 
     @Override
-    public StoreId storeId()
-    {
-        return graphDb.storeId();
-    }
-
-    @Override
     public long applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException,
             TransactionFailureException
     {
         try ( LockGroup locks = new LockGroup() )
         {
-            TransactionCommitProcess txCommitProcess = dependencyResolver
-                    .resolveDependency( NeoStoreDataSource.class )
-                    .getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
+            TransactionCommitProcess txCommitProcess =
+                    dependencyResolver.resolveDependency( TransactionCommitProcess.class );
             return txCommitProcess.commit( preparedTransaction, locks, CommitEvent.NULL );
         }
     }
@@ -161,7 +155,6 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
     {
-        NeoStoreDataSource dataSource = dependencyResolver.resolveDependency( DataSourceManager.class ).getDataSource();
         StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, dataSource,
                 dependencyResolver.resolveDependency( LogRotationControl.class ), fileSystem, storeDir,
                 monitors.newMonitor( StoreCopyServer.Monitor.class ) );

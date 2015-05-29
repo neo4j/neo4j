@@ -286,7 +286,6 @@ public class MasterImplTest
     public static SPI mockedSpi( final StoreId storeId )
     {
         MasterImpl.SPI mock = mock( MasterImpl.SPI.class );
-        when( mock.storeId() ).thenReturn( storeId );
         when( mock.packEmptyResponse( any() ) ).thenAnswer( new Answer()
         {
             @Override

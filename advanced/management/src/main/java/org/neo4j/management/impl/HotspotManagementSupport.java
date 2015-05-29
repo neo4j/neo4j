@@ -40,18 +40,15 @@ import javax.rmi.ssl.SslRMIServerSocketFactory;
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementSupport;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
 @Service.Implementation( ManagementSupport.class )
 public class HotspotManagementSupport extends AdvancedManagementSupport
 {
     @Override
-    protected JMXServiceURL getJMXServiceURL( KernelData kernel )
+    protected JMXServiceURL getJMXServiceURL( KernelData kernel, Log log )
     {
         JMXServiceURL url = null;
-        Log log = kernel.graphDatabase().getDependencyResolver().resolveDependency( LogService.class )
-                .getInternalLog( HotspotManagementSupport.class );
         try
         {
             Class<?> cal = Class.forName( "sun.management.ConnectorAddressLink" );
@@ -75,10 +72,6 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
         catch ( InvocationTargetException e )
         {
             log.warn( "Failed to load local JMX connection URL.", e.getTargetException() );
-        }
-        catch ( LinkageError e )
-        {
-            log.warn( "Failed to load local JMX connection URL.", e );
         }
         catch ( Exception e )
         {

@@ -26,7 +26,6 @@ import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
@@ -42,42 +41,40 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
     @Override
     protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
     {
-        if ( !isHA( management ) )
+        if ( management.isHAMode() )
         {
-            return null;
+            return new HighAvailabilityImpl( management, true );
         }
-        return new HighAvailabilityImpl( management, true );
+        return null;
     }
 
     @Override
     protected Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException
     {
-        if ( !isHA( management ) )
+        if ( management.isHAMode() )
         {
-            return null;
+            return new HighAvailabilityImpl( management );
         }
-        return new HighAvailabilityImpl( management );
-    }
-
-    private static boolean isHA( ManagementData management )
-    {
-        return management.getKernelData().graphDatabase() instanceof HighlyAvailableGraphDatabase;
+        return null;
     }
 
     private static class HighAvailabilityImpl extends Neo4jMBean implements HighAvailability
     {
         private final HighlyAvailableKernelData kernelData;
+        private final ManagementData management;
 
         HighAvailabilityImpl( ManagementData management )
                 throws NotCompliantMBeanException
         {
             super( management );
+            this.management = management;
             this.kernelData = (HighlyAvailableKernelData) management.getKernelData();
         }
 
         HighAvailabilityImpl( ManagementData management, boolean isMXBean )
         {
             super( management, isMXBean );
+            this.management = management;
             this.kernelData = (HighlyAvailableKernelData) management.getKernelData();
         }
 
@@ -130,8 +127,7 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             long time = System.currentTimeMillis();
             try
             {
-                kernelData.graphDatabase().getDependencyResolver().resolveDependency(
-                        UpdatePullerClient.class ).pullUpdates();
+                management.resolveDependency( UpdatePullerClient.class ).pullUpdates();
             }
             catch ( Exception e )
             {

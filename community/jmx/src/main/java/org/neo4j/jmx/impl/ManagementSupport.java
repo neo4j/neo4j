@@ -33,6 +33,7 @@ import javax.management.remote.JMXServiceURL;
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.ManagementInterface;
 import org.neo4j.kernel.KernelData;
+import org.neo4j.logging.Log;
 
 public class ManagementSupport
 {
@@ -86,10 +87,11 @@ public class ManagementSupport
      * of this JVM.
      *
      * @param kernel the kernel that wishes to access the URI.
+     * @param log
      * @return a URI that can be used for connecting to the {@link MBeanServer}
      *         of this JVM.
      */
-    protected JMXServiceURL getJMXServiceURL( KernelData kernel )
+    protected JMXServiceURL getJMXServiceURL( KernelData kernel, Log log )
     {
         return null;
     }
