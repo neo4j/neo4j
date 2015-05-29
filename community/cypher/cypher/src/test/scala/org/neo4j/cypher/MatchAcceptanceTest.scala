@@ -2035,4 +2035,64 @@ return b
       Map("a" -> c, "b" -> c)
     ))
   }
+
+  test("matching existing path with two nodes should respect relationship direction") {
+    val a = createNode("prop" -> "a")
+    val b = createNode("prop" -> "b")
+    val rel = relate(a, b)
+
+    val result = executeWithAllPlanners("MATCH p=({prop: 'a'})-->({prop: 'b'}) RETURN p").toList
+
+    result shouldBe List(Map("p" -> PathImpl(a, rel, b)))
+  }
+
+  test("matching non-existing path with two nodes should respect relationship direction") {
+    val a = createNode("prop" -> "a")
+    val b = createNode("prop" -> "b")
+    relate(a, b)
+
+    val result = executeWithAllPlanners("MATCH p=({prop: 'a'})<--({prop: 'b'}) RETURN p").toList
+
+    result shouldBe empty
+  }
+
+  test("issue 4692 path matching should respect relationship directions") {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+    relate(b, a)
+
+    val result = executeWithAllPlanners("MATCH p=(n)-->(k)<--(n) RETURN p").toList
+
+    result shouldBe empty
+  }
+
+  test("matching path with single <--> relationship should respect other relationship directions") {
+    val a = createNode()
+    val b = createNode()
+    val r1 = relate(a, b)
+    val r2 = relate(b, a)
+
+    val results = executeWithAllPlanners("MATCH p=(n)<-->(k)<--(n) RETURN p").toList
+
+    results should contain theSameElementsAs List(
+      Map("p" -> PathImpl(a, r2, b, r1, a)),
+      Map("p" -> PathImpl(b, r1, a, r2, b)))
+  }
+
+  test("matching path with only <--> relationships should work") {
+    val a = createNode()
+    val b = createNode()
+    val r1 = relate(a, b)
+    val r2 = relate(b, a)
+
+    val results = executeWithAllPlanners("MATCH p=(n)<-->(k)<-->(n) RETURN p").toList
+
+    results should contain theSameElementsAs List(
+      Map("p" -> PathImpl(a, r2, b, r1, a)),
+      Map("p" -> PathImpl(a, r1, b, r2, a)),
+      Map("p" -> PathImpl(b, r1, a, r2, b)),
+      Map("p" -> PathImpl(b, r2, a, r1, b)))
+  }
+
 }

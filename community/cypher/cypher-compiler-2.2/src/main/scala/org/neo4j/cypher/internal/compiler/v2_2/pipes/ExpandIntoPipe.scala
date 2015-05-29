@@ -76,21 +76,25 @@ case class ExpandIntoPipe(source: Pipe,
   /**
    * Finds all relationships connecting fromNode and toNode.
    */
-  private def findRelationships(query: QueryContext, fromNode: Node, toNode: Node, relCache: RelationshipsCache) = {
+  private def findRelationships(query: QueryContext, fromNode: Node, toNode: Node, relCache: RelationshipsCache): Iterator[Relationship] = {
     //check degree and iterate from the node with smaller degree
     val relTypes = types.types(query)
+
     val fromDegree = getDegree(fromNode, relTypes, dir, query)
+    if (fromDegree == 0) {
+      return Iterator.empty
+    }
+
     val toDegree = getDegree(toNode, relTypes, dir.reverse, query)
+    if (toDegree == 0) {
+      return Iterator.empty
+    }
 
     val (start, end, relationships) = if (fromDegree < toDegree)
       (fromNode, toNode, query.getRelationshipsForIds(fromNode, dir, relTypes))
     else
       (toNode, fromNode, query.getRelationshipsForIds(toNode, dir.reverse(), relTypes))
 
-    if (math.min(fromDegree, toDegree) == 0) {
-      relCache.put(start, end, Seq.empty)
-      Iterator.empty
-    } else {
     new PrefetchingIterator[Relationship] {
       //we do not expect two nodes to have many connecting relationships
       val connectedRelationships = new ArrayBuffer[Relationship](2)
@@ -104,10 +108,9 @@ case class ExpandIntoPipe(source: Pipe,
             return rel
           }
         }
-        relCache.put(start, end, connectedRelationships)
+        relCache.put(fromNode, toNode, connectedRelationships)
         null
       }
-    }
     }.asScala
   }
 
@@ -148,19 +151,39 @@ case class ExpandIntoPipe(source: Pipe,
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   private final class RelationshipsCache(capacity: Int) {
-    private var _size = 0
-    private val table = new mutable.OpenHashMap[(Node, Node), Seq[Relationship]]()
-    def put(node1: Node, node2: Node, rels: Seq[Relationship]) = {
-      if (_size < capacity) {
-        table.put(key(node1, node2), rels)
-        _size += 1
+
+    val table = new mutable.OpenHashMap[(Long, Long), Seq[Relationship]]()
+
+    def put(start: Node, end: Node, rels: Seq[Relationship]) = {
+      if (table.size < capacity) {
+        table.put(key(start, end), rels)
       }
     }
 
-    def get(node1: Node, node2: Node) = table.get(key(node1, node2))
+    def recordNoRels(start: Node, end: Node) = {
+      put(start, end, RelationshipsCache.NoRels)
+      put(end, start, RelationshipsCache.NoRels)
+    }
+
+    def get(start: Node, end: Node) = table.get(key(start, end))
 
     @inline
-    private def key(node1: Node, node2: Node) =
-      if (node1.getId < node2.getId) (node1, node2) else (node2, node1)
+    private def key(start: Node, end: Node) = {
+      // if direction is BOTH than we keep the key sorted, otherwise direction is important and we keep key as is
+
+      if (dir != Direction.BOTH) (start.getId, end.getId)
+      else {
+        if (start.getId < end.getId)
+          (start.getId, end.getId)
+        else
+          (end.getId, start.getId)
+      }
+    }
   }
+
+  private object RelationshipsCache {
+
+    final val NoRels = Seq.empty[Relationship]
+  }
+
 }
