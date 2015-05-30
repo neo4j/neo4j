@@ -258,9 +258,9 @@ public class ExportTest
         Node n = gdb.createNode( label );
         final ExecutionResult result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
-        assertEquals( "create index on :`Foo`(`bar2`)" + NL +
-                "create index on :`Foo`(`bar`)" + NL +
-                "create (_0:`Foo`)" + NL, doExportGraph( graph ) );
+        assertEquals( "create (_0:`Foo`)" + NL +
+                "create index on :`Foo`(`bar2`)" + NL +
+                "create index on :`Foo`(`bar`)" + NL, doExportGraph( graph ) );
     }
 
     @Test
@@ -273,9 +273,9 @@ public class ExportTest
         Node n = gdb.createNode( label );
         final ExecutionResult result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
-        assertEquals( "create constraint on (n:`Foo`) assert n.`bar2` is unique" + NL +
-                "create constraint on (n:`Foo`) assert n.`bar` is unique" + NL +
-                "create (_0:`Foo`)" + NL, doExportGraph( graph ) );
+        assertEquals( "create (_0:`Foo`)" + NL +
+                "create constraint on (n:`Foo`) assert n.`bar2` is unique" + NL +
+                "create constraint on (n:`Foo`) assert n.`bar` is unique" + NL, doExportGraph( graph ) );
     }
 
     private void commitAndStartNewTransactionAfterSchemaChanges()
