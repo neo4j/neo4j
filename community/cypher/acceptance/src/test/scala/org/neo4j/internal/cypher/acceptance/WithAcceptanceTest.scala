@@ -51,7 +51,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val a = createNode()
     val b = createNode()
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndRuntimes(
       "MATCH a WITH a MATCH b RETURN *"
     )
     result.toSet should equal(Set(
