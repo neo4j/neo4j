@@ -370,13 +370,13 @@ DC 10 01 01  02 03 04 05  06 07 08 09  00 01 02 03
 ----
 
 [[ndp-value-structs]]
-==== Graph Type Stuctures
+=== Graph Type Stuctures
 
 A number of key Neo4j types are represented as <<ndp-packstream-structures,structures>>.
 These include _nodes_, _relationships_ and _paths_.
 
 [[ndp-value-nodestruct]]
-===== Node
+==== Node
 A Node represents a node from a Neo4j graph and consists of a unique identifier (within the scope of its origin graph), a list of labels and a map of properties. The general serialised structure is as follows:
 
 [source,ndp_value_struct]
@@ -389,7 +389,7 @@ Node (signature=0x4E) {             /* signature: 'N' */
 ----
 
 [[ndp-value-relstruct]]
-===== Relationship
+==== Relationship
 A Relationship represents a relationship from a Neo4j graph and consists of a unique identifier (within the scope of its origin graph), identifiers for the start and end nodes of that relationship, a type and a map of properties. The general serialised structure is as follows:
 
 [source,ndp_value_struct]
@@ -404,7 +404,7 @@ Relationship (signature=0x52) {    /* signature: 'R' */
 ----
 
 [[ndp-value-pathstruct]]
-===== Path
+==== Path
 A Path consists of a list of alternating nodes and relationships, always starting and ending with a node. The general serialised structure is as follows:
 
 [source,ndp_value_struct]
