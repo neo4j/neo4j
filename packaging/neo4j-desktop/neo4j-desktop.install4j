@@ -715,7 +715,7 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
       </excludedComponents>
       <includedDownloadableComponents />
     </windows>
-    <macosArchive name="MacOS" id="444" customizedId="" mediaFileName="" installDir="neo4j-community" overridePrincipalLanguage="false" jreBitType="all" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="macosx-amd64-1.7.0_80" manualJREEntry="false" appleJre="false" archiveType="dmg" volumeName="${compiler:sys.shortName}" launcherId="24">
+    <macosArchive name="MacOS" id="444" customizedId="" mediaFileName="" installDir="neo4j-community" overridePrincipalLanguage="false" jreBitType="all" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="macosx-amd64-1.7.0_80_unpacked" manualJREEntry="false" appleJre="false" archiveType="dmg" volumeName="${compiler:sys.shortName}" launcherId="24">
       <excludedBeans />
       <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
       <exclude />

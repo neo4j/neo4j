@@ -193,13 +193,17 @@
                   <target name="media">
                     <mkdir dir="${project.build.directory}/install4j" />
                     <!--suppress MavenModelInspection -->
-                    <condition property="install4j.code.signing" value="&lt;codeSigning macEnabled=&quot;true&quot; macPkcs12File=&quot;${install4j.mac.pkcs12}&quot; windowsEnabled=&quot;true&quot; windowsKeySource=&quot;pkcs12&quot; windowsPvkFile=&quot;&quot; windowsSpcFile=&quot;&quot; windowsPkcs12File=&quot;${install4j.pkcs12}&quot; /&gt;">
-                      <and>
-                        <isset property="install4j.pkcs12"/>
-                        <isset property="install4j.mac.pkcs12"/>
-                      </and>
+                    <condition property="install4j.code.signing.mac.enabled" value="true">
+                      <isset property="install4j.mac.pkcs12" />
                     </condition>
-                    <property name="install4j.code.signing" value=""/>
+                    <property name="install4j.code.signing.mac.enabled" value="false" />
+                    <property name="install4j.mac.pkcs12" value="" />
+                    <condition property="install4j.code.signing.win.enabled" value="true">
+                      <isset property="install4j.win.pkcs12" />
+                    </condition>
+                    <property name="install4j.code.signing.win.enabled" value="false" />
+                    <property name="install4j.win.pkcs12" value="" />
+                    <property name="install4j.code.signing" value="&lt;codeSigning macEnabled=&quot;${install4j.code.signing.mac.enabled}&quot; macPkcs12File=&quot;${install4j.mac.pkcs12}&quot; windowsEnabled=&quot;${install4j.code.signing.win.enabled}&quot; windowsKeySource=&quot;pkcs12&quot; windowsPvkFile=&quot;&quot; windowsSpcFile=&quot;&quot; windowsPkcs12File=&quot;${install4j.win.pkcs12}&quot; /&gt;"/>
                     <copy file="${project.basedir}/neo4j-desktop.install4j" toFile="${project.build.directory}/install4j/neo4j-desktop.install4j">
                       <filterset begintoken="@" endtoken="@">
                         <filter token="NEO4J_VERSION" value="${project.version}"/>
