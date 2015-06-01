@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.function.Supplier
+import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.{GraphDatabaseService, Node}
 import org.neo4j.kernel.api._
 import org.neo4j.test.ImpermanentGraphDatabase
@@ -43,7 +44,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val id1 = new Id()
     val id2 = new Id()
 
-    val projectNode = ProjectNode("name")
+    val projectNode = expressions.Node("name")
     val compiled = compile(WhileLoop("name",
       ScanAllNodes("OP1"),
       Project("X", List(projectNode),

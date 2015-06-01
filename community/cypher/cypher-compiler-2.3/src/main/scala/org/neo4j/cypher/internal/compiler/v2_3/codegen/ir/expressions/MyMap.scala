@@ -17,24 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
+package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
 
-case class AcceptVisitor(id: String, columns: Map[String, CodeGenExpression]) extends Instruction {
+//Named MyMap to avoid conflict with collection.Map which makes everything weird
+case class MyMap(instructions: Map[String, CodeGenExpression]) extends CodeGenExpression {
 
-  override protected def columnNames = columns.keys
-
-  override def body[E](generator: MethodStructure[E]) = generator.trace(id) { body =>
-    columns.foreach { case (k, v) =>
-      body.setInRow(k, v.generateExpression(body))
-    }
-    body.visitRow()
-    body.incrementRows()
+  override def init[E](generator: MethodStructure[E]) = instructions.values.foreach { instruction =>
+    instruction.init(generator)
   }
 
-  override protected def operatorId = Some(id)
-
-  override protected def children = Seq.empty
+  override def generateExpression[E](structure: MethodStructure[E]) =
+    structure.asMap(instructions.mapValues(_.generateExpression(structure)))
 }

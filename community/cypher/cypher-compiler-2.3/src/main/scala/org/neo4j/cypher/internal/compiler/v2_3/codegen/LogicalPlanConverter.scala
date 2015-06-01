@@ -19,8 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
+import org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -213,51 +216,51 @@ object LogicalPlanConverter {
     }
 
     private def createProjectionInstruction(logicalPlan: Projection, expression: Expression)
-                                           (implicit opName: String, context: CodeGenContext): ProjectionInstruction = {
+                                           (implicit opName: String, context: CodeGenContext): CodeGenExpression = {
 
       expression match {
         case node@Identifier(name) if context.semanticTable.isNode(node) =>
-          ProjectNode(context.getVariable(name))
+          Node(context.getVariable(name))
 
         case rel@Identifier(name) if context.semanticTable.isRelationship(rel) =>
-          ProjectRelationship(context.getVariable(name))
+          Relationship(context.getVariable(name))
 
         case Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
           val token = propKey.id(context.semanticTable).map(_.id)
-          ProjectNodeProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
+          NodeProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
 
         case Property(rel@Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
           val token = propKey.id(context.semanticTable).map(_.id)
-          ProjectRelProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
+          RelProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
 
-        case Parameter(name) => ProjectParameter(name)
+        case ast.Parameter(name) => expressions.Parameter(name)
 
-        case lit: IntegerLiteral => ProjectLiteral(lit.value)
+        case lit: IntegerLiteral => Literal(lit.value)
 
-        case lit: DoubleLiteral => ProjectLiteral(lit.value)
+        case lit: DoubleLiteral => Literal(lit.value)
 
-        case lit: StringLiteral => ProjectLiteral(lit.value)
+        case lit: StringLiteral => Literal(lit.value)
 
-        case lit: Literal => ProjectLiteral(lit.value)
+        case lit: ast.Literal => Literal(lit.value)
 
-        case Collection(exprs) =>
-          ProjectCollection(exprs.map(e => createProjectionInstruction(logicalPlan, e)))
+        case ast.Collection(exprs) =>
+          expressions.Collection(exprs.map(e => createProjectionInstruction(logicalPlan, e)))
 
         case Add(lhs, rhs) =>
           val leftOp = createProjectionInstruction(logicalPlan, lhs)
           val rightOp = createProjectionInstruction(logicalPlan, rhs)
-          ProjectAddition(leftOp, rightOp)
+          Addition(leftOp, rightOp)
 
         case Subtract(lhs, rhs) =>
           val leftOp = createProjectionInstruction(logicalPlan, lhs)
           val rightOp = createProjectionInstruction(logicalPlan, rhs)
-          ProjectSubtraction(leftOp, rightOp)
+          Subtraction(leftOp, rightOp)
 
         case MapExpression(items: Seq[(PropertyKeyName, Expression)]) =>
           val map = items.map {
             case (key, expr) => (key.name, createProjectionInstruction(logicalPlan, expr))
           }.toMap
-          ProjectMap(map)
+          MyMap(map)
 
         case other => throw new CantCompileQueryException(s"Projection of $other not yet supported")
       }
