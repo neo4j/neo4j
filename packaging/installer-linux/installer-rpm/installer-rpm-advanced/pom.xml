@@ -8,7 +8,6 @@
         <relativePath>..</relativePath>
     </parent>
 
-    <groupId>org.neo4j</groupId>
     <artifactId>neo4j-advanced-rpm</artifactId>
     <version>2.3-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -30,6 +29,8 @@
         <neo4j.version>${project.version}</neo4j.version>
         <license-text.header>${neo4j.license}</license-text.header>
         <standalone.path>${project.baseDir}/../../../../standalone</standalone.path>
+
+        <neo4j.mainClass>org.neo4j.server.advanced.AdvancedBootstrapper</neo4j.mainClass>
 
         <buildnumber>0</buildnumber>
         <edition>advanced</edition>

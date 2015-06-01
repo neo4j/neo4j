@@ -8,7 +8,6 @@
         <relativePath>..</relativePath>
     </parent>
 
-    <groupId>org.neo4j</groupId>
     <artifactId>neo4j-community-rpm</artifactId>
     <version>2.3-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -35,18 +34,13 @@
 
         <buildnumber>0</buildnumber>
 
+        <neo4j.mainClass>org.neo4j.server.CommunityBootstrapper</neo4j.mainClass>
+
         <neo4j.debian.maintainer>Anders Nawroth &lt;anders@neotechnology.com&gt;</neo4j.debian.maintainer>
         <licensing.phase>none</licensing.phase>
     </properties>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

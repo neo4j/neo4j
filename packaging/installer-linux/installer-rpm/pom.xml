@@ -10,11 +10,9 @@
     </parent>
     <properties>
         <neo4j.license>AGPL-3-header.txt</neo4j.license>
-
         <licensing.phase>none</licensing.phase>
     </properties>
 
-    <groupId>org.neo4j</groupId>
     <artifactId>neo4j-installer-rpm</artifactId>
     <version>2.3-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -43,6 +41,30 @@
     <build>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>2.7</version>
+                    <executions>
+                        <execution>
+                            <id>rpm-specific-resources</id>
+                            <goals><goal>copy-resources</goal></goals>
+                            <phase>process-resources</phase>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}/rpm-resources</outputDirectory>
+                                <delimiters>
+                                    <delimiter>#{*}</delimiter>
+                                </delimiters>
+                                <resources>
+                                    <resource>
+                                        <directory>${project.parent.basedir}/src/main/resources</directory>
+                                        <filtering>true</filtering>
+                                    </resource>
+                                </resources>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>rpm-maven-plugin</artifactId>
@@ -89,7 +111,7 @@
                                         </location>
                                     </source>
                                     <source>
-                                        <location>${project.parent.basedir}/src/main/resources/neo4j</location>
+                                        <location>${project.build.directory}/rpm-resources/neo4j</location>
                                     </source>
                                 </sources>
                                 <filemode>0755</filemode>
@@ -173,7 +195,7 @@
                                 <directory>/etc/sysconfig</directory>
                                 <sources>
                                     <source>
-                                        <location>${project.parent.basedir}/src/main/resources/sysconfig</location>
+                                        <location>${project.build.directory}/rpm-resources/sysconfig</location>
                                     </source>
                                 </sources>
                             </mapping>
@@ -186,7 +208,7 @@
                                 <groupname>root</groupname>
                                 <sources>
                                     <source>
-                                        <location>${project.parent.basedir}/src/main/resources/init.d</location>
+                                        <location>${project.build.directory}/rpm-resources/init.d</location>
                                     </source>
                                 </sources>
                             </mapping>
