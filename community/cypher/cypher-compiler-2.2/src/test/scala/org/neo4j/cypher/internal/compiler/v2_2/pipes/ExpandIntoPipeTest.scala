@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.mockito.Matchers
-import org.mockito.Matchers._
+import org.mockito.Matchers.{eq => mockEq, _}
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -46,7 +45,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
 
   test("should support expand between two nodes with a relationship") {
     // given
-    mockRelationships(relationship1)
+    setUpRelMockingInQuertyContext(relationship1)
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> endNode1))
 
@@ -60,12 +59,14 @@ class ExpandIntoPipeTest extends CypherFunSuite {
 
   test("should return no relationships for types that have not been defined yet") {
     // given
-    when(query.getRelationshipsForIds(any(), any(), Matchers.eq(Some(Seq.empty)))).thenAnswer(new Answer[Iterator[Relationship]]{
-      override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = Iterator.empty
-    })
-    when(query.getRelationshipsForIds(any(), any(), Matchers.eq(Some(Seq(1,2))))).thenAnswer(new Answer[Iterator[Relationship]]{
-      override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = Iterator(relationship1, relationship2)
-    })
+    when(query.getRelationshipsForIds(any(), any(), mockEq(Some(Seq.empty)))).thenAnswer(
+      new Answer[Iterator[Relationship]] {
+        override def answer(invocationOnMock: InvocationOnMock) = Iterator.empty
+      })
+    when(query.getRelationshipsForIds(any(), any(), mockEq(Some(Seq(1, 2))))).thenAnswer(
+      new Answer[Iterator[Relationship]] {
+        override def answer(invocationOnMock: InvocationOnMock) = Iterator(relationship1, relationship2)
+      })
     when(query.nodeGetDegree(any(), any(), any())).thenReturn(1)
 
     val pipe = ExpandIntoPipe(newMockedPipe("a", row("a"-> startNode, "b" -> endNode1)), "a", "r", "b", Direction.OUTGOING, LazyTypes(Seq("FOO", "BAR")))()
@@ -87,7 +88,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
 
   test("should support expand between two nodes with multiple relationships") {
     // given
-    mockRelationships(relationship1, relationship2, relationship3)
+    setUpRelMockingInQuertyContext(relationship1, relationship2, relationship3)
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> endNode1),
       row("a" -> startNode, "b" -> endNode2)
@@ -104,7 +105,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
 
   test("should support expand between two nodes with multiple relationships and self loops") {
     // given
-    mockRelationships(relationship1, selfRelationship, relationship3)
+    setUpRelMockingInQuertyContext(relationship1, selfRelationship, relationship3)
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> endNode1),
       row("a" -> startNode, "b" -> startNode)
@@ -121,7 +122,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
 
   test("given empty input, should return empty output") {
     // given
-    mockRelationships()
+    setUpRelMockingInQuertyContext()
     val left = newMockedPipe("a", row("a" -> null, "b" -> null))
 
     // when
@@ -133,7 +134,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
 
   test("given a null start point, returns an empty iterator") {
     // given
-    mockRelationships(relationship1)
+    setUpRelMockingInQuertyContext(relationship1)
     val left = newMockedPipe("a",
       row("a" -> null, "b" -> endNode1))
 
@@ -146,7 +147,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
 
   test("given a null end point, returns an empty iterator") {
     // given
-    mockRelationships(relationship1)
+    setUpRelMockingInQuertyContext(relationship1)
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> null))
 
@@ -157,13 +158,81 @@ class ExpandIntoPipeTest extends CypherFunSuite {
     result shouldBe empty
   }
 
+  test("issue 4692 should respect relationship direction") {
+    // Given
+    val node0 = newMockedNode(0)
+    val node1 = newMockedNode(1)
+    val rel0 = newMockedRelationship(0, node0, node1)
+    val rel1 = newMockedRelationship(1, node1, node0)
+
+    setUpRelMockingInQuertyContext(rel0, rel1)
+
+    val source = newMockedPipe(
+      Map("n" -> CTNode, "r2" -> CTRelationship, "k" -> CTNode),
+      row("n" -> node1, "r2" -> rel1, "k" -> node0),
+      row("n" -> node0, "r2" -> rel0, "k" -> node1))
+
+    // When
+    val results = ExpandIntoPipe(source, "n", "r1", "k", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+
+    // Then
+    results should contain theSameElementsAs List(
+      Map("n" -> node1, "k" -> node0, "r1" -> rel1, "r2" -> rel1),
+      Map("n" -> node0, "k" -> node1, "r1" -> rel0, "r2" -> rel0))
+  }
+
+  test("should work for bidirectional relationships") {
+    // Given
+    val node0 = newMockedNode(0)
+    val node1 = newMockedNode(1)
+    val rel0 = newMockedRelationship(0, node0, node1)
+    val rel1 = newMockedRelationship(1, node1, node0)
+
+    setUpRelMockingInQuertyContext(rel0, rel1)
+
+    val source = newMockedPipe(
+      Map("n" -> CTNode, "r2" -> CTRelationship, "k" -> CTNode),
+      row("n" -> node1, "r2" -> rel1, "k" -> node0),
+      row("n" -> node0, "r2" -> rel0, "k" -> node1))
+
+    // When
+    val results = ExpandIntoPipe(source, "n", "r1", "k", Direction.BOTH, LazyTypes.empty)().createResults(queryState).toList
+
+    // Then
+    results should contain theSameElementsAs List(
+      Map("n" -> node1, "k" -> node0, "r1" -> rel0, "r2" -> rel1),
+      Map("n" -> node1, "k" -> node0, "r1" -> rel1, "r2" -> rel1),
+      Map("n" -> node0, "k" -> node1, "r1" -> rel1, "r2" -> rel0),
+      Map("n" -> node0, "k" -> node1, "r1" -> rel0, "r2" -> rel0))
+
+    // relationships should be cached after the first call
+    verify(query, times(1)).getRelationshipsForIds(any(), mockEq(Direction.BOTH), mockEq(None))
+  }
+
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
 
-  private def mockRelationships(rels: Relationship*) {
-    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
-      def answer(invocation: InvocationOnMock): Iterator[Relationship] = rels.iterator
-    })
-    when(query.nodeGetDegree(any(), any())).thenReturn(rels.size)
+  private def setUpRelMockingInQuertyContext(rels: Relationship*) {
+    val relsByStartNode = rels.groupBy(_.getStartNode)
+    val relsByEndNode = rels.groupBy(_.getEndNode)
+    val relsByNode = (relsByStartNode.keySet ++ relsByEndNode.keySet).map {
+      n => n -> (relsByStartNode.getOrElse(n, Seq.empty) ++ relsByEndNode.getOrElse(n, Seq.empty))
+    }.toMap
+
+    setUpRelLookupMocking(Direction.OUTGOING, relsByStartNode)
+    setUpRelLookupMocking(Direction.INCOMING, relsByEndNode)
+    setUpRelLookupMocking(Direction.BOTH, relsByNode)
+  }
+
+  private def setUpRelLookupMocking(direction: Direction, relsByNode: Map[Node, Seq[Relationship]]) {
+    relsByNode.foreach {
+      case (node, rels) =>
+        when(query.getRelationshipsForIds(node, direction, None)).thenAnswer(
+          new Answer[Iterator[Relationship]] {
+            def answer(invocation: InvocationOnMock) = rels.iterator
+          })
+
+        when(query.nodeGetDegree(node.getId, direction)).thenReturn(rels.size)
+    }
   }
 
   private def newMockedNode(id: Int) = {
@@ -183,11 +252,16 @@ class ExpandIntoPipeTest extends CypherFunSuite {
   }
 
   private def newMockedPipe(node: String, rows: ExecutionContext*): Pipe = {
+    newMockedPipe(Map(node -> CTNode), rows: _*)
+  }
+
+  private def newMockedPipe(symbols: Map[String, CypherType], rows: ExecutionContext*): Pipe = {
     val pipe = mock[Pipe]
+
     when(pipe.sources).thenReturn(Seq.empty)
-    when(pipe.symbols).thenReturn(SymbolTable(Map(node -> CTNode)))
+    when(pipe.symbols).thenReturn(SymbolTable(symbols))
     when(pipe.createResults(any())).thenAnswer(new Answer[Iterator[ExecutionContext]] {
-      def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = rows.iterator
+      def answer(invocation: InvocationOnMock) = rows.iterator
     })
 
     pipe
