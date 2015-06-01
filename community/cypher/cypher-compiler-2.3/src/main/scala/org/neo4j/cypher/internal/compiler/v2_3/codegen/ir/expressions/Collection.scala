@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
 case class Collection(instructions: Seq[CodeGenExpression]) extends CodeGenExpression {
 
-  override def init[E](generator: MethodStructure[E]) = instructions.foreach { instruction =>
-    instruction.init(generator)
-  }
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    instructions.foreach { instruction =>
+      instruction.init(generator)
+    }
 
-  override def generateExpression[E](structure: MethodStructure[E]) = structure.asList(instructions.map(_.generateExpression(structure)))
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
+    structure.asList(instructions.map(_.generateExpression(structure)))
 }

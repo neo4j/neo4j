@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
 case class ScanAllNodes(id: String) extends LoopDataGenerator {
 
-  override def init[E](generator: MethodStructure[E]) = {}
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
   override def produceIterator[E](iterVar: String, generator: MethodStructure[E]) = {
     generator.allNodesScan(iterVar)

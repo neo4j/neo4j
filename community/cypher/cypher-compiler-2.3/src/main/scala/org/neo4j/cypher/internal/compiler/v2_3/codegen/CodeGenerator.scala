@@ -39,7 +39,7 @@ import scala.collection.{Map, immutable, mutable}
 
 object CodeGenerator {
 
-  def generateClass(instructions: Seq[Instruction]) = {
+  def generateClass(instructions: Seq[Instruction])(implicit context: CodeGenContext) = {
     val columns = instructions.flatMap(_.allColumns)
     val opIds = instructions.flatMap(_.allOperatorIds)
     CodeStructure.__TODO__MOVE_IMPLEMENTATION.generateQuery(packageName, Namer.newClassName(),
@@ -51,11 +51,9 @@ object CodeGenerator {
 
   private val packageName = "org.neo4j.cypher.internal.compiler.v2_3.generated"
 
-  private def createInstructions(plan: LogicalPlan, semanticTable: SemanticTable,
-                                 idMap: immutable.Map[LogicalPlan, Id]): (Seq[Instruction], mutable.Map[Id, String]) = {
+  private def createInstructions(plan: LogicalPlan)(implicit context: CodeGenContext): (Seq[Instruction], mutable.Map[Id, String]) = {
     import LogicalPlanConverter._
 
-    val context = new CodeGenContext(semanticTable, idMap)
     val (_, result) = plan.asCodeGenPlan.produce(context)
     (result, context.operatorIds)
   }
@@ -72,7 +70,8 @@ class CodeGenerator {
     plan match {
       case res: ProduceResult =>
         val idMap = LogicalPlanIdentificationBuilder(plan)
-        val (instructions, operatorMap) = createInstructions(plan, semanticTable, idMap)
+        implicit val context = new CodeGenContext(semanticTable, idMap)
+        val (instructions, operatorMap) = createInstructions(plan)
         val clazz = generateClass(instructions)
         operatorMap.foreach {
           case (id, name) => setStaticField(clazz, name, id)

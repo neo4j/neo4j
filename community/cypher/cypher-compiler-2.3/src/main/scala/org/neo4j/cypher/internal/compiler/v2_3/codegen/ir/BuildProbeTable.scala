@@ -24,29 +24,31 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 sealed trait BuildProbeTable extends Instruction {
 
-  override def init[E](generator: MethodStructure[E]) = generator.allocateProbeTable(name, tableType)
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    generator.allocateProbeTable(name, tableType)
+
+  protected val name: String
 
   def joinData: JoinData
+  def tableType: JoinTableType
 
-  protected val name:String
-  val tableType: JoinTableType
   override protected def children = Seq.empty
 }
 
 object BuildProbeTable {
 
-  def apply(id: String, name: String, node: String, valueSymbols: Map[String, String],
-            namer: Namer): BuildProbeTable = {
-    if (valueSymbols.isEmpty) BuildCountingProbeTable(id, name, node, namer)
-    else BuildRecordingProbeTable(id, name, node, valueSymbols, namer)
+  def apply(id: String, name: String, node: String, valueSymbols: Map[String, String])(implicit context: CodeGenContext): BuildProbeTable = {
+    if (valueSymbols.isEmpty) BuildCountingProbeTable(id, name, node)
+    else BuildRecordingProbeTable(id, name, node, valueSymbols)
   }
 }
 
-case class BuildRecordingProbeTable(id:String, name: String, node: String, valueSymbols: Map[String, String], namer: Namer)
+case class BuildRecordingProbeTable(id:String, name: String, node: String, valueSymbols: Map[String, String])
+                                   (implicit context: CodeGenContext)
   extends BuildProbeTable {
 
-  override def body[E](generator: MethodStructure[E]): Unit = {
-    val value = generator.newTableValue(namer.newVarName(), valueTypeStructure)
+  override def body[E](generator: MethodStructure[E])(implicit ignored: CodeGenContext): Unit = {
+    val value = generator.newTableValue(context.namer.newVarName(), valueTypeStructure)
     valueSymbols.foreach {
       case (fieldName, localName) => generator.putField(valueTypeStructure, value, CTNode, fieldName, localName)
     }
@@ -54,7 +56,7 @@ case class BuildRecordingProbeTable(id:String, name: String, node: String, value
   }
 
   private val valueTypeField2VarName = valueSymbols.map {
-    case (fieldName, symbol) => fieldName -> namer.newVarName()
+    case (fieldName, symbol) => fieldName -> context.namer.newVarName()
   }
 
   private val valueTypeStructure: Map[String, CypherType] = valueSymbols.mapValues {
@@ -71,9 +73,10 @@ case class BuildRecordingProbeTable(id:String, name: String, node: String, value
 
 }
 
-case class BuildCountingProbeTable(id: String, name: String, node: String, namer: Namer) extends BuildProbeTable {
+case class BuildCountingProbeTable(id: String, name: String, node: String) extends BuildProbeTable {
 
-  override def body[E](generator: MethodStructure[E]) = generator.updateProbeTableCount(name, node)
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    generator.updateProbeTableCount(name, node)
 
   override protected def operatorId = Some(id)
 
@@ -84,4 +87,4 @@ case class BuildCountingProbeTable(id: String, name: String, node: String, namer
   }
 }
 
-case class JoinData(vars: Map[String, String], tableVar:String, tableType:JoinTableType, id:String)
+case class JoinData(vars: Map[String, String], tableVar: String, tableType: JoinTableType, id: String)

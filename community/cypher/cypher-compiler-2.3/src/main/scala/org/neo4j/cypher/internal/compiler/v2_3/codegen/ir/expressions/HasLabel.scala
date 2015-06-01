@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{MethodStructure, Namer}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
-case class HasLabel(opName: String, nodeVariable: String, labelVariable: String, labelName: String, namer: Namer)
+case class HasLabel(opName: String, nodeVariable: String, labelVariable: String, labelName: String)
   extends CodeGenExpression {
-  def init[E](generator: MethodStructure[E]) = generator.lookupLabelId(labelVariable, labelName)
+  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    generator.lookupLabelId(labelVariable, labelName)
 
-  def generateExpression[E](structure: MethodStructure[E]) = {
-    val localName = namer.newVarName()
+  def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+    val localName = context.namer.newVarName()
     structure.declarePredicate(localName)
 
     structure.trace(opName) { inner =>

@@ -102,7 +102,7 @@ object LogicalPlanConverter {
         val symbols = notNodeSymbols.map(s => s -> context.getVariable(s)).toMap
 
         val opName = context.registerOperator(logicalPlan)
-        val probeTable = BuildProbeTable(opName, probeTableName, nodeId, symbols, context.namer)
+        val probeTable = BuildProbeTable(opName, probeTableName, nodeId, symbols)(context)
         val probeTableSymbol = JoinTableMethod(probeTableName, probeTable.tableType)
 
         context.addProbeTable(this, probeTable.joinData)
@@ -254,11 +254,11 @@ object ExpressionConverter {
 
       case Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
         val token = propKey.id(context.semanticTable).map(_.id)
-        NodeProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
+        NodeProperty(opName, token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
       case Property(rel@Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
         val token = propKey.id(context.semanticTable).map(_.id)
-        RelProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
+        RelProperty(opName, token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
       case ast.Parameter(name) => expressions.Parameter(name)
 
@@ -292,7 +292,7 @@ object ExpressionConverter {
       case HasLabels(Identifier(name), label :: Nil) =>
         val labelIdVariable = context.namer.newVarName()
         val nodeVariable = context.getVariable(name)
-        HasLabel(opName, nodeVariable, labelIdVariable, label.name, context.namer)
+        HasLabel(opName, nodeVariable, labelIdVariable, label.name)
 
       case other => throw new CantCompileQueryException(s"Expression of $other not yet supported")
     }

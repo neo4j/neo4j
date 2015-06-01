@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
 // Generates the code that moves data into local variables from the iterator being consumed
 // TODO: these aren't really Instruction objects, should not extend it
 trait LoopDataGenerator extends Instruction {
 
-  def init[E](generator: MethodStructure[E]): Unit
+  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 
   def produceNext[E](nextVar: String, iterVar: String, generator: MethodStructure[E]): Unit = ???
 
@@ -35,5 +35,5 @@ trait LoopDataGenerator extends Instruction {
 
   override protected def operatorId = Some(id)
 
-  override def body[E](generator: MethodStructure[E]): Unit = ??? // This should not be an Instruction
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = ???
 }

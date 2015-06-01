@@ -27,7 +27,6 @@ import org.neo4j.codegen.ExpressionTemplate._
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen.TypeReference.{extending, parameterizedType, typeParameter}
 import org.neo4j.codegen._
-import org.neo4j.codegen.source.SourceCode
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.compiler.v2_3._
@@ -56,7 +55,7 @@ trait CodeStructure[T] {
 sealed trait JoinTableType
 
 case object LongToCountTable extends JoinTableType
-case class LongToListTable(structure:Map[String,CypherType], localMap:Map[String,String]) extends JoinTableType
+case class LongToListTable(structure: Map[String, CypherType], localMap: Map[String, String]) extends JoinTableType
 
 trait MethodStructure[E] {
   def declarePredicate(name: String): Unit

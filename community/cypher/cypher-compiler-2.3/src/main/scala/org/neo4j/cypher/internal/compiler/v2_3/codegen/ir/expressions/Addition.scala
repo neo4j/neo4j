@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
 case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression {
 
-  override def init[E](generator: MethodStructure[E]) = {
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     lhs.init(generator)
     rhs.init(generator)
   }
 
-  override def generateExpression[E](structure: MethodStructure[E]) =
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
     structure.add(lhs.generateExpression(structure), rhs.generateExpression(structure))
 }

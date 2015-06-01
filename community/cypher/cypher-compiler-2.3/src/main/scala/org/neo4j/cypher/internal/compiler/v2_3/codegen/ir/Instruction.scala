@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
 trait Instruction {
-  def init[E](generator: MethodStructure[E]): Unit = children.foreach(_.init(generator))
-  def body[E](generator: MethodStructure[E]): Unit
+  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = children.foreach(_.init(generator))
+  def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 
   protected def children: Seq[Instruction]
 
@@ -44,7 +44,7 @@ trait Instruction {
 object Instruction {
 
   val empty = new Instruction {
-    override def body[E](generator: MethodStructure[E]) = {}
+    override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
     override protected def children = Seq.empty
 

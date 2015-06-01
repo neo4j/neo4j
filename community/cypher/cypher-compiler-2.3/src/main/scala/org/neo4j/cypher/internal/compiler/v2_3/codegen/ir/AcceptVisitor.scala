@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
 
 case class AcceptVisitor(id: String, columns: Map[String, CodeGenExpression]) extends Instruction {
 
   override protected def columnNames = columns.keys
 
-  override def body[E](generator: MethodStructure[E]) = generator.trace(id) { body =>
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = generator.trace(id) { body =>
     columns.foreach { case (k, v) =>
       body.setInRow(k, v.generateExpression(body))
     }

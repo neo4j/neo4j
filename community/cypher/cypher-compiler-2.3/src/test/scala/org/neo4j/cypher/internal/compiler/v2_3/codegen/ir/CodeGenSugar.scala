@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenerator, QueryExecutionTracer, setStaticField}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, CodeGenerator, QueryExecutionTracer, setStaticField}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionResult, GeneratedQueryExecution, CompiledPlan, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription}
@@ -89,7 +89,7 @@ trait CodeGenSugar extends MockitoSugar {
   }
 
   def compile(instructions: Instruction*): Class[GeneratedQueryExecution] =
-    CodeGenerator.generateClass(instructions.toSeq)
+    CodeGenerator.generateClass(instructions.toSeq)(mock[CodeGenContext])
 
   def newInstance(clazz: Class[GeneratedQueryExecution],
                   taskCloser: TaskCloser = new TaskCloser,

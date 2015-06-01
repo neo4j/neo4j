@@ -19,16 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
 case class TracingInstruction(id: String, instruction: Instruction) extends Instruction {
 
-  override def init[E](generator: MethodStructure[E]) = {}
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  override def body[E](generator: MethodStructure[E]) = generator.trace(operatorId.get) { body =>
-    body.incrementRows()
-    instruction.body(body)
-  }
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    generator.trace(operatorId.get) { body =>
+      body.incrementRows()
+      instruction.body(body)
+    }
 
   override def children = Seq(instruction)
 

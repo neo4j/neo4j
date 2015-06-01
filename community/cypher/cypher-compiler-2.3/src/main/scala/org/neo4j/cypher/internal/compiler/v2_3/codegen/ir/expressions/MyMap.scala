@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
 //Named MyMap to avoid conflict with collection.Map which makes everything weird
 case class MyMap(instructions: Map[String, CodeGenExpression]) extends CodeGenExpression {
 
-  override def init[E](generator: MethodStructure[E]) = instructions.values.foreach { instruction =>
-    instruction.init(generator)
-  }
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    instructions.values.foreach { instruction =>
+      instruction.init(generator)
+    }
 
-  override def generateExpression[E](structure: MethodStructure[E]) =
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
     structure.asMap(instructions.mapValues(_.generateExpression(structure)))
 }

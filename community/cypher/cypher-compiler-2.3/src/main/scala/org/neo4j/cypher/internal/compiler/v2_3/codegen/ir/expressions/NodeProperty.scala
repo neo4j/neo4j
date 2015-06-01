@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{MethodStructure, Namer}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
-case class NodeProperty(id: String, token: Option[Int], propName: String, nodeIdVar: String, namer: Namer)
+case class NodeProperty(id: String, token: Option[Int], propName: String, nodeIdVar: String, propKeyVar: String)
   extends CodeGenExpression {
 
-  private val propKeyVar = token.map(_.toString).getOrElse(namer.newVarName())
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    if (token.isEmpty) generator.lookupPropertyKey(propName, propKeyVar)
 
-  override def init[E](generator: MethodStructure[E]) = if (token.isEmpty) generator.lookupPropertyKey(propName, propKeyVar)
-
-  override def generateExpression[E](structure: MethodStructure[E]): E = {
-    val localName = namer.newVarName()
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E = {
+    val localName = context.namer.newVarName()
     structure.declareProperty(localName)
     structure.trace(id) { body =>
       if (token.isEmpty)
