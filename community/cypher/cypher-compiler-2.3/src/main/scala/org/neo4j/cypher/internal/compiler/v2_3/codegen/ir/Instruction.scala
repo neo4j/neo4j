@@ -47,5 +47,6 @@ object Instruction {
     override def body[E](generator: MethodStructure[E]) = {}
 
     override protected def children = Seq.empty
+
   }
 }

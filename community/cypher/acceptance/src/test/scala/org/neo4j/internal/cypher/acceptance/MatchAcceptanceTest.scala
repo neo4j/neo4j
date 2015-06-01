@@ -931,7 +931,7 @@ return b
     relate(a, c)
 
     // when asked for a cartesian product of the same match twice
-    val result = executeWithAllPlanners("match a-->b match c-->d return a,b,c,d")
+    val result = executeWithAllPlannersAndRuntimes("match a-->b match c-->d return a,b,c,d")
 
     // then we should find 2 x 2 = 4 result matches
 

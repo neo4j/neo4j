@@ -36,6 +36,7 @@ object LogicalPlanConverter {
       case p: ProduceResult => p
       case p: Expand => p
       case p: NodeHashJoin => p
+      case p: CartesianProduct => p
       case p: Projection => p
 
       case _ =>
@@ -163,6 +164,29 @@ object LogicalPlanConverter {
       val opName = context.registerOperator(logicalPlan)
       val expand = ExpandC(opName, fromNodeVar, relVar, logicalPlan.dir, typeVar2TypeName, toNodeVar, Instruction.empty)
       (methodHandle, WhileLoop(relVar, expand, action))
+    }
+  }
+
+  private implicit class CartestianProductGen(val logicalPlan: CartesianProduct) extends CodeGenPlan {
+
+    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
+      context.pushParent(this)
+      logicalPlan.lhs.get.asCodeGenPlan.produce(context)
+    }
+
+    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+      if (child.logicalPlan eq logicalPlan.lhs.get) {
+        context.pushParent(this)
+        val (m, actions) = logicalPlan.rhs.get.asCodeGenPlan.produce(context)
+        (m, actions.headOption.getOrElse(throw new ThisShouldNotHappenError("pontus", "Illegal call chain")))
+      } else if (child.logicalPlan eq logicalPlan.rhs.get) {
+        val opName = context.registerOperator(logicalPlan)
+        val (m, instruction) = context.popParent().consume(context, this)
+        (m, TracingInstruction(opName, instruction))
+      }
+      else {
+        throw new ThisShouldNotHappenError("pontus", s"Unexpected consume call by $child")
+      }
     }
   }
 
