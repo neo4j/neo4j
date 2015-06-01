@@ -68,12 +68,6 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
     }
 
     @Override
-    protected Configurator createConfigurator( Log log )
-    {
-        return new ConfigurationBuilder.ConfigurationBuilderWrappingConfigurator( createConfigurationBuilder( log ) ) ;
-    }
-
-    @Override
     protected ConfigurationBuilder createConfigurationBuilder( Log log )
     {
         return configurator;

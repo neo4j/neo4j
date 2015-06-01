@@ -26,15 +26,18 @@ import java.util.List;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Internal;
 
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.DURATION;
+import static org.neo4j.helpers.Settings.EMPTY;
 import static org.neo4j.helpers.Settings.FALSE;
+import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
 import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.NO_DEFAULT;
-import static org.neo4j.helpers.Settings.EMPTY;
 import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.STRING_LIST;
@@ -50,45 +53,43 @@ public interface ServerSettings
 {
 
     @Description( "Maximum request header size" )
-    public static final Setting<Integer> maximum_request_header_size =
+    Setting<Integer> maximum_request_header_size =
             setting( "org.neo4j.server.webserver.max.request.header", INTEGER, "20480" );
 
     @Description( "Maximum response header size" )
-    public static final Setting<Integer> maximum_response_header_size =
+    Setting<Integer> maximum_response_header_size =
             setting( "org.neo4j.server.webserver.max.response.header", INTEGER, "20480" );
 
     @Description( "Comma-seperated list of custom security rules for Neo4j to use." )
-    public static final Setting<List<String>> security_rules = setting( "org.neo4j.server.rest.security_rules",
+    Setting<List<String>> security_rules = setting( "org.neo4j.server.rest.security_rules",
             STRING_LIST, EMPTY );
 
     // webserver configuration
     @Description( "Http port for the Neo4j REST API." )
-    public static final Setting<Integer> webserver_port = setting( "org.neo4j.server.webserver.port", INTEGER, "7474",
+    Setting<Integer> webserver_port = setting( "org.neo4j.server.webserver.port", INTEGER, "7474",
             port );
 
     @Description( "Hostname for the Neo4j REST API" )
-    public static final Setting<String> webserver_address = setting( "org.neo4j.server.webserver.address", STRING,
+    Setting<String> webserver_address = setting( "org.neo4j.server.webserver.address", STRING,
             "localhost", illegalValueMessage( "Must be a valid hostname", matches( ANY ) ) );
 
     @Description( "Number of Neo4j worker threads." )
-    public static final Setting<Integer> webserver_max_threads = setting( "org.neo4j.server.webserver.maxthreads",
+    Setting<Integer> webserver_max_threads = setting( "org.neo4j.server.webserver.maxthreads",
             INTEGER, NO_DEFAULT, min( 1 ) );
 
     @Description( "If execution time limiting is enabled in the database, this configures the maximum request execution time." )
-    public static final Setting<Long> webserver_limit_execution_time = setting(
+    Setting<Long> webserver_limit_execution_time = setting(
             "org.neo4j.server.webserver.limit.executiontime", DURATION, NO_DEFAULT );
 
-    // other settings
     @Description( "Path to the statistics database file." )
-    public static final Setting<File> rrdb_location = setting( "org.neo4j.server.webadmin.rrdb.location", PATH,
-            NO_DEFAULT );
+    Setting<File> rrdb_location = setting( "org.neo4j.server.webadmin.rrdb.location", PATH, NO_DEFAULT );
 
-    @Description( "Console engines for the legacy webadmin administr" )
-    public static final Setting<List<String>> management_console_engines = setting(
+    @Description( "Console engines for the legacy webadmin administration" )
+    Setting<List<String>> management_console_engines = setting(
             "org.neo4j.server.manage.console_engines", STRING_LIST, "SHELL" );
 
     @Description( "Comma-separated list of <classname>=<mount point> for unmanaged extensions." )
-    public static final Setting<List<ThirdPartyJaxRsPackage>> third_party_packages = setting( "org.neo4j.server.thirdparty_jaxrs_classes",
+    Setting<List<ThirdPartyJaxRsPackage>> third_party_packages = setting( "org.neo4j.server.thirdparty_jaxrs_classes",
             new Function<String, List<ThirdPartyJaxRsPackage>>()
             {
                 @Override
@@ -128,41 +129,49 @@ public interface ServerSettings
             },
             EMPTY );
 
-    // security configuration
     @Description( "Enable HTTPS for the REST API." )
-    public static final Setting<Boolean> webserver_https_enabled = setting( "org.neo4j.server.webserver.https.enabled",
-            BOOLEAN, FALSE );
+    Setting<Boolean> webserver_https_enabled = setting( "org.neo4j.server.webserver.https.enabled", BOOLEAN, FALSE );
 
     @Description( "HTTPS port for the REST API." )
-    public static final Setting<Integer> webserver_https_port = setting( "org.neo4j.server.webserver.https.port",
-            INTEGER, "7473", port );
+    Setting<Integer> webserver_https_port = setting( "org.neo4j.server.webserver.https.port", INTEGER, "7473", port );
 
     @Description( "Path to the keystore used to store SSL certificates and keys while the server is running." )
-    public static final Setting<File> webserver_keystore_path = setting(
+    Setting<File> webserver_keystore_path = setting(
             "org.neo4j.server.webserver.https.keystore.location", PATH, "neo4j-home/ssl/keystore" );
 
     @Description( "Path to the SSL certificate used for HTTPS connections." )
-    public static final Setting<File> webserver_https_cert_path = setting(
+    Setting<File> webserver_https_cert_path = setting(
             "org.neo4j.server.webserver.https.cert.location", PATH, "neo4j-home/ssl/snakeoil.cert" );
 
     @Description( "Path to the SSL key used for HTTPS connections." )
-    public static final Setting<File> webserver_https_key_path = setting(
+    Setting<File> webserver_https_key_path = setting(
             "org.neo4j.server.webserver.https.key.location", PATH, "neo4j-home/ssl/snakeoil.key" );
 
     @Description( "Enable HTTP request logging." )
-    public static final Setting<Boolean> http_logging_enabled = setting( "org.neo4j.server.http.log.enabled", BOOLEAN, FALSE );
+    Setting<Boolean> http_logging_enabled = setting( "org.neo4j.server.http.log.enabled", BOOLEAN, FALSE );
 
     @Description( "Enable HTTP content logging." )
-    public static final Setting<Boolean> http_content_logging_enabled = setting( "org.neo4j.server.http.unsafe.content_log.enabled", BOOLEAN, FALSE );
+    Setting<Boolean> http_content_logging_enabled = setting( "org.neo4j.server.http.unsafe.content_log.enabled",
+            BOOLEAN, FALSE );
 
     @Description( "Path to a logback configuration file for HTTP request logging." )
-    public static final Setting<File> http_log_config_File = setting( "org.neo4j.server.http.log.config", PATH,
-            NO_DEFAULT );
+    Setting<File> http_log_config_File = setting( "org.neo4j.server.http.log.config", PATH, NO_DEFAULT );
 
     @Description( "Timeout for idle transactions." )
-    public static final Setting<Long> transaction_timeout = setting( "org.neo4j.server.transaction.timeout", DURATION, "60s" );
+    Setting<Long> transaction_timeout = setting( "org.neo4j.server.transaction.timeout", DURATION, "60s" );
 
     @Description( "Enable auth requirement to access Neo4j." )
-    public static final Setting<Boolean> auth_enabled = setting("dbms.security.auth_enabled",
-            BOOLEAN, TRUE);
+    Setting<Boolean> auth_enabled = setting("dbms.security.auth_enabled", BOOLEAN, TRUE);
+
+    @Internal
+    @Description("Enable Neo4j Data Protocol")
+    Setting<Boolean> ndp_enabled = setting( "xx.ndp.enabled", BOOLEAN, "false" );
+
+    @Internal
+    @Description("Host and port for the Neo4j Data Protocol")
+    Setting<HostnamePort> ndp_socket_address = setting( "dbms.ndp.address", HOSTNAME_PORT, "localhost:7687" );
+
+    @Internal
+    @Description("Host and port for the Neo4j Data Protocol Websocket")
+    Setting<HostnamePort> ndp_ws_address = setting( "dbms.ndp.ws.address", HOSTNAME_PORT, "localhost:7688" );
 }
