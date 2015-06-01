@@ -37,6 +37,7 @@ public class ExactTxData extends TxData
 {
     private Map<String, Map<Object, Set<Object>>> data;
     private boolean hasOrphans;
+    private boolean hasRelationshipIds;
 
     ExactTxData( LuceneIndex index )
     {
@@ -47,6 +48,10 @@ public class ExactTxData extends TxData
     void add( TxDataHolder holder, Object entityId, String key, Object value )
     {
         idCollection( key, value, true ).add( entityId );
+        if ( !hasRelationshipIds && entityId instanceof RelationshipId )
+        {
+            hasRelationshipIds = true;
+        }
     }
 
     private Set<Object> idCollection( String key, Object value, boolean create )
@@ -143,7 +148,7 @@ public class ExactTxData extends TxData
         {
             return;
         }
-        
+
         if ( key == null || value == null )
         {
             TxData fullData = toFullTxData();
@@ -171,7 +176,7 @@ public class ExactTxData extends TxData
         }
         return toLongs( ids );
     }
-    
+
     @Override
     Collection<Long> getOrphans( String key )
     {
@@ -192,7 +197,7 @@ public class ExactTxData extends TxData
     {
         if (ids.isEmpty()) return Collections.emptySet();
 
-        if ( ids.iterator().next() instanceof Long )
+        if ( !hasRelationshipIds )
         {
             return (Collection) ids;
         }
@@ -206,7 +211,7 @@ public class ExactTxData extends TxData
             return longs;
         }
     }
-    
+
     @Override
     IndexSearcher asSearcher( TxDataHolder holder, QueryContext context )
     {

@@ -171,21 +171,24 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
 
                     @Override
                     void remove( DataWriteOperations operations, String name, long id, String key, Object value )
-                            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException
+                            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException,
+                            EntityNotFoundException
                     {
                         operations.relationshipRemoveFromLegacyIndex( name, id, key, value );
                     }
 
                     @Override
                     void remove( DataWriteOperations operations, String name, long id, String key )
-                            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException
+                            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException,
+                            EntityNotFoundException
                     {
                         operations.relationshipRemoveFromLegacyIndex( name, id, key );
                     }
 
                     @Override
                     void remove( DataWriteOperations operations, String name, long id )
-                            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException
+                            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException,
+                            EntityNotFoundException
                     {
                         operations.relationshipRemoveFromLegacyIndex( name, id );
                     }
@@ -223,13 +226,16 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
                 LegacyIndexNotFoundKernelException;
 
         abstract void remove( DataWriteOperations operations, String name, long id, String key, Object value )
-                throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException;
+                throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException,
+                EntityNotFoundException;
 
         abstract void remove( DataWriteOperations operations, String name, long id, String key )
-                throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException;
+                throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException,
+                EntityNotFoundException;
 
         abstract void remove( DataWriteOperations operations, String name, long id )
-                throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException;
+                throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException,
+                EntityNotFoundException;
 
         abstract void drop( DataWriteOperations operations, String name )
                 throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException;
@@ -321,7 +327,8 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
                         {
                             internalRemove( statement, id );
                         }
-                        catch ( LegacyIndexNotFoundKernelException | InvalidTransactionTypeKernelException ignore )
+                        catch ( LegacyIndexNotFoundKernelException |
+                                InvalidTransactionTypeKernelException | EntityNotFoundException ignore )
                         {
                             // Ignore these failures because we are going to skip the entity anyway
                         }
@@ -411,6 +418,10 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
         }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( entity + " doesn't exist" );
+        }
     }
 
     @Override
@@ -427,6 +438,10 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
         catch ( LegacyIndexNotFoundKernelException e )
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( entity + " doesn't exist" );
         }
     }
 
@@ -445,10 +460,14 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
         }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( entity + " doesn't exist" );
+        }
     }
 
     private void internalRemove( Statement statement, long id )
-            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException
+            throws InvalidTransactionTypeKernelException, LegacyIndexNotFoundKernelException, EntityNotFoundException
     {
         type.remove( statement.dataWriteOperations(), name, id );
     }

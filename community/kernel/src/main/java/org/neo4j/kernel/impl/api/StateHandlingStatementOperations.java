@@ -1391,24 +1391,64 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship,
-            String key, Object value ) throws LegacyIndexNotFoundKernelException
+    public void relationshipRemoveFromLegacyIndex( final KernelStatement statement, final String indexName, long relationship,
+            final String key, final Object value ) throws LegacyIndexNotFoundKernelException, EntityNotFoundException
     {
-        statement.legacyIndexTxState().relationshipChanges( indexName ).remove( relationship, key, value );
+        relationshipVisit( statement, relationship, new RelationshipVisitor<LegacyIndexNotFoundKernelException>()
+        {
+            @Override
+            public void visit( long relId, int type, long startNode, long endNode )
+                    throws LegacyIndexNotFoundKernelException
+            {
+                statement.legacyIndexTxState().relationshipChanges( indexName ).removeRelationship(
+                        relId, key, value, startNode, endNode );
+            }
+        } );
     }
 
     @Override
-    public void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship,
-            String key ) throws LegacyIndexNotFoundKernelException
+    public void relationshipRemoveFromLegacyIndex( final KernelStatement statement, final String indexName, long relationship,
+            final String key ) throws EntityNotFoundException, LegacyIndexNotFoundKernelException
     {
-        statement.legacyIndexTxState().relationshipChanges( indexName ).remove( relationship, key );
+        relationshipVisit( statement, relationship, new RelationshipVisitor<LegacyIndexNotFoundKernelException>()
+        {
+            @Override
+            public void visit( long relId, int type, long startNode, long endNode )
+                    throws LegacyIndexNotFoundKernelException
+            {
+                statement.legacyIndexTxState().relationshipChanges( indexName ).removeRelationship(
+                        relId, key, startNode, endNode );
+            }
+        } );
     }
 
     @Override
-    public void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship )
-            throws LegacyIndexNotFoundKernelException
+    public void relationshipRemoveFromLegacyIndex( final KernelStatement statement, final String indexName, long relationship )
+            throws LegacyIndexNotFoundKernelException, EntityNotFoundException
     {
-        statement.legacyIndexTxState().relationshipChanges( indexName ).remove( relationship );
+        try
+        {
+            relationshipVisit( statement, relationship, new RelationshipVisitor<LegacyIndexNotFoundKernelException>()
+            {
+                @Override
+                public void visit( long relId, int type, long startNode, long endNode )
+                        throws LegacyIndexNotFoundKernelException
+                {
+                    statement.legacyIndexTxState().relationshipChanges( indexName ).removeRelationship(
+                            relId, startNode, endNode );
+                }
+            } );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            // This is a special case which is still OK. This method is called lazily where deleted relationships
+            // that still are referenced by a legacy index will be added for removal in this transaction.
+            // Ideally we'd want to include start/end node too, but we can't since the relationship doesn't exist.
+            // So we do the "normal" remove call on the legacy index transaction changes. The downside is that
+            // Some queries on this transaction state that include start/end nodes might produce invalid results.
+            statement.legacyIndexTxState().relationshipChanges( indexName ).remove( relationship );
+            throw e;
+        }
     }
 
     @Override

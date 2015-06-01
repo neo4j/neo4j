@@ -37,6 +37,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilderTestTools;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -123,6 +124,16 @@ public abstract class DatabaseRule extends ExternalResource
     public Node createNode( Label... labels )
     {
         return getGraphDatabaseAPI().createNode( labels );
+    }
+
+    public Node getNodeById( long id )
+    {
+        return getGraphDatabaseService().getNodeById( id );
+    }
+
+    public IndexManager index()
+    {
+        return getGraphDatabaseService().index();
     }
 
     public Schema schema()

@@ -54,19 +54,19 @@ class LuceneTransactionState implements Closeable
         return data;
     }
 
-    void remove( LuceneIndex index, long entity, String key, Object value )
+    void remove( LuceneIndex index, Object entity, String key, Object value )
     {
         TxDataBoth data = getTxData( index, true );
         insert( entity, key, value, data.removed( true ), data.added( false ) );
     }
 
-    void remove( LuceneIndex index, long entity, String key )
+    void remove( LuceneIndex index, Object entity, String key )
     {
         TxDataBoth data = getTxData( index, true );
         insert( entity, key, null, data.removed( true ), data.added( false ) );
     }
 
-    void remove( LuceneIndex index, long entity )
+    void remove( LuceneIndex index, Object entity )
     {
         TxDataBoth data = getTxData( index, true );
         insert( entity, null, null, data.removed( true ), data.added( false ) );

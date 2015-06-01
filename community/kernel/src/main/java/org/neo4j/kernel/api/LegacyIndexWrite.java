@@ -66,12 +66,13 @@ public interface LegacyIndexWrite
             throws EntityNotFoundException, LegacyIndexNotFoundKernelException;
 
     void relationshipRemoveFromLegacyIndex( String indexName, long relationship, String key, Object value )
-            throws LegacyIndexNotFoundKernelException;
+            throws LegacyIndexNotFoundKernelException, EntityNotFoundException;
 
     void relationshipRemoveFromLegacyIndex( String indexName, long relationship, String key )
-            throws LegacyIndexNotFoundKernelException;
+            throws LegacyIndexNotFoundKernelException, EntityNotFoundException;
 
-    void relationshipRemoveFromLegacyIndex( String indexName, long relationship ) throws LegacyIndexNotFoundKernelException;
+    void relationshipRemoveFromLegacyIndex( String indexName, long relationship )
+            throws LegacyIndexNotFoundKernelException, EntityNotFoundException;
 
     void nodeLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException;
 

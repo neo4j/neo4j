@@ -65,13 +65,13 @@ public interface LegacyIndexWriteOperations
             Object value ) throws EntityNotFoundException, LegacyIndexNotFoundKernelException;
 
     void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship, String key,
-            Object value ) throws LegacyIndexNotFoundKernelException;
+            Object value ) throws LegacyIndexNotFoundKernelException, EntityNotFoundException;
 
     void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship, String key )
-            throws LegacyIndexNotFoundKernelException;
+            throws LegacyIndexNotFoundKernelException, EntityNotFoundException;
 
     void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship )
-            throws LegacyIndexNotFoundKernelException;
+            throws LegacyIndexNotFoundKernelException, EntityNotFoundException;
 
     void nodeLegacyIndexDrop( KernelStatement statement, String indexName ) throws LegacyIndexNotFoundKernelException;
 
