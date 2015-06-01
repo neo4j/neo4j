@@ -78,7 +78,7 @@ angular.module('neo4jApp.services')
 
         _setStats: (@stats) ->
           return unless @stats?
-          if stats.labels_added > 0 or stats.labels_removed > 0
+          if @stats.labels_added > 0 or @stats.labels_removed > 0
             $rootScope.$broadcast 'db:changed:labels', angular.copy(@stats)
 
       promiseResult = (promise) ->
