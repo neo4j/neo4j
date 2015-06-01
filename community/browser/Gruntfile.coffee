@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 "use strict"
-lrSnippet = require("grunt-contrib-livereload/lib/utils").livereloadSnippet
+
 mountFolder = (connect, dir) ->
   connect.static require("path").resolve(dir)
 proxySnippet = require('grunt-connect-proxy/lib/utils').proxyRequest;
@@ -46,11 +46,6 @@ module.exports = (grunt) ->
       contents = grunt.file.read(f)
       grunt.file.write f, contents.replace(data.find, data.replace)
 
-  grunt.loadNpmTasks 'grunt-contrib-stylus'
-
-  # load all grunt tasks
-  require("matchdep").filterDev("grunt-*").forEach grunt.loadNpmTasks
-
   # configurable paths
   yeomanConfig =
     app: "app"
@@ -59,7 +54,14 @@ module.exports = (grunt) ->
 
   try
     yeomanConfig.app = require("./component.json").appPath or yeomanConfig.app
+
+
+
+  #Start grunt config
   grunt.initConfig
+
+    yeoman: yeomanConfig
+
     append:
       coffee:
         header: "copyright/copyright.coffee"
@@ -67,24 +69,20 @@ module.exports = (grunt) ->
           "<%= yeoman.app %>/scripts/{,*/}*.coffee"
         ]
 
-    yeoman: yeomanConfig
     watch:
       coffee:
         files: ["<%= yeoman.app %>/scripts/{,*/}*.coffee", "<%= yeoman.lib %>/visualization/**/*.coffee"]
         tasks: ["coffee:dist", "coffee:visualization"]
-
       coffeeTest:
         files: ["test/spec/{,*/}*.coffee"]
         tasks: ["coffee:test"]
-
       stylus:
         files: 'app/styles/*.styl',
         tasks: ["stylus"]
-
       livereload:
         files: ["<%= yeoman.app %>/{,*/}*.html", "{.tmp,<%= yeoman.app %>}/styles/{,*/}*.css", "{.tmp,<%= yeoman.app %>}/scripts/{,*/}*.js", "<%= yeoman.app %>/images/{,*/}*.{png,jpg,jpeg,gif,webp,svg}"]
-        tasks: ["livereload"]
-
+        options:
+          livereload: true
       jade:
         files: ['app/index.jade', 'app/views/**/*.jade', 'app/content/**/*.jade']
         tasks: ['jade']
@@ -92,21 +90,16 @@ module.exports = (grunt) ->
     connect:
       options:
         port: 9000
-
-        # Change this to '0.0.0.0' to access the server from outside.
         hostname: "0.0.0.0"
-
       dist:
         options:
           port: 9001
           middleware: (connect) ->
             [proxySnippet, mountFolder(connect, yeomanConfig.dist)]
-
       livereload:
         options:
           middleware: (connect) ->
-            [proxySnippet, lrSnippet, mountFolder(connect, ".tmp"), mountFolder(connect, yeomanConfig.app)]
-
+            [proxySnippet, require('connect-livereload')(), mountFolder(connect, ".tmp"), mountFolder(connect, yeomanConfig.app)]
       test:
         options:
           port: 9000
@@ -121,13 +114,6 @@ module.exports = (grunt) ->
               changeOrigin: false
           },
           {
-              context: '/authentication',
-              host: 'localhost',
-              port: 7474,
-              https: false,
-              changeOrigin: false
-          },
-          {
               context: '/user',
               host: 'localhost',
               port: 7474,
@@ -135,7 +121,6 @@ module.exports = (grunt) ->
               changeOrigin: false
           }
       ]
-
 
     open:
       server:
@@ -151,13 +136,11 @@ module.exports = (grunt) ->
             "<%= yeoman.app %>/content/**/*.html"
           ]
         ]
-
       server: ".tmp"
 
     jshint:
       options:
         jshintrc: ".jshintrc"
-
       all: ["Gruntfile.js", "<%= yeoman.app %>/scripts/{,*/}*.js"]
 
     karma:
@@ -177,7 +160,6 @@ module.exports = (grunt) ->
           dest: ".tmp/scripts"
           ext: ".js"
         ]
-
       test:
         files: [
           expand: true
@@ -213,12 +195,6 @@ module.exports = (grunt) ->
       html:
         src: ["<%= yeoman.app %>/views/**/*.jade"]
         dest: "<%= yeoman.app %>/views"
-        # files: [
-        #   expand: true
-        #   cwd: "<%= yeoman.app %>/views/"
-        #   src: ['**/*.jade']
-        #   dest: "<%= yeoman.app %>/views/"
-        # ]
         options:
           client: false
           pretty: true
@@ -255,25 +231,9 @@ module.exports = (grunt) ->
           dest: "<%= yeoman.dist %>/images"
         ]
 
-    # This task is populated by usemin
-    # cssmin:
-    #   dist:
-    #     files:
-    #       "<%= yeoman.dist %>/styles/main.css": [".tmp/styles/{,*/}*.css", "<%= yeoman.app %>/styles/{,*/}*.css"]
-
     htmlmin:
       dist:
         options: {}
-
-        #removeCommentsFromCDATA: true,
-        #          // https://github.com/yeoman/grunt-usemin/issues/44
-        #          //collapseWhitespace: true,
-        #          collapseBooleanAttributes: true,
-        #          removeAttributeQuotes: true,
-        #          removeRedundantAttributes: true,
-        #          useShortDoctype: true,
-        #          removeEmptyAttributes: true,
-        #          removeOptionalTags: true
         files: [
           expand: true
           cwd: "<%= yeoman.app %>"
@@ -281,27 +241,10 @@ module.exports = (grunt) ->
           dest: "<%= yeoman.dist %>"
         ]
 
-    # cdnify:
-    #   dist:
-    #     html: ["<%= yeoman.dist %>/*.html"]
-
-    ngmin:
-      dist:
-        files: [
-          expand: true
-          cwd: "<%= yeoman.dist %>/scripts"
-          src: "*.js"
-          dest: "<%= yeoman.dist %>/scripts"
-        ]
-
     uglify:
-      options: {
+      options:
         mangle: false
         ASCIIOnly: true
-      },
-      dist:
-        files:
-          "<%= yeoman.dist %>/scripts/scripts.js": ["<%= yeoman.dist %>/scripts/scripts.js"]
 
     rev:
       dist:
@@ -325,11 +268,6 @@ module.exports = (grunt) ->
             dest: "<%= yeoman.dist %>/fonts"
             src: ["components/**/*.{otf,woff,ttf,svg}"]
         }]
-    shell:
-      dirListing:
-        command: 'ls',
-        options:
-            stdout: true
 
     replace:
       dist:
@@ -337,8 +275,10 @@ module.exports = (grunt) ->
         replace: 'url(/browser/images'
         src: ["<%= yeoman.dist %>/styles/main.css"]
 
-  grunt.renameTask "regarde", "watch"
-  grunt.registerTask "server", ["clean:server", "coffee", "configureProxies", "stylus", "jade", "livereload-start", "connect:livereload", "watch"]
+  # load all grunt tasks
+  require("matchdep").filterDev("grunt-*").forEach grunt.loadNpmTasks
+
+  grunt.registerTask "server", ["clean:server", "coffee", "configureProxies", "stylus", "jade", "connect:livereload", "watch"]
   grunt.registerTask "test", ["clean:server", "coffee", "connect:test", "karma"]
   grunt.registerTask "build", ["clean:dist", "test", "coffee", "jade", "stylus", "useminPrepare", "concat", "copy", "imagemin", "cssmin", "htmlmin", "uglify", "rev", "usemin", "replace"]
   grunt.registerTask "server:dist", ["build", "configureProxies", "connect:dist:keepalive"]
