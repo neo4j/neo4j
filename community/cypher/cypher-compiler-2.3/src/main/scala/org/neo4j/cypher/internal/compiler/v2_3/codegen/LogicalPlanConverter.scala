@@ -198,9 +198,10 @@ object LogicalPlanConverter {
     }
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+      val opName = context.registerOperator(logicalPlan)
       val projectionInstructions = logicalPlan.expressions.map {
         case (identifier, expression) =>
-          val instruction = createProjectionInstruction(logicalPlan, expression, context)
+          val instruction = createProjectionInstruction(logicalPlan, expression)(opName, context)
 
           context.addProjection(identifier, instruction)
           instruction
@@ -208,10 +209,11 @@ object LogicalPlanConverter {
 
       val (methodHandle, action) = context.popParent().consume(context, this)
 
-      (methodHandle, Project(projectionInstructions, action))
+      (methodHandle, Project(opName, projectionInstructions, action))
     }
 
-    private def createProjectionInstruction(logicalPlan: Projection, expression: Expression, context: CodeGenContext): ProjectionInstruction = {
+    private def createProjectionInstruction(logicalPlan: Projection, expression: Expression)
+                                           (implicit opName: String, context: CodeGenContext): ProjectionInstruction = {
 
       expression match {
         case node@Identifier(name) if context.semanticTable.isNode(node) =>
@@ -222,12 +224,10 @@ object LogicalPlanConverter {
 
         case Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
           val token = propKey.id(context.semanticTable).map(_.id)
-          val opName = context.registerOperator(logicalPlan)
           ProjectNodeProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
 
         case Property(rel@Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
           val token = propKey.id(context.semanticTable).map(_.id)
-          val opName = context.registerOperator(logicalPlan)
           ProjectRelProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
 
         case Parameter(name) => ProjectParameter(name)
@@ -241,21 +241,21 @@ object LogicalPlanConverter {
         case lit: Literal => ProjectLiteral(lit.value)
 
         case Collection(exprs) =>
-          ProjectCollection(exprs.map(e => createProjectionInstruction(logicalPlan, e, context)))
+          ProjectCollection(exprs.map(e => createProjectionInstruction(logicalPlan, e)))
 
         case Add(lhs, rhs) =>
-          val leftOp = createProjectionInstruction(logicalPlan, lhs, context)
-          val rightOp = createProjectionInstruction(logicalPlan, rhs, context)
+          val leftOp = createProjectionInstruction(logicalPlan, lhs)
+          val rightOp = createProjectionInstruction(logicalPlan, rhs)
           ProjectAddition(leftOp, rightOp)
 
         case Subtract(lhs, rhs) =>
-          val leftOp = createProjectionInstruction(logicalPlan, lhs, context)
-          val rightOp = createProjectionInstruction(logicalPlan, rhs, context)
+          val leftOp = createProjectionInstruction(logicalPlan, lhs)
+          val rightOp = createProjectionInstruction(logicalPlan, rhs)
           ProjectSubtraction(leftOp, rightOp)
 
         case MapExpression(items: Seq[(PropertyKeyName, Expression)]) =>
           val map = items.map {
-            case (key, expr) => (key.name, createProjectionInstruction(logicalPlan, expr, context))
+            case (key, expr) => (key.name, createProjectionInstruction(logicalPlan, expr))
           }.toMap
           ProjectMap(map)
 
