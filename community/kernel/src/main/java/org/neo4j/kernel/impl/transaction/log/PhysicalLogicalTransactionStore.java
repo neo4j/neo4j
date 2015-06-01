@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -30,53 +29,23 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_1P_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
-public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements LogicalTransactionStore
+public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
 {
     private final LogFile logFile;
-    private final LogRotation logRotation;
     private final TransactionMetadataCache transactionMetadataCache;
-    private final TransactionIdStore transactionIdStore;
-    private final IdOrderingQueue legacyIndexTransactionOrdering;
-    private final KernelHealth kernelHealth;
-    private TransactionAppender appender;
 
-    public PhysicalLogicalTransactionStore(
-            LogFile logFile,
-            LogRotation logRotation,
-            TransactionMetadataCache transactionMetadataCache,
-            TransactionIdStore transactionIdStore,
-            IdOrderingQueue legacyIndexTransactionOrdering,
-            KernelHealth kernelHealth )
+    public PhysicalLogicalTransactionStore( LogFile logFile, TransactionMetadataCache transactionMetadataCache )
     {
         this.logFile = logFile;
-        this.logRotation = logRotation;
         this.transactionMetadataCache = transactionMetadataCache;
-        this.transactionIdStore = transactionIdStore;
-        this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
-        this.kernelHealth = kernelHealth;
     }
 
-    @Override
-    public void start() throws Throwable
-    {
-        // We can't open the appender until 'start()' because the LogFile needs recovery to have completed first.
-        this.appender = new BatchingTransactionAppender( logFile, logRotation, transactionMetadataCache,
-                transactionIdStore, legacyIndexTransactionOrdering, kernelHealth );
-    }
-
-    @Override
-    public TransactionAppender getAppender()
-    {
-        return appender;
-    }
 
     @Override
     public IOCursor<CommittedTransactionRepresentation> getTransactions( final long transactionIdToStartFrom )
@@ -160,7 +129,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
         private LogEntryStart startEntryForFoundTransaction;
 
         public TransactionPositionLocator( long startTransactionId,
-                                           LogEntryReader<ReadableVersionableLogChannel> logEntryReader )
+                LogEntryReader<ReadableVersionableLogChannel> logEntryReader )
         {
             this.startTransactionId = startTransactionId;
             this.logEntryReader = logEntryReader;
@@ -171,22 +140,22 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
         {
             LogEntry logEntry;
             LogEntryStart startEntry = null;
-            while ( (logEntry = logEntryReader.readLogEntry( channel ) ) != null )
+            while ( (logEntry = logEntryReader.readLogEntry( channel )) != null )
             {
                 switch ( logEntry.getType() )
                 {
-                    case TX_START:
-                        startEntry = logEntry.as();
-                        break;
-                    case TX_1P_COMMIT:
-                        LogEntryCommit commit = logEntry.as();
-                        if ( commit.getTxId() == startTransactionId )
-                        {
-                            startEntryForFoundTransaction = startEntry;
-                            return false;
-                        }
-                    default: // just skip commands
-                        break;
+                case TX_START:
+                    startEntry = logEntry.as();
+                    break;
+                case TX_1P_COMMIT:
+                    LogEntryCommit commit = logEntry.as();
+                    if ( commit.getTxId() == startTransactionId )
+                    {
+                        startEntryForFoundTransaction = startEntry;
+                        return false;
+                    }
+                default: // just skip commands
+                    break;
                 }
             }
             return true;
@@ -224,7 +193,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
         public boolean visit( LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog )
         {
             boolean foundIt = transactionId >= firstTransactionIdInLog &&
-                    transactionId <= lastTransactionIdInLog;
+                              transactionId <= lastTransactionIdInLog;
             if ( foundIt )
             {
                 foundPosition = position;

@@ -29,12 +29,14 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.checksum;
 
@@ -42,7 +44,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.checksum
  * Concurrently appends transactions to the transaction log, while coordinating with the log rotation and forcing the
  * log file in batches.
  */
-class BatchingTransactionAppender implements TransactionAppender
+public class BatchingTransactionAppender extends LifecycleAdapter implements TransactionAppender
 {
     private static class ThreadLink
     {
@@ -73,16 +75,17 @@ class BatchingTransactionAppender implements TransactionAppender
     private final IdOrderingQueue legacyIndexTransactionOrdering;
 
     private final AtomicReference<ThreadLink> threadLinkHead = new AtomicReference<>( ThreadLink.END );
-    private final WritableLogChannel channel;
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogFile logFile;
     private final LogRotation logRotation;
     private final TransactionIdStore transactionIdStore;
-    private final TransactionLogWriter transactionLogWriter;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
-    private final IndexCommandDetector indexCommandDetector;
     private final KernelHealth kernelHealth;
-    private final Lock forceLock;
+    private final Lock forceLock = new ReentrantLock();
+
+    private WritableLogChannel channel;
+    private TransactionLogWriter transactionLogWriter;
+    private IndexCommandDetector indexCommandDetector;
 
     public BatchingTransactionAppender( LogFile logFile, LogRotation logRotation,
                                         TransactionMetadataCache transactionMetadataCache,
@@ -95,11 +98,15 @@ class BatchingTransactionAppender implements TransactionAppender
         this.transactionIdStore = transactionIdStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         this.kernelHealth = kernelHealth;
-        this.channel = logFile.getWriter();
         this.transactionMetadataCache = transactionMetadataCache;
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        this.channel = logFile.getWriter();
         this.indexCommandDetector = new IndexCommandDetector( new CommandWriter( channel ) );
-        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriterv1( channel, indexCommandDetector ) );
-        forceLock = new ReentrantLock();
+        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriterV1( channel, indexCommandDetector ) );
     }
 
     @Override
@@ -107,9 +114,11 @@ class BatchingTransactionAppender implements TransactionAppender
     {
         long transactionId = -1;
         int phase = 0;
+
         // We put log rotation check outside the private append method since it must happen before
         // we generate the next transaction id
-        logAppendEvent.setLogRotated( logRotation.rotateLogIfNeeded( logAppendEvent ) );
+        boolean logRotated = logRotation.rotateLogIfNeeded( logAppendEvent );
+        logAppendEvent.setLogRotated( logRotated );
 
         TransactionCommitment commit;
         try
@@ -191,8 +200,7 @@ class BatchingTransactionAppender implements TransactionAppender
      * @return A TransactionCommitment instance with metadata about the committed transaction, such as whether or not this transaction
      * contains any legacy index changes.
      */
-    private TransactionCommitment appendToLog(
-            TransactionRepresentation transaction, long transactionId ) throws IOException
+    private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId ) throws IOException
     {
         // Reset command writer so that we, after we've written the transaction, can ask it whether or
         // not any legacy index command was written. If so then there's additional ordering to care about below.

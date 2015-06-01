@@ -97,17 +97,17 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static java.lang.Integer.parseInt;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -126,9 +126,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Integer.parseInt;
-
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -1467,8 +1464,6 @@ public class NeoStoreTransactionTest
         when( appenderMock.append(
                 Matchers.<TransactionRepresentation>any(),
                 any( LogAppendEvent.class ) ) ).thenReturn( nextTxId++ );
-        LogicalTransactionStore txStoreMock = mock( LogicalTransactionStore.class );
-        when( txStoreMock.getAppender() ).thenReturn( appenderMock );
         @SuppressWarnings( "unchecked" )
         Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
         when( labelScanStore.instance() ).thenReturn( mock( LabelScanWriter.class ) );
@@ -1481,7 +1476,7 @@ public class NeoStoreTransactionTest
 
         PropertyLoader propertyLoader = new PropertyLoader( neoStore );
 
-        return new TransactionRepresentationCommitProcess( txStoreMock, mock( KernelHealth.class ),
+        return new TransactionRepresentationCommitProcess( appenderMock, mock( KernelHealth.class ),
                 neoStore, applier, new IndexUpdatesValidator( neoStore, propertyLoader, indexing ), mode );
     }
 

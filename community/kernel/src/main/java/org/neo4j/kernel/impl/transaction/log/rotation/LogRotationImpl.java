@@ -17,23 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.transaction.log.rotation;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 /**
  * Default implementation of the LogRotation interface.
  */
-public class LogRotationImpl
-    implements LogRotation
+public class LogRotationImpl implements LogRotation
 {
     private final LogRotation.Monitor monitor;
     private final LogFile logFile;
@@ -71,9 +69,9 @@ public class LogRotationImpl
                         doRotate();
                     }
                 }
-            }
 
-            return rotated;
+                return rotated;
+            }
         }
 
         return false;

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.log.rotation;
 
 import java.io.IOException;
 
@@ -31,14 +31,14 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
  */
 public interface LogRotation
 {
-    public interface Monitor
+    interface Monitor
     {
         void startedRotating( long currentVersion );
 
         void finishedRotating( long currentVersion );
     }
 
-    public static LogRotation NO_ROTATION = new LogRotation()
+    LogRotation NO_ROTATION = new LogRotation()
     {
         @Override
         public boolean rotateLogIfNeeded( LogAppendEvent logAppendEvent ) throws IOException
@@ -53,7 +53,6 @@ public interface LogRotation
     };
 
     /**
-     * @return {@code true} if a rotation is needed, and performs one if needed.
      * @param logAppendEvent A trace event for the current log append operation.
      */
     boolean rotateLogIfNeeded( LogAppendEvent logAppendEvent ) throws IOException;
@@ -65,7 +64,7 @@ public interface LogRotation
      */
     void rotateLogFile() throws IOException;
 
-    public class PrintFormat
+    class PrintFormat
     {
         public static String prefix( long currentVersion )
         {

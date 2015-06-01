@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_1;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_2;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_3;
 
 public class VersionAwareLogEntryReaderTest
 {
@@ -61,7 +61,7 @@ public class VersionAwareLogEntryReaderTest
         channel.put( start.getAdditionalHeader(), start.getAdditionalHeader().length );
 
         // when
-        final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_2 );
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_3 );
 
         // then
         assertEquals( start, logEntry );
@@ -80,7 +80,7 @@ public class VersionAwareLogEntryReaderTest
         channel.putLong( commit.getTimeWritten() );
 
         // when
-        final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_2 );
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_3 );
 
         // then
         assertEquals( commit, logEntry );
@@ -99,10 +99,30 @@ public class VersionAwareLogEntryReaderTest
         channel.put( NeoCommandType.NODE_COMMAND );
 
         // when
-        final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_2 );
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_3 );
 
         // then
         assertEquals( command, logEntry );
+    }
+
+    @Test
+    public void shouldReadACheckPointLogEntry() throws IOException
+    {
+        // given
+        final LogPosition logPosition = new LogPosition( 42, 43 );
+        final CheckPoint checkPoint = new CheckPoint( version, logPosition );
+        final InMemoryLogChannel channel = new InMemoryLogChannel();
+
+        channel.put( version );
+        channel.put( LogEntryByteCodes.CHECK_POINT );
+        channel.putLong( logPosition.getLogVersion() );
+        channel.putLong( logPosition.getByteOffset() );
+
+        // when
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_3 );
+
+        // then
+        assertEquals( checkPoint, logEntry );
     }
 
     @Test
@@ -116,7 +136,7 @@ public class VersionAwareLogEntryReaderTest
         channel.put( NeoCommandType.NONE );
 
         // when
-        final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_2 );
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_3 );
 
         // then
         assertNull( logEntry );
@@ -131,7 +151,7 @@ public class VersionAwareLogEntryReaderTest
         channel.put( LogEntryByteCodes.EMPTY );
 
         // when
-        final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_2 );
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_3 );
 
         // then
         assertNull( logEntry );
@@ -144,7 +164,7 @@ public class VersionAwareLogEntryReaderTest
         final InMemoryLogChannel channel = new InMemoryLogChannel();
 
         // when
-        final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_2 );
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel, LOG_VERSION_2_3 );
 
         // then
         assertNull( logEntry );

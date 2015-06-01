@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.LogRotationImpl;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -40,9 +39,13 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -82,7 +85,7 @@ public class LogRotationDeadlockTest
                 rotationControl, health, NullLogProvider.getInstance() );
 
         // controlled batching transaction appender that will halt a committer
-        TransactionAppender appender = new BatchingTransactionAppender( logFile, rotation,
+        TransactionAppender appender =life.add( new BatchingTransactionAppender( logFile, rotation,
                 new TransactionMetadataCache( 10, 10 ), txIdStore, mock( IdOrderingQueue.class ),
                 health )
         {
@@ -92,12 +95,12 @@ public class LogRotationDeadlockTest
                 inBetweenCommittedAndClosed.reached();
                 super.forceAfterAppend( logAppendEvent );
             }
-        };
+        } );
+
+        life.start();
 
         // commit process
-        LogicalTransactionStore txStore = mock( LogicalTransactionStore.class );
-        when( txStore.getAppender() ).thenReturn( appender );
-        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( txStore,
+        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( appender,
                 health, txIdStore, mock( TransactionRepresentationStoreApplier.class ),
                 mock( IndexUpdatesValidator.class ), TransactionApplicationMode.INTERNAL );
 
@@ -141,4 +144,5 @@ public class LogRotationDeadlockTest
 
     public final @Rule OtherThreadRule<Void> committer = new OtherThreadRule<>( "COMMITTER" );
     public final @Rule OtherThreadRule<Void> rotator = new OtherThreadRule<>( "ROTATOR" );
+    public final @Rule LifeRule life = new LifeRule();
 }

@@ -30,7 +30,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 import static org.neo4j.com.RequestContext.anonymous;

@@ -23,14 +23,11 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
 /**
  * Used for reading transactions off of file.
@@ -40,8 +37,7 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
     private final LifeSupport life = new LifeSupport();
     private final LogicalTransactionStore physicalStore;
 
-    public ReadOnlyTransactionStore( FileSystemAbstraction fs, File fromPath, Monitors monitors,
-            KernelHealth kernelHealth )
+    public ReadOnlyTransactionStore( FileSystemAbstraction fs, File fromPath, Monitors monitors )
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( fromPath, fs );
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 100 );
@@ -49,15 +45,7 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
         PhysicalLogFile logFile = life.add(new PhysicalLogFile( fs, logFiles, 0,
                 transactionIdStore, new ReadOnlyLogVersionRepository(fs, fromPath),
                 monitors.newMonitor( PhysicalLogFile.Monitor.class ), transactionMetadataCache));
-
-        physicalStore = life.add( new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION,
-                transactionMetadataCache, transactionIdStore, BYPASS, kernelHealth ) );
-    }
-
-    @Override
-    public TransactionAppender getAppender()
-    {
-        throw new UnsupportedOperationException( "Read-only transaction store" );
+        physicalStore = new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache );
     }
 
     @Override

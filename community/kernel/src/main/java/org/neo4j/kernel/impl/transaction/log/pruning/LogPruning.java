@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.impl.transaction.log.LogRotation.PrintFormat;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.PrintFormat;
 
 /**
  * This class listens for rotations and does log pruning.

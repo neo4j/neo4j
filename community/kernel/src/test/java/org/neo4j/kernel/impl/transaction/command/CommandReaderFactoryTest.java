@@ -20,16 +20,18 @@
 package org.neo4j.kernel.impl.transaction.command;
 
 import org.junit.Test;
+
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.LEGACY_LOG_ENTRY_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.LOG_ENTRY_VERSION_2_1;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.LOG_ENTRY_VERSION_2_2;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.LOG_ENTRY_VERSION_2_3;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_1_9;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_0;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_1;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_2;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_3;
 
 public class CommandReaderFactoryTest
 {
@@ -80,6 +82,18 @@ public class CommandReaderFactoryTest
 
         // WHEN
         CommandReader reader = factory.newInstance( LOG_VERSION_2_2, LOG_ENTRY_VERSION_2_2 );
+
+        // THEN
+        assertTrue( reader instanceof PhysicalLogNeoCommandReaderV2 );
+    }
+    @Test
+    public void testReturnsV2ReaderForVersion2AndLogFormat2_3() throws Exception
+    {
+        // GIVEN
+        CommandReaderFactory factory = new CommandReaderFactory.Default();
+
+        // WHEN
+        CommandReader reader = factory.newInstance( LOG_VERSION_2_3, LOG_ENTRY_VERSION_2_3 );
 
         // THEN
         assertTrue( reader instanceof PhysicalLogNeoCommandReaderV2 );

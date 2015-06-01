@@ -19,44 +19,36 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.util.TimeZone;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-import org.neo4j.helpers.Format;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
 
-public abstract class LogEntryCommit extends AbstractLogEntry
+public class CheckPoint extends AbstractLogEntry
 {
-    private final long txId;
-    private final long timeWritten;
-    protected final String name;
 
-    LogEntryCommit( byte type, byte version, long txId, long timeWritten, String name )
+    private LogPosition logPosition;
+
+    CheckPoint( LogPosition logPosition )
     {
-        super( type, version );
-        this.txId = txId;
-        this.timeWritten = timeWritten;
-        this.name = name;
+        this( CURRENT_LOG_ENTRY_VERSION, logPosition );
     }
 
-    public long getTxId()
+    CheckPoint( byte version, LogPosition logPosition )
     {
-        return txId;
-    }
-
-    public long getTimeWritten()
-    {
-        return timeWritten;
+        super( LogEntryByteCodes.CHECK_POINT, version );
+        this.logPosition = logPosition;
     }
 
     @Override
-    public String toString()
+    public <T extends LogEntry> T as()
     {
-        return toString( Format.DEFAULT_TIME_ZONE );
+        return (T) this;
     }
 
-    @Override
-    public String toString( TimeZone timeZone )
+
+    public LogPosition getLogPosition()
     {
-        return name + "[txId=" + getTxId() + ", " + timestamp( getTimeWritten(), timeZone ) + "]";
+        return logPosition;
     }
 
     @Override
@@ -71,16 +63,15 @@ public abstract class LogEntryCommit extends AbstractLogEntry
             return false;
         }
 
-        LogEntryCommit commit = (LogEntryCommit) o;
-        return timeWritten == commit.timeWritten && txId == commit.txId && name.equals( commit.name );
+        CheckPoint that = (CheckPoint) o;
+
+        return logPosition.equals( that.logPosition );
+
     }
 
     @Override
     public int hashCode()
     {
-        int result = (int) (txId ^ (txId >>> 32));
-        result = 31 * result + (int) (timeWritten ^ (timeWritten >>> 32));
-        result = 31 * result + name.hashCode();
-        return result;
+        return logPosition.hashCode();
     }
 }

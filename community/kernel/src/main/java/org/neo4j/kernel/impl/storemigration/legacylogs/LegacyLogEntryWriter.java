@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 
@@ -55,7 +55,7 @@ class LegacyLogEntryWriter
                 @Override
                 public LogEntryWriter apply( WritableLogChannel channel )
                 {
-                    return new LogEntryWriterv1( channel, new CommandWriter( channel ) );
+                    return new LogEntryWriterV1( channel, new CommandWriter( channel ) );
                 }
             };
 

@@ -47,21 +47,8 @@ public class LogHeader
         }
 
         LogHeader logHeader = (LogHeader) o;
-
-        if ( lastCommittedTxId != logHeader.lastCommittedTxId )
-        {
-            return false;
-        }
-        if ( logFormatVersion != logHeader.logFormatVersion )
-        {
-            return false;
-        }
-        if ( logVersion != logHeader.logVersion )
-        {
-            return false;
-        }
-
-        return true;
+        return lastCommittedTxId == logHeader.lastCommittedTxId && logFormatVersion == logHeader.logFormatVersion &&
+               logVersion == logHeader.logVersion;
     }
 
     @Override

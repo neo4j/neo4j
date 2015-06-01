@@ -45,4 +45,9 @@ public class TransactionLogWriter
         // Write commit record
         writer.writeCommitEntry( transactionId, transaction.getTimeCommitted() );
     }
+
+    public void checkPoint( long transactionId, LogPosition logPosition ) throws IOException
+    {
+        writer.writeCheckPointEntry( transactionId, logPosition );
+    }
 }

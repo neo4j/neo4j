@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 public interface LogEntryWriter
 {
@@ -31,4 +32,6 @@ public interface LogEntryWriter
     void serialize( TransactionRepresentation tx ) throws IOException;
 
     void writeCommitEntry( long transactionId, long timeWritten ) throws IOException;
+
+    void writeCheckPointEntry( long transactionId, LogPosition logPosition ) throws IOException;
 }

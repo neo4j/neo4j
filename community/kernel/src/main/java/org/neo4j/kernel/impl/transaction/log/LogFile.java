@@ -27,7 +27,7 @@ import java.io.IOException;
  */
 public interface LogFile
 {
-    public interface LogFileVisitor
+    interface LogFileVisitor
     {
         boolean visit( LogPosition position, ReadableVersionableLogChannel channel ) throws IOException;
     }
@@ -53,7 +53,7 @@ public interface LogFile
      */
     boolean rotationNeeded() throws IOException;
 
-    public void rotate() throws IOException;
+    void rotate() throws IOException;
 
     File currentLogFile();
 

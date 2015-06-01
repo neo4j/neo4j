@@ -61,7 +61,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
@@ -263,7 +263,7 @@ public class TransactionRecordStateTest
     private void writeToChannel( TransactionRepresentation transaction, WritableLogChannel channel )
             throws IOException
     {
-        TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriterv1( channel,
+        TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriterV1( channel,
                 new CommandWriter( channel ) ) );
         writer.append( transaction, 2 );
     }

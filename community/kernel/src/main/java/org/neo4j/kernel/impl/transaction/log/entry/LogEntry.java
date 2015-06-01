@@ -19,15 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.io.IOException;
 import java.util.TimeZone;
-
-import org.neo4j.kernel.impl.transaction.command.LogHandler;
 
 public interface LogEntry
 {
-    void accept( LogHandler handler ) throws IOException;
-
     byte getType();
 
     byte getVersion();

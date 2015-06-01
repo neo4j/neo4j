@@ -56,12 +56,15 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 public class PhysicalLogicalTransactionStoreTest
 {
+    private static final KernelHealth kernelHealth = mock( KernelHealth.class );
+
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     @Rule
     public TargetDirectory.TestDirectory dir = testDirForTest( getClass() );
@@ -85,8 +88,9 @@ public class PhysicalLogicalTransactionStoreTest
         Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
                 transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
-        life.add( new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, mock( KernelHealth.class ) ) );
+
+        life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
+                positionCache, transactionIdStore, BYPASS, kernelHealth ) );
 
         try
         {
@@ -117,7 +121,7 @@ public class PhysicalLogicalTransactionStoreTest
         life.start();
         try
         {
-            addATransactionAndRewind( logFile, positionCache, transactionIdStore,
+            addATransactionAndRewind(life,  logFile, positionCache, transactionIdStore,
                     additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted );
         }
         finally
@@ -153,11 +157,10 @@ public class PhysicalLogicalTransactionStoreTest
                 } );
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
 
+        TransactionAppender appender = new BatchingTransactionAppender( logFile, NO_ROTATION,
+                positionCache, transactionIdStore, BYPASS, kernelHealth );
+        life.add( appender );
 
-        PhysicalLogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile,
-                LogRotation.NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, mock( KernelHealth.class ) );
-        life.add( store );
         life.add(new Recovery(new Recovery.SPI()
         {
             @Override
@@ -217,7 +220,7 @@ public class PhysicalLogicalTransactionStoreTest
         life.start();
         try
         {
-            addATransactionAndRewind( logFile, positionCache, transactionIdStore,
+            addATransactionAndRewind( life, logFile, positionCache, transactionIdStore,
                     additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted );
         }
         finally
@@ -254,9 +257,7 @@ public class PhysicalLogicalTransactionStoreTest
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
                 transactionIdStore, mock( LogVersionRepository.class ), monitor,
                 positionCache ) );
-
-        LogicalTransactionStore store = life.add( new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION,
-                positionCache, transactionIdStore, BYPASS, mock( KernelHealth.class ) ) );
+        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile, positionCache );
 
         // WHEN
         life.start();
@@ -283,19 +284,25 @@ public class PhysicalLogicalTransactionStoreTest
         // GIVEN
         LogFile logFile = mock( LogFile.class );
         TransactionMetadataCache cache = new TransactionMetadataCache( 10, 10 );
-        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
-        LogicalTransactionStore txStore =
-                new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION, cache, txIdStore, BYPASS,
-                        mock( KernelHealth.class ) );
 
-        // WHEN
+        LifeSupport life = new LifeSupport();
+
+        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache );
+
         try
         {
-            txStore.getMetadataFor( 10 );
-            fail( "Should have thrown" );
-        }
-        catch ( NoSuchTransactionException e )
-        {   // THEN Good
+            life.start();
+            // WHEN
+            try
+            {
+                txStore.getMetadataFor( 10 );
+                fail( "Should have thrown" );
+            }
+            catch ( NoSuchTransactionException e )
+            {   // THEN Good
+            }
+        } finally {
+            life.shutdown();
         }
     }
 
@@ -304,40 +311,47 @@ public class PhysicalLogicalTransactionStoreTest
     {
         // GIVEN
         LogFile logFile = mock( LogFile.class );
-        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         // a missing file
-        when( logFile.getReader( any( LogPosition.class) ) ).thenThrow( FileNotFoundException.class );
+        when( logFile.getReader( any( LogPosition.class) ) ).thenThrow( new FileNotFoundException() );
         // Which is nevertheless in the metadata cache
         TransactionMetadataCache cache = new TransactionMetadataCache( 10, 10 );
         cache.cacheTransactionMetadata( 10, new LogPosition( 2, 130 ), 1, 1, 100 );
-        LogicalTransactionStore txStore =
-                new PhysicalLogicalTransactionStore( logFile, LogRotation.NO_ROTATION, cache, txIdStore, BYPASS,
-                        mock( KernelHealth.class ) );
 
-        // WHEN
-          // we ask for that transaction and forward
+        LifeSupport life = new LifeSupport();
+
+        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache );
+
         try
         {
-            txStore.getTransactions( 10 );
-            fail();
-        }
-        catch( NoSuchTransactionException e )
+            life.start();
+
+            // WHEN
+            // we ask for that transaction and forward
+            try
+            {
+                txStore.getTransactions( 10 );
+                fail();
+            }
+            catch ( NoSuchTransactionException e )
+            {
+                // THEN
+                // We don't get a FileNotFoundException but a NoSuchTransactionException instead
+            }
+        } finally
         {
-            // THEN
-              // We don't get a FileNotFoundException but a NoSuchTransactionException instead
+            life.shutdown();
         }
 
     }
 
-    private void addATransactionAndRewind( LogFile logFile,
+    private void addATransactionAndRewind( LifeSupport life, LogFile logFile,
                                            TransactionMetadataCache positionCache,
                                            TransactionIdStore transactionIdStore,
                                            byte[] additionalHeader, int masterId, int authorId, long timeStarted,
                                            long latestCommittedTxWhenStarted, long timeCommitted ) throws IOException
     {
-        TransactionAppender appender = new BatchingTransactionAppender(
-                logFile, LogRotation.NO_ROTATION, positionCache, transactionIdStore, BYPASS,
-                mock( KernelHealth.class ) );
+        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
+                transactionIdStore, BYPASS, kernelHealth ) );
         PhysicalTransactionRepresentation transaction =
                 new PhysicalTransactionRepresentation( singleCreateNodeCommand() );
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,

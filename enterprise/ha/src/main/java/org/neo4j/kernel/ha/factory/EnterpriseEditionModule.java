@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.ha.factory;
 
+import org.jboss.netty.logging.InternalLoggerFactory;
+
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -128,7 +128,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -464,7 +464,7 @@ public class EnterpriseEditionModule
         return new CommitProcessFactory()
         {
             @Override
-            public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
+            public TransactionCommitProcess create( TransactionAppender appender,
                                                     KernelHealth kernelHealth, NeoStore neoStore,
                                                     TransactionRepresentationStoreApplier storeApplier,
                                                     NeoStoreInjectedTransactionValidator txValidator,
@@ -478,7 +478,7 @@ public class EnterpriseEditionModule
                 else
                 {
 
-                    TransactionCommitProcess inner = new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
+                    TransactionCommitProcess inner = new TransactionRepresentationCommitProcess( appender, kernelHealth,
                                                 neoStore, storeApplier, indexUpdatesValidator, mode );
                     new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
                             memberStateMachine, txValidator, inner );

@@ -60,7 +60,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -135,11 +135,11 @@ public class MasterClientTest
         LogFile logFile = mock( LogFile.class );
 
         when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( txStore );
+        when( resolver.resolveDependency( TransactionAppender.class ) ).thenReturn( txAppender );
         when( resolver.resolveDependency( TransactionRepresentationStoreApplier.class ) ).thenReturn( txApplier );
         when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
         when( resolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
         when( resolver.resolveDependency( LogRotation.class ) ).thenReturn( mock(LogRotation.class) );
-        when( txStore.getAppender() ).thenReturn( txAppender );
         IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
                 any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );
