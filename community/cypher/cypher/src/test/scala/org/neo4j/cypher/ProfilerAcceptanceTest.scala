@@ -72,6 +72,20 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(2)(result)("Expand(All)")
   }
 
+  test("match (n:A)-->(x:B) return *") {
+    //GIVEN
+    relate( createLabeledNode("A"), createLabeledNode("B"))
+
+    //WHEN
+    val result = profileWithAllPlannersAndRuntimes("match (n:A)-->(x:B) return *")
+    println(result.executionPlanDescription())
+    //THEN
+    assertRows(1)(result)("ProduceResults", "Projection", "Filter", "Expand(All)", "NodeByLabelScan")
+    assertDbHits(0)(result)("ProduceResults", "Projection")
+    assertDbHits(1)(result)("Filter")
+    assertDbHits(2)(result)("NodeByLabelScan", "Expand(All)")
+  }
+
   test("PROFILE for Cypher 2.2") {
     val result = eengine.profile("cypher 2.2 match n where n-[:FOO]->() return *")
 

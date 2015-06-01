@@ -27,6 +27,7 @@ import org.neo4j.codegen.ExpressionTemplate._
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen.TypeReference.{extending, parameterizedType, typeParameter}
 import org.neo4j.codegen._
+import org.neo4j.codegen.source.SourceCode
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.compiler.v2_3._
@@ -132,7 +133,9 @@ trait MethodStructure[E] {
   def lookupPropertyKey(propName: String, propVar: String)
 
   // code structure
-  def whileLoop(test: E)(block: MethodStructure[E]=>Unit): Unit
+  def whileLoop(test: E)(block: MethodStructure[E] => Unit): Unit
+
+  def ifStatement(test: E)(block: MethodStructure[E] => Unit): Unit
 
   // results
   def materializeNode(nodeIdVar: String): E
@@ -295,6 +298,12 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     using(generator.whileLoop(test)) { body =>
       block(copy(generator = body))
     }
+
+  override def ifStatement(test: Expression)(block: (MethodStructure[Expression]) => Unit) = {
+    using(generator.ifStatement(test)) { body =>
+      block(copy(generator = body))
+    }
+  }
 
   override def setInRow(column: String, value: Expression) =
     generator.expression(Expression.invoke(resultRow, Methods.set, Expression.constant(column), value))

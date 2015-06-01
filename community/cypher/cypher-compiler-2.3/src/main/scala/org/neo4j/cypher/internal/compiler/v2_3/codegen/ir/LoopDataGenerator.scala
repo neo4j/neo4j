@@ -34,4 +34,6 @@ trait LoopDataGenerator extends Instruction {
   def id: String
 
   override protected def operatorId = Some(id)
+
+  override def body[E](generator: MethodStructure[E]): Unit = ??? // This should not be an Instruction
 }

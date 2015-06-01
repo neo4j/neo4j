@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands
+import org.neo4j.cypher.internal.compiler.v2_3.{ast, commands}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{SeekArgs => PipeEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
@@ -78,6 +78,7 @@ object InternalPlanDescription {
     case class Rows(value: Long) extends Argument
     case class DbHits(value: Long) extends Argument
     case class ColumnsLeft(value: Seq[String]) extends Argument
+    case class Expression(value: ast.Expression) extends Argument
     case class LegacyExpression(value: commands.expressions.Expression) extends Argument
     case class UpdateActionName(value: String) extends Argument
     case class LegacyIndex(value: String) extends Argument

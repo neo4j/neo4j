@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{ExceptionCodeGen, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
 
 trait Instruction {
   def init[E](generator: MethodStructure[E]): Unit = children.foreach(_.init(generator))
-  def body[E](generator: MethodStructure[E]): Unit = ???
+  def body[E](generator: MethodStructure[E]): Unit
 
   protected def children: Seq[Instruction]
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
-import CodeGenExpression.{add, parameter, sub}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression.{add, parameter, sub}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.scalatest._
 
@@ -29,11 +29,10 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
 
   { // literal + literal
     def adding(lhs: CodeGenExpression, rhs: CodeGenExpression) = {
-    val addition = add(lhs, rhs)
-    evaluate(
-      Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> addition))))
-  }
-
+      val addition = add(lhs, rhs)
+      evaluate(
+        Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> addition))))
+    }
 
     verifyAddition(adding, new SimpleOperands[CodeGenExpression]("literal") {
       override def value(value: Any) = literal(value)

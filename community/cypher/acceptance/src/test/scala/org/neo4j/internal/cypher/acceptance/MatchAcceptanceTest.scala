@@ -848,6 +848,37 @@ return b
     result.toList should equal (List(Map("b" -> b1)))
   }
 
+  test("should match nodes with specified labels on both sides") {
+    // given
+    val r = relate(createLabeledNode("A"), createLabeledNode("B"))
+    relate(createLabeledNode("B"), createLabeledNode("A"))
+    relate(createLabeledNode("B"), createLabeledNode("B"))
+    relate(createLabeledNode("A"), createLabeledNode("A"))
+
+    // when
+    val result = executeWithAllPlannersAndRuntimes(s"MATCH (a:A)-[r]->(b:B) RETURN r")
+
+    // THEN
+    result.toSet should equal (Set(Map("r" -> r)))
+  }
+
+  test("should match nodes with many labels specified on it") {
+    // given
+    val n = createLabeledNode("A","B","C")
+    createLabeledNode("A","B")
+    createLabeledNode("A","C")
+    createLabeledNode("B","C")
+    createLabeledNode("A")
+    createLabeledNode("B")
+    createLabeledNode("C")
+
+    // when
+    val result = executeWithAllPlannersAndRuntimes(s"MATCH (a:A:B:C) RETURN a")
+
+    // THEN
+    result.toList should equal (List(Map("a" -> n)))
+  }
+
   test("should be able to tell if a label is on a node or not") {
     // given
     createNode()

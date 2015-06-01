@@ -33,6 +33,7 @@ object PlanDescriptionArgumentSerializer {
     arg match {
       case ColumnsLeft(columns) => s"keep columns ${columns.mkString(SEPARATOR)}"
       case LegacyExpression(expr) => removeGeneratedNames(expr.toString)
+      case Expression(expr) => removeGeneratedNames(expr.toString)
       case UpdateActionName(action) => action
       case LegacyIndex(index) => index
       case Index(label, property) => s":$label($property)"
