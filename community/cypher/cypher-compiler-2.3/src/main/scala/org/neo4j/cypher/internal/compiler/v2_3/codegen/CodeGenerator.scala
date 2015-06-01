@@ -40,8 +40,10 @@ import scala.collection.{Map, immutable, mutable}
 object CodeGenerator {
 
   def generateClass(instructions: Seq[Instruction]) = {
+    val columns = instructions.flatMap(_.allColumns)
+    val opIds = instructions.flatMap(_.allOperatorIds)
     CodeStructure.__TODO__MOVE_IMPLEMENTATION.generateQuery(packageName, Namer.newClassName(),
-      instructions.flatMap(_.allColumns), instructions.flatMap(_.allOperatorIds)) { acceptMethod =>
+      columns, opIds) { acceptMethod =>
       instructions.foreach(insn => insn.init(acceptMethod))
       instructions.foreach(insn => insn.body(acceptMethod))
     }

@@ -19,8 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
+import org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -198,9 +201,10 @@ object LogicalPlanConverter {
     }
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+      val opName = context.registerOperator(logicalPlan)
       val projectionInstructions = logicalPlan.expressions.map {
         case (identifier, expression) =>
-          val instruction = createProjectionInstruction(logicalPlan, expression, context)
+          val instruction = createExpression(logicalPlan, expression)(opName, context)
 
           context.addProjection(identifier, instruction)
           instruction
@@ -208,58 +212,62 @@ object LogicalPlanConverter {
 
       val (methodHandle, action) = context.popParent().consume(context, this)
 
-      (methodHandle, Project(projectionInstructions, action))
+      (methodHandle, Project(opName, projectionInstructions, action))
     }
 
-    private def createProjectionInstruction(logicalPlan: Projection, expression: Expression, context: CodeGenContext): ProjectionInstruction = {
+    private def createExpression(logicalPlan: Projection, expression: Expression)
+                                (implicit opName: String, context: CodeGenContext): CodeGenExpression = {
 
       expression match {
         case node@Identifier(name) if context.semanticTable.isNode(node) =>
-          ProjectNode(context.getVariable(name))
+          Node(context.getVariable(name))
 
         case rel@Identifier(name) if context.semanticTable.isRelationship(rel) =>
-          ProjectRelationship(context.getVariable(name))
+          Relationship(context.getVariable(name))
 
         case Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
           val token = propKey.id(context.semanticTable).map(_.id)
-          val opName = context.registerOperator(logicalPlan)
-          ProjectNodeProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
+          NodeProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
 
         case Property(rel@Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
           val token = propKey.id(context.semanticTable).map(_.id)
-          val opName = context.registerOperator(logicalPlan)
-          ProjectRelProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
+          RelProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
 
-        case Parameter(name) => ProjectParameter(name)
+        case ast.Parameter(name) => expressions.Parameter(name)
 
-        case lit: IntegerLiteral => ProjectLiteral(lit.value)
+        case lit: IntegerLiteral => Literal(lit.value)
 
-        case lit: DoubleLiteral => ProjectLiteral(lit.value)
+        case lit: DoubleLiteral => Literal(lit.value)
 
-        case lit: StringLiteral => ProjectLiteral(lit.value)
+        case lit: StringLiteral => Literal(lit.value)
 
-        case lit: Literal => ProjectLiteral(lit.value)
+        case lit: ast.Literal => Literal(lit.value)
 
-        case Collection(exprs) =>
-          ProjectCollection(exprs.map(e => createProjectionInstruction(logicalPlan, e, context)))
+        case ast.Collection(exprs) =>
+          expressions.Collection(exprs.map(e => createExpression(logicalPlan, e)))
 
         case Add(lhs, rhs) =>
-          val leftOp = createProjectionInstruction(logicalPlan, lhs, context)
-          val rightOp = createProjectionInstruction(logicalPlan, rhs, context)
-          ProjectAddition(leftOp, rightOp)
+          val leftOp = createExpression(logicalPlan, lhs)
+          val rightOp = createExpression(logicalPlan, rhs)
+          Addition(leftOp, rightOp)
 
         case Subtract(lhs, rhs) =>
-          val leftOp = createProjectionInstruction(logicalPlan, lhs, context)
-          val rightOp = createProjectionInstruction(logicalPlan, rhs, context)
-          ProjectSubtraction(leftOp, rightOp)
+          val leftOp = createExpression(logicalPlan, lhs)
+          val rightOp = createExpression(logicalPlan, rhs)
+          Subtraction(leftOp, rightOp)
 
         case MapExpression(items: Seq[(PropertyKeyName, Expression)]) =>
           val map = items.map {
-            case (key, expr) => (key.name, createProjectionInstruction(logicalPlan, expr, context))
+            case (key, expr) => (key.name, createExpression(logicalPlan, expr))
           }.toMap
-          ProjectMap(map)
+          MyMap(map)
 
-        case other => throw new CantCompileQueryException(s"Projection of $other not yet supported")
+        case HasLabels(Identifier(name), label :: Nil) =>
+          val labelIdVariable = context.namer.newVarName()
+          val nodeVariable = context.getVariable(name)
+          HasLabel(opName, nodeVariable, labelIdVariable, label.name, context.namer)
+
+        case other => throw new CantCompileQueryException(s"Expression of $other not yet supported")
       }
     }
   }

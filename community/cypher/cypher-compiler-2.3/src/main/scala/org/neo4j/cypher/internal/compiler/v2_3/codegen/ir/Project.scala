@@ -22,19 +22,21 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
 
-case class AcceptVisitor(id: String, columns: Map[String, CodeGenExpression]) extends Instruction {
+case class Project(opName: String, projections: Seq[CodeGenExpression], parent: Instruction) extends Instruction {
 
-  override protected def columnNames = columns.keys
-
-  override def body[E](generator: MethodStructure[E]) = generator.trace(id) { body =>
-    columns.foreach { case (k, v) =>
-      body.setInRow(k, v.generateExpression(body))
+  override def body[E](generator: MethodStructure[E]) = {
+    generator.trace(opName) { inner =>
+      inner.incrementRows()
     }
-    body.visitRow()
-    body.incrementRows()
+    parent.body(generator)
   }
 
-  override protected def operatorId = Some(id)
+  override protected def children = Seq(parent)
 
-  override protected def children = Seq.empty
+  override protected def operatorId = Some(opName)
+
+  override def init[E](generator: MethodStructure[E]) = {
+    super.init(generator)
+    projections.foreach(_.init(generator))
+  }
 }
