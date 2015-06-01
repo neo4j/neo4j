@@ -19,17 +19,21 @@
  */
 package org.neo4j.graphdb;
 
-import java.io.IOException;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.neo4j.graphdb.mockfs.LimitedFileSystemGraphDatabase;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.test.CleanupRule;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
+import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -41,7 +45,17 @@ public class RunOutOfDiskSpaceIT
     {
         // Given
         TransactionFailureException exceptionThrown = null;
-        LimitedFileSystemGraphDatabase db = cleanup.add( new LimitedFileSystemGraphDatabase() );
+
+        String storeDir = testDirectory.absolutePath();
+        LimitedFileSystemGraphDatabase db = new LimitedFileSystemGraphDatabase( storeDir );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
+
+        long logVersion = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCurrentLogVersion();
 
         db.runOutOfDiskSpaceNao();
 
@@ -52,7 +66,7 @@ public class RunOutOfDiskSpaceIT
 
         try
         {
-            tx.finish();
+            tx.close();
             fail( "Expected tx finish to throw TransactionFailureException when filesystem is full." );
         }
         catch ( TransactionFailureException e )
@@ -62,7 +76,11 @@ public class RunOutOfDiskSpaceIT
 
         // Then
         assertTrue( Exceptions.contains( exceptionThrown, IOException.class ) );
+
         db.somehowGainMoreDiskSpace(); // to help shutting down the db
+        db.shutdown();
+
+        assertEquals( logVersion, new NeoStoreUtil( new File( storeDir ), db.getFileSystem() ).getLogVersion() );
     }
 
     @Test
@@ -70,7 +88,17 @@ public class RunOutOfDiskSpaceIT
     {
         // Given
         TransactionFailureException errorCaught = null;
-        LimitedFileSystemGraphDatabase db = cleanup.add( new LimitedFileSystemGraphDatabase() );
+
+        String storeDir = testDirectory.absolutePath();
+        LimitedFileSystemGraphDatabase db = new LimitedFileSystemGraphDatabase( storeDir );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
+
+        long logVersion = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCurrentLogVersion();
 
         db.runOutOfDiskSpaceNao();
 
@@ -80,7 +108,7 @@ public class RunOutOfDiskSpaceIT
 
         try
         {
-            tx.finish();
+            tx.close();
             fail( "Expected tx finish to throw TransactionFailureException when filesystem is full." );
         }
         catch ( TransactionFailureException e )
@@ -101,8 +129,12 @@ public class RunOutOfDiskSpaceIT
 
         // Then
         assertThat( errorCaught.getCause(), is( instanceOf( org.neo4j.kernel.api.exceptions.TransactionFailureException.class ) ) );
+
         db.somehowGainMoreDiskSpace(); // to help shutting down the db
+        db.shutdown();
+
+        assertEquals( logVersion, new NeoStoreUtil( new File( storeDir ), db.getFileSystem() ).getLogVersion() );
     }
 
-    public final @Rule CleanupRule cleanup = new CleanupRule();
+    public final @Rule TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 }
