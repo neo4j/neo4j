@@ -27,7 +27,8 @@ import org.scalatest._
 class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with CodeGenSugar {
   // addition
 
-  { // literal + literal
+  {
+    // literal + literal
     def adding(lhs: CodeGenExpression, rhs: CodeGenExpression) = {
       val addition = add(lhs, rhs)
       evaluate(
@@ -39,21 +40,24 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
     })
   }
 
-  { // parameter + parameter
+  {
+    // parameter + parameter
     val addition: CodeGenExpression = add(parameter("lhs"), parameter("rhs"))
-    val clazz = compile(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition))))
+    val instructions = Seq(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition))))
 
-    def adding(lhs: Any, rhs: Any) = evaluate(newInstance(clazz, params = Map("lhs" -> lhs, "rhs" -> rhs)))
+    def adding(lhs: Any, rhs: Any) = evaluate(instructions, params = Map("lhs" -> lhs, "rhs" -> rhs))
 
     verifyAddition(adding, new SimpleOperands[Any]("parameter") {
       override def value(value: Any) = value
     })
   }
 
-  { // literal + parameter
+  {
+    // literal + parameter
     def adding(lhs: CodeGenExpression, rhs: Any) = {
       val addition: CodeGenExpression = add(lhs, parameter("rhs"))
-      evaluate(newInstance(compile(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition)))), params = Map("rhs" -> rhs)))
+      val instructions = Seq(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition))))
+      evaluate(instructions, params = Map("rhs" -> rhs))
 
     }
 
@@ -64,11 +68,12 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
     })
   }
 
-  { // parameter + literal
+  {
+    // parameter + literal
     def adding(lhs: Any, rhs: CodeGenExpression) = {
       val addition: CodeGenExpression = add(parameter("lhs"), rhs)
-      evaluate(newInstance(compile(Project("X", Seq(addition),
-        AcceptVisitor("id", Map("result" -> addition)))), params = Map("lhs" -> lhs)))
+      val instructions = Seq(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition))))
+      evaluate(instructions, params = Map("lhs" -> lhs))
     }
 
     verifyAddition(adding, new Operands[Any, CodeGenExpression]("parameter", "literal") {
@@ -80,34 +85,36 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
 
   // subtraction
 
-  { // literal - literal
+  {
+    // literal - literal
     def subtracting(lhs: CodeGenExpression, rhs: CodeGenExpression) = {
-    val subtraction = sub(lhs, rhs)
-    evaluate(
-      Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> subtraction))))
-  }
+      val subtraction = sub(lhs, rhs)
+      evaluate(
+        Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> subtraction))))
+    }
 
     verifySubtraction(subtracting, new SimpleOperands[CodeGenExpression]("literal") {
       override def value(value: Any) = literal(value)
     })
   }
 
-  { // parameter - parameter
+  {
+    // parameter - parameter
     val subtraction: CodeGenExpression = sub(parameter("lhs"), parameter("rhs"))
-    val clazz = compile(Project("X", Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction))))
-    def subtracting(lhs: Any, rhs: Any) = evaluate(newInstance(clazz, params = Map("lhs" -> lhs, "rhs" -> rhs)))
+    val instructions = Seq(Project("X", Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction))))
+    def subtracting(lhs: Any, rhs: Any) = evaluate(instructions, params = Map("lhs" -> lhs, "rhs" -> rhs))
 
     verifySubtraction(subtracting, new SimpleOperands[Any]("parameter") {
       override def value(value: Any) = value
     })
   }
 
-  { // literal - parameter
+  {
+    // literal - parameter
     def subtracting(lhs: CodeGenExpression, rhs: Any) = {
       val subtraction: CodeGenExpression = sub(lhs, parameter("rhs"))
-      evaluate(newInstance(compile(Project("X", Seq(subtraction),
-        AcceptVisitor("id", Map("result" ->  subtraction)))), params = Map("rhs" -> rhs)))
-
+      val instructions = Seq(Project("X", Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction))))
+      evaluate(instructions, params = Map("rhs" -> rhs))
     }
 
     verifySubtraction(subtracting, new Operands[CodeGenExpression, Any]("literal", "parameter") {
@@ -117,11 +124,12 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
     })
   }
 
-  { // parameter - literal
+  {
+    // parameter - literal
     def subtracting(lhs: Any, rhs: CodeGenExpression) = {
       val subtraction: CodeGenExpression = sub(parameter("lhs"), rhs)
-      evaluate(newInstance(compile(Project("X", Seq(subtraction),
-        AcceptVisitor("id", Map("result" ->  subtraction)))), params = Map("lhs" -> lhs)))
+      val instructions = Seq(Project("X", Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction))))
+      evaluate(instructions, params = Map("lhs" -> lhs))
     }
 
     verifySubtraction(subtracting, new Operands[Any, CodeGenExpression]("parameter", "literal") {
