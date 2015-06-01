@@ -46,7 +46,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val projectNode = ProjectNode("name")
     val compiled = compile(WhileLoop("name",
       ScanAllNodes("OP1"),
-      Project(List(projectNode),
+      Project("X", List(projectNode),
       AcceptVisitor("OP2", Map("n" -> projectNode)))))
 
     val statement = mock[Statement]

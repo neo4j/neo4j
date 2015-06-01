@@ -58,7 +58,6 @@ case class ProjectNodeProperty(id: String, token: Option[Int], propName: String,
         body.nodeGetPropertyForVar(nodeIdVar, propKeyVar, localName)
       else
         body.nodeGetPropertyById(nodeIdVar, token.get, localName)
-      body.incrementRows()
       body.incrementDbHits()
     }
     structure.load(localName)
@@ -84,7 +83,6 @@ case class ProjectRelProperty(id:String, token: Option[Int], propName: String, r
         body.relationshipGetPropertyForVar(relIdVar, propKeyVar, localName)
       else
         body.relationshipGetPropertyById(relIdVar, token.get, localName)
-      body.incrementRows()
       body.incrementDbHits()
     }
     structure.load(localName)
@@ -183,16 +181,16 @@ case class ProjectMap(instructions: Map[String, ProjectionInstruction]) extends 
   override def children: Seq[Instruction] = instructions.values.toSeq
 }
 
-case class Project(projections: Seq[ProjectionInstruction], parent: Instruction) extends Instruction {
+case class Project(opName: String, projections: Seq[ProjectionInstruction], parent: Instruction) extends Instruction {
 
-  override def init[E](generator: MethodStructure[E]) = {
-    projections.foreach { instruction =>
-      instruction.init(generator)
+  override def body[E](generator: MethodStructure[E]) = {
+    generator.trace(opName) { inner =>
+      inner.incrementRows()
     }
-    parent.init(generator)
+    parent.body(generator)
   }
 
-  override def body[E](generator: MethodStructure[E]) = parent.body(generator)
-
   override protected def children = projections :+ parent
+
+  override protected def operatorId = Some(opName)
 }

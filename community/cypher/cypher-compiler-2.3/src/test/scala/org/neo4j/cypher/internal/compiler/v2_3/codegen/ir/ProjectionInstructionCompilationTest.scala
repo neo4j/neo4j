@@ -30,7 +30,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
     def adding(lhs: ProjectionInstruction, rhs: ProjectionInstruction) = {
     val addition = add(lhs, rhs)
     evaluate(
-      Project(Seq.empty, AcceptVisitor("id", Map("result" -> addition))))
+      Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> addition))))
   }
 
 
@@ -41,7 +41,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
 
   { // parameter + parameter
     val addition: ProjectionInstruction = add(parameter("lhs"), parameter("rhs"))
-    val clazz = compile(Project(Seq(addition), AcceptVisitor("id", Map("result" -> addition))))
+    val clazz = compile(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition))))
 
     def adding(lhs: Any, rhs: Any) = evaluate(newInstance(clazz, params = Map("lhs" -> lhs, "rhs" -> rhs)))
 
@@ -53,7 +53,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
   { // literal + parameter
     def adding(lhs: ProjectionInstruction, rhs: Any) = {
       val addition: ProjectionInstruction = add(lhs, parameter("rhs"))
-      evaluate(newInstance(compile(Project(Seq(addition), AcceptVisitor("id", Map("result" -> addition)))), params = Map("rhs" -> rhs)))
+      evaluate(newInstance(compile(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition)))), params = Map("rhs" -> rhs)))
 
     }
 
@@ -67,7 +67,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
   { // parameter + literal
     def adding(lhs: Any, rhs: ProjectionInstruction) = {
       val addition: ProjectionInstruction = add(parameter("lhs"), rhs)
-      evaluate(newInstance(compile(Project(Seq(addition),
+      evaluate(newInstance(compile(Project("X", Seq(addition),
         AcceptVisitor("id", Map("result" -> addition)))), params = Map("lhs" -> lhs)))
     }
 
@@ -84,7 +84,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
     def subtracting(lhs: ProjectionInstruction, rhs: ProjectionInstruction) = {
     val subtraction = sub(lhs, rhs)
     evaluate(
-      Project(Seq.empty, AcceptVisitor("id", Map("result" -> subtraction))))
+      Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> subtraction))))
   }
 
     verifySubtraction(subtracting, new SimpleOperands[ProjectionInstruction]("literal") {
@@ -94,7 +94,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
 
   { // parameter - parameter
     val subtraction: ProjectionInstruction = sub(parameter("lhs"), parameter("rhs"))
-    val clazz = compile(Project(Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction))))
+    val clazz = compile(Project("X", Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction))))
     def subtracting(lhs: Any, rhs: Any) = evaluate(newInstance(clazz, params = Map("lhs" -> lhs, "rhs" -> rhs)))
 
     verifySubtraction(subtracting, new SimpleOperands[Any]("parameter") {
@@ -105,7 +105,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
   { // literal - parameter
     def subtracting(lhs: ProjectionInstruction, rhs: Any) = {
       val subtraction: ProjectionInstruction = sub(lhs, parameter("rhs"))
-      evaluate(newInstance(compile(Project(Seq(subtraction),
+      evaluate(newInstance(compile(Project("X", Seq(subtraction),
         AcceptVisitor("id", Map("result" ->  subtraction)))), params = Map("rhs" -> rhs)))
 
     }
@@ -120,7 +120,7 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
   { // parameter - literal
     def subtracting(lhs: Any, rhs: ProjectionInstruction) = {
       val subtraction: ProjectionInstruction = sub(parameter("lhs"), rhs)
-      evaluate(newInstance(compile(Project(Seq(subtraction),
+      evaluate(newInstance(compile(Project("X", Seq(subtraction),
         AcceptVisitor("id", Map("result" ->  subtraction)))), params = Map("lhs" -> lhs)))
     }
 
