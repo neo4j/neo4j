@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 class neo.graphView
   constructor: (element, measureSize, @graph, @style) ->
     layout = neo.layout.force()
-    @viz = neo.viz(element, measureSize, graph, layout, @style)
+    @viz = neo.viz(element, measureSize, @graph, layout, @style)
     @callbacks = {}
     callbacks = @callbacks
     @viz.trigger = do ->
