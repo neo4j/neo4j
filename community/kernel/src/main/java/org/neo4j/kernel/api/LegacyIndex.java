@@ -49,4 +49,10 @@ public interface LegacyIndex
     LegacyIndexHits query( Object queryOrQueryObject, long startNode, long endNode );
 
     void addRelationship( long entity, String key, Object value, long startNode, long endNode );
+
+    void removeRelationship( long entity, String key, Object value, long startNode, long endNode );
+
+    void removeRelationship( long entity, String key, long startNode, long endNode );
+
+    void removeRelationship( long entity, long startNode, long endNode );
 }

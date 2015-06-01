@@ -70,7 +70,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
@@ -1853,5 +1856,30 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         // THEN
         assertEquals( asSet(), nodes );
+    }
+
+    @Test
+    public void shouldNotSeeDeletedRelationshipWhenQueryingWithStartAndEndNode()
+    {
+        // GIVEN
+        RelationshipIndex index = relationshipIndex( EXACT_CONFIG );
+        Node start = graphDb.createNode();
+        Node end = graphDb.createNode();
+        RelationshipType type = withName( "REL" );
+        Relationship rel = start.createRelationshipTo( end, type );
+        index.add( rel, "Type", type.name() );
+        finishTx( true );
+        beginTx();
+
+        // WHEN
+        IndexHits<Relationship> hits = index.get( "Type", type.name(), start, end );
+        assertEquals( 1, count( (Iterator<Relationship>)hits ) );
+        assertEquals( 1, hits.size() );
+        index.remove( rel );
+
+        // THEN
+        hits = index.get( "Type", type.name(), start, end );
+        assertEquals( 0, count( (Iterator<Relationship>)hits ) );
+        assertEquals( 0, hits.size() );
     }
 }
