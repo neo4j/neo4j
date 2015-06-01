@@ -848,6 +848,18 @@ return b
     result.toList should equal (List(Map("b" -> b1)))
   }
 
+  test("should be able to tell if a label is on a node or not") {
+    // given
+    createNode()
+    createLabeledNode("Foo")
+
+    // when
+    val result = executeWithAllPlannersAndRuntimes(s"MATCH (n) RETURN (n:Foo)")
+
+    // THEN
+    result.toSet should equal (Set(Map("(n:Foo)" -> true), Map("(n:Foo)" -> false)))
+  }
+
   test("should use predicates in the correct place") {
     // given
     val m = executeWithRulePlanner( """create

@@ -41,6 +41,19 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(4)(result)("AllNodesScan")
   }
 
+  test("track db hits in Projection") {
+    createNode()
+    createNode()
+    createNode()
+
+    val result = profileWithAllPlannersAndRuntimes("MATCH (n) RETURN (n:Foo)")
+
+    assertRows(3)(result)("AllNodesScan", "ProduceResults", "Projection")
+    assertDbHits(0)(result)("ProduceResults")
+    assertDbHits(3)(result)("Projection")
+    assertDbHits(4)(result)("AllNodesScan")
+  }
+
   test("match n where n-[:FOO]->() return *") {
     //GIVEN
     relate( createNode(), createNode(), "FOO")

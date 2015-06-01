@@ -27,7 +27,6 @@ import org.neo4j.codegen.ExpressionTemplate._
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen.TypeReference.{extending, parameterizedType, typeParameter}
 import org.neo4j.codegen._
-import org.neo4j.codegen.source.SourceCode
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.compiler.v2_3._
@@ -37,7 +36,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.CypherType
 import org.neo4j.function.Supplier
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.graphdb.{Relationship, Direction, GraphDatabaseService, Node}
+import org.neo4j.graphdb.{Direction, GraphDatabaseService, Node, Relationship}
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.properties.Property
@@ -59,8 +58,9 @@ case object LongToCountTable extends JoinTableType
 case class LongToListTable(structure:Map[String,CypherType], localMap:Map[String,String]) extends JoinTableType
 
 trait MethodStructure[E] {
+  def declarePredicate(name: String): Unit
 
-  def declareProperty(propertyVar: String): Unit
+  def declareProperty(name: String): Unit
 
   def putField(structure: Map[String, CypherType], value: E, fieldType: CypherType, fieldName: String, localVar: String): Unit
 
@@ -102,6 +102,8 @@ trait MethodStructure[E] {
 
   // db access
   def labelScan(iterVar: String, labelIdVar: String): Unit
+
+  def hasLabel(nodeVar: String, labelVar: String, predVar: String): Unit
 
   def allNodesScan(iterVar: String): Unit
 
@@ -278,6 +280,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def labelScan(iterVar: String, labelIdVar: String) =
     generator.assign(typeRef[PrimitiveLongIterator], iterVar, Expression.invoke(readOperations, Methods.nodesGetForLabel, generator.load(labelIdVar)))
+
 
   override def lookupLabelId(labelIdVar: String, labelName: String) =
     generator.assign(typeRef[Int], labelIdVar, Expression.invoke(readOperations, Methods.labelGetForName, Expression.constant(labelName)))
@@ -481,6 +484,18 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     locals = locals + (propertyVar -> generator.declare(typeRef[Object], propertyVar))
   }
 
+  override def hasLabel(nodeVar: String, labelVar: String, predVar: String) =  {
+     val local = locals(predVar)
+    Templates.handleExceptions(generator, fields.ro) { inner =>
+      val invoke = Expression.invoke(readOperations, Methods.nodeHasLabel, inner.load(nodeVar), inner.load(labelVar))
+      inner.assign(local, invoke)
+    }
+  }
+
+  override def declarePredicate(name: String) = {
+    locals = locals + (name -> generator.declare(typeRef[Boolean], name))
+  }
+
   override def nodeGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
     Templates.handleExceptions(generator, fields.ro) { body =>
@@ -557,7 +572,8 @@ private object Methods {
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
   val nodeGetProperty = method[ReadOperations, Object]("nodeGetProperty")
   val relationshipGetProperty = method[ReadOperations, Object]("relationshipGetProperty")
-  val nodesGetForLabel = method[ReadOperations, PrimitiveLongIterator]("nodesGetForLabel", typeRef[Long])
+  val nodesGetForLabel = method[ReadOperations, PrimitiveLongIterator]("nodesGetForLabel", typeRef[Int])
+  val nodeHasLabel = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])
   val nextLong = method[PrimitiveLongIterator, Long]("next")
   val getNodeById = method[GraphDatabaseService, Node]("getNodeById")
   val getRelationshipById = method[GraphDatabaseService, Relationship]("getRelationshipById")

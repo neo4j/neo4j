@@ -204,7 +204,7 @@ object LogicalPlanConverter {
       val opName = context.registerOperator(logicalPlan)
       val projectionInstructions = logicalPlan.expressions.map {
         case (identifier, expression) =>
-          val instruction = createProjectionInstruction(logicalPlan, expression)(opName, context)
+          val instruction = createExpression(logicalPlan, expression)(opName, context)
 
           context.addProjection(identifier, instruction)
           instruction
@@ -215,8 +215,8 @@ object LogicalPlanConverter {
       (methodHandle, Project(opName, projectionInstructions, action))
     }
 
-    private def createProjectionInstruction(logicalPlan: Projection, expression: Expression)
-                                           (implicit opName: String, context: CodeGenContext): CodeGenExpression = {
+    private def createExpression(logicalPlan: Projection, expression: Expression)
+                                (implicit opName: String, context: CodeGenContext): CodeGenExpression = {
 
       expression match {
         case node@Identifier(name) if context.semanticTable.isNode(node) =>
@@ -244,25 +244,30 @@ object LogicalPlanConverter {
         case lit: ast.Literal => Literal(lit.value)
 
         case ast.Collection(exprs) =>
-          expressions.Collection(exprs.map(e => createProjectionInstruction(logicalPlan, e)))
+          expressions.Collection(exprs.map(e => createExpression(logicalPlan, e)))
 
         case Add(lhs, rhs) =>
-          val leftOp = createProjectionInstruction(logicalPlan, lhs)
-          val rightOp = createProjectionInstruction(logicalPlan, rhs)
+          val leftOp = createExpression(logicalPlan, lhs)
+          val rightOp = createExpression(logicalPlan, rhs)
           Addition(leftOp, rightOp)
 
         case Subtract(lhs, rhs) =>
-          val leftOp = createProjectionInstruction(logicalPlan, lhs)
-          val rightOp = createProjectionInstruction(logicalPlan, rhs)
+          val leftOp = createExpression(logicalPlan, lhs)
+          val rightOp = createExpression(logicalPlan, rhs)
           Subtraction(leftOp, rightOp)
 
         case MapExpression(items: Seq[(PropertyKeyName, Expression)]) =>
           val map = items.map {
-            case (key, expr) => (key.name, createProjectionInstruction(logicalPlan, expr))
+            case (key, expr) => (key.name, createExpression(logicalPlan, expr))
           }.toMap
           MyMap(map)
 
-        case other => throw new CantCompileQueryException(s"Projection of $other not yet supported")
+        case HasLabels(Identifier(name), label :: Nil) =>
+          val labelIdVariable = context.namer.newVarName()
+          val nodeVariable = context.getVariable(name)
+          HasLabel(opName, nodeVariable, labelIdVariable, label.name, context.namer)
+
+        case other => throw new CantCompileQueryException(s"Expression of $other not yet supported")
       }
     }
   }
