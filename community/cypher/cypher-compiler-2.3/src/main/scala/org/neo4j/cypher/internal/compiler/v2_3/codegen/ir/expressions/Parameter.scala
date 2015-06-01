@@ -17,24 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
+package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
 
-case class AcceptVisitor(id: String, columns: Map[String, CodeGenExpression]) extends Instruction {
+case class Parameter(key: String) extends CodeGenExpression {
 
-  override protected def columnNames = columns.keys
+  override def init[E](generator: MethodStructure[E]) = generator.expectParameter(key)
 
-  override def body[E](generator: MethodStructure[E]) = generator.trace(id) { body =>
-    columns.foreach { case (k, v) =>
-      body.setInRow(k, v.generateExpression(body))
-    }
-    body.visitRow()
-    body.incrementRows()
-  }
-
-  override protected def operatorId = Some(id)
-
-  override protected def children = Seq.empty
+  override def generateExpression[E](structure: MethodStructure[E]): E = structure.parameter(key)
 }

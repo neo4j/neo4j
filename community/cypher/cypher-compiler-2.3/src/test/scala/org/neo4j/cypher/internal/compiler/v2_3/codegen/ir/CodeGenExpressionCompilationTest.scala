@@ -19,28 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.ProjectionInstruction.{add, parameter, sub}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
+import CodeGenExpression.{add, parameter, sub}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.scalatest._
 
-class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers with CodeGenSugar {
+class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with CodeGenSugar {
   // addition
 
   { // literal + literal
-    def adding(lhs: ProjectionInstruction, rhs: ProjectionInstruction) = {
+    def adding(lhs: CodeGenExpression, rhs: CodeGenExpression) = {
     val addition = add(lhs, rhs)
     evaluate(
       Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> addition))))
   }
 
 
-    verifyAddition(adding, new SimpleOperands[ProjectionInstruction]("literal") {
+    verifyAddition(adding, new SimpleOperands[CodeGenExpression]("literal") {
       override def value(value: Any) = literal(value)
     })
   }
 
   { // parameter + parameter
-    val addition: ProjectionInstruction = add(parameter("lhs"), parameter("rhs"))
+    val addition: CodeGenExpression = add(parameter("lhs"), parameter("rhs"))
     val clazz = compile(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition))))
 
     def adding(lhs: Any, rhs: Any) = evaluate(newInstance(clazz, params = Map("lhs" -> lhs, "rhs" -> rhs)))
@@ -51,13 +52,13 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
   }
 
   { // literal + parameter
-    def adding(lhs: ProjectionInstruction, rhs: Any) = {
-      val addition: ProjectionInstruction = add(lhs, parameter("rhs"))
+    def adding(lhs: CodeGenExpression, rhs: Any) = {
+      val addition: CodeGenExpression = add(lhs, parameter("rhs"))
       evaluate(newInstance(compile(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition)))), params = Map("rhs" -> rhs)))
 
     }
 
-    verifyAddition(adding, new Operands[ProjectionInstruction, Any]("literal", "parameter") {
+    verifyAddition(adding, new Operands[CodeGenExpression, Any]("literal", "parameter") {
       override def lhs(value: Any) = literal(value)
 
       override def rhs(value: Any) = value
@@ -65,13 +66,13 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
   }
 
   { // parameter + literal
-    def adding(lhs: Any, rhs: ProjectionInstruction) = {
-      val addition: ProjectionInstruction = add(parameter("lhs"), rhs)
+    def adding(lhs: Any, rhs: CodeGenExpression) = {
+      val addition: CodeGenExpression = add(parameter("lhs"), rhs)
       evaluate(newInstance(compile(Project("X", Seq(addition),
         AcceptVisitor("id", Map("result" -> addition)))), params = Map("lhs" -> lhs)))
     }
 
-    verifyAddition(adding, new Operands[Any, ProjectionInstruction]("parameter", "literal") {
+    verifyAddition(adding, new Operands[Any, CodeGenExpression]("parameter", "literal") {
       override def lhs(value: Any) = value
 
       override def rhs(value: Any) = literal(value)
@@ -81,19 +82,19 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
   // subtraction
 
   { // literal - literal
-    def subtracting(lhs: ProjectionInstruction, rhs: ProjectionInstruction) = {
+    def subtracting(lhs: CodeGenExpression, rhs: CodeGenExpression) = {
     val subtraction = sub(lhs, rhs)
     evaluate(
       Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> subtraction))))
   }
 
-    verifySubtraction(subtracting, new SimpleOperands[ProjectionInstruction]("literal") {
+    verifySubtraction(subtracting, new SimpleOperands[CodeGenExpression]("literal") {
       override def value(value: Any) = literal(value)
     })
   }
 
   { // parameter - parameter
-    val subtraction: ProjectionInstruction = sub(parameter("lhs"), parameter("rhs"))
+    val subtraction: CodeGenExpression = sub(parameter("lhs"), parameter("rhs"))
     val clazz = compile(Project("X", Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction))))
     def subtracting(lhs: Any, rhs: Any) = evaluate(newInstance(clazz, params = Map("lhs" -> lhs, "rhs" -> rhs)))
 
@@ -103,14 +104,14 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
   }
 
   { // literal - parameter
-    def subtracting(lhs: ProjectionInstruction, rhs: Any) = {
-      val subtraction: ProjectionInstruction = sub(lhs, parameter("rhs"))
+    def subtracting(lhs: CodeGenExpression, rhs: Any) = {
+      val subtraction: CodeGenExpression = sub(lhs, parameter("rhs"))
       evaluate(newInstance(compile(Project("X", Seq(subtraction),
         AcceptVisitor("id", Map("result" ->  subtraction)))), params = Map("rhs" -> rhs)))
 
     }
 
-    verifySubtraction(subtracting, new Operands[ProjectionInstruction, Any]("literal", "parameter") {
+    verifySubtraction(subtracting, new Operands[CodeGenExpression, Any]("literal", "parameter") {
       override def lhs(value: Any) = literal(value)
 
       override def rhs(value: Any) = value
@@ -118,13 +119,13 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
   }
 
   { // parameter - literal
-    def subtracting(lhs: Any, rhs: ProjectionInstruction) = {
-      val subtraction: ProjectionInstruction = sub(parameter("lhs"), rhs)
+    def subtracting(lhs: Any, rhs: CodeGenExpression) = {
+      val subtraction: CodeGenExpression = sub(parameter("lhs"), rhs)
       evaluate(newInstance(compile(Project("X", Seq(subtraction),
         AcceptVisitor("id", Map("result" ->  subtraction)))), params = Map("lhs" -> lhs)))
     }
 
-    verifySubtraction(subtracting, new Operands[Any, ProjectionInstruction]("parameter", "literal") {
+    verifySubtraction(subtracting, new Operands[Any, CodeGenExpression]("parameter", "literal") {
       override def lhs(value: Any) = value
 
       override def rhs(value: Any) = literal(value)
@@ -171,10 +172,10 @@ class ProjectionInstructionCompilationTest extends CypherFunSuite with Matchers 
     }
   }
 
-  def literal(value: Any): ProjectionInstruction = value match {
-    case v: Int => ProjectionInstruction.literal(v)
-    case v: Long => ProjectionInstruction.literal(v)
-    case v: Double => ProjectionInstruction.literal(v)
-    case v: String => ProjectionInstruction.literal(v)
+  def literal(value: Any): CodeGenExpression = value match {
+    case v: Int => CodeGenExpression.literal(v)
+    case v: Long => CodeGenExpression.literal(v)
+    case v: Double => CodeGenExpression.literal(v)
+    case v: String => CodeGenExpression.literal(v)
   }
 }

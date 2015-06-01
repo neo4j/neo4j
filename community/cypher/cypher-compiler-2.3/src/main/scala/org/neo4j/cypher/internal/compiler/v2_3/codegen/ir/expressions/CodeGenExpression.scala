@@ -17,24 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
+package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
 
-case class AcceptVisitor(id: String, columns: Map[String, CodeGenExpression]) extends Instruction {
+trait CodeGenExpression {
+  def init[E](generator: MethodStructure[E]): Unit
 
-  override protected def columnNames = columns.keys
+  def generateExpression[E](structure: MethodStructure[E]): E
+}
 
-  override def body[E](generator: MethodStructure[E]) = generator.trace(id) { body =>
-    columns.foreach { case (k, v) =>
-      body.setInRow(k, v.generateExpression(body))
-    }
-    body.visitRow()
-    body.incrementRows()
-  }
+object CodeGenExpression {
 
-  override protected def operatorId = Some(id)
+  def literal(value: Long): CodeGenExpression = Literal(java.lang.Long.valueOf(value))
 
-  override protected def children = Seq.empty
+  def literal(value: Double): CodeGenExpression = Literal(java.lang.Double.valueOf(value))
+
+  def literal(value: String): CodeGenExpression = Literal(value)
+
+  def parameter(key: String): CodeGenExpression = Parameter(key)
+
+  def add(lhs: CodeGenExpression, rhs: CodeGenExpression): CodeGenExpression = Addition(lhs, rhs)
+
+  def sub(lhs: CodeGenExpression, rhs: CodeGenExpression): CodeGenExpression = Subtraction(lhs, rhs)
 }
