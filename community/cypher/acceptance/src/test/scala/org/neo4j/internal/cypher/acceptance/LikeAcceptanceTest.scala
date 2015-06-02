@@ -137,6 +137,15 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
   // *** TESTS OF _
 
+  test("_ should match exactly one character") {
+    val a1 = createNode(Map("prop" -> "value"))
+    createNode(Map("prop" -> "valu"))
+
+    val result = executeWithAllPlanners("MATCH a WHERE a.prop LIKE 'valu_' RETURN a")
+
+    result.toList should equal(Seq(Map("a" -> a1)))
+  }
+
   test("one letter at the start of a string") {
     val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE '_BCDEF' RETURN a")
 

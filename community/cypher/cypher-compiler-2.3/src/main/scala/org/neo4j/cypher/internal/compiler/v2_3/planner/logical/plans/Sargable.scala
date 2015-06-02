@@ -64,6 +64,24 @@ object AsPropertyScannable {
   }
 }
 
+object AsStringRangeSeekable {
+
+  def unapply(v: Any): Option[StringRangeSeekable] = v match {
+    case like@Like(Property(ident: Identifier, propertyKey), LikePattern(StringLiteral(value)), _)
+      if !like.caseInsensitive =>
+      getRange(value).map { range => StringRangeSeekable(range, like, ident, propertyKey) }
+    case _ => None
+  }
+
+  def getRange(literal: String): Option[SeekRange[String]] = {
+    val regex = ".*%".r
+    regex.findFirstIn(literal).map { prefix =>
+      RightOpenRange(InclusiveBound(prefix.substring(0, prefix.length - 1)))
+    }
+  }
+}
+
+
 sealed trait Sargable[T <: Expression] {
   def expr: T
   def ident: Identifier
@@ -71,17 +89,41 @@ sealed trait Sargable[T <: Expression] {
   def name = ident.name
 }
 
-sealed trait Seekable[T <: Expression] extends Sargable[T] {
-  def args: SeekableArgs
+sealed trait Seekable[T <: Expression, A] extends Sargable[T] {
+
+  def args: A
 }
 
+sealed trait EqualitySeekable[T <: Expression] extends Seekable[T, SeekableArgs]
+
 case class IdSeekable(expr: FunctionInvocation, ident: Identifier, args: SeekableArgs)
-  extends Seekable[FunctionInvocation]
+  extends EqualitySeekable[FunctionInvocation]
 
 case class PropertySeekable(expr: Property, ident: Identifier, args: SeekableArgs)
-  extends Seekable[Property] {
+  extends EqualitySeekable[Property] {
 
   def propertyKey = expr.propertyKey
+}
+
+sealed trait Bound[V] {
+
+  def value: V
+}
+
+final case class InclusiveBound[V](value: V) extends Bound[V]
+
+final case class ExclusiveBound[V](value: V) extends Bound[V]
+
+sealed trait SeekRange[V]
+
+final case class RightOpenRange[V](left: Bound[V]) extends SeekRange[V]
+
+final case class ClosedRange[V](left: Bound[V], right: Bound[V]) extends SeekRange[V]
+
+case class StringRangeSeekable(range: SeekRange[String], expr: Like, ident: Identifier, propertyKey: PropertyKeyName)
+  extends Seekable[Like, LikePattern] {
+
+  val args = expr.pattern
 }
 
 sealed trait Scannable[T <: Expression] extends Sargable[T]

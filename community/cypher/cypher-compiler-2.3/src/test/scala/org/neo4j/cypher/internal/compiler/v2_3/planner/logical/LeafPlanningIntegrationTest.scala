@@ -31,6 +31,38 @@ import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
+//  test("should use unique index seek for prefix search using like with %") {
+//    (new given {
+//      uniqueIndexOn("Person", "name")
+//    } planFor "MATCH (a:Person) WHERE a.name LIKE 'prefix%' RETURN a").innerPlan should equal(
+//      ???
+//    )
+//  }
+
+//  test("should use unique index seek for prefix search using like with _") {
+//    (new given {
+//      uniqueIndexOn("Person", "name")
+//    } planFor "MATCH (a:Person) WHERE a.name LIKE 'prefix_' RETURN a").innerPlan should equal(
+//      ???
+//    )
+//  }
+//
+//  test("should use index seek for prefix search using like with %") {
+//    (new given {
+//      indexOn("Person", "name")
+//    } planFor "MATCH (a:Person) WHERE a.name LIKE 'prefix%' RETURN a").innerPlan should equal(
+//      ???
+//    )
+//  }
+
+//  test("should use index seek for prefix search using like with _") {
+//    (new given {
+//      indexOn("Person", "name")
+//    } planFor "MATCH (a:Person) WHERE a.name LIKE 'prefix_' RETURN a").innerPlan should equal(
+//      ???
+//    )
+//  }
+
   test("should build plans for all nodes scans") {
     (new given {
     } planFor "MATCH (n) RETURN n").innerPlan should equal(
