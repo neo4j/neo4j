@@ -17,24 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
+package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
-case class WhileLoop(id: String, producer: LoopDataGenerator, action: Instruction) extends Instruction {
+case class Subtraction(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression {
 
-  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    val iterator = s"${id}Iter"
-    generator.trace(producer.id) { body =>
-      producer.produceIterator(iterator, body)
-      body.whileLoop(body.hasNext(iterator)) { loopBody =>
-        loopBody.incrementDbHits()
-        loopBody.incrementRows()
-        producer.produceNext(id, iterator, loopBody)
-        action.body(loopBody)
-      }
-    }
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    lhs.init(generator)
+    rhs.init(generator)
   }
 
-  override def children = Seq(producer, action)
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
+    structure.sub(lhs.generateExpression(structure), rhs.generateExpression(structure))
 }

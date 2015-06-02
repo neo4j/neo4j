@@ -17,24 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
+package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
-case class WhileLoop(id: String, producer: LoopDataGenerator, action: Instruction) extends Instruction {
+case class HasLabel(opName: String, nodeVariable: String, labelVariable: String, labelName: String)
+  extends CodeGenExpression {
+  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    generator.lookupLabelId(labelVariable, labelName)
 
-  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    val iterator = s"${id}Iter"
-    generator.trace(producer.id) { body =>
-      producer.produceIterator(iterator, body)
-      body.whileLoop(body.hasNext(iterator)) { loopBody =>
-        loopBody.incrementDbHits()
-        loopBody.incrementRows()
-        producer.produceNext(id, iterator, loopBody)
-        action.body(loopBody)
-      }
+  def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+    val localName = context.namer.newVarName()
+    structure.declarePredicate(localName)
+
+    structure.trace(opName) { inner =>
+      inner.hasLabel(nodeVariable, labelVariable, localName)
+      inner.incrementDbHits()
+      inner.load(localName)
     }
   }
-
-  override def children = Seq(producer, action)
 }

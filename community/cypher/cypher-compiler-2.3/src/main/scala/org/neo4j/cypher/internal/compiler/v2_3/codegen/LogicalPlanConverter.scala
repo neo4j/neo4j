@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, ast}
 
 object LogicalPlanConverter {
 
@@ -38,6 +39,7 @@ object LogicalPlanConverter {
       case p: NodeHashJoin => p
       case p: CartesianProduct => p
       case p: Projection => p
+      case p: Selection => p
 
       case _ =>
         throw new CantCompileQueryException(s"$logicalPlan is not yet supported")
@@ -100,7 +102,7 @@ object LogicalPlanConverter {
         val symbols = notNodeSymbols.map(s => s -> context.getVariable(s)).toMap
 
         val opName = context.registerOperator(logicalPlan)
-        val probeTable = BuildProbeTable(opName, probeTableName, nodeId, symbols, context.namer)
+        val probeTable = BuildProbeTable(opName, probeTableName, nodeId, symbols)(context)
         val probeTableSymbol = JoinTableMethod(probeTableName, probeTable.tableType)
 
         context.addProbeTable(this, probeTable.joinData)
@@ -119,8 +121,7 @@ object LogicalPlanConverter {
         (methodHandle, GetMatchesFromProbeTable(nodeId, thunk, actions))
       }
       else {
-
-        throw new ThisShouldNotHappenError("lutovich", s"Unexpected consume call by $child")
+        throw new InternalException(s"Unexpected consume call by $child")
       }
     }
   }
@@ -178,14 +179,14 @@ object LogicalPlanConverter {
       if (child.logicalPlan eq logicalPlan.lhs.get) {
         context.pushParent(this)
         val (m, actions) = logicalPlan.rhs.get.asCodeGenPlan.produce(context)
-        (m, actions.headOption.getOrElse(throw new ThisShouldNotHappenError("pontus", "Illegal call chain")))
+        (m, actions.headOption.getOrElse(throw new InternalException("Illegal call chain")))
       } else if (child.logicalPlan eq logicalPlan.rhs.get) {
         val opName = context.registerOperator(logicalPlan)
         val (m, instruction) = context.popParent().consume(context, this)
         (m, TracingInstruction(opName, instruction))
       }
       else {
-        throw new ThisShouldNotHappenError("pontus", s"Unexpected consume call by $child")
+        throw new InternalException(s"Unexpected consume call by $child")
       }
     }
   }
@@ -198,9 +199,10 @@ object LogicalPlanConverter {
     }
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+      val opName = context.registerOperator(logicalPlan)
       val projectionInstructions = logicalPlan.expressions.map {
         case (identifier, expression) =>
-          val instruction = createProjectionInstruction(logicalPlan, expression, context)
+          val instruction = ExpressionConverter.createExpression(expression)(opName, context)
 
           context.addProjection(identifier, instruction)
           instruction
@@ -208,59 +210,107 @@ object LogicalPlanConverter {
 
       val (methodHandle, action) = context.popParent().consume(context, this)
 
-      (methodHandle, Project(projectionInstructions, action))
+      (methodHandle, Project(opName, projectionInstructions, action))
+    }
+  }
+
+  private implicit class SelectionCodeGen(val logicalPlan: Selection) extends CodeGenPlan {
+
+    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
+      context.pushParent(this)
+      logicalPlan.lhs.get.asCodeGenPlan.produce(context)
     }
 
-    private def createProjectionInstruction(logicalPlan: Projection, expression: Expression, context: CodeGenContext): ProjectionInstruction = {
+    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+      val opName = context.registerOperator(logicalPlan)
+      val predicates = logicalPlan.predicates.map {
+        case expression =>
+          ExpressionConverter.createPredicate(expression)(opName, context)
 
-      expression match {
-        case node@Identifier(name) if context.semanticTable.isNode(node) =>
-          ProjectNode(context.getVariable(name))
-
-        case rel@Identifier(name) if context.semanticTable.isRelationship(rel) =>
-          ProjectRelationship(context.getVariable(name))
-
-        case Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
-          val token = propKey.id(context.semanticTable).map(_.id)
-          val opName = context.registerOperator(logicalPlan)
-          ProjectNodeProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
-
-        case Property(rel@Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
-          val token = propKey.id(context.semanticTable).map(_.id)
-          val opName = context.registerOperator(logicalPlan)
-          ProjectRelProperty(opName, token, propKey.name, context.getVariable(name), context.namer)
-
-        case Parameter(name) => ProjectParameter(name)
-
-        case lit: IntegerLiteral => ProjectLiteral(lit.value)
-
-        case lit: DoubleLiteral => ProjectLiteral(lit.value)
-
-        case lit: StringLiteral => ProjectLiteral(lit.value)
-
-        case lit: Literal => ProjectLiteral(lit.value)
-
-        case Collection(exprs) =>
-          ProjectCollection(exprs.map(e => createProjectionInstruction(logicalPlan, e, context)))
-
-        case Add(lhs, rhs) =>
-          val leftOp = createProjectionInstruction(logicalPlan, lhs, context)
-          val rightOp = createProjectionInstruction(logicalPlan, rhs, context)
-          ProjectAddition(leftOp, rightOp)
-
-        case Subtract(lhs, rhs) =>
-          val leftOp = createProjectionInstruction(logicalPlan, lhs, context)
-          val rightOp = createProjectionInstruction(logicalPlan, rhs, context)
-          ProjectSubtraction(leftOp, rightOp)
-
-        case MapExpression(items: Seq[(PropertyKeyName, Expression)]) =>
-          val map = items.map {
-            case (key, expr) => (key.name, createProjectionInstruction(logicalPlan, expr, context))
-          }.toMap
-          ProjectMap(map)
-
-        case other => throw new CantCompileQueryException(s"Projection of $other not yet supported")
+        case x => throw new CantCompileQueryException(x.toString)
       }
+
+      val (methodHandle, innerBlock) = context.popParent().consume(context, this)
+
+      val instruction = predicates.reverse.foldLeft[Instruction](TracingInstruction(opName, innerBlock)) {
+        case (acc, predicate) => If(predicate, acc)
+      }
+
+      (methodHandle, instruction)
+    }
+  }
+}
+
+object ExpressionConverter {
+  def createPredicate(expression: Expression)
+                     (implicit opName: String, context: CodeGenContext): CodeGenExpression = expression match {
+    case expression: HasLabels =>
+      createExpression(expression)
+
+    case exp@Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
+      PropertyAsPredicate(createExpression(exp))
+
+    case exp@Property(node@Identifier(name), propKey) if context.semanticTable.isRelationship(node) =>
+      PropertyAsPredicate(createExpression(exp))
+
+    case other =>
+      throw new CantCompileQueryException(s"Predicate of $other not yet supported")
+
+  }
+
+  def createExpression(expression: Expression)
+                      (implicit opName: String, context: CodeGenContext): CodeGenExpression = {
+
+    expression match {
+      case node@Identifier(name) if context.semanticTable.isNode(node) =>
+        Node(context.getVariable(name))
+
+      case rel@Identifier(name) if context.semanticTable.isRelationship(rel) =>
+        Relationship(context.getVariable(name))
+
+      case Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
+        val token = propKey.id(context.semanticTable).map(_.id)
+        NodeProperty(opName, token, propKey.name, context.getVariable(name), context.namer.newVarName())
+
+      case Property(rel@Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
+        val token = propKey.id(context.semanticTable).map(_.id)
+        RelProperty(opName, token, propKey.name, context.getVariable(name), context.namer.newVarName())
+
+      case ast.Parameter(name) => expressions.Parameter(name)
+
+      case lit: IntegerLiteral => Literal(lit.value)
+
+      case lit: DoubleLiteral => Literal(lit.value)
+
+      case lit: StringLiteral => Literal(lit.value)
+
+      case lit: ast.Literal => Literal(lit.value)
+
+      case ast.Collection(exprs) =>
+        expressions.Collection(exprs.map(e => createExpression(e)))
+
+      case Add(lhs, rhs) =>
+        val leftOp = createExpression(lhs)
+        val rightOp = createExpression(rhs)
+        Addition(leftOp, rightOp)
+
+      case Subtract(lhs, rhs) =>
+        val leftOp = createExpression(lhs)
+        val rightOp = createExpression(rhs)
+        Subtraction(leftOp, rightOp)
+
+      case MapExpression(items: Seq[(PropertyKeyName, Expression)]) =>
+        val map = items.map {
+          case (key, expr) => (key.name, createExpression(expr))
+        }.toMap
+        MyMap(map)
+
+      case HasLabels(Identifier(name), label :: Nil) =>
+        val labelIdVariable = context.namer.newVarName()
+        val nodeVariable = context.getVariable(name)
+        HasLabel(opName, nodeVariable, labelIdVariable, label.name)
+
+      case other => throw new CantCompileQueryException(s"Expression of $other not yet supported")
     }
   }
 }

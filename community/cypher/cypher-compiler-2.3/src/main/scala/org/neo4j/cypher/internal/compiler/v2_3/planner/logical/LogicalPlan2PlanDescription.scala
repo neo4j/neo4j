@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 
 object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) => InternalPlanDescription) {
-  import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 
   override def apply(plan: LogicalPlan, idMap: Map[LogicalPlan, Id]): InternalPlanDescription = {
     val symbols = plan.availableSymbols.map(_.name)
@@ -47,7 +46,7 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) 
         PlanDescriptionImpl(id = idMap(plan), "NodeIndexUniqueSeek", NoChildren, Seq(Index(label.name, propKey.name)), symbols)
 
       case ProduceResult(nodes, rels, _, inner) =>
-        PlanDescriptionImpl(id = idMap(plan), "Results", SingleChild(apply(inner, idMap)), Seq(), symbols)
+        PlanDescriptionImpl(id = idMap(plan), "ProduceResults", SingleChild(apply(inner, idMap)), Seq(), symbols)
 
       case Expand(inner, IdName(fromName), dir, typeNames, IdName(toName), IdName(relName), mode) =>
         val expression = ExpandExpression( fromName, relName, typeNames.map( _.name ), toName, dir )
@@ -62,7 +61,10 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) 
         PlanDescriptionImpl(id = idMap(plan), "NodeHashJoin", children, Seq(KeyNames(nodes.toSeq.map(_.name))), symbols)
 
       case Projection(lhs, expr) =>
-        PlanDescriptionImpl(id = idMap(plan), "Projection", SingleChild(apply(lhs, idMap)), expr.values.toSeq.map(e => LegacyExpression(e.asCommandExpression)), symbols )
+        PlanDescriptionImpl(id = idMap(plan), "Projection", SingleChild(apply(lhs, idMap)), expr.values.toSeq.map(Expression.apply), symbols )
+
+      case Selection(predicates, lhs) =>
+        PlanDescriptionImpl(id = idMap(plan), "Filter", SingleChild(apply(lhs, idMap)), predicates.map(Expression.apply), symbols)
 
       case CartesianProduct(lhs, rhs) =>
         val children = TwoChildren(apply(lhs, idMap), apply(rhs, idMap))

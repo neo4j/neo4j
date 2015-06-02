@@ -17,24 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
+package org.neo4j.cypher.internal.compiler.v2_3.codegen;
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
+import java.lang.reflect.Array;
 
-case class WhileLoop(id: String, producer: LoopDataGenerator, action: Instruction) extends Instruction {
+import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException;
 
-  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    val iterator = s"${id}Iter"
-    generator.trace(producer.id) { body =>
-      producer.produceIterator(iterator, body)
-      body.whileLoop(body.hasNext(iterator)) { loopBody =>
-        loopBody.incrementDbHits()
-        loopBody.incrementRows()
-        producer.produceNext(id, iterator, loopBody)
-        action.body(loopBody)
-      }
+// Class with static methods used by compiled execution plans
+public abstract class CompiledPredicateHelper
+{
+    public static boolean isPropertyValueTrue( Object value )
+    {
+        if ( value == null )
+        {
+            return false;
+        }
+        if ( value instanceof Boolean )
+        {
+            return (boolean) value;
+        }
+        if ( value.getClass().isArray() )
+        {
+            return Array.getLength( value ) > 0;
+        }
+        throw new CypherTypeException( "Don't know how to treat that as a predicate: " + value.toString(), null );
     }
-  }
-
-  override def children = Seq(producer, action)
 }

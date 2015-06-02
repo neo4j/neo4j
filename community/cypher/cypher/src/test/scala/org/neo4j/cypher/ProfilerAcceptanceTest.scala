@@ -36,7 +36,21 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     val result = profileWithAllPlannersAndRuntimes("MATCH (n) RETURN n")
 
-    assertRows(3)(result)("AllNodesScan")
+    assertRows(3)(result)("AllNodesScan", "ProduceResults", "Projection")
+    assertDbHits(0)(result)("ProduceResults", "Projection")
+    assertDbHits(4)(result)("AllNodesScan")
+  }
+
+  test("track db hits in Projection") {
+    createNode()
+    createNode()
+    createNode()
+
+    val result = profileWithAllPlannersAndRuntimes("MATCH (n) RETURN (n:Foo)")
+
+    assertRows(3)(result)("AllNodesScan", "ProduceResults", "Projection")
+    assertDbHits(0)(result)("ProduceResults")
+    assertDbHits(3)(result)("Projection")
     assertDbHits(4)(result)("AllNodesScan")
   }
 
@@ -56,6 +70,20 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     assertRows(0)(result)("Expand(All)")
     assertDbHits(2)(result)("Expand(All)")
+  }
+
+  test("match (n:A)-->(x:B) return *") {
+    //GIVEN
+    relate( createLabeledNode("A"), createLabeledNode("B"))
+
+    //WHEN
+    val result = profileWithAllPlannersAndRuntimes("match (n:A)-->(x:B) return *")
+    println(result.executionPlanDescription())
+    //THEN
+    assertRows(1)(result)("ProduceResults", "Projection", "Filter", "Expand(All)", "NodeByLabelScan")
+    assertDbHits(0)(result)("ProduceResults", "Projection")
+    assertDbHits(1)(result)("Filter")
+    assertDbHits(2)(result)("NodeByLabelScan", "Expand(All)")
   }
 
   test("PROFILE for Cypher 2.2") {
@@ -133,8 +161,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = profileWithAllPlannersAndRuntimes("MATCH n RETURN n.foo")
 
     //WHEN THEN
-    assertRows(1)(result)("Results")
-    assertDbHits(0)(result)("Results")
+    assertRows(1)(result)("ProduceResults")
+    assertDbHits(0)(result)("ProduceResults")
 
     assertRows(1)(result)("Projection")
     assertDbHits(1)(result)("Projection")
@@ -326,10 +354,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = profileWithAllPlannersAndRuntimes("return 5 + 3")
 
     // then
-    assertDbHits(0)(result)("Argument")
-    assertDbHits(0)(result)("Projection")
-    assertDbHits(0)(result)("Results")
-    assertRows(1)(result)("Results")
+    assertDbHits(0)(result)("Argument", "Projection", "ProduceResults")
+    assertRows(1)(result)("ProduceResults")
   }
 
   test("should report correct dbhits and rows for property addition") {

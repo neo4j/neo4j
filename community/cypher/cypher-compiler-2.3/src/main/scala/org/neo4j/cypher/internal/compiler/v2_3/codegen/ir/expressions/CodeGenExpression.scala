@@ -17,24 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
+package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
-case class WhileLoop(id: String, producer: LoopDataGenerator, action: Instruction) extends Instruction {
+trait CodeGenExpression {
+  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 
-  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    val iterator = s"${id}Iter"
-    generator.trace(producer.id) { body =>
-      producer.produceIterator(iterator, body)
-      body.whileLoop(body.hasNext(iterator)) { loopBody =>
-        loopBody.incrementDbHits()
-        loopBody.incrementRows()
-        producer.produceNext(id, iterator, loopBody)
-        action.body(loopBody)
-      }
-    }
-  }
+  def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E
+}
 
-  override def children = Seq(producer, action)
+object CodeGenExpression {
+
+  def literal(value: Long): CodeGenExpression = Literal(java.lang.Long.valueOf(value))
+
+  def literal(value: Double): CodeGenExpression = Literal(java.lang.Double.valueOf(value))
+
+  def literal(value: String): CodeGenExpression = Literal(value)
+
+  def parameter(key: String): CodeGenExpression = Parameter(key)
+
+  def add(lhs: CodeGenExpression, rhs: CodeGenExpression): CodeGenExpression = Addition(lhs, rhs)
+
+  def sub(lhs: CodeGenExpression, rhs: CodeGenExpression): CodeGenExpression = Subtraction(lhs, rhs)
 }

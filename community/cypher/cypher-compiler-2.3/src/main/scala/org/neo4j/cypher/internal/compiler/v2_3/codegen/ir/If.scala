@@ -19,22 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
-case class WhileLoop(id: String, producer: LoopDataGenerator, action: Instruction) extends Instruction {
+case class If(predicate: CodeGenExpression, block: Instruction) extends Instruction {
+  override protected def children: Seq[Instruction] = Seq(block)
 
-  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    val iterator = s"${id}Iter"
-    generator.trace(producer.id) { body =>
-      producer.produceIterator(iterator, body)
-      body.whileLoop(body.hasNext(iterator)) { loopBody =>
-        loopBody.incrementDbHits()
-        loopBody.incrementRows()
-        producer.produceNext(id, iterator, loopBody)
-        action.body(loopBody)
-      }
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
+    generator.ifStatement(predicate.generateExpression(generator)) { inner =>
+      block.body(inner)
     }
   }
 
-  override def children = Seq(producer, action)
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
+    super.init(generator)
+    predicate.init(generator)
+  }
 }

@@ -20,21 +20,23 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
 
-case class WhileLoop(id: String, producer: LoopDataGenerator, action: Instruction) extends Instruction {
+case class Project(opName: String, projections: Seq[CodeGenExpression], parent: Instruction) extends Instruction {
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    val iterator = s"${id}Iter"
-    generator.trace(producer.id) { body =>
-      producer.produceIterator(iterator, body)
-      body.whileLoop(body.hasNext(iterator)) { loopBody =>
-        loopBody.incrementDbHits()
-        loopBody.incrementRows()
-        producer.produceNext(id, iterator, loopBody)
-        action.body(loopBody)
-      }
+    generator.trace(opName) { inner =>
+      inner.incrementRows()
     }
+    parent.body(generator)
   }
 
-  override def children = Seq(producer, action)
+  override protected def children = Seq(parent)
+
+  override protected def operatorId = Some(opName)
+
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    super.init(generator)
+    projections.foreach(_.init(generator))
+  }
 }

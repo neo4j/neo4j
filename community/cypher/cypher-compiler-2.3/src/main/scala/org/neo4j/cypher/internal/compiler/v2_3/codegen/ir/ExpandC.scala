@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{MethodStructure, KernelExceptionCodeGen}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure, KernelExceptionCodeGen}
 import org.neo4j.graphdb.Direction
 
 case class ExpandC(id: String, fromVar: String, relVar: String, dir: Direction,
                    types: Map[String, String], toVar: String, inner: Instruction)
   extends LoopDataGenerator {
 
-  override def init[E](generator: MethodStructure[E]) = {
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     types.foreach {
       case (typeVar,relType) => generator.lookupRelationshipTypeId(typeVar, relType)
     }

@@ -26,9 +26,9 @@ case class MethodInvocation(override val operatorId: Option[String],
                             methodName: String,
                             statements: Seq[Instruction]) extends Instruction {
 
-  override def init[E](generator: MethodStructure[E]) = {}
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  override def body[E](generator: MethodStructure[E]) = {
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.method(symbol.tableType, symbol.name, methodName) { body =>
       statements.foreach(_.init(body))
       statements.foreach(_.body(body))
