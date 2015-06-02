@@ -23,9 +23,9 @@ import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 
+import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 public class ThresholdBasedPruneStrategy implements LogPruneStrategy
@@ -33,30 +33,27 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
     private final FileSystemAbstraction fileSystem;
     private final LogFileInformation logFileInformation;
     private final PhysicalLogFiles files;
-    private final LogVersionRepository versionRepo;
     private final Threshold threshold;
 
     public ThresholdBasedPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation,
-                                        PhysicalLogFiles files, LogVersionRepository versionRepo, Threshold threshold )
+                                        PhysicalLogFiles files, Threshold threshold )
     {
         this.fileSystem = fileSystem;
         this.logFileInformation = logFileInformation;
         this.files = files;
-        this.versionRepo = versionRepo;
         this.threshold = threshold;
     }
 
     @Override
-    public void prune()
+    public void prune( long upToLogVersion )
     {
-        long currentLogVersion = versionRepo.getCurrentLogVersion();
-        if ( currentLogVersion == 0 )
+        if ( upToLogVersion == INITIAL_LOG_VERSION )
         {
             return;
         }
 
         threshold.init();
-        long upper = currentLogVersion-1;
+        long upper = upToLogVersion -1;
         boolean exceeded = false;
         while ( upper >= 0 )
         {

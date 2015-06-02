@@ -19,16 +19,16 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Node;
@@ -43,23 +43,21 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogDeserializer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 /**
  * Test for a problem where multiple threads getting an index for the first time
@@ -131,8 +129,9 @@ public class IndexCreationTest
         PhysicalLogFile pLogFile = db.getDependencyResolver().resolveDependency( PhysicalLogFile.class );
         long version = ds.getCurrentLogVersion();
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
 
-        ReadableVersionableLogChannel logChannel =pLogFile.getReader( new LogPosition( version, LOG_HEADER_SIZE ) );
+        ReadableVersionableLogChannel logChannel = pLogFile.getReader( LogPosition.start( version ) );
 
         LogDeserializer deserializer = new LogDeserializer();
 

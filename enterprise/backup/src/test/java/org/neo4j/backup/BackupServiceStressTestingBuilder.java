@@ -41,6 +41,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
@@ -48,9 +49,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
@@ -150,7 +149,7 @@ public class BackupServiceStressTestingBuilder
             {
                 createIndex( db );
                 createSomeData( db );
-                rotateLog( db );
+                rotateLogAndCheckPoint( db );
 
                 final AtomicBoolean keepGoing = new AtomicBoolean( true );
 
@@ -292,9 +291,10 @@ public class BackupServiceStressTestingBuilder
             }
         }
 
-        private void rotateLog( GraphDatabaseAPI db ) throws IOException
+        private void rotateLogAndCheckPoint( GraphDatabaseAPI db ) throws IOException
         {
             db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+            db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
         }
 
     }

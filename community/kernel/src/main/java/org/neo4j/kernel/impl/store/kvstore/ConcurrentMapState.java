@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 
 class ConcurrentMapState<Key> extends ActiveState<Key>
 {
+    private static final long[] META = {};
     private final ConcurrentMap<Key, byte[]> changes;
     private final File file;
     private final AtomicLong highestAppliedVersion;
@@ -45,7 +46,7 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
     {
         super( store );
         this.previousVersion = store.version();
-        this.versionSequence = new ArrayQueueOutOfOrderSequence( previousVersion, 50 );
+        this.versionSequence = new ArrayQueueOutOfOrderSequence( previousVersion, 50, META );
         this.file = file;
         this.highestAppliedVersion = new AtomicLong( previousVersion );
         this.changes = new ConcurrentHashMap<>();
@@ -56,7 +57,7 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
     {
         super( store );
         this.previousVersion = store.version();
-        this.versionSequence = new ArrayQueueOutOfOrderSequence( previousVersion, 50 );
+        this.versionSequence = new ArrayQueueOutOfOrderSequence( previousVersion, 50, META );
         this.file = file;
         this.changes = prototype.changes;
         this.highestAppliedVersion = prototype.highestAppliedVersion;
@@ -72,12 +73,12 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
     @Override
     public EntryUpdater<Key> updater( long version, Lock lock )
     {
-        if ( versionSequence.seen( version, 0 ) )
+        if ( versionSequence.seen( version, META ) )
         {
             throw new IllegalStateException( "Cannot apply update with given version " + version +
                                              " when base version is " + previousVersion );
         }
-        versionSequence.offer( version, 0 );
+        versionSequence.offer( version, META );
         update( highestAppliedVersion, version );
         return new Updater<>( lock, store, changes, appliedChanges );
     }

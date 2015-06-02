@@ -24,15 +24,20 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
-import org.neo4j.kernel.impl.transaction.log.LogRecoveryCheck;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
+import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 
 /**
  * For now, an external tool that can determine if a given store will need
@@ -54,13 +59,13 @@ public class StoreRecoverer
 
     public boolean recoveryNeededAt( File dataDir ) throws IOException
     {
-        long logVersion = fs.fileExists( new File( dataDir, NeoStore.DEFAULT_NAME ) ) ?
-                new NeoStoreUtil( dataDir, fs ).getLogVersion() : 0;
+        long logVersion = fs.fileExists( new File( dataDir, NeoStore.DEFAULT_NAME ) )
+                          ? new NeoStoreUtil( dataDir, fs ).getLogVersion()
+                          : 0;
         return recoveryNeededAt( dataDir, logVersion );
     }
 
-    public boolean recoveryNeededAt( File dataDir, long currentLogVersion )
-            throws IOException
+    public boolean recoveryNeededAt( File dataDir, long currentLogVersion ) throws IOException
     {
         // We need config to determine where the logical log files are
         File neoStorePath = new File( dataDir, NeoStore.DEFAULT_NAME );
@@ -71,21 +76,29 @@ public class StoreRecoverer
         }
 
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
-        File log = logFiles.getLogFileForVersion( currentLogVersion );
 
-        if ( !fs.fileExists( log ) )
+        LogEntryReader<ReadableVersionableLogChannel> reader = new LogEntryReaderFactory().versionable();
+
+        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
+        LatestCheckPointFinder.LatestCheckPoint result = finder.find( currentLogVersion );
+        if ( result.checkPoint == null )
         {
-            // This most likely means that the db has been cleanly shut down, i.e. force then inc log version,
-            // then NOT creating a new log file (will be done the next startup)
-            return false;
+            if ( result.oldestLogVersionFound == 0 )
+            {
+                return true;
+            }
+            else
+            {
+                throw new UnderlyingStorageException( "No check point found in any log file from version " +
+                                                      Math.max( INITIAL_LOG_VERSION, result.oldestLogVersionFound ) +
+                                                      " to " + currentLogVersion );
+            }
         }
-        try ( StoreChannel logChannel = fs.open( log, "r" ) )
-        {
-            return LogRecoveryCheck.recoveryRequired(logChannel);
-        }
+
+        return result.commitsAfterCheckPoint;
     }
 
-    public void recover( File dataDir, Map<String, String> params, LogProvider userLogProvider )
+    public void recover( File dataDir, Map<String,String> params, LogProvider userLogProvider )
     {
         // For now, just launch a full embedded database on top of the
         // directory.
@@ -97,6 +110,6 @@ public class StoreRecoverer
                 dataDir.getAbsolutePath(),
                 params,
                 GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider ) )
-            .shutdown();
+                .shutdown();
     }
 }

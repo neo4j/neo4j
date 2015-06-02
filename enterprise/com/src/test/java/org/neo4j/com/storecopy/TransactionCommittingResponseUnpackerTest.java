@@ -30,6 +30,8 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
+import org.neo4j.function.Consumers;
+import org.neo4j.function.LongConsumer;
 import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -52,6 +54,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -287,12 +290,15 @@ public class TransactionCommittingResponseUnpackerTest
                 logVersionRepository, new PhysicalLogFile.Monitor.Adapter(), transactionMetadataCache ) );
         final KernelHealth health = mock( KernelHealth.class );
         final LogRotation logRotation = LogRotation.NO_ROTATION;
+        final CheckPointer checkPointer = CheckPointer.NO_CHECKPOINT;
+        LongConsumer transactionCommittedConsumer = Consumers.LNOOP;
         final IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
                 any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );
         final TransactionRepresentationStoreApplier applier = mock(TransactionRepresentationStoreApplier.class);
         final TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
-                transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS, health ) );
+                checkPointer, transactionCommittedConsumer, transactionMetadataCache, transactionIdStore,
+                IdOrderingQueue.BYPASS, health ) );
         life.start();
 
 
@@ -316,7 +322,7 @@ public class TransactionCommittingResponseUnpackerTest
         catch ( Exception e )
         {
             // THEN apart from failing we don't want any committed/closed calls to TransactionIdStore
-            verify( transactionIdStore, times( 0 ) ).transactionCommitted( anyLong(), anyLong() );
+            verify( transactionIdStore, times( 0 ) ).transactionCommitted( anyLong(), anyLong(), anyLong(), anyLong() );
             verify( transactionIdStore, times( 0 ) ).transactionClosed( anyLong() );
         }
     }

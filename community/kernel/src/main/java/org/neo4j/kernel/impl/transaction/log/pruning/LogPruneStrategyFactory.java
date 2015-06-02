@@ -25,7 +25,6 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 
 import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
@@ -35,7 +34,7 @@ public class LogPruneStrategyFactory
     public static final LogPruneStrategy NO_PRUNING = new LogPruneStrategy()
     {
         @Override
-        public void prune()
+        public void prune( long upToLogVersion )
         {
             // do nothing
         }
@@ -76,7 +75,6 @@ public class LogPruneStrategyFactory
     public static LogPruneStrategy fromConfigValue( FileSystemAbstraction fileSystem,
                                                     LogFileInformation logFileInformation,
                                                     PhysicalLogFiles files,
-                                                    LogVersionRepository versionRepo,
                                                     String configValue )
     {
         String[] tokens = configValue.split( " " );
@@ -95,8 +93,7 @@ public class LogPruneStrategyFactory
                     return NO_PRUNING;
                 case "false":
                     final TransactionCountThreshold thresholdToUse = new TransactionCountThreshold( 1 );
-                    return new ThresholdBasedPruneStrategy( fileSystem, logFileInformation, files, versionRepo,
-                            thresholdToUse );
+                    return new ThresholdBasedPruneStrategy( fileSystem, logFileInformation, files, thresholdToUse );
                 default:
                     throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
                             "'. The form is 'all' or '<number><unit> <type>' for example '100k txs' " +
@@ -129,7 +126,7 @@ public class LogPruneStrategyFactory
                 throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
                         "'. Invalid type '" + type + "', valid are files, size, txs, hours, days." );
         }
-        return new ThresholdBasedPruneStrategy( fileSystem, logFileInformation, files, versionRepo, thresholdToUse );
+        return new ThresholdBasedPruneStrategy( fileSystem, logFileInformation, files, thresholdToUse );
     }
 
 }

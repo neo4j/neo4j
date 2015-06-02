@@ -86,11 +86,10 @@ public class LogEntryWriterV1 implements LogEntryWriter
     }
 
     @Override
-    public void writeCheckPointEntry( long transactionId, LogPosition logPosition ) throws IOException
+    public void writeCheckPointEntry( LogPosition logPosition ) throws IOException
     {
         writeLogEntryHeader( CHECK_POINT );
-        channel.putLong( transactionId ).
-                putLong( logPosition.getLogVersion() ).
+        channel.putLong( logPosition.getLogVersion() ).
                 putLong( logPosition.getByteOffset() );
     }
 }

@@ -37,7 +37,7 @@ import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.SORT_BY_NODE_ID;
  * Provides {@link LabelScanWriter} that takes advantage of the single-threaded context of recovery
  * to cache writes and apply in bigger batches, where each batch holds data from many transactions.
  */
-class RecoveryLabelScanWriterProvider implements Provider<LabelScanWriter>, Closeable
+public class RecoveryLabelScanWriterProvider implements Provider<LabelScanWriter>, Closeable
 {
     private int callCount;
     private final LabelScanStore labelScanStore;

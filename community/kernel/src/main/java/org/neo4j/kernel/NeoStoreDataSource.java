@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
@@ -112,20 +113,23 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointTransactionCountThreshold;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
+import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
@@ -147,13 +151,15 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.kernel.recovery.DefaultRecoverySPI;
+import org.neo4j.kernel.recovery.LatestCheckPointFinder;
+import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.helpers.collection.Iterables.toList;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
 public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexProviders
@@ -202,9 +208,11 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
 
         LogFile logFile();
 
-        LogRotationControl logRotationControl();
+        StoreFlusher storeFlusher();
 
         LogRotation logRotation();
+
+        CheckPointer checkPointing();
 
         TransactionAppender transactionAppender();
     }
@@ -469,7 +477,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             buildRecovery( fs, cacheModule.cacheAccess(), indexingModule.indexingService(),
                     indexingModule.indexUpdatesValidator(), indexingModule.labelScanStore(), neoStoreModule.neoStore(),
                     monitors.newMonitor( RecoveryVisitor.Monitor.class ), monitors.newMonitor( Recovery.Monitor.class ),
-                    transactionLogModule.logFiles(), transactionLogModule.logRotationControl(), startupStatistics );
+                    transactionLogModule.logFiles(), transactionLogModule.storeFlusher(), startupStatistics );
 
             KernelModule kernelModule = buildKernel( indexingModule.integrityValidator(),
                     transactionLogModule.transactionAppender(), neoStoreModule.neoStore(),
@@ -567,7 +575,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                         neoStoreModule.neoStore().getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
                 relationshipTypeTokens.setInitialTokens(
                         neoStoreModule.neoStore().getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
-                labelTokens.setInitialTokens( neoStoreModule.neoStore().getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
+                labelTokens.setInitialTokens( neoStoreModule.neoStore().getLabelTokenStore().getTokens( Integer
+                        .MAX_VALUE ) );
 
                 neoStore.rebuildCountStoreIfNeeded(); // TODO: move this to lifecycle
             }
@@ -746,7 +755,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             @Override
             public long getTimestampForVersion( long version ) throws IOException
             {
-                LogPosition position = new LogPosition( version, LOG_HEADER_SIZE );
+                LogPosition position = LogPosition.start( version );
                 try ( ReadableVersionableLogChannel channel = logFile.getReader( position ) )
                 {
                     final LogEntryReader<ReadableVersionableLogChannel> reader =
@@ -771,23 +780,29 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 ? GraphDatabaseFacadeFactory.Configuration.ephemeral_keep_logical_logs
                 : GraphDatabaseSettings.keep_logical_logs );
 
-        LogPruneStrategy logPruneStrategy = fromConfigValue( fs, logFileInformation, logFiles, neoStore, pruningConf );
+        LogPruneStrategy logPruneStrategy = fromConfigValue( fs, logFileInformation, logFiles, pruningConf );
 
-        monitors.addMonitorListener( new LogPruning( logPruneStrategy, logProvider ) );
+        final LogPruning logPruning = new LogPruningImpl( logPruneStrategy, logProvider );
 
-        final LogRotationControl logRotationControl = new LogRotationControl( neoStore, indexingService, labelScanStore,
+        final StoreFlusher storeFlusher = new StoreFlusher( neoStore, indexingService, labelScanStore,
                 indexProviders );
 
         final LogRotation logRotation = new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ),
-                logFile, logRotationControl, kernelHealth, logProvider );
+                logFile, kernelHealth, logProvider );
 
-        final TransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
-                transactionMetadataCache, neoStore, legacyIndexTransactionOrdering, kernelHealth );
+        final CheckPointTransactionCountThreshold transactionCountThreshold = new CheckPointTransactionCountThreshold(
+                config.get( GraphDatabaseSettings.store_internal_check_point_max_txs ) );
+        final CheckPointer checkPointing = new CheckPointerImpl( logFile, neoStore, transactionCountThreshold,
+                storeFlusher, logPruning, kernelHealth, logProvider );
+
+        final TransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation, checkPointing,
+                transactionCountThreshold, transactionMetadataCache, neoStore, legacyIndexTransactionOrdering, kernelHealth );
         final LogicalTransactionStore logicalTransactionStore = new PhysicalLogicalTransactionStore( logFile,
                 transactionMetadataCache );
 
         life.add( logFile );
         life.add( appender );
+        life.add( checkPointing );
 
         return new TransactionLogModule()
         {
@@ -822,15 +837,21 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             }
 
             @Override
-            public LogRotationControl logRotationControl()
+            public StoreFlusher storeFlusher()
             {
-                return logRotationControl;
+                return storeFlusher;
             }
 
             @Override
             public LogRotation logRotation()
             {
                 return logRotation;
+            }
+
+            @Override
+            public CheckPointer checkPointing()
+            {
+                return checkPointing;
             }
 
             @Override
@@ -856,7 +877,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     private void buildRecovery( final FileSystemAbstraction fileSystemAbstraction, CacheAccessBackDoor cacheAccess,
             IndexingService indexingService, IndexUpdatesValidator indexUpdatesValidator, LabelScanStore labelScanStore,
             final NeoStore neoStore, RecoveryVisitor.Monitor recoveryVisitorMonitor, Recovery.Monitor recoveryMonitor,
-            final PhysicalLogFiles logFiles, final LogRotationControl logRotationControl,
+            final PhysicalLogFiles logFiles, final StoreFlusher storeFlusher,
             final StartupStatisticsProvider startupStatistics )
     {
         final RecoveryLabelScanWriterProvider labelScanWriters =
@@ -875,43 +896,12 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         final Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer =
                 new LogFileRecoverer( logEntryReader, recoveryVisitor );
 
-        Recovery recovery = new Recovery( new Recovery.SPI()
-        {
-            @Override
-            public void forceEverything()
-            {
-                try
-                {
-                    labelScanWriters.close();
-                    legacyIndexApplierLookup.close();
-                }
-                catch ( IOException e )
-                {
-                    throw new UnderlyingStorageException( e );
-                }
-                logRotationControl.forceEverything();
-            }
+        final LatestCheckPointFinder checkPointFinder =
+                new LatestCheckPointFinder( logFiles, fileSystemAbstraction, logEntryReader );
 
-            @Override
-            public long getCurrentLogVersion()
-            {
-                return neoStore.getCurrentLogVersion();
-            }
-
-            @Override
-            public Visitor<LogVersionedStoreChannel,IOException> getRecoverer()
-            {
-                return logFileRecoverer;
-            }
-
-            @Override
-            public PhysicalLogVersionedStoreChannel getLogFile( long recoveryVersion )
-                    throws IOException
-            {
-                return PhysicalLogFile.openForVersion( logFiles, fileSystemAbstraction,
-                        recoveryVersion );
-            }
-        }, recoveryMonitor );
+        Recovery.SPI spi = new DefaultRecoverySPI( labelScanWriters, legacyIndexApplierLookup,
+                storeFlusher, logFileRecoverer, logFiles, fileSystemAbstraction, neoStore, checkPointFinder );
+        Recovery recovery = new Recovery( spi, recoveryMonitor );
 
         life.add( recovery );
 
@@ -1069,7 +1059,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             return;
         }
 
-        LogRotationControl logRotationControl = transactionLogModule.logRotationControl();
+        StoreFlusher storeFlusher = transactionLogModule.storeFlusher();
+        CheckPointer checkPointer = transactionLogModule.checkPointing();
 
         // First kindly await all committing transactions to close. Do this without interfering with the
         // log file monitor. Keep in mind that at this point the availability guard is raised and some time spent
@@ -1079,7 +1070,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         // be some in flight that will get to commit at some point
         // in the future. Such transactions will fail if they come to commit after our synchronized block below.
         // Here we're zooming in and focusing on getting committed transactions to close.
-        logRotationControl.awaitAllTransactionsClosed();
+        awaitAllTransactionsClosed();
         LogFile logFile = transactionLogModule.logFile();
         synchronized ( logFile )
         {
@@ -1093,20 +1084,23 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 // to close. This is because there might have been transactions that were in flight and just now
                 // want to commit. We will allow committed transactions be properly closed, but no new transactions
                 // will be able to start committing at this point.
-                logRotationControl.awaitAllTransactionsClosed();
+                awaitAllTransactionsClosed();
 
                 // Force all pending store changes to disk.
-                logRotationControl.forceEverything();
+                storeFlusher.forceEverything();
 
-                // Rotate away the latest log only if the kernel is healthy.
+                //Write new checkpoint in the log only if the kernel is healthy.
                 // We cannot throw here since we need to shutdown without exceptions.
                 if ( kernelHealth.isHealthy() )
                 {
-                    // We simply increment the version, essentially "rotating" away
-                    // the current active log file, to avoid having a recovery on
-                    // next startup. Not necessary, simply speeds up the startup
-                    // process.
-                    neoStoreModule.neoStore().incrementAndGetVersion();
+                    try
+                    {
+                        checkPointer.forceCheckPoint();
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new UnderlyingStorageException( e );
+                    }
                 }
 
                 // Shut down all services in here, effectively making the database unusable for anyone who tries.
@@ -1120,6 +1114,14 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         // After we've released the logFile monitor there might be transactions that wants to commit, but had
         // to wait for the logFile monitor until now. When they finally get it and try to commit they will
         // fail since the logFile no longer works.
+    }
+
+    private void awaitAllTransactionsClosed()
+    {
+        while ( !neoStoreModule.neoStore().closedTransactionIdIsOnParWithOpenedTransactionId() )
+        {
+            LockSupport.parkNanos( 1_000_000 ); // 1 ms
+        }
     }
 
     @Override

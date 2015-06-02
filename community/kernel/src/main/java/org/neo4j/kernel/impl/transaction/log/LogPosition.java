@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-public class LogPosition
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+
+public class LogPosition implements Comparable<LogPosition>
 {
     public static final LogPosition UNSPECIFIED = new LogPosition( -1, -1 )
     {
@@ -41,6 +43,11 @@ public class LogPosition
             return "UNSPECIFIED";
         }
     };
+
+    public static LogPosition start( long logVersion )
+    {
+        return new LogPosition( logVersion, LOG_HEADER_SIZE );
+    }
 
     private final long logVersion;
     private final long byteOffset;
@@ -102,5 +109,16 @@ public class LogPosition
         int result = (int) (logVersion ^ (logVersion >>> 32));
         result = 31 * result + (int) (byteOffset ^ (byteOffset >>> 32));
         return result;
+    }
+
+    @Override
+    public int compareTo( LogPosition o )
+    {
+        if ( logVersion != o.logVersion )
+        {
+            return (int) (logVersion - o.logVersion);
+        }
+
+        return (int) (byteOffset - o.byteOffset);
     }
 }

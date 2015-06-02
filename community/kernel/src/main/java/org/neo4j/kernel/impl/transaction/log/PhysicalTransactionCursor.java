@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -34,14 +35,17 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 public class PhysicalTransactionCursor<T extends ReadableLogChannel>
         implements IOCursor<CommittedTransactionRepresentation>
 {
-    private final T channel;
-    private final LogEntryReader<T> entryReader;
-    private CommittedTransactionRepresentation current;
+    private final LogEntryCursor<T> logEntryCursor;
+    private final Marker<T> marker;
 
-    public PhysicalTransactionCursor( T channel, LogEntryReader<T> entryReader )
+    private CommittedTransactionRepresentation current;
+    private long lastKnownGoodPosition;
+
+    public PhysicalTransactionCursor( T channel, LogEntryReader<T> entryReader ) throws IOException
     {
-        this.channel = channel;
-        this.entryReader = entryReader;
+        this.marker = new Marker<>( channel );
+        this.lastKnownGoodPosition = marker.currentPosition();
+        this.logEntryCursor = new LogEntryCursor<>( channel, entryReader );
     }
 
     protected List<Command> commandList()
@@ -58,44 +62,78 @@ public class PhysicalTransactionCursor<T extends ReadableLogChannel>
     @Override
     public boolean next() throws IOException
     {
-        LogEntry entry = entryReader.readLogEntry( channel );
-        if ( entry == null )
-        {
-            return false;
-        }
-
-        assert entry instanceof LogEntryStart : "Expected Start entry, read " + entry + " instead";
-        LogEntryStart startEntry = (LogEntryStart) entry;
-        LogEntryCommit commitEntry;
-
-        List<Command> entries = commandList();
         while ( true )
         {
-            entry = entryReader.readLogEntry( channel );
-            if ( entry == null )
+            if ( !logEntryCursor.next() )
             {
                 return false;
             }
-            if ( entry instanceof LogEntryCommit )
+
+            LogEntry entry = logEntryCursor.get();
+            if ( entry instanceof CheckPoint )
             {
-                commitEntry = entry.as();
-                break;
+                // this is a good position anyhow
+                lastKnownGoodPosition = marker.currentPosition();
+                continue;
             }
 
-            entries.add( entry.<LogEntryCommand>as().getXaCommand() );
-        }
+            assert entry instanceof LogEntryStart : "Expected Start entry, read " + entry + " instead";
+            LogEntryStart startEntry = entry.as();
+            LogEntryCommit commitEntry;
 
-        PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries );
-        transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getMasterId(),
-                startEntry.getLocalId(), startEntry.getTimeWritten(),
-                startEntry.getLastCommittedTxWhenTransactionStarted(), commitEntry.getTimeWritten(), -1 );
-        current = new CommittedTransactionRepresentation( startEntry, transaction, commitEntry );
-        return true;
+            List<Command> entries = commandList();
+            while ( true )
+            {
+                if ( !logEntryCursor.next() )
+                {
+                    return false;
+                }
+
+                entry = logEntryCursor.get();
+                if ( entry instanceof LogEntryCommit )
+                {
+                    commitEntry = entry.as();
+                    break;
+                }
+
+                LogEntryCommand command = entry.as();
+                entries.add( command.getXaCommand() );
+            }
+
+            PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries );
+            transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getMasterId(),
+                    startEntry.getLocalId(), startEntry.getTimeWritten(),
+                    startEntry.getLastCommittedTxWhenTransactionStarted(), commitEntry.getTimeWritten(), -1 );
+            current = new CommittedTransactionRepresentation( startEntry, transaction, commitEntry );
+            lastKnownGoodPosition = marker.currentPosition();
+            return true;
+        }
     }
 
     @Override
     public void close() throws IOException
     {
-        channel.close();
+        logEntryCursor.close();
+    }
+
+    public long lastKnownGoodPosition()
+    {
+        return lastKnownGoodPosition;
+    }
+
+    private static class Marker<T extends ReadableLogChannel>
+    {
+        private final LogPositionMarker marker = new LogPositionMarker();
+        private final T channel;
+
+        public Marker( T channel )
+        {
+            this.channel = channel;
+        }
+
+        public long currentPosition() throws IOException
+        {
+            return channel.getCurrentPosition( marker ).getByteOffset();
+        }
     }
 }

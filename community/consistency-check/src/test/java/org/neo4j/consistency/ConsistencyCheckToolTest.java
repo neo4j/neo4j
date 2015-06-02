@@ -19,27 +19,28 @@
  */
 package org.neo4j.consistency;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.Recovery;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.Recovery;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -52,13 +53,11 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
@@ -190,7 +189,7 @@ public class ConsistencyCheckToolTest
         consistencyCheckTool.run( "-recovery", storeDirectory.graphDbDir().getAbsolutePath() );
 
         // Then
-        verify( listener ).recoveryRequired( anyLong() );
+        verify( listener ).recoveryRequired( any( LogPosition.class ) );
         verify( listener ).recoveryCompleted();
     }
 

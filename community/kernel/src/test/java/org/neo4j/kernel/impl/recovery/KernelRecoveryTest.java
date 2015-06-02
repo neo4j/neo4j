@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.recovery;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -34,12 +34,13 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-
+import static org.neo4j.kernel.impl.transaction.LogMatchers.checkPoint;
 import static org.neo4j.kernel.impl.transaction.LogMatchers.commandEntry;
 import static org.neo4j.kernel.impl.transaction.LogMatchers.commitEntry;
 import static org.neo4j.kernel.impl.transaction.LogMatchers.containsExactly;
@@ -84,7 +85,10 @@ public class KernelRecoveryTest
                     startEntry( -1, -1 ),
                     commandEntry( node2, NodeCommand.class ),
                     commandEntry( ReadOperations.ANY_LABEL, NodeCountsCommand.class ),
-                    commitEntry( 3 )
+                    commitEntry( 3 ),
+
+                    // checkpoint
+                    checkPoint( new LogPosition(0, 133) )
                 )
         );
     }

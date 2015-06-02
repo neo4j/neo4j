@@ -17,18 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.function;
 
-import java.io.IOException;
-
-import org.neo4j.io.fs.StoreChannel;
-
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-
-public class LogRecoveryCheck
+/**
+ * Represents an operation that accepts a single long input argument and returns no result.
+ *
+ * Unlike most other functional interfaces, Consumer is expected to operate via side-effects.
+ *
+ */
+public interface LongConsumer extends ThrowingLongConsumer<RuntimeException>
 {
-    public static boolean recoveryRequired(StoreChannel storeChannel) throws IOException
-    {
-        return storeChannel.size() > LOG_HEADER_SIZE;
-    }
+    /**
+     * Performs this operation on the given argument.
+     *
+     * @param t the long input argument
+     */
+    void accept( long t );
 }

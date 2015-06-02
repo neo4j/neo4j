@@ -43,7 +43,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
+import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
@@ -235,11 +235,11 @@ public class StoreCopyClientTest
                     LogicalTransactionStore logicalTransactionStore  = original.getDependencyResolver().resolveDependency(
                             LogicalTransactionStore.class );
 
-                    LogRotationControl logRotationControl = original.getDependencyResolver().resolveDependency(
-                            LogRotationControl.class );
+                    StoreFlusher storeFlusher = original.getDependencyResolver().resolveDependency(
+                            StoreFlusher.class );
 
                     RequestContext requestContext = new StoreCopyServer(transactionIdStore, neoStoreDataSource,
-                            logRotationControl, fs, originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ) )
+                            storeFlusher, fs, originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ) )
                             .flushStoresAndStreamStoreFiles( writer, false );
 
                     final StoreId storeId = original.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get().getStoreId();

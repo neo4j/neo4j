@@ -112,7 +112,8 @@ public class BatchingNeoStore implements AutoCloseable, NeoStoreSupplier
             throw new UnderlyingStorageException( e );
         }
         neoStore.setLastCommittedAndClosedTransactionId(
-                initialIds.lastCommittedTransactionId(), initialIds.lastCommittedTransactionChecksum() );
+                initialIds.lastCommittedTransactionId(), initialIds.lastCommittedTransactionChecksum(),
+                initialIds.lastCommittedTransactionLogVersion(), initialIds.lastCommittedTransactionLogByteOffset() );
         this.propertyKeyRepository = new BatchingPropertyKeyTokenRepository(
                 neoStore.getPropertyKeyTokenStore(), initialIds.highPropertyKeyTokenId() );
         this.labelRepository = new BatchingLabelTokenRepository(

@@ -36,7 +36,7 @@ public interface TransactionAppender
      *
      * Any failure happening inside this method will automatically
      * {@link TransactionIdStore#transactionClosed(long) close} the transaction if the execution got past
-     * {@link TransactionIdStore#transactionCommitted(long, long)}, so callers should not close transactions
+     * {@link TransactionIdStore#transactionCommitted(long, long, long, long)}, so callers should not close transactions
      * on exception thrown from this method. Although callers must make sure that successfully appended
      * transactions exiting this method are {@link TransactionIdStore#transactionClosed(long)}.
      *
@@ -56,7 +56,7 @@ public interface TransactionAppender
      *
      * Any failure happening inside this method will automatically
      * {@link TransactionIdStore#transactionClosed(long) close} the transaction if the execution got past
-     * {@link TransactionIdStore#transactionCommitted(long, long)}, so callers should not close transactions
+     * {@link TransactionIdStore#transactionCommitted(long, long, long, long)}, so callers should not close transactions
      * on exception thrown from this method. Although callers must make sure that successfully appended
      * transactions exiting this method are {@link TransactionIdStore#transactionClosed(long)}.
      *

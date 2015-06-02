@@ -23,34 +23,15 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
-import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
 public class TestStoreRecoverer
 {
@@ -68,9 +49,9 @@ public class TestStoreRecoverer
     public void shouldWantToRecoverBrokenStore() throws Exception
     {
         File store = createIntactStore();
-        createLogFileForNextVersionWithSomeDataInIt( store, fileSystem );
+        FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( store, fileSystem );
 
-        StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
+        StoreRecoverer recoverer = new StoreRecoverer( fileSystemAbstraction );
 
         assertThat( recoverer.recoveryNeededAt( store ), is( true ) );
     }
@@ -79,14 +60,14 @@ public class TestStoreRecoverer
     public void shouldBeAbleToRecoverBrokenStore() throws Exception
     {
         File storeDir = createIntactStore();
-        createLogFileForNextVersionWithSomeDataInIt( storeDir, fileSystem );
+        FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem );
 
-        StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
+        StoreRecoverer recoverer = new StoreRecoverer( fileSystemAbstraction );
 
         assertThat( recoverer.recoveryNeededAt( storeDir ), is( true ) );
 
         // Don't call recoverer.recover, because currently it's hard coded to start an embedded db
-        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
+        new TestGraphDatabaseFactory().setFileSystem( fileSystemAbstraction ).newImpermanentDatabase( storeDir ).shutdown();
 
         assertThat( recoverer.recoveryNeededAt( storeDir ), is( false ) );
     }
@@ -99,47 +80,23 @@ public class TestStoreRecoverer
         return storeDir;
     }
 
-    public static void createLogFileForNextVersionWithSomeDataInIt( File store, FileSystemAbstraction fileSystem ) throws IOException
+    private FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem )
+            throws IOException
     {
-        NeoStoreUtil util = new NeoStoreUtil( store, fileSystem );
+        final GraphDatabaseService db =
+                new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( store );
 
-        LifeSupport life = new LifeSupport();
-        DeadSimpleTransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( util.getLastCommittedTx(), 0 );
-        TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 10 );
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( store, PhysicalLogFile.DEFAULT_NAME, fileSystem );
-        LogFile logFile = life.add( new PhysicalLogFile( fileSystem, logFiles, 1000, transactionIdStore,
-                new DeadSimpleLogVersionRepository( util.getLogVersion() ), mock( PhysicalLogFile.Monitor.class ),
-                positionCache ) );
-        life.start();
-        try
+
+        try ( Transaction tx = db.beginTx() )
         {
-
-            TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
-                    positionCache, transactionIdStore, BYPASS, mock( KernelHealth.class ) ) );
-            life.add( appender );
-            appender.append( singleNodeTransaction(), LogAppendEvent.NULL );
+            db.createNode();
+            tx.success();
         }
-        finally
-        {
-            life.shutdown();
-        }
-    }
 
-    private static TransactionRepresentation singleNodeTransaction()
-    {
-        PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( Arrays.asList( createNodeCommand() ) );
-        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, -1 );
-        return transaction;
-    }
 
-    private static Command createNodeCommand()
-    {
-        NodeCommand nodeCommand = new NodeCommand();
-        long id = 0;
-        NodeRecord after = new NodeRecord( id );
-        after.setInUse( true );
-        nodeCommand.init( new NodeRecord( id ), after );
-        return nodeCommand;
+        EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
+        db.shutdown();
+        return snapshot;
     }
 
     private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();

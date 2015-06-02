@@ -33,19 +33,22 @@ import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 public class DeadSimpleTransactionIdStore implements TransactionIdStore
 {
     private final AtomicLong committingTransactionId = new AtomicLong();
-    private final OutOfOrderSequence committedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100 );
-    private final OutOfOrderSequence closedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100 );
+    private final OutOfOrderSequence committedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100, new long[3] );
+    private final OutOfOrderSequence closedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100, new long[1] );
     private final long previouslyCommittedTxId;
     private final long initialTransactionChecksum;
 
     public DeadSimpleTransactionIdStore()
     {
-        this( TransactionIdStore.BASE_TX_ID, 0 );
+        this( BASE_TX_ID, 0, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
     }
 
-    public DeadSimpleTransactionIdStore( long previouslyCommittedTxId, long checksum )
+    public DeadSimpleTransactionIdStore( long previouslyCommittedTxId, long checksum,
+            long previouslyCommittedTxLogVersion, long previouslyCommittedTxLogByteOffset )
     {
-        setLastCommittedAndClosedTransactionId( previouslyCommittedTxId, checksum );
+        assert previouslyCommittedTxId >= BASE_TX_ID : "cannot start from a tx id less than BASE_TX_ID";
+        setLastCommittedAndClosedTransactionId( previouslyCommittedTxId, checksum,
+                previouslyCommittedTxLogVersion, previouslyCommittedTxLogByteOffset );
         this.previouslyCommittedTxId = previouslyCommittedTxId;
         this.initialTransactionChecksum = checksum;
     }
@@ -57,9 +60,9 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionCommitted( long transactionId, long checksum )
+    public void transactionCommitted( long transactionId, long checksum, long logVersion, long byteOffset )
     {
-        committedTransactionId.offer( transactionId, checksum );
+        committedTransactionId.offer( transactionId, new long[]{checksum, logVersion, byteOffset} );
     }
 
     @Override
@@ -87,17 +90,17 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum )
+    public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long logVersion, long byteOffset )
     {
         committingTransactionId.set( transactionId );
-        committedTransactionId.set( transactionId, checksum );
-        closedTransactionId.set( transactionId, checksum );
+        committedTransactionId.set( transactionId, new long[]{checksum, logVersion, byteOffset} );
+        closedTransactionId.set( transactionId, new long[]{checksum, logVersion, byteOffset} );
     }
 
     @Override
     public void transactionClosed( long transactionId )
     {
-        closedTransactionId.offer( transactionId, 0 );
+        closedTransactionId.offer( transactionId, new long[]{0} );
     }
 
     @Override

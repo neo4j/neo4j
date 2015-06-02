@@ -39,7 +39,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
+import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -75,7 +75,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
     public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI, final LogProvider logProvider,
                                         final Monitors monitors, final NeoStoreDataSource neoStoreDataSource,
-                                        final Supplier<LogRotationControl> logRotationControlSupplier,
+                                        final Supplier<StoreFlusher> storeFlusherSupplier,
                                         final Supplier<TransactionIdStore> transactionIdStoreSupplier,
                                         final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
                                         final Supplier<LogFileInformation> logFileInformationSupplier,
@@ -90,7 +90,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 StoreCopyServer copier = new StoreCopyServer(
                         transactionIdStore,
                         neoStoreDataSource,
-                        logRotationControlSupplier.get(),
+                        storeFlusherSupplier.get(),
                         fileSystemAbstraction,
                         new File( graphDatabaseAPI.getStoreDir() ),
                         monitors.newMonitor( StoreCopyServer.Monitor.class ) );

@@ -53,7 +53,8 @@ public interface StoreMigrationParticipant extends Resource
      * @throws IOException if there was an error migrating.
      * @throws UnsatisfiedDependencyException if one or more dependencies were unsatisfied.
      */
-    void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider, PageCache pageCache ) throws IOException;
+    void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider, PageCache pageCache )
+            throws IOException;
 
     /**
      * After a successful migration, move all affected files from {@code upgradeDirectory} over to

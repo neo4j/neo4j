@@ -45,6 +45,12 @@ public interface LogAppendEvent extends AutoCloseable
         }
 
         @Override
+        public LogCheckPointEvent beginCheckPoint()
+        {
+            return LogCheckPointEvent.NULL;
+        }
+
+        @Override
         public SerializeTransactionEvent beginSerializeTransaction()
         {
             return SerializeTransactionEvent.NULL;
@@ -78,6 +84,11 @@ public interface LogAppendEvent extends AutoCloseable
      * Begin a log rotation as part of this appending to the transaction log.
      */
     LogRotateEvent beginLogRotate();
+
+    /**
+     * Begin a check point write to the log
+     */
+    LogCheckPointEvent beginCheckPoint();
 
     /**
      * Begin serializing and writing out the commands for this transaction.

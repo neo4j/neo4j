@@ -34,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.function.Consumers;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
@@ -53,6 +54,7 @@ import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.CleanupRule;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -71,10 +73,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.helpers.Exceptions.contains;
+import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer.NO_CHECKPOINT;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
@@ -96,8 +96,8 @@ public class BatchingTransactionAppenderTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
-        TransactionAppender appender =  life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, kernelHealth ) );
+        TransactionAppender appender =  life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
+                NO_CHECKPOINT, Consumers.LNOOP, positionCache, transactionIdStore, BYPASS, kernelHealth ) );
 
         life.start();
 
@@ -138,8 +138,8 @@ public class BatchingTransactionAppenderTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( nextTxId );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
-        TransactionAppender appender = life.add ( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, kernelHealth ) );
+        TransactionAppender appender = life.add ( new BatchingTransactionAppender( logFile, NO_ROTATION,
+                NO_CHECKPOINT, Consumers.LNOOP, positionCache, transactionIdStore, BYPASS, kernelHealth ) );
         life.start();
 
         // WHEN
@@ -184,8 +184,8 @@ public class BatchingTransactionAppenderTest
         when( logFile.getWriter() ).thenReturn( channel );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, kernelHealth ) );
+        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
+                NO_CHECKPOINT, Consumers.LNOOP, positionCache, transactionIdStore, BYPASS, kernelHealth ) );
 
         life.start();
 
@@ -233,7 +233,7 @@ public class BatchingTransactionAppenderTest
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
         Mockito.reset( kernelHealth );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
-                metadataCache, transactionIdStore, BYPASS, kernelHealth ) );
+                NO_CHECKPOINT, Consumers.LNOOP, metadataCache, transactionIdStore, BYPASS, kernelHealth ) );
 
         life.start();
 
@@ -268,7 +268,7 @@ public class BatchingTransactionAppenderTest
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 1L, 2L, 3L, 4L, 5L );
         IdOrderingQueue legacyIndexOrdering = new SynchronizedArrayIdOrderingQueue( 5 );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
-                metadataCache, transactionIdStore, legacyIndexOrdering, kernelHealth ) );
+                NO_CHECKPOINT, Consumers.LNOOP, metadataCache, transactionIdStore, legacyIndexOrdering, kernelHealth ) );
 
         life.start();
 
@@ -334,7 +334,7 @@ public class BatchingTransactionAppenderTest
         IdOrderingQueue idOrderingQueue = mock( IdOrderingQueue.class );
         doThrow( new RuntimeException( failureMessage ) ).when( idOrderingQueue ).waitFor( anyLong() );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
-                metadataCache, transactionIdStore, idOrderingQueue, kernelHealth ) );
+                NO_CHECKPOINT, Consumers.LNOOP, metadataCache, transactionIdStore, idOrderingQueue, kernelHealth ) );
 
         life.start();
 
@@ -350,7 +350,7 @@ public class BatchingTransactionAppenderTest
             // THEN
             assertTrue( contains( e, failureMessage, RuntimeException.class ) );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
-            verify( transactionIdStore, times( 1 ) ).transactionCommitted( eq( txId ), anyLong() );
+            verify( transactionIdStore, times( 1 ) ).transactionCommitted( eq( txId ), anyLong(), anyLong(), anyLong() );
             verify( transactionIdStore, times( 1 ) ).transactionClosed( txId );
             verifyNoMoreInteractions( transactionIdStore );
         }

@@ -25,15 +25,14 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.CURRE
 
 public class CheckPoint extends AbstractLogEntry
 {
+    private final LogPosition logPosition;
 
-    private LogPosition logPosition;
-
-    CheckPoint( LogPosition logPosition )
+    public CheckPoint( LogPosition logPosition )
     {
         this( CURRENT_LOG_ENTRY_VERSION, logPosition );
     }
 
-    CheckPoint( byte version, LogPosition logPosition )
+    public CheckPoint( byte version, LogPosition logPosition )
     {
         super( LogEntryByteCodes.CHECK_POINT, version );
         this.logPosition = logPosition;
@@ -65,13 +64,20 @@ public class CheckPoint extends AbstractLogEntry
 
         CheckPoint that = (CheckPoint) o;
 
-        return logPosition.equals( that.logPosition );
-
+        return !(logPosition != null ? !logPosition.equals( that.logPosition ) : that.logPosition != null);
     }
 
     @Override
     public int hashCode()
     {
-        return logPosition.hashCode();
+        return logPosition != null ? logPosition.hashCode() : 0;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "CheckPoint[" +
+               "position=" + logPosition +
+               ']';
     }
 }

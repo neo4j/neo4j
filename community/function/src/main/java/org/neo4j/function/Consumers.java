@@ -33,6 +33,15 @@ public final class Consumers
         }
     };
 
+    public static final LongConsumer LNOOP = new LongConsumer()
+    {
+        @Override
+        public void accept( long t )
+        {
+
+        }
+    };
+
     /**
      * @param <T> The type to be consumed
      * @return a {@link Consumer} that does nothing.

@@ -35,9 +35,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogDeserializer;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -160,6 +162,23 @@ public class LogMatchers
             public void describeTo( Description description )
             {
                 description.appendText( String.format( "Commit[txId=%d, <Any Date>]", txId ) );
+            }
+        };
+    }
+    public static Matcher<? extends LogEntry> checkPoint( final LogPosition position )
+    {
+        return new TypeSafeMatcher<CheckPoint>()
+        {
+            @Override
+            public boolean matchesSafely( CheckPoint cp )
+            {
+                return cp != null &&  position.equals( cp.getLogPosition() );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( String.format( "CheckPoint[position=%s]", position.toString() ) );
             }
         };
     }

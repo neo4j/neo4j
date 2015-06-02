@@ -33,5 +33,5 @@ public interface LogEntryWriter
 
     void writeCommitEntry( long transactionId, long timeWritten ) throws IOException;
 
-    void writeCheckPointEntry( long transactionId, LogPosition logPosition ) throws IOException;
+    void writeCheckPointEntry( LogPosition logPosition ) throws IOException;
 }

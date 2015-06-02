@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
@@ -46,6 +47,7 @@ public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRep
     private final Monitor monitor;
     private long lastTransactionIdApplied = -1;
     private long lastTransactionChecksum;
+    private LogPosition lastTransactionLogPosition;
 
     public RecoveryVisitor( TransactionIdStore store,
                             TransactionRepresentationStoreApplier storeApplier,
@@ -71,7 +73,9 @@ public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRep
         }
 
         lastTransactionIdApplied = txId;
-        lastTransactionChecksum = LogEntryStart.checksum( transaction.getStartEntry() );
+        LogEntryStart startEntry = transaction.getStartEntry();
+        lastTransactionChecksum = LogEntryStart.checksum( startEntry );
+        lastTransactionLogPosition = startEntry.getStartPosition();
         monitor.transactionRecovered( txId );
         return false;
     }
@@ -81,7 +85,8 @@ public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRep
     {
         if ( lastTransactionIdApplied != -1 )
         {
-            store.setLastCommittedAndClosedTransactionId( lastTransactionIdApplied, lastTransactionChecksum );
+            store.setLastCommittedAndClosedTransactionId( lastTransactionIdApplied, lastTransactionChecksum,
+                    lastTransactionLogPosition.getLogVersion(), lastTransactionLogPosition.getByteOffset() );
         }
     }
 

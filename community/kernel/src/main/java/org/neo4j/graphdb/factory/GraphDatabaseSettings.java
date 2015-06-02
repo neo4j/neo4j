@@ -142,6 +142,9 @@ public abstract class GraphDatabaseSettings
     @Description( "Maximum number of history files for the internal log." )
     public static final Setting<Integer> store_internal_log_max_archives = setting("store.internal_log.max_archives", INTEGER, "7", min(1) );
 
+    @Description( "Maximum number of transactions to trigger a check point" )
+    public static final Setting<Integer> store_internal_check_point_max_txs = setting( "store.internal_checkpoint.max_txs", INTEGER, "200000", min(1) );
+
     // Indexing
     @Description("Controls the auto indexing feature for nodes. Setting it to `false` shuts it down, " +
             "while `true` enables it by default for properties "

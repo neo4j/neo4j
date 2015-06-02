@@ -19,6 +19,13 @@
  */
 package org.neo4j.index.recovery;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -26,13 +33,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -44,17 +44,16 @@ import org.neo4j.kernel.api.impl.index.LuceneLabelScanStoreExtension;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
+import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertFalse;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 /**
@@ -88,7 +87,7 @@ public class UniqueIndexRecoveryTests
         Node unLabeledNode = createUnLabeledNode();
         Node labeledNode = createLabeledNode();
         createUniqueConstraint();
-        rotateLog(); // snapshot
+        rotateLogAndCheckPoint(); // snapshot
         setPropertyOnLabeledNode( labeledNode );
         deletePropertyOnLabeledNode( labeledNode );
         addLabelToUnLabeledNode( unLabeledNode );
@@ -244,13 +243,14 @@ public class UniqueIndexRecoveryTests
         db.shutdown();
     }
 
-    private void rotateLog() throws IOException
+    private void rotateLogAndCheckPoint() throws IOException
     {
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
     }
 
     private void flushAll()
     {
-        db.getDependencyResolver().resolveDependency( LogRotationControl.class ).forceEverything();
+        db.getDependencyResolver().resolveDependency( StoreFlusher.class ).forceEverything();
     }
 }

@@ -67,6 +67,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.concat;
@@ -186,6 +187,7 @@ public class StoreUpgradeIntegrationTest
                 {
                     NeoServer server = bootstrapper.getServer();
                     Database database = server.getDatabase();
+                    assertTrue( database.isRunning() );
                     checkInstance( store, database.getGraph() );
                 }
                 finally
