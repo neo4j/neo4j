@@ -143,5 +143,6 @@ class StringFunctionsTest extends CypherFunSuite {
     str(1234) should equal("1234")
     str(List(1, 2, 3, 4)) should equal("[1,2,3,4]")
     str(null) should equal(expectedNull)
+    str("4") should equal("4")
   }
 }
