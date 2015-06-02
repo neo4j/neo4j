@@ -27,6 +27,12 @@ include::{importdir}/neo4j-graph-algo-docs-jar/dev/index.asciidoc[]
 
 include::{importdir}/neo4j-server-docs-jar/dev/rest-api/index.asciidoc[]
 
+ifdef::feature-ndp[]
+:leveloffset: 1
+
+include::{importdir}/neo4j-ndp-v1-docs-docs-jar/dev/index.asciidoc[]
+endif::feature-ndp[]
+
 :leveloffset: 1
 
 include::deprecations.asciidoc[]
