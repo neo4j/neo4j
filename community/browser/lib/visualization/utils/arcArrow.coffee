@@ -26,7 +26,7 @@ class neo.utils.arcArrow
     square = (l) ->
       l * l
 
-    deflectionRadians = deflection * Math.PI / 180
+    deflectionRadians = @deflection * Math.PI / 180
     startAttach =
       x: Math.cos( deflectionRadians ) * (startRadius),
       y: Math.sin( deflectionRadians ) * (startRadius)
