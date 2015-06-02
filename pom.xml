@@ -591,20 +591,6 @@
         <version>2.3</version>
       </dependency>
       <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>osgi_R4_core</artifactId>
-        <version>1.0</version>
-        <scope>provided</scope>
-        <optional>true</optional>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>osgi_R4_compendium</artifactId>
-        <version>1.0</version>
-        <scope>provided</scope>
-        <optional>true</optional>
-      </dependency>
-      <dependency>
         <groupId>com.sun.jersey</groupId>
         <artifactId>jersey-client</artifactId>
         <version>1.19</version>
