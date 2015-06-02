@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.TypeSpec
-import org.neo4j.cypher.internal.compiler.v2_3.{symbols, InternalException, ast}
+import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, symbols}
 
 object LogicalPlanConverter {
 
@@ -128,13 +126,15 @@ object LogicalPlanConverter {
     }
   }
 
-  private implicit class ProduceResultCodeGen(val logicalPlan: ProduceResult) extends CodeGenPlan {
+  trait SingleChildPlan extends CodeGenPlan {
 
-    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
+    final override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
       context.pushParent(this)
       logicalPlan.lhs.get.asCodeGenPlan.produce(context)
     }
+  }
 
+  private implicit class ProduceResultCodeGen(val logicalPlan: ProduceResult) extends SingleChildPlan {
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
       val nodeVars = logicalPlan.nodes.map(n => n -> context.getProjection(n))
       val relVars = logicalPlan.relationships.map(r => r -> context.getProjection(r))
@@ -144,15 +144,10 @@ object LogicalPlanConverter {
     }
   }
 
-  private implicit class ExpandCodeGen(val logicalPlan: Expand) extends CodeGenPlan {
+  private implicit class ExpandCodeGen(val logicalPlan: Expand) extends SingleChildPlan {
 
     if (logicalPlan.mode != ExpandAll) {
       throw new CantCompileQueryException(s"Expand ${logicalPlan.mode} not yet supported")
-    }
-
-    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
-      context.pushParent(this)
-      logicalPlan.lhs.get.asCodeGenPlan.produce(context)
     }
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
@@ -234,12 +229,7 @@ object LogicalPlanConverter {
     }
   }
 
-  private implicit class ProjectionCodeGen(val logicalPlan: Projection) extends CodeGenPlan {
-
-    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
-      context.pushParent(this)
-      logicalPlan.lhs.get.asCodeGenPlan.produce(context)
-    }
+  private implicit class ProjectionCodeGen(val logicalPlan: Projection) extends SingleChildPlan {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
       val opName = context.registerOperator(logicalPlan)
@@ -257,12 +247,7 @@ object LogicalPlanConverter {
     }
   }
 
-  private implicit class SelectionCodeGen(val logicalPlan: Selection) extends CodeGenPlan {
-
-    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
-      context.pushParent(this)
-      logicalPlan.lhs.get.asCodeGenPlan.produce(context)
-    }
+  private implicit class SelectionCodeGen(val logicalPlan: Selection) extends SingleChildPlan {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
       val opName = context.registerOperator(logicalPlan)
@@ -277,80 +262,6 @@ object LogicalPlanConverter {
       }
 
       (methodHandle, instruction)
-    }
-  }
-}
-
-object ExpressionConverter {
-  def createPredicate(expression: Expression)
-                     (implicit opName: String, context: CodeGenContext): CodeGenExpression = expression match {
-    case expression: HasLabels =>
-      createExpression(expression)
-
-    case exp@Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
-      PropertyAsPredicate(createExpression(exp))
-
-    case exp@Property(node@Identifier(name), propKey) if context.semanticTable.isRelationship(node) =>
-      PropertyAsPredicate(createExpression(exp))
-
-    case other =>
-      throw new CantCompileQueryException(s"Predicate of $other not yet supported")
-
-  }
-
-  def createExpression(expression: Expression)
-                      (implicit opName: String, context: CodeGenContext): CodeGenExpression = {
-
-    expression match {
-      case node@Identifier(name) if context.semanticTable.isNode(node) =>
-        Node(context.getVariable(name))
-
-      case rel@Identifier(name) if context.semanticTable.isRelationship(rel) =>
-        Relationship(context.getVariable(name))
-
-      case Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
-        val token = propKey.id(context.semanticTable).map(_.id)
-        NodeProperty(opName, token, propKey.name, context.getVariable(name), context.namer.newVarName())
-
-      case Property(rel@Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
-        val token = propKey.id(context.semanticTable).map(_.id)
-        RelProperty(opName, token, propKey.name, context.getVariable(name), context.namer.newVarName())
-
-      case ast.Parameter(name) => expressions.Parameter(name)
-
-      case lit: IntegerLiteral => Literal(lit.value)
-
-      case lit: DoubleLiteral => Literal(lit.value)
-
-      case lit: StringLiteral => Literal(lit.value)
-
-      case lit: ast.Literal => Literal(lit.value)
-
-      case ast.Collection(exprs) =>
-        expressions.Collection(exprs.map(e => createExpression(e)))
-
-      case Add(lhs, rhs) =>
-        val leftOp = createExpression(lhs)
-        val rightOp = createExpression(rhs)
-        Addition(leftOp, rightOp)
-
-      case Subtract(lhs, rhs) =>
-        val leftOp = createExpression(lhs)
-        val rightOp = createExpression(rhs)
-        Subtraction(leftOp, rightOp)
-
-      case MapExpression(items: Seq[(PropertyKeyName, Expression)]) =>
-        val map = items.map {
-          case (key, expr) => (key.name, createExpression(expr))
-        }.toMap
-        MyMap(map)
-
-      case HasLabels(Identifier(name), label :: Nil) =>
-        val labelIdVariable = context.namer.newVarName()
-        val nodeVariable = context.getVariable(name)
-        HasLabel(opName, nodeVariable, labelIdVariable, label.name)
-
-      case other => throw new CantCompileQueryException(s"Expression of $other not yet supported")
     }
   }
 }
