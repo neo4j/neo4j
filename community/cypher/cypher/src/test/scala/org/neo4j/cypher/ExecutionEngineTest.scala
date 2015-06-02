@@ -977,6 +977,10 @@ order by a.COL1""")
 
   test("should_be_able_to_coerce_collections_to_predicates") {
     val n = createLabeledNode(Map("coll" -> Array(1, 2, 3), "bool" -> true), "LABEL")
+    createLabeledNode(Map("coll" -> Array[Int](), "bool" -> true), "LABEL")
+    createLabeledNode(Map("coll" -> Array(1, 2, 3), "bool" -> false), "LABEL")
+    createNode("coll" -> Array(1, 2, 3), "bool" -> true)
+    createLabeledNode("LABEL")
 
     val foundNode = executeWithAllPlannersAndRuntimes("match (n:LABEL) where n.coll and n.bool return n").columnAs[Node]("n").next()
 

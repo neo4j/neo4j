@@ -131,6 +131,8 @@ trait MethodStructure[E] {
 
   def lookupPropertyKey(propName: String, propVar: String)
 
+  def propertyValueAsPredicate(propertyExpression: E): E
+
   // code structure
   def whileLoop(test: E)(block: MethodStructure[E] => Unit): Unit
 
@@ -545,6 +547,9 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   override def lookupPropertyKey(propName: String, propIdVar: String) =
     generator.assign(typeRef[Int], propIdVar, Expression.invoke(readOperations, Methods.propertyKeyGetForName ,Expression.constant(propName)))
 
+  override def propertyValueAsPredicate(propertyExpression: Expression): Expression =
+    Expression.invoke(Methods.propertyAsPredicate, propertyExpression)
+
   override def newTableValue(targetVar: String, structure: Map[String, CypherType]) = {
     val valueType = aux.typeReference(structure)
     generator.assign(valueType, targetVar, Templates.newInstance(valueType))
@@ -576,6 +581,7 @@ private object Methods {
   val mapContains = method[util.Map[String, Object], Boolean]("containsKey", typeRef[String])
   val labelGetForName = method[ReadOperations, Int]("labelGetForName", typeRef[String])
   val propertyKeyGetForName = method[ReadOperations, Int]("propertyKeyGetForName", typeRef[String])
+  val propertyAsPredicate = method[CompiledPredicateHelper, Boolean]("isPropertyValueTrue", typeRef[Object])
   val relationshipTypeGetForName = method[ReadOperations, Int]("relationshipTypeGetForName", typeRef[String])
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
   val nodeGetProperty = method[ReadOperations, Object]("nodeGetProperty")

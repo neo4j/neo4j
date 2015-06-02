@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.{Literal, _}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, ast}
@@ -224,8 +224,8 @@ object LogicalPlanConverter {
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
       val opName = context.registerOperator(logicalPlan)
       val predicates = logicalPlan.predicates.map {
-        case expression: HasLabels =>
-          ExpressionConverter.createExpression(expression)(opName, context)
+        case expression =>
+          ExpressionConverter.createPredicate(expression)(opName, context)
 
         case x => throw new CantCompileQueryException(x.toString)
       }
@@ -242,6 +242,22 @@ object LogicalPlanConverter {
 }
 
 object ExpressionConverter {
+  def createPredicate(expression: Expression)
+                     (implicit opName: String, context: CodeGenContext): CodeGenExpression = expression match {
+    case expression: HasLabels =>
+      createExpression(expression)
+
+    case exp@Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
+      PropertyAsPredicate(createExpression(exp))
+
+    case exp@Property(node@Identifier(name), propKey) if context.semanticTable.isRelationship(node) =>
+      PropertyAsPredicate(createExpression(exp))
+
+    case other =>
+      throw new CantCompileQueryException(s"Predicate of $other not yet supported")
+
+  }
+
   def createExpression(expression: Expression)
                       (implicit opName: String, context: CodeGenContext): CodeGenExpression = {
 
