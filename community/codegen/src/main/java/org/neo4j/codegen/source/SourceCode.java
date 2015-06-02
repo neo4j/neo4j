@@ -45,7 +45,7 @@ public enum SourceCode implements CodeGeneratorOption
     public static final CodeGeneratorOption SOURCECODE = new CodeGenerationStrategy<Configuration>()
     {
         @Override
-        protected Configuration createConfigurator()
+        protected Configuration createConfigurator( ClassLoader loader )
         {
             return new Configuration();
         }
@@ -80,7 +80,7 @@ public enum SourceCode implements CodeGeneratorOption
 
     private static CodeGeneratorOption printWarningsTo( PrintStream err )
     {
-        return new MyCodeGeneratorOption( err );
+        return new PrintWarningsOption( err );
     }
 
     public static CodeGeneratorOption annotationProcessor( Processor processor )
@@ -175,11 +175,11 @@ public enum SourceCode implements CodeGeneratorOption
         }
     }
 
-    private static class MyCodeGeneratorOption implements CodeGeneratorOption, WarningsHandler
+    private static class PrintWarningsOption implements CodeGeneratorOption, WarningsHandler
     {
         private final PrintStream target;
 
-        MyCodeGeneratorOption( PrintStream target )
+        PrintWarningsOption( PrintStream target )
         {
             this.target = target;
         }
@@ -189,7 +189,7 @@ public enum SourceCode implements CodeGeneratorOption
         {
             if ( target instanceof Configuration )
             {
-                ((Configuration) target).addWarningsHandler( this );
+                ((Configuration) target).withWarningsHandler( this );
             }
         }
 

@@ -22,11 +22,8 @@ package org.neo4j.codegen.source;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import javax.tools.FileObject;
@@ -39,13 +36,11 @@ import org.neo4j.codegen.ByteCodes;
 
 class FileManager extends ForwardingJavaFileManager<StandardJavaFileManager>
 {
-    private final ClassLoader classpathLoader;
     private final Map<String/*className*/, ClassFile> classes = new HashMap<>();
 
-    FileManager( StandardJavaFileManager fileManager, ClassLoader classpathLoader )
+    FileManager( StandardJavaFileManager fileManager )
     {
         super( fileManager );
-        this.classpathLoader = classpathLoader;
     }
 
     @Override
@@ -62,7 +57,7 @@ class FileManager extends ForwardingJavaFileManager<StandardJavaFileManager>
         return classes.values();
     }
 
-    static class ClassFile extends SimpleJavaFileObject implements ByteCodes
+    private static class ClassFile extends SimpleJavaFileObject implements ByteCodes
     {
         private final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         private final String className;
@@ -89,18 +84,6 @@ class FileManager extends ForwardingJavaFileManager<StandardJavaFileManager>
         public ByteBuffer bytes()
         {
             return ByteBuffer.wrap( bytes.toByteArray() );
-        }
-    }
-
-    private static URL sourceUrl( Path sourceLocation )
-    {
-        try
-        {
-            return sourceLocation == null ? null : sourceLocation.toUri().toURL();
-        }
-        catch ( MalformedURLException e )
-        {
-            return null;
         }
     }
 }

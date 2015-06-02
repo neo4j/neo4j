@@ -22,6 +22,7 @@ package org.neo4j.codegen.source;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -33,31 +34,43 @@ import org.neo4j.codegen.TypeReference;
 
 class Configuration
 {
-    private List<Processor> processors;
-    private Set<SourceCode> flags;
-    private List<String> options;
-    private List<SourceVisitor> sourceVisitors;
-    private List<WarningsHandler> warningsHandlers;
+    private List<Processor> processors = new ArrayList<>();
+    private Set<SourceCode> flags = EnumSet.noneOf( SourceCode.class );
+    private List<String> options = new ArrayList<>();
+    private List<SourceVisitor> sourceVisitors = new ArrayList<>();
+    private List<WarningsHandler> warningsHandlers = new ArrayList<>();
 
-    public void withAnnotationProcessor( Processor processor )
+    public Configuration withAnnotationProcessor( Processor processor )
     {
-        if ( processors == null )
-        {
-            processors = new ArrayList<>();
-        }
         processors.add( processor );
+        return this;
     }
 
-    public void withFlag( SourceCode flag )
+    public Configuration withFlag( SourceCode flag )
     {
-        if ( flags == null )
+        flags.add( flag );
+        return this;
+    }
+
+    public Configuration withOptions( String... opts )
+    {
+        if ( opts != null )
         {
-            flags = EnumSet.of( flag );
+            Collections.addAll( options, opts );
         }
-        else
-        {
-            flags.add( flag );
-        }
+        return this;
+    }
+
+    public Configuration withSourceVisitor( SourceVisitor visitor )
+    {
+        sourceVisitors.add( visitor );
+        return this;
+    }
+
+    public Configuration withWarningsHandler( WarningsHandler handler )
+    {
+        warningsHandlers.add( handler );
+        return this;
     }
 
     public Iterable<String> options()
@@ -67,10 +80,7 @@ class Configuration
 
     public void processors( JavaCompiler.CompilationTask task )
     {
-        if ( processors != null )
-        {
-            task.setProcessors( processors );
-        }
+        task.setProcessors( processors );
     }
 
     public Locale locale()
@@ -98,38 +108,17 @@ class Configuration
         return flags != null && flags.contains( flag );
     }
 
-    public void addSourceVisitor( SourceVisitor visitor )
-    {
-        if ( sourceVisitors == null )
-        {
-            sourceVisitors = new ArrayList<>();
-        }
-        sourceVisitors.add( visitor );
-    }
-
     public void visit( TypeReference reference, StringBuilder source )
     {
-        if ( sourceVisitors != null )
+        for ( SourceVisitor visitor : sourceVisitors )
         {
-            for ( SourceVisitor visitor : sourceVisitors )
-            {
-                visitor.visitSource( reference, source );
-            }
+            visitor.visitSource( reference, source );
         }
-    }
-
-    public void addWarningsHandler( WarningsHandler handler )
-    {
-        if ( warningsHandlers == null )
-        {
-            warningsHandlers = new ArrayList<>();
-        }
-        warningsHandlers.add( handler );
     }
 
     public WarningsHandler warningsHandler()
     {
-        if ( warningsHandlers == null )
+        if ( warningsHandlers.isEmpty() )
         {
             return WarningsHandler.NO_WARNINGS_HANDLER;
         }
@@ -137,10 +126,7 @@ class Configuration
         {
             return warningsHandlers.get( 0 );
         }
-        else
-        {
-            return new WarningsHandler.Multiplex(
-                    warningsHandlers.toArray( new WarningsHandler[warningsHandlers.size()] ) );
-        }
+        return new WarningsHandler.Multiplex(
+                warningsHandlers.toArray( new WarningsHandler[warningsHandlers.size()] ) );
     }
 }
