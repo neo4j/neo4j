@@ -49,11 +49,6 @@ import static org.neo4j.collection.primitive.Primitive.longObjectMap;
  */
 public class NDPModule implements ServerModule
 {
-
-    // ./neo4j -> EnterpriseLauncher#main()
-    // ./neo4j -> AdvancedLauncher#main()
-    // ./neo4j -> CommunityLauncher#main()
-
     private final Config config;
     private final DependencyResolver dependencyResolver;
     private final LifeSupport life = new LifeSupport();
@@ -74,7 +69,8 @@ public class NDPModule implements ServerModule
         final LogService logging = dependencyResolver.resolveDependency( LogService.class );
         final JobScheduler scheduler = dependencyResolver.resolveDependency( JobScheduler.class );
 
-        final Log log = logging.getInternalLog( Sessions.class );
+        final Log internalLog = logging.getInternalLog( Sessions.class );
+        final Log userLog = logging.getUserLog( Sessions.class );
 
         final HostnamePort socketAddress = config.get( ServerSettings.ndp_socket_address );
         final HostnamePort webSocketAddress = config.get( ServerSettings.ndp_ws_address );
@@ -82,7 +78,7 @@ public class NDPModule implements ServerModule
         if ( config.get( ServerSettings.ndp_enabled ) )
         {
             final Sessions sessions = life.add( new ThreadedSessions(
-                    life.add( new StandardSessions( api, log ) ),
+                    life.add( new StandardSessions( api, internalLog ) ),
                     scheduler,
                     logging ) );
 
@@ -92,7 +88,7 @@ public class NDPModule implements ServerModule
                 @Override
                 public SocketProtocol apply( Channel channel )
                 {
-                    return new SocketProtocolV1( log, sessions.newSession(), channel );
+                    return new SocketProtocolV1( internalLog, sessions.newSession(), channel );
                 }
             } );
 
@@ -100,7 +96,9 @@ public class NDPModule implements ServerModule
             life.add( new NettyServer( asList(
                     new SocketTransport( socketAddress, availableVersions ),
                     new WebSocketTransport( webSocketAddress, availableVersions ) ) ) );
-            log.info( "NDP Server extension loaded." );
+            internalLog.info( "NDP Server extension loaded." );
+            userLog.info( "Experimental NDP support enabled! Listening for socket connections on " + socketAddress +
+                          " and for websocket connections on " + webSocketAddress + ".");
         }
 
         life.start();
