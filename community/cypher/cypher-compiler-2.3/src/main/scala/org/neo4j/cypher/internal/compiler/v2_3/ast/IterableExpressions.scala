@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
-import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_3._
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 trait FilteringExpression extends Expression {
   def name: String
@@ -34,7 +34,17 @@ trait FilteringExpression extends Expression {
   def semanticCheck(ctx: SemanticContext) =
     expression.semanticCheck(ctx) chain
     expression.expectType(CTCollection(CTAny).covariant) chain
-    checkInnerPredicate
+    checkInnerPredicate chain
+    failIfAggregrating(innerPredicate)
+
+  protected def failIfAggregrating(e: Expression): Option[SemanticError] =
+    if(e.containsAggregate) {
+      val message = "Can't use aggregating expressions inside of expressions executing over collections"
+      Some(SemanticError(message, expression.position))
+    } else None
+
+  protected def failIfAggregrating(in: Option[Expression]): Option[SemanticError] =
+    in.flatMap(failIfAggregrating)
 
   protected def possibleInnerTypes: TypeGenerator = s =>
     (expression.types(s) constrain CTCollection(CTAny)).unwrapCollections
@@ -87,7 +97,8 @@ case class ExtractExpression(scope: ExtractScope, expression: Expression)(val po
     checkPredicateNotDefined chain
     checkExtractExpressionDefined chain
     super.semanticCheck(ctx) chain
-    checkInnerExpression
+    checkInnerExpression chain
+    failIfAggregrating(extractExpression)
 
   private def checkExtractExpressionDefined =
     when (scope.extractExpression.isEmpty) {
@@ -121,7 +132,10 @@ case class ListComprehension(scope: ExtractScope, expression: Expression)(val po
   def innerPredicate = scope.innerPredicate
   def extractExpression = scope.extractExpression
 
-  override def semanticCheck(ctx: SemanticContext) = super.semanticCheck(ctx) chain checkInnerExpression
+  override def semanticCheck(ctx: SemanticContext) =
+    super.semanticCheck(ctx) chain
+      checkInnerExpression chain
+      failIfAggregrating(extractExpression)
 
   private def checkInnerExpression: SemanticCheck = extractExpression match {
     case Some(e) =>
@@ -212,7 +226,15 @@ case class ReduceExpression(scope: ReduceScope, init: Expression, collection: Ex
       accumulator.declare(accType) chain
       expression.semanticCheck(SemanticContext.Simple)
     } chain expression.expectType(init.types, AccumulatorExpressionTypeMismatchMessageGenerator) chain
-    this.specifyType(s => init.types(s) leastUpperBounds expression.types(s))
+    this.specifyType(s => init.types(s) leastUpperBounds expression.types(s)) chain
+    failIfAggregrating
+
+  protected def failIfAggregrating: Option[SemanticError] =
+    if (expression.containsAggregate) {
+      val message = "Can't use aggregating expressions inside of expressions executing over collections"
+      Some(SemanticError(message, expression.position))
+    } else None
+
 }
 
 object ReduceExpression {
