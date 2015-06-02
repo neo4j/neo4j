@@ -25,15 +25,12 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.Log;
-import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.Sessions;
 import org.neo4j.ndp.runtime.internal.StandardSessions;
 import org.neo4j.ndp.transport.socket.NettyServer;
@@ -67,10 +64,9 @@ public class Neo4jWithSocket implements TestRule
             {
                 final GraphDatabaseService gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
                 final GraphDatabaseAPI api = ((GraphDatabaseAPI) gdb);
-                final Log log = api.getDependencyResolver().resolveDependency( LogService.class )
-                        .getInternalLog( Session.class );
+                final LogService logging = api.getDependencyResolver().resolveDependency( LogService.class );
 
-                final Sessions sessions = life.add( new StandardSessions( api, log ) );
+                final Sessions sessions = life.add( new StandardSessions( api, logging ) );
 
                 PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> availableVersions = longObjectMap();
                 availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel, SocketProtocol>()
@@ -78,7 +74,7 @@ public class Neo4jWithSocket implements TestRule
                     @Override
                     public SocketProtocol apply( Channel channel )
                     {
-                        return new SocketProtocolV1( log, sessions.newSession(), channel );
+                        return new SocketProtocolV1( logging, sessions.newSession(), channel );
                     }
                 } );
 

@@ -94,7 +94,8 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
         final Config config = dependencies.config();
         final GraphDatabaseService gdb = dependencies.db();
         final GraphDatabaseAPI api = (GraphDatabaseAPI) gdb;
-        final Log log = dependencies.logService().getInternalLog( Sessions.class );
+        final LogService logging = dependencies.logService();
+        final Log log = logging.getInternalLog( Sessions.class );
 
         final HostnamePort socketAddress = config.get( Settings.ndp_socket_address );
         final HostnamePort webSocketAddress = config.get( Settings.ndp_ws_address );
@@ -104,9 +105,9 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
         if ( config.get( Settings.ndp_enabled ) )
         {
             final Sessions sessions = life.add( new ThreadedSessions(
-                    life.add( new StandardSessions( api, log ) ),
+                    life.add( new StandardSessions( api, logging ) ),
                     dependencies.scheduler(),
-                    dependencies.logService() ) );
+                    logging ) );
 
             PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> availableVersions = longObjectMap();
             availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel, SocketProtocol>()
@@ -114,7 +115,7 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
                 @Override
                 public SocketProtocol apply( Channel channel )
                 {
-                    return new SocketProtocolV1( log, sessions.newSession(), channel );
+                    return new SocketProtocolV1( logging, sessions.newSession(), channel );
                 }
             } );
 

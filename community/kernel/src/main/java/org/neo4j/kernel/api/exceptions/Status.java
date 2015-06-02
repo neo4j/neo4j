@@ -401,7 +401,7 @@ public interface Status
         }
     }
 
-    public enum Classification
+    enum Classification
     {
         /** The Client sent a bad request - changing the request might yield a successful outcome. */
         ClientError( TransactionEffect.NONE,
@@ -426,7 +426,7 @@ public interface Status
 
         private final String description;
 
-        private Classification( TransactionEffect transactionEffect, String description )
+        Classification( TransactionEffect transactionEffect, String description )
         {
             this.description = description;
             this.rollbackTransaction = transactionEffect == TransactionEffect.ROLLBACK;

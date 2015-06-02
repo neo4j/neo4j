@@ -32,7 +32,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.StatementMetadata;
 import org.neo4j.ndp.runtime.integration.RecordingCallback;
@@ -75,7 +75,7 @@ public class StateMachineErrorTest
         doThrow( new SyntaxException( "src/test" ) ).when( runner ).run( any( SessionState.class ),
                 any( String.class ), any( Map.class ) );
 
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLogService.getInstance() );
 
         // When
         machine.run( "this is nonsense", EMPTY_PARAMS, null, responses );
@@ -100,7 +100,7 @@ public class StateMachineErrorTest
         when( runner.run( any( SessionState.class ), any( String.class ), any( Map.class ) ) )
                 .thenReturn( mock( RecordStream.class ) );
 
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLogService.getInstance() );
 
         // and Given there is a result ready to be retrieved
         machine.run( "something", null, null, Session.Callbacks.<StatementMetadata, Object>noop() );
@@ -117,7 +117,7 @@ public class StateMachineErrorTest
     public void testRollbackError() throws Throwable
     {
         // Given
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLogService.getInstance() );
 
         // Given there is a running transaction
         machine.beginTransaction();
@@ -138,7 +138,7 @@ public class StateMachineErrorTest
         // Given
         RecordingCallback<StatementMetadata, Object> messages = new RecordingCallback<>();
         RecordingCallback<RecordStream, Object> pulling = new RecordingCallback<>();
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLogService.getInstance() );
 
         // When I perform some action that causes an error state
         machine.commitTransaction(); // No tx to be committed!
@@ -178,7 +178,7 @@ public class StateMachineErrorTest
         // Given
         RecordingCallback<StatementMetadata, Object> messages = new RecordingCallback<>();
         RecordingCallback<Void, Object> failures = new RecordingCallback<>();
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLogService.getInstance() );
 
         // Given I've performed some action that causes an error state
         machine.commitTransaction(); // No tx to be committed!

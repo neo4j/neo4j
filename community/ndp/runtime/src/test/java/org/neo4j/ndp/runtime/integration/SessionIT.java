@@ -35,6 +35,7 @@ import org.neo4j.ndp.runtime.internal.Neo4jError;
 import org.neo4j.stream.Record;
 import org.neo4j.stream.RecordStream;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.ndp.runtime.integration.SessionMatchers.failedWith;
@@ -261,8 +262,9 @@ public class SessionIT
 
         // Then
         pullAllCallbackCalled.await( 30, TimeUnit.SECONDS );
-        assertThat( error.get(), equalTo( new Neo4jError( Status.General.UnknownFailure,
-                "An unexpected failure occurred: 'Ooopsies!'." ) ) );
+        final Neo4jError err = error.get();
+        assertThat( err.status(), equalTo( (Status)Status.General.UnknownFailure ) );
+        assertThat( err.message(), containsString( "An unexpected failure occurred" ) );
     }
 
     @Test

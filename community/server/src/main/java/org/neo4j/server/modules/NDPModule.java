@@ -80,17 +80,17 @@ public class NDPModule implements ServerModule
         if ( config.get( ServerSettings.ndp_enabled ) )
         {
             final Sessions sessions = life.add( new ThreadedSessions(
-                    life.add( new StandardSessions( api, internalLog ) ),
+                    life.add( new StandardSessions( api, logging ) ),
                     scheduler,
                     logging ) );
 
             PrimitiveLongObjectMap<Function<Channel,SocketProtocol>> availableVersions = longObjectMap();
-            availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel, SocketProtocol>()
+            availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel,SocketProtocol>()
             {
                 @Override
                 public SocketProtocol apply( Channel channel )
                 {
-                    return new SocketProtocolV1( internalLog, sessions.newSession(), channel );
+                    return new SocketProtocolV1( logging, sessions.newSession(), channel );
                 }
             } );
 

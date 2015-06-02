@@ -20,20 +20,19 @@
 package org.neo4j.ndp.transport.socket;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 import org.neo4j.ndp.messaging.v1.MessageFormat;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.msgprocess.TransportBridge;
 import org.neo4j.ndp.runtime.Session;
-import org.neo4j.ndp.runtime.internal.Neo4jError;
+import org.neo4j.ndp.runtime.internal.ErrorTranslator;
 import org.neo4j.packstream.PackStream;
 
 /**
@@ -57,6 +56,7 @@ public class SocketProtocolV1 implements SocketProtocol
     private final Session session;
     private final Log log;
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
+    private final ErrorTranslator errorTranslator;
 
     public enum State
     {
@@ -69,10 +69,11 @@ public class SocketProtocolV1 implements SocketProtocol
     private State state = State.AWAITING_CHUNK;
     private int chunkSize = 0;
 
-    public SocketProtocolV1( final Log log, Session session, Channel channel )
+    public SocketProtocolV1( final LogService logging, Session session, Channel channel )
     {
-        this.log = log;
+        this.log = logging.getInternalLog( getClass() );
         this.session = session;
+        this.errorTranslator = new ErrorTranslator( logging );
         this.output = new ChunkedOutput( channel, DEFAULT_BUFFER_SIZE );
         this.input = new ChunkedInput();
         this.packer = new PackStreamMessageFormatV1.Writer( new PackStream.Packer( output ), output.messageBoundaryHook() );
@@ -176,8 +177,8 @@ public class SocketProtocolV1 implements SocketProtocol
     {
         state = State.CLOSED;
         input.close();
-        output.close();
         session.close();
+        output.close();
     }
 
     public State state()
@@ -219,15 +220,11 @@ public class SocketProtocolV1 implements SocketProtocol
 
     private void handleUnexpectedError( ChannelHandlerContext channelContext, Throwable e )
     {
-        log.error( String.format( "Session %s: Unexpected error while processing message. Session will be " +
-                                  "terminated: %s", session.key(), e.getMessage() ), e );
         try
         {
             try
             {
-                packer.handleFailureMessage( new Neo4jError( // TODO Map kernelException causes
-                        Status.General.UnknownFailure,
-                        e.getMessage() ) );
+                packer.handleFailureMessage( errorTranslator.translate( e ) );
                 packer.flush();
             }
             catch ( Throwable e1 )

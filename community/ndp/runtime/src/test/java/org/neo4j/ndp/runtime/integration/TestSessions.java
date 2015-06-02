@@ -30,7 +30,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.NullLog;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.Sessions;
 import org.neo4j.ndp.runtime.internal.StandardSessions;
@@ -55,7 +54,7 @@ public class TestSessions implements TestRule, Sessions
                 gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
                 Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
                 StandardSessions sessions = life.add(
-                        new StandardSessions( (GraphDatabaseAPI) gdb, NullLog.getInstance() ) );
+                        new StandardSessions( (GraphDatabaseAPI) gdb, NullLogService.getInstance() ) );
                 actual = life.add( new ThreadedSessions(
                         sessions,
                         scheduler, NullLogService.getInstance() ) );

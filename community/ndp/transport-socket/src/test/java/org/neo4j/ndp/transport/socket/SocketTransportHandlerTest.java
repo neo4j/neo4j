@@ -26,9 +26,8 @@ import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.ndp.runtime.Session;
 
 import static org.mockito.Mockito.mock;
@@ -71,7 +70,7 @@ public class SocketTransportHandlerTest
             @Override
             public SocketProtocol apply( Channel channel )
             {
-                return new SocketProtocolV1( NullLog.getInstance(), session, channel );
+                return new SocketProtocolV1( NullLogService.getInstance(), session, channel );
             }
         } );
 
