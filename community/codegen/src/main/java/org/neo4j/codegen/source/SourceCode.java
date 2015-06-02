@@ -30,14 +30,14 @@ import javax.annotation.processing.Processor;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
-import org.neo4j.codegen.TypeReference;
 import org.neo4j.codegen.CodeGenerationStrategy;
 import org.neo4j.codegen.CodeGenerator;
 import org.neo4j.codegen.CodeGeneratorOption;
+import org.neo4j.codegen.TypeReference;
 
 import static java.util.Objects.requireNonNull;
-
 import static org.neo4j.codegen.CompilationFailureException.format;
+import static org.neo4j.codegen.source.ClasspathHelper.fullClasspathStringFor;
 
 public enum SourceCode implements CodeGeneratorOption
 {
@@ -47,7 +47,7 @@ public enum SourceCode implements CodeGeneratorOption
         @Override
         protected Configuration createConfigurator( ClassLoader loader )
         {
-            return new Configuration();
+            return new Configuration().withOptions( "-classpath", fullClasspathStringFor( loader ) );
         }
 
         @Override
