@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -50,29 +51,29 @@ public class IndexTxStateLookupTest
     private static final Random random = new Random();
 
     @SuppressWarnings("RedundantStringConstructorCall")
-    @Parameterized.Parameters(name = "store=<{0}> lookup=<{1}>")
+    @Parameterized.Parameters(name = "{2}")
     public static Iterable<Object[]> parameters()
     {
         List<Object[]> parameters = new ArrayList<>();
         parameters.addAll( asList(
-                new Object[]{new String( "name" ), new String( "name" )},
-                new Object[]{7, 7L},
-                new Object[]{9L, 9},
-                new Object[]{2, 2.0},
-                new Object[]{3L, 3.0},
-                new Object[]{4, 4.0f},
-                new Object[]{5L, 5.0f},
-                new Object[]{12.0, 12},
-                new Object[]{13.0, 13L},
-                new Object[]{14.0f, 14},
-                new Object[]{15.0f, 15L},
-                new Object[]{2.5f, 2.5},
-                new Object[]{16.25, 16.25f},
-                new Object[]{new String[]{"a", "b", "c"}, new char[]{'a', 'b', 'c'}},
-                new Object[]{new char[]{'d', 'e', 'f'}, new String[]{"d", "e", "f"}},
-                new Object[]{splitStrings( TRIGGER_LAZY ), splitChars( TRIGGER_LAZY )},
-                new Object[]{splitChars( TRIGGER_LAZY ), splitStrings( TRIGGER_LAZY )},
-                new Object[]{new String[]{"foo", "bar"}, new String[]{"foo", "bar"}} ) );
+                new Object[]{new String( "name" ), new String( "name" ), "String => String"},
+                new Object[]{7, 7L, "int => long"},
+                new Object[]{9L, 9, "long => int"},
+                new Object[]{2, 2.0, "int => double"},
+                new Object[]{3L, 3.0, "long => double"},
+                new Object[]{4, 4.0f, "int => float"},
+                new Object[]{5L, 5.0f, "long => float"},
+                new Object[]{12.0, 12, "double => int"},
+                new Object[]{13.0, 13L, "double => long"},
+                new Object[]{14.0f, 14, "float => int"},
+                new Object[]{15.0f, 15L, "float => long"},
+                new Object[]{2.5f, 2.5, "float => int"},
+                new Object[]{16.25, 16.25f, "double => float"},
+                new Object[]{new String[]{"a", "b", "c"}, new char[]{'a', 'b', 'c'}, "String[] => char[]"},
+                new Object[]{new char[]{'d', 'e', 'f'}, new String[]{"d", "e", "f"}, "char[] => String[]"},
+                new Object[]{splitStrings( TRIGGER_LAZY ), splitChars( TRIGGER_LAZY ), "String[] => char[] (long)"},
+                new Object[]{splitChars( TRIGGER_LAZY ), splitStrings( TRIGGER_LAZY ), "char[] => String[] (long)"},
+                new Object[]{new String[]{"foo", "bar"}, new String[]{"foo", "bar"}, "String[] => String[]"} ) );
         Class[] numberTypes = {byte.class, short.class, int.class, long.class, float.class, double.class};
         for ( Class lhs : numberTypes )
         {
@@ -94,7 +95,7 @@ public class IndexTxStateLookupTest
             Array.set( lhs, i, convert( value, lhsType ) );
             Array.set( rhs, i, convert( value, rhsType ) );
         }
-        return new Object[]{lhs, rhs};
+        return new Object[]{lhs, rhs, format("%s[%s] => %s[%s]", lhsType.getName(), length, rhsType.getName(), length)};
     }
 
     private static Object convert( int value, Class<?> type )
@@ -142,7 +143,8 @@ public class IndexTxStateLookupTest
     private final Object lookup;
     private GraphDatabaseService graphDb;
 
-    public IndexTxStateLookupTest( Object store, Object lookup )
+    @SuppressWarnings("UnusedParameters")
+    public IndexTxStateLookupTest( Object store, Object lookup, Object name )
     {
         this.store = store;
         this.lookup = lookup;
