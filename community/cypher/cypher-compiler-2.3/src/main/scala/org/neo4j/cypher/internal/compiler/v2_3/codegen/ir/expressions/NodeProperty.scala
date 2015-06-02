@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
-case class NodeProperty(id: String, token: Option[Int], propName: String, nodeIdVar: String, propKeyVar: String)
+abstract class ElementProperty(id: String, token: Option[Int], propName: String, elementIdVar: String, propKeyVar: String)
   extends CodeGenExpression {
-
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
     if (token.isEmpty) generator.lookupPropertyKey(propName, propKeyVar)
 
@@ -32,11 +31,35 @@ case class NodeProperty(id: String, token: Option[Int], propName: String, nodeId
     structure.declareProperty(localName)
     structure.trace(id) { body =>
       if (token.isEmpty)
-        body.nodeGetPropertyForVar(nodeIdVar, propKeyVar, localName)
+        propertyByName(body, localName)
       else
-        body.nodeGetPropertyById(nodeIdVar, token.get, localName)
+        propertyById(body, localName)
       body.incrementDbHits()
     }
     structure.load(localName)
   }
+
+  def propertyByName[E](body: MethodStructure[E], localName: String): Unit
+
+  def propertyById[E](body: MethodStructure[E], localName: String): Unit
+}
+
+case class NodeProperty(id: String, token: Option[Int], propName: String, nodeIdVar: String, propKeyVar: String)
+  extends ElementProperty(id, token, propName, nodeIdVar, propKeyVar) {
+
+  override def propertyByName[E](body: MethodStructure[E], localName: String) =
+    body.nodeGetPropertyForVar(nodeIdVar, propKeyVar, localName)
+
+  override def propertyById[E](body: MethodStructure[E], localName: String) =
+    body.nodeGetPropertyById(nodeIdVar, token.get, localName)
+}
+
+case class RelProperty(id: String, token: Option[Int], propName: String, relIdVar: String, propKeyVar: String)
+  extends ElementProperty(id, token, propName, relIdVar, propKeyVar) {
+
+  override def propertyByName[E](body: MethodStructure[E], localName: String) =
+    body.relationshipGetPropertyForVar(relIdVar, propKeyVar, localName)
+
+  override def propertyById[E](body: MethodStructure[E], localName: String) =
+    body.relationshipGetPropertyById(relIdVar, token.get, localName)
 }
