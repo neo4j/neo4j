@@ -83,16 +83,24 @@ angular.module('neo4jApp.services')
 
       promiseResult = (promise) ->
         q = $q.defer()
+
         promise.success(
-          (result) =>
+          (result, status, headers, config) =>
+            raw = {request: config, response: {headers: headers(), data: result}}
+            raw.request.status = status
             if not result
-              q.reject()
+              q.reject({raw: raw})
             else if result.errors && result.errors.length > 0
-              q.reject(result)
+              q.reject({errors: result.errors, raw: raw})
             else
               results = []
+              if result.commit
+                begin_request= result
+                result = {results: [begin_request]}
               for r in result.results
-                results.push( new CypherResult(r) )
+                partResult = new CypherResult(r)
+                partResult.raw = raw
+                results.push partResult
               q.resolve( results[0] ) # TODO: handle multiple...
         ).error(
           (r) ->
@@ -103,7 +111,17 @@ angular.module('neo4jApp.services')
       class CypherTransaction
         constructor: () ->
           @_reset()
+          @requests = []
           delegate = null
+
+        _requestDone: (promise) ->
+          that = @
+          promise.then(
+            (res) ->
+              that.requests.push res
+            (res) ->
+              that.requests.push res
+          )
 
         _onSuccess: () ->
 
@@ -127,16 +145,20 @@ angular.module('neo4jApp.services')
               q.resolve(r)
             (r) => q.reject(r)
           )
-          promiseResult rr
+          parsed_result = promiseResult rr
+          @_requestDone parsed_result
+          parsed_result
 
         execute: (query) ->
           return @begin(query) unless @id
-          promiseResult(Server.transaction(
+          parsed_result = promiseResult(Server.transaction(
             path: '/' + @id
             statements: [
               statement: query
             ]
           ))
+          @_requestDone parsed_result
+          parsed_result
 
         commit: (query) ->
           statements = if query then [{statement:query}] else []
@@ -159,6 +181,7 @@ angular.module('neo4jApp.services')
               -> UDC.increment('cypher_wins')
               -> UDC.increment('cypher_fails')
             )
+            @_requestDone res
             res
           else
             res = promiseResult(Server.transaction(
@@ -169,6 +192,7 @@ angular.module('neo4jApp.services')
               -> UDC.increment('cypher_wins')
               -> UDC.increment('cypher_fails')
             )
+            @_requestDone res
             res
 
         rollback: ->

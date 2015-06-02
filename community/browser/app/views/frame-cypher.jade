@@ -4,17 +4,29 @@ div(ng-controller="CypherResultCtrl", fullscreen)
     .left-frame-toggle
       .left-toggle-menu.toggle(ng-if='frame.type == "cypher" && availableModes.length > 0')
         .btn-group.toggle-buttons
-          button.btn(ng-class='{active: isActive("graph")}', ng-click='setActive("graph")')
-            i.nf.nf-logo
-            span.mini-menu-item-text Graph
-          br
-          button.btn(ng-class='{active: isActive("table")}', ng-click='setActive("table")')
-            i.fa.fa-table
-            span.mini-menu-item-text Rows
-          br
-          button.btn(ng-show='isAvailable("plan")', ng-class='{active: isActive("plan")}', ng-click='setActive("plan")')
-            i.fa.fa-code-fork
-            span.mini-menu-item-text Plan
+          .button-holder(ng-show="isAvailable('graph')")
+            button.btn(ng-class='{active: isActive("graph")}', ng-click='setActive("graph")')
+              i.nf.nf-logo
+              span.mini-menu-item-text Graph
+            br
+          .button-holder(ng-show="isAvailable('table')")
+            button.btn(ng-class='{active: isActive("table")}', ng-click='setActive("table")')
+              i.fa.fa-table
+              span.mini-menu-item-text Rows
+            br
+          .button-holder(ng-show="isAvailable('plan')")
+            button.btn(ng-class='{active: isActive("plan")}', ng-click='setActive("plan")')
+              i.fa.fa-code-fork
+              span.mini-menu-item-text Plan
+            br
+          .button-holder(ng-show="isAvailable('errors')")
+            button.btn(ng-class='{active: isActive("errors")}', ng-click='setActive("errors")')
+              i.fa.fa-file-text-o
+              span.mini-menu-item-text Errors
+            br
+          button.btn(ng-class='{active: isActive("raw")}', ng-click='setActive("raw")')
+            i.fa.fa-code
+            span.mini-menu-item-text Code
     .right-inner-frame.no-indicator(ng-class='{"no-left-menu": frame.type != "cypher" || availableModes.length < 1}')
       .inner
         .view-result(ng-class='{error: frame.hasErrors}')
@@ -69,12 +81,39 @@ div(ng-controller="CypherResultCtrl", fullscreen)
               .status
                 include partials/plan-status
 
-          .view-result-error.result(ng-show='frame.hasErrors')
-            pre(ng-bind="frame.detailedErrorText")
-            .status-bar.error
+          .view-result-raw.result(ng-show='isActive("raw") && !frame.isTerminating')
+            .raw-holder
+              article.help.no-data.has-status-bar(ng-show='!isAvailable("raw")')
+                p No raw data found.
+              .raw-contents.clearfix(ng-show='isAvailable("raw")')
+                .request-card(ng-repeat="(index, request) in frame.requests")
+                  h4 {{ getRequestTitle(frame.requests.length, index) }}
+                  .frame-card
+                    p.lead.div-toggler General
+                    .frame-card-contents
+                      general-request-table(table-data="request.raw.request")
+                  .frame-card
+                    p.lead.div-toggler Request
+                    .frame-card-contents
+                      headers-table(table-data="request.raw.request.headers")
+                      h5 Payload
+                      pre(output-raw="request.raw.request.data")
+                  .frame-card
+                    p.lead.div-toggler Response
+                    .frame-card-contents
+                      headers-table(table-data="request.raw.response.headers")
+                      h5 Data
+                      pre(output-raw="request.raw.response.data", override-size-limit="true")
+            include partials/error-status-bar
+            .status-bar(ng-show="!frame.hasErrors")
               .status
-                .fa.fa-exclamation-triangle.icon-warning-sign &nbsp;
-                {{frame.errorText}}
+                include partials/raw-status
+
+          .view-result-error.result.with-frame-menu(ng-show='isActive("errors")')
+            .error-holder
+              article.help.no-data.has-status-bar
+                pre(ng-bind="frame.detailedErrorText")
+            include partials/error-status-bar
 
           .view-result-loading(ng-show='frame.isLoading && !frame.isTerminating')
             .spinner

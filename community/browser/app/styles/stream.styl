@@ -191,7 +191,24 @@
             overflow: auto
             background: #fff
 
+        .view-result-raw
+          position: relative
+          max-height: frame-result-height
+          min-height: frame-min-height
+          .raw-holder
+            max-height: (frame-result-height - middlebar-height)
+            min-height: (frame-min-height - middlebar-height)
+            overflow: auto
+
         .view-result-error
+          &.with-frame-menu
+            max-height: frame-result-height
+            min-height: frame-min-height
+            .error-holder
+              max-height: (frame-result-height - middlebar-height)
+              min-height: (frame-min-height - middlebar-height)
+              overflow: auto
+              background: #fff
           pre
             font-family: mono-font-family
             font-size: 14px
@@ -210,6 +227,7 @@
             margin-left: auto
             margin-right: auto
             text-align: center
+
     footer
       position: relative
       padding: 0

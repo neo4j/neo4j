@@ -245,6 +245,13 @@ table.json-object
         position: fixed
         bottom: 0
         width: 100%
+    .view-result-raw
+      .raw-holder
+        padding-bottom: (middlebar-height - 1)
+      .status-bar
+        position: fixed
+        bottom: 0
+        width: 100%
   .legend
     max-height: none;
   .left-frame-toggle
@@ -604,3 +611,38 @@ span.error
 .btn-neutral
   background-color: color-no
   border-radius: 6px
+
+.request-card
+  float: left
+  width: 45%
+  margin: 15px 1% 20px 1%
+  padding: 0 10px 20px 10px
+  border: 1px solid #ccc
+  border-radius: 4px
+  background-color: #ffffff
+  .frame-card
+    font-size: 12px
+    margin: 10px 5px 0 5px
+    .frame-card-contents
+      padding: 0 10px
+      margin: 0 5px
+    pre
+      font-size: 11px
+    th, td
+      padding: 0 0 0 1px
+    tr td:first-child
+      width: 30%
+      &:first-letter
+        text-transform: uppercase
+    .div-toggler
+      cursor: pointer
+      &:before
+        content: "\f0d7\00a0 "
+        font-family: FontAwesome
+      &.collapsed
+        &:before
+          content: "\f0da\00a0 "
+          font-family: FontAwesome
+
+.clearfix
+  clearfix()

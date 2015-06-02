@@ -18,30 +18,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-'use strict'
+'use strict';
 
-angular.module('neo4jApp.controllers', ['neo4jApp.utils'])
-angular.module('neo4jApp.directives', ['ui.bootstrap.modal', 'neo4jApp.utils'])
-angular.module('neo4jApp.filters', [])
-angular.module('neo4jApp.services', ['LocalStorageModule', 'neo4jApp.settings', 'neo4jApp.utils', 'base64'])
-
-app = angular.module('neo4jApp', [
-  'ngAnimate'
-  'neo4jApp.controllers'
-  'neo4jApp.directives'
-  'neo4jApp.filters'
-  'neo4jApp.services'
-  'neo4jApp.animations'
-  'neo.exportable'
-  'neo.csv'
-  'ui.bootstrap.dropdown'
-  'ui.bootstrap.position'
-  'ui.bootstrap.tooltip'
-  'ui.bootstrap.popover'
-  'ui.bootstrap.tabs'
-  'ui.bootstrap.carousel'
-  'ui.codemirror'
-  'ui.sortable'
-  #'angularMoment'
-  'ngSanitize'
-])
+angular.module('neo4jApp.directives')
+.directive 'divToggler', ['Editor', (Editor) ->
+  restrict: 'C'
+  link: (scope, element, attrs) ->
+    element.click (e) ->
+      element.next('div').slideToggle()
+      element.toggleClass('collapsed')
+      scope.$apply()
+]

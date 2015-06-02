@@ -19,23 +19,35 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 'use strict';
-
 angular.module('neo4jApp.directives')
-  .directive('outputRaw', ['Settings', (Settings) ->
-    restrict: 'A'
-    link: (scope, element, attrs) ->
-      unbind = scope.$watch attrs.outputRaw, (val) ->
-        return unless val
-        val = JSON.stringify(val, null, 2) unless angular.isString(val)
-        # Try to truncate string at first newline after limit
-        str = val.substring(0, Settings.maxRawSize)
-        rest = val.substring(Settings.maxRawSize + 1)
-        if attrs.overrideSizeLimit
-          str = val
-          rest = no
-        if rest
-          rest = rest.split("\n")[0] or ''
-          str += rest + "\n...\n<truncated output>\n\nPress download to see complete response"
-        element.text(str)
+.directive('headersTable', ['Utils', (Utils) ->
+    replace: yes
+    restrict: 'E'
+    link: (scope, elm, attr) ->
+      unbind = scope.$watch attr.tableData, (result) ->
+        return unless result
+        elm.html(render(result))
         unbind()
+
+      render = (result) ->
+        rows = result
+        cols = ['Header', 'Value']
+        return "" unless Object.keys(rows).length
+        html  = "<table class='table data'>"
+        html += "<thead><tr>"
+        for col in cols
+          html += "<th>#{col}</th>"
+        html += "</tr></thead>"
+        html += "<tbody>"
+
+        for i, v of rows
+          html += "<tr>"
+          html += '<td>' + Utils.escapeHTML(i) + '</td>'
+          html += '<td>' + Utils.escapeHTML(v) + '</td>'
+          html += "</tr>"
+        html += "</tbody>"
+        html += "</table>"
+        html
+
   ])
+
