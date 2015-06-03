@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, ast}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.TypeSpec
+import org.neo4j.cypher.internal.compiler.v2_3.{symbols, InternalException, ast}
 
 object LogicalPlanConverter {
 
@@ -57,7 +58,7 @@ object LogicalPlanConverter {
   private implicit class AllNodesScanCodeGen(val logicalPlan: AllNodesScan) extends LeafCodeGenPlan {
 
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
-      val variable = context.namer.newVarName()
+      val variable = Variable(context.namer.newVarName(), symbols.CTNode)
       context.addVariable(logicalPlan.idName.name, variable)
       val (methodHandle, actions) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
@@ -68,7 +69,7 @@ object LogicalPlanConverter {
   private implicit class NodeByLabelScanCodeGen(val logicalPlan: NodeByLabelScan) extends LeafCodeGenPlan {
 
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
-      val nodeVar = context.namer.newVarName()
+      val nodeVar = Variable(context.namer.newVarName(), symbols.CTNode)
       val labelVar = context.namer.newVarName()
       context.addVariable(logicalPlan.idName.name, nodeVar)
       val (methodHandle, actions) = context.popParent().consume(context, this)
@@ -154,8 +155,8 @@ object LogicalPlanConverter {
     }
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
-      val relVar = context.namer.newVarName()
-      val toNodeVar = context.namer.newVarName()
+      val relVar = Variable(context.namer.newVarName(), symbols.CTRelationship)
+      val toNodeVar = Variable(context.namer.newVarName(), symbols.CTNode)
       context.addVariable(logicalPlan.relName.name, relVar)
       context.addVariable(logicalPlan.to.name, toNodeVar)
 
@@ -223,12 +224,9 @@ object LogicalPlanConverter {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
       val opName = context.registerOperator(logicalPlan)
-      val predicates = logicalPlan.predicates.map {
-        case expression =>
-          ExpressionConverter.createPredicate(expression)(opName, context)
-
-        case x => throw new CantCompileQueryException(x.toString)
-      }
+      val predicates = logicalPlan.predicates.map(
+        ExpressionConverter.createPredicate(_)(opName, context)
+      )
 
       val (methodHandle, innerBlock) = context.popParent().consume(context, this)
 

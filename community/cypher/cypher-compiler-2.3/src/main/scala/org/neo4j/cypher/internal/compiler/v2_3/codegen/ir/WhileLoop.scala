@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
 
-case class WhileLoop(id: String, producer: LoopDataGenerator, action: Instruction) extends Instruction {
+case class WhileLoop(variable: Variable, producer: LoopDataGenerator, action: Instruction) extends Instruction {
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    val iterator = s"${id}Iter"
+    val iterator = s"${variable.name}Iter"
     generator.trace(producer.id) { body =>
       producer.produceIterator(iterator, body)
       body.whileLoop(body.hasNext(iterator)) { loopBody =>
         loopBody.incrementDbHits()
         loopBody.incrementRows()
-        producer.produceNext(id, iterator, loopBody)
+        producer.produceNext(variable, iterator, loopBody)
         action.body(loopBody)
       }
     }

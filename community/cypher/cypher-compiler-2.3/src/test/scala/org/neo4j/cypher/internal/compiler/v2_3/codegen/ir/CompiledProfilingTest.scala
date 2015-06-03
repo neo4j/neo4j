@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compiler.v2_3.ProfileMode
+import org.neo4j.cypher.internal.compiler.v2_3.{symbols, ProfileMode}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.Variable
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
@@ -44,8 +45,9 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val id1 = new Id()
     val id2 = new Id()
 
-    val projectNode = expressions.Node("name")
-    val compiled = compile(WhileLoop("name",
+    val variable = Variable("name", symbols.CTNode)
+    val projectNode = expressions.Node(variable)
+    val compiled = compile(WhileLoop(variable,
       ScanAllNodes("OP1"),
       Project("X", List(projectNode),
       AcceptVisitor("OP2", Map("n" -> projectNode)))))
@@ -115,7 +117,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
   test("should generate operator id fields") {
     // given
-    val instruction = WhileLoop("name",
+    val instruction = WhileLoop(Variable("name", symbols.CTNode),
       ScanAllNodes("foo"),
       AcceptVisitor("bar", Map.empty))
 
