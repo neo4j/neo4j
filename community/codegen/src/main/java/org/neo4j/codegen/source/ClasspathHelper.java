@@ -41,7 +41,7 @@ final class ClasspathHelper
 
     static Set<String> javaClasspath()
     {
-        String[] classpathElements = javaClasspathString().split( ":" );
+        String[] classpathElements = javaClasspathString().split( File.pathSeparator );
         Set<String> result = new LinkedHashSet<>();
 
         for ( String element : classpathElements )
