@@ -27,6 +27,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -72,11 +73,12 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicator;
+import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -190,7 +192,11 @@ public class StoreMigrator implements StoreMigrationParticipant
         // Write the tx checksum to file in migrationDir, because we need it later when moving files into storeDir
         writeLastTxChecksum( migrationDir, lastTxChecksum );
 
-        if ( versionToUpgradeFrom( storeDir ).equals( Legacy21Store.LEGACY_VERSION ) )
+        if (versionToUpgradeFrom( storeDir ).equals( Legacy22Store.LEGACY_VERSION ))
+        {
+            // all good no need to migrate store files
+        }
+        else if ( versionToUpgradeFrom( storeDir ).equals( Legacy21Store.LEGACY_VERSION ) )
         {
             // create counters from scratch
             removeDuplicateEntityProperties( storeDir, migrationDir, pageCache, schemaIndexProvider );
@@ -718,6 +724,10 @@ public class StoreMigrator implements StoreMigrationParticipant
                         StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
                 idFilesToDelete = new StoreFile[]{};
                 break;
+            case Legacy22Store.LEGACY_VERSION:
+                filesToMove = Collections.emptyList();
+                idFilesToDelete = new StoreFile[]{};
+                break;
             default:
                 throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom( storeDir ) );
         }
@@ -739,7 +749,6 @@ public class StoreMigrator implements StoreMigrationParticipant
         updateOrAddNeoStoreFieldsAsPartOfMigration( migrationDir, storeDir );
 
         // delete old logs
-        legacyLogs.operate( DELETE, storeDir, null );
         legacyLogs.deleteUnusedLogFiles( storeDir );
     }
 
