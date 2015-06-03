@@ -37,6 +37,7 @@ object LogicalPlanConverter {
       case p: NodeByLabelScan => p
       case p: ProduceResult => p
       case p: Expand => p
+      case p: OptionalExpand => p
       case p: NodeHashJoin => p
       case p: CartesianProduct => p
       case p: Projection => p
@@ -164,12 +165,53 @@ object LogicalPlanConverter {
       val fromNodeVar = context.getVariable(logicalPlan.from.name)
       val typeVar2TypeName = logicalPlan.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(logicalPlan)
-      val expand = ExpandC(opName, fromNodeVar, relVar, logicalPlan.dir, typeVar2TypeName, toNodeVar, Instruction.empty)
+      val expand = ExpandLoopDataGenerator(opName, fromNodeVar, logicalPlan.dir, typeVar2TypeName, toNodeVar)
       (methodHandle, WhileLoop(relVar, expand, action))
     }
   }
 
-  private implicit class CartestianProductGen(val logicalPlan: CartesianProduct) extends CodeGenPlan {
+
+  private implicit class OptionalExpandCodeGen(val logicalPlan: OptionalExpand) extends CodeGenPlan {
+
+    if (logicalPlan.mode != ExpandAll) {
+      throw new CantCompileQueryException(s"OptionalExpand ${logicalPlan.mode} not yet supported")
+    }
+
+    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
+      context.pushParent(this)
+      logicalPlan.lhs.get.asCodeGenPlan.produce(context)
+    }
+
+    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+      //mark relationship and node to visit as nullable
+      val relVar = Variable(context.namer.newVarName(), symbols.CTRelationship, nullable = true)
+      val toNodeVar = Variable(context.namer.newVarName(), symbols.CTNode, nullable = true)
+      context.addVariable(logicalPlan.relName.name, relVar)
+      context.addVariable(logicalPlan.to.name, toNodeVar)
+
+      val (methodHandle, action) = context.popParent().consume(context, this)
+      val fromNodeVar = context.getVariable(logicalPlan.from.name)
+      val typeVar2TypeName = logicalPlan.types.map(t => context.namer.newVarName() -> t.name).toMap
+      val opName = context.registerOperator(logicalPlan)
+
+      //wrap inner instructions with predicates
+      val instructionWithPredicates = logicalPlan.predicates
+        .reverseMap(ExpressionConverter.createExpression(_)(opName, context)).foldLeft[Instruction](action) {
+        case (acc, predicate) => If(predicate, acc)
+      }
+      //name of flag to check if results were yielded
+      val yieldFlag = context.namer.newVarName()
+
+      val expand = ExpandLoopDataGenerator(opName, fromNodeVar, logicalPlan.dir, typeVar2TypeName, toNodeVar)
+
+      val dataGenerator = CheckingLoopDataGenerator(expand, yieldFlag)
+      val loop = WhileLoop(relVar, dataGenerator, instructionWithPredicates)
+
+      (methodHandle, NullingWhileLoop(loop, yieldFlag, relVar, toNodeVar))
+    }
+  }
+
+  private implicit class CartesianProductGen(val logicalPlan: CartesianProduct) extends CodeGenPlan {
 
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
       context.pushParent(this)

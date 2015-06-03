@@ -31,9 +31,11 @@ case class HasLabel(opName: String, nodeVariable: Variable, labelVariable: Strin
     structure.declarePredicate(localName)
 
     structure.trace(opName) { inner =>
-      inner.hasLabel(nodeVariable.name, labelVariable, localName)
       inner.incrementDbHits()
-      inner.load(localName)
+      if (nodeVariable.nullable)
+        inner.nullable(nodeVariable.name, nodeVariable.cypherType, inner.hasLabel(nodeVariable.name, labelVariable, localName))
+      else
+        inner.hasLabel(nodeVariable.name, labelVariable, localName)
     }
   }
 }

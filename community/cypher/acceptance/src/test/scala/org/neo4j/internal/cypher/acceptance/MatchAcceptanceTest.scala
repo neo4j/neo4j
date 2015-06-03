@@ -789,7 +789,7 @@ return b
 
   test("should preserve the original matched values if optional match matches nothing") {
     val n = createNode()
-    val result = executeWithAllPlanners("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n, x")
+    val result = executeWithAllPlannersAndRuntimes("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n, x")
 
     result.toList should equal (List(Map("n" -> n, "x" -> null)))
   }

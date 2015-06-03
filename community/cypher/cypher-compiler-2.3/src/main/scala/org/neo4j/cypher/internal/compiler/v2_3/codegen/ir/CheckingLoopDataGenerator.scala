@@ -19,30 +19,31 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure, KernelExceptionCodeGen}
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
 
-case class ExpandC(id: String, fromVar: Variable, relVar: Variable, dir: Direction,
-                   types: Map[String, String], toVar: Variable, inner: Instruction)
+/**
+ * Generates instructions for running a loop data generator that sets the flag with the provided name
+ * to true if the loop data generator produces results
+ * @param loop the loop to wrap
+ * @param yieldedFlagVar the name of the flag to update
+ */
+case class CheckingLoopDataGenerator(loop: LoopDataGenerator, yieldedFlagVar: String)
   extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    types.foreach {
-      case (typeVar,relType) => generator.lookupRelationshipTypeId(typeVar, relType)
-    }
-    inner.init(generator)
+    loop.init(generator)
   }
 
   override def produceIterator[E](iterVar: String, generator: MethodStructure[E]) = {
-    if(types.isEmpty)
-      generator.nodeGetAllRelationships(iterVar, fromVar.name, dir)
-    else
-      generator.nodeGetRelationships(iterVar, fromVar.name, dir, types.keys.toSeq)
-    generator.incrementDbHits()
+    loop.produceIterator(iterVar, generator)
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E]) =
-    generator.nextRelationshipNode(toVar.name, iterVar, dir, fromVar.name, relVar.name)
+  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E]) = {
+    loop.produceNext(nextVar, iterVar, generator)
+    generator.updateFlag(yieldedFlagVar, newValue = true)
+  }
 
-  override def children = Seq(inner)
+  override def children = Seq(loop)
+
+  override def id = loop.id
 }

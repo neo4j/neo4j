@@ -176,7 +176,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
 
     // WHEN
-    val result = profileWithAllPlanners("MATCH n optional match (n)-->(x) return x")
+    val result = profileWithAllPlannersAndRuntimes("MATCH n optional match (n)-->(x) return x")
 
     // THEN
     assertDbHits(0)(result)("ProduceResults")
