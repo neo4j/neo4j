@@ -91,7 +91,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
+    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))

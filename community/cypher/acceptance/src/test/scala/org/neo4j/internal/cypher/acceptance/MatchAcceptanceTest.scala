@@ -930,7 +930,7 @@ return b
     graph.createIndex("Person", "name")
 
     // when
-    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
+    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
 
     // then
     result.toList should equal (List(Map("n" -> jake)))

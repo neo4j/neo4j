@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Direction, GraphDatabaseService, Node, Relationship}
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.exceptions.KernelException
+import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.api.properties.Property
 import org.neo4j.kernel.api.{ReadOperations, Statement, StatementTokenNameLookup, TokenNameLookup}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -118,6 +119,10 @@ trait MethodStructure[E] {
   def relationshipGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
   def lookupPropertyKey(propName: String, propVar: String)
   def propertyValueAsPredicate(propertyExpression: E): E
+
+  def indexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
+
+  def indexSeek(iterVar: String, descriptorVar: String, value: E): Unit
 
   // code structure
   def whileLoop(test: E)(block: MethodStructure[E] => Unit): Unit
@@ -289,7 +294,6 @@ private class AuxGenerator(val packageName: String, val generator: codegen.CodeG
 private case class Method(fields: Fields, generator: CodeBlock, aux: AuxGenerator, tracing: Boolean = true,
                           event: Option[String] = None, var locals: Map[String, LocalVariable] = Map.empty)
   extends MethodStructure[Expression] {
-
   import CodeStructure.typeRef
 
   override def nextNode(targetVar: String, iterVar: String) =
@@ -620,6 +624,19 @@ private case class Method(fields: Fields, generator: CodeBlock, aux: AuxGenerato
   override def lookupPropertyKey(propName: String, propIdVar: String) =
     generator.assign(typeRef[Int], propIdVar, Expression.invoke(readOperations, Methods.propertyKeyGetForName ,Expression.constant(propName)))
 
+  override def indexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String) = {
+    generator.assign(typeRef[IndexDescriptor], descriptorVar,
+      Templates.newInstance(typeRef[IndexDescriptor], generator.load(labelVar), generator.load(propKeyVar))
+    )
+  }
+
+  override def indexSeek(iterVar: String, descriptorVar: String, value: Expression) = {
+    val local = generator.declare(typeRef[PrimitiveLongIterator], iterVar)
+    Templates.handleExceptions(generator, fields.ro) { body =>
+      body.assign(local, Expression.invoke(readOperations, Methods.nodesGetFromIndexLookup, generator.load(descriptorVar), value ))
+    }
+  }
+
   override def propertyValueAsPredicate(propertyExpression: Expression): Expression =
     Expression.invoke(Methods.propertyAsPredicate, propertyExpression)
 
@@ -659,6 +676,7 @@ private object Methods {
   val relationshipTypeGetForName = method[ReadOperations, Int]("relationshipTypeGetForName", typeRef[String])
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
   val nodeGetProperty = method[ReadOperations, Object]("nodeGetProperty")
+  val nodesGetFromIndexLookup = method[ReadOperations, PrimitiveLongIterator]("nodesGetFromIndexLookup", typeRef[IndexDescriptor], typeRef[Object])
   val relationshipGetProperty = method[ReadOperations, Object]("relationshipGetProperty")
   val nodesGetForLabel = method[ReadOperations, PrimitiveLongIterator]("nodesGetForLabel", typeRef[Int])
   val nodeHasLabel = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])
@@ -676,8 +694,8 @@ private object Methods {
 private object Templates {
   import CodeStructure.{method, param, staticField, typeRef}
 
-  def newInstance(valueType: TypeReference): Expression = {
-    Expression.invoke(Expression.newInstance(valueType), MethodReference.constructorReference(valueType))
+  def newInstance(valueType: TypeReference, args: Expression*): Expression = {
+    Expression.invoke(Expression.newInstance(valueType), MethodReference.constructorReference(valueType), args:_*)
   }
 
   val newLongObjectMap = Expression.invoke(method[Primitive,PrimitiveLongObjectMap[_]]("longObjectMap"))

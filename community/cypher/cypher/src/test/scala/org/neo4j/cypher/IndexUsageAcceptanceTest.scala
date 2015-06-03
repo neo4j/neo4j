@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.NodeIndexSeekPipe
 
 class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
   test("should be able to use indexes") {
     setUpDatabaseForTests()
 
     // When
-    val result = executeWithAllPlanners("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
+    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
 
     // Then
     result.executionPlanDescription().toString should include("NodeIndexSeek")
@@ -47,7 +46,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     setUpDatabaseForTests()
 
     // When
-    val result = executeWithAllPlanners("MATCH (n:Matrix:Crew) WHERE n.name = 'Neo' RETURN n")
+    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Matrix:Crew) WHERE n.name = 'Neo' RETURN n")
 
     // Then
     result.executionPlanDescription().toString should include("NodeIndexSeek")

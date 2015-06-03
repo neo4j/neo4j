@@ -34,11 +34,11 @@ case class CheckingLoopDataGenerator(loop: LoopDataGenerator, yieldedFlagVar: St
     loop.init(generator)
   }
 
-  override def produceIterator[E](iterVar: String, generator: MethodStructure[E]) = {
+  override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     loop.produceIterator(iterVar, generator)
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E]) = {
+  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     loop.produceNext(nextVar, iterVar, generator)
     generator.updateFlag(yieldedFlagVar, newValue = true)
   }

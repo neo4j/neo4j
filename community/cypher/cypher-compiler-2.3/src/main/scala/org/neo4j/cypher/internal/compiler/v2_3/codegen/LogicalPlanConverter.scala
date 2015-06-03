@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
@@ -34,6 +35,7 @@ object LogicalPlanConverter {
       case p: SingleRow => p
       case p: AllNodesScan => p
       case p: NodeByLabelScan => p
+      case p: NodeIndexSeek => p
       case p: ProduceResult => p
       case p: Expand => p
       case p: OptionalExpand => p
@@ -76,6 +78,25 @@ object LogicalPlanConverter {
       val (methodHandle, actions) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
       (methodHandle, Seq(WhileLoop(nodeVar, ScanForLabel(opName, logicalPlan.label.name, labelVar), actions)))
+    }
+  }
+
+  private implicit class NodeIndexSeekCodeGen(val logicalPlan: NodeIndexSeek) extends LeafCodeGenPlan {
+
+
+    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
+      val nodeVar = Variable(context.namer.newVarName(), symbols.CTNode)
+      val labelVar = context.namer.newVarName()
+      val propIdVar = context.namer.newVarName()
+      context.addVariable(logicalPlan.idName.name, nodeVar)
+      val (methodHandle, actions) = context.popParent().consume(context, this)
+      val opName = context.registerOperator(logicalPlan)
+      val expr = logicalPlan.valueExpr match {
+        case SingleQueryExpression(e) => ExpressionConverter.createExpression(e)(opName, context)
+        case _ => throw new CantCompileQueryException("ManyQueryExpressions for index seeks not yet supported")
+      }
+
+      (methodHandle, Seq(WhileLoop(nodeVar, IndexSeek(opName, logicalPlan.label.name, labelVar, logicalPlan.propertyKey.name, propIdVar, expr), actions)))
     }
   }
 

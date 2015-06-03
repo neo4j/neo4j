@@ -27,9 +27,9 @@ trait LoopDataGenerator extends Instruction {
 
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 
-  def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E]): Unit
+  def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 
-  def produceIterator[E](iterVarName: String, generator: MethodStructure[E]): Unit
+  def produceIterator[E](iterVarName: String, generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 
   def id: String
 
