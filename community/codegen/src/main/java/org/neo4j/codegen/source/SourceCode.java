@@ -30,14 +30,14 @@ import javax.annotation.processing.Processor;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
-import org.neo4j.codegen.TypeReference;
 import org.neo4j.codegen.CodeGenerationStrategy;
 import org.neo4j.codegen.CodeGenerator;
 import org.neo4j.codegen.CodeGeneratorOption;
+import org.neo4j.codegen.TypeReference;
 
 import static java.util.Objects.requireNonNull;
-
 import static org.neo4j.codegen.CompilationFailureException.format;
+import static org.neo4j.codegen.source.ClasspathHelper.fullClasspathStringFor;
 
 public enum SourceCode implements CodeGeneratorOption
 {
@@ -45,9 +45,9 @@ public enum SourceCode implements CodeGeneratorOption
     public static final CodeGeneratorOption SOURCECODE = new CodeGenerationStrategy<Configuration>()
     {
         @Override
-        protected Configuration createConfigurator()
+        protected Configuration createConfigurator( ClassLoader loader )
         {
-            return new Configuration();
+            return new Configuration().withOptions( "-classpath", fullClasspathStringFor( loader ) );
         }
 
         @Override
@@ -80,7 +80,7 @@ public enum SourceCode implements CodeGeneratorOption
 
     private static CodeGeneratorOption printWarningsTo( PrintStream err )
     {
-        return new MyCodeGeneratorOption( err );
+        return new PrintWarningsOption( err );
     }
 
     public static CodeGeneratorOption annotationProcessor( Processor processor )
@@ -175,11 +175,11 @@ public enum SourceCode implements CodeGeneratorOption
         }
     }
 
-    private static class MyCodeGeneratorOption implements CodeGeneratorOption, WarningsHandler
+    private static class PrintWarningsOption implements CodeGeneratorOption, WarningsHandler
     {
         private final PrintStream target;
 
-        MyCodeGeneratorOption( PrintStream target )
+        PrintWarningsOption( PrintStream target )
         {
             this.target = target;
         }
@@ -189,7 +189,7 @@ public enum SourceCode implements CodeGeneratorOption
         {
             if ( target instanceof Configuration )
             {
-                ((Configuration) target).addWarningsHandler( this );
+                ((Configuration) target).withWarningsHandler( this );
             }
         }
 

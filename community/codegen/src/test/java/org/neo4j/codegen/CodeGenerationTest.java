@@ -521,7 +521,7 @@ public class CodeGenerationTest
     }
 
     private static final String PACKAGE = "org.neo4j.codegen.test";
-    private final CodeGenerator generator = CodeGenerator.generateCode( SourceCode.PRINT_SOURCE );
+    private final CodeGenerator generator = CodeGenerator.generateCode( /*SourceCode.PRINT_SOURCE*/ );
 
     ClassGenerator generateClass( String name, Class<?> firstInterface, Class<?>... more )
     {

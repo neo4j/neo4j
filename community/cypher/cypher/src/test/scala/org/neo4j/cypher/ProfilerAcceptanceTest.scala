@@ -78,7 +78,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     //WHEN
     val result = profileWithAllPlannersAndRuntimes("match (n:A)-->(x:B) return *")
-    println(result.executionPlanDescription())
+
     //THEN
     assertRows(1)(result)("ProduceResults", "Projection", "Filter", "Expand(All)", "NodeByLabelScan")
     assertDbHits(0)(result)("ProduceResults", "Projection")

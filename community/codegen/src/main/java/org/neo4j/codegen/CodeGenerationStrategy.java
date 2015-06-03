@@ -26,7 +26,7 @@ import static org.neo4j.codegen.source.SourceCode.SOURCECODE;
 
 public abstract class CodeGenerationStrategy<Configuration> implements CodeGeneratorOption
 {
-    protected abstract Configuration createConfigurator();
+    protected abstract Configuration createConfigurator( ClassLoader loader );
 
     protected abstract CodeGenerator createCodeGenerator( ClassLoader loader, Configuration configuration );
 
@@ -46,7 +46,8 @@ public abstract class CodeGenerationStrategy<Configuration> implements CodeGener
 
     private CodeGenerator generateCode( ClassLoader loader, CodeGeneratorOption... options )
     {
-        return createCodeGenerator( loader, applyTo( createConfigurator(), options ) );
+        Configuration configurator = createConfigurator( loader );
+        return createCodeGenerator( loader, applyTo( configurator, options ) );
     }
 
     private static class Choice implements ByteCodeVisitor.Configurable

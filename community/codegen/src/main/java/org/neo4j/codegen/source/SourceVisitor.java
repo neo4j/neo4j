@@ -30,7 +30,7 @@ public abstract class SourceVisitor implements CodeGeneratorOption
         if ( target instanceof Configuration )
         {
             Configuration configuration = (Configuration) target;
-            configuration.addSourceVisitor( this );
+            configuration.withSourceVisitor( this );
         }
     }
 

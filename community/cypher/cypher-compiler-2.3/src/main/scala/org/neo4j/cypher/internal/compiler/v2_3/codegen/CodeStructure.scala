@@ -155,7 +155,7 @@ trait MethodStructure[E] {
 object CodeStructure {
   val __TODO__MOVE_IMPLEMENTATION = new CodeStructure[GeneratedQueryExecution] {
     override def generateQuery(packageName: String, className: String, columns: Seq[String], opIds: Seq[String])(block: MethodStructure[_] => Unit) = {
-      val generator: codegen.CodeGenerator = codegen.CodeGenerator.generateCode(/*SourceCode.PRINT_SOURCE*/)
+      val generator = codegen.CodeGenerator.generateCode(CodeStructure.getClass.getClassLoader/*, SourceCode.PRINT_SOURCE*/)
       using(generator.generateClass(packageName, className, typeRef[GeneratedQueryExecution], typeRef[SuccessfulCloseable])) { clazz =>
         // fields
         val fields = Fields(
