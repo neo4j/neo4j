@@ -70,7 +70,7 @@ public class UdcSettings
     public static final Setting<String> udc_registration_key = setting( "neo4j.ext.udc.reg", STRING, "unreg",
             illegalValueMessage( "Must be a valid registration id", matches( ANY ) ) );
 
-    private static enum Enabled implements Function<String, Boolean>
+    private enum Enabled implements Function<String, Boolean>
     {
         /** Only explicitly configuring this as 'false' disables UDC, all other values leaves UDC enabled. */
         UNLESS_EXPLICITLY_DISABLED;

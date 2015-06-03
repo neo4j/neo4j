@@ -19,50 +19,34 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import org.junit.Test;
+
 import java.io.File;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Test;
-
 import org.neo4j.ext.udc.UdcConstants;
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.event.KernelEventHandler;
-import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
-import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.StartupStatistics;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.udc.UsageData;
+import org.neo4j.udc.UsageDataKeys;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 public class DefaultUdcInformationCollectorTest
 {
-    private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector( new Config(), null,
-            new StubKernelData() );
+    private final UsageData usageData = new UsageData();
+    private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector(
+            new Config(), null,
+            new StubIdGeneratorFactory(), mock( StartupStatistics.class ), usageData );
 
     @Test
     public void shouldIncludeTheMacAddress()
@@ -112,224 +96,35 @@ public class DefaultUdcInformationCollectorTest
         assertEquals( "300", collector.getUdcParams().get( UdcConstants.LABEL_IDS_IN_USE ) );
     }
 
-    @SuppressWarnings("deprecation")
-    private static class StubKernelData extends KernelData
+    @Test
+    public void shouldIncludeVersionEditionAndMode() throws Throwable
     {
-        public StubKernelData()
-        {
-            super( new DefaultFileSystemAbstraction(), new File( "graph.db" ), new Config() );
-        }
+        // Given
+        usageData.set( UsageDataKeys.version, "1.2.3" );
+        usageData.set( UsageDataKeys.edition, UsageDataKeys.Edition.advanced );
+        usageData.set( UsageDataKeys.operationalMode, UsageDataKeys.OperationalMode.ha );
 
-        @Override
-        public Version version()
-        {
-            return new Version( "foo", "bar" )
-            {
-
-            };
-        }
-
-        @Override
-        public GraphDatabaseAPI graphDatabase()
-        {
-            return new StubDatabase();
-        }
+        // When & Then
+        assertEquals( "1.2.3", collector.getUdcParams().get( UdcConstants.VERSION ) );
+        assertEquals( "advanced", collector.getUdcParams().get( UdcConstants.EDITION ) );
+        assertEquals( "ha", collector.getUdcParams().get( UdcConstants.DATABASE_MODE ) );
     }
 
-    @SuppressWarnings("deprecation")
-    private static class StubDatabase implements GraphDatabaseAPI
+    @Test
+    public void shouldIncludeRecentClientNames() throws Throwable
     {
-        private final IdGeneratorFactory idGeneratorFactory = new StubIdGeneratorFactory();
+        // Given
+        usageData.get( UsageDataKeys.clientNames ).add( "SteveBrookClient/1.0" );
+        usageData.get( UsageDataKeys.clientNames ).add( "MayorClient/1.0" );
 
-        @Override
-        public DependencyResolver getDependencyResolver()
+        // When & Then
+        String userAgents = collector.getUdcParams().get( UdcConstants.USER_AGENTS );
+        if( !(userAgents.equals( "SteveBrookClient/1.0,MayorClient/1.0" )
+           || userAgents.equals( "MayorClient/1.0,SteveBrookClient/1.0" )))
         {
-            return new StubDependencyResolver( idGeneratorFactory );
+            fail("Expected \"SteveBrookClient/1.0,MayorClient/1.0\" or \"MayorClient/1.0,SteveBrookClient/1.0\", " +
+                 "got \""+userAgents+"\"");
         }
-
-        @Override
-        public StoreId storeId()
-        {
-            return null;
-        }
-
-        @Override
-        public String getStoreDir()
-        {
-            return null;
-        }
-
-        @Override
-        public Node createNode()
-        {
-            return null;
-        }
-
-        @Override
-        public Node createNode( Label... labels )
-        {
-            return null;
-        }
-
-        @Override
-        public Node getNodeById( long id )
-        {
-            return null;
-        }
-
-        @Override
-        public Relationship getRelationshipById( long id )
-        {
-            return null;
-        }
-
-        @Override
-        public Iterable<Node> getAllNodes()
-        {
-            return null;
-        }
-
-        @Override
-        public ResourceIterator<Node> findNodes( Label label, String key, Object value )
-        {
-            return null;
-        }
-
-        @Override
-        public Node findNode( Label label, String key, Object value )
-        {
-            return null;
-        }
-
-        @Override
-        public ResourceIterator<Node> findNodes( Label label )
-        {
-            return null;
-        }
-
-        @Override
-        public ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value )
-        {
-            return null;
-        }
-
-        @Override
-        public Iterable<RelationshipType> getRelationshipTypes()
-        {
-            return null;
-        }
-
-        @Override
-        public boolean isAvailable( long timeout )
-        {
-            return false;
-        }
-
-        @Override
-        public void shutdown()
-        {
-
-        }
-
-        @Override
-        public Transaction beginTx()
-        {
-            return null;
-        }
-
-        @Override
-        public Result execute( String query )
-        {
-            return execute( query, Collections.<String, Object>emptyMap() );
-        }
-
-        @Override
-        public Result execute( String query, Map<String, Object> parameters )
-        {
-            return null;
-        }
-
-        @Override
-        public <T> TransactionEventHandler<T> registerTransactionEventHandler( TransactionEventHandler<T>
-                                                                                       handler )
-        {
-            return null;
-        }
-
-        @Override
-        public <T> TransactionEventHandler<T> unregisterTransactionEventHandler( TransactionEventHandler<T>
-                                                                                         handler )
-        {
-            return null;
-        }
-
-        @Override
-        public KernelEventHandler registerKernelEventHandler( KernelEventHandler handler )
-        {
-            return null;
-        }
-
-        @Override
-        public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )
-        {
-            return null;
-        }
-
-        @Override
-        public Schema schema()
-        {
-            return null;
-        }
-
-        @Override
-        public IndexManager index()
-        {
-            return null;
-        }
-
-        @Override
-        public TraversalDescription traversalDescription()
-        {
-            return null;
-        }
-
-        @Override
-        public BidirectionalTraversalDescription bidirectionalTraversalDescription()
-        {
-            return null;
-        }
-    }
-
-    private static class StubDependencyResolver implements DependencyResolver
-    {
-        private final IdGeneratorFactory idGeneratorFactory;
-
-        public StubDependencyResolver( IdGeneratorFactory idGeneratorFactory )
-        {
-            this.idGeneratorFactory = idGeneratorFactory;
-        }
-
-        @Override
-        public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
-        {
-            if ( IdGeneratorFactory.class.isAssignableFrom( type ) )
-            {
-                return (T) idGeneratorFactory;
-            }
-            else if ( StartupStatistics.class.isAssignableFrom( type ) )
-            {
-                return (T) mock( StartupStatistics.class );
-            }
-
-            throw new IllegalArgumentException( type.getName() );
-        }
-
-        @Override
-        public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
-        {
-            return null;
-        }
-
     }
 
     private static class StubIdGeneratorFactory implements IdGeneratorFactory

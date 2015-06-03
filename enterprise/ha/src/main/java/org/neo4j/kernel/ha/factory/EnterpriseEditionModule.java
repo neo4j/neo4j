@@ -138,6 +138,8 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.udc.UsageDataKeys;
+import org.neo4j.udc.UsageData;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -426,6 +428,15 @@ public class EnterpriseEditionModule
         upgradeConfiguration = new HAUpgradeConfiguration();
 
         registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName ), dependencies, logging );
+
+        publishEditionInfo( config, dependencies.resolveDependency( UsageData.class ) );
+    }
+
+    private void publishEditionInfo( Config config, UsageData sysInfo )
+    {
+        sysInfo.set( UsageDataKeys.edition, UsageDataKeys.Edition.enterprise );
+        sysInfo.set( UsageDataKeys.operationalMode, UsageDataKeys.OperationalMode.ha );
+        sysInfo.set( UsageDataKeys.serverId, config.get( ClusterSettings.server_id ).toString() );
     }
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory( final HighAvailabilityMemberContext

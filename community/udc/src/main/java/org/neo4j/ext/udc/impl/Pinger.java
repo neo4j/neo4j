@@ -22,6 +22,7 @@ package org.neo4j.ext.udc.impl;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.util.Map;
 
 import org.neo4j.helpers.HostnamePort;
@@ -57,7 +58,7 @@ public class Pinger
         {
             uri.append( key );
             uri.append( "=" );
-            uri.append( usageDataMap.get( key ) );
+            uri.append( URLEncoder.encode( usageDataMap.get( key ), "UTF-8") );
             uri.append( "+" );
         }
 
@@ -80,7 +81,7 @@ public class Pinger
         con.setUseCaches( false );
         con.connect();
 
-        con.getInputStream();
+        con.getInputStream().close();
     }
 
     public Integer getPingCount()

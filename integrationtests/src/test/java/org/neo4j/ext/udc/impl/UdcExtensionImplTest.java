@@ -19,28 +19,27 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.localserver.LocalTestServer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.sun.jersey.spi.container.ContainerRequest;
-import org.apache.commons.io.FileUtils;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.localserver.LocalTestServer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
+import org.neo4j.concurrent.RecentK;
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.ext.udc.UdcSettings;
@@ -48,9 +47,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.server.rest.web.CollectUserAgentFilter;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.udc.UsageData;
+import org.neo4j.udc.UsageDataKeys;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -60,9 +60,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.stub;
-
 import static org.neo4j.ext.udc.UdcConstants.CLUSTER_HASH;
 import static org.neo4j.ext.udc.UdcConstants.DATABASE_MODE;
 import static org.neo4j.ext.udc.UdcConstants.EDITION;
@@ -89,6 +86,7 @@ public class UdcExtensionImplTest
 
     private PingerHandler handler;
     private Map<String, String> config;
+    private GraphDatabaseService graphdb;
 
     @Before
     public void resetUdcState()
@@ -98,28 +96,16 @@ public class UdcExtensionImplTest
     }
 
     /**
-     * Sanity check to make sure a database can be created
-     * and destroyed.
-     *
-     * @throws java.io.IOException
-     */
-    @Test
-    public void shouldNotCrashNormalGraphdbCreation() throws IOException
-    {
-        GraphDatabaseService graphdb = createDatabase( null );
-        destroy( graphdb );
-    }
-
-    /**
      * Expect the counts to be initialized.
      */
     @Test
     public void shouldLoadWhenNormalGraphdbIsCreated() throws Exception
     {
-        GraphDatabaseService graphdb = createDatabase( null );
-        // when the UDC extension successfully loads, it initializes the attempts count to 0
+        // When
+        graphdb = createDatabase( null );
+
+        // Then, when the UDC extension successfully loads, it initializes the attempts count to 0
         assertGotSuccessWithRetry( IS_ZERO );
-        destroy( graphdb );
     }
 
     /**
@@ -133,69 +119,81 @@ public class UdcExtensionImplTest
         Set<String> successCountValues = UdcTimerTask.successCounts.keySet();
         assertThat( successCountValues.size(), equalTo( 2 ) );
         assertThat( "this", is( not( "that" ) ) );
-        destroy( graphdb1 );
-        destroy( graphdb2 );
+        cleanup( graphdb1 );
+        cleanup( graphdb2 );
     }
 
     @Test
     public void shouldRecordFailuresWhenThereIsNoServer() throws Exception
     {
-        GraphDatabaseService graphdb = new TestGraphDatabaseFactory().
+        // When
+        graphdb = new TestGraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( path.directory( "should-record-failures" ).getPath() ).
                 loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) ).
                 setConfig( UdcSettings.first_delay, "100" ).
                 setConfig( UdcSettings.udc_host, "127.0.0.1:1" ).
                 newGraphDatabase();
+
+        // Then
         assertGotFailureWithRetry( IS_GREATER_THAN_ZERO );
-        destroy( graphdb );
     }
 
     @Test
     public void shouldRecordSuccessesWhenThereIsAServer() throws Exception
     {
+        // Given
         setupServer();
-        GraphDatabaseService graphdb = createDatabase( config );
+
+        // When
+        graphdb = createDatabase( config );
+
+        // Then
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertGotFailureWithRetry( IS_ZERO );
-        destroy( graphdb );
     }
 
     @Test
     public void shouldBeAbleToSpecifySourceWithConfig() throws Exception
     {
+        // Given
         setupServer();
 
-        GraphDatabaseService graphdb = createDatabase( config );
+        // When
+        graphdb = createDatabase( config );
+
+        // Then
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertEquals( "unit-testing", handler.getQueryMap().get( SOURCE ) );
-
-        destroy( graphdb );
     }
 
     @Test
     public void shouldRecordDatabaseMode() throws Exception
     {
+        // Given
         setupServer();
 
-        GraphDatabaseService graphdb = createDatabase( config );
+        // When
+        graphdb = createDatabase( config );
+
+        // Then
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertEquals( "single", handler.getQueryMap().get( DATABASE_MODE ) );
-
-        destroy( graphdb );
     }
 
     @Test
     public void shouldRecordClusterName() throws Exception
     {
+        // Given
         setupServer();
 
-        GraphDatabaseService graphdb = createDatabase( config );
+        // When
+        graphdb = createDatabase( config );
+
+        // Then
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
 
         String hashOfDefaultClusterName = "1108231321";
         assertEquals( hashOfDefaultClusterName, handler.getQueryMap().get( CLUSTER_HASH ) );
-
-        destroy( graphdb );
     }
 
     private void setupServer() throws Exception
@@ -259,115 +257,105 @@ public class UdcExtensionImplTest
     @Test
     public void shouldNotBeAbleToSpecifyRegistrationIdWithConfig() throws Exception
     {
-
+        // Given
         setupServer();
-
         config.put( UdcSettings.udc_registration_key.name(), "marketoid" );
 
-        GraphDatabaseService graphdb = createDatabase( config );
+        // When
+        graphdb = createDatabase( config );
+
+        // Then
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertEquals( "test-reg", handler.getQueryMap().get( REGISTRATION ) );
-
-        destroy( graphdb );
     }
 
     @Test
     public void shouldBeAbleToReadDefaultRegistration() throws Exception
     {
+        // Given
         setupServer();
 
-        GraphDatabaseService graphdb = createDatabase( config );
+        // When
+        graphdb = createDatabase( config );
+
+        // Then
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertEquals( "test-reg", handler.getQueryMap().get( REGISTRATION ) );
-
-        destroy( graphdb );
     }
 
     @Test
     public void shouldBeAbleToDetermineTestTagFromClasspath() throws Exception
     {
+        // Given
         setupServer();
 
-        GraphDatabaseService graphdb = createDatabase( config );
+        // When
+        graphdb = createDatabase( config );
+
+        // Then
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertEquals( "test,web", handler.getQueryMap().get( TAGS ) );
-
-        destroy( graphdb );
     }
 
     @Test
     public void shouldBeAbleToDetermineEditionFromClasspath() throws Exception
     {
+        // Given
         setupServer();
-        GraphDatabaseService graphdb = createDatabase( config );
+
+        // When
+        graphdb = createDatabase( config );
+
+        // Then
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertEquals( Edition.enterprise.name(), handler.getQueryMap().get( EDITION ) );
-
-        destroy( graphdb );
     }
 
     @Test
     public void shouldBeAbleToDetermineUserAgent() throws Exception
     {
-        makeRequestWithAgent( "test/1.0" );
+        // Given
         setupServer();
-        GraphDatabaseService graphdb = createDatabase( config );
+        graphdb = createDatabase( config );
+
+        // When
+        makeRequestWithAgent( "test/1.0" );
+
+        // Then
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertEquals( "test/1.0", handler.getQueryMap().get( USER_AGENTS ) );
-
-
-        destroy( graphdb );
     }
 
     @Test
     public void shouldBeAbleToDetermineUserAgents() throws Exception
     {
+        // Given
+        setupServer();
+        graphdb = createDatabase( config );
+
+        // When
         makeRequestWithAgent( "test/1.0" );
         makeRequestWithAgent( "foo/bar" );
-        setupServer();
-        GraphDatabaseService graphdb = createDatabase( config );
+
+        // Then
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         String userAgents = handler.getQueryMap().get( USER_AGENTS );
         assertEquals( true, userAgents.contains( "test/1.0" ) );
         assertEquals( true, userAgents.contains( "foo/bar" ) );
-
-
-        destroy( graphdb );
-    }
-
-    @Test
-    public void shouldUpdateTheUserAgentsPerPing() throws Exception
-    {
-        makeRequestWithAgent( "test/1.0" );
-        setupServer();
-        config.put( UdcSettings.interval.name(), "1000" );
-        GraphDatabaseService graphdb = createDatabase( config );
-        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        String userAgents = handler.getQueryMap().get( USER_AGENTS );
-        assertEquals( true, userAgents.contains( "test/1.0" ) );
-
-        makeRequestWithAgent( "foo/bar" );
-
-        Thread.sleep( 1000 );
-        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-
-        userAgents = handler.getQueryMap().get( USER_AGENTS );
-        assertEquals( true, userAgents.contains( "foo/bar" ) );
-        assertEquals( false, userAgents.contains( "test/1.0" ) );
-
-        destroy( graphdb );
     }
 
     @Test
     public void shouldIncludeMacAddressInConfig() throws Exception
     {
+        // Given
         setupServer();
 
-        GraphDatabaseService graphdb = createDatabase( config );
+        // When
+        graphdb = createDatabase( config );
+
+        // Then
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertNotNull( handler.getQueryMap().get( MAC ) );
-
-        destroy( graphdb );
     }
 
     @Test
@@ -384,12 +372,10 @@ public class UdcExtensionImplTest
                     @Override
                     public Void call() throws Exception
                     {
-                        GraphDatabaseService graphdb = createDatabase( config );
+                        graphdb = createDatabase( config );
                         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
                         assertEquals( "udc-property", handler.getQueryMap().get( "test" ) );
                         assertEquals( "os-property", handler.getQueryMap().get( "os.test" ) );
-
-                        destroy( graphdb );
                         return null;
                     }
                 } );
@@ -407,11 +393,9 @@ public class UdcExtensionImplTest
             @Override
             public Void call() throws Exception
             {
-                GraphDatabaseService graphdb = createDatabase( config );
+                graphdb = createDatabase( config );
                 assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
                 assertEquals( UdcConstants.UNKNOWN_DIST, handler.getQueryMap().get( "dist" ) );
-
-                destroy( graphdb );
                 return null;
             }
         } );
@@ -425,12 +409,10 @@ public class UdcExtensionImplTest
             return;
         }
         setupServer();
-        GraphDatabaseService graphdb = createDatabase( config );
+        graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
 
         assertEquals( DefaultUdcInformationCollector.searchForPackageSystems(), handler.getQueryMap().get( "dist" ) );
-
-        destroy( graphdb );
     }
 
     @Test
@@ -442,11 +424,9 @@ public class UdcExtensionImplTest
             @Override
             public Void call() throws Exception
             {
-                GraphDatabaseService graphdb = createDatabase( config );
+                graphdb = createDatabase( config );
                 assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
                 assertEquals( UdcConstants.UNKNOWN_DIST, handler.getQueryMap().get( "dist" ) );
-
-                destroy( graphdb );
                 return null;
             }
         } );
@@ -457,12 +437,10 @@ public class UdcExtensionImplTest
     {
         setupServer();
 
-        GraphDatabaseService graphdb = createDatabase( config );
+        graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         String version = handler.getQueryMap().get( VERSION );
         assertTrue( version.matches( VersionPattern ) );
-
-        destroy( graphdb );
     }
 
     @Test
@@ -470,12 +448,10 @@ public class UdcExtensionImplTest
     {
         setupServer();
 
-        GraphDatabaseService graphdb = createDatabase( config );
+        graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         String source = handler.getQueryMap().get( SOURCE );
         assertEquals( "unit-testing", source );
-
-        destroy( graphdb );
     }
 
     @Test
@@ -488,11 +464,10 @@ public class UdcExtensionImplTest
             @Override
             public Void call() throws Exception
             {
-                GraphDatabaseService graphdb = createDatabase( config );
+                graphdb = createDatabase( config );
                 assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
                 String source = handler.getQueryMap().get( SOURCE );
                 assertEquals( "overridden", source );
-                destroy( graphdb );
                 return null;
             }
         } );
@@ -606,12 +581,22 @@ public class UdcExtensionImplTest
         return graphDatabaseBuilder.newGraphDatabase();
     }
 
-    private void destroy( GraphDatabaseService dbToDestroy ) throws IOException
+    @After
+    public void cleanup() throws IOException
     {
-        @SuppressWarnings("deprecation") GraphDatabaseAPI db = (GraphDatabaseAPI) dbToDestroy;
-        dbToDestroy.shutdown();
-        FileUtils.deleteDirectory( new File( db.getStoreDir() ) );
+        cleanup( graphdb );
     }
+
+    private void cleanup( GraphDatabaseService gdb ) throws IOException
+    {
+        if(gdb != null)
+        {
+            @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db = (GraphDatabaseAPI) gdb;
+            gdb.shutdown();
+            FileUtils.deleteDirectory( new File( db.getStoreDir() ) );
+        }
+    }
+
 
     private static class PointerTo<T>
     {
@@ -633,17 +618,12 @@ public class UdcExtensionImplTest
         }
     }
 
-    private ContainerRequest makeRequestWithAgent( String agent )
+    private void makeRequestWithAgent( String agent )
     {
-        return CollectUserAgentFilter.instance().filter( request( agent ) );
-    }
-
-    private static ContainerRequest request( String... userAgent )
-    {
-        ContainerRequest request = mock( ContainerRequest.class );
-        List<String> headers = Arrays.asList( userAgent );
-        stub( request.getRequestHeader( "User-Agent" ) ).toReturn( headers );
-        return request;
+        RecentK<String> clients =
+                ((GraphDatabaseAPI) graphdb).getDependencyResolver().resolveDependency( UsageData.class ).get(
+                        UsageDataKeys.clientNames );
+        clients.add( agent );
     }
 
     private void withSystemProperty( String name, String value, Callable<Void> block ) throws Exception

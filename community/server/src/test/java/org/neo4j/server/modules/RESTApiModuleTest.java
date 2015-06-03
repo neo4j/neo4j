@@ -26,10 +26,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
+import org.neo4j.udc.UsageData;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollection;
@@ -42,6 +44,7 @@ public class RESTApiModuleTest
     @Test
     public void shouldRegisterASingleUri() throws Exception
     {
+        // Given
         WebServer webServer = mock( WebServer.class );
 
         Map<String, String> params = new HashMap();
@@ -49,11 +52,16 @@ public class RESTApiModuleTest
         params.put( Configurator.REST_API_PATH_PROPERTY_KEY, path );
         Config config = new Config( params );
 
+        Dependencies deps = new Dependencies();
+        deps.satisfyDependency( new UsageData() );
+
         Database db = mock(Database.class);
 
-        RESTApiModule module = new RESTApiModule( webServer, db, config, NullLogProvider.getInstance() );
+        // When
+        RESTApiModule module = new RESTApiModule( webServer, db, config, deps, NullLogProvider.getInstance() );
         module.start();
 
+        // Then
         verify( webServer ).addJAXRSClasses( any( List.class ), anyString(), anyCollection() );
     }
 }

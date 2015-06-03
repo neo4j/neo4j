@@ -38,19 +38,19 @@ public interface ConfigurationBuilder
     /**
      * @return the configuration to access server properties.
      */
-    public Config configuration();
+    Config configuration();
 
     /**
      * @return the properties that are used by {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory a graph database} to build database properties.
      */
-    public Map<String, String> getDatabaseTuningProperties();
+    Map<String, String> getDatabaseTuningProperties();
 
     /*
      * The wrapping classes are only used for support legacy code.
      * Once we are ready to move the deprecated classes in the server package into an internal package,
      * we should also then remove these wrapping classes too.
      */
-    public class ConfiguratorWrappingConfigurationBuilder implements ConfigurationBuilder
+    class ConfiguratorWrappingConfigurationBuilder implements ConfigurationBuilder
     {
         private final Config serverConfig;
         private final Map<String, String> dbProperties;
@@ -108,7 +108,7 @@ public interface ConfigurationBuilder
         }
     }
 
-    public class ConfigurationBuilderWrappingConfigurator extends Configurator.Adapter
+    class ConfigurationBuilderWrappingConfigurator extends Configurator.Adapter
     {
 
         private final ConfigurationBuilder builder;

@@ -19,71 +19,62 @@
  */
 package org.neo4j.server.rest.web;
 
-import com.sun.jersey.spi.container.ContainerRequest;
-import com.sun.jersey.spi.container.ContainerRequestFilter;
-
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
 
-public class CollectUserAgentFilter implements ContainerRequestFilter
+import org.neo4j.concurrent.RecentK;
+
+/**
+ * Collects user agent information and publishes it to a tracker of most recently seen user agents.
+ */
+public class CollectUserAgentFilter implements Filter
 {
-    private static CollectUserAgentFilter INSTANCE;
+    private final RecentK<String> output;
 
-    public static CollectUserAgentFilter instance()
+    public CollectUserAgentFilter( RecentK<String> output )
     {
-        if ( INSTANCE == null )
-        {
-            new CollectUserAgentFilter();
-        }
-        return INSTANCE;
-    }
-
-    private final Collection<String> userAgents = Collections.synchronizedCollection( new HashSet<String>() );
-
-    public CollectUserAgentFilter()
-    {
-        // Bear with me here. There are some fairly unpleasant constraints that have led me to this solution.
-        //
-        // 1. The UDC can't depend on server components, because it has to work in embedded. So the read side of this
-        //    in DefaultUdcInformationCollector is invoked by reflection. For that reason we need the actual list of
-        //    user agents in a running system to be statically accessible.
-        //
-        // 2. On the write side, Jersey's contract is that we provide a class which it instantiates itself. So we need
-        //    to write the list of user agents from any instance. However Jersey will only create one instance, so we
-        //     can rely on the constructor being called only once in the running system.
-        //
-        // 3. For testing purposes, we would like to be able to create independent instances; otherwise we get problems
-        //    with global state being carried over between tests.
-        INSTANCE = this;
+        this.output = output;
     }
 
     @Override
-    public ContainerRequest filter( ContainerRequest request )
+    public void init( FilterConfig filterConfig ) throws ServletException
+    {
+
+    }
+
+    @Override
+    public void doFilter( ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain )
+            throws IOException, ServletException
     {
         try
         {
-            List<String> headers = request.getRequestHeader( "User-Agent" );
-            if ( headers != null && !headers.isEmpty() )
+            final HttpServletRequest request = (HttpServletRequest) servletRequest;
+            String ua = request.getHeader( "User-Agent" );
+            if ( ua != null && !ua.isEmpty() )
             {
-                userAgents.add( headers.get( 0 ).split( " " )[0] );
+                output.add( ua.split( " " )[0] );
             }
         }
         catch ( RuntimeException e )
         {
             // We're fine with that
         }
-        return request;
+
+        filterChain.doFilter( servletRequest, servletResponse );
     }
 
-    public void reset()
+    @Override
+    public void destroy()
     {
-        userAgents.clear();
-    }
 
-    public Collection<String> getUserAgents()
-    {
-        return Collections.unmodifiableCollection( userAgents );
     }
 }

@@ -19,106 +19,95 @@
  */
 package org.neo4j.server.rest.web;
 
-import java.util.Arrays;
-import java.util.List;
-
-import com.sun.jersey.spi.container.ContainerRequest;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
+
+import org.neo4j.concurrent.RecentK;
 import org.neo4j.test.Mute;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
-
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.test.Mute.muteAll;
 
 public class CollectUserAgentFilterTest
 {
-    private final CollectUserAgentFilter filter = new CollectUserAgentFilter();
+    private final RecentK<String> agents = new RecentK<>(10);
+    private final FilterChain filterChain = mock( FilterChain.class );
+    private final CollectUserAgentFilter filter = new CollectUserAgentFilter( agents );
 
     @Rule
     public Mute mute = muteAll();
 
     @Test
-    public void shouldRecordASingleUserAgent()
+    public void shouldRecordASingleUserAgent() throws IOException, ServletException
     {
-        filter.filter( request( "the-agent" ) );
-        assertThat( filter.getUserAgents(), hasItem( "the-agent" ) );
+        filter.doFilter( request( "the-agent" ), null, filterChain );
+        assertThat( agents.recentItems(), hasItem( "the-agent" ) );
     }
 
     @Test
-    public void shouldOnlyRecordTheFirstFieldOfTheUserAgentString()
+    public void shouldOnlyRecordTheFirstFieldOfTheUserAgentString() throws IOException, ServletException
     {
-        filter.filter( request( "the-agent other-info" ) );
-        assertThat( filter.getUserAgents(), hasItem( "the-agent" ) );
+        filter.doFilter( request( "the-agent other-info" ), null, filterChain );
+        assertThat( agents.recentItems(), hasItem( "the-agent" ) );
     }
 
     @Test
-    public void shouldRecordMultipleUserAgents()
+    public void shouldRecordMultipleUserAgents() throws IOException, ServletException
     {
-        filter.filter( request( "agent1" ) );
-        filter.filter( request( "agent2" ) );
-        assertThat( filter.getUserAgents(), hasItems( "agent1", "agent2" ) );
+        filter.doFilter( request( "agent1" ), null, filterChain );
+        filter.doFilter( request( "agent2" ), null, filterChain );
+        assertThat( agents.recentItems(), hasItems( "agent1", "agent2" ) );
     }
 
     @Test
-    public void shouldNotReportDuplicates()
+    public void shouldNotReportDuplicates() throws IOException, ServletException
     {
-        filter.filter( request( "the-agent" ) );
-        filter.filter( request( "the-agent" ) );
-        assertThat( filter.getUserAgents(), hasSize( 1 ) );
+        filter.doFilter( request( "the-agent" ), null, filterChain );
+        filter.doFilter( request( "the-agent" ), null, filterChain );
+        assertThat( agents.recentItems(), hasSize( 1 ) );
     }
 
     @Test
-    public void shouldClearRecordedValues()
+    public void shouldCopeIfThereIsNoUserAgentHeader() throws IOException, ServletException
     {
-        filter.filter( request( "the-agent" ) );
-        filter.reset();
-        assertThat( filter.getUserAgents(), hasSize( 0 ) );
+        filter.doFilter( request( null ), null, filterChain );
+        assertThat( agents.recentItems(), hasSize( 0 ) );
     }
 
     @Test
-    public void shouldCopeIfThereIsNoUserAgentHeader()
+    public void shouldSwallowAnyExceptionsThrownByTheRequest() throws IOException, ServletException
     {
-        filter.filter( request() );
-        assertThat( filter.getUserAgents(), hasSize( 0 ) );
+        HttpServletRequest request = mock( HttpServletRequest.class );
+        stub(request.getHeader( anyString() )).toThrow( new RuntimeException() );
+        filter.doFilter( request, null, filterChain );
     }
 
     @Test
-    public void shouldCopeIfThereIsMoreThanOneUserAgentHeader()
+    public void shouldReturnTheRequest() throws IOException, ServletException
     {
-        filter.filter( request( "agent1", "agent2" ) );
-        assertThat( filter.getUserAgents(), hasSize( 1 ) );
+        ServletRequest original = request( "the-agent" );
+        filter.doFilter( original, null, filterChain );
+        verify(filterChain).doFilter( original, null );
     }
 
-    @Test
-    public void shouldSwallowAnyExceptionsThrownByTheRequest()
+    private static ServletRequest request( String userAgent )
     {
-        ContainerRequest request = mock( ContainerRequest.class );
-        stub(request.getRequestHeader( anyString() )).toThrow( new RuntimeException() );
-        filter.filter( request );
-    }
-
-    @Test
-    public void shouldReturnTheRequest()
-    {
-        ContainerRequest original = request( "the-agent" );
-        ContainerRequest returned = filter.filter( original );
-        assertSame( original, returned );
-    }
-
-    private static ContainerRequest request( String... userAgent )
-    {
-        ContainerRequest request = mock( ContainerRequest.class );
-        List<String> headers = Arrays.asList( userAgent );
-        stub(request.getRequestHeader( "User-Agent" )).toReturn( headers );
+        HttpServletRequest request = mock( HttpServletRequest.class );
+        when( request.getHeader( "User-Agent" ) ).thenReturn( userAgent );
         return request;
     }
 }

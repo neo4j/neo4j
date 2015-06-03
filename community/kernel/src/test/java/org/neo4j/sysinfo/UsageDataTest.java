@@ -17,12 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ext.udc.impl;
+package org.neo4j.sysinfo;
 
-/**
- * @author mh
- * @since 11.06.12
- */
-public enum Edition {
-   community, advanced, enterprise;
+import org.junit.Test;
+
+import org.neo4j.udc.UsageData;
+import org.neo4j.udc.UsageDataKey;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.udc.UsageDataKey.key;
+
+public class UsageDataTest
+{
+    @Test
+    public void shouldPutAndRetrieve() throws Throwable
+    {
+        // Given
+        UsageData ms = new UsageData();
+        UsageDataKey<String> key = key( "hello" );
+
+        // When
+        ms.set( key, "Hello!" );
+
+        // Then
+        assertEquals( "Hello!", ms.get( key ) );
+        assertEquals( null, ms.get( key( "other" ) ) );
+    }
 }
