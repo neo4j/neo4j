@@ -37,8 +37,12 @@ div(ng-controller="CypherResultCtrl", fullscreen)
                 a(help-topic="RETURN")
                   | RETURN
                 | &nbsp; nodes, relationships or paths to see a graph visualization.
-            .graph-holder.result(ng-show='isAvailable("graph")')
+            .graph-holder.result(ng-show='isAvailable("graph")', ng-class="{'one-legend-row': hasLabels || hasTypes, 'two-legend-rows': hasLabels && hasTypes}")
               include partials/legend
+              .frame-notification(ng-controller="FrameNotificationCtrl", ng-class="{'show': show}", class="notif-{{type}}")
+                p {{message}}
+                .close-notification
+                  a.fa.fa-times-circle(ng-click="close()")
               .graph-contents
                 svg.graph(neo-graph
                   graph-data='frame.response.graph'
@@ -48,8 +52,7 @@ div(ng-controller="CypherResultCtrl", fullscreen)
                   on-node-drag-toggle='onNodeDragToggle($item)'
                   on-canvas-clicked='onItemClick()'
                   ng-controller='D3GraphCtrl'
-                  style="pointer-events:fill;"
-                  ng-class="{'one-legend-row': hasLabels || hasTypes, 'two-legend-rows': hasLabels && hasTypes}")
+                  style="pointer-events:fill;")
               .status-bar(ng-show='isActive("graph")')
                 .cell
                   .status

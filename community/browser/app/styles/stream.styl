@@ -147,6 +147,18 @@
             display: table
             width: 100%
             min-height: frame-min-height
+            svg
+              width: 100%
+            &.one-legend-row
+              svg
+                height: (svg-start-height - legend-row-height)
+              .frame-notification
+                top: legend-row-height
+            &.two-legend-rows
+              svg
+                height: (svg-start-height - legend-row-height*2)
+              .frame-notification
+                top: legend-row-height*2
             > *
               display: table-row
               > .cell
@@ -156,13 +168,7 @@
                 height: middlebar-height
                 line-height: middlebar-height
                 vertical-align: middle
-            svg
-              width: 100%
-              height: svg-start-height
-              &.one-legend-row
-                height: (svg-start-height - legend-row-height)
-              &.two-legend-rows
-                height: (svg-start-height - legend-row-height*2)
+
             a.fa-table
               font-size: 24px
               absolute: bottom 57px right horizontal-padding
@@ -244,6 +250,40 @@
         height: 39px
         line-height: 39px
 
+.frame-notification
+  z-index: 20
+  visibility: hidden
+  opacity: 0
+  transition: all .7s ease-in-out
+  position absolute
+  width: 100%
+  background-color: #428BCA
+  &.show
+    visibility: visible
+    opacity: 1
+  p
+    height: 30px
+    line-height: 40px
+    padding-left: 10px
+    font-size: 13px
+    float: left
+    color: white
+  .close-notification
+    float: right
+    margin-right: 10px
+    font-size: 16px
+    a
+      line-height: 40px
+      color: white
+      &:hover
+        color: #eeeeee
+  &.notif-default
+    background-color: #428BCA
+  &.notif-warning
+    background-color: #ff8400
+  &.notif-error
+    background-color: #E74C3C
+    
 .code-bar
   background: #fff
   color: stream-font-color
