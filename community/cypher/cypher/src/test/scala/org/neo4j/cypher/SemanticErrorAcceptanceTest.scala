@@ -465,6 +465,42 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "integer, 10508455564958384115, is too large")
   }
 
+  test("aggregation inside looping queries is not allowed") {
+
+    val mess = "Can't use aggregating expressions inside of expressions executing over collections"
+    executeAndEnsureError(
+      "MATCH n RETURN [x in [1,2,3,4,5] | count(*)]",
+      s"$mess (line 1, column 22 (offset: 21))")
+
+    executeAndEnsureError(
+      "MATCH n RETURN ALL(x in [1,2,3,4,5] WHERE count(*) = 0)",
+      s"$mess (line 1, column 25 (offset: 24))")
+
+    executeAndEnsureError(
+      "MATCH n RETURN ANY(x in [1,2,3,4,5] WHERE count(*) = 0)",
+      s"$mess (line 1, column 25 (offset: 24))")
+
+    executeAndEnsureError(
+      "MATCH n RETURN NONE(x in [1,2,3,4,5] WHERE count(*) = 0)",
+      s"$mess (line 1, column 26 (offset: 25))")
+
+    executeAndEnsureError(
+      "MATCH n RETURN SINGLE(x in [1,2,3,4,5] WHERE count(*) = 0)",
+      s"$mess (line 1, column 28 (offset: 27))")
+
+    executeAndEnsureError(
+      "MATCH n RETURN EXTRACT(x in [1,2,3,4,5] | count(*) = 0)",
+      s"$mess (line 1, column 29 (offset: 28))")
+
+    executeAndEnsureError(
+      "MATCH n RETURN FILTER(x in [1,2,3,4,5] WHERE count(*) = 0)",
+      s"$mess (line 1, column 28 (offset: 27))")
+
+    executeAndEnsureError(
+      "MATCH n RETURN REDUCE(acc = 0, x in [1,2,3,4,5] | acc + count(*))",
+      s"$mess (line 1, column 55 (offset: 54))")
+  }
+
   def executeAndEnsureError(query: String, expected: String) {
     import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper._
 
