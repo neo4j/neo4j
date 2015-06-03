@@ -278,6 +278,10 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
         {
             append( value.toString() );
         }
+        else if ( value instanceof Boolean )
+        {
+            append( value.toString() );
+        }
         else
         {
             throw new UnsupportedOperationException( value.getClass() + " constants" );
@@ -305,7 +309,7 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void not( Expression expression )
     {
-        append( "! (" );
+        append( "!( " );
         expression.accept( this );
         append(" )");
     }
