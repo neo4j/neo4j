@@ -19,6 +19,7 @@
  */
 package org.neo4j.ndp.transport.socket.integration;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,6 +54,7 @@ import static org.neo4j.ndp.transport.socket.integration.TransportTestUtil.event
  * load that they roll back, asserting they don't see each others changes.
  */
 @RunWith( Parameterized.class )
+@Ignore
 public class ConcurrentAccessIT
 {
     @Rule
