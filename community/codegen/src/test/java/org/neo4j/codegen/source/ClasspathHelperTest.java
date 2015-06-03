@@ -22,6 +22,7 @@ package org.neo4j.codegen.source;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -44,60 +45,60 @@ public class ClasspathHelperTest
     }
 
     @Test
-    public void shouldWorkForClassLoaderWithNoParent() throws MalformedURLException
+    public void shouldWorkForClassLoaderWithNoParent() throws Exception
     {
         // Given
-        ClassLoader loader = new URLClassLoader( urls( "file:///dev/null/file1", "file:///dev/null/file2" ), null );
+        ClassLoader loader = new URLClassLoader( urls( "file:///file1", "file:///file2" ), null );
 
         // When
         Set<String> elements = fullClasspathFor( loader );
 
         // Then
-        assertThat( elements, hasItems( "/dev/null/file1", "/dev/null/file2" ) );
+        assertThat( elements, hasItems( pathTo( "file1" ), pathTo( "file2" ) ) );
     }
 
     @Test
-    public void shouldWorkForClassLoaderWithSingleParent() throws MalformedURLException
+    public void shouldWorkForClassLoaderWithSingleParent() throws Exception
     {
         // Given
-        ClassLoader parent = new URLClassLoader( urls( "file:///dev/null/file1", "file:///dev/null/file2" ), null );
-        ClassLoader child = new URLClassLoader( urls( "file:///dev/null/file3" ), parent );
+        ClassLoader parent = new URLClassLoader( urls( "file:///file1", "file:///file2" ), null );
+        ClassLoader child = new URLClassLoader( urls( "file:///file3" ), parent );
 
         // When
         Set<String> elements = fullClasspathFor( child );
 
         // Then
-        assertThat( elements, hasItems( "/dev/null/file1", "/dev/null/file2", "/dev/null/file3" ) );
+        assertThat( elements, hasItems( pathTo( "file1" ), pathTo( "file2" ), pathTo( "file3" ) ) );
     }
 
     @Test
-    public void shouldWorkForClassLoaderHierarchy() throws MalformedURLException
+    public void shouldWorkForClassLoaderHierarchy() throws Exception
     {
         // Given
-        ClassLoader loader1 = new URLClassLoader( urls( "file:///dev/null/file1" ), null );
-        ClassLoader loader2 = new URLClassLoader( urls( "file:///dev/null/file2" ), loader1 );
-        ClassLoader loader3 = new URLClassLoader( urls( "file:///dev/null/file3" ), loader2 );
-        ClassLoader loader4 = new URLClassLoader( urls( "file:///dev/null/file4" ), loader3 );
+        ClassLoader loader1 = new URLClassLoader( urls( "file:///file1" ), null );
+        ClassLoader loader2 = new URLClassLoader( urls( "file:///file2" ), loader1 );
+        ClassLoader loader3 = new URLClassLoader( urls( "file:///file3" ), loader2 );
+        ClassLoader loader4 = new URLClassLoader( urls( "file:///file4" ), loader3 );
 
         // When
         Set<String> elements = fullClasspathFor( loader4 );
 
         // Then
-        assertThat( elements, hasItems( "/dev/null/file1", "/dev/null/file2", "/dev/null/file3", "/dev/null/file4" ) );
+        assertThat( elements, hasItems( pathTo( "file1" ), pathTo( "file2" ), pathTo( "file3" ), pathTo( "file4" ) ) );
     }
 
     @Test
-    public void shouldReturnCorrectClasspathString() throws MalformedURLException
+    public void shouldReturnCorrectClasspathString() throws Exception
     {
         // Given
-        ClassLoader parent = new URLClassLoader( urls( "file:///dev/null/foo" ), null );
-        ClassLoader child = new URLClassLoader( urls( "file:///dev/null/bar" ), parent );
+        ClassLoader parent = new URLClassLoader( urls( "file:///foo" ), null );
+        ClassLoader child = new URLClassLoader( urls( "file:///bar" ), parent );
 
         // When
         String classpath = fullClasspathStringFor( child );
 
         // Then
-        assertThat( classpath, containsString( "/dev/null/bar" + File.pathSeparator + "/dev/null/foo" ) );
+        assertThat( classpath, containsString( pathTo( "bar" ) + File.pathSeparator + pathTo( "foo" ) ) );
     }
 
     private static URL[] urls( String... strings ) throws MalformedURLException
@@ -108,5 +109,16 @@ public class ClasspathHelperTest
             urls[i] = new URL( strings[i] );
         }
         return urls;
+    }
+
+    private static String pathTo( String fileName ) throws IOException
+    {
+        File currentDir = new File( "." ).getCanonicalFile();
+        File root = currentDir.getParentFile().getCanonicalFile();
+        while ( root.getParentFile() != null )
+        {
+            root = root.getParentFile().getCanonicalFile();
+        }
+        return new File( root, fileName ).getCanonicalPath();
     }
 }
