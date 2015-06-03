@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.rmi.ConnectException;
@@ -108,20 +109,35 @@ public class StartClient
      */
     public static final String ARG_CONFIG = "config";
 
-    private StartClient() { }
+    private final PrintStream out;
+    private final PrintStream err;
+
+    private StartClient( PrintStream out, PrintStream err )
+    {
+        this.out = out;
+        this.err = err;
+    }
 
     /**
      * Starts a shell client. Remote or local depending on the arguments.
      *
      * @param arguments the arguments from the command line. Can contain
-     *                  information about whether to start a local
-     *                  {@link GraphDatabaseShellServer} or connect to an already running
-     *                  {@link GraphDatabaseService}.
+     * information about whether to start a local
+     * {@link GraphDatabaseShellServer} or connect to an already running
+     * {@link GraphDatabaseService}.
      */
     public static void main( String[] arguments )
     {
         InterruptSignalHandler signalHandler = InterruptSignalHandler.getHandler();
-        new StartClient().start( arguments, signalHandler );
+        try
+        {
+            new StartClient( System.out, System.err ).start( arguments, signalHandler );
+        }
+        catch ( ShellExecutionFailureException e )
+        {
+            e.dumpMessage( System.out, System.err );
+            System.exit( 1 );
+        }
     }
 
     private void start( String[] arguments, CtrlCHandler signalHandler )
@@ -129,7 +145,7 @@ public class StartClient
         Args args = Args.withFlags( ARG_READONLY ).parse( arguments );
         if ( args.has( "?" ) || args.has( "h" ) || args.has( "help" ) || args.has( "usage" ) )
         {
-            printUsage();
+            printUsage( out );
             return;
         }
 
@@ -140,13 +156,13 @@ public class StartClient
         String pid = args.get( ARG_PID, null );
 
         if ( (path != null && (port != null || name != null || host != null || pid != null))
-                || (pid != null && host != null) )
+             || (pid != null && host != null) )
         {
-            System.err.println( "You have supplied both " +
-                    ARG_PATH + " as well as " + ARG_HOST + "/" + ARG_PORT + "/" + ARG_NAME + ". " +
-                    "You should either supply only " + ARG_PATH +
-                    " or " + ARG_HOST + "/" + ARG_PORT + "/" + ARG_NAME + " so that either a local or " +
-                    "remote shell client can be started" );
+            err.println( "You have supplied both " +
+                         ARG_PATH + " as well as " + ARG_HOST + "/" + ARG_PORT + "/" + ARG_NAME + ". " +
+                         "You should either supply only " + ARG_PATH +
+                         " or " + ARG_HOST + "/" + ARG_PORT + "/" + ARG_NAME + " so that either a local or " +
+                         "remote shell client can be started" );
         }
         // Local
         else if ( path != null )
@@ -157,7 +173,7 @@ public class StartClient
             }
             catch ( ShellException e )
             {
-                handleException( e, args );
+                throw new ShellExecutionFailureException( e, args );
             }
             startLocal( args, signalHandler );
         }
@@ -165,10 +181,9 @@ public class StartClient
         else
         {
             String readonly = args.get( ARG_READONLY, null );
-            if (readonly != null )
+            if ( readonly != null )
             {
-                System.err.println(
-                        "Warning: -" + ARG_READONLY + " is ignored unless you connect with -" + ARG_PATH + "!" );
+                err.println( "Warning: -" + ARG_READONLY + " is ignored unless you connect with -" + ARG_PATH + "!" );
             }
 
             // Start server on the supplied process
@@ -216,11 +231,11 @@ public class StartClient
         String dbPath = args.get( ARG_PATH, null );
         if ( dbPath == null )
         {
-            System.err.println( "ERROR: To start a local Neo4j service and a " +
-                    "shell client on top of that you need to supply a path to a " +
-                    "Neo4j store or just a new path where a new store will " +
-                    "be created if it doesn't exist. -" + ARG_PATH +
-                    " /my/path/here" );
+            err.println( "ERROR: To start a local Neo4j service and a " +
+                         "shell client on top of that you need to supply a path to a " +
+                         "Neo4j store or just a new path where a new store will " +
+                         "be created if it doesn't exist. -" + ARG_PATH +
+                         " /my/path/here" );
             return;
         }
 
@@ -231,13 +246,12 @@ public class StartClient
         }
         catch ( Exception e )
         {
-            handleException( e, args );
+            throw new ShellExecutionFailureException( e, args );
         }
-        System.exit( 0 );
     }
 
     private void tryStartLocalServerAndClient( String dbPath, boolean readOnly, Args args,
-                                               CtrlCHandler signalHandler ) throws Exception
+            CtrlCHandler signalHandler ) throws Exception
     {
         String configFile = args.get( ARG_CONFIG, null );
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( dbPath, readOnly, configFile );
@@ -252,7 +266,7 @@ public class StartClient
 
         if ( !isCommandLine( args ) )
         {
-            System.out.println( "NOTE: Local Neo4j graph database service at '" + dbPath + "'" );
+            out.println( "NOTE: Local Neo4j graph database service at '" + dbPath + "'" );
         }
         ShellClient client = ShellLobby.newClient( server, getSessionVariablesFromArgs( args ), signalHandler );
         grabPromptOrJustExecuteCommand( client, args );
@@ -288,7 +302,7 @@ public class StartClient
         }
         catch ( Exception e )
         {
-            handleException( e, args );
+            throw new ShellExecutionFailureException( e, args );
         }
     }
 
@@ -303,13 +317,13 @@ public class StartClient
                     getSessionVariablesFromArgs( args ), signalHandler );
             if ( !isCommandLine( args ) )
             {
-                System.out.println( "NOTE: Remote Neo4j graph database service '" + name + "' at port " + port );
+                out.println( "NOTE: Remote Neo4j graph database service '" + name + "' at port " + port );
             }
             grabPromptOrJustExecuteCommand( client, args );
         }
         catch ( Exception e )
         {
-            handleException( e, args );
+            throw new ShellExecutionFailureException( e, args );
         }
     }
 
@@ -361,12 +375,12 @@ public class StartClient
         client.grabPrompt();
     }
 
-    private static void executeCommandStream( ShellClient client, BufferedReader reader ) throws IOException,
+    private void executeCommandStream( ShellClient client, BufferedReader reader ) throws IOException,
             ShellException
     {
         try
         {
-            for ( String line; ( line = reader.readLine() ) != null; )
+            for ( String line; (line = reader.readLine()) != null; )
             {
                 client.evaluate( line );
             }
@@ -378,16 +392,16 @@ public class StartClient
         }
     }
 
-    static Map<String, Serializable> getSessionVariablesFromArgs( Args args ) throws RemoteException, ShellException
+    static Map<String,Serializable> getSessionVariablesFromArgs( Args args ) throws RemoteException, ShellException
     {
         String profile = args.get( "profile", null );
-        Map<String, Serializable> session = new HashMap<String, Serializable>();
+        Map<String,Serializable> session = new HashMap<>();
         if ( profile != null )
         {
             applyProfileFile( new File( profile ), session );
         }
 
-        for ( Map.Entry<String, String> entry : args.asMap().entrySet() )
+        for ( Map.Entry<String,String> entry : args.asMap().entrySet() )
         {
             String key = entry.getKey();
             if ( key.startsWith( "D" ) )
@@ -403,9 +417,9 @@ public class StartClient
         return session;
     }
 
-    private static void applyProfileFile( File file, Map<String, Serializable> session ) throws ShellException
+    private static void applyProfileFile( File file, Map<String,Serializable> session ) throws ShellException
     {
-        try (FileInputStream fis = new FileInputStream( file ))
+        try ( FileInputStream fis = new FileInputStream( file ) )
         {
             Properties properties = new Properties();
             properties.load( fis );
@@ -419,22 +433,8 @@ public class StartClient
         catch ( IOException e )
         {
             throw new IllegalArgumentException( "Couldn't find profile '" +
-                    file.getAbsolutePath() + "'" );
+                                                file.getAbsolutePath() + "'" );
         }
-    }
-
-    private static void handleException( Exception e, Args args )
-    {
-        String message = e.getCause() instanceof ConnectException ?
-                "Connection refused" : e.getMessage();
-        System.err.println( "ERROR (-v for expanded information):\n\t" + message );
-        if ( args.has( "v" ) )
-        {
-            e.printStackTrace( System.err );
-        }
-        System.err.println();
-        printUsage();
-        System.exit( 1 );
     }
 
     private static int longestString( String... strings )
@@ -450,7 +450,7 @@ public class StartClient
         return length;
     }
 
-    private static void printUsage()
+    private static void printUsage( PrintStream out )
     {
         int port = SimpleAppServer.DEFAULT_PORT;
         String name = SimpleAppServer.DEFAULT_NAME;
@@ -458,35 +458,35 @@ public class StartClient
                 ARG_CONFIG,
                 ARG_HOST, ARG_NAME,
                 ARG_PATH, ARG_PID, ARG_PORT, ARG_READONLY );
-        System.out.println(
+        out.println(
                 padArg( ARG_HOST, longestArgLength ) + "Domain name or IP of host to connect to (default: localhost)" +
-                        "\n" +
-                        padArg( ARG_PORT, longestArgLength ) + "Port of host to connect to (default: " +
-                        SimpleAppServer.DEFAULT_PORT + ")\n" +
-                        padArg( ARG_NAME, longestArgLength ) + "RMI name, i.e. rmi://<host>:<port>/<name> (default: "
-                        + SimpleAppServer.DEFAULT_NAME + ")\n" +
-                        padArg( ARG_PID, longestArgLength ) + "Process ID to connect to\n" +
-                        padArg( ARG_COMMAND, longestArgLength ) + "Command line to execute. After executing it the " +
-                        "shell exits\n" +
-                        padArg( ARG_FILE, longestArgLength ) + "File containing commands to execute, or '-' to read " +
-                        "from stdin. After executing it the shell exits\n" +
-                        padArg( ARG_READONLY, longestArgLength ) + "Connect in readonly mode (only for connecting " +
-                        "with -" + ARG_PATH + ")\n" +
-                        padArg( ARG_PATH, longestArgLength ) + "Points to a neo4j db path so that a local server can " +
-                        "be started there\n" +
-                        padArg( ARG_CONFIG, longestArgLength ) + "Points to a config file when starting a local " +
-                        "server\n\n" +
+                "\n" +
+                padArg( ARG_PORT, longestArgLength ) + "Port of host to connect to (default: " +
+                SimpleAppServer.DEFAULT_PORT + ")\n" +
+                padArg( ARG_NAME, longestArgLength ) + "RMI name, i.e. rmi://<host>:<port>/<name> (default: "
+                + SimpleAppServer.DEFAULT_NAME + ")\n" +
+                padArg( ARG_PID, longestArgLength ) + "Process ID to connect to\n" +
+                padArg( ARG_COMMAND, longestArgLength ) + "Command line to execute. After executing it the " +
+                "shell exits\n" +
+                padArg( ARG_FILE, longestArgLength ) + "File containing commands to execute, or '-' to read " +
+                "from stdin. After executing it the shell exits\n" +
+                padArg( ARG_READONLY, longestArgLength ) + "Connect in readonly mode (only for connecting " +
+                "with -" + ARG_PATH + ")\n" +
+                padArg( ARG_PATH, longestArgLength ) + "Points to a neo4j db path so that a local server can " +
+                "be started there\n" +
+                padArg( ARG_CONFIG, longestArgLength ) + "Points to a config file when starting a local " +
+                "server\n\n" +
 
-                        "Example arguments for remote:\n" +
-                        "\t-" + ARG_PORT + " " + port + "\n" +
-                        "\t-" + ARG_HOST + " " + "192.168.1.234" + " -" + ARG_PORT + " " + port + " -" + ARG_NAME + "" +
-                        " " + name + "\n" +
-                        "\t-" + ARG_HOST + " " + "localhost" + " -" + ARG_READONLY + "\n" +
-                        "\t...or no arguments for default values\n" +
-                        "Example arguments for local:\n" +
-                        "\t-" + ARG_PATH + " /path/to/db" + "\n" +
-                        "\t-" + ARG_PATH + " /path/to/db -" + ARG_CONFIG + " /path/to/neo4j.config" + "\n" +
-                        "\t-" + ARG_PATH + " /path/to/db -" + ARG_READONLY
+                "Example arguments for remote:\n" +
+                "\t-" + ARG_PORT + " " + port + "\n" +
+                "\t-" + ARG_HOST + " " + "192.168.1.234" + " -" + ARG_PORT + " " + port + " -" + ARG_NAME + "" +
+                " " + name + "\n" +
+                "\t-" + ARG_HOST + " " + "localhost" + " -" + ARG_READONLY + "\n" +
+                "\t...or no arguments for default values\n" +
+                "Example arguments for local:\n" +
+                "\t-" + ARG_PATH + " /path/to/db" + "\n" +
+                "\t-" + ARG_PATH + " /path/to/db -" + ARG_CONFIG + " /path/to/neo4j.config" + "\n" +
+                "\t-" + ARG_PATH + " /path/to/db -" + ARG_READONLY
         );
     }
 
@@ -503,5 +503,30 @@ public class StartClient
             string = string + " ";
         }
         return string;
+    }
+
+    private static class ShellExecutionFailureException extends RuntimeException
+    {
+        private final Throwable cause;
+        private final Args args;
+
+        ShellExecutionFailureException( Throwable cause, Args args )
+        {
+            this.cause = cause;
+            this.args = args;
+        }
+
+        private void dumpMessage( PrintStream out, PrintStream err )
+        {
+            String message = cause.getCause() instanceof ConnectException ?
+                             "Connection refused" : cause.getMessage();
+            err.println( "ERROR (-v for expanded information):\n\t" + message );
+            if ( args.has( "v" ) )
+            {
+                cause.printStackTrace( err );
+            }
+            err.println();
+            printUsage( out );
+        }
     }
 }
