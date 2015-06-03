@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalLea
 object leafPlanOptions extends LogicalLeafPlan.Finder {
 
   def apply(config: QueryPlannerConfiguration, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Set[LogicalPlan] = {
-    val kit = config.toKit(queryGraph)
+    val queryPlannerKit = config.toKit()
     val pickBest = config.pickBestCandidate(context)
 
     val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph)
-    val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(kit.select))
+    val leafPlanCandidateListsWithSelections = queryPlannerKit.select(leafPlanCandidateLists, queryGraph)
     val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
     bestLeafPlans.toSet
   }

@@ -64,16 +64,17 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerList,
                                      optionalSolvers: Seq[OptionalSolver],
                                      pickBestCandidate: LogicalPlanningFunction0[CandidateSelector]) {
 
-  def toKit(qg: QueryGraph)(implicit context: LogicalPlanningContext): QueryPlannerKit =
+  def toKit()(implicit context: LogicalPlanningContext): QueryPlannerKit =
     QueryPlannerKit(
-      qg = qg,
-      select = plan => applySelections(plan, qg),
+      select = (plan: LogicalPlan, qg: QueryGraph) => applySelections(plan, qg),
       projectAllEndpoints = (plan: LogicalPlan, qg: QueryGraph) => projectAllEndpoints(plan, qg),
       pickBest = pickBestCandidate(context)
     )
 }
 
-case class QueryPlannerKit(qg: QueryGraph,
-                           select: LogicalPlan => LogicalPlan,
+case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan,
                            projectAllEndpoints: (LogicalPlan, QueryGraph) => LogicalPlan,
-                           pickBest: CandidateSelector)
+                           pickBest: CandidateSelector) {
+  def select(plans: Iterable[Seq[LogicalPlan]], qg: QueryGraph): Iterable[Seq[LogicalPlan]] =
+    plans.map(_.map(plan => select(plan, qg)))
+}

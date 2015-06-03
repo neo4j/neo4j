@@ -66,6 +66,27 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result should equal(List(List(nodeA, nodeB, nodeD)))
   }
 
+  test("apply-arguments with optional shortest path should be plannable in IDP") {
+    /*
+       a-b-c-d
+       b-d
+     */
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
+    relate(nodeC, nodeD)
+    relate(nodeB, nodeD)
+
+    val result = innerExecute("CYPHER PLANNER IDP MATCH (a:A), (d:D) OPTIONAL MATCH p = shortestPath((a)-[*]->(d)) RETURN nodes(p) AS nodes").toList
+
+    result should equal(List(Map("nodes" -> List(nodeA, nodeB, nodeD))))
+  }
+
+  test("returns null when no shortest path is found") {
+    val result = executeWithAllPlanners("MATCH (a:A), (b:B) OPTIONAL MATCH p = shortestPath( (a)-[*]->(b) ) RETURN p").toList
+
+    result should equal(List(Map("p" -> null)))
+  }
+
   test("finds shortest path rels") {
     /*
        a-b-c-d
