@@ -79,7 +79,13 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) 
       case CartesianProduct(lhs, rhs) =>
         val children = TwoChildren(apply(lhs, idMap), apply(rhs, idMap))
         PlanDescriptionImpl(id = idMap(plan), "CartesianProduct", children,Seq.empty, symbols)
-      case row: SingleRow => new SingleRowPlanDescription(id = idMap(plan), Seq.empty, row.argumentIds.map(_.name))
+
+      case Limit(lhs, count) =>
+        PlanDescriptionImpl(id = idMap(plan), name = "Limit", children = SingleChild(apply(lhs, idMap)),
+          Seq(Expression(count)), symbols)
+
+      case row: SingleRow =>
+        new SingleRowPlanDescription(id = idMap(plan), Seq.empty, row.argumentIds.map(_.name))
 
       case x => throw new CantCompileQueryException(x.getClass.getSimpleName)
     }

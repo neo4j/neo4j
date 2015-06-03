@@ -28,6 +28,14 @@ import scala.util.Random
 
 class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers with NewPlannerTestSupport {
 
+  test("limit 0 should return an empty result") {
+    createNode()
+    createNode()
+    createNode()
+    val result = executeWithAllPlannersAndRuntimes("match n return n limit 0")
+    result should be(empty)
+  }
+
   test("should not support sorting on things after distinct has removed it") {
     createNode("name" -> "A", "age" -> 13)
     createNode("name" -> "B", "age" -> 12)

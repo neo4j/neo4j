@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, symbols}
 
@@ -40,6 +41,7 @@ object LogicalPlanConverter {
       case p: CartesianProduct => p
       case p: Projection => p
       case p: Selection => p
+      case p: plans.Limit => p
 
       case _ =>
         throw new CantCompileQueryException(s"$logicalPlan is not yet supported")
@@ -260,6 +262,20 @@ object LogicalPlanConverter {
       val instruction = predicates.reverse.foldLeft[Instruction](TracingInstruction(opName, innerBlock)) {
         case (acc, predicate) => If(predicate, acc)
       }
+
+      (methodHandle, instruction)
+    }
+  }
+
+  private implicit class Limit(val logicalPlan: plans.Limit) extends SingleChildPlan {
+
+    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+      val opName = context.registerOperator(logicalPlan)
+      val count = ExpressionConverter.createExpression(logicalPlan.count)(opName, context)
+      val counterName = context.namer.newVarName()
+
+      val (methodHandle, innerBlock) = context.popParent().consume(context, this)
+      val instruction = DecreaseAndReturnWhenZero(opName, counterName, innerBlock, count)
 
       (methodHandle, instruction)
     }

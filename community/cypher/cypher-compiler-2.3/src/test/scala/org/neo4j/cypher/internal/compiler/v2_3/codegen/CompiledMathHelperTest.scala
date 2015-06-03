@@ -113,4 +113,11 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case ex: Throwable => Left(ex)
     }
 
+  val inputs = Table[Any]("Number", 42, 42.1, 42L, 42.3F)
+  property("transformToInt") {
+    forAll(inputs) {
+      case x => CompiledMathHelper.transformToInt(x) should equal(42)
+    }
+  }
+
 }
