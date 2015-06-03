@@ -55,6 +55,8 @@ case class BuildRecordingProbeTable(id:String, name: String, node: String, value
     generator.updateProbeTable(valueTypeStructure, name, node, value)
   }
 
+  override protected def operatorId = Some(id)
+
   private val valueTypeField2VarName = valueSymbols.map {
     case (fieldName, symbol) => fieldName -> context.namer.newVarName()
   }

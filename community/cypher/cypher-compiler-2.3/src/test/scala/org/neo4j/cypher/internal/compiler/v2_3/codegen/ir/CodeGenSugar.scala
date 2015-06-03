@@ -76,6 +76,15 @@ trait CodeGenSugar extends MockitoSugar {
     evaluate(newInstance(compile(instructions: _*)))
   }
 
+  def evaluate(instructions: Seq[Instruction],
+               stmt: Statement = mock[Statement],
+               db: GraphDatabaseService = null,
+               params: Map[String, Any] = Map.empty): List[Map[String, Object]] = {
+    val clazz = compile(instructions: _*)
+    val result = newInstance(clazz, statement = stmt, graphdb = db, params = params)
+    evaluate(result)
+  }
+
   def evaluate(result: InternalExecutionResult): List[Map[String, Object]] = {
     var rows = List.empty[Map[String, Object]]
     val columns: List[String] = result.columns
