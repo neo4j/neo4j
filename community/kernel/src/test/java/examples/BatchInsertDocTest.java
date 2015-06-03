@@ -19,16 +19,16 @@
  */
 package examples;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicLabel;
@@ -38,11 +38,11 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.DefaultFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
@@ -62,8 +62,7 @@ public class BatchInsertDocTest
         try
         {
             inserter = BatchInserters.inserter(
-                    new File( "target/batchinserter-example" ).getAbsolutePath(),
-                    fileSystem );
+                    new File( "target/batchinserter-example" ).getAbsolutePath() );
 
             Label personLabel = DynamicLabel.label( "Person" );
             inserter.createDeferredSchemaIndex( personLabel ).on( "name" ).create();
@@ -89,8 +88,9 @@ public class BatchInsertDocTest
         // END SNIPPET: insert
 
         // try it out from a normal db
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase(
-                new File("target/batchinserter-example").getAbsolutePath() );
+        GraphDatabaseService db =
+                new GraphDatabaseFactory().newEmbeddedDatabase(
+                    new File("target/batchinserter-example").getAbsolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
             Label personLabelForTesting = DynamicLabel.label( "Person" );
@@ -115,7 +115,7 @@ public class BatchInsertDocTest
         Map<String, String> config = new HashMap<>();
         config.put( "dbms.pagecache.memory", "512m" );
         BatchInserter inserter = BatchInserters.inserter(
-                new File("target/batchinserter-example-config").getAbsolutePath(), fileSystem, config );
+                new File( "target/batchinserter-example-config" ).getAbsolutePath(), config );
         // Insert data here ... and then shut down:
         inserter.shutdown();
         // END SNIPPET: configuredInsert
@@ -130,11 +130,11 @@ public class BatchInsertDocTest
         }
 
         // START SNIPPET: configFileInsert
-        try ( InputStream input = fileSystem.openAsInputStream( new File( "target/docs/batchinsert-config" ).getAbsoluteFile() ) )
+        try ( FileReader input = new FileReader( new File( "target/docs/batchinsert-config" ).getAbsoluteFile() ) )
         {
             Map<String, String> config = MapUtil.load( input );
             BatchInserter inserter = BatchInserters.inserter(
-                    "target/docs/batchinserter-example-config", fileSystem, config );
+                    "target/docs/batchinserter-example-config", config );
             // Insert data here ... and then shut down:
             inserter.shutdown();
         }

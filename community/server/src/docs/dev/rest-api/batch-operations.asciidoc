@@ -1,7 +1,14 @@
 [[rest-api-batch-ops]]
 == Batch operations ==
 
-Note: You cannot use this resource to execute Cypher queries with +USING PERIODIC COMMIT+.
+[abstract]
+Batch operations lets you execute multiple API calls through a single HTTP call.
+This improves performance for large insert and update operations significantly.
+
+This service is _transactional._
+If any of the operations performed fails (returns a non-2xx HTTP status code), the transaction will be rolled back and no changes will be applied.
+
+IMPORTANT: You cannot use this resource to execute Cypher queries with +USING PERIODIC COMMIT+.
 
 include::execute-multiple-operations-in-batch.asciidoc[]
 

@@ -181,6 +181,6 @@ Currently, the address space is as follows:
 | nodes | 2^35^ (&#8764; 34 billion) 
 | relationships | 2^35^ (&#8764; 34 billion) 
 | properties | 2^36^ to 2^38^ depending on property types (maximum &#8764; 274 billion, always at least &#8764; 68 billion)
-| relationship types | 2^15^ (&#8764; 32 000)
+| relationship types | 2^16^ (&#8764; 65 000)
 |=========
 

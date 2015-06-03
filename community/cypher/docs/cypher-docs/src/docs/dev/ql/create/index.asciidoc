@@ -14,6 +14,8 @@ Read <<introduction-pattern>> for an introduction.
 
 include::create-single-node.asciidoc[]
 
+include::create-multiple-nodes.asciidoc[]
+
 include::create-a-node-with-a-label.asciidoc[]
 
 include::create-a-node-with-multiple-labels.asciidoc[]

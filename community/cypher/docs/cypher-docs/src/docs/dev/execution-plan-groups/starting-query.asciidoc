@@ -1,8 +1,8 @@
 [[execution-plans-starting-query]]
 
-== Starting a query operators ==
+== Starting point operators ==
 
-These operators find parts of the graph from which to start a query.
+These operators find parts of the graph from which to start.
 
 :leveloffset: 2
 
