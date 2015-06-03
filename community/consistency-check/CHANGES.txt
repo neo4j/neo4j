@@ -1,3 +1,7 @@
+2.3.0-M02
+---------
+o Consistency Checker now has an additional check for node label id arrays that are not sorted
+
 2.2.0
 -----
 o Made more configurable - can now enable/disable all parts of the process
