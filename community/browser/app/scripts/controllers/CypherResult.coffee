@@ -186,4 +186,9 @@ angular.module('neo4jApp.controllers')
 
     $scope.toggleDisplayInternalRelationships = ->
       $scope.displayInternalRelationships = !$scope.displayInternalRelationships
+
+    $scope.$on 'graph:max_neighbour_limit', (event, result) ->
+      if event.stopPropagation then event.stopPropagation()
+      $scope.$broadcast 'frame.notif.max_neighbour_limit', result
+
   ]

@@ -99,16 +99,12 @@ angular.module('neo4jApp.controllers')
           GraphExplorer.exploreNeighbours(d, graph, $scope.displayInternalRelationships)
           .then(
               # Success
-            () =>
+            (neighboursResult) =>
+              checkLimitsReached neighboursResult
               linkDistance = 60
               CircularLayout.layout(graph.nodes(), d, linkDistance)
               d.expanded = yes
               graphView.update()
-          ,
-              # Error
-            (msg) ->
-              # Too many neighbours
-              alert(msg)
           )
           # New in Angular 1.1.5
           # https://github.com/angular/angular.js/issues/2371
@@ -149,6 +145,10 @@ angular.module('neo4jApp.controllers')
             initGraphView(graph)
         else
           initGraphView(graph)
+
+      checkLimitsReached = (result) ->
+        if result.neighbourSize > result.neighbourDisplayedSize
+          $scope.$emit 'graph:max_neighbour_limit', result
 
       return @
   ])
