@@ -158,7 +158,13 @@ case class Selectivity(factor: Double) extends Ordered[Selectivity] {
   def *(other: Selectivity): Selectivity = other.factor * factor
   def *(other: Multiplier): Selectivity = factor * other.coefficient
   def ^(a: Int): Selectivity = Math.pow(factor, a)
-  def negate: Selectivity = 1 - factor
+  def negate: Selectivity = {
+    val f = 1.0 - factor
+    if (factor == 0 || f < 1)
+      f
+    else
+      Selectivity.CLOSEST_TO_ONE
+  }
 
   def compare(that: Selectivity) = factor.compare(that.factor)
 }
@@ -168,6 +174,7 @@ object Selectivity {
 
   val ZERO = Selectivity(0.0d)
   val ONE = Selectivity(1.0d)
+  val CLOSEST_TO_ONE = Selectivity(1 - 5.56e-17)    // we can get closer, but this is close enough
 
   implicit def lift(amount: Double): Selectivity = Selectivity(amount)
 
