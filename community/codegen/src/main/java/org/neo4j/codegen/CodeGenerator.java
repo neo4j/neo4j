@@ -33,11 +33,13 @@ public abstract class CodeGenerator
     private ByteCodeVisitor byteCodeVisitor = DO_NOTHING;
 
     public static CodeGenerator generateCode( CodeGeneratorOption... options )
+            throws CodeGenerationNotSupportedException
     {
         return generateCode( Thread.currentThread().getContextClassLoader(), options );
     }
 
     public static CodeGenerator generateCode( ClassLoader loader, CodeGeneratorOption... options )
+            throws CodeGenerationNotSupportedException
     {
         return codeGenerator( requireNonNull( loader, "ClassLoader" ), options );
     }

@@ -28,9 +28,12 @@ import java.util.Collections;
 import java.util.List;
 import javax.annotation.processing.Processor;
 import javax.tools.Diagnostic;
+import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
+import javax.tools.ToolProvider;
 
 import org.neo4j.codegen.CodeGenerationStrategy;
+import org.neo4j.codegen.CodeGenerationStrategyNotSupportedException;
 import org.neo4j.codegen.CodeGenerator;
 import org.neo4j.codegen.CodeGeneratorOption;
 import org.neo4j.codegen.TypeReference;
@@ -52,14 +55,20 @@ public enum SourceCode implements CodeGeneratorOption
 
         @Override
         protected CodeGenerator createCodeGenerator( ClassLoader loader, Configuration configuration )
+                throws CodeGenerationStrategyNotSupportedException
         {
-            return new SourceCodeGenerator( loader, configuration );
+            JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+            if ( compiler == null )
+            {
+                throw new CodeGenerationStrategyNotSupportedException( this, "no java source compiler available" );
+            }
+            return new SourceCodeGenerator( loader, configuration, compiler );
         }
 
         @Override
-        public String toString()
+        protected String name()
         {
-            return "SourceCode";
+            return "SOURCECODE";
         }
     };
     public static final CodeGeneratorOption PRINT_SOURCE = new SourceVisitor()

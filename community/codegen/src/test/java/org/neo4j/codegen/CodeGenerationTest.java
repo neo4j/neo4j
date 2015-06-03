@@ -31,8 +31,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.codegen.source.SourceCode;
-
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -59,8 +57,19 @@ import static org.neo4j.codegen.TypeReference.typeParameter;
 
 public class CodeGenerationTest
 {
-
     public static final MethodReference RUN = methodReference( Runnable.class, void.class, "run" );
+
+    public CodeGenerationTest()
+    {
+        try
+        {
+            generator = CodeGenerator.generateCode( /*SourceCode.PRINT_SOURCE*/ );
+        }
+        catch ( CodeGenerationNotSupportedException e )
+        {
+            throw new AssertionError( "Cannot compile code.", e );
+        }
+    }
 
     @Test
     public void shouldGenerateClass() throws Exception
@@ -521,7 +530,7 @@ public class CodeGenerationTest
     }
 
     private static final String PACKAGE = "org.neo4j.codegen.test";
-    private final CodeGenerator generator = CodeGenerator.generateCode( /*SourceCode.PRINT_SOURCE*/ );
+    private final CodeGenerator generator;
 
     ClassGenerator generateClass( String name, Class<?> firstInterface, Class<?>... more )
     {
