@@ -20,6 +20,7 @@
 package org.neo4j.server.modules;
 
 import io.netty.channel.Channel;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.Function;
@@ -40,6 +41,7 @@ import org.neo4j.ndp.transport.socket.SocketProtocolV1;
 import org.neo4j.ndp.transport.socket.SocketTransport;
 import org.neo4j.ndp.transport.socket.WebSocketTransport;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.logging.Netty4LoggerFactory;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
@@ -92,7 +94,7 @@ public class NDPModule implements ServerModule
                 }
             } );
 
-            // Start services
+            InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logging.getInternalLogProvider() ) );
             life.add( new NettyServer( asList(
                     new SocketTransport( socketAddress, availableVersions ),
                     new WebSocketTransport( webSocketAddress, availableVersions ) ) ) );
