@@ -1,3 +1,8 @@
+2.3.0-M02
+-----
+o Code view of Cypher request frames. It displays info about the frame requests
+  made to the REST API.
+
 2.2.2
 -----
 o Added :sysinfo as a shorthand for :play sysinfo
