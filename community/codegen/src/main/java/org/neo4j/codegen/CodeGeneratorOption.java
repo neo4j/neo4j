@@ -22,37 +22,4 @@ package org.neo4j.codegen;
 public interface CodeGeneratorOption
 {
     void applyTo( Object target );
-
-    abstract class Conditional implements CodeGeneratorOption
-    {
-        public static CodeGeneratorOption conditionedBy( final String property, CodeGeneratorOption option )
-        {
-            return new Conditional( option )
-            {
-                @Override
-                protected boolean enabled()
-                {
-                    return Boolean.getBoolean( property );
-                }
-            };
-        }
-
-        private final CodeGeneratorOption option;
-
-        public Conditional( CodeGeneratorOption option )
-        {
-            this.option = option;
-        }
-
-        @Override
-        public final void applyTo( Object target )
-        {
-            if ( enabled() )
-            {
-                option.applyTo( target );
-            }
-        }
-
-        protected abstract boolean enabled();
-    }
 }

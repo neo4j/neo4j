@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{GeneratedQueryExecution, SuccessfulCloseable}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.using
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.CypherType
 import org.neo4j.function.Supplier
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
@@ -155,7 +156,11 @@ trait MethodStructure[E] {
 object CodeStructure {
   val __TODO__MOVE_IMPLEMENTATION = new CodeStructure[GeneratedQueryExecution] {
     override def generateQuery(packageName: String, className: String, columns: Seq[String], opIds: Seq[String])(block: MethodStructure[_] => Unit) = {
-      val generator = codegen.CodeGenerator.generateCode(CodeStructure.getClass.getClassLoader/*, SourceCode.PRINT_SOURCE*/)
+      val generator = try {
+        codegen.CodeGenerator.generateCode(CodeStructure.getClass.getClassLoader/*, SourceCode.PRINT_SOURCE*/)
+      } catch {
+        case e: Exception => throw new CantCompileQueryException(e.getMessage, e)
+      }
       using(generator.generateClass(packageName, className, typeRef[GeneratedQueryExecution], typeRef[SuccessfulCloseable])) { clazz =>
         // fields
         val fields = Fields(

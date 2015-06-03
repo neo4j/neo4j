@@ -27,7 +27,6 @@ import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
-import javax.tools.ToolProvider;
 
 import org.neo4j.codegen.ByteCodes;
 import org.neo4j.codegen.ClassEmitter;
@@ -39,11 +38,13 @@ class SourceCodeGenerator extends CodeGenerator
 {
     private final Configuration configuration;
     private final Map<TypeReference, StringBuilder> classes = new HashMap<>();
+    private final JavaCompiler compiler;
 
-    SourceCodeGenerator( ClassLoader parentClassLoader, Configuration configuration )
+    SourceCodeGenerator( ClassLoader parentClassLoader, Configuration configuration, JavaCompiler javaCompiler )
     {
         super( parentClassLoader );
         this.configuration = configuration;
+        this.compiler = javaCompiler;
     }
 
     @Override
@@ -76,7 +77,6 @@ class SourceCodeGenerator extends CodeGenerator
 
     protected Iterable<? extends ByteCodes> compile( ClassLoader classpathLoader ) throws CompilationFailureException
     {
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
 
         FileManager fileManager = new FileManager(

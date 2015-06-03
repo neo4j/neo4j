@@ -28,9 +28,11 @@ public abstract class CodeGenerationStrategy<Configuration> implements CodeGener
 {
     protected abstract Configuration createConfigurator( ClassLoader loader );
 
-    protected abstract CodeGenerator createCodeGenerator( ClassLoader loader, Configuration configuration );
+    protected abstract CodeGenerator createCodeGenerator( ClassLoader loader, Configuration configuration )
+            throws CodeGenerationStrategyNotSupportedException;
 
     static CodeGenerator codeGenerator( ClassLoader loader, CodeGeneratorOption... options )
+            throws CodeGenerationNotSupportedException
     {
         return applyTo( new Choice( SOURCECODE ), options ).generateCode( loader, options );
     }
@@ -45,10 +47,19 @@ public abstract class CodeGenerationStrategy<Configuration> implements CodeGener
     }
 
     private CodeGenerator generateCode( ClassLoader loader, CodeGeneratorOption... options )
+            throws CodeGenerationStrategyNotSupportedException
     {
         Configuration configurator = createConfigurator( loader );
         return createCodeGenerator( loader, applyTo( configurator, options ) );
     }
+
+    @Override
+    public String toString()
+    {
+        return "CodeGenerationStrategy:" + name();
+    }
+
+    protected abstract String name();
 
     private static class Choice implements ByteCodeVisitor.Configurable
     {
@@ -76,6 +87,7 @@ public abstract class CodeGenerationStrategy<Configuration> implements CodeGener
         }
 
         CodeGenerator generateCode( ClassLoader loader, CodeGeneratorOption[] options )
+                throws CodeGenerationNotSupportedException
         {
             CodeGenerator generator = strategy.generateCode( loader, options );
             if ( visitors != null )
