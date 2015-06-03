@@ -80,6 +80,11 @@ trait MethodStructure[E] {
   def constant(value: Object): E
   def asMap(map: Map[String, E]): E
   def asList(values: Seq[E]): E
+
+  def toSet(value: E): E
+
+  def castToCollection(value: E): E
+
   def load(varName: String): E
 
   // arithmetic
@@ -120,12 +125,13 @@ trait MethodStructure[E] {
   def lookupPropertyKey(propName: String, propVar: String)
   def propertyValueAsPredicate(propertyExpression: E): E
 
-  def indexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
+  def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
 
   def indexSeek(iterVar: String, descriptorVar: String, value: E): Unit
 
   // code structure
   def whileLoop(test: E)(block: MethodStructure[E] => Unit): Unit
+  def forEach(varName: String, cypherType: CypherType, iterable: E)(block: MethodStructure[E] => Unit): Unit
   def ifStatement(test: E)(block: MethodStructure[E] => Unit): Unit
   def returnSuccessfully(): Unit
 
@@ -299,10 +305,13 @@ private case class Method(fields: Fields, generator: CodeBlock, aux: AuxGenerato
   override def nextNode(targetVar: String, iterVar: String) =
     generator.assign(typeRef[Long], targetVar, Expression.invoke(generator.load(iterVar), Methods.nextLong))
 
-  override def nextRelationshipNode(targetVar: String, iterVar: String, direction: Direction, nodeVar: String, relVar: String) = {
+  override def nextRelationshipNode(targetVar: String, iterVar: String, direction: Direction, nodeVar: String,
+                                    relVar: String) = {
     val startNode = Expression.invoke(generator.load("rel"), Methods.startNode)
     val endNode = Expression.invoke(generator.load("rel"), Methods.endNode)
-    generator.expression(Expression.invoke(generator.load(iterVar), Methods.relationshipVisit, Expression.invoke(generator.load(iterVar), Methods.nextLong), generator.load("rel")))
+    generator.expression(Expression.invoke(generator.load(iterVar), Methods.relationshipVisit,
+                                           Expression.invoke(generator.load(iterVar), Methods.nextLong),
+                                           generator.load("rel")))
     generator.assign(typeRef[Long], targetVar, direction match {
       case Direction.INCOMING => startNode
       case Direction.OUTGOING => endNode
@@ -315,20 +324,28 @@ private case class Method(fields: Fields, generator: CodeBlock, aux: AuxGenerato
     generator.assign(typeRef[PrimitiveLongIterator], iterVar, Expression.invoke(readOperations, Methods.nodesGetAll))
 
   override def labelScan(iterVar: String, labelIdVar: String) =
-    generator.assign(typeRef[PrimitiveLongIterator], iterVar, Expression.invoke(readOperations, Methods.nodesGetForLabel, generator.load(labelIdVar)))
+    generator.assign(typeRef[PrimitiveLongIterator], iterVar,
+                     Expression.invoke(readOperations, Methods.nodesGetForLabel, generator.load(labelIdVar)))
 
 
   override def lookupLabelId(labelIdVar: String, labelName: String) =
-    generator.assign(typeRef[Int], labelIdVar, Expression.invoke(readOperations, Methods.labelGetForName, Expression.constant(labelName)))
+    generator.assign(typeRef[Int], labelIdVar,
+                     Expression.invoke(readOperations, Methods.labelGetForName, Expression.constant(labelName)))
 
   override def lookupRelationshipTypeId(typeIdVar: String, typeName: String) =
-    generator.assign(typeRef[Int], typeIdVar, Expression.invoke(readOperations, Methods.relationshipTypeGetForName, Expression.constant(typeName)))
+    generator.assign(typeRef[Int], typeIdVar, Expression
+      .invoke(readOperations, Methods.relationshipTypeGetForName, Expression.constant(typeName)))
 
   override def hasNext(iterVar: String) =
     Expression.invoke(generator.load(iterVar), Methods.hasNext)
 
   override def whileLoop(test: Expression)(block: MethodStructure[Expression] => Unit) =
     using(generator.whileLoop(test)) { body =>
+      block(copy(generator = body))
+    }
+
+  override def forEach(varName: String, cypherType: CypherType, iterable: Expression)(block: MethodStructure[Expression] => Unit) =
+    using(generator.forEach(Parameter.param(CodeStructure.lowerType(cypherType), varName), iterable)) { body =>
       block(copy(generator = body))
     }
 
@@ -461,6 +478,11 @@ private case class Method(fields: Fields, generator: CodeBlock, aux: AuxGenerato
 
   override def asList(values: Seq[Expression]) = Templates.asList(values)
 
+  override def toSet(value: Expression) =
+    Templates.newInstance(typeRef[util.HashSet[Object]], value)
+
+  override def castToCollection(value: Expression) = Expression.invoke(Methods.toCollection, value)
+
   override def asMap(map: Map[String, Expression]) = {
     Expression.invoke(Methods.arrayAsList, map.flatMap {
       case (key, value) => Seq(Expression.constant(key), value)
@@ -479,6 +501,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux: AuxGenerato
 
   override def allocateProbeTable(tableVar: String, tableType: JoinTableType) =
     generator.assign(joinTableType(tableType), tableVar, allocate(tableType))
+
 
   private def joinTableType(resultType: JoinTableType): TypeReference = {
     val returnType = resultType match {
@@ -624,7 +647,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux: AuxGenerato
   override def lookupPropertyKey(propName: String, propIdVar: String) =
     generator.assign(typeRef[Int], propIdVar, Expression.invoke(readOperations, Methods.propertyKeyGetForName ,Expression.constant(propName)))
 
-  override def indexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String) = {
+  override def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String) = {
     generator.assign(typeRef[IndexDescriptor], descriptorVar,
       Templates.newInstance(typeRef[IndexDescriptor], generator.load(labelVar), generator.load(propKeyVar))
     )
@@ -672,7 +695,8 @@ private object Methods {
   val mapContains = method[util.Map[String, Object], Boolean]("containsKey", typeRef[String])
   val labelGetForName = method[ReadOperations, Int]("labelGetForName", typeRef[String])
   val propertyKeyGetForName = method[ReadOperations, Int]("propertyKeyGetForName", typeRef[String])
-  val propertyAsPredicate = method[CompiledPredicateHelper, Boolean]("isPropertyValueTrue", typeRef[Object])
+  val propertyAsPredicate = method[CompiledConversionUtils, Boolean]("isPropertyValueTrue", typeRef[Object])
+  val toCollection = method[CompiledConversionUtils, java.util.Collection[Object]]("toCollection", typeRef[Object])
   val relationshipTypeGetForName = method[ReadOperations, Int]("relationshipTypeGetForName", typeRef[String])
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
   val nodeGetProperty = method[ReadOperations, Object]("nodeGetProperty")

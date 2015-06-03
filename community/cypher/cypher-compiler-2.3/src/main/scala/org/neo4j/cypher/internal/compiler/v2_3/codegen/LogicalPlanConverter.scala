@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.SingleQueryExpression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, symbols}
+import org.neo4j.cypher.internal.compiler.v2_3.{ast, InternalException, symbols}
 
 object LogicalPlanConverter {
 
@@ -83,20 +83,40 @@ object LogicalPlanConverter {
 
   private implicit class NodeIndexSeekCodeGen(val logicalPlan: NodeIndexSeek) extends LeafCodeGenPlan {
 
-
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
       val nodeVar = Variable(context.namer.newVarName(), symbols.CTNode)
-      val labelVar = context.namer.newVarName()
-      val propIdVar = context.namer.newVarName()
       context.addVariable(logicalPlan.idName.name, nodeVar)
+
       val (methodHandle, actions) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
-      val expr = logicalPlan.valueExpr match {
-        case SingleQueryExpression(e) => ExpressionConverter.createExpression(e)(opName, context)
-        case _ => throw new CantCompileQueryException("ManyQueryExpressions for index seeks not yet supported")
-      }
+      val indexSeekInstruction = logicalPlan.valueExpr match {
+        //single expression, do a index lookup for that value
+        case SingleQueryExpression(e) =>
+          val expression = ExpressionConverter.createExpression(e)(opName, context)
+          WhileLoop(nodeVar,
+                    IndexSeek(opName, logicalPlan.label.name, logicalPlan.propertyKey.name,
+                              context.namer.newVarName(), expression), actions)
+        //collection, create set and for each element of the set do an index lookup
+        case ManyQueryExpression(e: ast.Collection) =>
+          val expression = ToSet(ExpressionConverter.createExpression(e)(opName, context))
+          val expressionVar = context.namer.newVarName()
+          ForEachExpression(expressionVar, expression,
+                            WhileLoop(nodeVar,
+                                      IndexSeek(opName, logicalPlan.label.name, logicalPlan.propertyKey.name,
+                                                context.namer.newVarName(), LoadVariable(expressionVar)), actions))
+        //Unknown, try to cast to collection and then same as above
+        case ManyQueryExpression(e) =>
+          val expression = ToSet(CastToCollection(ExpressionConverter.createExpression(e)(opName, context)))
+          val expressionVar = context.namer.newVarName()
+          ForEachExpression(expressionVar, expression,
+                            WhileLoop(nodeVar,
+                                      IndexSeek(opName, logicalPlan.label.name, logicalPlan.propertyKey.name,
+                                                context.namer.newVarName(), LoadVariable(expressionVar)), actions))
 
-      (methodHandle, Seq(WhileLoop(nodeVar, IndexSeek(opName, logicalPlan.label.name, labelVar, logicalPlan.propertyKey.name, propIdVar, expr), actions)))
+         case e => throw new InternalException(s"$e is not a valid QueryExpression")
+        }
+
+      (methodHandle, Seq(indexSeekInstruction))
     }
   }
 

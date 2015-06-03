@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
 
-case class IndexSeek(id: String, labelName: String, labelVar: String, propName: String, propKeyVar: String, expression: CodeGenExpression) extends LoopDataGenerator {
-
-  private val descriptorVar = s"descriptorFor$labelVar$propKeyVar"
+case class IndexSeek(id: String, labelName: String, propName: String, descriptorVar: String, expression: CodeGenExpression) extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    val labelVar = context.namer.newVarName()
+    val propKeyVar = context.namer.newVarName()
     generator.lookupLabelId(labelVar, labelName)
     generator.lookupPropertyKey(propName, propKeyVar)
-    generator.indexDescriptor(descriptorVar, labelVar, propKeyVar)
+    generator.newIndexDescriptor(descriptorVar, labelVar, propKeyVar)
   }
 
   override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
