@@ -104,7 +104,7 @@ angular.module('neo4jApp.services')
           if not @hasRequiredData()
             @pingLater(event)
             return false
-          if Settings.shouldReportUdc
+          if @isBeta() || Settings.shouldReportUdc
             pingTime = new Date(@data.pingTime || 0)
             today = new Date()
             today = new Date(today.getFullYear(), today.getMonth(), today.getDay())
@@ -116,6 +116,9 @@ angular.module('neo4jApp.services')
               return false
           else
             return false
+
+        isBeta: ->
+          return /-M\d\d/.test(@data.neo4j_version)
 
         hasRequiredData: ->
           return @data.store_id and @data.neo4j_version
