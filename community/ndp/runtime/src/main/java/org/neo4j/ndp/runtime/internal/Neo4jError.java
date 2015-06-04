@@ -60,15 +60,19 @@ public class Neo4jError
 
         Neo4jError that = (Neo4jError) o;
 
-        return message.equals( that.message ) && status.equals( that.status );
+        if ( status != null ? !status.equals( that.status ) : that.status != null )
+        {
+            return false;
+        }
+        return !(message != null ? !message.equals( that.message ) : that.message != null);
 
     }
 
     @Override
     public int hashCode()
     {
-        int result = status.hashCode();
-        result = 31 * result + message.hashCode();
+        int result = status != null ? status.hashCode() : 0;
+        result = 31 * result + (message != null ? message.hashCode() : 0);
         return result;
     }
 

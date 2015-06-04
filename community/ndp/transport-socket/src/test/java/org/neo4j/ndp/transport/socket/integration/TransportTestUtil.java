@@ -47,11 +47,20 @@ public class TransportTestUtil
 
     public static byte[] chunk( int chunkSize, Message... messages ) throws IOException
     {
+        byte[][] serializedMessages = new byte[messages.length][];
+        for ( int i = 0; i < messages.length; i++ )
+        {
+            serializedMessages[i] = serialize( messages[i] );
+        }
+        return chunk( chunkSize, serializedMessages );
+    }
+
+    public static byte[] chunk( int chunkSize, byte[] ... messages )
+    {
         ByteBuffer output = ByteBuffer.allocate( 1024 ).order( ByteOrder.BIG_ENDIAN );
 
-        for ( Message message : messages )
+        for ( byte[] wholeMessage : messages )
         {
-            byte[] wholeMessage = serialize( message );
             int left = wholeMessage.length;
             while ( left > 0 )
             {
@@ -130,7 +139,7 @@ public class TransportTestUtil
     public static int recvChunkHeader( Connection conn ) throws Exception
     {
         byte[] raw = conn.recv( 2 );
-        return (raw[0] << 8 | raw[1]) & 0xffff;
+        return ((raw[0] & 0xff) << 8 | (raw[1] & 0xff)) & 0xffff;
     }
 
     public static Matcher<Connection> eventuallyRecieves( final byte[] expected )

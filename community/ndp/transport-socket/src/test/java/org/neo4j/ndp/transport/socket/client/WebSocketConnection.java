@@ -118,7 +118,10 @@ public class WebSocketConnection implements Connection, WebSocketListener
     @Override
     public void close() throws Exception
     {
-        client.stop();
+        if(client != null )
+        {
+            client.stop();
+        }
     }
 
     @Override

@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.ndp.messaging.NDPIOException;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
@@ -74,6 +75,22 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         byte MSG_SUCCESS = 0x70;
         byte MSG_IGNORED = 0x7E;
         byte MSG_FAILURE = 0x7F;
+    }
+
+    static String messageTypeName( int type )
+    {
+        switch( type )
+        {
+        case MessageTypes.MSG_ACK_FAILURE: return "MSG_ACK_FAILURE";
+        case MessageTypes.MSG_RUN:         return "MSG_RUN";
+        case MessageTypes.MSG_DISCARD_ALL: return "MSG_DISCARD_ALL";
+        case MessageTypes.MSG_PULL_ALL:    return "MSG_PULL_ALL";
+        case MessageTypes.MSG_RECORD:      return "MSG_RECORD";
+        case MessageTypes.MSG_SUCCESS:     return "MSG_SUCCESS";
+        case MessageTypes.MSG_IGNORED:     return "MSG_IGNORED";
+        case MessageTypes.MSG_FAILURE:     return "MSG_FAILURE";
+        default: return "0x" + Integer.toHexString(type);
+        }
     }
 
     public static class Writer implements MessageFormat.Writer
@@ -171,10 +188,10 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             packer.packMapHeader( 2 );
 
             packer.pack( "code" );
-            packValue( cause.status().code().serialize() );
+            packer.pack( cause.status().code().serialize() );
 
             packer.pack( "message" );
-            packValue( cause.message() );
+            packer.pack( cause.message() );
             onMessageComplete.run();
         }
 
@@ -287,7 +304,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 packer.packListHeader( arr.length );
                 for ( int i = 0; i < arr.length; i++ )
                 {
-                    packValue( arr[i] );
+                    packer.pack( arr[i] );
                 }
             }
             else if ( obj instanceof double[] )
@@ -296,7 +313,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 packer.packListHeader( arr.length );
                 for ( int i = 0; i < arr.length; i++ )
                 {
-                    packValue( arr[i] );
+                    packer.pack( arr[i] );
                 }
             }
             else if ( obj instanceof boolean[] )
@@ -305,7 +322,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 packer.packListHeader( arr.length );
                 for ( int i = 0; i < arr.length; i++ )
                 {
-                    packValue( arr[i] );
+                    packer.pack( arr[i] );
                 }
             }
             else if ( obj.getClass().isArray() )
@@ -394,36 +411,55 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         @Override
         public <E extends Exception> void read( MessageHandler<E> output ) throws IOException, E
         {
-            unpacker.unpackStructHeader();
-            int type = (int) unpacker.unpackLong();
-            switch ( type )
+            try
             {
-            case MessageTypes.MSG_RUN:
-                unpackRunMessage( output );
-                break;
-            case MessageTypes.MSG_DISCARD_ALL:
-                unpackDiscardAllMessage( output );
-                break;
-            case MessageTypes.MSG_PULL_ALL:
-                unpackPullAllMessage( output );
-                break;
-            case MessageTypes.MSG_RECORD:
-                unpackRecordMessage( output );
-                break;
-            case MessageTypes.MSG_SUCCESS:
-                unpackSuccessMessage( output );
-                break;
-            case MessageTypes.MSG_FAILURE:
-                unpackFailureMessage( output );
-                break;
-            case MessageTypes.MSG_ACK_FAILURE:
-                unpackAckFailureMessage( output );
-                break;
-            case MessageTypes.MSG_IGNORED:
-                unpackIgnoredMessage( output );
-                break;
-            default:
-                throw new IOException( "Unknown message type: " + type );
+                unpacker.unpackStructHeader();
+                int type = (int) unpacker.unpackLong();
+
+                try
+                {
+                    switch ( type )
+                    {
+                    case MessageTypes.MSG_RUN:
+                        unpackRunMessage( output );
+                        break;
+                    case MessageTypes.MSG_DISCARD_ALL:
+                        unpackDiscardAllMessage( output );
+                        break;
+                    case MessageTypes.MSG_PULL_ALL:
+                        unpackPullAllMessage( output );
+                        break;
+                    case MessageTypes.MSG_RECORD:
+                        unpackRecordMessage( output );
+                        break;
+                    case MessageTypes.MSG_SUCCESS:
+                        unpackSuccessMessage( output );
+                        break;
+                    case MessageTypes.MSG_FAILURE:
+                        unpackFailureMessage( output );
+                        break;
+                    case MessageTypes.MSG_ACK_FAILURE:
+                        unpackAckFailureMessage( output );
+                        break;
+                    case MessageTypes.MSG_IGNORED:
+                        unpackIgnoredMessage( output );
+                        break;
+                    default:
+                        throw new NDPIOException( Status.Request.Invalid,
+                                "0x" + Integer.toHexString(type) + " is not a valid message type." );
+                    }
+                }
+                catch( PackStream.PackstreamException e )
+                {
+                    throw new NDPIOException( Status.Request.InvalidFormat,
+                            "Unable to read " + messageTypeName (type) + " message. " +
+                            "Error was: " + e.getMessage() );
+                }
+            }
+            catch( PackStream.PackstreamException e )
+            {
+                throw new NDPIOException( Status.Request.InvalidFormat, "Unable to read message type. " +
+                        "Error was: " + e.getMessage() );
             }
         }
 

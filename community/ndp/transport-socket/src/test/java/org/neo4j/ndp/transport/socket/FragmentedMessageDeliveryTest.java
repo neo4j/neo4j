@@ -29,9 +29,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
-import org.neo4j.logging.NullLog;
-import org.neo4j.ndp.messaging.v1.MessageFormat;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
 import org.neo4j.ndp.messaging.v1.message.Message;
@@ -117,7 +116,7 @@ public class FragmentedMessageDeliveryTest
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         when(ctx.channel()).thenReturn( ch );
 
-        SocketProtocolV1 protocol = new SocketProtocolV1( NullLog.getInstance(), sess, ch );
+        SocketProtocolV1 protocol = new SocketProtocolV1( NullLogService.getInstance(), sess, ch );
 
         // When data arrives split up according to the current permutation
         for ( ByteBuf fragment : fragments )

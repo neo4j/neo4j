@@ -22,10 +22,11 @@ package org.neo4j.ndp.transport.socket;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
-import java.nio.BufferOverflowException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.ndp.messaging.NDPIOException;
 import org.neo4j.packstream.PackInput;
 import org.neo4j.packstream.PackStream;
 
@@ -80,7 +81,7 @@ public class ChunkedInput implements PackInput
     }
 
     @Override
-    public byte peekByte()
+    public byte peekByte() throws IOException
     {
         ensureChunkAvailable();
         return currentChunk.getByte( currentChunk.readerIndex() );
@@ -159,7 +160,7 @@ public class ChunkedInput implements PackInput
     }
 
     @Override
-    public PackInput readBytes( byte[] into, int offset, int toRead )
+    public PackInput readBytes( byte[] into, int offset, int toRead ) throws IOException
     {
         ensureChunkAvailable();
         int toReadFromChunk = Math.min( toRead, currentChunk.readableBytes() );
@@ -183,11 +184,14 @@ public class ChunkedInput implements PackInput
         ensureChunkAvailable();
         if ( remaining < numBytes )
         {
-            throw new PackStream.EndOfStream( "Unexpected end of stream while trying to read " + numBytes + " bytes." );
+            throw new NDPIOException( Status.Request.InvalidFormat, "Unable to deserialize request, message " +
+                                                                    "boundary found before message ended. This " +
+                                                                    "indicates a serialization or framing " +
+                                                                    "problem with your client driver." );
         }
     }
 
-    private void ensureChunkAvailable()
+    private void ensureChunkAvailable() throws IOException
     {
         if ( currentChunk == null || currentChunk.readableBytes() == 0 )
         {
@@ -198,7 +202,10 @@ public class ChunkedInput implements PackInput
             }
             else
             {
-                throw new BufferOverflowException();
+                throw new NDPIOException( Status.Request.InvalidFormat, "Unable to deserialize request, message " +
+                                                                        "boundary found before message ended. This " +
+                                                                        "indicates a serialization or framing " +
+                                                                        "problem with your client driver." );
             }
         }
     }

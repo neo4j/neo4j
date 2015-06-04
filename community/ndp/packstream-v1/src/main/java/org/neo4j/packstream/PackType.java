@@ -42,5 +42,7 @@ public enum PackType
     /** Sequence of zero or more key/value pairs, keys are unique */
     MAP,
     /** A composite data structure, made up of zero or more packstream values and a type signature. */
-    STRUCT
+    STRUCT,
+    /** Undefined type, reserved for future use */
+    RESERVED
 }

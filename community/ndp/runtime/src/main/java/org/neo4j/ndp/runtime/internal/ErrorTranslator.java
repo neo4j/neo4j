@@ -19,10 +19,19 @@
  */
 package org.neo4j.ndp.runtime.internal;
 
-import org.neo4j.cypher.CypherException;
-import org.neo4j.kernel.api.exceptions.KernelException;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
+import java.util.UUID;
+
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.Version;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
+
+import static javax.xml.bind.DatatypeConverter.printBase64Binary;
 
 /**
  * Convert the mixed exceptions the underlying engine can throw to a cohesive set of known failures. This is an
@@ -30,37 +39,74 @@ import org.neo4j.logging.Log;
  */
 public class ErrorTranslator
 {
+    private final Log internalLog;
+    private final Log userLog;
 
-    private final Log log;
-
-    public ErrorTranslator( Log log )
+    public ErrorTranslator( LogService logging )
     {
-        this.log = log;
+        this(logging.getUserLog( ErrorTranslator.class ), logging.getInternalLog( ErrorTranslator.class ));
+    }
+
+    public ErrorTranslator( Log userLog, Log internalLog )
+    {
+        this.internalLog = internalLog;
+        this.userLog = userLog;
     }
 
     public Neo4jError translate( Throwable any )
     {
-        if ( any instanceof KernelException )
+        for( Throwable cause = any; cause != null; cause = cause.getCause() )
         {
-            return new Neo4jError( ((KernelException) any).status(), any.getMessage() );
-        }
-        else if ( any instanceof CypherException )
-        {
-            return new Neo4jError( ((CypherException) any).status(), any.getMessage() );
-        }
-        else
-        {
-            if ( any.getCause() != null )
+            if ( cause instanceof Status.HasStatus )
             {
-                return translate( any.getCause() );
+                return new Neo4jError( ((Status.HasStatus) cause).status(), any.getMessage() );
             }
-
-            // Log unknown errors.
-            log.warn( "Client triggered unknown error: " + any.getMessage(), any );
-
-            return new Neo4jError( Status.General.UnknownFailure, "An unexpected failure occurred: '"
-                                                                  + any.getMessage() + "'." );
         }
+
+        // In this case, an error has "slipped out", and we don't have a good way to handle it. This indicates
+        // a buggy code path, and we need to try to convince whoever ends up here to tell us about it.
+
+        // TODO: Perhaps move this whole block to somewhere more sensible?
+        String reference = UUID.randomUUID().toString();
+
+        // Log unknown errors.
+        userLog.error( String.format(
+                "Client triggered unexpected error. Help us fix this error by emailing the " +
+                "following report to issues@neotechnology.com: %n%s", generateReport( any, reference ) ), any );
+        internalLog.error( String.format( "Client triggered unexpected error, reference %s.", reference), any );
+
+        return new Neo4jError( Status.General.UnknownFailure,
+                String.format( "An unexpected failure occurred, see details in the database " +
+                               "logs, reference number %s.%n%s", reference, Exceptions.stringify( any ) ) );
+    }
+
+    /**
+     * For unexpected errors, we generate a report and urge users to send it to us for debugging.
+     */
+    private String generateReport( Throwable err, String reference )
+    {
+        // To avoid having users send us just the exception message or just part of the stack traces, encode the whole
+        // stack trace into a Base64 string, and wrap the report explicitly in start/end markers to show users where
+        // to cut and paste.
+        SimpleDateFormat dateFormatGmt = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss");
+        dateFormatGmt.setTimeZone( TimeZone.getTimeZone( "GMT" ) );
+
+        return String.format( "---- START OF REPORT ----%n" +
+                              "Date          : %s GMT%n" +
+                              "Neo4j Version : %s%n" +
+                              "Java Version  : %s%n" +
+                              "OS            : %s%n" +
+                              "Reference     : %s%n" + // This will help us correlate emailed reports with user logs
+                              "Error data    : %n" +
+                              "%s%n" +
+                              "---- END OF REPORT ----%n",
+                dateFormatGmt.format( new Date() ),
+                Version.getKernelRevision(),
+                System.getProperty("java.version"),
+                System.getProperty("os.name"),
+                reference,
+                printBase64Binary( Exceptions.stringify( err ).getBytes( StandardCharsets.UTF_8 ) )
+                        .replaceAll( "(.{100})", "$1\n" ) );
     }
 
 }

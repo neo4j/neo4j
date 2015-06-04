@@ -20,10 +20,7 @@
 package org.neo4j.packstream;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
-
-import static java.lang.Integer.toHexString;
 
 /**
  * PackStream is a messaging serialisation format heavily inspired by MessagePack.
@@ -345,8 +342,7 @@ public class PackStream
             }
             else
             {
-                throw new Overflow(
-                        "Structures cannot have more than " + Short.MAX_VALUE + " fields" );
+                throw new Overflow( "Structures cannot have more than " + Short.MAX_VALUE + " fields" );
             }
         }
 
@@ -385,7 +381,7 @@ public class PackStream
             case STRUCT_16:
                 return unpackUINT16();
             default:
-                throw new Unexpected( "Expected a struct, but got: " + toHexString( markerByte ) );
+                throw new Unexpected( PackType.STRUCT, markerByte );
             }
         }
 
@@ -410,7 +406,7 @@ public class PackStream
             case LIST_32:
                 return unpackUINT32();
             default:
-                throw new Unexpected( "Expected a list, but got: " + toHexString( markerByte ) );
+                throw new Unexpected( PackType.LIST, markerByte);
             }
         }
 
@@ -430,7 +426,7 @@ public class PackStream
             case MAP_32:
                 return unpackUINT32();
             default:
-                throw new Unexpected( "Expected a map, but got: " + toHexString( markerByte ) );
+                throw new Unexpected( PackType.MAP, markerByte);
             }
         }
 
@@ -449,7 +445,7 @@ public class PackStream
             case INT_64:
                 return in.readLong();
             default:
-                throw new Unexpected( "Expected an integer, but got: " + toHexString( markerByte ) );
+                throw new Unexpected( PackType.INTEGER, markerByte);
             }
         }
 
@@ -460,7 +456,7 @@ public class PackStream
             {
                 return in.readDouble();
             }
-            throw new Unexpected( "Expected a double, but got: " + toHexString( markerByte ) );
+            throw new Unexpected( PackType.FLOAT, markerByte);
         }
 
         public String unpackString() throws IOException
@@ -491,7 +487,7 @@ public class PackStream
                 }
             }
             default:
-                throw new Unexpected( "Expected bytes, but got: " + toHexString( markerByte & 0xFF ) );
+                throw new Unexpected( PackType.BYTES, markerByte);
             }
         }
 
@@ -521,7 +517,7 @@ public class PackStream
                 }
             }
             default:
-                throw new Unexpected( "Expected a string, but got: " + toHexString( markerByte & 0xFF ) );
+                throw new Unexpected( PackType.TEXT, markerByte);
             }
         }
 
@@ -535,7 +531,7 @@ public class PackStream
             case FALSE:
                 return false;
             default:
-                throw new Unexpected( "Expected a boolean, but got: " + toHexString( markerByte & 0xFF ) );
+                throw new Unexpected( PackType.BOOLEAN, markerByte);
             }
         }
 
@@ -575,51 +571,66 @@ public class PackStream
         public PackType peekNextType() throws IOException
         {
             final byte markerByte = in.peekByte();
-            final byte markerHighNibble = (byte) (markerByte & 0xF0);
+            return type( markerByte );
+        }
+    }
 
-            switch ( markerHighNibble )
-            {
-            case TINY_TEXT:
-                return PackType.TEXT;
-            case TINY_LIST:
-                return PackType.LIST;
-            case TINY_MAP:
-                return PackType.MAP;
-            case TINY_STRUCT:
-                return PackType.STRUCT;
-            }
+    private static PackType type( byte markerByte )
+    {
+        final byte markerHighNibble = (byte) (markerByte & 0xF0);
 
-            switch ( markerByte )
-            {
-            case NULL:
-                return PackType.NULL;
-            case TRUE:
-            case FALSE:
-                return PackType.BOOLEAN;
-            case FLOAT_64:
-                return PackType.FLOAT;
-            case BYTES_8:
-            case BYTES_16:
-            case BYTES_32:
-                return PackType.BYTES;
-            case TEXT_8:
-            case TEXT_16:
-            case TEXT_32:
-                return PackType.TEXT;
-            case LIST_8:
-            case LIST_16:
-            case LIST_32:
-                return PackType.LIST;
-            case MAP_8:
-            case MAP_16:
-            case MAP_32:
-                return PackType.MAP;
-            case STRUCT_8:
-            case STRUCT_16:
-                return PackType.STRUCT;
-            default:
-                return PackType.INTEGER;
-            }
+        switch ( markerHighNibble )
+        {
+        case TINY_TEXT:
+            return PackType.TEXT;
+        case TINY_LIST:
+            return PackType.LIST;
+        case TINY_MAP:
+            return PackType.MAP;
+        case TINY_STRUCT:
+            return PackType.STRUCT;
+        }
+
+        if ( markerByte >= MINUS_2_TO_THE_4 )
+        {
+            return PackType.INTEGER;
+        }
+
+        switch ( markerByte )
+        {
+        case NULL:
+            return PackType.NULL;
+        case TRUE:
+        case FALSE:
+            return PackType.BOOLEAN;
+        case FLOAT_64:
+            return PackType.FLOAT;
+        case BYTES_8:
+        case BYTES_16:
+        case BYTES_32:
+            return PackType.BYTES;
+        case TEXT_8:
+        case TEXT_16:
+        case TEXT_32:
+            return PackType.TEXT;
+        case LIST_8:
+        case LIST_16:
+        case LIST_32:
+            return PackType.LIST;
+        case MAP_8:
+        case MAP_16:
+        case MAP_32:
+            return PackType.MAP;
+        case STRUCT_8:
+        case STRUCT_16:
+            return PackType.STRUCT;
+        case INT_8:
+        case INT_16:
+        case INT_32:
+        case INT_64:
+            return PackType.INTEGER;
+        default:
+            return PackType.RESERVED;
         }
     }
 
@@ -649,9 +660,24 @@ public class PackStream
 
     public static class Unexpected extends PackstreamException
     {
-        public Unexpected( String message )
+        public Unexpected( PackType expectedType, byte unexpectedMarkerByte )
         {
-            super( message );
+            super( "Wrong type received. Expected " + expectedType + ", received: " + type(unexpectedMarkerByte) + " " +
+                   "(" + toHexString( unexpectedMarkerByte ) + ").");
+        }
+
+        private static String toHexString( byte unexpectedMarkerByte )
+        {
+            String s = Integer.toHexString( unexpectedMarkerByte );
+            if(s.length() > 2)
+            {
+                s = s.substring( 0, 2 );
+            }
+            else if(s.length() < 2)
+            {
+                return "0" + s;
+            }
+            return "0x" + s;
         }
     }
 }
