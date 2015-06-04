@@ -161,6 +161,41 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     result shouldBe 'empty
   }
 
+  test("expand into null should return nulled row") {
+    // given
+    val node: Node = mock[Node]
+    val input = new FakePipe(Iterator(Map("a" -> node, "b" -> null)))
+
+    // when
+    val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+
+    // then
+    result should equal(List(Map("a" -> node, "r" -> null, "b" -> null)))
+  }
+
+  test("expand null into something should return nulled row") {
+    // given
+    val node: Node = mock[Node]
+    val input = new FakePipe(Iterator(Map("a" -> null, "b" -> node)))
+
+    // when
+    val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+
+    // then
+    result should equal(List(Map("a" -> null, "r" -> null, "b" -> node)))
+  }
+
+  test("expand null into null should return nulled row") {
+    // given
+    val input = new FakePipe(Iterator(Map("a" -> null, "b" -> null)))
+
+    // when
+    val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+
+    // then
+    result should equal(List(Map("a" -> null, "r" -> null, "b" -> null)))
+  }
+
   private def mockRelationships(rels: Relationship*) {
     when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
       def answer(invocation: InvocationOnMock): Iterator[Relationship] = rels.iterator

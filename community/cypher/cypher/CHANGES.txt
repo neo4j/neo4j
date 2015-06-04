@@ -2,6 +2,7 @@
 -----
 o Returns nice error message when using aggregation inside
   of expressions that loop over collections
+o Fixes #4758 - OPTIONAL MATCH when either side is null
 
 2.2.2
 -----
