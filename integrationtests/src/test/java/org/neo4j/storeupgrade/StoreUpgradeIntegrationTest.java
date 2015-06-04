@@ -122,6 +122,20 @@ public class StoreUpgradeIntegrationTest
                             30 /* last txId */,
                             selectivities( 1.0, 1.0, 1.0 ),
                             indexCounts( counts( 0, 38, 38, 38 ), counts(0, 1, 1, 1), counts( 0, 133, 133, 133 ) )
+                    )},
+
+                    // 2.2
+                    new Store[]{new Store( "0.A.5-empty.zip",
+                            0 /* node count */,
+                            1 /* last txId */,
+                            selectivities(),
+                            indexCounts()
+                    )},
+                    new Store[]{new Store( "0.A.5-data.zip",
+                            174 /* node count */,
+                            30 /* last txId */,
+                            selectivities( 1.0, 1.0, 1.0 ),
+                            indexCounts( counts( 0, 38, 38, 38 ), counts(0, 1, 1, 1), counts( 0, 133, 133, 133 ) )
                     )}
             );
         }

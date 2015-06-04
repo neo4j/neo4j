@@ -37,11 +37,11 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.test.Unzip;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 public class MigrationTestUtils
@@ -136,6 +136,8 @@ public class MigrationTestUtils
     {
         switch ( version )
         {
+            case Legacy22Store.LEGACY_VERSION:
+                return find22FormatStoreDirectory();
             case Legacy21Store.LEGACY_VERSION:
                 return find21FormatStoreDirectory();
             case Legacy20Store.LEGACY_VERSION:
@@ -145,6 +147,11 @@ public class MigrationTestUtils
             default:
                 throw new IllegalArgumentException( "Unknown version" );
         }
+    }
+
+    public static File find22FormatStoreDirectory() throws IOException
+    {
+        return Unzip.unzip( Legacy22Store.class, "upgradeTest22Db.zip" );
     }
 
     public static File find21FormatStoreDirectory() throws IOException

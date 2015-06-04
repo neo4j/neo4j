@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.getRootDirectory;
 import static org.neo4j.kernel.impl.store.record.SchemaRule.Kind.UNIQUENESS_CONSTRAINT;
@@ -78,6 +79,8 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
         case Legacy20Store.LEGACY_VERSION:
         case Legacy21Store.LEGACY_VERSION:
             return true;
+        case Legacy22Store.LEGACY_VERSION:
+            return false;
         default:
             throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom( storeDir ) );
         }
