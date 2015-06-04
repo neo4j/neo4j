@@ -48,5 +48,6 @@ object Instruction {
 
     override protected def children = Seq.empty
 
+    override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
   }
 }

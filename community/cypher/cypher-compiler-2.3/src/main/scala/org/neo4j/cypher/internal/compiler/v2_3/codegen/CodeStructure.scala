@@ -49,7 +49,8 @@ import scala.collection.mutable
 
 // <SPI>
 trait CodeStructure[T] {
-  def generateQuery(packageName: String, className: String, columns: Seq[String], operatorIds: Map[String, Id])(block: MethodStructure[_] => Unit): T
+  def generateQuery(packageName: String, className: String, columns: Seq[String], operatorIds: Map[String, Id])
+                   (block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext): T
 }
 
 sealed trait JoinTableType
@@ -136,8 +137,10 @@ trait MethodStructure[E] {
 // TODO: the rest of this file is implementation of the SPI above, and should move to cypher/cypher
 
 object CodeStructure {
+
   val __TODO__MOVE_IMPLEMENTATION = new CodeStructure[GeneratedQuery] {
-    override def generateQuery(packageName: String, className: String, columns: Seq[String], operatorIds: Map[String, Id])(block: MethodStructure[_] => Unit) = {
+
+    override def generateQuery(packageName: String, className: String, columns: Seq[String], operatorIds: Map[String, Id])(block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext) = {
       val generator = try {
         codegen.CodeGenerator.generateCode(CodeStructure.getClass.getClassLoader/*, SourceCode.PRINT_SOURCE*/)
       } catch {
@@ -157,7 +160,7 @@ object CodeStructure {
           success = clazz.generate(Templates.SUCCESS))
         // the "COLUMNS" static field
         clazz.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList(
-          columns.map(key => Expression.constant(key))))
+          columns.toSeq.map(key => Expression.constant(key))))
 
         // the operator id fields
         operatorIds.keys.foreach { opId =>
@@ -286,8 +289,9 @@ private class AuxGenerator(val packageName: String, val generator: codegen.CodeG
   }
 }
 
-private case class Method(fields: Fields, generator: CodeBlock, aux: AuxGenerator, tracing: Boolean = true,
-                          event: Option[String] = None, var locals: Map[String, LocalVariable] = Map.empty)
+
+private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator, tracing: Boolean = true,
+                          event: Option[String] = None, var locals:Map[String,LocalVariable]=Map.empty)(implicit context: CodeGenContext)
   extends MethodStructure[Expression] {
 
   import CodeStructure.typeRef
@@ -491,16 +495,17 @@ private case class Method(fields: Fields, generator: CodeBlock, aux: AuxGenerato
   }
 
   override def updateProbeTableCount(tableVar: String, keyVar: String) = {
-    generator.assign(typeRef[Int], "count", Expression.invoke(generator.load(tableVar), Methods.countingTableGet, generator.load(keyVar)))
+    val countName = context.namer.newVarName()
+    generator.assign(typeRef[Int], countName, Expression.invoke(generator.load(tableVar), Methods.countingTableGet, generator.load(keyVar)))
     generator.expression(Expression.invoke(generator.load(tableVar), Methods.countingTablePut, generator.load(keyVar), Expression.ternary(
-      Expression.eq(generator.load("count"), Expression.get(CodeStructure.staticField[LongKeyIntValueTable, Int]("NULL"))),
+      Expression.eq(generator.load(countName), Expression.get(CodeStructure.staticField[LongKeyIntValueTable, Int]("NULL"))),
       Expression.constant(1),
-      Expression.add(generator.load("count"), Expression.constant(1)))))
+      Expression.add(generator.load(countName), Expression.constant(1)))))
   }
 
   override def probe(tableVar: String, tableType: JoinTableType, keyVar:String)(block: MethodStructure[Expression] => Unit) = tableType match {
     case LongToCountTable =>
-      val times = generator.declare(typeRef[Int], "times") // TODO: use a namer here!
+      val times = generator.declare(typeRef[Int], context.namer.newVarName())
       generator.assign(times, Expression.invoke(generator.load(tableVar), Methods.countingTableGet, generator.load(keyVar)))
       using(generator.whileLoop(Expression.gt(times, Expression.constant(0)))) { body =>
         block(copy(generator=body))
@@ -514,14 +519,15 @@ private case class Method(fields: Fields, generator: CodeBlock, aux: AuxGenerato
       // the methods we use on those types
       val get = MethodReference.methodReference(tableType, listType, "get", typeRef[Long])
       // generate the code
-      val list = generator.declare(listType, "list")
+      val list = generator.declare(listType, context.namer.newVarName())
+      val elementName = context.namer.newVarName()
       generator.assign(list, Expression.invoke(generator.load(tableVar), get, generator.load(keyVar)))
       using(generator.ifStatement(Expression.not(Expression.eq(list, Expression.constant(null))))) { onTrue =>
-        using(onTrue.forEach(Parameter.param(valueType, "element"), list)) { forEach =>
+        using(onTrue.forEach(Parameter.param(valueType, elementName), list)) { forEach =>
           locals.foreach {
             case (local, field) =>
               val fieldType = CodeStructure.lowerType(structure(field))
-              forEach.assign(fieldType, local, Expression.get(forEach.load("element"),FieldReference.field(valueType, fieldType, field)))
+              forEach.assign(fieldType, local, Expression.get(forEach.load(elementName),FieldReference.field(valueType, fieldType, field)))
           }
           block(copy(generator=forEach))
         }
@@ -542,11 +548,12 @@ private case class Method(fields: Fields, generator: CodeBlock, aux: AuxGenerato
     val put = MethodReference.methodReference(tableType, listType, "put", typeRef[Long], listType)
     val add = MethodReference.methodReference(listType, typeRef[Boolean], "add", valueType)
     // generate the code
-    val list = generator.declare(listType, "list") // ProbeTable list;
+    val listName = context.namer.newVarName()
+    val list = generator.declare(listType, listName) // ProbeTable list;
     generator.assign(list, Expression.invoke(generator.load(tableVar), get, generator.load(keyVar))) // list = tableVar.get(keyVar);
-    using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load("list")))) { onTrue =>  // if (null == list)
+    using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load(listName)))) { onTrue =>  // if (null == list)
       onTrue.assign(list, Templates.newInstance(listType)) // list = new ListType();
-      onTrue.expression(Expression.invoke(generator.load(tableVar), put, generator.load(keyVar), generator.load("list"))) // tableVar.put(keyVar, list);
+      onTrue.expression(Expression.invoke(generator.load(tableVar), put, generator.load(keyVar), generator.load(listName))) // tableVar.put(keyVar, list);
     }
     generator.expression(Expression.invoke(list, add, element)) // list.add( element );
   }

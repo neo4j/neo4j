@@ -31,5 +31,8 @@ case class GetMatchesFromProbeTable(key: Variable, code: JoinData, action: Instr
       }
     }
 
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    action.init(generator)
+
   override def children = Seq(action)
 }
