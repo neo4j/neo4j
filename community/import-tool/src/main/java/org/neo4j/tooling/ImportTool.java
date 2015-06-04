@@ -38,6 +38,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.Version;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
@@ -306,13 +307,15 @@ public class ImportTool
         LifeSupport life = new LifeSupport();
 
         JobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
-        LogService logService = life.add( new StoreLogService( NullLogProvider.getInstance(), fs, storeDir, jobScheduler ) );
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+        Config config = new Config();
+        LogService logService = life.add( new StoreLogService( logProvider, fs, storeDir, config, jobScheduler ) );
 
         life.start();
-        org.neo4j.unsafe.impl.batchimport.Configuration config =
+        org.neo4j.unsafe.impl.batchimport.Configuration configuration =
                 importConfiguration( processors, defaultSettingsSuitableForTests );
         BatchImporter importer = new ParallelBatchImporter( storeDir,
-                config,
+                configuration,
                 logService,
                 ExecutionMonitors.defaultVisible() );
         printOverview( storeDir, nodesFiles, relationshipsFiles );

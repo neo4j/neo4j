@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.jboss.netty.channel.ChannelException;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.jboss.netty.channel.ChannelException;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
@@ -177,7 +177,8 @@ public class StandaloneClusterClient
         File home = new File( System.getProperty( "neo4j.home" ) );
         String logDir = System.getProperty( "org.neo4j.cluster.logdirectory",
                 new File( new File( new File( home, "data" ), "log" ), "arbiter" ).getAbsolutePath() );
-        return new StoreLogService( FormattedLogProvider.toOutputStream( System.out ), fileSystem, new File( logDir ), jobScheduler );
+        return new StoreLogService( FormattedLogProvider.toOutputStream( System.out ), fileSystem,
+                new File( logDir ), new Config(), jobScheduler );
     }
 
     private static File extractDbTuningProperties( String propertiesFile )

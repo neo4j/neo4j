@@ -19,21 +19,22 @@
  */
 package org.neo4j.kernel.impl.logging;
 
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Consumers;
-
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.RotatingFileOutputStreamSupplier;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.concurrent.Executor;
+
+import org.neo4j.function.Consumer;
+import org.neo4j.function.Consumers;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
@@ -44,24 +45,38 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
     private final Closeable closeable;
     private final SimpleLogService logService;
 
-    public StoreLogService( LogProvider userLogProvider, FileSystemAbstraction fileSystem, File storeDirectory, JobScheduler jobScheduler ) throws IOException
+    public StoreLogService( LogProvider userLogProvider, FileSystemAbstraction fileSystem, File storeDir, Config config, JobScheduler jobScheduler ) throws IOException
     {
-        this( userLogProvider, fileSystem, storeDirectory, 0L, 0, 0, jobScheduler, Consumers.<LogProvider>noop() );
+        this( userLogProvider, fileSystem, storeDir, config, 0L, 0, 0, jobScheduler, Consumers.<LogProvider>noop() );
     }
 
-    public StoreLogService( LogProvider userLogProvider, FileSystemAbstraction fileSystem, File storeDirectory,
+    public StoreLogService( LogProvider userLogProvider, FileSystemAbstraction fileSystem, File storeDir, Config config,
                             long internalLogRotationThreshold, int internalLogRotationDelay, int maxInternalLogArchives,
                             JobScheduler jobScheduler, final Consumer<LogProvider> rotationListener ) throws IOException
     {
-        this( userLogProvider, fileSystem, storeDirectory, internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives,
+        this( userLogProvider, fileSystem, storeDir, config, internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives,
                 jobScheduler.executor( JobScheduler.Groups.internalLogRotation ), rotationListener );
     }
 
-    public StoreLogService( LogProvider userLogProvider, FileSystemAbstraction fileSystem, File storeDirectory,
+    public StoreLogService( LogProvider userLogProvider, FileSystemAbstraction fileSystem, File storeDir, Config config,
                             long internalLogRotationThreshold, int internalLogRotationDelay, int maxInternalLogArchives,
                             Executor rotationExecutor, final Consumer<LogProvider> rotationListener ) throws IOException
     {
-        File logFile = new File( storeDirectory, INTERNAL_LOG_NAME );
+        File internalLogLocation = config.get( GraphDatabaseSettings.internal_log_location );
+        final File logFile;
+        if ( internalLogLocation != null )
+        {
+            logFile = internalLogLocation;
+            if ( !logFile.getParentFile().exists() )
+            {
+                logFile.getParentFile().mkdirs();
+            }
+        }
+        else
+        {
+            logFile = new File( storeDir, StoreLogService.INTERNAL_LOG_NAME );
+        }
+
         FormattedLogProvider internalLogProvider;
         if ( internalLogRotationThreshold == 0 )
         {

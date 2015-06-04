@@ -93,7 +93,7 @@ public class StoreMigrationTool
                 deps, ignore() ) );
 
         JobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
-        LogService logService = new StoreLogService( userLogProvider, fs, legacyStoreDirectory, jobScheduler );
+        LogService logService = new StoreLogService( userLogProvider, fs, legacyStoreDirectory, config, jobScheduler );
 
         // Add the kernel store migrator
         life.start();

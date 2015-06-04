@@ -204,12 +204,12 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         }
 
         @Override
-        protected LogService createLogService(LogProvider userLogProvider)
+        protected LogService createLogService( LogProvider userLogProvider )
         {
             StoreLogService logService;
             try
             {
-                logService = new StoreLogService( NullLogProvider.getInstance(), fileSystem, storeDir, jobScheduler );
+                logService = new StoreLogService( NullLogProvider.getInstance(), fileSystem, storeDir, config, jobScheduler );
             } catch ( IOException e )
             {
                 throw new RuntimeException( e );

@@ -59,8 +59,8 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.udc.UsageDataKeys;
 import org.neo4j.udc.UsageData;
+import org.neo4j.udc.UsageDataKeys;
 
 /**
  * Platform module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. This creates
@@ -133,7 +133,7 @@ public class PlatformModule
 
         // If no logging was passed in from the outside then create logging and register
         // with this life
-        logging = life.add(dependencies.satisfyDependency(createLogService(externalDependencies.userLogProvider())));
+        logging = life.add( dependencies.satisfyDependency( createLogService( externalDependencies.userLogProvider() ) ) );
 
         config.setLogger( logging.getInternalLog( Config.class ) );
 
@@ -202,7 +202,7 @@ public class PlatformModule
         return new DefaultFileSystemAbstraction();
     }
 
-    protected LogService createLogService(LogProvider userLogProvider)
+    protected LogService createLogService( LogProvider userLogProvider )
     {
         if ( userLogProvider == null )
         {
@@ -215,7 +215,7 @@ public class PlatformModule
         LogService logService;
         try
         {
-            logService = new StoreLogService( userLogProvider, fileSystem, storeDir,
+            logService = new StoreLogService( userLogProvider, fileSystem, storeDir, config,
                     internalLogRotationThreshold, internalLogRotationDelay, internalLogMaxArchives,
                     jobScheduler, new Consumer<LogProvider>()
             {
@@ -225,7 +225,8 @@ public class PlatformModule
                     diagnosticsManager.dumpAll( logProvider.getLog( DiagnosticsManager.class ) );
                 }
             } );
-        } catch ( IOException ex )
+        }
+        catch ( IOException ex )
         {
             throw new RuntimeException( ex );
         }
