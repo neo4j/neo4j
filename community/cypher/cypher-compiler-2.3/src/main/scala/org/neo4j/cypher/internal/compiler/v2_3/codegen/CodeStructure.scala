@@ -30,7 +30,7 @@ import org.neo4j.codegen._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{GeneratedQueryExecution, SuccessfulCloseable}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{GeneratedQuery, GeneratedQueryExecution, SuccessfulCloseable}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.using
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
@@ -49,8 +49,7 @@ import scala.collection.mutable
 
 // <SPI>
 trait CodeStructure[T] {
-  // TODO: this should be self-contained - i.e. return an instance of T rather than a Class[T]
-  def generateQuery(packageName: String, className: String, columns: Seq[String], opIds: Seq[String])(block: MethodStructure[_] => Unit): Class[T]
+  def generateQuery(packageName: String, className: String, columns: Seq[String], operatorIds: Map[String, Id])(block: MethodStructure[_] => Unit): T
 }
 
 sealed trait JoinTableType
@@ -137,14 +136,14 @@ trait MethodStructure[E] {
 // TODO: the rest of this file is implementation of the SPI above, and should move to cypher/cypher
 
 object CodeStructure {
-  val __TODO__MOVE_IMPLEMENTATION = new CodeStructure[GeneratedQueryExecution] {
-    override def generateQuery(packageName: String, className: String, columns: Seq[String], opIds: Seq[String])(block: MethodStructure[_] => Unit) = {
+  val __TODO__MOVE_IMPLEMENTATION = new CodeStructure[GeneratedQuery] {
+    override def generateQuery(packageName: String, className: String, columns: Seq[String], operatorIds: Map[String, Id])(block: MethodStructure[_] => Unit) = {
       val generator = try {
         codegen.CodeGenerator.generateCode(CodeStructure.getClass.getClassLoader/*, SourceCode.PRINT_SOURCE*/)
       } catch {
         case e: Exception => throw new CantCompileQueryException(e.getMessage, e)
       }
-      using(generator.generateClass(packageName, className, typeRef[GeneratedQueryExecution], typeRef[SuccessfulCloseable])) { clazz =>
+      val execution = using(generator.generateClass(packageName, className+"Execution", typeRef[GeneratedQueryExecution], typeRef[SuccessfulCloseable])) { clazz =>
         // fields
         val fields = Fields(
           closer = clazz.field(typeRef[TaskCloser], "closer"),
@@ -161,7 +160,7 @@ object CodeStructure {
           columns.map(key => Expression.constant(key))))
 
         // the operator id fields
-        opIds.foreach { opId =>
+        operatorIds.keys.foreach { opId =>
           clazz.staticField(typeRef[Id], opId)
         }
 
@@ -188,7 +187,39 @@ object CodeStructure {
           }
         }
         clazz.handle()
-      }.loadClass().asInstanceOf[Class[GeneratedQueryExecution]]
+      }
+      val query = using(generator.generateClass(packageName,className, typeRef[GeneratedQuery])) { clazz =>
+        using(clazz.generateMethod(typeRef[GeneratedQueryExecution], "execute",
+          param[TaskCloser]("closer"),
+          param[Statement]("statement"),
+          param[GraphDatabaseService]("db"),
+          param[ExecutionMode]("executionMode"),
+          param[Supplier[InternalPlanDescription]]("description"),
+          param[QueryExecutionTracer]("tracer"),
+          param[util.Map[String, Object]]("params"))) { execute =>
+          execute.returns(Expression.invoke(Expression.newInstance(execution), MethodReference.constructorReference(execution,
+            typeRef[TaskCloser],
+            typeRef[Statement],
+            typeRef[GraphDatabaseService],
+            typeRef[ExecutionMode],
+            typeRef[Supplier[InternalPlanDescription]],
+            typeRef[QueryExecutionTracer],
+            typeRef[util.Map[String, Object]]),
+            execute.load("closer"),
+            execute.load("statement"),
+            execute.load("db"),
+            execute.load("executionMode"),
+            execute.load("description"),
+            execute.load("tracer"),
+            execute.load("params")))
+        }
+        clazz.handle()
+      }.newInstance().asInstanceOf[GeneratedQuery]
+      val clazz: Class[_] = execution.loadClass()
+      operatorIds.foreach {
+        case (key, id) => setStaticField(clazz, key, id)
+      }
+      query
     }
   }
 

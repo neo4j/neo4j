@@ -35,34 +35,34 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
 
-import scala.collection.{Map, immutable, mutable}
+import scala.collection.immutable
 
 object CodeGenerator {
 
-  def generateClass(instructions: Seq[Instruction])(implicit context: CodeGenContext) = {
+  def generateQuery(plan: LogicalPlan, semantics: SemanticTable, ids: Map[LogicalPlan, Id]): GeneratedQuery = {
+    import LogicalPlanConverter._
+    implicit val context = new CodeGenContext(semantics, ids)
+    val (_, instructions) = plan.asCodeGenPlan.produce(context)
+    generate(instructions, context.operatorIds.map {
+      case (id: Id, field: String) => field -> id
+    }.toMap)
+  }
+
+  def generate(instructions: Seq[Instruction], operatorIds: Map[String, Id])(implicit context: CodeGenContext): GeneratedQuery = {
     val columns = instructions.flatMap(_.allColumns)
-    val opIds = instructions.flatMap(_.allOperatorIds)
-    CodeStructure.__TODO__MOVE_IMPLEMENTATION.generateQuery(packageName, Namer.newClassName(),
-      columns, opIds) { acceptMethod =>
-      instructions.foreach(insn => insn.init(acceptMethod))
-      instructions.foreach(insn => insn.body(acceptMethod))
+    CodeStructure.__TODO__MOVE_IMPLEMENTATION.generateQuery(packageName, Namer.newClassName(), columns, operatorIds) { accept =>
+      instructions.foreach(insn => insn.init(accept))
+      instructions.foreach(insn => insn.body(accept))
     }
   }
 
   private val packageName = "org.neo4j.cypher.internal.compiler.v2_3.generated"
-
-  private def createInstructions(plan: LogicalPlan)(implicit context: CodeGenContext): (Seq[Instruction], mutable.Map[Id, String]) = {
-    import LogicalPlanConverter._
-
-    val (_, result) = plan.asCodeGenPlan.produce(context)
-    (result, context.operatorIds)
-  }
 }
 
 
 class CodeGenerator {
 
-  import CodeGenerator.{createInstructions, generateClass}
+  import CodeGenerator.generateQuery
 
   import scala.collection.JavaConverters._
 
@@ -70,12 +70,8 @@ class CodeGenerator {
     plan match {
       case res: ProduceResult =>
         val idMap = LogicalPlanIdentificationBuilder(plan)
-        implicit val context = new CodeGenContext(semanticTable, idMap)
-        val (instructions, operatorMap) = createInstructions(plan)
-        val clazz = generateClass(instructions)
-        operatorMap.foreach {
-          case (id, name) => setStaticField(clazz, name, id)
-        }
+
+        val query: GeneratedQuery = generateQuery(plan, semanticTable, idMap)
 
         val fp = planContext.statistics match {
           case igs: InstrumentedGraphStatistics =>
@@ -91,8 +87,9 @@ class CodeGenerator {
                     descriptionProvider: (InternalPlanDescription) => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer]),
                     params: immutable.Map[String, Any], closer: TaskCloser): InternalExecutionResult = {
             val (supplier, tracer) = descriptionProvider(description)
-            GeneratedCodeLoader.newInstance(clazz, closer, statement, db, execMode, supplier,
-                              tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
+            val execution: GeneratedQueryExecution = query.execute(closer, statement, db, execMode, supplier,
+              tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
+            new CompiledExecutionResult(closer, statement, execution, supplier)
           }
         }
 
@@ -103,7 +100,7 @@ class CodeGenerator {
     }
   }
 
-  private def asJavaHashMap(params: Map[String, Any]) = {
+  private def asJavaHashMap(params: scala.collection.Map[String, Any]) = {
     val jMap = new util.HashMap[String, Object]()
     params.foreach {
       case (key, value) => jMap.put(key, javaValue(value))
@@ -113,7 +110,7 @@ class CodeGenerator {
 
   private def javaValue(value: Any): Object = value match {
     case iter: Seq[_] => iter.map(javaValue).asJava
-    case iter: Map[_, _] => Eagerly.immutableMapValues(iter, javaValue).asJava
+    case iter: scala.collection.Map[_, _] => Eagerly.immutableMapValues(iter, javaValue).asJava
     case x: Any => x.asInstanceOf[AnyRef]
   }
 

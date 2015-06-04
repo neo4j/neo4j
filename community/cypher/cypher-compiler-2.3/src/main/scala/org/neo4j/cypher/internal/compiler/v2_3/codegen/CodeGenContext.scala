@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.CypherType
 
-import scala.collection.{immutable, mutable}
+import scala.collection.mutable
 
 // STATEFUL!
 
 case class Variable(name: String, cypherType: CypherType, nullable: Boolean = false)
 
-class CodeGenContext(val semanticTable: SemanticTable, idMap: immutable.Map[LogicalPlan, Id]) {
+class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id]) {
 
   private val variables: mutable.Map[String, Variable] = mutable.Map()
   private val projections: mutable.Map[String, CodeGenExpression] = mutable.Map()
