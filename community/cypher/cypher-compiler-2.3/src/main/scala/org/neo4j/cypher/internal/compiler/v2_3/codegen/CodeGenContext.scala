@@ -32,15 +32,13 @@ import scala.collection.mutable
 
 case class Variable(name: String, cypherType: CypherType, nullable: Boolean = false)
 
-class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id]) {
+class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id], val namer: Namer = Namer()) {
 
   private val variables: mutable.Map[String, Variable] = mutable.Map()
   private val projections: mutable.Map[String, CodeGenExpression] = mutable.Map()
   private val probeTables: mutable.Map[CodeGenPlan, JoinData] = mutable.Map()
   private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
   val operatorIds: mutable.Map[Id, String] = mutable.Map()
-
-  val namer = Namer()
 
   def addVariable(name: String, variable: Variable) {
     variables.put(name, variable)

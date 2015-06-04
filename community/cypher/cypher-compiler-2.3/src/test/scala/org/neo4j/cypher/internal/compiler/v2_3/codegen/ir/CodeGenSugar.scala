@@ -19,10 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, CodeGenerator, QueryExecutionTracer, setStaticField}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.Namer
+import org.neo4j.cypher.internal.compiler.v2_3.codegen._
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{GeneratedQueryExecution, CompiledExecutionResult, GeneratedQuery, InternalExecutionResult, CompiledPlan}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.tracer
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
@@ -40,11 +43,13 @@ import org.scalatest.mock.MockitoSugar
 import scala.collection.JavaConversions
 
 trait CodeGenSugar extends MockitoSugar {
+  private val semanticTable = mock[SemanticTable]
+
   def compile(plan: LogicalPlan) = {
     val statistics: GraphStatistics = mock[GraphStatistics]
     val context = mock[PlanContext]
     doReturn(statistics).when(context).statistics
-    new CodeGenerator().generate(plan, context, Clock.SYSTEM_CLOCK, mock[SemanticTable], CostBasedPlannerName.default)
+    new CodeGenerator().generate(plan, context, Clock.SYSTEM_CLOCK, semanticTable, CostBasedPlannerName.default)
   }
 
   def compileAndExecute(plan: LogicalPlan,
@@ -95,7 +100,10 @@ trait CodeGenSugar extends MockitoSugar {
   }
 
   def compile(instructions: Seq[Instruction], operatorIds: Map[String, Id] = Map.empty): GeneratedQuery = {
-    CodeGenerator.generate(instructions, operatorIds)(new CodeGenContext(new SemanticTable(), Map.empty))
+    //In reality the same namer should be used for construction Instruction as in generating code
+    //these tests separate the concerns so we give this namer non-standard prefixes
+    CodeGenerator.generate(instructions, operatorIds)(new CodeGenContext(new SemanticTable(), Map.empty,
+                                                                         new Namer(new AtomicInteger(0), varPrefix = "TEST_VAR", methodPrefix = "TEST_METHOD")))
   }
 
   def newInstance(clazz: GeneratedQuery,

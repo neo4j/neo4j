@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
 import java.util.concurrent.atomic.AtomicInteger
 
-class Namer(classNameCounter: AtomicInteger) {
+class Namer(classNameCounter: AtomicInteger, varPrefix: String = "v", methodPrefix: String = "m", operationPrefix: String = "OP") {
 
   private var methodNameCounter = 0
   private var varNameCounter = 0
@@ -29,17 +29,17 @@ class Namer(classNameCounter: AtomicInteger) {
 
   def newMethodName(): String = {
     methodNameCounter += 1
-    s"m$methodNameCounter"
+    s"$methodPrefix$methodNameCounter"
   }
 
   def newVarName(): String = {
     varNameCounter += 1
-    s"v$varNameCounter"
+    s"$varPrefix$varNameCounter"
   }
 
   def newOpName(planName: String): String = {
     opNameCounter += 1
-    s"OP${opNameCounter}_$planName"
+    s"$operationPrefix${opNameCounter}_$planName"
   }
 }
 
