@@ -176,6 +176,8 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.Settings.ANY;
+import static org.neo4j.helpers.Settings.NO_DEFAULT;
+import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.illegalValueMessage;
 import static org.neo4j.helpers.Settings.matches;
@@ -1332,6 +1334,7 @@ public abstract class InternalAbstractGraphDatabase
                             " or `200k txs` for limiting the number of transactions to keep to 200 000", matches(ANY)));
         public static final Setting<File> store_dir = GraphDatabaseSettings.store_dir;
         public static final Setting<File> neo_store = GraphDatabaseSettings.neo_store;
+        public static final Setting<File> internal_log_location = setting("store.internal_log.location", PATH, NO_DEFAULT );
 
         // Kept here to have it not be publicly documented.
         public static final Setting<String> lock_manager = setting( "lock_manager", STRING, "" );

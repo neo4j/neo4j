@@ -24,6 +24,7 @@ import java.net.URL;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.RestartOnChange;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -74,6 +75,21 @@ public class LogbackService
                 file.mkdirs();
             }
 
+            File configuredInternalLog = config.get( GraphDatabaseSettings.internal_log_location );
+            final File internalLog;
+            if ( configuredInternalLog != null )
+            {
+                internalLog = configuredInternalLog;
+                if ( !internalLog.getParentFile().exists() )
+                {
+                    internalLog.getParentFile().mkdirs();
+                }
+            }
+            else
+            {
+                internalLog = new File( storeDir, StringLogger.DEFAULT_NAME );
+            }
+
             // Neo4j specific log config
             loggingLife.add( new LifecycleAdapter()
             {
@@ -90,6 +106,7 @@ public class LogbackService
                     }
 
                     loggerContext.putProperty( "neo_store", storeDir.getPath() );
+                    loggerContext.putProperty( "internal_log", internalLog.getPath() );
                     loggerContext.putProperty( "remote_logging_enabled", config.get( GraphDatabaseSettings
                             .remote_logging_enabled ).toString() );
                     loggerContext.putProperty( "remote_logging_host", config.get( GraphDatabaseSettings

@@ -25,7 +25,7 @@
   <property resource="logback.properties" />
 
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>${neo_store}/messages.log</file>
+        <file>${internal_log}</file>
         <encoder>
             <pattern>%date{yyyy-MM-dd HH:mm:ss.SSSZ,UTC} %-5level [%logger{15}]: %message%n</pattern>
         </encoder>

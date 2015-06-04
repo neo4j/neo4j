@@ -382,6 +382,10 @@ public abstract class GraphDatabaseSettings
     @Obsoleted( "Write batching can no longer be turned off" )
     public static final Setting<Boolean> batched_writes = setting( "batched_writes", BOOLEAN, Boolean.TRUE.toString() );
 
+    @Description("The location of the internal diagnostics log.")
+    @Internal
+    public static final Setting<File> internal_log_location = setting("store.internal_log.location", PATH, NO_DEFAULT );
+
     @Description( "Log executed queries that takes longer than the configured threshold." )
     public static final Setting<Boolean> log_queries = setting("dbms.querylog.enabled", BOOLEAN, FALSE );
 
