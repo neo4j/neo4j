@@ -22,6 +22,7 @@ o Cypher may now use full index scans to solve queries containing has(n.prop) if
 -----
 o Returns nice error message when using aggregation inside
   of expressions that loop over collections
+o Fixes #4758 - OPTIONAL MATCH when either side is null
 
 2.2.2
 -----

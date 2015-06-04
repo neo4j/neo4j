@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.cypher.acceptance
+package org.neo4j.cypher
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb._
 
-class OptionalBehaviourAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   var nodeA: Node = null
   var nodeB: Node = null
@@ -56,11 +55,6 @@ class OptionalBehaviourAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     assert(result.toList === List(Map("m" -> nodeA)))
   }
 
-  test("has label on null should evaluate to null") {
-    val result = executeWithAllPlannersAndRuntimes("match (n:Single) optional match n-[r:TYPE]-(m) return m:TYPE")
-    assert(result.toList === List(Map("m:TYPE" -> null)))
-  }
-
   test("should allow match following optional match if there is an intervening WITH when there are no results") {
     val result = executeWithAllPlanners("MATCH (a:Single) OPTIONAL MATCH (a)-->(b:NonExistent) OPTIONAL MATCH (a)-->(c:NonExistent) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
     assert(result.toList === List())
@@ -84,7 +78,7 @@ class OptionalBehaviourAcceptanceTest extends ExecutionEngineFunSuite with NewPl
   }
 
   test("optional matching between two found nodes behaves as expected") {
-    val result = executeWithAllPlannersAndRuntimes(
+    val result = executeWithAllPlanners(
       """match (a:A), (b:C)
         |optional match (x)-->(b)
         |return x""".stripMargin)
@@ -187,5 +181,51 @@ class OptionalBehaviourAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     assert(result.toSet === Set(
       Map("x" -> nodeC, "r" -> null)
     ))
+  }
+
+  test("should handle optional match between optionally matched things") {
+    val result = executeWithAllPlanners(
+      """OPTIONAL MATCH (a:NOT_THERE)
+        |WITH a
+        |MATCH (b:B)
+        |with a, b
+        |OPTIONAL MATCH (b)-[r:NOR_THIS]->(a)
+        |RETURN a, b, r""".stripMargin)
+
+    assert(result.toList === List(Map("b" -> nodeB, "r" -> null, "a" -> null)))
+  }
+
+  test("should handle optional match between nulls") {
+    val result = executeWithAllPlanners(
+      """OPTIONAL MATCH (a:NOT_THERE)
+        |OPTIONAL MATCH (b:NOT_THERE)
+        |with a, b
+        |OPTIONAL MATCH (b)-[r:NOR_THIS]->(a)
+        |RETURN a, b, r""".stripMargin)
+
+    assert(result.toList === List(Map("b" -> null, "r" -> null, "a" -> null)))
+  }
+  
+  test("should handle optional match between optionally matched things") {
+    val result = executeWithAllPlanners(
+      """OPTIONAL MATCH (a:NOT_THERE)
+        |WITH a
+        |MATCH (b:B)
+        |with a, b
+        |OPTIONAL MATCH (b)-[r:NOR_THIS]->(a)
+        |RETURN a, b, r""".stripMargin)
+
+    assert(result.toList === List(Map("b" -> nodeB, "r" -> null, "a" -> null)))
+  }
+
+  test("should handle optional match between nulls") {
+    val result = executeWithAllPlanners(
+      """OPTIONAL MATCH (a:NOT_THERE)
+        |OPTIONAL MATCH (b:NOT_THERE)
+        |with a, b
+        |OPTIONAL MATCH (b)-[r:NOR_THIS]->(a)
+        |RETURN a, b, r""".stripMargin)
+
+    assert(result.toList === List(Map("b" -> null, "r" -> null, "a" -> null)))
   }
 }
