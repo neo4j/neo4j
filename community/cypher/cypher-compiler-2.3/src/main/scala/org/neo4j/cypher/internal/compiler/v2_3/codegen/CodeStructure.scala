@@ -59,6 +59,11 @@ case object LongToCountTable extends JoinTableType
 case class LongToListTable(structure: Map[String, CypherType], localMap: Map[String, String]) extends JoinTableType
 
 trait MethodStructure[E] {
+
+  def declareFlag(name: String, initialValue: Boolean)
+
+  def updateFlag(name: String, newValue: Boolean)
+
   def declarePredicate(name: String): Unit
 
   def declareProperty(name: String): Unit
@@ -89,6 +94,12 @@ trait MethodStructure[E] {
 
   def constant(value: Object): E
 
+  def not(value: E): E
+
+  def markAsNull(varName: String, cypherType: CypherType): Unit
+
+  def nullable(varName: String, cypherType: CypherType, onSuccess: E): E
+
   // parameters
   def expectParameter(key: String): Unit
 
@@ -104,7 +115,7 @@ trait MethodStructure[E] {
   // db access
   def labelScan(iterVar: String, labelIdVar: String): Unit
 
-  def hasLabel(nodeVar: String, labelVar: String, predVar: String): Unit
+  def hasLabel(nodeVar: String, labelVar: String, predVar: String): E
 
   def allNodesScan(iterVar: String): Unit
 
@@ -229,10 +240,17 @@ object CodeStructure {
       base
     }
   }
+
   def lowerType(cType:CypherType):TypeReference = cType match {
     case symbols.CTNode => typeRef[Long]
     case symbols.CTRelationship => typeRef[Long]
     case symbols.CTAny => typeRef[Object]
+  }
+
+  def nullValue(cType: CypherType) = cType match {
+    case symbols.CTNode => Expression.constant(-1L)
+    case symbols.CTRelationship => Expression.constant(-1L)
+    case symbols.CTAny => Expression.constant(null)
   }
 }
 
@@ -324,6 +342,13 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def materializeNode(nodeIdVar: String) = Expression.invoke(db, Methods.getNodeById, generator.load(nodeIdVar))
 
+  override def nullable(varName: String, cypherType: CypherType, onSuccess: Expression) = {
+    Expression.ternary(
+      Expression.eq(CodeStructure.nullValue(cypherType), generator.load(varName)),
+      Expression.constant(null),
+      onSuccess)
+  }
+
   override def materializeRelationship(relIdVar: String) = Expression.invoke(db, Methods.getRelationshipById, generator.load(relIdVar))
 
   override def trace[V](planStepId: String)(block: MethodStructure[Expression]=>V) = if(!tracing) block(this)
@@ -352,6 +377,11 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   override def parameter(key: String) = Expression.invoke(params, Methods.mapGet, Expression.constant(key))
 
   override def constant(value: Object) = Expression.constant(value)
+
+  override def not(value: Expression): Expression = Expression.not(value)
+
+  override def markAsNull(varName: String, cypherType: CypherType) =
+    generator.assign(CodeStructure.lowerType(cypherType), varName, CodeStructure.nullValue(cypherType))
 
   override def nodeGetAllRelationships(iterVar: String, nodeVar: String, direction: Direction) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
@@ -504,12 +534,24 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     Templates.handleExceptions(generator, fields.ro) { inner =>
       val invoke = Expression.invoke(readOperations, Methods.nodeHasLabel, inner.load(nodeVar), inner.load(labelVar))
       inner.assign(local, invoke)
+      generator.load(predVar)
     }
+  }
+
+  override def declareFlag(name: String, initialValue: Boolean) = {
+    val localVariable = generator.declare(typeRef[Boolean], name)
+    locals = locals + (name -> localVariable)
+    generator.assign(localVariable, Expression.constant(initialValue))
+  }
+
+  override def updateFlag(name: String, newValue: Boolean) = {
+    generator.assign(locals(name), Expression.constant(newValue))
   }
 
   override def declarePredicate(name: String) = {
     locals = locals + (name -> generator.declare(typeRef[Boolean], name))
   }
+
 
   override def nodeGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)

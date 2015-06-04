@@ -19,12 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols
 
-case class Node(nodeIdVar: String) extends CodeGenExpression {
+case class Node(nodeIdVar: Variable) extends CodeGenExpression {
+  assert(nodeIdVar.cypherType == symbols.CTNode)
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.materializeNode(nodeIdVar)
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) ={
+    if (nodeIdVar.nullable)
+      structure.nullable(nodeIdVar.name, nodeIdVar.cypherType, structure.materializeNode(nodeIdVar.name))
+    else
+      structure.materializeNode(nodeIdVar.name)
+
+  }
 }

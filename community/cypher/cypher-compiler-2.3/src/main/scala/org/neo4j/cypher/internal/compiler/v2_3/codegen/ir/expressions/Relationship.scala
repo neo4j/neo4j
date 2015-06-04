@@ -19,12 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols
 
-case class Relationship(relId: String) extends CodeGenExpression {
+case class Relationship(relId: Variable) extends CodeGenExpression {
+  assert(relId.cypherType == symbols.CTRelationship)
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.materializeRelationship(relId)
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) ={
+    if (relId.nullable)
+      structure.nullable(relId.name, relId.cypherType, structure.materializeRelationship(relId.name))
+    else
+      structure.materializeRelationship(relId.name)
+  }
 }

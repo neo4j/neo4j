@@ -56,6 +56,11 @@ class OptionalBehaviourAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     assert(result.toList === List(Map("m" -> nodeA)))
   }
 
+  test("has label on null should evaluate to null") {
+    val result = executeWithAllPlannersAndRuntimes("match (n:Single) optional match n-[r:TYPE]-(m) return m:TYPE")
+    assert(result.toList === List(Map("m:TYPE" -> null)))
+  }
+
   test("should allow match following optional match if there is an intervening WITH when there are no results") {
     val result = executeWithAllPlanners("MATCH (a:Single) OPTIONAL MATCH (a)-->(b:NonExistent) OPTIONAL MATCH (a)-->(c:NonExistent) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
     assert(result.toList === List())
@@ -79,7 +84,7 @@ class OptionalBehaviourAcceptanceTest extends ExecutionEngineFunSuite with NewPl
   }
 
   test("optional matching between two found nodes behaves as expected") {
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndRuntimes(
       """match (a:A), (b:C)
         |optional match (x)-->(b)
         |return x""".stripMargin)

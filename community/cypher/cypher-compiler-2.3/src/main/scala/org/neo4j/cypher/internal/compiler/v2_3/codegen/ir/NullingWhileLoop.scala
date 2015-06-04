@@ -21,17 +21,28 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
 
-case class ScanAllNodes(id: String) extends LoopDataGenerator {
+/**
+ * Generates code that runs a loop and afterwards checks if the provided variable has been set,
+ * if not it sets all provided variables to null and runs the inner body of the loop
+ * @param loop
+ * @param yieldedFlagVar
+ * @param nullableVars
+ */
+case class NullingWhileLoop(loop: WhileLoop, yieldedFlagVar: String, nullableVars: Variable*)
+  extends Instruction {
 
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    loop.init(generator)
 
-  override def produceIterator[E](iterVar: String, generator: MethodStructure[E]) = {
-    generator.allNodesScan(iterVar)
-    generator.incrementDbHits()
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    generator.declareFlag(yieldedFlagVar, initialValue = false)
+    loop.body(generator)
+    generator.ifStatement(generator.not(generator.load(yieldedFlagVar))){ ifBody =>
+      //mark variables as null
+      nullableVars.foreach(v => ifBody.markAsNull(v.name, v.cypherType))
+      loop.action.body(ifBody)
+    }
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E]) =
-    generator.nextNode(nextVar.name, iterVar)
-
-  override protected def children = Seq.empty
+  override def children = Seq(loop)
 }

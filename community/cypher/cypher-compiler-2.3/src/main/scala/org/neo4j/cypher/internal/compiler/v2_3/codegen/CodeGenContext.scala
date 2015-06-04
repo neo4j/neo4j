@@ -24,13 +24,17 @@ import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.JoinData
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.CypherType
 
 import scala.collection.{immutable, mutable}
 
 // STATEFUL!
+
+case class Variable(name: String, cypherType: CypherType, nullable: Boolean = false)
+
 class CodeGenContext(val semanticTable: SemanticTable, idMap: immutable.Map[LogicalPlan, Id]) {
 
-  private val variables: mutable.Map[String, String] = mutable.Map()
+  private val variables: mutable.Map[String, Variable] = mutable.Map()
   private val projections: mutable.Map[String, CodeGenExpression] = mutable.Map()
   private val probeTables: mutable.Map[CodeGenPlan, JoinData] = mutable.Map()
   private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
@@ -38,15 +42,15 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: immutable.Map[Logi
 
   val namer = Namer()
 
-  def addVariable(name: String, symbol: String) {
-    variables.put(name, symbol)
+  def addVariable(name: String, variable: Variable) {
+    variables.put(name, variable)
   }
 
   def addProjection(name: String, projection: CodeGenExpression) {
     projections.put(name, projection)
   }
 
-  def getVariable(name: String): String = variables(name)
+  def getVariable(name: String): Variable = variables(name)
 
   def getProjection(name: String): CodeGenExpression = projections(name)
 

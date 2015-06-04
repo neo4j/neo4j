@@ -37,28 +37,28 @@ sealed trait BuildProbeTable extends Instruction {
 
 object BuildProbeTable {
 
-  def apply(id: String, name: String, node: String, valueSymbols: Map[String, String])(implicit context: CodeGenContext): BuildProbeTable = {
+  def apply(id: String, name: String, node: Variable, valueSymbols: Map[String, Variable])(implicit context: CodeGenContext): BuildProbeTable = {
     if (valueSymbols.isEmpty) BuildCountingProbeTable(id, name, node)
     else BuildRecordingProbeTable(id, name, node, valueSymbols)
   }
 }
 
-case class BuildRecordingProbeTable(id:String, name: String, node: String, valueSymbols: Map[String, String])
+case class BuildRecordingProbeTable(id:String, name: String, node: Variable, valueSymbols: Map[String, Variable])
                                    (implicit context: CodeGenContext)
   extends BuildProbeTable {
 
   override def body[E](generator: MethodStructure[E])(implicit ignored: CodeGenContext): Unit = {
     val value = generator.newTableValue(context.namer.newVarName(), valueTypeStructure)
     valueSymbols.foreach {
-      case (fieldName, localName) => generator.putField(valueTypeStructure, value, CTNode, fieldName, localName)
+      case (fieldName, localName) => generator.putField(valueTypeStructure, value, CTNode, fieldName, localName.name)
     }
-    generator.updateProbeTable(valueTypeStructure, name, node, value)
+    generator.updateProbeTable(valueTypeStructure, name, node.name, value)
   }
 
   override protected def operatorId = Some(id)
 
   private val valueTypeField2VarName = valueSymbols.map {
-    case (fieldName, symbol) => fieldName -> context.namer.newVarName()
+    case (fieldName, symbol) => fieldName -> symbol.copy(name = context.namer.newVarName())
   }
 
   private val valueTypeStructure: Map[String, CypherType] = valueSymbols.mapValues {
@@ -66,19 +66,19 @@ case class BuildRecordingProbeTable(id:String, name: String, node: String, value
   }
 
   private val varName2ValueTypeField = valueTypeField2VarName.map {
-    case (fieldName, localName) => localName -> fieldName
+    case (fieldName, localName) => localName.name -> fieldName
   }
 
-  override val tableType = LongToListTable(valueTypeStructure,varName2ValueTypeField)
+  override val tableType = LongToListTable(valueTypeStructure, varName2ValueTypeField)
 
   val joinData: JoinData = JoinData(valueTypeField2VarName, name, tableType, id)
 
 }
 
-case class BuildCountingProbeTable(id: String, name: String, node: String) extends BuildProbeTable {
+case class BuildCountingProbeTable(id: String, name: String, node: Variable) extends BuildProbeTable {
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
-    generator.updateProbeTableCount(name, node)
+    generator.updateProbeTableCount(name, node.name)
 
   override protected def operatorId = Some(id)
 
@@ -89,4 +89,4 @@ case class BuildCountingProbeTable(id: String, name: String, node: String) exten
   }
 }
 
-case class JoinData(vars: Map[String, String], tableVar: String, tableType: JoinTableType, id: String)
+case class JoinData(vars: Map[String, Variable], tableVar: String, tableType: JoinTableType, id: String)

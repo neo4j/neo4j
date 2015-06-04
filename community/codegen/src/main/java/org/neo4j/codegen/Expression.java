@@ -101,7 +101,8 @@ public abstract class Expression extends ExpressionTemplate
                value instanceof String ||
                value instanceof Long ||
                value instanceof Integer ||
-               value instanceof Double) )
+               value instanceof Double ||
+               value instanceof Boolean) )
         {
             throw new IllegalArgumentException( "Not a valid constant!" );
         }

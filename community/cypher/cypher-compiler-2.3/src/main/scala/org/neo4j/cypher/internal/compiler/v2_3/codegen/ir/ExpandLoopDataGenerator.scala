@@ -19,19 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure, KernelExceptionCodeGen}
+import org.neo4j.graphdb.Direction
 
-case class ScanAllNodes(id: String) extends LoopDataGenerator {
+case class ExpandLoopDataGenerator(id: String, fromVar: Variable, dir: Direction,
+                   types: Map[String, String], toVar: Variable)
+  extends LoopDataGenerator {
 
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    types.foreach {
+      case (typeVar,relType) => generator.lookupRelationshipTypeId(typeVar, relType)
+    }
+  }
 
   override def produceIterator[E](iterVar: String, generator: MethodStructure[E]) = {
-    generator.allNodesScan(iterVar)
+    if(types.isEmpty)
+      generator.nodeGetAllRelationships(iterVar, fromVar.name, dir)
+    else
+      generator.nodeGetRelationships(iterVar, fromVar.name, dir, types.keys.toSeq)
     generator.incrementDbHits()
   }
 
   override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E]) =
-    generator.nextNode(nextVar.name, iterVar)
+    generator.nextRelationshipNode(toVar.name, iterVar, dir, fromVar.name, nextVar.name)
 
-  override protected def children = Seq.empty
+  override def children = Seq.empty
 }
