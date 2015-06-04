@@ -20,7 +20,6 @@
 package org.neo4j.test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,7 +35,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -206,15 +205,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         @Override
         protected LogService createLogService( LogProvider userLogProvider )
         {
-            StoreLogService logService;
-            try
-            {
-                logService = new StoreLogService( NullLogProvider.getInstance(), fileSystem, storeDir, config, jobScheduler );
-            } catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-            return logService;
+            return new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
         }
     }
 }
