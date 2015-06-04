@@ -23,5 +23,5 @@ import java.lang.reflect.Method;
 
 public interface MonitorListenerInvocationHandler
 {
-    public void invoke( Object proxy, Method method, Object[] args, String... tags ) throws Throwable;
+    void invoke( Object proxy, Method method, Object[] args, String... tags ) throws Throwable;
 }
