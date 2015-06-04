@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsCollection
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LowerBounded
+import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, CypherTypeException, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import scala.collection.GenTraversableOnce
 import org.neo4j.graphdb.Node
@@ -56,5 +57,8 @@ object indexQuery extends GraphElementPropertyFunctions {
         case null => Iterator.empty
         case _ => throw new CypherTypeException(s"Expected the value for looking up :$labelName($propertyName) to be a collection but it was not.")
       }
+
+    case RangeQueryExpression(seekRange) =>
+      index(makeValueNeoSafe(seekRange)).toIterator
   }
 }

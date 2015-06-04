@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, QueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{Equals, _}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.functions
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{Many, One, Zero, ZeroOneOrMany}
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ManySeekArgs, SingleSeekArg, SeekArgs}
+import org.neo4j.cypher.internal.compiler.v2_3.parser.{LikePatternOp, LikePatternParser, MatchText, WildcardLikePatternOp}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
 
 object WithSeekableArgs {
   def unapply(v: Any) = v match {
@@ -37,7 +38,7 @@ object WithSeekableArgs {
 object AsIdSeekable {
   def unapply(v: Any) = v match {
     case WithSeekableArgs(func@FunctionInvocation(_, _, IndexedSeq(ident: Identifier)), rhs)
-      if func.function == Some(functions.Id) && !rhs.dependencies(ident) =>
+      if func.function.contains(functions.Id) && !rhs.dependencies(ident) =>
       Some(IdSeekable(func, ident, rhs))
     case _ =>
       None
@@ -57,7 +58,7 @@ object AsPropertySeekable {
 object AsPropertyScannable {
   def unapply(v: Any) = v match {
     case func@FunctionInvocation(_, _, IndexedSeq(property@Property(ident: Identifier, _)))
-      if func.function == Some(functions.Has) =>
+      if func.function.contains(functions.Has) =>
       Some(PropertyScannable(func, ident, property))
     case _ =>
       None
@@ -70,13 +71,17 @@ object AsStringRangeSeekable {
     case like@Like(Property(ident: Identifier, propertyKey), LikePattern(StringLiteral(value)), _)
       if !like.caseInsensitive =>
       getRange(value).map { range => StringRangeSeekable(range, like, ident, propertyKey) }
-    case _ => None
+    case _ =>
+      None
   }
 
   def getRange(literal: String): Option[SeekRange[String]] = {
-    val regex = ".*%".r
-    regex.findFirstIn(literal).map { prefix =>
-      RightOpenRange(InclusiveBound(prefix.substring(0, prefix.length - 1)))
+    val ops: List[LikePatternOp] = LikePatternParser(literal).compact.ops
+    ops match {
+      case MatchText(prefix) :: (_: WildcardLikePatternOp) :: tl =>
+        Some(LowerBounded(InclusiveBound(prefix)))
+      case _ =>
+        None
     }
   }
 }
@@ -105,25 +110,12 @@ case class PropertySeekable(expr: Property, ident: Identifier, args: SeekableArg
   def propertyKey = expr.propertyKey
 }
 
-sealed trait Bound[V] {
-
-  def value: V
-}
-
-final case class InclusiveBound[V](value: V) extends Bound[V]
-
-final case class ExclusiveBound[V](value: V) extends Bound[V]
-
-sealed trait SeekRange[V]
-
-final case class RightOpenRange[V](left: Bound[V]) extends SeekRange[V]
-
-final case class ClosedRange[V](left: Bound[V], right: Bound[V]) extends SeekRange[V]
-
 case class StringRangeSeekable(range: SeekRange[String], expr: Like, ident: Identifier, propertyKey: PropertyKeyName)
   extends Seekable[Like, LikePattern] {
 
   val args = expr.pattern
+
+  def asQueryExpression: QueryExpression[Expression] = RangeQueryExpression(StringSeekRange(range)(expr.rhs.position))
 }
 
 sealed trait Scannable[T <: Expression] extends Sargable[T]

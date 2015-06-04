@@ -68,6 +68,9 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
       "MATCH (a:A) WHERE a.prop = 42"
         -> A * Aprop,
 
+      "MATCH (a:A) WHERE a.prop LIKE 'prefix%'"
+        -> (A * (orTimes(DEFAULT_NUMBER_OF_INDEX_LOOKUPS, Aprop) + ((1d - Aprop) * DEFAULT_RANGE_SEEK_FACTOR))),
+
       "MATCH (a:B) WHERE a.bar = 42"
         -> B * DEFAULT_EQUALITY_SELECTIVITY,
 

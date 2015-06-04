@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
 import ExpressionConverters._
 import commands.{expressions => commandexpressions}
-import commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression, RangeFunction}
 import symbols._
 
 case object Range extends Function with SimpleTypedFunction {
