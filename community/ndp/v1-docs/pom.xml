@@ -128,18 +128,7 @@
 
   <build>
     <plugins>
-      <!-- Disable the ComponentVersion generation -->
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-version</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-
-      <!-- Temporary asciidoc generation, pending plugging into manual. -->
+      <!-- Generate manual for just this component -->
       <plugin>
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>

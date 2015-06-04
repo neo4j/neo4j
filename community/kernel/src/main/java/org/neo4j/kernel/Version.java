@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel;
 
-import java.util.NoSuchElementException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.neo4j.helpers.Service;
 
@@ -29,20 +30,22 @@ import org.neo4j.helpers.Service;
 @Deprecated
 public class Version extends Service
 {
+
     public static Version getKernel()
     {
         return KERNEL_VERSION;
     }
 
-    public static String getKernelRevision()
+    public static String getKernelVersion()
     {
-        return getKernel().getRevision();
+        return getKernel().getVersion();
     }
 
     private final String artifactId;
     private final String title;
     private final String vendor;
     private final String version;
+    private final String releaseVersion;
 
     @Override
     public String toString()
@@ -74,35 +77,24 @@ public class Version extends Service
     }
 
     /**
-     * Gets the version of the running neo4j kernel.
-     *
-     * @return the version of the neo4j kernel
+     * @return a detailed version string, including source control revision information if that is available, suitable
+     *         for internal use, logging and debugging.
      */
     public final String getVersion()
-    {
-        if ( version == null || version.equals( "" ) )
-        {
-            return "revision: " + getRevision();
-        }
-        else if ( version.endsWith( "-SNAPSHOT" ) )
-        {
-            return version + " (revision: " + getRevision() + ")";
-        }
-        else
-        {
-            return version;
-        }
-    }
-
-    public String getReleaseVersion()
     {
         return version;
     }
 
     /**
-     * Returns the build revision of the running neo4j kernel.
-     *
-     * @return build revision
+     * @return a user-friendly version string, like "1.0.0-M01" or "2.0.0", suitable for end-user display
+     */
+    public String getReleaseVersion()
+    {
+        return releaseVersion;
+    }
+
+    /**
+     * @return the source control revision information, if that is available
      */
     public final String getRevision()
     {
@@ -145,15 +137,36 @@ public class Version extends Service
     {
         super( artifactId );
         this.artifactId = artifactId;
-        Package pkg = getClass().getPackage();
-        this.title = defaultValue( pkg.getImplementationTitle(), artifactId );
-        this.vendor = defaultValue( pkg.getImplementationVendor(), "Neo Technology" );
-        this.version = defaultValue( pkg.getImplementationVersion(), version );
+        this.title = artifactId;
+        this.vendor = "Neo Technology";
+        this.version = version == null ? "dev" : version;
+        this.releaseVersion = parseReleaseVersion( this.version );
     }
 
-    private static String defaultValue( String preferred, String fallback )
+    /**
+     * This reads out the user friendly part of the version, for public display.
+     */
+    private String parseReleaseVersion( String fullVersion )
     {
-        return (preferred == null || preferred.equals( "" )) ? fallback : preferred;
+        // Generally, a version we extract from the jar manifest will look like:
+        //   1.2.3-M01,abcdef-dirty
+        // Parse out the first part of it:
+        Pattern pattern = Pattern.compile(
+                "(\\d+" +                  // Major version
+                "\\.\\d+" +                // Minor version
+                "(\\.\\d+)?" +             // Optional patch version
+                "(\\-?[^,]+)?)" +          // Optional marker, like M01, GA, SNAPSHOT - anything other than a comma
+                ".*"                       // Anything else, such as git revision
+        );
+
+        Matcher matcher = pattern.matcher( fullVersion );
+        if(matcher.matches())
+        {
+            return matcher.group( 1 );
+        }
+
+        // If we don't recognize the version pattern, do the safe thing and keep it in full
+        return version;
     }
 
     /**
@@ -168,43 +181,9 @@ public class Version extends Service
         System.out.println( "Vendor: " + kernelVersion.vendor );
         System.out.println( "ArtifactId: " + kernelVersion.artifactId );
         System.out.println( "Version: " + kernelVersion.getVersion() );
-        System.out.println( "ReleaseVersion: " + kernelVersion.getReleaseVersion() );
-        System.out.println( "Revision: " + kernelVersion.getRevision() );
-        System.out.println( "CommitDescription: " + kernelVersion.getCommitDescription() );
-        System.out.println( "BuildNumber: " + kernelVersion.getBuildNumber() );
-        System.out.println( "BranchName: " + kernelVersion.getBranchName() );
-        System.out.println( "CommitId: " + kernelVersion.getCommitId() );
     }
 
     static final String KERNEL_ARTIFACT_ID = "neo4j-kernel";
-    private static final Version KERNEL_VERSION;
-
-    static
-    {
-        Version kernelVersion;
-        try
-        {
-            kernelVersion = Service.load( Version.class, KERNEL_ARTIFACT_ID );
-        }
-        catch ( NoSuchElementException ex )
-        {
-            kernelVersion = null;
-        }
-        if ( kernelVersion == null )
-        {
-            try
-            {
-                kernelVersion = (Version) Class.forName( "org.neo4j.kernel.impl.ComponentVersion" ).newInstance();
-            }
-            catch ( Exception e )
-            {
-                kernelVersion = null;
-            }
-        }
-        if ( kernelVersion == null )
-        {
-            kernelVersion = new Version( KERNEL_ARTIFACT_ID, "" );
-        }
-        KERNEL_VERSION = kernelVersion;
-    }
+    private static final Version KERNEL_VERSION = new Version( KERNEL_ARTIFACT_ID,
+            Version.class.getPackage().getImplementationVersion() );
 }

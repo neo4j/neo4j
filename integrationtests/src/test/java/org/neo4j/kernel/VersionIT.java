@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel;
 
-import static org.junit.Assert.assertFalse;
-
 import org.junit.Test;
 
-public class TestVersion
+import static org.junit.Assert.assertFalse;
+
+public class VersionIT
 {
     @Test
     public void canGetKernelRevision() throws Exception
     {
-        assertFalse( "Kernel revision not specified", "".equals( Version.getKernelRevision() ) );
+        assertFalse( "Kernel revision not specified", "".equals( Version.getKernelVersion() ) );
     }
 }

@@ -188,7 +188,7 @@ public class PlatformModule
     private void publishPlatformInfo( UsageData sysInfo )
     {
         sysInfo.set( UsageDataKeys.version, Version.getKernel().getReleaseVersion() );
-        sysInfo.set( UsageDataKeys.revision, Version.getKernel().getRevision() );
+        sysInfo.set( UsageDataKeys.revision, Version.getKernel().getVersion() );
         sysInfo.set( UsageDataKeys.operationalMode, UsageDataKeys.OperationalMode.ha );
     }
 
