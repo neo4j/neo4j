@@ -19,23 +19,21 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.graphdb._
-import org.neo4j.test.TestGraphDatabaseFactory
-import org.scalatest.BeforeAndAfterAll
 
-class OptionalBehaviourAcceptanceTest extends AbstractAcceptanceTest {
+class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   var nodeA: Node = null
   var nodeB: Node = null
   var nodeC: Node = null
   var selfRel: Relationship = null
 
-  def initDatabase() {
-    val single = createLabeledNode(Map.empty, "Single")
+  override protected def initTest() = {
+    super.initTest()
+    val single = createLabeledNode(Map.empty[String, Any], "Single")
     nodeA = createLabeledNode(Map("prop" -> 42), "A")
     nodeB = createLabeledNode(Map("prop" -> 46), "B")
-    nodeC = createLabeledNode(Map.empty, "C")
+    nodeC = createLabeledNode(Map.empty[String, Any], "C")
     relate(single, nodeA)
     relate(single, nodeB)
     relate(nodeA, nodeC)
@@ -43,44 +41,44 @@ class OptionalBehaviourAcceptanceTest extends AbstractAcceptanceTest {
   }
 
   test("optional nodes with labels in match clause should return null when there is no match") {
-    val result = execute("match (n:Single) optional match n-[r]-(m:NonExistent) return r")
+    val result = executeWithAllPlanners("match (n:Single) optional match n-[r]-(m:NonExistent) return r")
     assert(result.toList === List(Map("r" -> null)))
   }
 
   test("optional nodes with labels in match clause should not return if where is no match") {
-    val result = execute("match (n:Single) optional match (n)-[r]-(m) where m:NonExistent return r")
+    val result = executeWithAllPlanners("match (n:Single) optional match (n)-[r]-(m) where m:NonExistent return r")
     assert(result.toList === List(Map("r" -> null)))
   }
 
   test("predicates on optional matches should be respected") {
-    val result = execute("match (n:Single) optional match n-[r]-(m) where m.prop = 42 return m")
+    val result = executeWithAllPlanners("match (n:Single) optional match n-[r]-(m) where m.prop = 42 return m")
     assert(result.toList === List(Map("m" -> nodeA)))
   }
 
   test("should allow match following optional match if there is an intervening WITH when there are no results") {
-    val result = execute("MATCH (a:Single) OPTIONAL MATCH (a)-->(b:NonExistent) OPTIONAL MATCH (a)-->(c:NonExistent) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
+    val result = executeWithAllPlanners("MATCH (a:Single) OPTIONAL MATCH (a)-->(b:NonExistent) OPTIONAL MATCH (a)-->(c:NonExistent) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
     assert(result.toList === List())
   }
 
   test("should allow match following optional match if there is an intervening WITH when there are no results 23") {
-    val result = execute("MATCH (a:Single) OPTIONAL MATCH (a)-->(b:A) OPTIONAL MATCH (a)-->(c:B) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
+    val result = executeWithAllPlanners("MATCH (a:Single) OPTIONAL MATCH (a)-->(b:A) OPTIONAL MATCH (a)-->(c:B) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
     assert(result.toList === List(Map("d" -> nodeC)))
   }
 
   test("should support optional match without any external dependencies in WITH") {
-    val result = execute("OPTIONAL MATCH (a:A) WITH a AS a MATCH (b:B) RETURN a, b")
+    val result = executeWithAllPlanners("OPTIONAL MATCH (a:A) WITH a AS a MATCH (b:B) RETURN a, b")
 
     assert(result.toList === List(Map("a" -> nodeA, "b" -> nodeB)))
   }
 
   test("should support named paths inside of optional matches") {
-    val result = execute("match (a:A) optional match p = a-[:X]->b return p")
+    val result = executeWithAllPlanners("match (a:A) optional match p = a-[:X]->b return p")
 
     assert(result.toList === List(Map("p" -> null)))
   }
 
   test("optional matching between two found nodes behaves as expected") {
-    val result = execute(
+    val result = executeWithAllPlanners(
       """match (a:A), (b:C)
         |optional match (x)-->(b)
         |return x""".stripMargin)
@@ -92,13 +90,13 @@ class OptionalBehaviourAcceptanceTest extends AbstractAcceptanceTest {
 
 
   test("should support names paths inside of option matches with node predicates") {
-    val result = execute("match (a:A), (b:B) optional match p = a-[:X]->b return p")
+    val result = executeWithAllPlanners("match (a:A), (b:B) optional match p = a-[:X]->b return p")
 
     assert(result.toList === List(Map("p" -> null)))
   }
 
   test("should support varlength optional relationships") {
-    val result = execute("match (a:Single) optional match (a)-[*]->(b) return b")
+    val result = executeWithAllPlanners("match (a:Single) optional match (a)-[*]->(b) return b")
 
     assert(result.toSet === Set(
       Map("b" -> nodeA),
@@ -108,25 +106,25 @@ class OptionalBehaviourAcceptanceTest extends AbstractAcceptanceTest {
   }
 
   test("should support varlength optional relationships that is longer than the existing longest") {
-    val result = execute("match (a:Single) optional match a-[*3..]->b return b")
+    val result = executeWithAllPlanners("match (a:Single) optional match a-[*3..]->b return b")
 
     assert(result.toSet === Set(Map("b" -> null)))
   }
 
   test("should support optional match to find self loops") {
-    val result = execute("match (a:B) optional match a-[r]->a return r")
+    val result = executeWithAllPlanners("match (a:B) optional match a-[r]->a return r")
 
     assert(result.toSet === Set(Map("r" -> selfRel)))
   }
 
   test("should support optional match to not find self loops") {
-    val result = execute("match (a) where not (a:B) optional match (a)-[r]->(a) return r")
+    val result = executeWithAllPlanners("match (a) where not (a:B) optional match (a)-[r]->(a) return r")
 
     assert(result.toSet === Set(Map("r" -> null)))
   }
 
   test("should support varlength optional relationships where both ends are already bound") {
-    val result = execute("match (a:Single), (x:C) optional match (a)-[*]->(x) return x")
+    val result = executeWithAllPlanners("match (a:Single), (x:C) optional match (a)-[*]->(x) return x")
 
     assert(result.toSet === Set(
       Map("x" -> nodeC)
@@ -134,7 +132,7 @@ class OptionalBehaviourAcceptanceTest extends AbstractAcceptanceTest {
   }
 
   test("should support varlength optional relationships where both ends are already bound but no paths exist") {
-    val result = execute("match (a:A), (b:B) optional match p = (a)-[*]->(b) return p")
+    val result = executeWithAllPlanners("match (a:A), (b:B) optional match p = (a)-[*]->(b) return p")
 
     assert(result.toSet === Set(
       Map("p" -> null)
@@ -142,7 +140,7 @@ class OptionalBehaviourAcceptanceTest extends AbstractAcceptanceTest {
   }
 
   test("should support optional relationships where both ends are already bound") {
-    val result = execute("match (a:Single), (c:C) optional match (a)-->(b)-->(c) return b")
+    val result = executeWithAllPlanners("match (a:Single), (c:C) optional match (a)-->(b)-->(c) return b")
 
     assert(result.toSet === Set(
       Map("b" -> nodeA)
@@ -150,7 +148,7 @@ class OptionalBehaviourAcceptanceTest extends AbstractAcceptanceTest {
   }
 
   test("should support optional relationships where both ends are already bound and no paths exist") {
-    val result = execute("match (a:A), (c:C) optional match (a)-->(b)-->(c) return b")
+    val result = executeWithAllPlanners("match (a:A), (c:C) optional match (a)-->(b)-->(c) return b")
 
     assert(result.toSet === Set(
       Map("b" -> null)
@@ -158,7 +156,7 @@ class OptionalBehaviourAcceptanceTest extends AbstractAcceptanceTest {
   }
 
   test("should handle pattern predicates in optional match") {
-    val result = execute("match (a:A), (c:C) optional match (a)-->(b) WHERE (b)-->(c) return b")
+    val result = executeWithAllPlanners("match (a:A), (c:C) optional match (a)-->(b) WHERE (b)-->(c) return b")
 
     assert(result.toSet === Set(
       Map("b" -> null)
@@ -166,7 +164,7 @@ class OptionalBehaviourAcceptanceTest extends AbstractAcceptanceTest {
   }
 
   test("should handle pattern predicates in optional match with hit") {
-    val result = execute("match (a:Single), (c:C) optional match (a)-->(b) WHERE (b)-->(c) return b")
+    val result = executeWithAllPlanners("match (a:Single), (c:C) optional match (a)-->(b) WHERE (b)-->(c) return b")
 
     assert(result.toSet === Set(
       Map("b" -> nodeA)
@@ -174,7 +172,7 @@ class OptionalBehaviourAcceptanceTest extends AbstractAcceptanceTest {
   }
 
   test("should handle correlated optional matches - the first does not match, and the second must not match") {
-    val result = execute(
+    val result = executeWithAllPlanners(
       """match (a:A), (b:B)
         |optional match (a)-->(x)
         |optional match (x)-[r]->(b)
@@ -184,53 +182,27 @@ class OptionalBehaviourAcceptanceTest extends AbstractAcceptanceTest {
       Map("x" -> nodeC, "r" -> null)
     ))
   }
-}
 
-trait AbstractAcceptanceTest extends CypherFunSuite with BeforeAndAfterAll {
+  test("should handle optional match between optionally matched things") {
+    val result = executeWithAllPlanners(
+      """OPTIONAL MATCH (a:NOT_THERE)
+        |WITH a
+        |MATCH (b:B)
+        |with a, b
+        |OPTIONAL MATCH (b)-[r:NOR_THIS]->(a)
+        |RETURN a, b, r""".stripMargin)
 
-  var graph: GraphDatabaseService = null
-  var engine: ExecutionEngine = null
-
-  override protected def beforeAll() {
-    super.beforeAll()
-    graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    engine = new ExecutionEngine(graph)
-    initDatabase()
+    assert(result.toList === List(Map("b" -> nodeB, "r" -> null, "a" -> null)))
   }
 
-  def initDatabase(): Unit
+  test("should handle optional match between nulls") {
+    val result = executeWithAllPlanners(
+      """OPTIONAL MATCH (a:NOT_THERE)
+        |OPTIONAL MATCH (b:NOT_THERE)
+        |with a, b
+        |OPTIONAL MATCH (b)-[r:NOR_THIS]->(a)
+        |RETURN a, b, r""".stripMargin)
 
-  def relate(a: Node, b: Node, typeName: String = "REL"): Relationship = inTx {
-    a.createRelationshipTo(b, DynamicRelationshipType.withName(typeName))
-  }
-
-  def createLabeledNode(map: Map[String, Any], labels: String*): Node = inTx {
-    val result = graph.createNode()
-    labels.foreach(l => result.addLabel(DynamicLabel.label(l)))
-    setProperties(result, map)
-    result
-  }
-
-  def createNode(map: Map[String, Any] = Map.empty): Node = inTx {
-    val result = graph.createNode()
-    setProperties(result, map)
-    result
-  }
-
-  def setProperties(n: Node, map: Map[String, Any]): Unit = {
-    map.foreach {
-      case (k, v) => n.setProperty(k, v)
-    }
-  }
-
-  def execute(query: String): ExecutionResult =
-    engine.execute(query)
-
-  private def inTx[T](f: => T): T = {
-    val tx = graph.beginTx()
-    val result = f
-    tx.success()
-    tx.close()
-    result
+    assert(result.toList === List(Map("b" -> null, "r" -> null, "a" -> null)))
   }
 }

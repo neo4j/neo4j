@@ -48,7 +48,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
             val toNode: Node = getRowNode(row, toName)
 
             if (toNode == null) {
-              Iterator.empty
+              Iterator(row.newWith1(relName, null))
             }
             else {
               val matchIterator = new PrefetchingIterator[ExecutionContext] {
@@ -74,7 +74,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
             }
 
           case value if value == null =>
-            Iterator(row.newWith2(relName, null, toName, null))
+            Iterator(row.newWith1(relName, null))
 
           case value =>
             throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
