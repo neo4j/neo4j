@@ -197,12 +197,17 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
     createNode()
     createNode()
-    val result = profileWithAllPlanners("""MATCH n RETURN n LIMIT 1""")
+    val result = profileWithAllPlannersAndRuntimes("""MATCH n RETURN n LIMIT 1""")
 
     // WHEN
     result.toList
+    println(result.executionPlanDescription())
 
     // THEN PASS
+    assertRows(1)(result)("AllNodesScan", "ProduceResults", "Projection")
+    assertDbHits(0)(result)("ProduceResults", "Projection")
+    assertDbHits(2)(result)("AllNodesScan")
+
     result.executionPlanDescription()
   }
 

@@ -144,6 +144,24 @@ public final class CompiledMathHelper
                                        " and " + rhs.getClass().getSimpleName(), null );
     }
 
+    public static int transformToInt( Object value )
+    {
+        if ( value == null )
+        {
+            throw new CypherTypeException( "Expected a numeric value but got null", null );
+        }
+        if ( value instanceof Number )
+        {
+            Number number = (Number) value;
+            if ( number.longValue() > Integer.MAX_VALUE )
+            {
+                throw new CypherTypeException( value.toString() + " is too large to cast to an int32", null );
+            }
+            return number.intValue();
+        }
+        throw new CypherTypeException( String.format( "Expected a numeric value but got %s", value.toString() ), null );
+    }
+
     /**
      * Both a1 and a2 must be arrays
      */

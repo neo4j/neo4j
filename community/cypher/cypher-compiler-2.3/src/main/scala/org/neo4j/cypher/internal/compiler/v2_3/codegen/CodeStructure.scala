@@ -60,103 +60,75 @@ case class LongToListTable(structure: Map[String, CypherType], localMap: Map[Str
 
 trait MethodStructure[E] {
 
+  // misc
   def declareFlag(name: String, initialValue: Boolean)
-
   def updateFlag(name: String, newValue: Boolean)
-
   def declarePredicate(name: String): Unit
-
   def declareProperty(name: String): Unit
-
+  def declareCounter(name: String, initialValue: E): Unit
   def putField(structure: Map[String, CypherType], value: E, fieldType: CypherType, fieldName: String, localVar: String): Unit
-
-  def newTableValue(targetVar: String, structure: Map[String, CypherType]): E
-
   def updateProbeTable(structure: Map[String, CypherType], tableVar: String, keyVar: String, element: E): Unit
-
   def probe(tableVar: String, tableType: JoinTableType, keyVar:String)(block: MethodStructure[E]=>Unit): Unit
-
   def updateProbeTableCount(tableVar: String, keyVar: String): Unit
-
   def allocateProbeTable(tableVar: String, tableType: JoinTableType): Unit
-
   def method(resultType: JoinTableType, resultVar: String, methodName: String)(block: MethodStructure[E]=>Unit): Unit
 
+  // expressions
+  def decreaseCounterAndCheckForZero(name: String): E
+  def counterEqualsZero(variableName: String): E
+  def newTableValue(targetVar: String, structure: Map[String, CypherType]): E
+  def constant(value: Object): E
   def asMap(map: Map[String, E]): E
-
   def asList(values: Seq[E]): E
-
   def load(varName: String): E
 
+  // arithmetic
   def add(lhs: E, rhs: E): E
-
   def sub(lhs: E, rhs: E): E
 
-  def constant(value: Object): E
-
+  // predicates
   def not(value: E): E
 
+  // null handling
   def markAsNull(varName: String, cypherType: CypherType): Unit
-
   def nullable(varName: String, cypherType: CypherType, onSuccess: E): E
 
   // parameters
   def expectParameter(key: String): Unit
-
   def parameter(key: String): E
 
   // tracing
   def trace[V](planStepId: String)(block: MethodStructure[E] => V): V
-
   def incrementDbHits(): Unit
-
   def incrementRows(): Unit
 
   // db access
   def labelScan(iterVar: String, labelIdVar: String): Unit
-
   def hasLabel(nodeVar: String, labelVar: String, predVar: String): E
-
   def allNodesScan(iterVar: String): Unit
-
   def lookupLabelId(labelIdVar: String, labelName: String): Unit
-
   def lookupRelationshipTypeId(typeIdVar: String, typeName: String): Unit
-
   def nodeGetAllRelationships(iterVar: String, nodeVar: String, direction: Direction): Unit
-
   def nodeGetRelationships(iterVar: String, nodeVar: String, direction: Direction, typeVars: Seq[String]): Unit
-
   def nextNode(targetVar: String, iterVar: String): Unit
-
   def nextRelationshipNode(targetVar: String, iterVar: String, direction: Direction, nodeVar: String, relVar: String): Unit
-
   def hasNext(iterVar: String): E
-
   def nodeGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
-
   def nodeGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
-
   def relationshipGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
-
   def relationshipGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
-
   def lookupPropertyKey(propName: String, propVar: String)
-
   def propertyValueAsPredicate(propertyExpression: E): E
 
   // code structure
   def whileLoop(test: E)(block: MethodStructure[E] => Unit): Unit
-
   def ifStatement(test: E)(block: MethodStructure[E] => Unit): Unit
+  def returnSuccessfully(): Unit
 
   // results
   def materializeNode(nodeIdVar: String): E
-
   def materializeRelationship(relIdVar: String): E
-
   def visitRow(): Unit
-
   def setInRow(column: String, value: E): Unit
 }
 
@@ -283,7 +255,9 @@ private class AuxGenerator(val packageName: String, val generator: codegen.CodeG
   }
 }
 
-private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator, tracing: Boolean = true, event: Option[String] = None, var locals:Map[String,LocalVariable]=Map.empty) extends MethodStructure[Expression] {
+private case class Method(fields: Fields, generator: CodeBlock, aux: AuxGenerator, tracing: Boolean = true,
+                          event: Option[String] = None, var locals: Map[String, LocalVariable] = Map.empty)
+  extends MethodStructure[Expression] {
 
   import CodeStructure.typeRef
 
@@ -329,13 +303,34 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     }
   }
 
+  override def returnSuccessfully() {
+    generator.expression(Expression.invoke(generator.self(), fields.success))
+    generator.returns()
+  }
+
+  override def declareCounter(name: String, initialValue: Expression): Unit = {
+    val variable = generator.declare(typeRef[Int], name)
+    locals = locals + (name -> variable)
+    generator.assign(variable, Expression.invoke(Methods.mathCastToInt, initialValue))
+  }
+
+  override def decreaseCounterAndCheckForZero(name: String): Expression = {
+    val local = locals(name)
+    generator.assign(local, Expression.sub(local, Expression.constant(1)))
+    Expression.eq(Expression.constant(0), local)
+  }
+
+  override def counterEqualsZero(name: String): Expression = {
+    val local = locals(name)
+    Expression.eq(Expression.constant(0), local)
+  }
+
   override def setInRow(column: String, value: Expression) =
     generator.expression(Expression.invoke(resultRow, Methods.set, Expression.constant(column), value))
 
   override def visitRow() = using(generator.ifStatement(Expression.not(
     Expression.invoke(generator.load("visitor"), Methods.visit, generator.load("row"))))) { body =>
     // NOTE: we are in this if-block if the visitor decided to terminate early (by returning false)
-    // TODO: should that really mean 'success'?
     body.expression(Expression.invoke(body.self(), fields.success))
     body.returns()
   }
@@ -502,7 +497,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       }
   }
 
-  override def putField(structure: Map[String, CypherType],value: Expression, fieldType: CypherType, fieldName: String, localVar: String) = {
+  override def putField(structure: Map[String, CypherType], value: Expression, fieldType: CypherType, fieldName: String, localVar: String) = {
     generator.put(value, field(structure, fieldType, fieldName), generator.load(localVar))
   }
 
@@ -612,8 +607,8 @@ private object Methods {
 
   import CodeStructure.{method, typeRef}
 
-  val countingTablePut = method[PrimitiveLongIntMap,Int]("put", typeRef[Long], typeRef[Int])
-  val countingTableGet = method[PrimitiveLongIntMap,Int]("get", typeRef[Long])
+  val countingTablePut = method[PrimitiveLongIntMap, Int]("put", typeRef[Long], typeRef[Int])
+  val countingTableGet = method[PrimitiveLongIntMap, Int]("get", typeRef[Long])
   val hasNext = method[PrimitiveLongIterator, Boolean]("hasNext")
   val arrayAsList = method[MapUtil, util.Map[String, Object]]("map", typeRef[Array[Object]])
   val relationshipVisit = method[RelationshipIterator, Boolean]("relationshipVisit", typeRef[Long], typeRef[RelationshipVisitor[RuntimeException]])
@@ -624,6 +619,7 @@ private object Methods {
   val nodeGetRelationships = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction], typeRef[Array[Int]])
   val mathAdd = method[CompiledMathHelper, Object]("add", typeRef[Object], typeRef[Object])
   val mathSub = method[CompiledMathHelper, Object]("subtract", typeRef[Object], typeRef[Object])
+  val mathCastToInt = method[CompiledMathHelper, Int]("transformToInt", typeRef[Object])
   val mapGet = method[util.Map[String, Object], Object]("get", typeRef[String])
   val mapContains = method[util.Map[String, Object], Boolean]("containsKey", typeRef[String])
   val labelGetForName = method[ReadOperations, Int]("labelGetForName", typeRef[String])
