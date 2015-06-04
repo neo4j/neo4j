@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha.factory;
 import org.jboss.netty.logging.InternalLoggerFactory;
 
 import java.io.File;
-import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -40,13 +39,17 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
+import org.neo4j.com.Server;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
+import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.function.Factory;
+import org.neo4j.function.Function;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -58,6 +61,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.BranchedDataMigrator;
 import org.neo4j.kernel.ha.CommitProcessSwitcher;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
@@ -69,10 +73,12 @@ import org.neo4j.kernel.ha.LabelTokenCreatorModeSwitcher;
 import org.neo4j.kernel.ha.LastUpdateTime;
 import org.neo4j.kernel.ha.PropertyKeyCreatorModeSwitcher;
 import org.neo4j.kernel.ha.RelationshipTypeCreatorModeSwitcher;
+import org.neo4j.kernel.ha.TransactionChecksumLookup;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.kernel.ha.UpdatePullingTransactionObligationFulfiller;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
+import org.neo4j.kernel.ha.cluster.DefaultMasterImplSPI;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberContext;
@@ -90,10 +96,12 @@ import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
+import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
+import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
@@ -128,9 +136,13 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -140,6 +152,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageDataKeys;
 import org.neo4j.udc.UsageData;
+
+import static java.lang.reflect.Proxy.newProxyInstance;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -165,17 +179,19 @@ public class EnterpriseEditionModule
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
 
         life.add( new BranchedDataMigrator( platformModule.storeDir ) );
-        DelegateInvocationHandler<Master> masterDelegateInvocationHandler = new DelegateInvocationHandler<>( Master
-                .class );
-        Master master = (Master) Proxy.newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
+        DelegateInvocationHandler<Master> masterDelegateInvocationHandler =
+                new DelegateInvocationHandler<>( Master.class );
+        Master master = (Master) newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
                 masterDelegateInvocationHandler );
         InstanceId serverId = config.get( ClusterSettings.server_id );
+
         RequestContextFactory requestContextFactory = dependencies.satisfyDependency( new RequestContextFactory(
                 serverId.toIntegerIndex(),
-                dependencies ) );
+                dependencies.provideDependency( TransactionIdStore.class ) ) );
 
         TransactionCommittingResponseUnpacker responseUnpacker = dependencies.satisfyDependency(
-                new TransactionCommittingResponseUnpacker( dependencies ) );
+                new TransactionCommittingResponseUnpacker( DependenciesProxy.dependencies( dependencies,
+                        TransactionCommittingResponseUnpacker.Dependencies.class ) ) );
 
         Supplier<KernelAPI> kernelProvider = dependencies.provideDependency( KernelAPI.class );
 
@@ -189,31 +205,31 @@ public class EnterpriseEditionModule
                 new DelegateInvocationHandler<>( ClusterMemberAvailability.class );
 
         ClusterMemberEvents clusterEvents = dependencies.satisfyDependency(
-                (ClusterMemberEvents) Proxy.newProxyInstance(
+                (ClusterMemberEvents) newProxyInstance(
                         ClusterMemberEvents.class.getClassLoader(),
                         new Class[]{ClusterMemberEvents.class, Lifecycle.class},
                         clusterEventsDelegateInvocationHandler ) );
 
-        HighAvailabilityMemberContext memberContext = (HighAvailabilityMemberContext) Proxy.newProxyInstance(
+        HighAvailabilityMemberContext memberContext = (HighAvailabilityMemberContext) newProxyInstance(
                 HighAvailabilityMemberContext.class.getClassLoader(),
                 new Class[]{HighAvailabilityMemberContext.class}, memberContextDelegateInvocationHandler );
         ClusterMemberAvailability clusterMemberAvailability = dependencies.satisfyDependency(
-                (ClusterMemberAvailability) Proxy.newProxyInstance(
-                ClusterMemberAvailability.class.getClassLoader(),
-                new Class[]{ClusterMemberAvailability.class}, clusterMemberAvailabilityDelegateInvocationHandler ) );
+                (ClusterMemberAvailability) newProxyInstance(
+                        ClusterMemberAvailability.class.getClassLoader(),
+                        new Class[]{ClusterMemberAvailability.class},
+                        clusterMemberAvailabilityDelegateInvocationHandler ) );
 
         // TODO There's a cyclical dependency here that should be fixed
-        final AtomicReference<HighAvailabilityMemberStateMachine> electionProviderRef = new AtomicReference<>(  );
+        final AtomicReference<HighAvailabilityMemberStateMachine> electionProviderRef = new AtomicReference<>();
         ElectionCredentialsProvider electionCredentialsProvider = config.get( HaSettings.slave_only ) ?
                 new NotElectableElectionCredentialsProvider() :
                 new DefaultElectionCredentialsProvider(
                         config.get( ClusterSettings.server_id ),
-                        new OnDiskLastTxIdGetter( platformModule.graphDatabaseFacade ),
+                        new OnDiskLastTxIdGetter( platformModule.dependencies.provideDependency( NeoStore.class ) ),
                         new HighAvailabilityMemberInfoProvider()
                         {
                             @Override
-                            public HighAvailabilityMemberState
-                            getHighAvailabilityMemberState()
+                            public HighAvailabilityMemberState getHighAvailabilityMemberState()
                             {
                                 return electionProviderRef.get().getCurrentState();
                             }
@@ -230,32 +246,35 @@ public class EnterpriseEditionModule
                         electionCredentialsProvider,
                         objectStreamFactory, objectStreamFactory ) );
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
-                clusterClient, clusterClient, logging.getInternalLogProvider(), new org.neo4j.function.Predicate<PaxosClusterMemberEvents
-                .ClusterMembersSnapshot>()
-        {
-            @Override
-            public boolean test( PaxosClusterMemberEvents.ClusterMembersSnapshot item )
-            {
-                for ( MemberIsAvailable member : item.getCurrentAvailableMembers() )
+                clusterClient, clusterClient, logging.getInternalLogProvider(),
+                new org.neo4j.function.Predicate<PaxosClusterMemberEvents
+                        .ClusterMembersSnapshot>()
                 {
-                    if ( member.getRoleUri().getScheme().equals( "ha" ) )
+                    @Override
+                    public boolean test( PaxosClusterMemberEvents.ClusterMembersSnapshot item )
                     {
-                        if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ).equals(
-                                platformModule.config.get( ClusterSettings.server_id ) ) )
+                        for ( MemberIsAvailable member : item.getCurrentAvailableMembers() )
                         {
-                            logging.getInternalLog( PaxosClusterMemberEvents.class ).error( String.format( "Instance " +
-                                            "%s has" +
-                                            " the same serverId as ours (%s) - will not " +
-                                            "join this cluster",
-                                    member.getRoleUri(), config.get( ClusterSettings.server_id ).toIntegerIndex()
-                            ) );
-                            return true;
+                            if ( member.getRoleUri().getScheme().equals( "ha" ) )
+                            {
+                                if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ).equals(
+                                        platformModule.config.get( ClusterSettings.server_id ) ) )
+                                {
+                                    logging.getInternalLog( PaxosClusterMemberEvents.class ).error(
+                                            String.format( "Instance " +
+                                                            "%s has" +
+                                                            " the same serverId as ours (%s) - will not " +
+                                                            "join this cluster",
+                                                    member.getRoleUri(),
+                                                    config.get( ClusterSettings.server_id ).toIntegerIndex()
+                                            ) );
+                                    return true;
+                                }
+                            }
                         }
+                        return true;
                     }
-                }
-                return true;
-            }
-        }, new HANewSnapshotFunction(), objectStreamFactory, objectStreamFactory,
+                }, new HANewSnapshotFunction(), objectStreamFactory, objectStreamFactory,
                 platformModule.monitors.newMonitor( NamedThreadFactory.Monitor.class )
         );
 
@@ -285,7 +304,8 @@ public class EnterpriseEditionModule
         HighAvailabilityMemberContext localMemberContext = new SimpleHighAvailabilityMemberContext( clusterClient
                 .getServerId(), config.get( HaSettings.slave_only ) );
         PaxosClusterMemberAvailability localClusterMemberAvailability = new PaxosClusterMemberAvailability(
-                clusterClient.getServerId(), clusterClient, clusterClient, logging.getInternalLogProvider(), objectStreamFactory,
+                clusterClient.getServerId(), clusterClient, clusterClient, logging.getInternalLogProvider(),
+                objectStreamFactory,
                 objectStreamFactory );
 
         memberContextDelegateInvocationHandler.setDelegate( localMemberContext );
@@ -314,10 +334,12 @@ public class EnterpriseEditionModule
         paxosLife.add( clusterEvents );
         paxosLife.add( localClusterMemberAvailability );
 
-        idGeneratorFactory = dependencies.satisfyDependency(createIdGeneratorFactory( masterDelegateInvocationHandler, logging.getInternalLogProvider(), requestContextFactory ));
+        idGeneratorFactory = dependencies.satisfyDependency(
+                createIdGeneratorFactory( masterDelegateInvocationHandler, logging.getInternalLogProvider(),
+                        requestContextFactory ) );
 
         // TODO There's a cyclical dependency here that should be fixed
-        final AtomicReference<HighAvailabilityModeSwitcher> exceptionHandlerRef = new AtomicReference<>(  );
+        final AtomicReference<HighAvailabilityModeSwitcher> exceptionHandlerRef = new AtomicReference<>();
         InvalidEpochExceptionHandler invalidEpochHandler = new InvalidEpochExceptionHandler()
         {
             @Override
@@ -327,28 +349,111 @@ public class EnterpriseEditionModule
             }
         };
 
-        MasterClientResolver masterClientResolver = new MasterClientResolver( logging.getInternalLogProvider(), responseUnpacker,
+        MasterClientResolver masterClientResolver = new MasterClientResolver( logging.getInternalLogProvider(),
+                responseUnpacker,
                 invalidEpochHandler,
                 config.get( HaSettings.read_timeout ).intValue(),
                 config.get( HaSettings.lock_read_timeout ).intValue(),
                 config.get( HaSettings.max_concurrent_channels_per_slave ),
                 config.get( HaSettings.com_chunk_size ).intValue() );
 
-        SwitchToSlave switchToSlaveInstance = new SwitchToSlave( logging, fs, storeDir, config, dependencies,
-                (HaIdGeneratorFactory) idGeneratorFactory,
+        LastUpdateTime lastUpdateTime = new LastUpdateTime();
+
+        UpdatePuller updatePuller = dependencies.satisfyDependency( life.add(
+                new UpdatePuller( memberStateMachine, requestContextFactory, master, lastUpdateTime,
+                        logging.getInternalLogProvider(), serverId, invalidEpochHandler ) ) );
+        dependencies.satisfyDependency( life.add( new UpdatePullerClient( config.get( HaSettings.pull_interval ),
+                platformModule.jobScheduler, logging.getInternalLogProvider(), updatePuller,
+                platformModule.availabilityGuard ) ) );
+        dependencies.satisfyDependency( life.add( new UpdatePullingTransactionObligationFulfiller(
+                updatePuller, memberStateMachine, serverId,
+                dependencies.provideDependency( TransactionIdStore.class ) ) ) );
+
+
+        Factory<Slave> slaveFactory = new Factory<Slave>()
+        {
+            @Override
+            public Slave newInstance()
+            {
+                return new SlaveImpl( dependencies.resolveDependency( TransactionObligationFulfiller.class ) );
+            }
+        };
+
+        Function<Slave, SlaveServer> slaveServerFactory = new Function<Slave, SlaveServer>()
+        {
+            @Override
+            public SlaveServer apply( Slave slave ) throws RuntimeException
+            {
+                return new SlaveServer( slave, slaveServerConfig( config ), logging.getInternalLogProvider(),
+                        monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
+                        monitors.newMonitor( RequestMonitor.class, SlaveServer.class ) );
+            }
+        };
+
+        SwitchToSlave switchToSlaveInstance = new SwitchToSlave( platformModule.storeDir, logging,
+                platformModule.fileSystem, members,
+                config, dependencies, (HaIdGeneratorFactory) idGeneratorFactory,
                 masterDelegateInvocationHandler, clusterMemberAvailability,
                 requestContextFactory, platformModule.kernelExtensions.listFactories(), masterClientResolver,
-                monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
-                monitors.newMonitor( RequestMonitor.class, SlaveServer.class ),
                 monitors.newMonitor( SwitchToSlave.Monitor.class ),
-                monitors.newMonitor( StoreCopyClient.Monitor.class ) );
+                monitors.newMonitor( StoreCopyClient.Monitor.class ),
+                dependencies.provideDependency( NeoStoreDataSource.class ),
+                dependencies.provideDependency( TransactionIdStore.class ),
+                slaveFactory, slaveServerFactory, updatePuller, platformModule.pageCache, monitors );
 
-        SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, platformModule.graphDatabaseFacade,
-                (HaIdGeneratorFactory) idGeneratorFactory, config, dependencies.provideDependency( SlaveFactory.class ),
-                masterDelegateInvocationHandler, clusterMemberAvailability, platformModule.dataSourceManager,
-                monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ),
-                monitors.newMonitor( RequestMonitor.class, MasterServer.class ),
-                monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ) );
+        final Factory<MasterImpl.SPI> masterSPIFactory = new Factory<MasterImpl.SPI>()
+        {
+            @Override
+            public MasterImpl.SPI newInstance()
+            {
+                return new DefaultMasterImplSPI( platformModule.graphDatabaseFacade, platformModule.fileSystem,
+                        platformModule.monitors,
+                        labelTokenHolder, propertyKeyTokenHolder, relationshipTypeTokenHolder, idGeneratorFactory,
+                        lockManager, platformModule.dependencies.resolveDependency( TransactionCommitProcess.class ),
+                        platformModule.dependencies.resolveDependency( LogRotationControl.class ),
+                        platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
+                        platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ),
+                        platformModule.dependencies.resolveDependency( NeoStoreDataSource.class ),
+                        platformModule.jobScheduler );
+            }
+        };
+
+        Factory<Master> masterFactory = new Factory<Master>()
+        {
+            @Override
+            public Master newInstance()
+            {
+                return new MasterImpl( masterSPIFactory.newInstance(),
+                        monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ), config );
+            }
+        };
+
+        Function<Master, MasterServer> masterServerFactory = new Function<Master, MasterServer>()
+        {
+            @Override
+            public MasterServer apply( Master master ) throws RuntimeException
+            {
+                TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup(
+                        platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
+                        platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ) );
+
+                MasterServer masterServer = new MasterServer( master, logging.getInternalLogProvider(),
+                        masterServerConfig(
+                                config ),
+                        new BranchDetectingTxVerifier( logging.getInternalLogProvider(), txChecksumLookup ),
+                        monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ),
+                        monitors.newMonitor( RequestMonitor.class, MasterServer.class ) );
+                return masterServer;
+            }
+        };
+
+        SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, (HaIdGeneratorFactory) idGeneratorFactory,
+                config, dependencies.provideDependency( SlaveFactory.class ),
+                masterFactory,
+                masterServerFactory,
+                masterDelegateInvocationHandler, clusterMemberAvailability,
+                platformModule.dependencies.provideDependency(
+                        NeoStoreDataSource.class ) );
 
         final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher(
                 switchToSlaveInstance, switchToMasterInstance,
@@ -376,36 +481,31 @@ public class EnterpriseEditionModule
 
         life.add( responseUnpacker );
 
-        LastUpdateTime lastUpdateTime = new LastUpdateTime();
-
-        UpdatePuller updatePuller = dependencies.satisfyDependency( life.add(
-                new UpdatePuller( memberStateMachine, requestContextFactory, master, lastUpdateTime,
-                        logging.getInternalLogProvider(), serverId, invalidEpochHandler ) ) );
-        dependencies.satisfyDependency( life.add( new UpdatePullerClient( config.get( HaSettings.pull_interval ),
-                platformModule.jobScheduler, logging.getInternalLogProvider(), updatePuller, platformModule.availabilityGuard ) ) );
-        dependencies.satisfyDependency( life.add( new UpdatePullingTransactionObligationFulfiller(
-                updatePuller, memberStateMachine, serverId, dependencies ) ) );
-
         life.add( paxosLife );
 
         platformModule.diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine,
                 clusterClient ) );
 
         // Create HA services
-        lockManager = dependencies.satisfyDependency(createLockManager( memberStateMachine, config, masterDelegateInvocationHandler, requestContextFactory, platformModule.availabilityGuard, logging ));
+        lockManager = dependencies.satisfyDependency(
+                createLockManager( memberStateMachine, config, masterDelegateInvocationHandler, requestContextFactory,
+                        platformModule.availabilityGuard, logging ) );
 
         propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new PropertyKeyTokenHolder(
-                createPropertyKeyCreator( config, memberStateMachine, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ) )));
-        labelTokenHolder = life.add( dependencies.satisfyDependency(new LabelTokenHolder( createLabelIdCreator( config,
+                createPropertyKeyCreator( config, memberStateMachine, masterDelegateInvocationHandler,
+                        requestContextFactory, kernelProvider ) ) ) );
+        labelTokenHolder = life.add( dependencies.satisfyDependency( new LabelTokenHolder( createLabelIdCreator( config,
                 memberStateMachine, masterDelegateInvocationHandler, requestContextFactory, kernelProvider ) ) ) );
         relationshipTypeTokenHolder = life.add( dependencies.satisfyDependency( new RelationshipTypeTokenHolder(
                 createRelationshipTypeCreator( config, memberStateMachine, masterDelegateInvocationHandler,
                         requestContextFactory, kernelProvider ) ) ) );
 
-        life.add( dependencies.satisfyDependency(createKernelData( fs, storeDir, config, platformModule.graphDatabaseFacade, members, lastUpdateTime ) ));
+        life.add( dependencies.satisfyDependency( createKernelData( config, platformModule.graphDatabaseFacade,
+                members, fs, storeDir, lastUpdateTime, dependencies.provideDependency( NeoStore.class ) ) ) );
 
         commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, life,
-                clusterClient, members, platformModule.jobScheduler, master, requestContextFactory, memberStateMachine );
+                clusterClient, members, platformModule.jobScheduler, master, requestContextFactory,
+                memberStateMachine );
 
         headerInformationFactory = createHeaderInformationFactory( memberContext );
 
@@ -439,8 +539,9 @@ public class EnterpriseEditionModule
         sysInfo.set( UsageDataKeys.serverId, config.get( ClusterSettings.server_id ).toString() );
     }
 
-    protected TransactionHeaderInformationFactory createHeaderInformationFactory( final HighAvailabilityMemberContext
-                                                                                          memberContext )
+
+    protected TransactionHeaderInformationFactory createHeaderInformationFactory(
+            final HighAvailabilityMemberContext memberContext )
     {
         return new TransactionHeaderInformationFactory.WithRandomBytes()
         {
@@ -458,13 +559,15 @@ public class EnterpriseEditionModule
                                                                ClusterClient clusterClient, ClusterMembers members,
                                                                JobScheduler jobScheduler, final Master master,
                                                                final RequestContextFactory requestContextFactory,
-                                                               final HighAvailabilityMemberStateMachine memberStateMachine )
+                                                               final HighAvailabilityMemberStateMachine
+                                                                       memberStateMachine )
     {
         final DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate =
                 new DelegateInvocationHandler<>( TransactionCommitProcess.class );
 
-        DefaultSlaveFactory slaveFactory = dependencies.satisfyDependency( new DefaultSlaveFactory( logging.getInternalLogProvider(), monitors,
-                config.get( HaSettings.com_chunk_size ).intValue() ) );
+        DefaultSlaveFactory slaveFactory = dependencies.satisfyDependency(
+                new DefaultSlaveFactory( logging.getInternalLogProvider(), monitors,
+                        config.get( HaSettings.com_chunk_size ).intValue() ) );
 
         Slaves slaves = dependencies.satisfyDependency(
                 life.add( new HighAvailabilitySlaves( members, clusterClient, slaveFactory ) ) );
@@ -488,21 +591,23 @@ public class EnterpriseEditionModule
                 }
                 else
                 {
-
                     TransactionCommitProcess inner = new TransactionRepresentationCommitProcess( appender, kernelHealth,
                                                 neoStore, storeApplier, indexUpdatesValidator, mode );
                     new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
                             memberStateMachine, txValidator, inner );
 
-                    return (TransactionCommitProcess) Proxy
-                            .newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
+                    return (TransactionCommitProcess)
+                            newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
                                     new Class[]{TransactionCommitProcess.class}, commitProcessDelegate );
                 }
             }
         };
     }
 
-    protected IdGeneratorFactory createIdGeneratorFactory(DelegateInvocationHandler<Master> masterDelegateInvocationHandler, LogProvider logging, RequestContextFactory requestContextFactory)
+    protected IdGeneratorFactory createIdGeneratorFactory( DelegateInvocationHandler<Master>
+                                                                   masterDelegateInvocationHandler,
+                                                           LogProvider logging, RequestContextFactory
+            requestContextFactory )
     {
         idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
                 requestContextFactory );
@@ -517,12 +622,15 @@ public class EnterpriseEditionModule
         return idGeneratorFactory;
     }
 
-    protected Locks createLockManager(HighAvailabilityMemberStateMachine memberStateMachine, final Config config, DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
-                                      RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard, final LogService logging)
+    protected Locks createLockManager( HighAvailabilityMemberStateMachine memberStateMachine, final Config config,
+                                       DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
+                                       RequestContextFactory requestContextFactory,
+                                       AvailabilityGuard availabilityGuard, final LogService logging )
     {
         DelegateInvocationHandler<Locks> lockManagerDelegate = new DelegateInvocationHandler<>( Locks.class );
-        final Locks lockManager = (Locks) Proxy.newProxyInstance(
-                Locks.class.getClassLoader(), new Class[]{Locks.class}, lockManagerDelegate );
+        final Locks lockManager = (Locks) newProxyInstance( Locks.class.getClassLoader(),
+                new Class[]{Locks.class},
+                lockManagerDelegate );
         new LockManagerModeSwitcher( memberStateMachine, lockManagerDelegate, masterDelegateInvocationHandler,
                 requestContextFactory, availabilityGuard, config, new Factory<Locks>()
         {
@@ -535,9 +643,12 @@ public class EnterpriseEditionModule
         return lockManager;
     }
 
-    protected TokenCreator createRelationshipTypeCreator(Config config, HighAvailabilityMemberStateMachine memberStateMachine,
-                                                         DelegateInvocationHandler<Master> masterDelegateInvocationHandler, RequestContextFactory requestContextFactory,
-                                                         Supplier<KernelAPI> kernelProvider)
+    protected TokenCreator createRelationshipTypeCreator( Config config,
+                                                          HighAvailabilityMemberStateMachine memberStateMachine,
+                                                          DelegateInvocationHandler<Master>
+                                                                  masterDelegateInvocationHandler,
+                                                          RequestContextFactory requestContextFactory,
+                                                          Supplier<KernelAPI> kernelProvider )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -547,9 +658,8 @@ public class EnterpriseEditionModule
         {
             DelegateInvocationHandler<TokenCreator> relationshipTypeCreatorDelegate =
                     new DelegateInvocationHandler<>( TokenCreator.class );
-            TokenCreator relationshipTypeCreator =
-                    (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
-                            new Class[]{TokenCreator.class}, relationshipTypeCreatorDelegate );
+            TokenCreator relationshipTypeCreator = (TokenCreator) newProxyInstance( TokenCreator.class.getClassLoader(),
+                    new Class[]{TokenCreator.class}, relationshipTypeCreatorDelegate );
 
             new RelationshipTypeCreatorModeSwitcher( memberStateMachine, relationshipTypeCreatorDelegate,
                     masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
@@ -558,9 +668,11 @@ public class EnterpriseEditionModule
         }
     }
 
-    protected TokenCreator createPropertyKeyCreator(Config config, HighAvailabilityMemberStateMachine memberStateMachine,
-                                                             DelegateInvocationHandler<Master> masterDelegateInvocationHandler, RequestContextFactory requestContextFactory,
-                                                             Supplier<KernelAPI> kernelProvider)
+    protected TokenCreator createPropertyKeyCreator( Config config,
+                                                     HighAvailabilityMemberStateMachine memberStateMachine,
+                                                     DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
+                                                     RequestContextFactory requestContextFactory,
+                                                     Supplier<KernelAPI> kernelProvider )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -570,9 +682,8 @@ public class EnterpriseEditionModule
         {
             DelegateInvocationHandler<TokenCreator> propertyKeyCreatorDelegate =
                     new DelegateInvocationHandler<>( TokenCreator.class );
-            TokenCreator propertyTokenCreator =
-                    (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
-                            new Class[]{TokenCreator.class}, propertyKeyCreatorDelegate );
+            TokenCreator propertyTokenCreator = (TokenCreator) newProxyInstance( TokenCreator.class.getClassLoader(),
+                    new Class[]{TokenCreator.class}, propertyKeyCreatorDelegate );
             new PropertyKeyCreatorModeSwitcher( memberStateMachine, propertyKeyCreatorDelegate,
                     masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
             return propertyTokenCreator;
@@ -580,8 +691,9 @@ public class EnterpriseEditionModule
     }
 
     protected TokenCreator createLabelIdCreator( Config config, HighAvailabilityMemberStateMachine memberStateMachine,
-                                                             DelegateInvocationHandler<Master> masterDelegateInvocationHandler, RequestContextFactory requestContextFactory,
-                                                             Supplier<KernelAPI> kernelProvider )
+                                                 DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
+                                                 RequestContextFactory requestContextFactory,
+                                                 Supplier<KernelAPI> kernelProvider )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -591,24 +703,27 @@ public class EnterpriseEditionModule
         {
             DelegateInvocationHandler<TokenCreator> labelIdCreatorDelegate =
                     new DelegateInvocationHandler<>( TokenCreator.class );
-            TokenCreator labelIdCreator =
-                    (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
-                            new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
+            TokenCreator labelIdCreator = (TokenCreator) newProxyInstance( TokenCreator.class.getClassLoader(),
+                    new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
             new LabelTokenCreatorModeSwitcher( memberStateMachine, labelIdCreatorDelegate,
                     masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
             return labelIdCreator;
         }
     }
 
-    protected KernelData createKernelData( FileSystemAbstraction fileSystem, File storeDir, Config config, GraphDatabaseAPI graphDb, ClusterMembers members, LastUpdateTime lastUpdateTime)
+    protected KernelData createKernelData( Config config, GraphDatabaseAPI graphDb, ClusterMembers members,
+                                           FileSystemAbstraction fs, File storeDir,
+                                           LastUpdateTime lastUpdateTime, Supplier<NeoStore> neoStoreSupplier )
     {
-        OnDiskLastTxIdGetter txIdGetter = new OnDiskLastTxIdGetter( graphDb );
-        ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider(
-                members, txIdGetter, lastUpdateTime );
-        return new HighlyAvailableKernelData( graphDb, members, databaseInfo, fileSystem, storeDir, config );
+        OnDiskLastTxIdGetter txIdGetter = new OnDiskLastTxIdGetter( neoStoreSupplier );
+        ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider( members,
+                txIdGetter,
+                lastUpdateTime );
+        return new HighlyAvailableKernelData( graphDb, members, databaseInfo, fs, storeDir, config );
     }
 
-    protected void registerRecovery( final String editionName, final DependencyResolver dependencyResolver, final LogService logging)
+    protected void registerRecovery( final String editionName, final DependencyResolver dependencyResolver,
+                                     final LogService logging )
     {
         memberStateMachine.addHighAvailabilityMemberListener( new HighAvailabilityMemberListener()
         {
@@ -620,8 +735,8 @@ public class EnterpriseEditionModule
             @Override
             public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
             {
-                if ( event.getOldState().equals( HighAvailabilityMemberState.TO_MASTER ) && event.getNewState().equals(
-                        HighAvailabilityMemberState.MASTER ) )
+                if ( event.getOldState().equals( HighAvailabilityMemberState.TO_MASTER ) &&
+                        event.getNewState().equals( HighAvailabilityMemberState.MASTER ) )
                 {
                     doAfterRecoveryAndStartup( true );
                 }
@@ -630,8 +745,8 @@ public class EnterpriseEditionModule
             @Override
             public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
             {
-                if ( event.getOldState().equals( HighAvailabilityMemberState.TO_SLAVE ) && event.getNewState().equals(
-                        HighAvailabilityMemberState.SLAVE ) )
+                if ( event.getOldState().equals( HighAvailabilityMemberState.TO_SLAVE ) &&
+                        event.getNewState().equals( HighAvailabilityMemberState.SLAVE ) )
                 {
                     doAfterRecoveryAndStartup( false );
                 }
@@ -679,10 +794,71 @@ public class EnterpriseEditionModule
 
         if ( isMaster )
         {
-            new RemoveOrphanConstraintIndexesOnStartup( resolver.resolveDependency( NeoStoreDataSource.class )
-                    .getKernel(), resolver.resolveDependency( LogService.class ).getInternalLogProvider() ).perform();
+            new RemoveOrphanConstraintIndexesOnStartup( resolver.resolveDependency( KernelAPI.class ),
+                    resolver.resolveDependency( LogService.class ).getInternalLogProvider() ).perform();
         }
     }
+
+    private Server.Configuration masterServerConfig( final Config config )
+    {
+        return new Server.Configuration()
+        {
+            @Override
+            public long getOldChannelThreshold()
+            {
+                return config.get( HaSettings.lock_read_timeout );
+            }
+
+            @Override
+            public int getMaxConcurrentTransactions()
+            {
+                return config.get( HaSettings.max_concurrent_channels_per_slave );
+            }
+
+            @Override
+            public int getChunkSize()
+            {
+                return config.get( HaSettings.com_chunk_size ).intValue();
+            }
+
+            @Override
+            public HostnamePort getServerAddress()
+            {
+                return config.get( HaSettings.ha_server );
+            }
+        };
+    }
+
+    private Server.Configuration slaveServerConfig( final Config config )
+    {
+        return new Server.Configuration()
+        {
+            @Override
+            public long getOldChannelThreshold()
+            {
+                return config.get( HaSettings.lock_read_timeout );
+            }
+
+            @Override
+            public int getMaxConcurrentTransactions()
+            {
+                return config.get( HaSettings.max_concurrent_channels_per_slave );
+            }
+
+            @Override
+            public int getChunkSize()
+            {
+                return config.get( HaSettings.com_chunk_size ).intValue();
+            }
+
+            @Override
+            public HostnamePort getServerAddress()
+            {
+                return config.get( HaSettings.ha_server );
+            }
+        };
+    }
+
 
     private static final class HAUpgradeConfiguration implements UpgradeConfiguration
     {

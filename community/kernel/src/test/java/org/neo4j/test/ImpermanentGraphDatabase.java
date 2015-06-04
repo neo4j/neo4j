@@ -191,8 +191,9 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     protected static class ImpermanentPlatformModule extends PlatformModule
     {
-        public ImpermanentPlatformModule( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies
-                dependencies, GraphDatabaseFacade graphDatabaseFacade )
+        public ImpermanentPlatformModule( File storeDir, Map<String, String> params,
+                                          GraphDatabaseFacadeFactory.Dependencies dependencies,
+                                          GraphDatabaseFacade graphDatabaseFacade )
         {
             super( storeDir, withForcedInMemoryConfiguration(params), dependencies, graphDatabaseFacade );
         }

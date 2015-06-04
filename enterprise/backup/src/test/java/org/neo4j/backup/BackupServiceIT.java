@@ -45,7 +45,6 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
@@ -65,6 +64,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
@@ -504,13 +505,11 @@ public class BackupServiceIT
         // This monitor is added server-side...
         monitors.addMonitorListener( new StoreSnoopingMonitor( barrier ) );
 
-        OnlineBackupKernelExtension backup = new OnlineBackupKernelExtension(
-                defaultConfig,
-                db,
-                db.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
-                NullLogProvider.getInstance(),
-                // ... so that it's used by StoreCopyServer
-                monitors );
+        Dependencies dependencies = new Dependencies(db.getDependencyResolver());
+        dependencies.satisfyDependencies( defaultConfig, monitors, NullLogProvider.getInstance() );
+
+        OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension) new OnlineBackupExtensionFactory().newKernelExtension(
+                DependenciesProxy.dependencies(dependencies, OnlineBackupExtensionFactory.Dependencies.class));
         backup.start();
 
         // when

@@ -21,8 +21,6 @@ package org.neo4j.kernel.ha;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
@@ -38,16 +36,12 @@ public class OnDiskLastTxIdGetterTest
     {
         // This is a sign that we have some bad coupling on our hands.
         // We currently have to do this because of our lifecycle and construction ordering.
-        GraphDatabaseAPI graphdb = mock( GraphDatabaseAPI.class );
-        DependencyResolver resolver = mock( DependencyResolver.class );
         NeoStoreSupplier supplier = mock( NeoStoreSupplier.class );
         NeoStore neoStore = mock( NeoStore.class );
-        when( graphdb.getDependencyResolver() ).thenReturn( resolver );
-        when( resolver.resolveDependency( NeoStoreSupplier.class ) ).thenReturn( supplier );
         when( supplier.get() ).thenReturn( neoStore );
         when( neoStore.getLastCommittedTransactionId() ).thenReturn( 13L );
 
-        OnDiskLastTxIdGetter getter = new OnDiskLastTxIdGetter( graphdb );
+        OnDiskLastTxIdGetter getter = new OnDiskLastTxIdGetter( supplier );
         assertEquals( 13L, getter.getLastTxId() );
     }
 }

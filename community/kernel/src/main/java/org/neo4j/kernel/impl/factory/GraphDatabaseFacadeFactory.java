@@ -128,9 +128,9 @@ public abstract class GraphDatabaseFacadeFactory
         Throwable error = null;
         try
         {
-            enableAvailabilityLogging( platform.availabilityGuard, platform.logging.getInternalLog( getClass() )
-                    .infoLogger() ); // Done after create to avoid a redundant
+            // Done after create to avoid a redundant
             // "database is now unavailable"
+            enableAvailabilityLogging( platform.availabilityGuard, platform.logging.getInternalLog( getClass() ).infoLogger() );
 
             platform.life.start();
         }
@@ -193,8 +193,8 @@ public abstract class GraphDatabaseFacadeFactory
      * @param editionModule
      * @return
      */
-    protected DataSourceModule createDataSource( final Dependencies dependencies, final PlatformModule
-            platformModule, EditionModule editionModule )
+    protected DataSourceModule createDataSource( final Dependencies dependencies,
+                                                 final PlatformModule platformModule, EditionModule editionModule )
     {
         return new DataSourceModule( dependencies, platformModule, editionModule );
     }

@@ -24,66 +24,53 @@ import java.net.URI;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
-import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
-import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.function.Factory;
+import org.neo4j.function.Function;
 import org.neo4j.function.Supplier;
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
-import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.TransactionChecksumLookup;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 
 public class SwitchToMaster implements AutoCloseable
 {
     private LogService logService;
+    private Factory<Master> masterFactory;
+    private Function<Master, MasterServer> masterServerFactory;
     private Log userLog;
-    private GraphDatabaseAPI graphDb;
     private HaIdGeneratorFactory idGeneratorFactory;
     private Config config;
     private Supplier<SlaveFactory> slaveFactorySupplier;
-    private MasterImpl.Monitor masterImplMonitor;
     private DelegateInvocationHandler<Master> masterDelegateHandler;
     private ClusterMemberAvailability clusterMemberAvailability;
-    private DataSourceManager dataSourceManager;
-    private ByteCounterMonitor masterByteCounterMonitor;
-    private RequestMonitor masterRequestMonitor;
+    private Supplier<NeoStoreDataSource> dataSourceSupplier;
 
-    public SwitchToMaster( LogService logService, GraphDatabaseAPI graphDb,
+    public SwitchToMaster( LogService logService,
             HaIdGeneratorFactory idGeneratorFactory, Config config, Supplier<SlaveFactory> slaveFactorySupplier,
+            Factory<Master> masterFactory,
+            Function<Master, MasterServer> masterServerFactory,
             DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
-            DataSourceManager dataSourceManager, ByteCounterMonitor masterByteCounterMonitor, RequestMonitor masterRequestMonitor, MasterImpl.Monitor masterImplMonitor)
+            Supplier<NeoStoreDataSource> dataSourceSupplier)
     {
         this.logService = logService;
+        this.masterFactory = masterFactory;
+        this.masterServerFactory = masterServerFactory;
         this.userLog = logService.getUserLog( getClass() );
-        this.graphDb = graphDb;
         this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
         this.slaveFactorySupplier = slaveFactorySupplier;
-        this.masterImplMonitor = masterImplMonitor;
         this.masterDelegateHandler = masterDelegateHandler;
         this.clusterMemberAvailability = clusterMemberAvailability;
-        this.dataSourceManager = dataSourceManager;
-        this.masterByteCounterMonitor = masterByteCounterMonitor;
-        this.masterRequestMonitor = masterRequestMonitor;
+        this.dataSourceSupplier = dataSourceSupplier;
     }
 
     /**
@@ -107,23 +94,16 @@ public class SwitchToMaster implements AutoCloseable
         {
 
             idGeneratorFactory.switchToMaster();
-            NeoStoreDataSource neoStoreXaDataSource = dataSourceManager.getDataSource();
+            NeoStoreDataSource neoStoreXaDataSource = dataSourceSupplier.get();
             neoStoreXaDataSource.afterModeSwitch();
 
-            MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb );
+            Master master = masterFactory.newInstance();
 
-            MasterImpl masterImpl = new MasterImpl( spi, masterImplMonitor, config );
+            MasterServer masterServer = masterServerFactory.apply( master );
 
-            DependencyResolver resolver = neoStoreXaDataSource.getDependencyResolver();
-            TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup(
-                    resolver.resolveDependency( TransactionIdStore.class ),
-                    resolver.resolveDependency( LogicalTransactionStore.class ) );
-            MasterServer masterServer = new MasterServer( masterImpl, logService.getInternalLogProvider(), serverConfig(),
-                    new BranchDetectingTxVerifier( logService.getInternalLogProvider(),
-                            txChecksumLookup ), masterByteCounterMonitor, masterRequestMonitor );
-            haCommunicationLife.add( masterImpl );
+            haCommunicationLife.add( master );
             haCommunicationLife.add( masterServer );
-            masterDelegateHandler.setDelegate( masterImpl );
+            masterDelegateHandler.setDelegate( master );
 
             haCommunicationLife.start();
 
@@ -148,37 +128,6 @@ public class SwitchToMaster implements AutoCloseable
         return URI.create( "ha://" + hostname + ":" + port + "?serverId=" + myId() );
     }
 
-    private Server.Configuration serverConfig()
-    {
-        Server.Configuration serverConfig = new Server.Configuration()
-        {
-            @Override
-            public long getOldChannelThreshold()
-            {
-                return config.get( HaSettings.lock_read_timeout );
-            }
-
-            @Override
-            public int getMaxConcurrentTransactions()
-            {
-                return config.get( HaSettings.max_concurrent_channels_per_slave );
-            }
-
-            @Override
-            public int getChunkSize()
-            {
-                return config.get( HaSettings.com_chunk_size ).intValue();
-            }
-
-            @Override
-            public HostnamePort getServerAddress()
-            {
-                return config.get( HaSettings.ha_server );
-            }
-        };
-        return serverConfig;
-    }
-
     private InstanceId myId()
     {
         return config.get( ClusterSettings.server_id );
@@ -189,15 +138,13 @@ public class SwitchToMaster implements AutoCloseable
     {
         logService = null;
         userLog = null;
-        graphDb = null;
+        masterFactory = null;
+        masterServerFactory = null;
         idGeneratorFactory = null;
         config = null;
         slaveFactorySupplier = null;
-        masterImplMonitor = null;
         masterDelegateHandler = null;
         clusterMemberAvailability = null;
-        dataSourceManager = null;
-        masterByteCounterMonitor = null;
-        masterRequestMonitor = null;
+        dataSourceSupplier = null;
     }
 }
