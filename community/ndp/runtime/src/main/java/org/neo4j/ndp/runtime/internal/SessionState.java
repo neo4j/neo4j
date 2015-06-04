@@ -22,7 +22,8 @@ package org.neo4j.ndp.runtime.internal;
 import org.neo4j.kernel.api.Statement;
 
 /**
- * Exposes the ability to manipulate the state of a running session in various ways.
+ * Exposes the ability to manipulate the state of a running session in various ways. This is the interface Tank
+ * uses to manipulate the session.
  */
 public interface SessionState
 {
@@ -47,6 +48,4 @@ public interface SessionState
     /** Rollback the current explicit transaction associated with this session. */
     void rollbackTransaction();
 
-    /** Get or create a new statement object, to execute operations against the database */
-    Statement statement();
 }

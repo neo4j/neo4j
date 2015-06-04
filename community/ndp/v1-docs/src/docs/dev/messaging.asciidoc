@@ -262,6 +262,12 @@ FailureMessage (signature=0x7F) {
 `FAILURE` messages contain metadata providing details regarding the primary failure that has occurred.
 This metadata is a simple map containing a code and a message. These codes map to the standard Neo4j status codes.
 
+When a `FAILURE` occurs, in most cases any open transaction will be rolled back.
+However, if the `FAILURE` is classified as a `client error`, the transaction will be left open and can be used again
+after the `FAILURE` has been acknowledged.
+This is mainly to support user-driven queries, where a database administrator may have built up a large transaction, and
+we do not want a simple spelling mistake to roll it all back.
+
 .Example
 [source,ndp_packstream_type]
 ----

@@ -40,7 +40,7 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
 
     public Call next() throws InterruptedException
     {
-        Call msg = calls.poll( 10, TimeUnit.SECONDS );
+        Call msg = calls.poll( 10000, TimeUnit.SECONDS );
         if ( msg == null )
         {
             throw new RuntimeException( "Waited 10 seconds for message, but no message arrived." );
