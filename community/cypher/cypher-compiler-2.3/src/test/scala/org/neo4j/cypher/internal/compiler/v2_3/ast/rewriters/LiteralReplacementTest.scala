@@ -40,6 +40,10 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertRewrite("RETURN (x NOT ILIKE (\"P_ttern\" + x.name)) AS result", "RETURN (x NOT ILIKE ({`  AUTOSTRING0`} + x.name)) AS result", Map("  AUTOSTRING0" -> "P_ttern"))
   }
 
+  test("should not extract literal dynamic property lookups") {
+    assertDoesNotRewrite("MATCH n RETURN n[\"name\"]")
+  }
+
   test("should extract literals in return clause") {
     assertRewrite(s"RETURN 1 as result", s"RETURN {`  AUTOINT0`} as result", Map("  AUTOINT0" -> 1))
     assertRewrite(s"RETURN 1.1 as result", s"RETURN {`  AUTODOUBLE0`} as result", Map("  AUTODOUBLE0" -> 1.1))

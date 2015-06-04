@@ -38,7 +38,7 @@ case object Head extends Function {
     expression.types(_).unwrapCollections
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =
-    commandexpressions.CollectionIndex(
+    commandexpressions.ContainerIndex(
       invocation.arguments(0).asCommandExpression,
       commandexpressions.Literal(0)
     )

@@ -98,13 +98,13 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
       legacy.CollectionSliceExpression(legacy.Identifier("collection"), Some(legacy.Literal(1)), Some(legacy.Literal(2)))
 
     parsing("[1,2,3,4][2]") shouldGive
-      legacy.CollectionIndex(collection, legacy.Literal(2))
+      legacy.ContainerIndex(collection, legacy.Literal(2))
 
     parsing("[[1,2]][0][6]") shouldGive
-      legacy.CollectionIndex(legacy.CollectionIndex(legacy.Collection(legacy.Collection(legacy.Literal(1), legacy.Literal(2))), legacy.Literal(0)), legacy.Literal(6))
+      legacy.ContainerIndex(legacy.ContainerIndex(legacy.Collection(legacy.Collection(legacy.Literal(1), legacy.Literal(2))), legacy.Literal(0)), legacy.Literal(6))
 
     parsing("collection[1..2][0]") shouldGive
-      legacy.CollectionIndex(legacy.CollectionSliceExpression(legacy.Identifier("collection"), Some(legacy.Literal(1)), Some(legacy.Literal(2))), legacy.Literal(0))
+      legacy.ContainerIndex(legacy.CollectionSliceExpression(legacy.Identifier("collection"), Some(legacy.Literal(1)), Some(legacy.Literal(2))), legacy.Literal(0))
 
     parsing("collection[..-2]") shouldGive
       legacy.CollectionSliceExpression(legacy.Identifier("collection"), None, Some(legacy.Literal(-2)))

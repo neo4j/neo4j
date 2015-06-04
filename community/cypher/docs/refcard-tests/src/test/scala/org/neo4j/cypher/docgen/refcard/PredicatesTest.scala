@@ -142,6 +142,16 @@ RETURN n###
 
 Non-existing property returns `NULL`, which is not equal to anything.
 
+###assertion=returns-none parameters=aname
+MATCH n
+WHERE
+
+n["property"] = {value}
+
+RETURN n###
+
+Properties may also be accessed using a dynamically computed property name
+
 ###assertion=returns-one parameters=regex
 MATCH n
 WHERE HAS(n.property) AND

@@ -77,7 +77,7 @@ object ExpressionConverters {
       case e: ast.Collection => e.asCommandCollection
       case e: ast.MapExpression => e.asCommandMap
       case e: ast.CollectionSlice => e.asCommandCollectionSlice
-      case e: ast.CollectionIndex => e.asCommandCollectionIndex
+      case e: ast.ContainerIndex => e.asCommandContainerIndex
       case e: ast.FilterExpression => e.asCommandFilter
       case e: ast.ExtractExpression => e.asCommandExtract
       case e: ast.ListComprehension => e.asCommandListComprehension
@@ -362,9 +362,9 @@ object ExpressionConverters {
       commandexpressions.CollectionSliceExpression(e.collection.asCommandExpression, e.from.asCommandExpression, e.to.asCommandExpression)
   }
 
-  implicit class CollectionIndexConverter(val e: ast.CollectionIndex) extends AnyVal {
-    def asCommandCollectionIndex: commandexpressions.CollectionIndex =
-      commandexpressions.CollectionIndex(e.collection.asCommandExpression, e.idx.asCommandExpression)
+  implicit class CollectionIndexConverter(val e: ast.ContainerIndex) extends AnyVal {
+    def asCommandContainerIndex: commandexpressions.ContainerIndex =
+      commandexpressions.ContainerIndex(e.expr.asCommandExpression, e.idx.asCommandExpression)
   }
 
   implicit class FilterConverter(val e: ast.FilterExpression) extends AnyVal {

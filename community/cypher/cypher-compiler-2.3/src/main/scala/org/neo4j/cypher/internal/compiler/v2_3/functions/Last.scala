@@ -38,7 +38,7 @@ case object Last extends Function {
     (expression.types(s) constrain CTCollection(CTAny)).unwrapCollections
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =
-    commandexpressions.CollectionIndex(
+    commandexpressions.ContainerIndex(
       invocation.arguments(0).asCommandExpression,
       commandexpressions.Literal(-1)
     )

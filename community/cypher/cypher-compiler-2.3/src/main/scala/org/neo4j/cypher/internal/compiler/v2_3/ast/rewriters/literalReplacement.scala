@@ -45,6 +45,8 @@ object literalReplacement {
       (acc, _) => r.properties.treeFold(acc)(literalMatcher)
     case ast.LikePattern(_: ast.StringLiteral) =>
       (acc, _) => acc
+    case ast.ContainerIndex(_, _: ast.StringLiteral) =>
+      (acc, _) => acc
     case l: ast.StringLiteral =>
       (acc, _) => acc + (l -> ast.Parameter(s"  AUTOSTRING${acc.size}")(l.position))
     case l: ast.IntegerLiteral =>

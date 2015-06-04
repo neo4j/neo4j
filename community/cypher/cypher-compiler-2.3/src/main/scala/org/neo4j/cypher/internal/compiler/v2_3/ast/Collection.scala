@@ -50,13 +50,36 @@ case class CollectionSlice(collection: Expression, from: Option[Expression], to:
     specifyType(collection.types)
 }
 
-case class CollectionIndex(collection: Expression, idx: Expression)(val position: InputPosition)
+case class ContainerIndex(expr: Expression, idx: Expression)(val position: InputPosition)
   extends Expression {
 
   override def semanticCheck(ctx: SemanticContext) =
-    collection.semanticCheck(ctx) chain
-    collection.expectType(CTCollection(CTAny).covariant) chain
+    expr.semanticCheck(ctx) chain
     idx.semanticCheck(ctx) chain
-    idx.expectType(CTInteger.covariant) chain
-    specifyType(collection.types(_).unwrapCollections)
+    expr.typeSwitch {
+      case exprT =>
+        idx.typeSwitch {
+          case idxT =>
+            val collT = CTCollection(CTAny).covariant & exprT
+            val mapT = CTMap.covariant & exprT
+            val exprIsColl = collT != TypeSpec.none
+            val exprIsMap = mapT != TypeSpec.none
+            val idxIsInteger = (CTInteger.covariant & idxT) != TypeSpec.none
+            val idxIsString = (CTString.covariant & idxT) != TypeSpec.none
+            val collectionLookup = exprIsColl || idxIsInteger
+            val mapLookup = exprIsMap || idxIsString
+
+            if (collectionLookup && !mapLookup) {
+                expr.expectType(CTCollection(CTAny).covariant) chain
+                idx.expectType(CTInteger.covariant) chain
+                specifyType(expr.types(_).unwrapCollections)
+            }
+            else if (!collectionLookup && mapLookup) {
+                expr.expectType(CTMap.covariant) chain
+                idx.expectType(CTString.covariant)
+            } else {
+                SemanticCheckResult.success
+            }
+        }
+    }
 }
