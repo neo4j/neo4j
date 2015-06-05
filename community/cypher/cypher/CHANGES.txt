@@ -3,6 +3,8 @@
 o Returns nice error message when using aggregation inside
   of expressions that loop over collections
 o Fixes #4758 - OPTIONAL MATCH when either side is null
+o Fixes problem with projection of named paths
+o Identifiers in scope of ORDER BY are no longer lost in rewriting
 
 2.2.2
 -----
