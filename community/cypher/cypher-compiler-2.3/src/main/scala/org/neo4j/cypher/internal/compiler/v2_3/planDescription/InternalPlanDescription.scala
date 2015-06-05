@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 
-import org.neo4j.cypher.internal.compiler.v2_3.{ast, commands}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{SeekArgs => PipeEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.compiler.v2_3.{ast, commands}
 import org.neo4j.graphdb.Direction
 
 /**
@@ -104,6 +104,9 @@ object InternalPlanDescription {
       override def name = "runtime-impl"
     }
     case class ExpandExpression(from: String, relName: String, relTypes:Seq[String], to: String, direction: Direction, varLength: Boolean = false) extends Argument
+    case class SourceCode(className: String, sourceCode: String) extends Argument {
+      override def name = className
+    }
   }
 }
 
@@ -154,12 +157,19 @@ final case class PlanDescriptionImpl(id: Id,
 
   override def toString = {
     val NL = System.lineSeparator()
-    s"${renderAsTreeTable(this)}$NL${renderSummary(this)}"
+    s"${renderAsTreeTable(this)}$NL${renderSummary(this)}$renderSources"
   }
 
   def render( builder: StringBuilder, separator: String, levelSuffix: String ) { ??? }
 
   def render( builder: StringBuilder ) { ??? }
+
+  private def renderSources = {
+    arguments.flatMap {
+      case SourceCode(className, sourceCode) => Some(s"=== Compiled: $className ===\n$sourceCode")
+      case _ => None
+    }.mkString("\n","\n","")
+  }
 }
 
 final case class SingleRowPlanDescription(id: Id, arguments: Seq[Argument] = Seq.empty, identifiers: Set[String]) extends InternalPlanDescription {

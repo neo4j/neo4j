@@ -132,6 +132,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
         !x.isInstanceOf[Planner] &&
         !x.isInstanceOf[PlannerImpl] &&
         !x.isInstanceOf[Runtime] &&
+        !x.isInstanceOf[SourceCode] &&
         !x.isInstanceOf[Time] &&
         !x.isInstanceOf[RuntimeImpl] &&
         !x.isInstanceOf[Version] => PlanDescriptionArgumentSerializer.serialize(x)

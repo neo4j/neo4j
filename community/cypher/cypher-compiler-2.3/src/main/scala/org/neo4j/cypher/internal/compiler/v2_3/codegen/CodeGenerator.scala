@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
+import java.lang.Boolean.getBoolean
 import java.util
 
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator.SourceSink
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, PlanFingerprint, _}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.SourceCode
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
@@ -38,19 +41,20 @@ import org.neo4j.kernel.api.Statement
 import scala.collection.immutable
 
 object CodeGenerator {
+  type SourceSink = Option[(String, String) => Unit]
 
-  def generateQuery(plan: LogicalPlan, semantics: SemanticTable, ids: Map[LogicalPlan, Id]): GeneratedQuery = {
+  def generateQuery(plan: LogicalPlan, semantics: SemanticTable, ids: Map[LogicalPlan, Id], sources:SourceSink=None): GeneratedQuery = {
     import LogicalPlanConverter._
     implicit val context = new CodeGenContext(semantics, ids)
     val (_, instructions) = plan.asCodeGenPlan.produce(context)
     generate(instructions, context.operatorIds.map {
       case (id: Id, field: String) => field -> id
-    }.toMap)
+    }.toMap, sources)
   }
 
-  def generate(instructions: Seq[Instruction], operatorIds: Map[String, Id])(implicit context: CodeGenContext): GeneratedQuery = {
+  def generate(instructions: Seq[Instruction], operatorIds: Map[String, Id], sources:SourceSink=None)(implicit context: CodeGenContext): GeneratedQuery = {
     val columns = instructions.flatMap(_.allColumns)
-    CodeStructure.__TODO__MOVE_IMPLEMENTATION.generateQuery(packageName, Namer.newClassName(), columns, operatorIds) { accept =>
+    CodeStructure.__TODO__MOVE_IMPLEMENTATION.generateQuery(packageName, Namer.newClassName(), columns, operatorIds, sources) { accept =>
       instructions.foreach(insn => insn.init(accept))
       instructions.foreach(insn => insn.body(accept))
     }
@@ -66,12 +70,18 @@ class CodeGenerator {
 
   import scala.collection.JavaConverters._
 
+  type PlanDescriptionProvider = (InternalPlanDescription) => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer])
+
   def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable, plannerName: PlannerName) = {
     plan match {
       case res: ProduceResult =>
         val idMap = LogicalPlanIdentificationBuilder(plan)
 
-        val query: GeneratedQuery = generateQuery(plan, semanticTable, idMap)
+        var sources = Map.empty[String, String]
+        val sourceSink: SourceSink = if(getBoolean("org.neo4j.cypher.codegen.IncludeSourcesInPlanDescription")) Some(
+          (className:String, sourceCode:String) => { sources = sources.updated(className, sourceCode) }) else None
+
+        val query: GeneratedQuery = generateQuery(plan, semanticTable, idMap, sourceSink)
 
         val fp = planContext.statistics match {
           case igs: InstrumentedGraphStatistics =>
@@ -80,11 +90,13 @@ class CodeGenerator {
             None
         }
 
-        val description: InternalPlanDescription = LogicalPlan2PlanDescription(plan, idMap)
+        val description: InternalPlanDescription = sources.foldLeft(LogicalPlan2PlanDescription(plan, idMap)) {
+          case (root, (className, sourceCode)) => root.addArgument(SourceCode(className, sourceCode))
+        }
 
         val builder = new RunnablePlan {
           def apply(statement: Statement, db: GraphDatabaseService, execMode: ExecutionMode,
-                    descriptionProvider: (InternalPlanDescription) => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer]),
+                    descriptionProvider: PlanDescriptionProvider,
                     params: immutable.Map[String, Any], closer: TaskCloser): InternalExecutionResult = {
             val (supplier, tracer) = descriptionProvider(description)
             val execution: GeneratedQueryExecution = query.execute(closer, statement, db, execMode, supplier,

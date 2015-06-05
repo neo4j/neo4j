@@ -49,6 +49,7 @@ object PlanDescriptionArgumentSerializer {
       case Planner(planner) => planner
       case PlannerImpl(plannerName) => plannerName
       case Runtime(runtime) => runtime
+      case SourceCode(className, sourceCode) => sourceCode
       case RuntimeImpl(runtimeName) => runtimeName
       case ExpandExpression(from, rel, typeNames, to, dir: Direction, varLength) =>
         val left = if (dir == Direction.INCOMING) "<-" else "-"
