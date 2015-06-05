@@ -56,6 +56,15 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
   using --bad-tolerance=<max bad entries>. Skipping of bad relationships/nodes can be enabled/disabled
   individually with --skip-duplicate-nodes and --skip-bad-relationships.
 
+2.2.3-SNAPSHOT
+-----
+Cypher:
+o Returns nice error message when using aggregation inside
+  of expressions that loop over collections
+o Fixes #4758 - OPTIONAL MATCH when either side is null
+o Fixes problem with projection of named paths
+o Identifiers in scope of ORDER BY are no longer lost in rewriting
+
 2.2.2
 -----
 General:
