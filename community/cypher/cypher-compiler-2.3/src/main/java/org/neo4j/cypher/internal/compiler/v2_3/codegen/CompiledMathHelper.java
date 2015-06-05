@@ -215,6 +215,22 @@ public final class CompiledMathHelper
                                        " and " + rhs.getClass().getSimpleName(), null );
     }
 
+    public static Object modulo( Object lhs, Object rhs )
+    {
+        if ( lhs == null || rhs == null )
+        {
+            return null;
+        }
+
+        if ( lhs instanceof Number && rhs instanceof Number )
+        {
+            return ((Number) lhs).doubleValue() % ((Number) rhs).doubleValue();
+        }
+
+        throw new CypherTypeException( "Cannot modulo " + lhs.getClass().getSimpleName() +
+                                       " and " + rhs.getClass().getSimpleName(), null );
+    }
+
     public static int transformToInt( Object value )
     {
         if ( value == null )
