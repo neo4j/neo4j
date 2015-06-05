@@ -59,7 +59,28 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
     (false, 3, Right(classOf[CypherTypeException])))
   )
 
-  val operationsToTest = Seq(addOperation, subOperation)
+  val mulOperation = Operation("Multiplication", Multiplication.apply, Seq(
+    (0, 0, Left(0)),
+    (0, 42, Left(0)),
+    (1, 1, Left(1)),
+    (5, 20, Left(100)),
+    (2, -10, Left(-20)),
+    (-2, 10, Left(-20)),
+    (-2, -10, Left(20)),
+    (0.0, 0.0, Left(0.0)),
+    (0.0, 42.5, Left(0.0)),
+    (1.2, 1, Left(1.2)),
+    (5.0, 20.0, Left(100.0)),
+    (2.0, -10.0, Left(-20.0)),
+    (-2.0, 10.0, Left(-20.0)),
+    (-2.0, -10.0, Left(20.0)),
+    (null, null, Left(null)),
+    (null, 1, Left(null)),
+    (1, null, Left(null)),
+    (true, 12, Right(classOf[CypherTypeException])))
+  )
+
+  val operationsToTest = Seq(addOperation, subOperation, mulOperation)
 
   for (Operation(name, apply, data) <- operationsToTest) {
 
