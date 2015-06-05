@@ -115,12 +115,12 @@ object LogicalPlanConverter {
       else if (child.logicalPlan eq logicalPlan.rhs.get) {
 
         val nodeId = context.getVariable(logicalPlan.nodes.head.name)
-        val thunk = context.getProbeTable(this)
-        thunk.vars foreach { case (name, symbol) => context.addVariable(name, symbol) }
+        val joinData = context.getProbeTable(this)
+        joinData.vars foreach { case (_, symbol) => context.addVariable(symbol.identifier, symbol.outgoing) }
 
         val (methodHandle, actions) = context.popParent().consume(context, this)
 
-        (methodHandle, GetMatchesFromProbeTable(nodeId, thunk, actions))
+        (methodHandle, GetMatchesFromProbeTable(nodeId, joinData, actions))
       }
       else {
         throw new InternalException(s"Unexpected consume call by $child")

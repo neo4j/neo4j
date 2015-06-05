@@ -48,31 +48,28 @@ case class BuildRecordingProbeTable(id:String, name: String, node: Variable, val
   extends BuildProbeTable {
 
   override def body[E](generator: MethodStructure[E])(implicit ignored: CodeGenContext): Unit = {
-    val value = generator.newTableValue(context.namer.newVarName(), valueTypeStructure)
-    valueSymbols.foreach {
-      case (fieldName, localName) => generator.putField(valueTypeStructure, value, CTNode, fieldName, localName.name)
+    val value = generator.newTableValue(context.namer.newVarName(), valueStructure)
+    fieldToVarName.foreach {
+      case (fieldName, localName) => generator.putField(valueStructure, value, localName.incoming.cypherType, fieldName, localName.incoming.name)
     }
-    generator.updateProbeTable(valueTypeStructure, name, node.name, value)
+    generator.updateProbeTable(valueStructure, name, node.name, value)
   }
 
   override protected def operatorId = Some(id)
 
-  private val valueTypeField2VarName = valueSymbols.map {
-    case (fieldName, symbol) => fieldName -> symbol.copy(name = context.namer.newVarName())
+  private val fieldToVarName = valueSymbols.map {
+    case (identifier, variable) => (context.namer.newVarName(), VariableData(identifier, variable,  variable.copy(name = context.namer.newVarName())))
   }
 
-  private val valueTypeStructure: Map[String, CypherType] = valueSymbols.mapValues {
-    case _ => CTNode
+  private val varNameToField = fieldToVarName.map {
+    case (fieldName, localName) => localName.outgoing.name -> fieldName
   }
 
-  private val varName2ValueTypeField = valueTypeField2VarName.map {
-    case (fieldName, localName) => localName.name -> fieldName
-  }
+  private val valueStructure = fieldToVarName.mapValues(_.outgoing.cypherType)
 
-  override val tableType = LongToListTable(valueTypeStructure, varName2ValueTypeField)
+  override val tableType = LongToListTable(valueStructure, varNameToField)
 
-  val joinData: JoinData = JoinData(valueTypeField2VarName, name, tableType, id)
-
+  val joinData: JoinData = JoinData(fieldToVarName, name, tableType, id)
 }
 
 case class BuildCountingProbeTable(id: String, name: String, node: Variable) extends BuildProbeTable {
@@ -88,5 +85,5 @@ case class BuildCountingProbeTable(id: String, name: String, node: Variable) ext
     JoinData(Map.empty, name, tableType, id)
   }
 }
-
-case class JoinData(vars: Map[String, Variable], tableVar: String, tableType: JoinTableType, id: String)
+case class VariableData(identifier: String, incoming: Variable, outgoing: Variable)
+case class JoinData(vars: Map[String, VariableData], tableVar: String, tableType: JoinTableType, id: String)

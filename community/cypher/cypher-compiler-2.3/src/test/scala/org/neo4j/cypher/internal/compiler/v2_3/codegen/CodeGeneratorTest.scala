@@ -312,6 +312,30 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     ))
   }
 
+
+  test("hash join on top of hash join") {
+
+    //given
+    val scan1 = NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved)
+    val scan2 = NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved)
+    val scan3 = NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved)
+    val join1 = NodeHashJoin(Set(IdName("a")), scan1, scan2)(solved)
+    val join2 = NodeHashJoin(Set(IdName("a")), scan3, join1)(solved)
+    val projection = Projection(join2, Map("a" -> ident("a")))(solved)
+    val plan = ProduceResult(List("a"), List.empty, List.empty, projection)
+
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getNodesFromResult(compiled, "a")
+
+    result.toSet should equal(Set(
+      Map("a" -> aNode),
+      Map("a" -> bNode),
+      Map("a" -> cNode)
+    ))
+  }
+
   test("project literal") {
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(pos)))(solved))
     val compiled = compileAndExecute(plan)
