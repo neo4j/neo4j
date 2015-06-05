@@ -22,7 +22,11 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -36,6 +40,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -46,9 +51,9 @@ import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -202,6 +207,11 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         {
             throw new UnderlyingStorageException( "Failed to initialize counts store", e );
         }
+    }
+
+    public StoreStatement acquireStatement()
+    {
+        return new StoreStatement(this);
     }
 
     @Override
@@ -859,7 +869,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         {
             return CommonAbstractStore.UNKNOWN_VERSION;
         }
-        Bits bits = Bits.bitsFromLongs( new long[] { storeVersion } );
+        Bits bits = Bits.bitsFromLongs( new long[]{storeVersion} );
         int length = bits.getShort( 8 );
         if ( length == 0 || length > 7 )
         {
@@ -991,5 +1001,13 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     {
         // TODO: move this to LifeCycle
         counts.start();
+    }
+
+    public void assertOpen()
+    {
+        if (nodeStore == null)
+        {
+            throw new IllegalStateException( "Database has been shutdown" );
+        }
     }
 }

@@ -23,8 +23,9 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.api.cursor.NodeCursor;
+import org.neo4j.kernel.api.cursor.RelationshipCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
@@ -34,13 +35,11 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.kernel.impl.util.register.NeoRegister;
-import org.neo4j.register.Register;
 
 public interface EntityReadOperations
 {
     // Currently, of course, most relevant operations here are still in the old core API implementation.
-    boolean nodeExists(KernelStatement state, long nodeId);
+    boolean nodeExists( KernelStatement state, long nodeId );
 
     boolean relationshipExists( KernelStatement statement, long relId );
 
@@ -102,7 +101,7 @@ public interface EntityReadOperations
     /**
      * Return all property keys associated with a node.
      */
-    PrimitiveLongIterator nodeGetPropertyKeys( KernelStatement state, long nodeId ) throws EntityNotFoundException;
+    PrimitiveIntIterator nodeGetPropertyKeys( KernelStatement state, long nodeId ) throws EntityNotFoundException;
 
     Iterator<DefinedProperty> nodeGetAllProperties( KernelStatement state, long nodeId ) throws EntityNotFoundException;
 
@@ -111,31 +110,37 @@ public interface EntityReadOperations
     /**
      * Return all property keys associated with a relationship.
      */
-    PrimitiveLongIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId ) throws
+    PrimitiveIntIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId ) throws
             EntityNotFoundException;
 
     Iterator<DefinedProperty> relationshipGetAllProperties( KernelStatement state,
-                                                            long relationshipId ) throws EntityNotFoundException;
+            long relationshipId ) throws EntityNotFoundException;
 
     // TODO: decide if this should be replaced by relationshipGetAllProperties()
 
     /**
      * Return all property keys associated with a relationship.
      */
-    PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state );
+    PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state );
 
     Iterator<DefinedProperty> graphGetAllProperties( KernelStatement state );
 
     RelationshipIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
-                                                int[] relTypes ) throws EntityNotFoundException;
+            int[] relTypes ) throws EntityNotFoundException;
 
-    RelationshipIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction ) throws EntityNotFoundException;
+    RelationshipIterator nodeGetRelationships( KernelStatement statement,
+            long nodeId,
+            Direction direction ) throws EntityNotFoundException;
 
-    int nodeGetDegree( KernelStatement statement, long nodeId, Direction direction, int relType ) throws EntityNotFoundException;
+    int nodeGetDegree( KernelStatement statement,
+            long nodeId,
+            Direction direction,
+            int relType ) throws EntityNotFoundException;
 
     int nodeGetDegree( KernelStatement statement, long nodeId, Direction direction ) throws EntityNotFoundException;
 
-    PrimitiveIntIterator nodeGetRelationshipTypes( KernelStatement statement, long nodeId ) throws EntityNotFoundException;
+    PrimitiveIntIterator nodeGetRelationshipTypes( KernelStatement statement,
+            long nodeId ) throws EntityNotFoundException;
 
     PrimitiveLongIterator nodesGetAll( KernelStatement state );
 
@@ -144,20 +149,7 @@ public interface EntityReadOperations
     <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement, long relId,
             RelationshipVisitor<EXCEPTION> visitor ) throws EntityNotFoundException, EXCEPTION;
 
-    Cursor expand( KernelStatement statement, Cursor inputCursor,
-                     /* Inputs  */ NeoRegister.Node.In nodeId, Register.Object.In<int[]> types,
-                     Register.Object.In<Direction> expandDirection,
-                     /* Outputs */ NeoRegister.Relationship.Out relId, NeoRegister.RelType.Out relType,
-                     Register.Object.Out<Direction> direction,
-                     NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId );
+    NodeCursor nodeCursorGetAll( KernelStatement state );
 
-
-    Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
-                                 RelationshipVisitor<? extends RuntimeException> visitor )
-            throws EntityNotFoundException;
-
-    Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction, int[] types,
-                                 RelationshipVisitor<? extends RuntimeException> visitor )
-            throws EntityNotFoundException;
-
+    RelationshipCursor relationshipCursorGetAll( KernelStatement state );
 }

@@ -22,11 +22,13 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.cursor.GenericCursor;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -39,8 +41,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
@@ -166,12 +168,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         return buffer;
     }
 
-    public static Pair<byte[]/*header in the first record*/,byte[]/*all other bytes*/>
+    public static Pair<byte[]/*header in the first record*/, byte[]/*all other bytes*/>
     readFullByteArrayFromHeavyRecords(
             Iterable<DynamicRecord> records, PropertyType propertyType )
     {
         byte[] header = null;
-        List<byte[]> byteList = new LinkedList<>();
+        List<byte[]> byteList = new ArrayList<>();
         int totalSize = 0, i = 0;
         for ( DynamicRecord record : records )
         {
@@ -189,8 +191,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         assert header != null : "header should be non-null since records should not be empty";
         int sourceOffset = header.length;
         int offset = 0;
-        for ( byte[] currentArray : byteList )
+        for ( int j = 0; j < byteList.size(); j++ )
         {
+            byte[] currentArray = byteList.get( j );
             System.arraycopy( currentArray, sourceOffset, bArray, offset,
                     currentArray.length - sourceOffset );
             offset += (currentArray.length - sourceOffset);
@@ -264,7 +267,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         {
             setStoreNotOk( new IllegalStateException(
                     "Misaligned file size " + fileSize + " for " + this + ", expected version length " +
-                    expectedVersionLength ) );
+                            expectedVersionLength ) );
         }
         if ( getStoreOk() )
         {
@@ -283,7 +286,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         if ( blockSize <= 0 )
         {
             throw new InvalidRecordException( "Illegal block size: " +
-                                              blockSize + " in " + getStorageFileName() );
+                    blockSize + " in " + getStorageFileName() );
         }
     }
 
@@ -331,8 +334,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         {
             long nextBlock = record.getNextBlock();
             int highByteInFirstInteger = nextBlock == Record.NO_NEXT_BLOCK.intValue() ? 0
-                                                                                      : (int) ((nextBlock &
-                                                                                                0xF00000000L) >> 8);
+                    : (int) ((nextBlock & 0xF00000000L) >> 8);
             highByteInFirstInteger |= (Record.IN_USE.byteValue() << 28);
             highByteInFirstInteger |= (record.isStartRecord() ? 0 : 1) << 31;
 
@@ -417,6 +419,68 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
     }
 
+    public GenericCursor<DynamicRecord> getRecordsCursor( final long startBlockId,
+            final boolean readBothHeaderAndData )
+    {
+        try
+        {
+            final PageCursor cursor = storeFile.io( 0, PF_SHARED_LOCK );
+
+            return new GenericCursor<DynamicRecord>()
+            {
+                long blockId = startBlockId;
+                int noNextBlock = Record.NO_NEXT_BLOCK.intValue();
+
+                @Override
+                public boolean next()
+                {
+                    try
+                    {
+                        if ( blockId != noNextBlock && cursor.next( pageIdForRecord( blockId ) ) )
+                        {
+                            DynamicRecord record = new DynamicRecord( blockId );
+                            int headerReadResult;
+                            do
+                            {
+                                cursor.setOffset( offsetForId( blockId ) );
+                                headerReadResult = readRecordHeader( cursor, record, false );
+                                if ( headerReadResult == hasDataSignal && readBothHeaderAndData )
+                                {
+                                    readRecordData( cursor, record );
+                                }
+                            }
+                            while ( cursor.shouldRetry() );
+
+                            checkForInUse( headerReadResult, record );
+                            checkForIllegalSize( headerReadResult, record );
+                            current = record;
+                            blockId = record.getNextBlock();
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new UnderlyingStorageException( e );
+                    }
+                }
+
+                @Override
+                public void close()
+                {
+                    cursor.close();
+                }
+            };
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
     private void checkForInUse( int headerReadResult, DynamicRecord record )
     {
         if ( headerReadResult == notInUseSignal )
@@ -431,8 +495,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         {
             int dataSize = getBlockSize() - AbstractDynamicStore.BLOCK_HEADER_SIZE;
             throw new InvalidRecordException( "Next block set[" + record.getNextBlock()
-                                              + "] current block illegal size[" + record.getLength() + "/" + dataSize +
-                                              "]" );
+                    + "] current block illegal size[" + record.getLength() + "/" + dataSize +
+                    "]" );
         }
     }
 
@@ -475,7 +539,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         record.setLength( nrOfBytes );
         record.setNextBlock( longNextBlock );
         if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue()
-             && nrOfBytes < dataSize || nrOfBytes > dataSize )
+                && nrOfBytes < dataSize || nrOfBytes > dataSize )
         {
             hasDataToRead = false;
             if ( !force )
@@ -483,7 +547,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 return illegalSizeSignal;
             }
         }
-        return hasDataToRead? hasDataSignal : hasNoDataSignal;
+        return hasDataToRead ? hasDataSignal : hasNoDataSignal;
     }
 
     private void readRecordData( PageCursor cursor, DynamicRecord record )
@@ -630,10 +694,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     public String toString()
     {
         return super.toString() + "[fileName:" + storageFileName.getName() +
-               ", blockSize:" + (getRecordSize() - getRecordHeaderSize()) + "]";
+                ", blockSize:" + (getRecordSize() - getRecordHeaderSize()) + "]";
     }
 
-    public Pair<byte[]/*header in the first record*/,byte[]/*all other bytes*/> readFullByteArray(
+    public Pair<byte[]/*header in the first record*/, byte[]/*all other bytes*/> readFullByteArray(
             Iterable<DynamicRecord> records, PropertyType propertyType )
     {
         for ( DynamicRecord record : records )

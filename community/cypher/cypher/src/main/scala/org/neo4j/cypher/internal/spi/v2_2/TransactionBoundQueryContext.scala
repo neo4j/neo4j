@@ -112,10 +112,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     JavaConversionSupport.asScala(statement.readOperations().nodeGetLabels(node))
 
   def getPropertiesForNode(node: Long) =
-    JavaConversionSupport.asScala(statement.readOperations().nodeGetAllPropertiesKeys(node))
+    JavaConversionSupport.mapToScala(statement.readOperations().nodeGetAllPropertiesKeys(node))(_.toLong)
 
   def getPropertiesForRelationship(relId: Long) =
-    JavaConversionSupport.asScala(statement.readOperations().relationshipGetAllPropertiesKeys(relId))
+    JavaConversionSupport.mapToScala(statement.readOperations().relationshipGetAllPropertiesKeys(relId))(_.toLong)
 
   override def isLabelSetOnNode(label: Int, node: Long) =
     statement.readOperations().nodeHasLabel(node, label)

@@ -23,9 +23,10 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.cursor.NodeCursor;
+import org.neo4j.kernel.api.cursor.RelationshipCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -45,35 +46,40 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
-import org.neo4j.kernel.impl.util.register.NeoRegister;
-import org.neo4j.register.Register;
 
 /**
  * Abstraction for reading committed data.
  */
 public interface StoreReadLayer
 {
-    boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException;
+    // Cursor
+    StoreStatement acquireStatement();
+
+    boolean nodeHasLabel( StoreStatement statement, long nodeId, int labelId ) throws EntityNotFoundException;
 
     boolean nodeExists( long nodeId );
 
-    PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException;
+    PrimitiveIntIterator nodeGetLabels( StoreStatement statement, long nodeId ) throws EntityNotFoundException;
 
-    RelationshipIterator nodeListRelationships( long nodeId, Direction direction)
+    RelationshipIterator nodeListRelationships( StoreStatement statement,
+            long nodeId,
+            Direction direction )
             throws EntityNotFoundException;
 
-    RelationshipIterator nodeListRelationships( long nodeId, Direction direction,
+    RelationshipIterator nodeListRelationships( StoreStatement statement, long nodeId, Direction direction,
             int[] relTypes ) throws EntityNotFoundException;
 
-    int nodeGetDegree( long nodeId, Direction direction )
+    int nodeGetDegree( StoreStatement statement, long nodeId, Direction direction )
             throws EntityNotFoundException;
 
-    int nodeGetDegree( long nodeId, Direction direction, int relType )
+    int nodeGetDegree( StoreStatement statement, long nodeId,
+            Direction direction,
+            int relType )
             throws EntityNotFoundException;
 
-    boolean nodeVisitDegrees( long nodeId, DegreeVisitor visitor );
+    boolean nodeVisitDegrees( StoreStatement statement, long nodeId, DegreeVisitor visitor );
 
-    PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId )
+    PrimitiveIntIterator nodeGetRelationshipTypes( StoreStatement statement, long nodeId )
             throws EntityNotFoundException;
 
     Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
@@ -92,24 +98,25 @@ public interface StoreReadLayer
 
     IndexRule indexRule( IndexDescriptor index, SchemaStorage.IndexRuleKind kind );
 
-    PrimitiveLongIterator nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException;
+    PrimitiveIntIterator nodeGetPropertyKeys( StoreStatement statement, long nodeId ) throws EntityNotFoundException;
 
-    Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+    Property nodeGetProperty( StoreStatement statement, long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Iterator<DefinedProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException;
+    Iterator<DefinedProperty> nodeGetAllProperties( StoreStatement statement,
+            long nodeId ) throws EntityNotFoundException;
 
     boolean relationshipExists( long relationshipId );
 
-    PrimitiveLongIterator relationshipGetPropertyKeys( long relationshipId )
-                    throws EntityNotFoundException;
+    PrimitiveIntIterator relationshipGetPropertyKeys( StoreStatement statement, long relationshipId )
+            throws EntityNotFoundException;
 
-    Property relationshipGetProperty( long relationshipId, int propertyKeyId )
-                            throws EntityNotFoundException;
+    Property relationshipGetProperty( StoreStatement statement, long relationshipId, int propertyKeyId )
+            throws EntityNotFoundException;
 
-    Iterator<DefinedProperty> relationshipGetAllProperties( long nodeId )
-                                    throws EntityNotFoundException;
+    Iterator<DefinedProperty> relationshipGetAllProperties( StoreStatement statement, long nodeId )
+            throws EntityNotFoundException;
 
-    PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state );
+    PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state );
 
     Property graphGetProperty( int propertyKeyId );
 
@@ -123,7 +130,7 @@ public interface StoreReadLayer
     Iterator<UniquenessConstraint> constraintsGetAll();
 
     PrimitiveLongResourceIterator nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index,
-                                                        Object value )
+            Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId );
@@ -185,11 +192,6 @@ public interface StoreReadLayer
 
     void releaseRelationship( long id );
 
-    Cursor expand( Cursor inputCursor, NeoRegister.Node.In nodeId, Register.Object.In<int[]> types,
-                   Register.Object.In<Direction> expandDirection, NeoRegister.Relationship.Out relId,
-                   NeoRegister.RelType.Out relType, Register.Object.Out<Direction> direction,
-                   NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId );
-
     long countsForNode( int labelId );
 
     long countsForRelationship( int startLabelId, int typeId, int endLabelId );
@@ -197,4 +199,8 @@ public interface StoreReadLayer
     long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+
+    NodeCursor nodesGetAllCursor( StoreStatement statement );
+
+    RelationshipCursor relationshipsGetAllCursor( StoreStatement storeStatement );
 }

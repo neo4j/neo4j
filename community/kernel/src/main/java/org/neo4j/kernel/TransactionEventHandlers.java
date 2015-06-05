@@ -34,6 +34,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.txstate.ReadableTxState;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -125,7 +126,7 @@ public class TransactionEventHandlers
         }
 
         TransactionData txData = state == null ? EMPTY_DATA :
-                new TxStateTransactionDataSnapshot( state, nodeActions, storeReadLayer );
+                new TxStateTransactionDataSnapshot( state, nodeActions, storeReadLayer, ((KernelStatement)transaction.acquireStatement()).getStoreStatement() );
 
         TransactionHandlerState handlerStates = new TransactionHandlerState( txData );
         for ( TransactionEventHandler<?> handler : this.transactionEventHandlers )

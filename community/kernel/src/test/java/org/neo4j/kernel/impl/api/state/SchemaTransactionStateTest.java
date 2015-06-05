@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,6 +26,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 
 import static org.junit.Assert.assertEquals;
@@ -50,6 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -232,6 +234,7 @@ public class SchemaTransactionStateTest
     private TransactionState txState;
     private StateHandlingStatementOperations txContext;
     private KernelStatement state;
+    private StoreStatement storeStatement;
 
     @Before
     public void before() throws Exception
@@ -246,6 +249,9 @@ public class SchemaTransactionStateTest
 
         txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
+
+        storeStatement = mock(StoreStatement.class);
+        when (state.getStoreStatement()).thenReturn( storeStatement );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )
@@ -282,11 +288,11 @@ public class SchemaTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( store.nodeGetLabels( nodeLabels.nodeId ) ).then(
+            when( store.nodeGetLabels( storeStatement, nodeLabels.nodeId ) ).then(
                     asAnswer( Arrays.<Integer>asList( nodeLabels.labelIds ) ) );
             for ( int label : nodeLabels.labelIds )
             {
-                when( store.nodeHasLabel( nodeLabels.nodeId, label ) ).thenReturn( true );
+                when( store.nodeHasLabel(storeStatement , nodeLabels.nodeId, label ) ).thenReturn( true );
 
                 Collection<Long> nodes = allLabels.get( label );
                 if ( nodes == null )

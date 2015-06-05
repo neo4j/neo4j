@@ -30,16 +30,21 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.Supplier;
+import org.neo4j.function.ToIntFunction;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.cursor.LabelCursor;
+import org.neo4j.kernel.api.cursor.NodeCursor;
+import org.neo4j.kernel.api.cursor.PropertyCursor;
+import org.neo4j.kernel.api.cursor.RelationshipCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -57,7 +62,6 @@ import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.StoreRelationshipIterable;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -65,6 +69,7 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -80,34 +85,53 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
+import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
-import org.neo4j.kernel.impl.util.register.NeoRegister;
-import org.neo4j.register.Register;
 
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
-import static org.neo4j.function.IntPredicates.alwaysTrue;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class DiskLayer implements StoreReadLayer
 {
     private static final Function<UniquenessConstraintRule, UniquenessConstraint> UNIQUENESS_CONSTRAINT_TO_RULE =
             new Function<UniquenessConstraintRule, UniquenessConstraint>()
-    {
+            {
 
+                @Override
+                public UniquenessConstraint apply( UniquenessConstraintRule rule )
+                {
+                    // We can use propertyKeyId straight up here, without reading from the record, since we have
+                    // verified that it has that propertyKeyId in the predicate. And since we currently only support
+                    // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
+                    return new UniquenessConstraint( rule.getLabel(), rule.getPropertyKey() );
+                }
+            };
+    private static final Function<PropertyCursor,DefinedProperty> GET_PROPERTY = new Function<PropertyCursor, DefinedProperty>()
+    {
         @Override
-        public UniquenessConstraint apply( UniquenessConstraintRule rule )
+        public DefinedProperty apply( PropertyCursor propertyCursor )
         {
-            // We can use propertyKeyId straight up here, without reading from the record, since we have
-            // verified that it has that propertyKeyId in the predicate. And since we currently only support
-            // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
-            return new UniquenessConstraint( rule.getLabel(), rule.getPropertyKey() );
+            return propertyCursor.getProperty();
+        }
+    };
+    private static final ToIntFunction<PropertyCursor> GET_KEY_INDEX_ID = new ToIntFunction<PropertyCursor>()
+    {
+        @Override
+        public int apply( PropertyCursor value )
+        {
+            return value.getKeyIndexId();
+        }
+    };
+    private static final ToIntFunction<LabelCursor> GET_LABEL = new ToIntFunction<LabelCursor>()
+    {
+        @Override
+        public int apply( LabelCursor cursor )
+        {
+            return cursor.getLabel();
         }
     };
 
@@ -133,8 +157,8 @@ public class DiskLayer implements StoreReadLayer
      * lazy properties.
      */
     public DiskLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
-                      RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage,
-                      final Supplier<NeoStore> neoStoreSupplier, IndexingService indexService )
+            RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage,
+            final Supplier<NeoStore> neoStoreSupplier, IndexingService indexService )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
@@ -148,6 +172,12 @@ public class DiskLayer implements StoreReadLayer
         this.counts = neoStore.getCounts();
         this.propertyLoader = new PropertyLoader( neoStore );
 
+    }
+
+    @Override
+    public StoreStatement acquireStatement()
+    {
+        return neoStore.acquireStatement();
     }
 
     @Override
@@ -179,70 +209,74 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException
+    public boolean nodeHasLabel( StoreStatement statement, long nodeId, int labelId ) throws EntityNotFoundException
     {
-        try
+        try ( NodeCursor nodeCursor = statement.acquireSingleNodeCursor( nodeId ) )
         {
-            return PrimitiveIntCollections.indexOf( nodeGetLabels( nodeId ), labelId ) != -1;
-        }
-        catch ( InvalidRecordException e )
-        {
-            return false;
-        }
-    }
-
-    @Override
-    public PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException
-    {
-        NodeRecord record = nodeStore.loadRecord( nodeId, null );
-        if ( record == null )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, nodeId );
-        }
-
-        final long[] labels = parseLabelsField( record ).get( nodeStore );
-        return new PrimitiveIntIterator()
-        {
-            private int cursor;
-
-
-            @Override
-            public boolean hasNext()
+            if ( nodeCursor.next() )
             {
-                return cursor < labels.length;
-            }
-
-
-            @Override
-            public int next()
-            {
-                if ( !hasNext() )
+                try ( LabelCursor labelCursor = nodeCursor.labels() )
                 {
-                    throw new NoSuchElementException();
+                    return labelCursor.seek( labelId );
                 }
-                return safeCastLongToInt( labels[cursor++] );
             }
-        };
+            else
+            {
+                throw new EntityNotFoundException( EntityType.NODE, nodeId );
+            }
+        }
     }
 
     @Override
-    public RelationshipIterator nodeListRelationships( long nodeId, Direction direction )
+    public PrimitiveIntIterator nodeGetLabels( StoreStatement statement, long nodeId ) throws EntityNotFoundException
+    {
+        try ( NodeCursor nodeCursor = statement.acquireSingleNodeCursor( nodeId ) )
+        {
+
+            if ( nodeCursor.next() )
+            {
+                return Cursors.intIterator(nodeCursor.labels(), GET_LABEL);
+            }
+            else
+            {
+                throw new EntityNotFoundException( EntityType.NODE, nodeId );
+            }
+        }
+    }
+
+    @Override
+    public RelationshipIterator nodeListRelationships( StoreStatement statement,
+            long nodeId,
+            Direction direction )
             throws EntityNotFoundException
     {
-        return StoreRelationshipIterable.iterator( neoStore, nodeId, alwaysTrue(), direction );
+        return nodeListRelationships( statement, nodeId, direction, null );
     }
 
     @Override
-    public RelationshipIterator nodeListRelationships( long nodeId, Direction direction, int[] relTypes )
+    public RelationshipIterator nodeListRelationships( final StoreStatement statement,
+            long nodeId,
+            Direction direction,
+            int[] relTypes )
             throws EntityNotFoundException
     {
-        // TODO Instead of having a PrimitiveIntSet here we can (in the dense case) have a sorted relTypes array
-        // and use a predicate that knows that the types coming from accept will be sorted as well.
-        return StoreRelationshipIterable.iterator( neoStore, nodeId, asSet( relTypes ), direction );
+        try ( final NodeCursor nodeCursor = statement.acquireSingleNodeCursor( nodeId ) )
+        {
+            if ( nodeCursor.next() )
+            {
+                return new CursorRelationshipIterator(nodeCursor.relationships( direction, relTypes ));
+            }
+            else
+            {
+                throw new EntityNotFoundException( EntityType.NODE, nodeId );
+            }
+        }
     }
 
     @Override
-    public int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException
+    public int nodeGetDegree( StoreStatement statement,
+            long nodeId,
+            Direction direction ) throws EntityNotFoundException
     {
         NodeRecord node = nodeStore.loadRecord( nodeId, null );
         if ( node == null )
@@ -263,11 +297,13 @@ public class DiskLayer implements StoreReadLayer
             return (int) count;
         }
 
-        return count( nodeListRelationships( nodeId, direction ) );
+        return count( nodeListRelationships( statement, nodeId, direction ) );
     }
 
     @Override
-    public int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException
+    public int nodeGetDegree( StoreStatement statement, long nodeId,
+            Direction direction,
+            int relType ) throws EntityNotFoundException
     {
         NodeRecord node = nodeStore.loadRecord( nodeId, null );
         if ( node == null )
@@ -290,7 +326,7 @@ public class DiskLayer implements StoreReadLayer
             return 0;
         }
 
-        return count( nodeListRelationships( nodeId, direction, new int[] {relType} ) );
+        return count( nodeListRelationships( statement, nodeId, direction, new int[]{relType} ) );
     }
 
     private long nodeDegreeByDirection( long nodeId, RelationshipGroupRecord group, Direction direction )
@@ -298,16 +334,20 @@ public class DiskLayer implements StoreReadLayer
         long loopCount = countByFirstPrevPointer( nodeId, group.getFirstLoop() );
         switch ( direction )
         {
-        case OUTGOING: return countByFirstPrevPointer( nodeId, group.getFirstOut() ) + loopCount;
-        case INCOMING: return countByFirstPrevPointer( nodeId, group.getFirstIn() ) + loopCount;
-        case BOTH: return countByFirstPrevPointer( nodeId, group.getFirstOut() ) +
-                          countByFirstPrevPointer( nodeId, group.getFirstIn() ) + loopCount;
-        default: throw new IllegalArgumentException( direction.name() );
+            case OUTGOING:
+                return countByFirstPrevPointer( nodeId, group.getFirstOut() ) + loopCount;
+            case INCOMING:
+                return countByFirstPrevPointer( nodeId, group.getFirstIn() ) + loopCount;
+            case BOTH:
+                return countByFirstPrevPointer( nodeId, group.getFirstOut() ) +
+                        countByFirstPrevPointer( nodeId, group.getFirstIn() ) + loopCount;
+            default:
+                throw new IllegalArgumentException( direction.name() );
         }
     }
 
     @Override
-    public boolean nodeVisitDegrees( final long nodeId, final DegreeVisitor visitor )
+    public boolean nodeVisitDegrees( StoreStatement statement, final long nodeId, final DegreeVisitor visitor )
     {
         NodeRecord node = nodeStore.loadRecord( nodeId, null );
         if ( node == null )
@@ -324,7 +364,7 @@ public class DiskLayer implements StoreReadLayer
                 long outCount = countByFirstPrevPointer( nodeId, group.getFirstOut() );
                 long inCount = countByFirstPrevPointer( nodeId, group.getFirstIn() );
                 long loopCount = countByFirstPrevPointer( nodeId, group.getFirstLoop() );
-                visitor.visitDegree( group.getType(), (int)(outCount+loopCount), (int)(inCount+loopCount) );
+                visitor.visitDegree( group.getType(), (int) (outCount + loopCount), (int) (inCount + loopCount) );
                 groupId = group.getNext();
             }
         }
@@ -347,13 +387,13 @@ public class DiskLayer implements StoreReadLayer
             RelationshipIterator relationships;
             try
             {
-                relationships = nodeListRelationships( nodeId, Direction.BOTH );
+                relationships = nodeListRelationships( statement, nodeId, Direction.BOTH );
                 while ( relationships.hasNext() )
                 {
                     relationships.relationshipVisit( relationships.next(), typeVisitor );
                 }
 
-                degrees.visitEntries( new PrimitiveIntObjectVisitor<int[],RuntimeException>()
+                degrees.visitEntries( new PrimitiveIntObjectVisitor<int[], RuntimeException>()
                 {
                     @Override
                     public boolean visited( int type, int[] degrees /*out,in,loop*/ ) throws RuntimeException
@@ -404,7 +444,8 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException
+    public PrimitiveIntIterator nodeGetRelationshipTypes( StoreStatement statement,
+            long nodeId ) throws EntityNotFoundException
     {
         final NodeRecord node = nodeStore.loadRecord( nodeId, null );
         if ( node == null )
@@ -448,7 +489,7 @@ public class DiskLayer implements StoreReadLayer
                 types.add( type );
             }
         };
-        RelationshipIterator relationships = nodeListRelationships( nodeId, Direction.BOTH );
+        RelationshipIterator relationships = nodeListRelationships( statement, nodeId, Direction.BOTH );
         while ( relationships.hasNext() )
         {
             relationships.relationshipVisit( relationships.next(), visitor );
@@ -650,13 +691,13 @@ public class DiskLayer implements StoreReadLayer
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
                 labelId, new Predicate<UniquenessConstraintRule>()
-        {
-            @Override
-            public boolean test( UniquenessConstraintRule rule )
-            {
-                return rule.containsPropertyKeyId( propertyKeyId );
-            }
-        } );
+                {
+                    @Override
+                    public boolean test( UniquenessConstraintRule rule )
+                    {
+                        return rule.containsPropertyKeyId( propertyKeyId );
+                    }
+                } );
     }
 
     @Override
@@ -675,7 +716,7 @@ public class DiskLayer implements StoreReadLayer
 
     @Override
     public PrimitiveLongResourceIterator nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index,
-                                                                       Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
+            Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         throw new UnsupportedOperationException();
     }
@@ -707,68 +748,117 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator relationshipGetPropertyKeys( long relationshipId ) throws EntityNotFoundException
+    public PrimitiveIntIterator relationshipGetPropertyKeys( final StoreStatement statement,
+            long relationshipId ) throws EntityNotFoundException
     {
-        throw new UnsupportedOperationException();
-    }
 
-    @Override
-    public Property relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
-    {
-        IteratingPropertyReceiver properties = propertyLoader.relLoadProperties( relationshipId,
-                new IteratingPropertyReceiver() );
-        Property property = property( properties, propertyKeyId );
-        return property != null ? property : Property.noRelationshipProperty( relationshipId, propertyKeyId );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
-    {
-        IteratingPropertyReceiver properties = propertyLoader.nodeLoadProperties( nodeId,
-                new IteratingPropertyReceiver() );
-        Property property = property( properties, propertyKeyId );
-        return property != null ? property : Property.noNodeProperty( nodeId, propertyKeyId );
-    }
-
-    private Property property( IteratingPropertyReceiver properties, int propertyKeyId )
-    {
-        while ( properties.hasNext() )
+        try ( RelationshipCursor relCursor = statement.acquireSingleRelationshipCursor( relationshipId ) )
         {
-            DefinedProperty property = properties.next();
-            if ( property.propertyKeyId() == propertyKeyId )
+            if ( !relCursor.next() )
             {
-                return property;
+                throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
             }
+
+            return Cursors.intIterator(relCursor.properties(), GET_KEY_INDEX_ID);
         }
-        return null;
     }
 
     @Override
-    public Iterator<DefinedProperty> nodeGetAllProperties( long nodeId )
+    public Property relationshipGetProperty( StoreStatement statement,
+            long relationshipId,
+            int propertyKeyId ) throws EntityNotFoundException
+    {
+        try ( RelationshipCursor storeRelationshipCursor = statement.acquireSingleRelationshipCursor( relationshipId ) )
+        {
+            if ( !storeRelationshipCursor.next() )
+            {
+                throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
+            }
+
+            try ( PropertyCursor cursor = storeRelationshipCursor.properties() )
+            {
+                if ( cursor.seek( propertyKeyId ) )
+                {
+                    return cursor.getProperty();
+                }
+            }
+
+            return Property.noRelationshipProperty( relationshipId, propertyKeyId );
+        }
+    }
+
+    @Override
+    public PrimitiveIntIterator nodeGetPropertyKeys( final StoreStatement statement,
+            long nodeId ) throws EntityNotFoundException
+    {
+        try ( NodeCursor nodeCursor = statement.acquireSingleNodeCursor( nodeId ) )
+        {
+            if ( !nodeCursor.next() )
+            {
+                throw new EntityNotFoundException( EntityType.NODE, nodeId );
+            }
+
+            return Cursors.intIterator(nodeCursor.properties(), GET_KEY_INDEX_ID);
+        }
+    }
+
+    @Override
+    public Property nodeGetProperty( StoreStatement statement,
+            long nodeId,
+            int propertyKeyId ) throws EntityNotFoundException
+    {
+        try ( NodeCursor storeNodeCursor = statement.acquireSingleNodeCursor( nodeId ) )
+        {
+            if ( !storeNodeCursor.next() )
+            {
+                throw new EntityNotFoundException( EntityType.NODE, nodeId );
+            }
+
+            try ( PropertyCursor cursor = storeNodeCursor.properties() )
+            {
+                if ( cursor.seek( propertyKeyId ) )
+                {
+                    return cursor.getProperty();
+                }
+            }
+
+            return Property.noNodeProperty( nodeId, propertyKeyId );
+        }
+    }
+
+    @Override
+    public Iterator<DefinedProperty> nodeGetAllProperties( StoreStatement statement,
+            long nodeId )
             throws EntityNotFoundException
     {
-        return propertyLoader.nodeLoadProperties( nodeId, new IteratingPropertyReceiver() );
+        try ( NodeCursor storeNodeCursor = statement.acquireSingleNodeCursor( nodeId ) )
+        {
+            if ( !storeNodeCursor.next() )
+            {
+                throw new EntityNotFoundException( EntityType.NODE, nodeId );
+            }
+
+            return Cursors.iterator( storeNodeCursor.properties(), GET_PROPERTY );
+        }
     }
 
     @Override
-    public Iterator<DefinedProperty> relationshipGetAllProperties( long relationshipId )
+    public Iterator<DefinedProperty> relationshipGetAllProperties( StoreStatement statement, final long relationshipId )
             throws EntityNotFoundException
     {
-        return propertyLoader.relLoadProperties( relationshipId, new IteratingPropertyReceiver() );
-//        catch ( InvalidRecordException e )
-//        {
-//            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId, e );
-//        }
+        try ( RelationshipCursor storeRelationshipCursor = statement.acquireSingleRelationshipCursor( relationshipId ) )
+        {
+            if ( !storeRelationshipCursor.next() )
+            {
+                throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
+            }
+
+            return Cursors.iterator( storeRelationshipCursor.properties(), GET_PROPERTY );
+        }
     }
 
     @Override
-    public PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state )
+    public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state )
     {
         throw new UnsupportedOperationException();
     }
@@ -835,7 +925,7 @@ public class DiskLayer implements StoreReadLayer
     {
         try
         {
-            return ((Token)relationshipTokenHolder.getTokenById( relationshipTypeId )).name();
+            return ((Token) relationshipTokenHolder.getTokenById( relationshipTypeId )).name();
         }
         catch ( TokenNotFoundException e )
         {
@@ -919,6 +1009,12 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
+    public NodeCursor nodesGetAllCursor( StoreStatement statement )
+    {
+        return statement.acquireIteratorNodeCursor().init( new AllStoreIdIterator( neoStore.getNodeStore() ) );
+    }
+
+    @Override
     public RelationshipIterator relationshipsGetAll()
     {
         return new RelationshipIterator.BaseIterator()
@@ -973,6 +1069,13 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
+    public RelationshipCursor relationshipsGetAllCursor( StoreStatement storeStatement )
+    {
+        return storeStatement.acquireIteratorRelationshipCursor().init(
+                new AllStoreIdIterator( neoStore.getRelationshipStore() ) );
+    }
+
+    @Override
     public long reserveNode()
     {
         return nodeStore.nextId();
@@ -997,15 +1100,6 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public Cursor expand( Cursor inputCursor, NeoRegister.Node.In nodeId, Register.Object.In<int[]> types, Register
-            .Object.In<Direction> expandDirection, NeoRegister.Relationship.Out relId, NeoRegister.RelType.Out
-            relType, Register.Object.Out<Direction> direction, NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out
-            neighborNodeId )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public long countsForNode( int labelId )
     {
         return counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
@@ -1019,5 +1113,131 @@ public class DiskLayer implements StoreReadLayer
             throw new UnsupportedOperationException( "not implemented" );
         }
         return counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() ).readSecond();
+    }
+
+    private class AllStoreIdIterator extends PrimitiveLongBaseIterator
+    {
+        private final CommonAbstractStore store;
+        private long highId;
+        private long currentId;
+
+        public AllStoreIdIterator( CommonAbstractStore store )
+        {
+            this.store = store;
+            highId = store.getHighestPossibleIdInUse();
+        }
+
+        @Override
+        protected boolean fetchNext()
+        {
+            while ( true )
+            {   // This outer loop is for checking if highId has changed since we started.
+                if ( currentId <= highId )
+                {
+                    try
+                    {
+                        return next( currentId );
+                    }
+                    finally
+                    {
+                        currentId++;
+                    }
+                }
+
+                long newHighId = store.getHighestPossibleIdInUse();
+                if ( newHighId > highId )
+                {
+                    highId = newHighId;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            return false;
+        }
+    }
+
+    private static class CursorRelationshipIterator implements RelationshipIterator, Resource
+    {
+        private RelationshipCursor cursor;
+        private boolean hasNext;
+
+        private long id;
+        private int type;
+        private long startNode;
+        private long endNode;
+
+        public CursorRelationshipIterator( RelationshipCursor resourceCursor )
+        {
+            cursor = resourceCursor;
+            hasNext = nextCursor();
+        }
+
+        private boolean nextCursor()
+        {
+            if (cursor != null)
+            {
+                boolean hasNext = cursor.next();
+                if ( !hasNext )
+                {
+                    close();
+                }
+                return hasNext;
+            } else
+            {
+                return false;
+            }
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return hasNext;
+        }
+
+        @Override
+        public long next()
+        {
+            if ( hasNext )
+            {
+                try
+                {
+                    id = cursor.getId();
+                    type = cursor.getType();
+                    startNode = cursor.getStartNode();
+                    endNode = cursor.getEndNode();
+
+                    return id;
+                }
+                finally
+                {
+                    hasNext = nextCursor();
+                }
+            }
+            else
+            {
+                throw new NoSuchElementException();
+            }
+        }
+
+        @Override
+        public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
+                RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
+        {
+            visitor.visit( id, type, startNode, endNode );
+            return false;
+        }
+
+
+        @Override
+        public void close()
+        {
+            if (cursor != null )
+            {
+                cursor.close();
+                cursor = null;
+            }
+        }
     }
 }

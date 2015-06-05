@@ -23,9 +23,10 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.cursor.NodeCursor;
+import org.neo4j.kernel.api.cursor.RelationshipCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -41,8 +42,6 @@ import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.util.register.NeoRegister;
-import org.neo4j.register.Register;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
@@ -102,7 +101,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     private void validateNoExistingNodeWithLabelAndProperty( KernelStatement state, int labelId,
-                                                             DefinedProperty property, long modifiedNode )
+            DefinedProperty property, long modifiedNode )
             throws ConstraintValidationKernelException
     {
         try
@@ -147,7 +146,10 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public long relationshipCreate( KernelStatement statement, int relationshipTypeId, long startNodeId, long endNodeId )
+    public long relationshipCreate( KernelStatement statement,
+            int relationshipTypeId,
+            long startNodeId,
+            long endNodeId )
             throws EntityNotFoundException
     {
         return entityWriteOperations.relationshipCreate( statement, relationshipTypeId, startNodeId, endNodeId );
@@ -284,7 +286,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public Property nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public Property nodeGetProperty( KernelStatement state,
+            long nodeId,
+            int propertyKeyId ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeGetProperty( state, nodeId, propertyKeyId );
     }
@@ -303,19 +307,20 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetPropertyKeys( KernelStatement state, long nodeId ) throws EntityNotFoundException
+    public PrimitiveIntIterator nodeGetPropertyKeys( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeGetPropertyKeys( state, nodeId );
     }
 
     @Override
-    public Iterator<DefinedProperty> nodeGetAllProperties( KernelStatement state, long nodeId ) throws EntityNotFoundException
+    public Iterator<DefinedProperty> nodeGetAllProperties( KernelStatement state,
+            long nodeId ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeGetAllProperties( state, nodeId );
     }
 
     @Override
-    public PrimitiveLongIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId ) throws
+    public PrimitiveIntIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId ) throws
             EntityNotFoundException
     {
         return entityReadOperations.relationshipGetPropertyKeys( state, relationshipId );
@@ -329,7 +334,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state )
+    public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state )
     {
         return entityReadOperations.graphGetPropertyKeys( state );
     }
@@ -342,13 +347,15 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
 
     @Override
     public RelationshipIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
-                                                       int[] relTypes ) throws EntityNotFoundException
+            int[] relTypes ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeGetRelationships( statement, nodeId, direction, relTypes );
     }
 
     @Override
-    public RelationshipIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction ) throws EntityNotFoundException
+    public RelationshipIterator nodeGetRelationships( KernelStatement statement,
+            long nodeId,
+            Direction direction ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeGetRelationships( statement, nodeId, direction );
     }
@@ -361,7 +368,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public int nodeGetDegree( KernelStatement statement, long nodeId, Direction direction ) throws EntityNotFoundException
+    public int nodeGetDegree( KernelStatement statement,
+            long nodeId,
+            Direction direction ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeGetDegree( statement, nodeId, direction );
     }
@@ -400,29 +409,14 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public Cursor expand( KernelStatement statement, Cursor inputCursor, NeoRegister.Node.In nodeId,
-                          Register.Object.In<int[]> types, Register.Object.In<Direction> expandDirection,
-                          NeoRegister.Relationship.Out relId, NeoRegister.RelType.Out relType,
-                          Register.Object.Out<Direction> direction,
-                          NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId )
+    public NodeCursor nodeCursorGetAll( KernelStatement state )
     {
-        return entityReadOperations.expand( statement, inputCursor, nodeId, types, expandDirection,
-                relId, relType, direction, startNodeId, neighborNodeId );
+        return entityReadOperations.nodeCursorGetAll( state );
     }
 
     @Override
-    public Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
-                                        RelationshipVisitor<? extends RuntimeException> visitor )
-            throws EntityNotFoundException
+    public RelationshipCursor relationshipCursorGetAll( KernelStatement state )
     {
-        return entityReadOperations.nodeGetRelationships( statement, nodeId, direction, visitor );
-    }
-
-    @Override
-    public Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction, int[] types,
-                                        RelationshipVisitor<? extends RuntimeException> visitor )
-            throws EntityNotFoundException
-    {
-        return entityReadOperations.nodeGetRelationships( statement, nodeId, direction, types, visitor );
+        return entityReadOperations.relationshipCursorGetAll( state );
     }
 }

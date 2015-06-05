@@ -163,7 +163,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     }
 
     def propertyKeyIds(id: Long): Iterator[Int] =
-      statement.readOperations().nodeGetAllProperties(id).asScala.map(_.propertyKeyId())
+      JavaConversionSupport.asScala(statement.readOperations().nodeGetAllPropertiesKeys(id))
 
     def getProperty(id: Long, propertyKeyId: Int): Any = {
       statement.readOperations().nodeGetProperty(id, propertyKeyId).value(null)

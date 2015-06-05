@@ -68,12 +68,12 @@ final class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) exte
   }
 
 
-  override def getPropertiesForNode(node: Long): Iterator[Long] = {
+  override def getPropertiesForNode(node: Long): Iterator[Int] = {
     lockNode(node)
     inner.getPropertiesForNode(node)
   }
 
-  override def getPropertiesForRelationship(relId: Long): Iterator[Long] = {
+  override def getPropertiesForRelationship(relId: Long): Iterator[Int] = {
     lockRelationship(relId)
     inner.getPropertiesForRelationship(relId)
   }

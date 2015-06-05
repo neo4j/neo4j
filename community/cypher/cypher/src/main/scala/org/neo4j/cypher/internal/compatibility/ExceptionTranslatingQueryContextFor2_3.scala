@@ -64,10 +64,10 @@ class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends Delega
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(super.removeLabelsFromNode(node, labelIds))
 
-  override def getPropertiesForNode(node: Long): Iterator[Long] =
+  override def getPropertiesForNode(node: Long): Iterator[Int] =
     translateException(super.getPropertiesForNode(node))
 
-  override def getPropertiesForRelationship(relId: Long): Iterator[Long] =
+  override def getPropertiesForRelationship(relId: Long): Iterator[Int] =
     translateException(super.getPropertiesForRelationship(relId))
 
   override def getPropertyKeyName(propertyKeyId: Int): String =

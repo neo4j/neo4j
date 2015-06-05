@@ -23,7 +23,6 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,10 +33,10 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
 import static junit.framework.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
@@ -144,27 +143,22 @@ public class NodeProxySingleRelationshipTest
         when( nodeActions.statement() ).thenReturn( stmt );
         when( readOps.relationshipTypeGetForName( loves.name() ) ).thenReturn( 2 );
 
-        when( readOps.nodeGetRelationships( eq( 1L ), eq( Direction.OUTGOING ), eq( new int[]{2} ),
-                                            any( RelationshipVisitor.class ) ) ).thenAnswer( new Answer<Cursor>()
+        when( readOps.nodeGetRelationships( eq( 1L ), eq( Direction.OUTGOING ), eq( 2 ) ) ).thenAnswer( new Answer<RelationshipIterator>()
         {
             @Override
-            public Cursor answer( InvocationOnMock invocation ) throws Throwable
+            public RelationshipIterator answer( InvocationOnMock invocation ) throws Throwable
             {
-                Object[] arguments = invocation.getArguments();
-                @SuppressWarnings("unchecked")
-                final RelationshipVisitor<RuntimeException> visitor =
-                        (RelationshipVisitor) arguments[arguments.length - 1];
-                return new Cursor()
+                return new RelationshipIterator.BaseIterator()
                 {
                     int pos;
+                    long relId;
 
                     @Override
-                    public boolean next()
+                    protected boolean fetchNext()
                     {
                         if ( pos < relIds.length )
                         {
-                            long relId = relIds[pos++];
-                            visitor.visit( relId, 2, 1, 10 * relId + 2 );
+                            relId = relIds[pos++];
                             return true;
                         }
                         else
@@ -174,14 +168,11 @@ public class NodeProxySingleRelationshipTest
                     }
 
                     @Override
-                    public void reset()
+                    public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
+                            RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
                     {
-                        throw new UnsupportedOperationException( "not implemented" );
-                    }
-
-                    @Override
-                    public void close()
-                    {
+                        visitor.visit( relId, 2, 1, 10 * relId + 2 );
+                        return false;
                     }
                 };
             }

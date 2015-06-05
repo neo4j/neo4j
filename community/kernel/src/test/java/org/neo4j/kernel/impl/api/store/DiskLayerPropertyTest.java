@@ -87,7 +87,7 @@ public class DiskLayerPropertyTest extends DiskLayerTest
             long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label1 ).getId();
 
             // when
-            Property property = single( disk.nodeGetAllProperties( nodeId ) );
+            Property property = single( disk.nodeGetAllProperties( disk.acquireStatement(), nodeId ) );
 
             //then
             assertTrue( property + ".valueEquals(" + value + ")", property.valueEquals( value ) );

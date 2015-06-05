@@ -144,7 +144,7 @@ public class NodeProxy implements Node
                 try
                 {
                     RelationshipConversion result = new RelationshipConversion( actions );
-                    result.cursor = statement.readOperations().nodeGetRelationships( nodeId, dir, result );
+                    result.iterator = statement.readOperations().nodeGetRelationships( nodeId, dir );
                     result.statement = statement;
                     return result;
                 }
@@ -191,8 +191,8 @@ public class NodeProxy implements Node
                 try
                 {
                     RelationshipConversion result = new RelationshipConversion( actions );
-                    result.cursor = statement.readOperations().nodeGetRelationships(
-                            nodeId, direction, typeIds, result );
+                    result.iterator = statement.readOperations().nodeGetRelationships(
+                            nodeId, direction, typeIds );
                     result.statement = statement;
                     return result;
                 }

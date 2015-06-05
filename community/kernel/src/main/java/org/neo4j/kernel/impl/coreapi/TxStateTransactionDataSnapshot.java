@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.txstate.ReadableTxState;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 
@@ -53,6 +54,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 {
     private final ReadableTxState state;
     private final NodeProxy.NodeActions nodeActions;
+    private final StoreStatement storeStatement;
 
     private final Collection<PropertyEntry<Node>> assignedNodeProperties = new ArrayList<>();
     private final Collection<PropertyEntry<Relationship>> assignedRelationshipProperties = new ArrayList<>();
@@ -63,10 +65,14 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final Collection<LabelEntry> removedLabels = new ArrayList<>();
 
     public TxStateTransactionDataSnapshot(
-            ReadableTxState state, NodeProxy.NodeActions nodeActions, StoreReadLayer storeReadLayer )
+            ReadableTxState state,
+            NodeProxy.NodeActions nodeActions,
+            StoreReadLayer storeReadLayer,
+            StoreStatement storeStatement )
     {
         this.state = state;
         this.nodeActions = nodeActions;
+        this.storeStatement = storeStatement;
 
         // Load all changes eagerly, because we won't have access to the after state after the tx has been committed.
         takeSnapshot( state, storeReadLayer );
@@ -150,7 +156,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             for ( Long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
-                Iterator<DefinedProperty> props = storeReadLayer.nodeGetAllProperties( nodeId );
+                Iterator<DefinedProperty> props = storeReadLayer.nodeGetAllProperties( storeStatement, nodeId);
                 while(props.hasNext())
                 {
                     DefinedProperty prop = props.next();
@@ -158,7 +164,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                             storeReadLayer.propertyKeyGetName( prop.propertyKeyId() ), null, prop.value() ) );
                 }
 
-                PrimitiveIntIterator labels = storeReadLayer.nodeGetLabels( nodeId );
+                PrimitiveIntIterator labels = storeReadLayer.nodeGetLabels( storeStatement, nodeId );
                 while(labels.hasNext())
                 {
                     removedLabels.add( new LabelEntryView( nodeId, storeReadLayer.labelGetName( labels.next() ) ) );
@@ -167,7 +173,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             }
             for ( Long relId : state.addedAndRemovedRelationships().getRemoved() )
             {
-                Iterator<DefinedProperty> props = storeReadLayer.relationshipGetAllProperties( relId );
+                Iterator<DefinedProperty> props = storeReadLayer.relationshipGetAllProperties(storeStatement , relId );
                 while(props.hasNext())
                 {
                     DefinedProperty prop = props.next();
@@ -259,7 +265,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             {
                 return null;
             }
-            return storeReadLayer.nodeGetProperty( nodeState.getId(), property ).value();
+            return storeReadLayer.nodeGetProperty( storeStatement, nodeState.getId(), property ).value();
         }
         catch ( EntityNotFoundException | PropertyNotFoundException e )
         {
@@ -275,7 +281,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             {
                 return null;
             }
-            return storeReadLayer.relationshipGetProperty( relState.getId(), property ).value();
+            return storeReadLayer.relationshipGetProperty( storeStatement, relState.getId(), property ).value();
         }
         catch ( EntityNotFoundException | PropertyNotFoundException e )
         {
