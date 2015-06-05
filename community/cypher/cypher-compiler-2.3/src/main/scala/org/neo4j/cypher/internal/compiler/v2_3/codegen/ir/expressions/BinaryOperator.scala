@@ -19,9 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
-case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends BinaryOperator(lhs, rhs) {
+protected abstract class BinaryOperator(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression {
 
-  override protected def generator[E](structure: MethodStructure[E]) = structure.add
+  override final def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    lhs.init(generator)
+    rhs.init(generator)
+  }
+
+  override final def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
+    generator(structure)(lhs.generateExpression(structure), rhs.generateExpression(structure))
+
+  protected def generator[E](structure: MethodStructure[E]): (E, E) => E
 }
