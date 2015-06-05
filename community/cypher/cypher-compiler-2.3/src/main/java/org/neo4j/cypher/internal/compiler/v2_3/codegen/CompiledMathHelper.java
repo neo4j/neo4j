@@ -144,6 +144,34 @@ public final class CompiledMathHelper
                                        " and " + rhs.getClass().getSimpleName(), null );
     }
 
+    public static Object multiply( Object lhs, Object rhs )
+    {
+        if ( lhs == null || rhs == null )
+        {
+            return null;
+        }
+
+        if ( lhs instanceof Number && rhs instanceof Number )
+        {
+            if ( lhs instanceof Double || rhs instanceof Double ||
+                 lhs instanceof Float || rhs instanceof Float )
+            {
+                return ((Number) lhs).doubleValue() * ((Number) rhs).doubleValue();
+            }
+            if ( lhs instanceof Long || rhs instanceof Long ||
+                 lhs instanceof Integer || rhs instanceof Integer ||
+                 lhs instanceof Short || rhs instanceof Short ||
+                 lhs instanceof Byte || rhs instanceof Byte )
+            {
+                return ((Number) lhs).longValue() * ((Number) rhs).longValue();
+            }
+            // other numbers we cannot multiply
+        }
+
+        throw new CypherTypeException( "Cannot multiply " + lhs.getClass().getSimpleName() +
+                                       " and " + rhs.getClass().getSimpleName(), null );
+    }
+
     public static int transformToInt( Object value )
     {
         if ( value == null )
