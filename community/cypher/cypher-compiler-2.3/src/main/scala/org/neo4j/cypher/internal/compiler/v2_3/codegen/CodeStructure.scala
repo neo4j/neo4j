@@ -84,6 +84,7 @@ trait MethodStructure[E] {
   // arithmetic
   def add(lhs: E, rhs: E): E
   def sub(lhs: E, rhs: E): E
+  def mul(lhs: E, rhs: E): E
 
   // predicates
   def not(value: E): E
@@ -430,6 +431,8 @@ private case class Method(fields: Fields, generator: CodeBlock, aux: AuxGenerato
 
   override def sub(lhs: Expression, rhs: Expression) = math(Methods.mathSub, lhs, rhs)
 
+  override def mul(lhs: Expression, rhs: Expression) = math(Methods.mathMul, lhs, rhs)
+
   private def math(method: MethodReference, lhs: Expression, rhs: Expression): Expression =
     // TODO: generate specialized versions for specific types
     Expression.invoke(method, lhs, rhs)
@@ -650,6 +653,7 @@ private object Methods {
   val nodeGetRelationships = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction], typeRef[Array[Int]])
   val mathAdd = method[CompiledMathHelper, Object]("add", typeRef[Object], typeRef[Object])
   val mathSub = method[CompiledMathHelper, Object]("subtract", typeRef[Object], typeRef[Object])
+  val mathMul = method[CompiledMathHelper, Object]("multiply", typeRef[Object], typeRef[Object])
   val mathCastToInt = method[CompiledMathHelper, Int]("transformToInt", typeRef[Object])
   val mapGet = method[util.Map[String, Object], Object]("get", typeRef[String])
   val mapContains = method[util.Map[String, Object], Boolean]("containsKey", typeRef[String])
