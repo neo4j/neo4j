@@ -17,21 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
+package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
-case class ScanAllNodes(id: String) extends LoopDataGenerator {
+case class LoadVariable(varName: String) extends CodeGenExpression {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.allNodesScan(iterVar)
-    generator.incrementDbHits()
-  }
-
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) =
-    generator.nextNode(nextVar.name, iterVar)
-
-  override protected def children = Seq.empty
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
+    structure.load(varName)
 }

@@ -19,29 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure, KernelExceptionCodeGen}
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
 
-case class ExpandLoopDataGenerator(id: String, fromVar: Variable, dir: Direction,
-                   types: Map[String, String], toVar: Variable)
-  extends LoopDataGenerator {
+case class IndexSeek(id: String, labelName: String, propName: String, descriptorVar: String, expression: CodeGenExpression) extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    types.foreach {
-      case (typeVar,relType) => generator.lookupRelationshipTypeId(typeVar, relType)
-    }
+    val labelVar = context.namer.newVarName()
+    val propKeyVar = context.namer.newVarName()
+    generator.lookupLabelId(labelVar, labelName)
+    generator.lookupPropertyKey(propName, propKeyVar)
+    generator.newIndexDescriptor(descriptorVar, labelVar, propKeyVar)
   }
 
   override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    if(types.isEmpty)
-      generator.nodeGetAllRelationships(iterVar, fromVar.name, dir)
-    else
-      generator.nodeGetRelationships(iterVar, fromVar.name, dir, types.keys.toSeq)
-    generator.incrementDbHits()
+      generator.indexSeek(iterVar, descriptorVar, expression.generateExpression(generator))
+      generator.incrementDbHits()
   }
 
   override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) =
-    generator.nextRelationshipNode(toVar.name, iterVar, dir, fromVar.name, nextVar.name)
+    generator.nextNode(nextVar.name, iterVar)
 
-  override def children = Seq.empty
+  override protected def children = Seq.empty
 }

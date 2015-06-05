@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, IncomparableValuesException}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
-class CompiledPredicateHelperTest extends CypherFunSuite {
+class CompiledConversionUtilsTest extends CypherFunSuite {
 
   val tests = Seq(
     (true, true),
@@ -37,12 +37,30 @@ class CompiledPredicateHelperTest extends CypherFunSuite {
   tests.foreach {
     case (v, expected) =>
       test(s"$v") {
-        CompiledPredicateHelper.isPropertyValueTrue(v) should equal(expected)
+        CompiledConversionUtils.isPropertyValueTrue(v) should equal(expected)
       }
   }
 
   test("should throw for string and int") {
-    intercept[CypherTypeException](CompiledPredicateHelper.isPropertyValueTrue("APA"))
-    intercept[CypherTypeException](CompiledPredicateHelper.isPropertyValueTrue(12))
+    intercept[CypherTypeException](CompiledConversionUtils.isPropertyValueTrue("APA"))
+    intercept[CypherTypeException](CompiledConversionUtils.isPropertyValueTrue(12))
   }
+
+  test("should convert List") {
+    import scala.collection.JavaConverters._
+
+    val col = CompiledConversionUtils.toCollection(List("a", "b", "c").asJava)
+
+    col shouldBe a [java.util.Collection[_]]
+    col.asScala.toSeq should equal(Seq("a", "b", "c"))
+  }
+
+  test("should throw if converting from non-collection") {
+    intercept[CypherTypeException](CompiledConversionUtils.toCollection("this is not a collection"))
+  }
+
+  test("should handle null") {
+    CompiledConversionUtils.toCollection(null) shouldBe empty
+  }
+
 }

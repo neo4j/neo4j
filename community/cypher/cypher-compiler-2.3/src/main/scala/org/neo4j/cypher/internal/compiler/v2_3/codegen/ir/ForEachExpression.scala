@@ -19,21 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols
 
-// Generates the code that moves data into local variables from the iterator being consumed
-// TODO: these aren't really Instruction objects, should not extend it
-trait LoopDataGenerator extends Instruction {
+case class ForEachExpression(varName: String, expression: CodeGenExpression, body: Instruction) extends Instruction {
 
-  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = body.init(generator)
 
-  def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
 
-  def produceIterator[E](iterVarName: String, generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
+    generator.forEach(varName, symbols.CTAny, expression.generateExpression(generator)) { forBody =>
+      body.body(forBody)
+    }
 
-  def id: String
-
-  override protected def operatorId = Some(id)
-
-  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = ???
+  override def children = Seq(body)
 }
