@@ -19,24 +19,25 @@
  */
 package org.neo4j.server;
 
+import org.junit.After;
+import org.junit.Test;
+
+import java.io.IOException;
+import javax.ws.rs.core.MediaType;
+
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RestRequest;
+import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
+import org.neo4j.server.web.ServerInternalSettings;
+import org.neo4j.test.server.ExclusiveServerTestBase;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 import static org.neo4j.test.server.HTTP.POST;
-
-import java.io.IOException;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.After;
-import org.junit.Test;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.rest.JaxRsResponse;
-import org.neo4j.server.rest.RestRequest;
-import org.neo4j.server.scripting.javascript.GlobalJavascriptInitializer;
-import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class ServerConfigDocIT extends ExclusiveServerTestBase
 {
@@ -100,7 +101,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         assertEquals( 200, response.getStatus() );
         assertEquals( "application/vnd.sun.wadl+xml", response.getHeaders().get( "Content-Type" ).iterator().next() );
         assertThat( response.getEntity(), containsString( "<application xmlns=\"http://wadl.dev.java" +
-                ".net/2009/02\">" ) );
+                                                          ".net/2009/02\">" ) );
     }
 
     @Test
@@ -127,6 +128,20 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
                 MediaType.WILDCARD_TYPE );
 
         assertEquals( 404, response.getStatus() );
+    }
+
+    @Test
+    public void shouldDisableWebadminWhenAskedTo() throws IOException
+    {
+        // Given
+        server = server().withProperty( ServerInternalSettings.webadmin_enabled.name(), "false" )
+                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .build();
+        server.start();
+
+        // When & then
+        assertEquals( 404, new RestRequest().get( "http://localhost:7474/webadmin" ).getStatus() );
+        assertEquals( 404, new RestRequest().get( "http://localhost:7474/db/manage/monitor" ).getStatus() );
     }
 
     @Test
