@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.scalatest._
 
 class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with CodeGenSugar {
+  private val traceIds = Map("X" -> null, "id" -> null)
+
   // addition
 
   {
@@ -32,11 +34,11 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
     def adding(lhs: CodeGenExpression, rhs: CodeGenExpression) = {
       val addition = add(lhs, rhs)
       evaluate(
-        Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> addition))))
+        Seq(Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> addition)))), operatorIds = traceIds)
     }
 
     verifyAddition(adding, new SimpleOperands[CodeGenExpression]("literal") {
-      override def value(value: Any) = literal(value)
+      override def value(value: Object) = literal(value)
     })
   }
 
@@ -45,41 +47,39 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
     val addition: CodeGenExpression = add(parameter("lhs"), parameter("rhs"))
     val instructions = Seq(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition))))
 
-    def adding(lhs: Any, rhs: Any) = evaluate(instructions, params = Map("lhs" -> lhs, "rhs" -> rhs))
+    def adding(lhs: Object, rhs: Object) = evaluate(instructions, params = Map("lhs" -> lhs, "rhs" -> rhs), operatorIds = traceIds)
 
-    verifyAddition(adding, new SimpleOperands[Any]("parameter") {
-      override def value(value: Any) = value
+    verifyAddition(adding, new SimpleOperands[Object]("parameter") {
+      override def value(value: Object) = value
     })
   }
 
   {
     // literal + parameter
-    def adding(lhs: CodeGenExpression, rhs: Any) = {
+    def adding(lhs: CodeGenExpression, rhs: Object) = {
       val addition: CodeGenExpression = add(lhs, parameter("rhs"))
       val instructions = Seq(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition))))
-      evaluate(instructions, params = Map("rhs" -> rhs))
+      evaluate(instructions, params = Map("rhs" -> rhs), operatorIds = traceIds)
 
     }
 
-    verifyAddition(adding, new Operands[CodeGenExpression, Any]("literal", "parameter") {
-      override def lhs(value: Any) = literal(value)
-
-      override def rhs(value: Any) = value
+    verifyAddition(adding, new Operands[CodeGenExpression, Object]("literal", "parameter") {
+      override def lhs(value: Object) = literal(value)
+      override def rhs(value: Object) = value
     })
   }
 
   {
     // parameter + literal
-    def adding(lhs: Any, rhs: CodeGenExpression) = {
+    def adding(lhs: Object, rhs: CodeGenExpression) = {
       val addition: CodeGenExpression = add(parameter("lhs"), rhs)
       val instructions = Seq(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition))))
-      evaluate(instructions, params = Map("lhs" -> lhs))
+      evaluate(instructions, params = Map("lhs" -> lhs), operatorIds = traceIds)
     }
 
-    verifyAddition(adding, new Operands[Any, CodeGenExpression]("parameter", "literal") {
-      override def lhs(value: Any) = value
-
-      override def rhs(value: Any) = literal(value)
+    verifyAddition(adding, new Operands[Object, CodeGenExpression]("parameter", "literal") {
+      override def lhs(value: Object) = value
+      override def rhs(value: Object) = literal(value)
     })
   }
 
@@ -90,11 +90,11 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
     def subtracting(lhs: CodeGenExpression, rhs: CodeGenExpression) = {
       val subtraction = sub(lhs, rhs)
       evaluate(
-        Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> subtraction))))
+        Seq(Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> subtraction)))), operatorIds = traceIds)
     }
 
     verifySubtraction(subtracting, new SimpleOperands[CodeGenExpression]("literal") {
-      override def value(value: Any) = literal(value)
+      override def value(value: Object) = literal(value)
     })
   }
 
@@ -102,78 +102,76 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
     // parameter - parameter
     val subtraction: CodeGenExpression = sub(parameter("lhs"), parameter("rhs"))
     val instructions = Seq(Project("X", Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction))))
-    def subtracting(lhs: Any, rhs: Any) = evaluate(instructions, params = Map("lhs" -> lhs, "rhs" -> rhs))
+    def subtracting(lhs: Object, rhs: Object) = evaluate(instructions, params = Map("lhs" -> lhs, "rhs" -> rhs), operatorIds = traceIds)
 
-    verifySubtraction(subtracting, new SimpleOperands[Any]("parameter") {
-      override def value(value: Any) = value
+    verifySubtraction(subtracting, new SimpleOperands[Object]("parameter") {
+      override def value(value: Object) = value
     })
   }
 
   {
     // literal - parameter
-    def subtracting(lhs: CodeGenExpression, rhs: Any) = {
+    def subtracting(lhs: CodeGenExpression, rhs: Object) = {
       val subtraction: CodeGenExpression = sub(lhs, parameter("rhs"))
       val instructions = Seq(Project("X", Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction))))
-      evaluate(instructions, params = Map("rhs" -> rhs))
+      evaluate(instructions, params = Map("rhs" -> rhs), operatorIds = traceIds)
     }
 
-    verifySubtraction(subtracting, new Operands[CodeGenExpression, Any]("literal", "parameter") {
-      override def lhs(value: Any) = literal(value)
-
-      override def rhs(value: Any) = value
+    verifySubtraction(subtracting, new Operands[CodeGenExpression, Object]("literal", "parameter") {
+      override def lhs(value: Object) = literal(value)
+      override def rhs(value: Object) = value
     })
   }
 
   {
     // parameter - literal
-    def subtracting(lhs: Any, rhs: CodeGenExpression) = {
+    def subtracting(lhs: Object, rhs: CodeGenExpression) = {
       val subtraction: CodeGenExpression = sub(parameter("lhs"), rhs)
       val instructions = Seq(Project("X", Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction))))
-      evaluate(instructions, params = Map("lhs" -> lhs))
+      evaluate(instructions, params = Map("lhs" -> lhs), operatorIds = traceIds)
     }
 
-    verifySubtraction(subtracting, new Operands[Any, CodeGenExpression]("parameter", "literal") {
-      override def lhs(value: Any) = value
-
-      override def rhs(value: Any) = literal(value)
+    verifySubtraction(subtracting, new Operands[AnyRef, CodeGenExpression]("parameter", "literal") {
+      override def lhs(value: Object) = value
+      override def rhs(value: Object) = literal(value)
     })
   }
 
   type Operator[Lhs, Rhs] = (Lhs, Rhs) => List[Map[String, Any]]
 
   private def verifyAddition[Lhs, Rhs](add: Operator[Lhs, Rhs], value: Operands[Lhs, Rhs]) = {
-    verify(add, 7, "+", 9, value, 16)
-    verify(add, "abc", "+", 7, value, "abc7")
-    verify(add, 9, "+", "abc", value, "9abc")
-    verify(add, 3.14, "+", "abc", value, "3.14abc")
-    verify(add, "abc", "+", 3.14, value, "abc3.14")
-    verify(add, 7, "+", 3.14, value, 10.14)
-    verify(add, 11.6, "+", 3, value, 14.6)
-    verify(add, 2.5, "+", 4.5, value, 7.0)
-    verify(add, Long.MaxValue, "+", Long.MinValue, value, -1)
+    verify(add, java.lang.Long.valueOf(7), "+", java.lang.Long.valueOf(9), value, java.lang.Long.valueOf(16))
+    verify(add, "abc", "+", java.lang.Long.valueOf(7), value, "abc7")
+    verify(add, java.lang.Long.valueOf(9), "+", "abc", value, "9abc")
+    verify(add, java.lang.Double.valueOf(3.14), "+", "abc", value, "3.14abc")
+    verify(add, "abc", "+", java.lang.Double.valueOf(3.14), value, "abc3.14")
+    verify(add, java.lang.Long.valueOf(7), "+", java.lang.Double.valueOf(3.14), value, 10.14)
+    verify(add, java.lang.Double.valueOf(11.6), "+", java.lang.Long.valueOf(3), value, java.lang.Double.valueOf(14.6))
+    verify(add, java.lang.Double.valueOf(2.5), "+", java.lang.Double.valueOf(4.5), value, java.lang.Double.valueOf(7.0))
+    verify(add, java.lang.Long.valueOf(Long.MaxValue), "+", java.lang.Long.valueOf(Long.MinValue), value, java.lang.Long.valueOf(-1))
   }
 
   private def verifySubtraction[Lhs, Rhs](sub: Operator[Lhs, Rhs], value: Operands[Lhs, Rhs]) = {
-    verify(sub, 9, "-", 7, value, 2)
-    verify(sub, Long.MaxValue, "-", Int.MaxValue, value, Long.MaxValue - Int.MaxValue)
-    verify(sub, 3.25, "-", 3, value, 0.25)
-    verify(sub, 3.21, "-", 1.23, value, 1.98)
-    verify(sub, -1, "-", -2, value, 1)
-    verify(sub, -1.25, "-", -2.5, value, 1.25)
+    verify(sub, java.lang.Long.valueOf(9), "-", java.lang.Long.valueOf(7), value, java.lang.Long.valueOf(2))
+    verify(sub, java.lang.Long.valueOf(Long.MaxValue), "-", java.lang.Long.valueOf(Int.MaxValue), value, java.lang.Long.valueOf(Long.MaxValue - Int.MaxValue))
+    verify(sub, java.lang.Double.valueOf(3.25), "-", java.lang.Long.valueOf(3), value, java.lang.Double.valueOf(0.25))
+    verify(sub, java.lang.Double.valueOf(3.21), "-", java.lang.Double.valueOf(1.23), value, java.lang.Double.valueOf(1.98))
+    verify(sub, java.lang.Long.valueOf(-1), "-", java.lang.Long.valueOf(-2), value, java.lang.Long.valueOf(1))
+    verify(sub, java.lang.Double.valueOf(-1.25), "-", java.lang.Double.valueOf(-2.5), value, java.lang.Double.valueOf(1.25))
   }
 
   abstract class Operands[Lhs, Rhs](val left: String, val right: String) {
-    def lhs(value: Any): Lhs
-    def rhs(value: Any): Rhs
+    def lhs(value: Object): Lhs
+    def rhs(value: Object): Rhs
   }
 
   abstract class SimpleOperands[Value](v: String) extends Operands[Value, Value](v, v) {
-    override def lhs(v: Any) = value(v)
-    override def rhs(v: Any) = value(v)
-    def value(value: Any): Value
+    override def lhs(v: Object) = value(v)
+    override def rhs(v: Object) = value(v)
+    def value(value: Object): Value
   }
 
-  def verify[Lhs, Rhs](operator: Operator[Lhs, Rhs], lhs: Any, op: String, rhs: Any, value: Operands[Lhs, Rhs], result: Any) {
+  def verify[Lhs, Rhs](operator: Operator[Lhs, Rhs], lhs: Object, op: String, rhs: Object, value: Operands[Lhs, Rhs], result: Any) {
     test(s"${lhs.getClass.getSimpleName} ${value.left} ($lhs) $op ${rhs.getClass.getSimpleName} ${value.right} ($rhs)") {
       operator(value.lhs(lhs), value.rhs(rhs)) shouldEqual List(Map("result" -> result))
     }
