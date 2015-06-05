@@ -306,10 +306,7 @@ public class ImportTool
 
         LifeSupport life = new LifeSupport();
 
-        JobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
-        NullLogProvider logProvider = NullLogProvider.getInstance();
-        Config config = new Config();
-        LogService logService = life.add( new StoreLogService( logProvider, fs, storeDir, config, jobScheduler ) );
+        LogService logService = life.add( StoreLogService.inStoreDirectory( fs, storeDir ) );
 
         life.start();
         org.neo4j.unsafe.impl.batchimport.Configuration configuration =

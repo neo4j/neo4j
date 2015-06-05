@@ -109,7 +109,7 @@ public class StandaloneClusterClient
         try
         {
             JobScheduler jobScheduler = new Neo4jJobScheduler();
-            LogService logService = logService( new DefaultFileSystemAbstraction(), jobScheduler );
+            LogService logService = logService( new DefaultFileSystemAbstraction() );
             ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
             new StandaloneClusterClient( jobScheduler, new ClusterClient( new Monitors(), adapt( new Config( config ) ),
                     logService, new NotElectableElectionCredentialsProvider(), objectStreamFactory,
@@ -172,13 +172,13 @@ public class StandaloneClusterClient
         }
     }
 
-    private static LogService logService( FileSystemAbstraction fileSystem, JobScheduler jobScheduler ) throws IOException
+    private static LogService logService( FileSystemAbstraction fileSystem ) throws IOException
     {
         File home = new File( System.getProperty( "neo4j.home" ) );
         String logDir = System.getProperty( "org.neo4j.cluster.logdirectory",
                 new File( new File( new File( home, "data" ), "log" ), "arbiter" ).getAbsolutePath() );
-        return new StoreLogService( FormattedLogProvider.toOutputStream( System.out ), fileSystem,
-                new File( logDir ), new Config(), jobScheduler );
+        return StoreLogService.withUserLogProvider( FormattedLogProvider.toOutputStream( System.out ) )
+                .inStoreDirectory( fileSystem, new File( logDir ) );
     }
 
     private static File extractDbTuningProperties( String propertiesFile )

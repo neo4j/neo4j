@@ -92,8 +92,7 @@ public class StoreMigrationTool
                 kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                 deps, ignore() ) );
 
-        JobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
-        LogService logService = new StoreLogService( userLogProvider, fs, legacyStoreDirectory, config, jobScheduler );
+        LogService logService = StoreLogService.withUserLogProvider( userLogProvider ).inStoreDirectory( fs, legacyStoreDirectory );
 
         // Add the kernel store migrator
         life.start();

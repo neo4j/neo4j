@@ -58,7 +58,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -204,27 +203,39 @@ public class PlatformModule
 
     protected LogService createLogService( LogProvider userLogProvider )
     {
-        if ( userLogProvider == null )
-        {
-            userLogProvider = NullLogProvider.getInstance();
-        }
-
         long internalLogRotationThreshold = config.get( GraphDatabaseSettings.store_internal_log_rotation_threshold );
         int internalLogRotationDelay = config.get( GraphDatabaseSettings.store_internal_log_rotation_delay );
         int internalLogMaxArchives = config.get( GraphDatabaseSettings.store_internal_log_max_archives );
+
+        final StoreLogService.Builder builder =
+                StoreLogService.withRotation( internalLogRotationThreshold, internalLogRotationDelay, internalLogMaxArchives, jobScheduler );
+
+        if ( userLogProvider != null )
+        {
+            builder.withUserLogProvider( userLogProvider );
+        }
+
+        builder.withRotationListener( new Consumer<LogProvider>()
+        {
+            @Override
+            public void accept( LogProvider logProvider )
+            {
+                diagnosticsManager.dumpAll( logProvider.getLog( DiagnosticsManager.class ) );
+            }
+        } );
+
+        File internalLog = config.get( GraphDatabaseSettings.store_internal_log_location );
         LogService logService;
         try
         {
-            logService = new StoreLogService( userLogProvider, fileSystem, storeDir, config,
-                    internalLogRotationThreshold, internalLogRotationDelay, internalLogMaxArchives,
-                    jobScheduler, new Consumer<LogProvider>()
+            if ( internalLog == null )
             {
-                @Override
-                public void accept( LogProvider logProvider )
-                {
-                    diagnosticsManager.dumpAll( logProvider.getLog( DiagnosticsManager.class ) );
-                }
-            } );
+                logService = builder.inStoreDirectory( fileSystem, storeDir );
+            }
+            else
+            {
+                logService = builder.toFile( fileSystem, internalLog );
+            }
         }
         catch ( IOException ex )
         {
