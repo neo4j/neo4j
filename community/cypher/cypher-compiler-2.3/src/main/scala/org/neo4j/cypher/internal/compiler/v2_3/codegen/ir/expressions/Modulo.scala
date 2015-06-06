@@ -19,12 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
 
-case class Literal(value: Object) extends CodeGenExpression {
+case class Modulo(lhs: CodeGenExpression, rhs: CodeGenExpression) extends BinaryOperator(lhs, rhs) {
 
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
-
-  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.constant(value)
+  override protected def generator[E](structure: MethodStructure[E]) = structure.mod
 }

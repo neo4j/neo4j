@@ -19,168 +19,144 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression.{add, parameter, sub}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.{ArithmeticException, CypherTypeException}
 import org.scalatest._
 
 class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with CodeGenSugar {
+
   private val traceIds = Map("X" -> null, "id" -> null)
 
-  // addition
+  case class Operation(name: String,
+                       execute: (CodeGenExpression, CodeGenExpression) => CodeGenExpression,
+                       data: Seq[(Any, Any, Either[Any, Class[_ <: Exception]])])
 
-  {
-    // literal + literal
-    def adding(lhs: CodeGenExpression, rhs: CodeGenExpression) = {
-      val addition = add(lhs, rhs)
-      evaluate(
-        Seq(Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> addition)))), operatorIds = traceIds)
+  val addOperation = Operation("Addition", Addition.apply, Seq(
+    (7, 9, Left(16)),
+    ("abc", 7, Left("abc7")),
+    (9, "abc", Left("9abc")),
+    (3.14, "abc", Left("3.14abc")),
+    ("abc", 3.14, Left("abc3.14")),
+    (7, 3.14, Left(10.14)),
+    (11.6, 3, Left(14.6)),
+    (2.5, 4.5, Left(7.0)),
+    (Long.MaxValue, Long.MinValue, Left(-1)),
+    (42, null, Left(null)),
+    (null, 42, Left(null)),
+    (true, 3, Right(classOf[CypherTypeException])))
+  )
+
+  val subOperation = Operation("Subtraction", Subtraction.apply, Seq(
+    (9, 7, Left(2)),
+    (Long.MaxValue, Int.MaxValue, Left(Long.MaxValue - Int.MaxValue)),
+    (3.25, 3, Left(0.25)),
+    (3.21, 1.23, Left(1.98)),
+    (-1, -2, Left(1)),
+    (-1.25, -2.5, Left(1.25)),
+    (2, null, Left(null)),
+    (null, 2, Left(null)),
+    (false, 3, Right(classOf[CypherTypeException])))
+  )
+
+  val mulOperation = Operation("Multiplication", Multiplication.apply, Seq(
+    (0, 0, Left(0)),
+    (0, 42, Left(0)),
+    (1, 1, Left(1)),
+    (5, 20, Left(100)),
+    (2, -10, Left(-20)),
+    (-2, 10, Left(-20)),
+    (-2, -10, Left(20)),
+    (0.0, 0.0, Left(0.0)),
+    (0.0, 42.5, Left(0.0)),
+    (1.2, 1, Left(1.2)),
+    (5.0, 20.0, Left(100.0)),
+    (2.0, -10.0, Left(-20.0)),
+    (-2.0, 10.0, Left(-20.0)),
+    (-2.0, -10.0, Left(20.0)),
+    (null, null, Left(null)),
+    (null, 1, Left(null)),
+    (1, null, Left(null)),
+    (true, 12, Right(classOf[CypherTypeException])))
+  )
+
+  val divOperation = Operation("Division", Division.apply, Seq(
+    (0, 2, Left(0)),
+    (10, 0, Right(classOf[ArithmeticException])),
+    (-42, 42, Left(-1)),
+    (1, 2, Left(0)),
+    (10.0, 0.0, Right(classOf[ArithmeticException])),
+    (-3.25, 13.0, Left(-0.25)),
+    (0, 2.0, Left(0.0)),
+    (-9, 3.0, Left(-3.0)),
+    (null, null, Left(null)),
+    (1, null, Left(null)),
+    (null, 1.0, Left(null)),
+    (true, 2, Right(classOf[CypherTypeException])),
+    (2.0, true, Right(classOf[CypherTypeException])))
+  )
+
+  val modOperation = Operation("Modulo", Modulo.apply, Seq(
+    (5, 2, Left(1)),
+    (3.25, -3, Left(0.25)),
+    (-14, -5.0, Left(-4.0)),
+    (null, null, Left(null)),
+    (42, null, Left(null)),
+    (null, 42, Left(null)),
+    (false, 42, Right(classOf[CypherTypeException])),
+    (5, true, Right(classOf[CypherTypeException])))
+  )
+
+  val operationsToTest = Seq(addOperation, subOperation, mulOperation, divOperation, modOperation)
+
+  for (Operation(name, apply, data) <- operationsToTest) {
+
+    val inputs = data.map {
+      case (x, y, r) => (asAnyRef(x), asAnyRef(y), asAnyRef(r))
     }
 
-    verifyAddition(adding, new SimpleOperands[CodeGenExpression]("literal") {
-      override def value(value: Object) = literal(value)
-    })
-  }
+    def project(lhs: CodeGenExpression, rhs: CodeGenExpression) =
+      Seq(Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> apply(lhs, rhs)))))
 
-  {
-    // parameter + parameter
-    val addition: CodeGenExpression = add(parameter("lhs"), parameter("rhs"))
-    val instructions = Seq(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition))))
+    inputs.foreach {
+      case (lhs, rhs, expected) =>
 
-    def adding(lhs: Object, rhs: Object) = evaluate(instructions, params = Map("lhs" -> lhs, "rhs" -> rhs), operatorIds = traceIds)
+        def verify(result: => AnyRef) = expected match {
+          case Left(x) =>
+            result should equal(List(Map("result" -> x)))
 
-    verifyAddition(adding, new SimpleOperands[Object]("parameter") {
-      override def value(value: Object) = value
-    })
-  }
+          case Right(x) =>
+            val error = intercept[Exception](result)
+            withClue(error)(error.getClass should equal(x))
+        }
 
-  {
-    // literal + parameter
-    def adding(lhs: CodeGenExpression, rhs: Object) = {
-      val addition: CodeGenExpression = add(lhs, parameter("rhs"))
-      val instructions = Seq(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition))))
-      evaluate(instructions, params = Map("rhs" -> rhs), operatorIds = traceIds)
+        test(s"$name: literal($lhs) & literal($rhs)") {
+          verify(evaluate(project(Literal(lhs), Literal(rhs)), operatorIds = traceIds,
+                          params = Map.empty))
+        }
 
-    }
+        test(s"$name: parameter($lhs) & parameter($rhs)") {
+          verify(evaluate(project(Parameter("lhs"), Parameter("rhs")), operatorIds = traceIds,
+                          params = Map("lhs" -> lhs, "rhs" -> rhs)))
+        }
 
-    verifyAddition(adding, new Operands[CodeGenExpression, Object]("literal", "parameter") {
-      override def lhs(value: Object) = literal(value)
-      override def rhs(value: Object) = value
-    })
-  }
+        test(s"$name: literal($lhs) & parameter($rhs)") {
+          verify(evaluate(project(Literal(lhs), Parameter("rhs")), operatorIds = traceIds,
+                          params = Map("rhs" -> rhs)))
+        }
 
-  {
-    // parameter + literal
-    def adding(lhs: Object, rhs: CodeGenExpression) = {
-      val addition: CodeGenExpression = add(parameter("lhs"), rhs)
-      val instructions = Seq(Project("X", Seq(addition), AcceptVisitor("id", Map("result" -> addition))))
-      evaluate(instructions, params = Map("lhs" -> lhs), operatorIds = traceIds)
-    }
-
-    verifyAddition(adding, new Operands[Object, CodeGenExpression]("parameter", "literal") {
-      override def lhs(value: Object) = value
-      override def rhs(value: Object) = literal(value)
-    })
-  }
-
-  // subtraction
-
-  {
-    // literal - literal
-    def subtracting(lhs: CodeGenExpression, rhs: CodeGenExpression) = {
-      val subtraction = sub(lhs, rhs)
-      evaluate(
-        Seq(Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> subtraction)))), operatorIds = traceIds)
-    }
-
-    verifySubtraction(subtracting, new SimpleOperands[CodeGenExpression]("literal") {
-      override def value(value: Object) = literal(value)
-    })
-  }
-
-  {
-    // parameter - parameter
-    val subtraction: CodeGenExpression = sub(parameter("lhs"), parameter("rhs"))
-    val instructions = Seq(Project("X", Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction))))
-    def subtracting(lhs: Object, rhs: Object) = evaluate(instructions, params = Map("lhs" -> lhs, "rhs" -> rhs), operatorIds = traceIds)
-
-    verifySubtraction(subtracting, new SimpleOperands[Object]("parameter") {
-      override def value(value: Object) = value
-    })
-  }
-
-  {
-    // literal - parameter
-    def subtracting(lhs: CodeGenExpression, rhs: Object) = {
-      val subtraction: CodeGenExpression = sub(lhs, parameter("rhs"))
-      val instructions = Seq(Project("X", Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction))))
-      evaluate(instructions, params = Map("rhs" -> rhs), operatorIds = traceIds)
-    }
-
-    verifySubtraction(subtracting, new Operands[CodeGenExpression, Object]("literal", "parameter") {
-      override def lhs(value: Object) = literal(value)
-      override def rhs(value: Object) = value
-    })
-  }
-
-  {
-    // parameter - literal
-    def subtracting(lhs: Object, rhs: CodeGenExpression) = {
-      val subtraction: CodeGenExpression = sub(parameter("lhs"), rhs)
-      val instructions = Seq(Project("X", Seq(subtraction), AcceptVisitor("id", Map("result" -> subtraction))))
-      evaluate(instructions, params = Map("lhs" -> lhs), operatorIds = traceIds)
-    }
-
-    verifySubtraction(subtracting, new Operands[AnyRef, CodeGenExpression]("parameter", "literal") {
-      override def lhs(value: Object) = value
-      override def rhs(value: Object) = literal(value)
-    })
-  }
-
-  type Operator[Lhs, Rhs] = (Lhs, Rhs) => List[Map[String, Any]]
-
-  private def verifyAddition[Lhs, Rhs](add: Operator[Lhs, Rhs], value: Operands[Lhs, Rhs]) = {
-    verify(add, java.lang.Long.valueOf(7), "+", java.lang.Long.valueOf(9), value, java.lang.Long.valueOf(16))
-    verify(add, "abc", "+", java.lang.Long.valueOf(7), value, "abc7")
-    verify(add, java.lang.Long.valueOf(9), "+", "abc", value, "9abc")
-    verify(add, java.lang.Double.valueOf(3.14), "+", "abc", value, "3.14abc")
-    verify(add, "abc", "+", java.lang.Double.valueOf(3.14), value, "abc3.14")
-    verify(add, java.lang.Long.valueOf(7), "+", java.lang.Double.valueOf(3.14), value, 10.14)
-    verify(add, java.lang.Double.valueOf(11.6), "+", java.lang.Long.valueOf(3), value, java.lang.Double.valueOf(14.6))
-    verify(add, java.lang.Double.valueOf(2.5), "+", java.lang.Double.valueOf(4.5), value, java.lang.Double.valueOf(7.0))
-    verify(add, java.lang.Long.valueOf(Long.MaxValue), "+", java.lang.Long.valueOf(Long.MinValue), value, java.lang.Long.valueOf(-1))
-  }
-
-  private def verifySubtraction[Lhs, Rhs](sub: Operator[Lhs, Rhs], value: Operands[Lhs, Rhs]) = {
-    verify(sub, java.lang.Long.valueOf(9), "-", java.lang.Long.valueOf(7), value, java.lang.Long.valueOf(2))
-    verify(sub, java.lang.Long.valueOf(Long.MaxValue), "-", java.lang.Long.valueOf(Int.MaxValue), value, java.lang.Long.valueOf(Long.MaxValue - Int.MaxValue))
-    verify(sub, java.lang.Double.valueOf(3.25), "-", java.lang.Long.valueOf(3), value, java.lang.Double.valueOf(0.25))
-    verify(sub, java.lang.Double.valueOf(3.21), "-", java.lang.Double.valueOf(1.23), value, java.lang.Double.valueOf(1.98))
-    verify(sub, java.lang.Long.valueOf(-1), "-", java.lang.Long.valueOf(-2), value, java.lang.Long.valueOf(1))
-    verify(sub, java.lang.Double.valueOf(-1.25), "-", java.lang.Double.valueOf(-2.5), value, java.lang.Double.valueOf(1.25))
-  }
-
-  abstract class Operands[Lhs, Rhs](val left: String, val right: String) {
-    def lhs(value: Object): Lhs
-    def rhs(value: Object): Rhs
-  }
-
-  abstract class SimpleOperands[Value](v: String) extends Operands[Value, Value](v, v) {
-    override def lhs(v: Object) = value(v)
-    override def rhs(v: Object) = value(v)
-    def value(value: Object): Value
-  }
-
-  def verify[Lhs, Rhs](operator: Operator[Lhs, Rhs], lhs: Object, op: String, rhs: Object, value: Operands[Lhs, Rhs], result: Any) {
-    test(s"${lhs.getClass.getSimpleName} ${value.left} ($lhs) $op ${rhs.getClass.getSimpleName} ${value.right} ($rhs)") {
-      operator(value.lhs(lhs), value.rhs(rhs)) shouldEqual List(Map("result" -> result))
+        test(s"$name: parameter($lhs) & literal($rhs)") {
+          verify(evaluate(project(Parameter("lhs"), Literal(rhs)), operatorIds = traceIds,
+                          params = Map("lhs" -> lhs)))
+        }
     }
   }
 
-  def literal(value: Any): CodeGenExpression = value match {
-    case v: Int => CodeGenExpression.literal(v)
-    case v: Long => CodeGenExpression.literal(v)
-    case v: Double => CodeGenExpression.literal(v)
-    case v: String => CodeGenExpression.literal(v)
+  private def asAnyRef(value: Any) = value match {
+    case x: Int => Int.box(x)
+    case x: Long => Long.box(x)
+    case x: Double => Double.box(x)
+    case x: AnyRef => x
+    case null => null
   }
 }

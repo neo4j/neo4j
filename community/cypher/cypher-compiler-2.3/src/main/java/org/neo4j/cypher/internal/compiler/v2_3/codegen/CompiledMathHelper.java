@@ -23,6 +23,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.cypher.internal.compiler.v2_3.ArithmeticException;
 import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException;
 
 /**
@@ -30,6 +31,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException;
  */
 public final class CompiledMathHelper
 {
+    private static final double EPSILON = Math.pow( 1, -10 );
+
     /**
      * Do not instantiate this class
      */
@@ -82,7 +85,7 @@ public final class CompiledMathHelper
         // array addition
         Class<?> lhsClass = lhs.getClass();
         Class<?> rhsClass = rhs.getClass();
-        if ( lhsClass.isArray() && rhsClass.isArray())
+        if ( lhsClass.isArray() && rhsClass.isArray() )
         {
             return addArrays( lhs, rhs );
         }
@@ -141,6 +144,90 @@ public final class CompiledMathHelper
         }
 
         throw new CypherTypeException( "Cannot add " + lhs.getClass().getSimpleName() +
+                                       " and " + rhs.getClass().getSimpleName(), null );
+    }
+
+    public static Object multiply( Object lhs, Object rhs )
+    {
+        if ( lhs == null || rhs == null )
+        {
+            return null;
+        }
+
+        if ( lhs instanceof Number && rhs instanceof Number )
+        {
+            if ( lhs instanceof Double || rhs instanceof Double ||
+                 lhs instanceof Float || rhs instanceof Float )
+            {
+                return ((Number) lhs).doubleValue() * ((Number) rhs).doubleValue();
+            }
+            if ( lhs instanceof Long || rhs instanceof Long ||
+                 lhs instanceof Integer || rhs instanceof Integer ||
+                 lhs instanceof Short || rhs instanceof Short ||
+                 lhs instanceof Byte || rhs instanceof Byte )
+            {
+                return ((Number) lhs).longValue() * ((Number) rhs).longValue();
+            }
+            // other numbers we cannot multiply
+        }
+
+        throw new CypherTypeException( "Cannot multiply " + lhs.getClass().getSimpleName() +
+                                       " and " + rhs.getClass().getSimpleName(), null );
+    }
+
+    public static Object divide( Object lhs, Object rhs )
+    {
+        if ( lhs == null || rhs == null )
+        {
+            return null;
+        }
+
+        if ( lhs instanceof Number && rhs instanceof Number )
+        {
+            if ( lhs instanceof Double || rhs instanceof Double ||
+                 lhs instanceof Float || rhs instanceof Float )
+            {
+                double left = ((Number) lhs).doubleValue();
+                double right = ((Number) rhs).doubleValue();
+                if ( Math.abs( right ) < EPSILON )
+                {
+                    throw new ArithmeticException( "/ by zero", null );
+                }
+                return left / right;
+            }
+            if ( lhs instanceof Long || rhs instanceof Long ||
+                 lhs instanceof Integer || rhs instanceof Integer ||
+                 lhs instanceof Short || rhs instanceof Short ||
+                 lhs instanceof Byte || rhs instanceof Byte )
+            {
+                long left = ((Number) lhs).longValue();
+                long right = ((Number) rhs).longValue();
+                if ( right == 0 )
+                {
+                    throw new ArithmeticException( "/ by zero", null );
+                }
+                return left / right;
+            }
+            // other numbers we cannot divide
+        }
+
+        throw new CypherTypeException( "Cannot divide " + lhs.getClass().getSimpleName() +
+                                       " and " + rhs.getClass().getSimpleName(), null );
+    }
+
+    public static Object modulo( Object lhs, Object rhs )
+    {
+        if ( lhs == null || rhs == null )
+        {
+            return null;
+        }
+
+        if ( lhs instanceof Number && rhs instanceof Number )
+        {
+            return ((Number) lhs).doubleValue() % ((Number) rhs).doubleValue();
+        }
+
+        throw new CypherTypeException( "Cannot modulo " + lhs.getClass().getSimpleName() +
                                        " and " + rhs.getClass().getSimpleName(), null );
     }
 
@@ -206,7 +293,7 @@ public final class CompiledMathHelper
         int l = Array.getLength( array );
         Object[] ret = new Object[l + 1];
         ret[0] = object;
-        for (int i = 1; i < ret.length; i++ )
+        for ( int i = 1; i < ret.length; i++ )
         {
             ret[i] = Array.get( array, i );
         }
