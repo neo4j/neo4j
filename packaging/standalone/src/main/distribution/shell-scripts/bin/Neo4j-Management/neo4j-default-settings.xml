@@ -1,0 +1,155 @@
+<?xml version="1.0"?>
+<defaults>
+  <!-- Order is important.  Last section wins -->
+  <section versionregex="^2\.1\.">
+  </section>
+
+  <section versionregex="^2\.2\.">
+    <setting file="neo4j.properties" name="allow_store_upgrade">false</setting>
+    <setting file="neo4j.properties" name="dbms.pagecache.memory"></setting>
+    <setting file="neo4j.properties" name="cypher_parser_version">2.2</setting>
+    <setting file="neo4j.properties" name="keep_logical_logs">false</setting>
+    <setting file="neo4j.properties" name="node_auto_indexing">false</setting>
+    <setting file="neo4j.properties" name="node_keys_indexable"></setting>
+    <setting file="neo4j.properties" name="relationship_auto_indexing">false</setting>
+    <setting file="neo4j.properties" name="relationship_keys_indexable"></setting>
+    <setting file="neo4j.properties" name="remote_shell_enabled">false</setting>
+    <setting file="neo4j.properties" name="remote_shell_host">127.0.0.1</setting>
+    <setting file="neo4j.properties" name="remote_shell_port">1337</setting>
+    <setting file="neo4j.properties" name="cache_type">soft</setting>
+
+    <setting file="neo4j-server.properties" name="org.neo4j.server.database.location">data/graph.db</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.db.tuning.properties">conf/neo4j.properties</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webserver.address">127.0.0.1</setting>
+    <setting file="neo4j-server.properties" name="dbms.security.auth_enabled">true</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webserver.port">7474</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webserver.https.enabled">true</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webserver.https.port">7473</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webserver.https.cert.location">conf/ssl/snakeoil.cert</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webserver.https.key.location">conf/ssl/snakeoil.key</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webserver.https.keystore.location">data/keystore</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.thirdparty_jaxrs_classes"></setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.http.log.enabled">false</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.http.log.config">conf/neo4j-http-logging.xml</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webadmin.rrdb.location">data/rrd</setting>
+    
+  </section>
+
+  <section versionregex="^2\.2\." editionregex="enterprise">
+
+    <setting file="neo4j.properties" name="branched_data_policy">keep_all</setting>
+    <setting file="neo4j.properties" name="ha.com_chunk_size">2M</setting>
+    <setting file="neo4j.properties" name="ha.lock_read_timeout">20s</setting>
+    <setting file="neo4j.properties" name="ha.max_concurrent_channels_per_slave">20</setting>
+    <setting file="neo4j.properties" name="ha.pull_interval">0s</setting>
+    <setting file="neo4j.properties" name="ha.read_timeout">20s</setting>
+    <setting file="neo4j.properties" name="ha.server">0.0.0.0:6001-6011</setting>
+    <setting file="neo4j.properties" name="ha.slave_only">false</setting>
+    <setting file="neo4j.properties" name="ha.state_switch_timeout">120s</setting>
+    <setting file="neo4j.properties" name="ha.tx_push_factor">1</setting>
+    <setting file="neo4j.properties" name="ha.tx_push_strategy">fixed</setting>
+    <setting file="neo4j.properties" name="heartbeat_timeout">11s</setting>
+
+    <setting file="neo4j.properties" name="online_backup_enabled">false</setting>
+    <setting file="neo4j.properties" name="online_backup_server">127.0.0.1:6362</setting>
+
+    <setting file="neo4j.properties" name="ha.allow_init_cluster">true</setting>
+    <setting file="neo4j.properties" name="ha.broadcast_timeout">30s</setting>
+    <setting file="neo4j.properties" name="ha.cluster_name">neo4j.ha</setting>
+    <setting file="neo4j.properties" name="ha.cluster_server">0.0.0.0:5001-5099</setting>
+    <setting file="neo4j.properties" name="ha.configuration_timeout">1s</setting>
+    <setting file="neo4j.properties" name="ha.default_timeout">5s</setting>
+    <setting file="neo4j.properties" name="ha.election_timeout">5s</setting>
+    <setting file="neo4j.properties" name="ha.heartbeat_interval">5s</setting>
+    <setting file="neo4j.properties" name="ha.heartbeat_timeout">11s</setting>
+    <setting file="neo4j.properties" name="ha.initial_hosts"></setting>
+    <setting file="neo4j.properties" name="ha.join_timeout">5s</setting>
+    <setting file="neo4j.properties" name="ha.learn_timeout">5s</setting>
+    <setting file="neo4j.properties" name="ha.leave_timeout">30s</setting>
+    <setting file="neo4j.properties" name="ha.paxos_timeout">5s</setting>
+    <setting file="neo4j.properties" name="ha.phase1_timeout">5s</setting>
+    <setting file="neo4j.properties" name="ha.phase2_timeout">5s</setting>
+    <setting file="neo4j.properties" name="ha.pull_interval"></setting>
+    <setting file="neo4j.properties" name="ha.server_id"></setting>
+    
+    <setting file="neo4j-server.properties" name="org.neo4j.server.database.mode">SINGLE</setting>    
+
+    <setting file="arbiter-wrapper.conf" name="wrapper.name">neo4j-arbiter</setting>    
+    <setting file="neo4j-wrapper.conf" name="wrapper.name">Neo4j-Server</setting>    
+  </section>
+
+  <section versionregex="^2\.3\.">
+    <setting file="neo4j.properties" name="allow_store_upgrade">false</setting>
+    <setting file="neo4j.properties" name="dbms.pagecache.memory"></setting>
+    <setting file="neo4j.properties" name="cypher_parser_version">2.2</setting>
+    <setting file="neo4j.properties" name="keep_logical_logs">false</setting>
+    <setting file="neo4j.properties" name="node_auto_indexing">false</setting>
+    <setting file="neo4j.properties" name="node_keys_indexable"></setting>
+    <setting file="neo4j.properties" name="relationship_auto_indexing">false</setting>
+    <setting file="neo4j.properties" name="relationship_keys_indexable"></setting>
+    <setting file="neo4j.properties" name="remote_shell_enabled">false</setting>
+    <setting file="neo4j.properties" name="remote_shell_host">127.0.0.1</setting>
+    <setting file="neo4j.properties" name="remote_shell_port">1337</setting>
+    <setting file="neo4j.properties" name="cache_type">soft</setting>
+
+    <setting file="neo4j-server.properties" name="org.neo4j.server.database.location">data/graph.db</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.db.tuning.properties">conf/neo4j.properties</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webserver.address">127.0.0.1</setting>
+    <setting file="neo4j-server.properties" name="dbms.security.auth_enabled">true</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webserver.port">7474</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webserver.https.enabled">true</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webserver.https.port">7473</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webserver.https.cert.location">conf/ssl/snakeoil.cert</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webserver.https.key.location">conf/ssl/snakeoil.key</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webserver.https.keystore.location">data/keystore</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.thirdparty_jaxrs_classes"></setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.http.log.enabled">false</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.http.log.config">conf/neo4j-http-logging.xml</setting>
+    <setting file="neo4j-server.properties" name="org.neo4j.server.webadmin.rrdb.location">data/rrd</setting>
+    
+  </section>
+
+  <section versionregex="^2\.3\." editionregex="enterprise">
+
+    <setting file="neo4j.properties" name="branched_data_policy">keep_all</setting>
+    <setting file="neo4j.properties" name="ha.com_chunk_size">2M</setting>
+    <setting file="neo4j.properties" name="ha.lock_read_timeout">20s</setting>
+    <setting file="neo4j.properties" name="ha.max_concurrent_channels_per_slave">20</setting>
+    <setting file="neo4j.properties" name="ha.pull_interval">0s</setting>
+    <setting file="neo4j.properties" name="ha.read_timeout">20s</setting>
+    <setting file="neo4j.properties" name="ha.server">0.0.0.0:6001-6011</setting>
+    <setting file="neo4j.properties" name="ha.slave_only">false</setting>
+    <setting file="neo4j.properties" name="ha.state_switch_timeout">120s</setting>
+    <setting file="neo4j.properties" name="ha.tx_push_factor">1</setting>
+    <setting file="neo4j.properties" name="ha.tx_push_strategy">fixed</setting>
+    <setting file="neo4j.properties" name="heartbeat_timeout">11s</setting>
+
+    <setting file="neo4j.properties" name="online_backup_enabled">false</setting>
+    <setting file="neo4j.properties" name="online_backup_server">127.0.0.1:6362</setting>
+
+    <setting file="neo4j.properties" name="ha.allow_init_cluster">true</setting>
+    <setting file="neo4j.properties" name="ha.broadcast_timeout">30s</setting>
+    <setting file="neo4j.properties" name="ha.cluster_name">neo4j.ha</setting>
+    <setting file="neo4j.properties" name="ha.cluster_server">0.0.0.0:5001-5099</setting>
+    <setting file="neo4j.properties" name="ha.configuration_timeout">1s</setting>
+    <setting file="neo4j.properties" name="ha.default_timeout">5s</setting>
+    <setting file="neo4j.properties" name="ha.election_timeout">5s</setting>
+    <setting file="neo4j.properties" name="ha.heartbeat_interval">5s</setting>
+    <setting file="neo4j.properties" name="ha.heartbeat_timeout">11s</setting>
+    <setting file="neo4j.properties" name="ha.initial_hosts"></setting>
+    <setting file="neo4j.properties" name="ha.join_timeout">5s</setting>
+    <setting file="neo4j.properties" name="ha.learn_timeout">5s</setting>
+    <setting file="neo4j.properties" name="ha.leave_timeout">30s</setting>
+    <setting file="neo4j.properties" name="ha.paxos_timeout">5s</setting>
+    <setting file="neo4j.properties" name="ha.phase1_timeout">5s</setting>
+    <setting file="neo4j.properties" name="ha.phase2_timeout">5s</setting>
+    <setting file="neo4j.properties" name="ha.pull_interval"></setting>
+    <setting file="neo4j.properties" name="ha.server_id"></setting>
+    
+    <setting file="neo4j-server.properties" name="org.neo4j.server.database.mode">SINGLE</setting>    
+
+    <setting file="arbiter-wrapper.conf" name="wrapper.name">neo4j-arbiter</setting>    
+    <setting file="neo4j-wrapper.conf" name="wrapper.name">Neo4j-Server</setting>    
+  </section>
+</defaults>
+
