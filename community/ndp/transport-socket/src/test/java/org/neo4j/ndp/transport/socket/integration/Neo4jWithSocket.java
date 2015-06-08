@@ -20,6 +20,9 @@
 package org.neo4j.ndp.transport.socket.integration;
 
 import io.netty.channel.Channel;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -30,6 +33,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.ndp.runtime.Sessions;
 import org.neo4j.ndp.runtime.internal.StandardSessions;
@@ -67,6 +71,7 @@ public class Neo4jWithSocket implements TestRule
                 final GraphDatabaseAPI api = ((GraphDatabaseAPI) gdb);
                 final LogService logging = api.getDependencyResolver().resolveDependency( LogService.class );
                 final UsageData usageData = api.getDependencyResolver().resolveDependency( UsageData.class );
+                final JobScheduler scheduler = api.getDependencyResolver().resolveDependency( JobScheduler.class );
 
                 final Sessions sessions = life.add( new StandardSessions( api, usageData, logging ) );
 
@@ -80,10 +85,13 @@ public class Neo4jWithSocket implements TestRule
                     }
                 } );
 
+                SelfSignedCertificate ssc = new SelfSignedCertificate();
+                SslContext sslCtx = SslContextBuilder.forServer( ssc.certificate(), ssc.privateKey() ).build();
+
                 // Start services
-                socketTransport = new SocketTransport( new HostnamePort( "localhost:7687" ), availableVersions );
-                wsTransport = new WebSocketTransport( new HostnamePort( "localhost:7688" ), availableVersions );
-                life.add( new NettyServer( asList(
+                socketTransport = new SocketTransport( new HostnamePort( "localhost:7687" ), sslCtx, logging.getUserLogProvider(), availableVersions );
+                wsTransport = new WebSocketTransport( new HostnamePort( "localhost:7688" ), sslCtx, logging.getUserLogProvider(), availableVersions );
+                life.add( new NettyServer( scheduler.threadFactory( JobScheduler.Groups.gapNetworkIO ), asList(
                         socketTransport,
                         wsTransport )) );
 

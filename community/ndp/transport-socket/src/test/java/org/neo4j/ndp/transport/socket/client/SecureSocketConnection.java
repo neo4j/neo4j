@@ -17,33 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.ssl;
+package org.neo4j.ndp.transport.socket.client;
 
-import java.security.KeyStore;
+import java.net.Socket;
+import java.security.SecureRandom;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 
-public class KeyStoreInformation {
-
-    private final char[] keyStorePassword;
-    private final char[] keyPassword;
-    private final KeyStore keyStore;
-
-    public KeyStoreInformation(KeyStore keyStore, char[] keyStorePassword, char[] keyPassword)
+public class SecureSocketConnection extends SocketConnection
+{
+    public SecureSocketConnection()
     {
-        this.keyStore = keyStore;
-        this.keyStorePassword = keyStorePassword;
-        this.keyPassword = keyPassword;
-    }
-    
-    public char[] getKeyStorePassword() {
-        return keyStorePassword;
+        super( createSecureSocket() );
     }
 
-    public char[] getKeyPassword() {
-        return keyPassword;
-    }
-
-    public KeyStore getKeyStore()
+    private static Socket createSecureSocket()
     {
-        return keyStore;
+        try
+        {
+            SSLContext context = SSLContext.getInstance( "SSL" );
+            context.init( new KeyManager[0], new TrustManager[]{new NaiveTrustManager()}, new SecureRandom() );
+
+            return context.getSocketFactory().createSocket();
+        }
+        catch( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

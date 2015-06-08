@@ -21,6 +21,7 @@ package org.neo4j.test;
 
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -43,6 +44,12 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
                 job = command;
             }
         };
+    }
+
+    @Override
+    public ThreadFactory threadFactory( Group group )
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override

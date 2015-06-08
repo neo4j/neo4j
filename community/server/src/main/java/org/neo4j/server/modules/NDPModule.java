@@ -20,7 +20,12 @@
 package org.neo4j.server.modules;
 
 import io.netty.channel.Channel;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.util.internal.logging.InternalLoggerFactory;
+
+import java.io.File;
+import javax.net.ssl.SSLException;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.Function;
@@ -65,47 +70,60 @@ public class NDPModule implements ServerModule
     @Override
     public void start()
     {
-        // These three pulled out dynamically due to initialization ordering issue where this module is
-        // created before the below services are created. A bigger piece of work is pending to
-        // organize this module life cycle better.
-        final GraphDatabaseAPI api = dependencyResolver.resolveDependency( GraphDatabaseAPI.class );
-        final LogService logging = dependencyResolver.resolveDependency( LogService.class );
-        final UsageData usageData = dependencyResolver.resolveDependency( UsageData.class );
-        final JobScheduler scheduler = dependencyResolver.resolveDependency( JobScheduler.class );
-
-        final Log internalLog = logging.getInternalLog( Sessions.class );
-        final Log userLog = logging.getUserLog( Sessions.class );
-
-        final HostnamePort socketAddress = config.get( ServerSettings.ndp_socket_address );
-        final HostnamePort webSocketAddress = config.get( ServerSettings.ndp_ws_address );
-
-        if ( config.get( ServerSettings.ndp_enabled ) )
+        try
         {
-            final Sessions sessions = life.add( new ThreadedSessions(
-                    life.add( new StandardSessions( api, usageData, logging ) ),
-                    scheduler,
-                    logging ) );
+            // These three pulled out dynamically due to initialization ordering issue where this module is
+            // created before the below services are created. A bigger piece of work is pending to
+            // organize this module life cycle better.
+            final GraphDatabaseAPI api = dependencyResolver.resolveDependency( GraphDatabaseAPI.class );
+            final LogService logging = dependencyResolver.resolveDependency( LogService.class );
+            final UsageData usageData = dependencyResolver.resolveDependency( UsageData.class );
+            final JobScheduler scheduler = dependencyResolver.resolveDependency( JobScheduler.class );
 
-            PrimitiveLongObjectMap<Function<Channel,SocketProtocol>> availableVersions = longObjectMap();
-            availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel,SocketProtocol>()
+            final Log internalLog = logging.getInternalLog( Sessions.class );
+            final Log userLog = logging.getUserLog( Sessions.class );
+
+            final File certificateFile = config.get( ServerSettings.tls_certificate_file );
+            final File keyFile = config.get( ServerSettings.tls_key_file );
+            final HostnamePort socketAddress = config.get( ServerSettings.ndp_socket_address );
+            final HostnamePort webSocketAddress = config.get( ServerSettings.ndp_ws_address );
+
+            if ( config.get( ServerSettings.ndp_enabled ) )
             {
-                @Override
-                public SocketProtocol apply( Channel channel )
+                final Sessions sessions = life.add( new ThreadedSessions(
+                        life.add( new StandardSessions( api, usageData, logging ) ),
+                        scheduler,
+                        logging ) );
+
+                PrimitiveLongObjectMap<Function<Channel,SocketProtocol>> availableVersions = longObjectMap();
+                availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel,SocketProtocol>()
                 {
-                    return new SocketProtocolV1( logging, sessions.newSession(), channel );
-                }
-            } );
+                    @Override
+                    public SocketProtocol apply( Channel channel )
+                    {
+                        return new SocketProtocolV1( logging, sessions.newSession(), channel );
+                    }
+                } );
 
-            InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logging.getInternalLogProvider() ) );
-            life.add( new NettyServer( asList(
-                    new SocketTransport( socketAddress, availableVersions ),
-                    new WebSocketTransport( webSocketAddress, availableVersions ) ) ) );
-            internalLog.info( "NDP Server extension loaded." );
-            userLog.info( "Experimental NDP support enabled! Listening for socket connections on " + socketAddress +
-                          " and for websocket connections on " + webSocketAddress + ".");
+                SslContext sslCtx = config.get( ServerSettings.ndp_tls_enabled ) ?
+                        SslContextBuilder.forServer( certificateFile, keyFile ).build() :
+                        null;
+
+                InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logging.getInternalLogProvider() ) );
+                life.add( new NettyServer( scheduler.threadFactory( JobScheduler.Groups.gapNetworkIO ), asList(
+                        new SocketTransport( socketAddress, sslCtx, logging.getInternalLogProvider(), availableVersions ),
+                        new WebSocketTransport( webSocketAddress, sslCtx, logging.getInternalLogProvider(), availableVersions ) ) ) );
+                internalLog.info( "NDP Server extension loaded." );
+                userLog.info( "Experimental NDP support enabled! Listening for socket connections on " + socketAddress +
+                              " and for websocket connections on " + webSocketAddress + "." );
+            }
+
+            life.start();
         }
-
-        life.start();
+        catch( SSLException e )
+        {
+            throw new RuntimeException( "Failed to configure TLS during NDP startup: " + e.getMessage(), e );
+        }
     }
 
     @Override

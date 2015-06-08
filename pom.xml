@@ -673,9 +673,9 @@
         <version>1.7R4</version>
       </dependency>
       <dependency>
-        <groupId>bouncycastle</groupId>
-        <artifactId>bcprov-jdk16</artifactId>
-        <version>140</version>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk15on</artifactId>
+        <version>1.52</version>
       </dependency>
       <dependency>
         <groupId>org.neo4j.3rdparty.javax.ws.rs</groupId>

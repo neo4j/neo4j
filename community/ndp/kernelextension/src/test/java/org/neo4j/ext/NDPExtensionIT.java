@@ -24,15 +24,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.ConnectException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.ndp.transport.socket.client.SecureSocketConnection;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class NDPExtensionIT
@@ -68,7 +65,7 @@ public class NDPExtensionIT
         assertEventuallyServerResponds( "localhost", 8776 );
     }
 
-    private void assertEventuallyServerResponds( String host, int port ) throws IOException, InterruptedException
+    private void assertEventuallyServerResponds( String host, int port ) throws Exception
     {
         long timeout = System.currentTimeMillis() + 1000 * 30;
         for (; ; )
@@ -91,22 +88,18 @@ public class NDPExtensionIT
         }
     }
 
-    private boolean serverResponds( String host, int port ) throws IOException, InterruptedException
+    private boolean serverResponds( String host, int port ) throws Exception
     {
         try
         {
-            try ( Socket socket = new Socket() )
+            try ( SecureSocketConnection conn = new SecureSocketConnection() )
             {
                 // Ok, we can connect - can we perform the version handshake?
-                socket.connect( new InetSocketAddress( host, port ) );
-                OutputStream out = socket.getOutputStream();
-                InputStream in = socket.getInputStream();
+                conn.connect( new HostnamePort( host, port ) );
 
-                // Hard-coded handshake, a general "test client" would be useful further on.
-                out.write( new byte[]{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} );
+                conn.send( new byte[]{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} );
 
-                byte[] accepted = new byte[4];
-                in.read( accepted );
+                byte[] accepted = conn.recv( 4 );
 
                 return Arrays.equals( accepted, new byte[]{0, 0, 0, 1} );
             }

@@ -31,8 +31,8 @@ import java.util.Collection;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.ndp.transport.socket.client.Connection;
-import org.neo4j.ndp.transport.socket.client.SocketConnection;
-import org.neo4j.ndp.transport.socket.client.WebSocketConnection;
+import org.neo4j.ndp.transport.socket.client.SecureSocketConnection;
+import org.neo4j.ndp.transport.socket.client.SecureWebSocketConnection;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -72,7 +72,7 @@ public class TransportSessionIT
                             @Override
                             public Connection newInstance()
                             {
-                                return new SocketConnection();
+                                return new SecureSocketConnection();
                             }
                         },
                         new HostnamePort( "localhost:7687" )
@@ -83,7 +83,7 @@ public class TransportSessionIT
                             @Override
                             public Connection newInstance()
                             {
-                                return new WebSocketConnection();
+                                return new SecureWebSocketConnection();
                             }
                         },
                         new HostnamePort( "localhost:7688" )

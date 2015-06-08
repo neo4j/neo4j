@@ -30,12 +30,13 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import io.netty.handler.ssl.SslContext;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.BiConsumer;
-import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Carries the Neo4j protocol over websockets. Apart from the initial websocket handshake, this works with the exact
@@ -46,11 +47,16 @@ public class WebSocketTransport implements BiConsumer<EventLoopGroup,EventLoopGr
     private static final int MAX_WEBSOCKET_HANDSHAKE_SIZE = 65536;
 
     private final HostnamePort address;
+    private final SslContext sslCtx;
+    private LogProvider logging;
     private final PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> availableVersions;
 
-    public WebSocketTransport( HostnamePort address, PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> protocolVersions )
+    public WebSocketTransport( HostnamePort address, SslContext sslCtx, LogProvider logging,
+            PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> protocolVersions )
     {
         this.address = address;
+        this.sslCtx = sslCtx;
+        this.logging = logging;
         this.availableVersions = protocolVersions;
     }
 
@@ -66,13 +72,20 @@ public class WebSocketTransport implements BiConsumer<EventLoopGroup,EventLoopGr
                     @Override
                     public void initChannel( SocketChannel ch ) throws Exception
                     {
+                        ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
+
+                        if( sslCtx != null )
+                        {
+                            ch.pipeline().addLast( sslCtx.newHandler( ch.alloc() ) );
+                        }
+
                         ch.pipeline().addLast(
                                 new HttpServerCodec(),
                                 new HttpObjectAggregator( MAX_WEBSOCKET_HANDSHAKE_SIZE ),
                                 new WebSocketServerProtocolHandler( "" ),
                                 new WebSocketFrameTranslator(),
                                 new SocketTransportHandler(
-                                        new SocketTransportHandler.ProtocolChooser( availableVersions ) ) );
+                                        new SocketTransportHandler.ProtocolChooser( availableVersions ), logging ) );
                     }
                 } );
 

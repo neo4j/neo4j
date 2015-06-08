@@ -83,7 +83,7 @@ import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.ssl.KeyStoreFactory;
 import org.neo4j.server.security.ssl.KeyStoreInformation;
-import org.neo4j.server.security.ssl.SslCertificateFactory;
+import org.neo4j.server.security.ssl.Certificates;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
@@ -137,6 +137,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private TransactionFacade transactionFacade;
     private TransactionHandleRegistry transactionRegistry;
+    private KeyStoreInformation keyStoreInfo;
 
     protected abstract PreFlightTasks createPreflightTasks();
 
@@ -208,6 +209,8 @@ public abstract class AbstractNeoServer implements NeoServer
                 transactionFacade = createTransactionalActions();
 
                 cypherExecutor = new CypherExecutor( database );
+
+                keyStoreInfo = initHttpsKeyStore();
 
                 configureWebServer();
 
@@ -402,7 +405,7 @@ public abstract class AbstractNeoServer implements NeoServer
     // TODO: Once WebServer is fully implementing LifeCycle,
     // it should manage all but static (eg. unchangeable during runtime)
     // configuration itself.
-    private void configureWebServer()
+    private void configureWebServer() throws Exception
     {
         int webServerPort = getWebServerPort();
         String webServerAddr = getWebServerAddress();
@@ -426,7 +429,7 @@ public abstract class AbstractNeoServer implements NeoServer
         if ( sslEnabled )
         {
             log.info( "Enabling HTTPS on port %s", sslPort );
-            webServer.setHttpsCertificateInformation( initHttpsKeyStore() );
+            webServer.setHttpsCertificateInformation( keyStoreInfo );
         }
     }
 
@@ -540,24 +543,20 @@ public abstract class AbstractNeoServer implements NeoServer
      * permissions etc), like you do with Apache Web Server. On each startup
      * we set up a key store for them with their certificate in it.
      */
-    protected KeyStoreInformation initHttpsKeyStore()
+    protected KeyStoreInformation initHttpsKeyStore() throws Exception
     {
-        File keystorePath = configurator.configuration().get( ServerSettings.webserver_keystore_path );
-
-        File privateKeyPath = configurator.configuration().get( ServerSettings.webserver_https_key_path );
-
-        File certificatePath = configurator.configuration().get( ServerSettings.webserver_https_cert_path );
+        File privateKeyPath = configurator.configuration().get( ServerSettings.tls_key_file ).getAbsoluteFile();
+        File certificatePath = configurator.configuration().get( ServerSettings.tls_certificate_file ).getAbsoluteFile();
 
         if ( !certificatePath.exists() )
         {
             //noinspection deprecation
             log.info( "No SSL certificate found, generating a self-signed certificate.." );
-            SslCertificateFactory certFactory = new SslCertificateFactory();
+            Certificates certFactory = new Certificates();
             certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, getWebServerAddress() );
         }
 
-        KeyStoreFactory keyStoreFactory = new KeyStoreFactory();
-        return keyStoreFactory.createKeyStore( keystorePath, privateKeyPath, certificatePath );
+        return new KeyStoreFactory().createKeyStore( privateKeyPath, certificatePath );
     }
 
     @Override

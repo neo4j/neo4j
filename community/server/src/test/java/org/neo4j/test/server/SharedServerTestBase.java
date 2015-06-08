@@ -48,6 +48,7 @@ public class SharedServerTestBase
     @BeforeClass
     public static void allocateServer() throws Throwable
     {
+        System.setProperty( "org.neo4j.useInsecureCertificateGeneration", "true" );
         if ( !useExternal )
         {
             muteAll().call( new Callable<Void>()

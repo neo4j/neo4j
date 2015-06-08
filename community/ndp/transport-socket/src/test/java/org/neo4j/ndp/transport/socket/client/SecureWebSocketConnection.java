@@ -19,6 +19,7 @@
  */
 package org.neo4j.ndp.transport.socket.client;
 
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
@@ -34,9 +35,8 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
-public class WebSocketConnection implements Connection, WebSocketListener
+public class SecureWebSocketConnection implements Connection, WebSocketListener
 {
-    private Session session;
     private WebSocketClient client;
     private RemoteEndpoint server;
 
@@ -52,11 +52,12 @@ public class WebSocketConnection implements Connection, WebSocketListener
     @Override
     public Connection connect( HostnamePort address ) throws Exception
     {
-        URI target = URI.create( "ws://" + address.getHost() + ":" + address.getPort() );
+        URI target = URI.create( "wss://" + address.getHost() + ":" + address.getPort() );
 
-        client = new WebSocketClient();
+        client = new WebSocketClient( new SslContextFactory( /* trustall= */ true ) );
         client.start();
-        session = client.connect( this, target ).get( 30, TimeUnit.SECONDS );
+
+        Session session = client.connect( this, target ).get( 30, TimeUnit.SECONDS );
         server = session.getRemote();
         return this;
     }
