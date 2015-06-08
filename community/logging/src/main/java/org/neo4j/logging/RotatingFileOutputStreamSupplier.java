@@ -19,10 +19,6 @@
  */
 package org.neo4j.logging;
 
-import org.neo4j.function.LongSupplier;
-import org.neo4j.function.Supplier;
-import org.neo4j.io.fs.FileSystemAbstraction;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -32,11 +28,17 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.function.LongSupplier;
+import org.neo4j.function.Supplier;
+import org.neo4j.io.fs.FileSystemAbstraction;
+
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 /**
@@ -179,7 +181,8 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
             // Already rotating
             return;
         }
-        rotationExecutor.execute( new Runnable()
+
+        Runnable runnable = new Runnable()
         {
             @Override
             public void run()
@@ -193,7 +196,8 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                         fileSystem.renameFile( outputFile, archivedOutputFile( 1 ) );
                     }
                     newStream = openOutputFile();
-                } catch ( Exception e )
+                }
+                catch ( Exception e )
                 {
                     rotationListener.rotationError( e, outRef.get() );
                     rotating.set( false );
@@ -201,7 +205,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                 }
                 OutputStream oldStream = outRef.get();
                 rotationListener.outputFileCreated( newStream, oldStream );
-                synchronized (outRef)
+                synchronized ( outRef )
                 {
                     if ( !closed.get() )
                     {
@@ -217,7 +221,17 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
                 rotationListener.rotationCompleted( newStream, oldStream );
                 rotating.set( false );
             }
-        } );
+        };
+
+        try
+        {
+            rotationExecutor.execute( runnable );
+        }
+        catch ( RejectedExecutionException e )
+        {
+            // Run directly instead
+            runnable.run();
+        }
     }
 
     private OutputStream openOutputFile() throws IOException

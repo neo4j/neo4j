@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -79,6 +80,9 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     @Override
     public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
     {
+        if (globalPool == null)
+            throw new RejectedExecutionException( "Scheduler is not started" );
+
         switch( group.strategy() )
         {
         case POOLED:
