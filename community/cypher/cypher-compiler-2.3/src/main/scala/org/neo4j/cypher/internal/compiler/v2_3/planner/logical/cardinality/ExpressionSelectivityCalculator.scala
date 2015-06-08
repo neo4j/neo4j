@@ -42,6 +42,10 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case False() =>
       Selectivity(0)
 
+    // SubPredicate(sub, super)
+    case partial: PartialPredicate[_] =>
+      apply(partial.coveredPredicate)
+
     // WHERE x.prop =/IN ...
     case AsPropertySeekable(seekable) =>
       calculateSelectivityForPropertyEquality(seekable.name, seekable.args.sizeHint, selections, seekable.propertyKey)

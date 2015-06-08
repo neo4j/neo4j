@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   val aIsPerson: HasLabels = identHasLabel("a", "Person")
+  val aIsProgrammer: HasLabels = identHasLabel("a", "Programmer")
   val bIsAnimal: HasLabels = identHasLabel("b", "Animal")
   val compareTwoNodes: Equals = compareBothSides("a", "b")
 
@@ -45,7 +46,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Predicate(idNames("b"), bIsAnimal)
     ))
 
-    selections.coveredBy(Seq(aIsPerson)) should be(false)
+    selections.coveredBy(Seq(aIsPerson)) should be(right = false)
   }
 
   test("should be able to tell when all predicates are covered") {
@@ -53,7 +54,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Predicate(idNames("a"), aIsPerson)
     ))
 
-    selections.coveredBy(Seq(aIsPerson)) should be(true)
+    selections.coveredBy(Seq(aIsPerson)) should be(right = true)
   }
 
   test("can extract HasLabels Predicates") {
@@ -103,6 +104,16 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
     ))
 
     selections.predicatesGiven(a) should equal(Seq.empty)
+  }
+
+  test("prunes away sub predicates") {
+    val covering = And(aIsPerson, aIsProgrammer)(pos)
+    val covered = aIsProgrammer
+    val selections = Selections(Set(Predicate(idNames("a"), PartialPredicate(covered, covering))))
+
+    val result = selections ++ Selections(Set(Predicate(idNames("a"), covering)))
+
+    result should equal(Selections(Set(Predicate(idNames("a"), covering))))
   }
 
   private def idNames(names: String*) = names.map(IdName(_)).toSet

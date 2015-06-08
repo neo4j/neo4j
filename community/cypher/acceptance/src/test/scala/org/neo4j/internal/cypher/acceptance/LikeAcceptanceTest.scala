@@ -41,9 +41,9 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     fNode = createLabeledNode("LABEL")
   }
 
-  // *** TESTS OF %
+  // *** TESTS OF PREFIX SEARCH
 
-  test("should plan an IndexSeek when index exists") {
+  test("should plan an IndexRangeSeek for a % string prefix search when index exists") {
 
     graph.inTx {
       (1 to 300).foreach { _ =>
@@ -61,6 +61,46 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
     result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
   }
+
+  test("should plan an IndexRangeSeek for a _ string prefix search when index exists") {
+
+    graph.inTx {
+      (1 to 300).foreach { _ =>
+        createLabeledNode("Address")
+      }
+    }
+    val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
+    val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
+    val a3 = createLabeledNode(Map("prop" -> "ww"), "Address")
+
+    graph.createIndex("Address", "prop")
+
+    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'ww_' RETURN a")
+
+    result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
+    result.toList should equal(List(Map("a" -> a2)))
+  }
+
+  test("should plan an IndexRangeSeek for a string search that starts with a prefix when index exists") {
+
+    graph.inTx {
+      (1 to 300).foreach { _ =>
+        createLabeledNode("Address")
+      }
+    }
+    val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
+    val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
+    val a3 = createLabeledNode(Map("prop" -> "ww"), "Address")
+
+    graph.createIndex("Address", "prop")
+
+    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'ww%w%' RETURN a")
+
+    result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
+    result.executionPlanDescription().toString should include("Filter")
+    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+  }
+
 
   test("should plan a UniqueIndexSeek when constraint exists") {
 

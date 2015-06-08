@@ -66,26 +66,29 @@ object AsPropertyScannable {
 }
 
 object AsStringRangeSeekable {
-
   def unapply(v: Any): Option[StringRangeSeekable] = v match {
-    case like@Like(Property(ident: Identifier, propertyKey), LikePattern(StringLiteral(value)), _)
+    case like@Like(Property(ident: Identifier, propertyKey), LikePattern(lit@StringLiteral(value)), _)
       if !like.caseInsensitive =>
-      getRange(value).map { range => StringRangeSeekable(range, like, ident, propertyKey) }
+        for ((range, prefix) <- getRange(value))
+          yield {
+            val prefixPattern = LikePattern(StringLiteral(prefix)(lit.position))
+            val predicate = like.copy(pattern = prefixPattern)(like.position)
+            StringRangeSeekable(range, predicate, ident, propertyKey)
+          }
     case _ =>
       None
   }
 
-  def getRange(literal: String): Option[SeekRange[String]] = {
+  def getRange(literal: String): Option[(SeekRange[String], String)] = {
     val ops: List[LikePatternOp] = LikePatternParser(literal).compact.ops
     ops match {
       case MatchText(prefix) :: (_: WildcardLikePatternOp) :: tl =>
-        Some(LowerBounded(InclusiveBound(prefix)))
+        Some(LowerBounded(InclusiveBound(prefix)) -> s"$prefix%")
       case _ =>
         None
     }
   }
 }
-
 
 sealed trait Sargable[T <: Expression] {
   def expr: T

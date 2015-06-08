@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, PropertyKeyId}
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  test("should use index seek for prefix search using like with %") {
+  test("should use index seek for simple prefix search using like with %") {
     (new given {
       indexOn("Person", "name")
       cost = nodeIndexScanCost
@@ -42,6 +42,23 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
         RangeQueryExpression(StringSeekRange(LowerBounded(InclusiveBound("prefix"))) _),
         Set.empty)(solved)
+    )
+  }
+
+  test("should use index seek for complex prefix search using like with %") {
+    (new given {
+      indexOn("Person", "name")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (a:Person) WHERE a.name LIKE 'prefix%suffix' RETURN a").innerPlan should equal(
+      Selection(
+        Seq(Like(Property(ident("a"), PropertyKeyName("name")_)_, LikePattern(StringLiteral("prefix%suffix")_))_),
+        NodeIndexSeek(
+          "a",
+          LabelToken("Person", LabelId(0)),
+          PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+          RangeQueryExpression(StringSeekRange(LowerBounded(InclusiveBound("prefix"))) _),
+          Set.empty)(solved)
+      )(solved)
     )
   }
 
