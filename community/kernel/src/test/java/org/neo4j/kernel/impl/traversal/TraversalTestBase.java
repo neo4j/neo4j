@@ -74,16 +74,11 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
 
     private Map<String, Node> createGraph( GraphDefinition graph )
     {
-        Transaction tx = beginTx();
-        try
+        try ( Transaction tx = beginTx() )
         {
             Map<String, Node> result = graph.create( getGraphDb() );
             tx.success();
             return result;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -211,9 +206,8 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
     protected <T> void expect( Iterable<? extends T> items,
             Representation<T> representation, Set<String> expected )
     {
-        Transaction tx = beginTx();
         Collection<String> encounteredItems = new ArrayList<String>();
-        try
+        try (Transaction tx = beginTx())
         {
             for ( T item : items )
             {
@@ -222,10 +216,6 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
                 encounteredItems.add( repr );
             }
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
 
         if ( !expected.isEmpty() )

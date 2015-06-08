@@ -123,7 +123,7 @@ public class BigStoreIT implements RelationshipType
     
     private void createAndVerifyGraphStartingWithId( long startId, int requiredHeapMb ) throws Exception
     {
-        assumeTrue( machineIsOkToRunThisTest( testName.getMethodName(), requiredHeapMb ) );
+        assumeTrue( machineIsOkToRunThisTest( requiredHeapMb ) );
         
         /*
          * Will create a layout like this:
@@ -157,12 +157,12 @@ public class BigStoreIT implements RelationshipType
             if ( i % 100 == 0 && i > 0 )
             {
                 tx.success();
-                tx.finish();
+                tx.close();
                 tx = db.beginTx();
             }
         }
         tx.success();
-        tx.finish();
+        tx.close();
 
         db = dbRule.restartDatabase();
 
@@ -198,7 +198,7 @@ public class BigStoreIT implements RelationshipType
         }
     }
 
-    public static boolean machineIsOkToRunThisTest( String testName, int requiredHeapMb )
+    public static boolean machineIsOkToRunThisTest(int requiredHeapMb )
     {
         if ( Settings.osIsWindows() )
         {
@@ -250,7 +250,7 @@ public class BigStoreIT implements RelationshipType
 
     private void testHighIds( long highMark, int minus, int requiredHeapMb ) throws IOException
     {
-        if ( !machineIsOkToRunThisTest( testName.getMethodName(), requiredHeapMb ) )
+        if ( !machineIsOkToRunThisTest( requiredHeapMb ) )
         {
             return;
         }
@@ -278,7 +278,7 @@ public class BigStoreIT implements RelationshipType
         assertEquals( stringPropertyValue, nodeAboveTheLine.getProperty( propertyKey ) );
         assertTrue( Arrays.equals( arrayPropertyValue, (long[]) relBelowTheLine.getProperty( propertyKey ) ) );
         tx.success();
-        tx.finish();
+        tx.close();
 
         for ( int i = 0; i < 2; i++ )
         {

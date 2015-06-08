@@ -48,8 +48,7 @@ public class GraphCloner extends ServerPlugin
     public Node clonedSubgraph( @Source Node startNode, @Parameter( name = "depth", optional = false ) Integer depth )
     {
         GraphDatabaseService graphDb = startNode.getGraphDatabase();
-        Transaction tx = graphDb.beginTx();
-        try
+        try ( Transaction tx = graphDb.beginTx() )
         {
             Traverser traverse = traverseToDepth( startNode, depth );
             Iterator<Node> nodes = traverse.nodes()
@@ -84,10 +83,6 @@ public class GraphCloner extends ServerPlugin
 
             return clonedNodes.get( startNode );
 
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -142,7 +137,7 @@ public class GraphCloner extends ServerPlugin
 
     private HashMap<Node, Node> cloneNodes( GraphDatabaseService graphDb, Iterator<Node> nodes )
     {
-        HashMap<Node, Node> result = new HashMap<Node, Node>();
+        HashMap<Node, Node> result = new HashMap<>();
 
         while ( nodes.hasNext() )
         {

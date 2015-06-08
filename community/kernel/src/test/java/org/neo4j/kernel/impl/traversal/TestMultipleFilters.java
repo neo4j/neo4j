@@ -60,7 +60,7 @@ public class TestMultipleFilters extends TraversalTestBase
     @After
     public void tearDown()
     {
-         tx.finish();
+         tx.close();
     }
     
     private static class MustBeConnectedToNodeFilter implements Predicate<Path>, Evaluator

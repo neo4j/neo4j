@@ -63,15 +63,11 @@ public class TestReadOnlyNeo4j
                 .newGraphDatabase();
         assertEquals( someData, DbRepresentation.of( readGraphDb ) );
 
-        Transaction tx = readGraphDb.beginTx();
-        try
+        try (Transaction tx = readGraphDb.beginTx())
         {
             readGraphDb.createNode();
 
             tx.success();
-            tx.close();
-
-            fail( "expected exception" );
         }
         catch ( TransactionFailureException e )
         {
@@ -85,18 +81,18 @@ public class TestReadOnlyNeo4j
     {
         DynamicRelationshipType type = withName( "KNOWS" );
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( PATH );
-        Transaction tx = db.beginTx();
-        @SuppressWarnings("deprecation")
-        Node prevNode = db.createNode();
-        for ( int i = 0; i < 100; i++ )
+        try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
-            Relationship rel = prevNode.createRelationshipTo( node, type );
-            node.setProperty( "someKey" + i%10, i%15 );
-            rel.setProperty( "since", System.currentTimeMillis() );
+            Node prevNode = db.createNode();
+            for ( int i = 0; i < 100; i++ )
+            {
+                Node node = db.createNode();
+                Relationship rel = prevNode.createRelationshipTo( node, type );
+                node.setProperty( "someKey" + i % 10, i % 15 );
+                rel.setProperty( "since", System.currentTimeMillis() );
+            }
+            tx.success();
         }
-        tx.success();
-        tx.finish();
         DbRepresentation result = DbRepresentation.of( db );
         db.shutdown();
         return result;
@@ -115,7 +111,7 @@ public class TestReadOnlyNeo4j
         node1.setProperty( "key1", "value1" );
         rel.setProperty( "key1", "value1" );
         tx.success();
-        tx.finish();
+        tx.close();
 
         // make sure write operations still throw exception
         try
@@ -163,7 +159,7 @@ public class TestReadOnlyNeo4j
                 DynamicRelationshipType.withName( "TEST" ), Direction.OUTGOING );
         assertEquals( rel, loadedRel );
         assertThat(loadedRel, inTx(db, hasProperty( "key1" ).withValue( "value1" )));
-        transaction.finish();
+        transaction.close();
         db.shutdown();
     }
 }

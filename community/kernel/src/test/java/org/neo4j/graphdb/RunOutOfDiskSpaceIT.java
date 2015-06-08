@@ -21,6 +21,7 @@ package org.neo4j.graphdb;
 
 import java.io.IOException;
 
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,6 +37,8 @@ import static org.junit.Assert.fail;
 
 public class RunOutOfDiskSpaceIT
 {
+    public final @Rule CleanupRule cleanup = new CleanupRule();
+
     @Test
     public void shouldPropagateIOExceptions() throws Exception
     {
@@ -46,22 +49,22 @@ public class RunOutOfDiskSpaceIT
         db.runOutOfDiskSpaceNao();
 
         // When
-        Transaction tx = db.beginTx();
-        db.createNode();
-        tx.success();
-
-        try
+        try ( Transaction tx = db.beginTx() )
         {
-            tx.finish();
-            fail( "Expected tx finish to throw TransactionFailureException when filesystem is full." );
+            db.createNode();
+            tx.success();
         }
         catch ( TransactionFailureException e )
         {
             exceptionThrown = e;
         }
+        finally
+        {
+            Assert.assertNotNull( "Expected tx finish to throw TransactionFailureException when filesystem is full.",
+                    exceptionThrown );
+            assertTrue( Exceptions.contains( exceptionThrown, IOException.class ) );
+        }
 
-        // Then
-        assertTrue( Exceptions.contains( exceptionThrown, IOException.class ) );
         db.somehowGainMoreDiskSpace(); // to help shutting down the db
     }
 
@@ -69,40 +72,44 @@ public class RunOutOfDiskSpaceIT
     public void shouldStopDatabaseWhenOutOfDiskSpace() throws Exception
     {
         // Given
-        TransactionFailureException errorCaught = null;
+        TransactionFailureException expectedCommitException = null;
+        TransactionFailureException expectedStartException = null;
         LimitedFileSystemGraphDatabase db = cleanup.add( new LimitedFileSystemGraphDatabase() );
 
         db.runOutOfDiskSpaceNao();
 
-        Transaction tx = db.beginTx();
-        db.createNode();
-        tx.success();
-
-        try
+        try ( Transaction tx = db.beginTx() )
         {
-            tx.finish();
-            fail( "Expected tx finish to throw TransactionFailureException when filesystem is full." );
+            db.createNode();
+            tx.success();
         }
         catch ( TransactionFailureException e )
         {
-            // Expected
+            expectedCommitException = e;
+        }
+        finally
+        {
+            Assert.assertNotNull( "Expected tx finish to throw TransactionFailureException when filesystem is full.",
+                    expectedCommitException );
         }
 
         // When
-        try
+        try (Transaction transaction = db.beginTx())
         {
-            db.beginTx();
             fail( "Expected tx begin to throw TransactionFailureException when tx manager breaks." );
         }
         catch ( TransactionFailureException e )
         {
-            errorCaught = e;
+            expectedStartException = e;
+        }
+        finally
+        {
+            Assert.assertNotNull( "Expected tx begin to throw TransactionFailureException when tx manager breaks.", expectedCommitException );
         }
 
         // Then
-        assertThat( errorCaught.getCause(), is( instanceOf( org.neo4j.kernel.api.exceptions.TransactionFailureException.class ) ) );
         db.somehowGainMoreDiskSpace(); // to help shutting down the db
     }
 
-    public final @Rule CleanupRule cleanup = new CleanupRule();
+
 }

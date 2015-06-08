@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.lang.Thread.sleep;
@@ -51,7 +52,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
  * where it should have been successful. After the point where the issue has been fixed this test will use
  * the full 0.5 seconds to try to reproduce it.
  * 
- * @see RelationshipIteratorIssuesTest for unit test
  */
 public class ConcurrentCreateAndGetRelationshipsIT
 {
@@ -108,16 +108,11 @@ public class ConcurrentCreateAndGetRelationshipsIT
 
     private Node createNode( GraphDatabaseService db )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
             tx.success();
             return node;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -148,8 +143,7 @@ public class ConcurrentCreateAndGetRelationshipsIT
             awaitStartSignal();
             while ( failure.get() == null && !stopSignal.get() )
             {
-                Transaction tx = db.beginTx();
-                try
+                try ( Transaction tx = db.beginTx() )
                 {
                     // ArrayIndexOutOfBoundsException happens here
                     count( parentNode.getRelationships( RELTYPE, OUTGOING ) );
@@ -160,10 +154,6 @@ public class ConcurrentCreateAndGetRelationshipsIT
                 catch ( Exception e )
                 {
                     failure.compareAndSet( null, e );
-                }
-                finally
-                {
-                    tx.finish();
                 }
             }
         }

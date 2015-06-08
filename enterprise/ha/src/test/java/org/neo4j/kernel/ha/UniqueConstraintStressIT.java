@@ -56,18 +56,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
 public class UniqueConstraintStressIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule(getClass());
-
-    protected ClusterManager.ManagedCluster cluster;
-
-    @Before
-    public void setup() throws Exception
-    {
-        cluster = clusterRule.config(HaSettings.pull_interval, "0").startCluster( );
-    }
-
-    private final int REPETITIONS = 1;
-    public final @Rule RepeatRule repeater = new RepeatRule();
+    public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
     @Rule
     public OtherThreadRule<Object> slaveWork = new OtherThreadRule<>();
@@ -75,8 +64,15 @@ public class UniqueConstraintStressIT
     @Rule
     public OtherThreadRule<Object> masterWork = new OtherThreadRule<>();
 
+    @Rule
+    public RepeatRule repeater = new RepeatRule();
+
+    protected ClusterManager.ManagedCluster cluster;
+
+    private final int REPETITIONS = 1;
     /** Configure how long to run the test. */
-    private static long runtime = Long.getLong( "neo4j.UniqueConstraintStressIT.runtime", TimeUnit.SECONDS.toMillis( 10 ) );
+    private static long runtime =
+            Long.getLong( "neo4j.UniqueConstraintStressIT.runtime", TimeUnit.SECONDS.toMillis( 10 ) );
 
     /** Label to constrain for the current iteration of the test. */
     private volatile Label label = DynamicLabel.label( "User" );
@@ -84,18 +80,15 @@ public class UniqueConstraintStressIT
     /** Property key to constrain for the current iteration of the test. */
     private volatile String property;
 
-    private final AtomicInteger roundNo = new AtomicInteger(0);
+    private final AtomicInteger roundNo = new AtomicInteger( 0 );
 
-    private abstract class Operation
+
+    @Before
+    public void setup() throws Exception
     {
-        HighlyAvailableGraphDatabase master = cluster.getMaster();
-        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-
-        Future<Boolean> constraintCreation = null;
-        Future<Integer> constraintViolation = null;
-
-        abstract void perform();
+        cluster = clusterRule.config(HaSettings.pull_interval, "0").startCluster( );
     }
+
 
     /* The different orders and delays in the below variations try to stress all known scenarios, as well as
      * of course stress for unknown concurrency issues. See the exception handling structure further below
@@ -395,5 +388,16 @@ public class UniqueConstraintStressIT
     {
         property = "Key-" + roundNo.incrementAndGet();
         label = DynamicLabel.label("Label-" + roundNo.get());
+    }
+
+    private abstract class Operation
+    {
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+
+        Future<Boolean> constraintCreation = null;
+        Future<Integer> constraintViolation = null;
+
+        abstract void perform();
     }
 }

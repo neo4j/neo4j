@@ -61,14 +61,9 @@ public class HighAvailabilitySlavesIT
 
         // then
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() ) {
-            Transaction transaction = db.beginTx();
-            try
+            try (Transaction transaction = db.beginTx())
             {
                 assertEquals( node, getNodeByName( db, name ) );
-            }
-            finally
-            {
-                transaction.finish();
             }
         }
     }
@@ -84,17 +79,12 @@ public class HighAvailabilitySlavesIT
 
     private long createNode( HighlyAvailableGraphDatabase db, String name )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
             node.setProperty( "name", name );
             tx.success();
             return node.getId();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

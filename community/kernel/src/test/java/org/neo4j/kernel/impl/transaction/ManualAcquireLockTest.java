@@ -191,7 +191,7 @@ public class ManualAcquireLockTest
                 public Void doWork( State state )
                 {
                     state.tx.success();
-                    state.tx.finish();
+                    state.tx.close();
                     return null;
                 }
             } );

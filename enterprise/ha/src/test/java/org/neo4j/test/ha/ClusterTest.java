@@ -51,13 +51,15 @@ public class ClusterTest
 {
     @Rule
     public LoggerRule logging = new LoggerRule( Level.OFF );
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
 
     @Test
     public void testCluster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
+                testDirectory.directory(  "testCluster" ),
                 MapUtil.stringMap(HaSettings.ha_server.name(), ":6001-6005",
                                   HaSettings.tx_push_factor.name(), "2"));
         try
@@ -66,25 +68,22 @@ public class ClusterTest
 
             clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
 
-            GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
-            Transaction tx = master.beginTx();
-            Node node = master.createNode();
-            long nodeId = node.getId();
-            node.setProperty( "foo", "bar" );
-            tx.success();
-            tx.finish();
+            long nodeId;
+            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
+            try ( Transaction tx = master.beginTx() )
+            {
+                Node node = master.createNode();
+                nodeId = node.getId();
+                node.setProperty( "foo", "bar" );
+                tx.success();
+            }
 
 
             HighlyAvailableGraphDatabase slave = clusterManager.getDefaultCluster().getAnySlave();
-            Transaction transaction = slave.beginTx();
-            try
+            try ( Transaction transaction = slave.beginTx() )
             {
-                node = slave.getNodeById( nodeId );
+                Node node = slave.getNodeById( nodeId );
                 assertThat( node.getProperty( "foo" ).toString(), CoreMatchers.equalTo( "bar" ) );
-            }
-            finally
-            {
-                transaction.finish();
             }
         }
         finally
@@ -107,7 +106,7 @@ public class ClusterTest
         clusters.getClusters().add( cluster );
 
         ClusterManager clusterManager = new ClusterManager( ClusterManager.provided( clusters ),
-                TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
+                testDirectory.directory( "testCluster" ),
                 MapUtil.stringMap( HaSettings.ha_server.name(), hostName+":6001-6005",
                         HaSettings.tx_push_factor.name(), "2" ));
         try
@@ -116,18 +115,20 @@ public class ClusterTest
 
             clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
 
-            GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
-            Transaction tx = master.beginTx();
-            Node node = master.createNode();
-            long nodeId = node.getId();
-            node.setProperty( "foo", "bar" );
-            tx.success();
-            tx.finish();
+            long nodeId;
+            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
+            try ( Transaction tx = master.beginTx() )
+            {
+                Node node = master.createNode();
+                nodeId = node.getId();
+                node.setProperty( "foo", "bar" );
+                tx.success();
+            }
 
             HighlyAvailableGraphDatabase anySlave = clusterManager.getDefaultCluster().getAnySlave();
-            try(Transaction ignore = anySlave.beginTx())
+            try ( Transaction ignore = anySlave.beginTx() )
             {
-                node = anySlave.getNodeById( nodeId );
+                Node node = anySlave.getNodeById( nodeId );
                 assertThat( node.getProperty( "foo" ).toString(), CoreMatchers.equalTo( "bar" ) );
             }
         }
@@ -150,7 +151,7 @@ public class ClusterTest
         clusters.getClusters().add( cluster );
 
         ClusterManager clusterManager = new ClusterManager( ClusterManager.provided( clusters ),
-                TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
+                testDirectory.directory( "testCluster" ),
                 MapUtil.stringMap( HaSettings.ha_server.name(), "0.0.0.0:6001-6005",
                         HaSettings.tx_push_factor.name(), "2" ));
         try
@@ -159,18 +160,20 @@ public class ClusterTest
 
             clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
 
-            GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
-            Transaction tx = master.beginTx();
-            Node node = master.createNode();
-            long nodeId = node.getId();
-            node.setProperty( "foo", "bar" );
-            tx.success();
-            tx.finish();
+            long nodeId;
+            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
+            try ( Transaction tx = master.beginTx() )
+            {
+                Node node = master.createNode();
+                nodeId = node.getId();
+                node.setProperty( "foo", "bar" );
+                tx.success();
+            }
 
             HighlyAvailableGraphDatabase anySlave = clusterManager.getDefaultCluster().getAnySlave();
-            try(Transaction ignore = anySlave.beginTx())
+            try ( Transaction ignore = anySlave.beginTx() )
             {
-                node = anySlave.getNodeById( nodeId );
+                Node node = anySlave.getNodeById( nodeId );
                 assertThat( node.getProperty( "foo" ).toString(), CoreMatchers.equalTo( "bar" ) );
             }
         }
@@ -184,17 +187,18 @@ public class ClusterTest
     public void testArbiterStartsFirstAndThenTwoInstancesJoin() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( ClusterManager.clusterWithAdditionalArbiters( 2, 1 ),
-                TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ), MapUtil.stringMap());
+                testDirectory.directory( "testCluster" ), MapUtil.stringMap());
         try
         {
             clusterManager.start();
             clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
 
-            GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
-            Transaction tx = master.beginTx();
-            master.createNode();
-            tx.success();
-            tx.finish();
+            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
+            try ( Transaction tx = master.beginTx() )
+            {
+                master.createNode();
+                tx.success();
+            }
         }
         finally
         {
@@ -209,7 +213,7 @@ public class ClusterTest
         try
         {
             String masterStoreDir =
-                    TargetDirectory.forTest( getClass() ).cleanDirectory( "testConflictingClusterPortsMaster" ).getAbsolutePath();
+                    testDirectory.directory( "testConflictingClusterPortsMaster" ).getAbsolutePath();
             first = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( masterStoreDir )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
@@ -221,7 +225,7 @@ public class ClusterTest
             try
             {
                 String slaveStoreDir =
-                        TargetDirectory.forTest( getClass() ).cleanDirectory( "testConflictingClusterPortsSlave" ).getAbsolutePath();
+                        testDirectory.directory( "testConflictingClusterPortsSlave" ).getAbsolutePath();
                 HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                         newHighlyAvailableDatabaseBuilder( slaveStoreDir )
                         .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
@@ -253,7 +257,7 @@ public class ClusterTest
         try
         {
             String storeDir =
-                    TargetDirectory.forTest( getClass() ).cleanDirectory( "testConflictingHaPorts" ).getAbsolutePath();
+                    testDirectory.directory( "testConflictingHaPorts" ).getAbsolutePath();
              first = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( storeDir )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
@@ -292,7 +296,7 @@ public class ClusterTest
     public void given4instanceClusterWhenMasterGoesDownThenElectNewMaster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/fourinstances.xml" ).toURI() ),
-                TargetDirectory.forTest( getClass() ).cleanDirectory( "4instances" ), MapUtil.stringMap() );
+                testDirectory.directory( "4instances" ), MapUtil.stringMap() );
         try
         {
             clusterManager.start();
@@ -307,11 +311,12 @@ public class ClusterTest
 
             GraphDatabaseService master = cluster.getMaster();
             logging.getLogger().info( "CREATE NODE" );
-            Transaction tx = master.beginTx();
-            master.createNode();
-            logging.getLogger().info( "CREATED NODE" );
-            tx.success();
-            tx.finish();
+            try ( Transaction tx = master.beginTx() )
+            {
+                master.createNode();
+                logging.getLogger().info( "CREATED NODE" );
+                tx.success();
+            }
 
             logging.getLogger().info( "STOPPING CLUSTER" );
         }
@@ -325,7 +330,7 @@ public class ClusterTest
     public void givenEmptyHostListWhenClusterStartupThenFormClusterWithSingleInstance() throws Exception
     {
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( getClass() ).cleanDirectory(
+                newHighlyAvailableDatabaseBuilder( testDirectory.directory(
                         "singleinstance" ).getAbsolutePath() ).
                 setConfig( ClusterSettings.server_id, "1" ).
                 setConfig( ClusterSettings.initial_hosts, "" ).

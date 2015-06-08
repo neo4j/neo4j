@@ -171,7 +171,7 @@ public class UniqueConstraintHaIT
         try
         {
             slaveTx.success();
-            slaveTx.finish();
+            slaveTx.close();
             fail( "Expected this commit to fail :(" );
         }
         catch( TransactionFailureException e )

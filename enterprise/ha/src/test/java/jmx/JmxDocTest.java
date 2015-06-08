@@ -29,6 +29,7 @@ import java.io.Writer;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -53,6 +54,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.configuration.AsciiDocListGenerator;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.TargetDirectory;
@@ -66,15 +68,10 @@ public class JmxDocTest
     private static final String ENDIF = "endif::nonhtmloutput[]\n";
     private static final String BEAN_NAME0 = "name0";
     private static final String BEAN_NAME = "name";
-    private static final List<String> QUERIES = Arrays.asList( new String[]{"org.neo4j:*"} );
+    private static final List<String> QUERIES = Collections.singletonList( "org.neo4j:*" );
     private static final String JAVADOC_URL = "link:javadocs/";
     private static final int EXPECTED_NUMBER_OF_BEANS = 12;
-    private static final Set<String> EXCLUDES = new HashSet<String>()
-    {
-        {
-            add( "JMX Server" );
-        }
-    };
+    private static final Set<String> EXCLUDES = IteratorUtil.set( "JMX Server" );
     private static final Map<String, String> TYPES = new HashMap<String, String>()
     {
         {
@@ -117,7 +114,7 @@ public class JmxDocTest
         AsciiDocListGenerator listGenerator = new AsciiDocListGenerator( "jmx-list", "MBeans exposed by Neo4j", false );
 
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-        SortedMap<String, ObjectName> neo4jBeans = new TreeMap<String, ObjectName>(
+        SortedMap<String, ObjectName> neo4jBeans = new TreeMap<>(
                 String.CASE_INSENSITIVE_ORDER );
 
         for ( String query : QUERIES )
@@ -259,7 +256,7 @@ public class JmxDocTest
                         + "|Name|Description|Type|Read|Write\n" + "5.1+^e|" )
                 .append( description )
                 .append( '\n' );
-        SortedSet<String> attributeInfo = new TreeSet<String>(
+        SortedSet<String> attributeInfo = new TreeSet<>(
                 String.CASE_INSENSITIVE_ORDER );
         for ( MBeanAttributeInfo attrInfo : attributes )
         {

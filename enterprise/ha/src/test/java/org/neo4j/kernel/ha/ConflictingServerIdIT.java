@@ -82,9 +82,10 @@ public class ConflictingServerIdIT
             assertTrue( master.isMaster() );
             assertTrue( !dbWithId21.isMaster() );
 
-            Transaction tx1 = dbWithId21.beginTx(  );
-            tx1.success();
-            tx1.finish();
+            try ( Transaction transaction = dbWithId21.beginTx() )
+            {
+                transaction.success();
+            }
         }
         finally
         {

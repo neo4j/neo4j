@@ -64,12 +64,13 @@ public class BackupEmbeddedIT
     @SuppressWarnings("deprecation")
     public static DbRepresentation createSomeData( GraphDatabaseService db )
     {
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        node.setProperty( "name", "Neo" );
-        db.createNode().createRelationshipTo( node, DynamicRelationshipType.withName( "KNOWS" ) );
-        tx.success();
-        tx.finish();
+        try (Transaction tx = db.beginTx())
+        {
+            Node node = db.createNode();
+            node.setProperty( "name", "Neo" );
+            db.createNode().createRelationshipTo( node, DynamicRelationshipType.withName( "KNOWS" ) );
+            tx.success();
+        }
         return DbRepresentation.of( db );
     }
 

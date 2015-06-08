@@ -114,8 +114,8 @@ public class RelationshipChainExplorerTest
     {
         File storeDirectory = storeLocation.graphDbDir();
         GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDirectory );
-        Transaction transaction = database.beginTx();
-        try
+
+        try ( Transaction transaction = database.beginTx() )
         {
             Node denseNode = database.createNode();
             for ( int i = 0; i < nDegreeTwoNodes; i++ )
@@ -133,10 +133,6 @@ public class RelationshipChainExplorerTest
                 degreeTwoNode.createRelationshipTo( leafNode, TestRelationshipType.CONNECTED );
             }
             transaction.success();
-        }
-        finally
-        {
-            transaction.finish();
         }
         database.shutdown();
         PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );

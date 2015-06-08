@@ -59,8 +59,7 @@ public class TestUniqueness extends TraversalTestBase
 
         createGraph( "a TO b", "a TO c", "a TO d", "a TO e", "a TO e", "b TO e", "d TO e", "c TO b" );
         RelationshipType to = withName( "TO" );
-        Transaction tx = beginTx();
-        try
+        try ( Transaction tx = beginTx() )
         {
             Node a = getNodeWithName( "a" );
             Node e = getNodeWithName( "e" );
@@ -74,10 +73,6 @@ public class TestUniqueness extends TraversalTestBase
             assertEquals( "a,c,b,e", pathRepresentation.represent( paths[3] ) );
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     @Test
@@ -90,8 +85,7 @@ public class TestUniqueness extends TraversalTestBase
         createGraph( "a TO b", "a TO c", "b TO c" );
         RelationshipType to = withName( "TO" );
 
-        Transaction tx = beginTx();
-        try
+        try ( Transaction tx = beginTx() )
         {
             Node a = getNodeWithName( "a" );
             Node c = getNodeWithName( "c" );
@@ -103,10 +97,6 @@ public class TestUniqueness extends TraversalTestBase
 
             assertEquals( "a,b,c", pathRepresentation.represent( thePath ) );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -122,8 +112,7 @@ public class TestUniqueness extends TraversalTestBase
         RelationshipType to = withName( "TO" );
 
 
-        Transaction tx = beginTx();
-        try
+        try ( Transaction tx = beginTx() )
         {
             Node a = getNodeWithName( "a" );
             Node d = getNodeWithName( "d" );
@@ -160,10 +149,6 @@ public class TestUniqueness extends TraversalTestBase
                 paths.next();
             }
             assertEquals( "wrong number of paths calculated with relationship global uniqueness", 1, count );
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 

@@ -68,7 +68,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     @After
     public void tearDown()
     {
-        tx.finish();
+        tx.close();
     }
     
     @Test( expected = IllegalArgumentException.class )

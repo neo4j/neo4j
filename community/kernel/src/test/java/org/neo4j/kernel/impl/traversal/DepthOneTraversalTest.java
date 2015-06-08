@@ -43,7 +43,7 @@ public class DepthOneTraversalTest extends TraversalTestBase
     @After
     public void tearDown()
     {
-        tx.finish();
+        tx.close();
     }
     
     private void shouldGetBothNodesOnDepthOne( TraversalDescription description )

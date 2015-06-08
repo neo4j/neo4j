@@ -70,7 +70,7 @@ public class GraphTransactionRule
             if (tx != null)
             {
                 tx.success();
-                tx.finish();
+                tx.close();
             }
         }
         finally
@@ -88,7 +88,7 @@ public class GraphTransactionRule
             if (tx != null)
             {
                 tx.failure();
-                tx.finish();
+                tx.close();
             }
         }
         finally

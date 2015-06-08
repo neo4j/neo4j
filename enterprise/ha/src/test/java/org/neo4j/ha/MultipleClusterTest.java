@@ -73,7 +73,7 @@ public class MultipleClusterTest
                 cluster1NodeId = node.getId();
                 logging.getLogger().info( "CREATED NODE" );
                 tx.success();
-                tx.finish();
+                tx.close();
             }
 
             ManagedCluster cluster2 = clusterManager.getCluster( "neo4j.ha2" );
@@ -87,7 +87,7 @@ public class MultipleClusterTest
                 cluster2NodeId = node.getId();
                 logging.getLogger().info( "CREATED NODE" );
                 tx.success();
-                tx.finish();
+                tx.close();
             }
 
             // Verify properties in all cluster nodes
@@ -98,7 +98,7 @@ public class MultipleClusterTest
                 Transaction transaction = highlyAvailableGraphDatabase.beginTx();
                 assertEquals( "neo4j.ha", highlyAvailableGraphDatabase.getNodeById( cluster1NodeId ).getProperty(
                         "cluster" ) );
-                transaction.finish();
+                transaction.close();
             }
 
             for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : cluster2.getAllMembers() )
@@ -108,7 +108,7 @@ public class MultipleClusterTest
                 Transaction transaction = highlyAvailableGraphDatabase.beginTx();
                 assertEquals( "neo4j.ha2", highlyAvailableGraphDatabase.getNodeById( cluster2NodeId ).getProperty(
                         "cluster" ) );
-                transaction.finish();
+                transaction.close();
             }
         }
         finally

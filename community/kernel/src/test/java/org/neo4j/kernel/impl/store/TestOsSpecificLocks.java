@@ -101,7 +101,7 @@ public class TestOsSpecificLocks
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
-        tx.finish();
+        tx.close();
         assertTrue( new File( path, "lock" ).exists() );
         try
         {

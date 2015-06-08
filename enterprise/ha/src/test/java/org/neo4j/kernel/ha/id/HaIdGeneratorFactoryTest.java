@@ -108,9 +108,9 @@ public class HaIdGeneratorFactoryTest
         IdGenerator gen = switchToSlave();
 
         // THEN
-        for ( int i = 0; i < defragIds.length; i++ )
+        for ( long defragId : defragIds )
         {
-            assertEquals(defragIds[i], gen.nextId() );
+            assertEquals( defragId, gen.nextId() );
         }
     }
 
@@ -127,9 +127,9 @@ public class HaIdGeneratorFactoryTest
         IdGenerator gen = switchToSlave();
 
         // THEN
-        for ( int i = 0; i < defragIds.length; i++ )
+        for ( long defragId : defragIds )
         {
-            assertEquals(defragIds[i], gen.nextId() );
+            assertEquals( defragId, gen.nextId() );
         }
     }
 

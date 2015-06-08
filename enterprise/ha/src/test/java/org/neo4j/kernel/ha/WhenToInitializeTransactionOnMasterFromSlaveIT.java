@@ -59,7 +59,7 @@ public class WhenToInitializeTransactionOnMasterFromSlaveIT
         slave = cluster.getAnySlave();
 
         // Create some basic data
-        try(Transaction tx = slave.beginTx())
+        try ( Transaction tx = slave.beginTx() )
         {
             Node node = slave.createNode( DynamicLabel.label( "Person" ) );
             node.setProperty( "name", "Bob" );

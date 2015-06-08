@@ -229,8 +229,7 @@ public class TransactionConstraintsIT
         deleteNode( cluster.getMaster(), node.getId() );
 
         // WHEN
-        Transaction tx = aSlave.beginTx();
-        try
+        try (Transaction slaveTransaction = aSlave.beginTx())
         {
             node.setProperty( "name", "test" );
             fail( "Shouldn't be able to modify a node deleted on master" );
@@ -239,10 +238,6 @@ public class TransactionConstraintsIT
         {
             // THEN
             // -- the transactions gotten back in the response should delete that node
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -264,7 +259,7 @@ public class TransactionConstraintsIT
         // GIVEN
         // -- two members acquiring a read lock on the same entity
         final Node commonNode;
-        try(Transaction tx = slave1.beginTx())
+        try ( Transaction tx = slave1.beginTx() )
         {
             commonNode = slave1.createNode();
             tx.success();
@@ -323,7 +318,7 @@ public class TransactionConstraintsIT
 
         // WHEN
         cluster.sync();
-        ClusterManager.RepairKit repairKit = cluster.fail( master );
+        ClusterManager.RepairKit originalMasterRepairKit = cluster.fail( master );
         cluster.await( masterAvailable( master ) );
         takeTheLeadInAnEventualMasterSwitch( cluster.getMaster() );
         cluster.sync();
@@ -333,7 +328,7 @@ public class TransactionConstraintsIT
         // See https://trello.com/c/hcTvl0bv
         Thread.sleep( 30000 );
 
-        repairKit.repair();
+        originalMasterRepairKit.repair();
         cluster.await( allSeesAllAsAvailable() );
         cluster.sync();
         cluster.stop();
@@ -371,8 +366,7 @@ public class TransactionConstraintsIT
         final Node node = createNode( master );
         cluster.sync();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        Transaction slaveTx = slave.beginTx();
-        try
+        try ( Transaction slaveTx = slave.beginTx() )
         {
             Lock lock = slaveTx.acquireWriteLock( slave.getNodeById( node.getId() ) );
 
@@ -394,7 +388,6 @@ public class TransactionConstraintsIT
         }
         finally
         {
-            slaveTx.finish();
             masterWorker.close();
         }
     }
@@ -453,7 +446,7 @@ public class TransactionConstraintsIT
     {
         try
         {
-            tx.finish();
+            tx.close();
             fail( "Transaction shouldn't be able to finish" );
         }
         catch ( TransactionFailureException e )

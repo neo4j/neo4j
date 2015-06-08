@@ -62,7 +62,7 @@ public class TestTxEntries
         node1.createRelationshipTo( node2,
                 DynamicRelationshipType.withName( "relType1" ) );
         tx.success();
-        tx.finish();
+        tx.close();
 
         tx = db.beginTx();
         node1.delete();
@@ -70,7 +70,7 @@ public class TestTxEntries
         try
         {
             // Will throw exception, causing the tx to be rolledback.
-            tx.finish();
+            tx.close();
         }
         catch ( Exception nothingToSeeHereMoveAlong )
         {
@@ -84,6 +84,6 @@ public class TestTxEntries
         tx = db.beginTx();
         node1.setProperty( "foo", "bar" );
         tx.success();
-        tx.finish();
+        tx.close();
     }
 }

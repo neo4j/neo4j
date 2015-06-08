@@ -643,7 +643,7 @@ public class TestIdGenerator
             }
         }
         tx.success();
-        tx.finish();
+        tx.close();
         db.shutdown();
 
         // After a clean shutdown, create new nodes and relationships and see so
@@ -666,7 +666,7 @@ public class TestIdGenerator
             }
         }
         tx.success();
-        tx.finish();
+        tx.close();
 
         // Verify by loading everything from scratch
         tx = db.beginTx();
@@ -674,7 +674,7 @@ public class TestIdGenerator
         {
             lastOrNull( node.getRelationships() );
         }
-        tx.finish();
+        tx.close();
         db.shutdown();
     }
 

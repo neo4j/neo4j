@@ -79,7 +79,8 @@ public class TargetDirectory
             return new File( directory(), name );
         }
 
-        public File directory( String name ) {
+        public File directory( String name )
+        {
             File dir = new File( directory(), name );
             if ( ! fileSystem.fileExists( dir ) )
             {

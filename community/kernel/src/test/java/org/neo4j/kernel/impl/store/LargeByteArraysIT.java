@@ -59,16 +59,11 @@ public class LargeByteArraysIT
 
     private void createNodeWithBigArray( GraphDatabaseService db )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
             node.setProperty( "prop", randomBigByteArray() );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 

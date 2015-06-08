@@ -194,8 +194,7 @@ public class ManyPropertyKeysIT
         public Void doWork( WorkerState state )
         {
             state.tx.success();
-            //noinspection deprecation
-            state.tx.finish();
+            state.tx.close();
             return null;
         }
     }

@@ -47,8 +47,8 @@ public class TestMultipleStartNodes extends TraversalTestBase
         createGraph( "you KNOW me", "you KNOW f1", "you KNOW f4", "me KNOW f1",
                 "me KNOW f4", "me KNOW f2", "me KNOW f3", "f1 KNOW f5", "f2 KNOW f6",
                 "you KNOW f7", "f7 KNOW f8" );
-        Transaction tx = beginTx();
-        try
+
+        try ( Transaction tx = beginTx() )
         {
             RelationshipType KNOW = withName( "KNOW" );
             Node you = getNodeWithName( "you" );
@@ -63,10 +63,6 @@ public class TestMultipleStartNodes extends TraversalTestBase
             TraversalDescription levelTwoTraversal = traversal().relationships( KNOW ).evaluator( atDepth( 2 ) );
             expectNodes( levelTwoTraversal.depthFirst().traverse( you, me ), levelTwoFriends );
             expectNodes( levelTwoTraversal.breadthFirst().traverse( you, me ), levelTwoFriends );
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }
