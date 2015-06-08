@@ -189,11 +189,14 @@ object LogicalPlanConverter {
 
   private implicit class ExpandCodeGen(val logicalPlan: Expand) extends SingleChildPlan {
 
-    if (logicalPlan.mode != ExpandAll) {
-      throw new CantCompileQueryException(s"Expand ${logicalPlan.mode} not yet supported")
+    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+      if (logicalPlan.mode == ExpandAll)
+        expandAllConsume(context, child)
+      else
+        expandIntoConsume(context, child)
     }
 
-    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+    private def expandAllConsume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
       val relVar = Variable(context.namer.newVarName(), symbols.CTRelationship)
       val toNodeVar = Variable(context.namer.newVarName(), symbols.CTNode)
       context.addVariable(logicalPlan.relName.name, relVar)
@@ -203,7 +206,22 @@ object LogicalPlanConverter {
       val fromNodeVar = context.getVariable(logicalPlan.from.name)
       val typeVar2TypeName = logicalPlan.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(logicalPlan)
-      val expand = ExpandLoopDataGenerator(opName, fromNodeVar, logicalPlan.dir, typeVar2TypeName, toNodeVar)
+      val expand = ExpandAllLoopDataGenerator(opName, fromNodeVar, logicalPlan.dir, typeVar2TypeName, toNodeVar)
+
+      (methodHandle, WhileLoop(relVar, expand, action))
+    }
+
+    private def expandIntoConsume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+      val relVar = Variable(context.namer.newVarName(), symbols.CTRelationship)
+      context.addVariable(logicalPlan.relName.name, relVar)
+
+      val (methodHandle, action) = context.popParent().consume(context, this)
+      val fromNodeVar = context.getVariable(logicalPlan.from.name)
+      val toNodeVar = context.getVariable(logicalPlan.to.name)
+      val typeVar2TypeName = logicalPlan.types.map(t => context.namer.newVarName() -> t.name).toMap
+      val opName = context.registerOperator(logicalPlan)
+      val expand = ExpandIntoLoopDataGenerator(opName, fromNodeVar, logicalPlan.dir, typeVar2TypeName, toNodeVar)
+
       (methodHandle, WhileLoop(relVar, expand, action))
     }
   }
@@ -240,7 +258,7 @@ object LogicalPlanConverter {
       //name of flag to check if results were yielded
       val yieldFlag = context.namer.newVarName()
 
-      val expand = ExpandLoopDataGenerator(opName, fromNodeVar, logicalPlan.dir, typeVar2TypeName, toNodeVar)
+      val expand = ExpandAllLoopDataGenerator(opName, fromNodeVar, logicalPlan.dir, typeVar2TypeName, toNodeVar)
 
       val dataGenerator = CheckingLoopDataGenerator(expand, yieldFlag)
       val loop = WhileLoop(relVar, dataGenerator, instructionWithPredicates)

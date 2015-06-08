@@ -659,7 +659,8 @@ RETURN a.name""")
     val r = relate(a, a)
     relate(a, b)
 
-    val result = executeWithAllPlanners("match a-[r]->a return r")
+
+    val result = executeWithAllPlannersAndRuntimes("match a-[r]->a return r")
     result.toList should equal (List(Map("r" -> r)))
   }
 
@@ -1168,7 +1169,7 @@ return b
     relate(b, c, "B")
 
     // when
-    val result = executeWithAllPlanners("match (a)-[r1:A]->(x)-[r2:B]->(a) return a.name")
+    val result = executeWithAllPlannersAndRuntimes("match (a)-[r1:A]->(x)-[r2:B]->(a) return a.name")
 
     // then does not throw exceptions
     assert(result.toList === List(
@@ -1186,7 +1187,7 @@ return b
     relate(b, c, "B")
 
     // when
-    val result = executeWithAllPlanners("match (a)-[:A]->(b), (b)-[:B]->(a) return a.name")
+    val result = executeWithAllPlannersAndRuntimes("match (a)-[:A]->(b), (b)-[:B]->(a) return a.name")
 
     // then does not throw exceptions
     assert(result.toList === List(

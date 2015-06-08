@@ -119,8 +119,11 @@ trait MethodStructure[E] {
   def lookupRelationshipTypeId(typeIdVar: String, typeName: String): Unit
   def nodeGetAllRelationships(iterVar: String, nodeVar: String, direction: Direction): Unit
   def nodeGetRelationships(iterVar: String, nodeVar: String, direction: Direction, typeVars: Seq[String]): Unit
+  def connectingRelationships(iterVar: String, fromNode: String, dir: Direction, toNode:String)
+  def connectingRelationships(iterVar: String, fromNode: String, dir: Direction, types: Seq[String], toNode: String)
   def nextNode(targetVar: String, iterVar: String): Unit
-  def nextRelationshipNode(targetVar: String, iterVar: String, direction: Direction, nodeVar: String, relVar: String): Unit
+  def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: Direction, fromNodeVar: String, relVar: String): Unit
+  def nextRelationship(iterVar: String, direction: Direction, relVar: String): Unit
   def hasNext(iterVar: String): E
   def nodeGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
   def nodeGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
@@ -312,18 +315,25 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   override def nextNode(targetVar: String, iterVar: String) =
     generator.assign(typeRef[Long], targetVar, Expression.invoke(generator.load(iterVar), Methods.nextLong))
 
-  override def nextRelationshipNode(targetVar: String, iterVar: String, direction: Direction, nodeVar: String,
+  override def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: Direction, fromNodeVar: String,
                                     relVar: String) = {
     val startNode = Expression.invoke(generator.load("rel"), Methods.startNode)
     val endNode = Expression.invoke(generator.load("rel"), Methods.endNode)
     generator.expression(Expression.invoke(generator.load(iterVar), Methods.relationshipVisit,
                                            Expression.invoke(generator.load(iterVar), Methods.nextLong),
                                            generator.load("rel")))
-    generator.assign(typeRef[Long], targetVar, direction match {
+    generator.assign(typeRef[Long], toNodeVar, direction match {
       case Direction.INCOMING => startNode
       case Direction.OUTGOING => endNode
-      case Direction.BOTH => Expression.ternary(Expression.eq(startNode, generator.load(nodeVar)), endNode, startNode)
+      case Direction.BOTH => Expression.ternary(Expression.eq(startNode, generator.load(fromNodeVar)), endNode, startNode)
     })
+    generator.assign(typeRef[Long], relVar, Expression.invoke(generator.load("rel"), Methods.relationship))
+  }
+
+  override def nextRelationship(iterVar: String, direction: Direction, relVar: String) = {
+    generator.expression(Expression.invoke(generator.load(iterVar), Methods.relationshipVisit,
+                                           Expression.invoke(generator.load(iterVar), Methods.nextLong),
+                                           generator.load("rel")))
     generator.assign(typeRef[Long], relVar, Expression.invoke(generator.load("rel"), Methods.relationship))
   }
 
@@ -449,6 +459,21 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     Templates.handleExceptions(generator, fields.ro) { body =>
       val args = Seq(body.load(nodeVar), dir(direction)) ++ typeVars.map(body.load)
       body.assign(local, Expression.invoke(readOperations, Methods.nodeGetRelationships, args: _*))
+    }
+  }
+
+  override def connectingRelationships(iterVar: String, fromNode: String, direction: Direction, toNode: String) = {
+    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
+    Templates.handleExceptions(generator, fields.ro) { body =>
+      body.assign(local, Expression.invoke(Methods.allConnectingRelationships, readOperations, body.load(fromNode), dir(direction), body.load(toNode)))
+    }
+  }
+
+  override def connectingRelationships(iterVar: String, fromNode: String, direction: Direction, typeVars: Seq[String], toNode: String) = {
+    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
+    Templates.handleExceptions(generator, fields.ro) { body =>
+      val args = Seq(readOperations, body.load(fromNode), dir(direction),  body.load(toNode)) ++ typeVars.map(body.load)
+      body.assign(local, Expression.invoke(Methods.connectingRelationships, args:_*))
     }
   }
 
@@ -704,6 +729,8 @@ private object Methods {
   val endNode = method[RelationshipIterator, Long]("endNode")
   val nodeGetAllRelationships = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction])
   val nodeGetRelationships = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction], typeRef[Array[Int]])
+  val allConnectingRelationships = method[CompiledExpandUtils, RelationshipIterator]("connectingRelationships", typeRef[ReadOperations], typeRef[Long], typeRef[Long], typeRef[Direction])
+  val connectingRelationships = method[CompiledExpandUtils, RelationshipIterator]("connectingRelationships", typeRef[ReadOperations], typeRef[Long], typeRef[Long], typeRef[Direction], typeRef[Array[Int]])
   val mathAdd = method[CompiledMathHelper, Object]("add", typeRef[Object], typeRef[Object])
   val mathSub = method[CompiledMathHelper, Object]("subtract", typeRef[Object], typeRef[Object])
   val mathMul = method[CompiledMathHelper, Object]("multiply", typeRef[Object], typeRef[Object])
