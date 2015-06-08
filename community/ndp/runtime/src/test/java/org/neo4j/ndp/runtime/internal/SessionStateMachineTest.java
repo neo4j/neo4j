@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.runtime.internal.session;
+package org.neo4j.ndp.runtime.internal;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -27,10 +27,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.ndp.runtime.internal.StatementRunner;
+import org.neo4j.ndp.runtime.Session;
+import org.neo4j.udc.UsageData;
+import org.neo4j.udc.UsageDataKeys;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,25 +43,22 @@ public class SessionStateMachineTest
     private final GraphDatabaseService db = mock( GraphDatabaseService.class );
     private final ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
     private final Transaction tx = mock( TopLevelTransaction.class );
-    private final SessionStateMachine machine = new SessionStateMachine(
+    private final UsageData usageData = new UsageData();
+    private final SessionStateMachine machine = new SessionStateMachine( usageData,
             db, txBridge, mock( StatementRunner.class ), NullLogService.getInstance() );
 
     @Test
-    public void initialStateShouldBeIdle()
+    public void initialStateShouldBeUninitalized()
     {
-        // When
-        SessionStateMachine machine = new SessionStateMachine(
-                mock( GraphDatabaseService.class ), mock( ThreadToStatementContextBridge.class ),
-                mock( StatementRunner.class ), NullLogService.getInstance() );
-
-        // Then
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );
+        // When & Then
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.UNITIALIZED ) );
     }
 
     @Test
     public void shouldStopRunningTxOnHalt() throws Throwable
     {
         // When
+        machine.initialize( "FunClient/1.2", null, Session.Callback.NO_OP );
         machine.beginTransaction();
         machine.close();
 
@@ -66,6 +66,16 @@ public class SessionStateMachineTest
         assertThat( machine.state(), equalTo( SessionStateMachine.State.STOPPED ) );
         verify( db ).beginTx();
         verify( tx ).close();
+    }
+
+    @Test
+    public void shouldPublishClientName() throws Throwable
+    {
+        // When
+        machine.initialize( "FunClient/1.2", null, Session.Callback.NO_OP );
+
+        // Then
+        assertTrue( usageData.get( UsageDataKeys.clientNames ).recentItems().contains( "FunClient/1.2" ) );
     }
 
     @Before

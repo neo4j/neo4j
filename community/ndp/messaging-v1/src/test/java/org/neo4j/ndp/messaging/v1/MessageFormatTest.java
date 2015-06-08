@@ -36,6 +36,7 @@ import org.neo4j.ndp.messaging.v1.message.AcknowledgeFailureMessage;
 import org.neo4j.ndp.messaging.v1.message.DiscardAllMessage;
 import org.neo4j.ndp.messaging.v1.message.FailureMessage;
 import org.neo4j.ndp.messaging.v1.message.IgnoredMessage;
+import org.neo4j.ndp.messaging.v1.message.InitializeMessage;
 import org.neo4j.ndp.messaging.v1.message.Message;
 import org.neo4j.ndp.messaging.v1.message.PullAllMessage;
 import org.neo4j.ndp.messaging.v1.message.RecordMessage;
@@ -67,6 +68,7 @@ public class MessageFormatTest
         assertSerializes( new FailureMessage( new Neo4jError( Status.General.UnknownFailure, "Err" ) ) );
         assertSerializes( new IgnoredMessage() );
         assertSerializes( new AcknowledgeFailureMessage() );
+        assertSerializes( new InitializeMessage("MyClient/1.0") );
     }
 
     @Test

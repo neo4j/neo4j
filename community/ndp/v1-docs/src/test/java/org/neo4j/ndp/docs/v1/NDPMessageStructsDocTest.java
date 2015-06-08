@@ -71,7 +71,7 @@ public class NDPMessageStructsDocTest
         PackStream.Packer packer = new PackStream.Packer( new BufferedChannelOutput( ch, 128 ) );
 
         // When I pack a message according to the documentation
-        packer.packStructHeader( struct.size(), (char) struct.signature() );
+        packer.packStructHeader( struct.size(), struct.signature() );
         for ( DocStruct.Field field : struct )
         {
             packValueOf( field.type(), packer );

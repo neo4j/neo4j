@@ -26,7 +26,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.Sessions;
-import org.neo4j.ndp.runtime.internal.session.SessionStateMachine;
+import org.neo4j.udc.UsageData;
 
 /**
  * The runtime environment in which user statements are executed. This is not a thread safe class, it is expected
@@ -36,14 +36,16 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
 {
     private final GraphDatabaseAPI gds;
     private final LifeSupport life = new LifeSupport();
+    private final UsageData usageData;
     private final LogService logging;
 
     private CypherStatementRunner queryEngine;
     private ThreadToStatementContextBridge txBridge;
 
-    public StandardSessions( GraphDatabaseAPI gds, LogService logging )
+    public StandardSessions( GraphDatabaseAPI gds, UsageData usageData, LogService logging )
     {
         this.gds = gds;
+        this.usageData = usageData;
         this.logging = logging;
         // TODO: Introduce a clean SPI rather than use GDS
         this.txBridge = gds.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
@@ -77,6 +79,6 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     @Override
     public Session newSession()
     {
-        return new SessionStateMachine( gds, txBridge, queryEngine, logging );
+        return new SessionStateMachine( usageData, gds, txBridge, queryEngine, logging );
     }
 }

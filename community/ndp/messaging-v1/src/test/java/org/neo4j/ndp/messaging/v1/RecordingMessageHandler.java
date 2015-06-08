@@ -27,6 +27,7 @@ import org.neo4j.ndp.messaging.v1.message.AcknowledgeFailureMessage;
 import org.neo4j.ndp.messaging.v1.message.DiscardAllMessage;
 import org.neo4j.ndp.messaging.v1.message.FailureMessage;
 import org.neo4j.ndp.messaging.v1.message.IgnoredMessage;
+import org.neo4j.ndp.messaging.v1.message.InitializeMessage;
 import org.neo4j.ndp.messaging.v1.message.Message;
 import org.neo4j.ndp.messaging.v1.message.PullAllMessage;
 import org.neo4j.ndp.messaging.v1.message.RecordMessage;
@@ -85,6 +86,12 @@ public class RecordingMessageHandler implements MessageHandler<RuntimeException>
     public void handleIgnoredMessage() throws RuntimeException
     {
         messages.add( new IgnoredMessage() );
+    }
+
+    @Override
+    public void handleInitializeMessage( String clientName ) throws RuntimeException
+    {
+        messages.add( new InitializeMessage( clientName ) );
     }
 
     public List<Message> asList()

@@ -110,6 +110,11 @@ public interface Session extends AutoCloseable
     String key();
 
     /**
+     * Initialize the session.
+     */
+    <A> void initialize( String clientName, A attachment, Callback<Void,A> callback );
+
+    /**
      * Run a statement, yielding a result stream which can be retrieved through pulling it in a subsequent call.
      * <p/>
      * If there is a statement running already, all remaining items in its stream must be {@link #pullAll(Object,

@@ -4,7 +4,7 @@
 This section discusses the semantic meaning and layout of protocol messages.
 For details on how Neo4j types are represented in binary form, see <<ndp-serialization,serialization>>.
 
-Clients may send request messages at any time.
+Clients may send request messages at any time after a session is <<ndp-message-structs-initialize,initialized>>.
 Clients may <<ndp-messaging-pipelining,pipeline>> requests, sending multiple requests together.
 
 Servers must fully respond to each request before the next request is processed and processing of requests within a session must be done in the same order in which the requests.
@@ -19,6 +19,11 @@ For example, `RECORD` messages are classed as detail messages and `SUCCESS` mess
 The diagrams below illustrates a basic exchange wherein the client sends a request message and receives a series of response messages.
 
 image:images/simple-exchange.png[]
+
+=== Initialization
+
+Before a session can be used to <<ndp-message-structs-run,run>> queries, it must be <<ndp-message-structs-initialize,initialized>>.
+The `INITIALIZE` message message should be sent by the client as the first message it sends after <<ndp-handshake,negotiating protocol version>>.
 
 [[ndp-messaging-pipelining]]
 === Pipelining
@@ -62,6 +67,41 @@ Once the client acknowledges the failure, it is then able to resend a corrected 
 
 Protocol messages are represented as <<ndp-packstream-structures,serialized structures>>.
 
+[[ndp-message-structs-initialize]]
+==== INITIALIZE
+
+The `INITIALIZE` message is a client message used once to initalize the session.
+This message is always the first message the client sends after <<ndp-handshake,negotiating protocol version>>.
+Sending any message other than `INITIALIZE` as the first message to the server will result in a `FAILURE` and the
+server closing the connection.
+
+The server will reply with a `SUCCESS` message unless some parameter for initialization is malformed.
+
+All parameters in the `INITIALIZE` message are required.
+
+[source,ndp_message_struct]
+----
+InitializeMessage (signature=0x01) {
+    Text clientName
+}
+----
+
+.Example
+[source,ndp_packstream_type]
+----
+Value: INITIALIZE "MyClient/1.0"
+
+B1 01 8C 4D  79 43 6C 69  65 6E 74 2F  31 2E 30
+----
+
+.Initialize message parameters
+[cols="20,80",options="header"]
+|=======================
+|Parameter   |Description
+|clientName  |A name and version for the client, if the user has allowed usage data collection, this is used to track popular clients. Example: "MyClient/1.0"
+|=======================
+
+[[ndp-message-structs-run]]
 ==== RUN
 
 The `RUN` message is a client message used to start a new job on the server. It has the following structure:

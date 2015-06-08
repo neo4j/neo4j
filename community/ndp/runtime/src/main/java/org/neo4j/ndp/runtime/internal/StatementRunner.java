@@ -22,7 +22,6 @@ package org.neo4j.ndp.runtime.internal;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.ndp.runtime.internal.session.SessionState;
 import org.neo4j.stream.RecordStream;
 
 /**

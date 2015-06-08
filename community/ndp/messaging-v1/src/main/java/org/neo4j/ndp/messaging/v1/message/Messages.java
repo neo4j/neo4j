@@ -41,6 +41,11 @@ public class Messages
         return new RunMessage( statement, parameters );
     }
 
+    public static Message initialize( String clientName )
+    {
+        return new InitializeMessage( clientName );
+    }
+
     public static Message pullAll()
     {
         return PULL_ALL;

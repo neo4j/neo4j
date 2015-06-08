@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.runtime.internal.session;
+package org.neo4j.ndp.runtime.internal;
 
 import java.util.Map;
 import java.util.UUID;
@@ -32,10 +32,9 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.StatementMetadata;
-import org.neo4j.ndp.runtime.internal.ErrorTranslator;
-import org.neo4j.ndp.runtime.internal.Neo4jError;
-import org.neo4j.ndp.runtime.internal.StatementRunner;
 import org.neo4j.stream.RecordStream;
+import org.neo4j.udc.UsageData;
+import org.neo4j.udc.UsageDataKeys;
 
 /**
  * State-machine based implementation of {@link SessionState}. With this approach,
@@ -50,6 +49,27 @@ public class SessionStateMachine implements Session, SessionState
      */
     enum State
     {
+        /**
+         * Before the session has been initialized.
+         */
+        UNITIALIZED
+                {
+                    @Override
+                    public State initialize( SessionStateMachine ctx, String clientName )
+                    {
+                        ctx.usageData.get( UsageDataKeys.clientNames ).add( clientName );
+                        return IDLE;
+                    }
+
+                    @Override
+                    protected State onNoImplementation( SessionStateMachine ctx, String command )
+                    {
+                        ctx.error( new Neo4jError( Status.Request.Invalid, "No operations allowed until you send an " +
+                                                                           "INITIALIZE message." ));
+                        return halt( ctx );
+                    }
+                },
+
         /**
          * No open transaction, no open result.
          */
@@ -215,11 +235,23 @@ public class SessionStateMachine implements Session, SessionState
                     @Override
                     public State halt( SessionStateMachine ctx )
                     {
-                        return State.STOPPED;
+                        return STOPPED;
+                    }
+
+                    @Override
+                    protected State onNoImplementation( SessionStateMachine ctx, String command )
+                    {
+                        ctx.ignored();
+                        return STOPPED;
                     }
                 };
 
         // Operations that a session can perform. Individual states override these if they want to support them.
+
+        public State initialize( SessionStateMachine ctx, String clientName )
+        {
+            return onNoImplementation( ctx, "initializing the session" );
+        }
 
         public State runStatement( SessionStateMachine ctx, String statement, Map<String,Object> params )
         {
@@ -312,6 +344,7 @@ public class SessionStateMachine implements Session, SessionState
         }
     }
 
+    private final UsageData usageData;
     private final GraphDatabaseService db;
     private final StatementRunner statementRunner;
     private final ErrorTranslator errTrans;
@@ -329,7 +362,7 @@ public class SessionStateMachine implements Session, SessionState
     };
 
     /** The current session state */
-    private State state = State.IDLE;
+    private State state = State.UNITIALIZED;
 
     /** The current pending result, if present */
     private RecordStream currentResult;
@@ -355,9 +388,10 @@ public class SessionStateMachine implements Session, SessionState
 
     // Note: We shouldn't depend on GDB like this, I think. Better to define an SPI that we can shape into a spec
     // for exactly the kind of underlying support the state machine needs.
-    public SessionStateMachine( GraphDatabaseService db, ThreadToStatementContextBridge txBridge,
+    public SessionStateMachine( UsageData usageData, GraphDatabaseService db, ThreadToStatementContextBridge txBridge,
             StatementRunner engine, LogService logging )
     {
+        this.usageData = usageData;
         this.db = db;
         this.txBridge = txBridge;
         this.statementRunner = engine;
@@ -370,6 +404,17 @@ public class SessionStateMachine implements Session, SessionState
     public String key()
     {
         return id;
+    }
+
+    @Override
+    public <A> void initialize( String clientName, A attachment, Callback<Void,A> callback )
+    {
+        before( attachment, callback );
+        try
+        {
+            state = state.initialize( this, clientName );
+        }
+        finally { after(); }
     }
 
     @Override

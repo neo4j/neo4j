@@ -147,9 +147,9 @@ public class DocStruct implements Iterable<DocStruct.Field>
         return raw;
     }
 
-    public int signature()
+    public byte signature()
     {
-        return Integer.parseInt( attribute( "signature" ).substring( 2 ), 16 );
+        return (byte) Integer.parseInt( attribute( "signature" ).substring( 2 ), 16 );
     }
 
     public int size()

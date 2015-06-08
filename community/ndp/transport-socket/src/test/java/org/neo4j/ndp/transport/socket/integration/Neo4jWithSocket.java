@@ -39,6 +39,7 @@ import org.neo4j.ndp.transport.socket.SocketProtocolV1;
 import org.neo4j.ndp.transport.socket.SocketTransport;
 import org.neo4j.ndp.transport.socket.WebSocketTransport;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.udc.UsageData;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
@@ -65,8 +66,9 @@ public class Neo4jWithSocket implements TestRule
                 final GraphDatabaseService gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
                 final GraphDatabaseAPI api = ((GraphDatabaseAPI) gdb);
                 final LogService logging = api.getDependencyResolver().resolveDependency( LogService.class );
+                final UsageData usageData = api.getDependencyResolver().resolveDependency( UsageData.class );
 
-                final Sessions sessions = life.add( new StandardSessions( api, logging ) );
+                final Sessions sessions = life.add( new StandardSessions( api, usageData, logging ) );
 
                 PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> availableVersions = longObjectMap();
                 availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel, SocketProtocol>()

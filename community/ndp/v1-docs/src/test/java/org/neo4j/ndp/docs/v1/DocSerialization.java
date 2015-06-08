@@ -136,7 +136,7 @@ public class DocSerialization
         else if ( value.startsWith( "Struct" ) )
         {
             DocStructExample struct = new DocStructExample( value );
-            packer.packStructHeader( struct.size(), (char) struct.signature() );
+            packer.packStructHeader( struct.size(), (byte)struct.signature() );
 
             for ( String s : struct )
             {
@@ -206,6 +206,10 @@ public class DocSerialization
                     "Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))\n" +
                     "\"This will cause a syntax error\"\n" +
                     " ^" ) );
+        }
+        else if( value.equals( "INITIALIZE \"MyClient/1.0\"" ))
+        {
+            writer.handleInitializeMessage( "MyClient/1.0" );
         }
         else
         {

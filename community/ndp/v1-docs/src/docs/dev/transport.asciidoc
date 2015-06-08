@@ -24,6 +24,7 @@ The default port for regular socket connections is *7687*.
 Similar configuration exists for the WebSocket listener.
 The default port for WebSocket connections is *7688*.
 
+[[ndp-handshake]]
 === Handshake
 
 After connecting, a handshake takes place to establish which protocol version should be used for that connection.

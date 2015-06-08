@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.ndp.runtime.internal.session.SessionState;
 import org.neo4j.stream.RecordStream;
 
 public class CypherStatementRunner implements StatementRunner

@@ -42,6 +42,7 @@ import org.neo4j.ndp.transport.socket.SocketTransport;
 import org.neo4j.ndp.transport.socket.WebSocketTransport;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.logging.Netty4LoggerFactory;
+import org.neo4j.udc.UsageData;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
@@ -69,6 +70,7 @@ public class NDPModule implements ServerModule
         // organize this module life cycle better.
         final GraphDatabaseAPI api = dependencyResolver.resolveDependency( GraphDatabaseAPI.class );
         final LogService logging = dependencyResolver.resolveDependency( LogService.class );
+        final UsageData usageData = dependencyResolver.resolveDependency( UsageData.class );
         final JobScheduler scheduler = dependencyResolver.resolveDependency( JobScheduler.class );
 
         final Log internalLog = logging.getInternalLog( Sessions.class );
@@ -80,7 +82,7 @@ public class NDPModule implements ServerModule
         if ( config.get( ServerSettings.ndp_enabled ) )
         {
             final Sessions sessions = life.add( new ThreadedSessions(
-                    life.add( new StandardSessions( api, logging ) ),
+                    life.add( new StandardSessions( api, usageData, logging ) ),
                     scheduler,
                     logging ) );
 
