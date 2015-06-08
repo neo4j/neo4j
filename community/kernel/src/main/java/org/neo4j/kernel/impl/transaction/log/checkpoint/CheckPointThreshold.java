@@ -33,7 +33,7 @@ public interface CheckPointThreshold
         }
 
         @Override
-        public void checkPointHappened()
+        public void checkPointHappened( long transactionId )
         {
 
         }
@@ -51,6 +51,8 @@ public interface CheckPointThreshold
      * has been written in the transaction log in order to make sure that the threshold updates its condition.
      *
      * This is important since we might have multiple thresholds or forced check points.
+     *
+     * @param transactionId the latest transaction committed id used by the check point
      */
-    void checkPointHappened();
+    void checkPointHappened( long transactionId );
 }

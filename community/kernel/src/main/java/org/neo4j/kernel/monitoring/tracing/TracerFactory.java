@@ -20,6 +20,7 @@
 package org.neo4j.kernel.monitoring.tracing;
 
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 
 /**
@@ -46,4 +47,10 @@ public interface TracerFactory
      * @return The created instance.
      */
     TransactionTracer createTransactionTracer();
+
+    /**
+     * Create a new CheckPointTracer instance.
+     * @return The created instance.
+     */
+    CheckPointTracer createCheckPointTracer();
 }

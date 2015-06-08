@@ -142,8 +142,26 @@ public abstract class GraphDatabaseSettings
     @Description( "Maximum number of history files for the internal log." )
     public static final Setting<Integer> store_internal_log_max_archives = setting("store.internal_log.max_archives", INTEGER, "7", min(1) );
 
-    @Description( "Maximum number of transactions to trigger a check point" )
-    public static final Setting<Integer> store_internal_check_point_max_txs = setting( "store.internal_checkpoint.max_txs", INTEGER, "200000", min(1) );
+    @Description( "Configures the transaction interval between check-points. The database will not check-point more " +
+                  "often  than this (unless check pointing is triggered by a different event), but might check-point " +
+                  "less often than this interval, if performing a check-point takes longer time than the configured " +
+                  "interval. A check-point is a point in the transaction logs, from which recovery would start from. " +
+                  "Longer check-point intervals typically means that recovery will take longer to complete in case " +
+                  "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that " +
+                  "the database places on the system, as each check-point implies a flushing and forcing of all the " +
+                  "store files.  The default is '100000' for a check-point every 100000 transactions." )
+    public static final Setting<Integer> check_point_interval_tx = setting( "dbms.checkpoint.interval.tx", INTEGER, "100000", min(1) );
+
+    @Description( "Configures the time interval between check-points. The database will not check-point more often " +
+                  "than this (unless check pointing is triggered by a different event), but might check-point less " +
+                  "often than this interval, if performing a check-point takes longer time than the configured " +
+                  "interval. A check-point is a point in the transaction logs, from which recovery would start from. " +
+                  "Longer check-point intervals typically means that recovery will take longer to complete in case " +
+                  "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that " +
+                  "the database places on the system, as each check-point implies a flushing and forcing of all the " +
+                  "store files. The default is '5m' for a check-point every 5 minutes. Other supported units are 's' " +
+                  "for seconds, and 'ms' for milliseconds." )
+    public static final Setting<Long> check_point_interval_time = setting( "dbms.checkpoint.interval.time", DURATION, "5m" );
 
     // Indexing
     @Description("Controls the auto indexing feature for nodes. Setting it to `false` shuts it down, " +

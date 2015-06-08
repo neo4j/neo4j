@@ -27,9 +27,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.function.Consumers;
+import org.neo4j.function.LongConsumer;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
@@ -37,6 +40,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProviders;
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
@@ -117,9 +121,13 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointTransactionCountThreshold;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThresholds;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CountCommittedTransactionThreshold;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.TimeCheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
@@ -470,7 +478,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                     indexingModule.indexingService(), cacheModule.schemaCache() );
 
             TransactionLogModule transactionLogModule =
-                    buildTransactionLogs( storeDir, config, logProvider, indexingModule.labelScanStore(),
+                    buildTransactionLogs( storeDir, config, logProvider, scheduler, indexingModule.labelScanStore(),
                             fs, neoStoreModule.neoStore(), cacheModule.cacheAccess(), indexingModule.indexingService(),
                             indexProviders.values() );
 
@@ -728,6 +736,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     }
 
     private TransactionLogModule buildTransactionLogs( File storeDir, Config config, LogProvider logProvider,
+            JobScheduler scheduler,
             LabelScanStore labelScanStore,
             FileSystemAbstraction fileSystemAbstraction,
             NeoStore neoStore, CacheAccessBackDoor cacheAccess,
@@ -790,19 +799,35 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         final LogRotation logRotation = new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ),
                 logFile, kernelHealth, logProvider );
 
-        final CheckPointTransactionCountThreshold transactionCountThreshold = new CheckPointTransactionCountThreshold(
-                config.get( GraphDatabaseSettings.store_internal_check_point_max_txs ) );
-        final CheckPointer checkPointing = new CheckPointerImpl( logFile, neoStore, transactionCountThreshold,
-                storeFlusher, logPruning, kernelHealth, logProvider );
+        int txThreshold = config.get( GraphDatabaseSettings.check_point_interval_tx );
+        final CountCommittedTransactionThreshold countCommittedTransactionThreshold =
+                new CountCommittedTransactionThreshold( txThreshold );
 
-        final TransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation, checkPointing,
-                transactionCountThreshold, transactionMetadataCache, neoStore, legacyIndexTransactionOrdering, kernelHealth );
-        final LogicalTransactionStore logicalTransactionStore = new PhysicalLogicalTransactionStore( logFile,
-                transactionMetadataCache );
+        long timeMillisThreshold = config.get( GraphDatabaseSettings.check_point_interval_time );
+        TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold( timeMillisThreshold, Clock.SYSTEM_CLOCK );
+
+        CheckPointThreshold threshold =
+                CheckPointThresholds.or( countCommittedTransactionThreshold, timeCheckPointThreshold );
+
+        final CheckPointerImpl checkPointer = new CheckPointerImpl( neoStore, threshold, storeFlusher, logPruning,
+                kernelHealth, logProvider, tracers.checkPointTracer, logFile );
+
+        long recurringPeriod = Math.min( timeMillisThreshold, TimeUnit.SECONDS.toMillis( 10 ) );
+        CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, scheduler, recurringPeriod );
+
+        LongConsumer transactionCommittedConsumer =
+                Consumers.seq( countCommittedTransactionThreshold, timeCheckPointThreshold );
+
+        final TransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
+                transactionCommittedConsumer, transactionMetadataCache, neoStore, legacyIndexTransactionOrdering,
+                kernelHealth );
+        final LogicalTransactionStore logicalTransactionStore =
+                new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache );
 
         life.add( logFile );
         life.add( appender );
-        life.add( checkPointing );
+        life.add( checkPointer );
+        life.add( checkPointScheduler );
 
         return new TransactionLogModule()
         {
@@ -851,7 +876,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             @Override
             public CheckPointer checkPointing()
             {
-                return checkPointing;
+                return checkPointer;
             }
 
             @Override

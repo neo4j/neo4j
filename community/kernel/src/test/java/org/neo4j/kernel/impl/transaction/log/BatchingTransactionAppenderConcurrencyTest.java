@@ -36,7 +36,6 @@ import java.util.concurrent.Semaphore;
 import org.neo4j.function.Consumers;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
@@ -81,7 +80,6 @@ public class BatchingTransactionAppenderConcurrencyTest
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final LogFile logFile = mock( LogFile.class );
     private final LogRotation logRotation = LogRotation.NO_ROTATION;
-    private final CheckPointer checkPointer = CheckPointer.NO_CHECKPOINT;
     private final TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 10 );
     private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
     private final IdOrderingQueue legacyIndexTransactionOrdering = IdOrderingQueue.BYPASS;
@@ -149,8 +147,8 @@ public class BatchingTransactionAppenderConcurrencyTest
     public void shouldForceLogChannel() throws Throwable
     {
         BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
-                checkPointer, Consumers.LNOOP, transactionMetadataCache, transactionIdStore,
-                legacyIndexTransactionOrdering, kernelHealth ) );
+                Consumers.LNOOP, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering,
+                kernelHealth ) );
         life.start();
 
         appender.forceAfterAppend( logAppendEvent );
@@ -169,8 +167,8 @@ public class BatchingTransactionAppenderConcurrencyTest
         // will be at capacity.
 
         final BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
-                checkPointer, Consumers.LNOOP, transactionMetadataCache, transactionIdStore,
-                legacyIndexTransactionOrdering, kernelHealth ) );
+                Consumers.LNOOP, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering,
+                kernelHealth ) );
         life.start();
 
         Runnable runnable = createForceAfterAppendRunnable( appender );
@@ -200,8 +198,8 @@ public class BatchingTransactionAppenderConcurrencyTest
         // will be at capacity.
 
         final BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
-                checkPointer, Consumers.LNOOP, transactionMetadataCache, transactionIdStore,
-                legacyIndexTransactionOrdering, kernelHealth ) );
+                Consumers.LNOOP, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering,
+                kernelHealth ) );
         life.start();
 
         Runnable runnable = createForceAfterAppendRunnable( appender );

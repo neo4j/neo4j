@@ -25,7 +25,9 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
@@ -35,17 +37,19 @@ import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.THREAD_ID;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexPopulation;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
+import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 public class Neo4jJobSchedulerTest
 {
     private final AtomicInteger invocations = new AtomicInteger();
     private final LifeSupport life = new LifeSupport();
-    private Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler(  ) );
+    private Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
 
     private Runnable countInvocationsJob = new Runnable()
     {
@@ -89,7 +93,7 @@ public class Neo4jJobSchedulerTest
         assertEquals( count, actualInvocations );
 
         sleep( period );
-        assertThat( invocations.get(), equalTo(actualInvocations) );
+        assertThat( invocations.get(), equalTo( actualInvocations ) );
     }
 
     @Test
@@ -127,8 +131,8 @@ public class Neo4jJobSchedulerTest
 
         // When
         scheduler.schedule( new JobScheduler.Group( "MyGroup", NEW_THREAD ),
-                            waitForLatch( threadStarted, unblockThread ),
-                            stringMap( THREAD_ID, "MyTestThread" ) );
+                waitForLatch( threadStarted, unblockThread ),
+                stringMap( THREAD_ID, "MyTestThread" ) );
         threadStarted.await();
 
         // Then
@@ -149,6 +153,32 @@ public class Neo4jJobSchedulerTest
         {
             unblockThread.countDown();
         }
+    }
+
+    @Test
+    public void shouldRunWithDelay() throws Throwable
+    {
+        // Given
+        life.start();
+
+        final AtomicLong runTime = new AtomicLong();
+        final CountDownLatch latch = new CountDownLatch( 1 );
+
+        long time = System.currentTimeMillis();
+
+        scheduler.schedule( new JobScheduler.Group( "group", POOLED ), new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                runTime.set( System.currentTimeMillis() );
+                latch.countDown();
+            }
+        }, 100, TimeUnit.MILLISECONDS );
+
+        latch.await();
+
+        assertTrue( time + 100 <= runTime.get() );
     }
 
     private List<String> threadNames()

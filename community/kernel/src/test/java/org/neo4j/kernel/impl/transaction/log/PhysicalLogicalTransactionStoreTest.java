@@ -60,7 +60,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer.NO_CHECKPOINT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
@@ -94,7 +93,7 @@ public class PhysicalLogicalTransactionStoreTest
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
                 transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
 
-        life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, NO_CHECKPOINT, Consumers.LNOOP, positionCache,
+        life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, Consumers.LNOOP, positionCache,
                 transactionIdStore, BYPASS, kernelHealth ) );
 
         try
@@ -140,8 +139,8 @@ public class PhysicalLogicalTransactionStoreTest
         final LogFileRecoverer recoverer = new LogFileRecoverer( new LogEntryReaderFactory().versionable(), visitor );
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
 
-        TransactionAppender appender = new BatchingTransactionAppender( logFile, NO_ROTATION, NO_CHECKPOINT,
-                Consumers.LNOOP, positionCache, transactionIdStore, BYPASS, kernelHealth );
+        TransactionAppender appender = new BatchingTransactionAppender( logFile, NO_ROTATION,  Consumers.LNOOP,
+                positionCache, transactionIdStore, BYPASS, kernelHealth );
         life.add( appender );
 
         life.add(new Recovery(new Recovery.SPI()
@@ -346,7 +345,7 @@ public class PhysicalLogicalTransactionStoreTest
                                            long latestCommittedTxWhenStarted, long timeCommitted ) throws IOException
     {
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
-                NO_CHECKPOINT, Consumers.LNOOP, positionCache, transactionIdStore, BYPASS, kernelHealth ) );
+                Consumers.LNOOP, positionCache, transactionIdStore, BYPASS, kernelHealth ) );
         PhysicalTransactionRepresentation transaction =
                 new PhysicalTransactionRepresentation( singleCreateNodeCommand() );
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,

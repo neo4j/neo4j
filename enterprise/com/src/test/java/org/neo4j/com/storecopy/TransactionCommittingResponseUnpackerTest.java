@@ -54,7 +54,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -290,15 +289,14 @@ public class TransactionCommittingResponseUnpackerTest
                 logVersionRepository, new PhysicalLogFile.Monitor.Adapter(), transactionMetadataCache ) );
         final KernelHealth health = mock( KernelHealth.class );
         final LogRotation logRotation = LogRotation.NO_ROTATION;
-        final CheckPointer checkPointer = CheckPointer.NO_CHECKPOINT;
         LongConsumer transactionCommittedConsumer = Consumers.LNOOP;
         final IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
                 any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );
         final TransactionRepresentationStoreApplier applier = mock(TransactionRepresentationStoreApplier.class);
         final TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
-                checkPointer, transactionCommittedConsumer, transactionMetadataCache, transactionIdStore,
-                IdOrderingQueue.BYPASS, health ) );
+                transactionCommittedConsumer, transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS,
+                health ) );
         life.start();
 
 

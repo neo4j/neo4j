@@ -19,35 +19,39 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.function.LongConsumer;
 
-public class CheckPointTransactionCountThreshold implements CheckPointThreshold, LongConsumer
+public class CountCommittedTransactionThreshold implements CheckPointThreshold, LongConsumer
 {
-    private final AtomicInteger committedTransactions = new AtomicInteger( 0 );
-    private final int threshold;
+    private volatile long lastCommittedTransactionId = -1;
+    private volatile long nextTransactionIdTarget = -1;
 
-    public CheckPointTransactionCountThreshold( int threshold )
+    private final int notificationThreshold;
+
+    public CountCommittedTransactionThreshold( int notificationThreshold )
     {
-        this.threshold = threshold;
+        this.notificationThreshold = notificationThreshold;
     }
 
     @Override
     public boolean isCheckPointingNeeded()
     {
-        return committedTransactions.get() >= threshold;
+        return lastCommittedTransactionId != -1 && lastCommittedTransactionId >= nextTransactionIdTarget;
     }
 
     @Override
-    public void checkPointHappened()
+    public void checkPointHappened( long transactionId )
     {
-        committedTransactions.set( 0 );
+        nextTransactionIdTarget = transactionId + notificationThreshold;
     }
 
     @Override
     public void accept( long transactionId )
     {
-        committedTransactions.incrementAndGet();
+        lastCommittedTransactionId = transactionId;
+        if ( nextTransactionIdTarget == -1 )
+        {
+            nextTransactionIdTarget = lastCommittedTransactionId + notificationThreshold - 1;
+        }
     }
 }

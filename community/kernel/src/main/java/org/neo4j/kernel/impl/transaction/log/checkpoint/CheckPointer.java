@@ -21,34 +21,20 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-
 /**
  * This interface represent a check pointer which is responsible to write check points in the transaction log.
  */
 public interface CheckPointer
 {
-    CheckPointer NO_CHECKPOINT = new CheckPointer()
-    {
-        @Override
-        public void checkPointIfNeeded( LogAppendEvent logAppendEvent )
-        {
-        }
-
-        @Override
-        public void forceCheckPoint()
-        {
-        }
-    };
-
     /**
      * This method will verify that the conditions for triggering a check point hold and in such a case it will write
      * a check point in the transaction log.
      *
-     * @param logAppendEvent the log append event to be used to notify the check pointing
+     * This method does NOT handle concurrency since there should be only one check point thread running.
+     *
      * @throws IOException if writing the check point fails
      */
-    void checkPointIfNeeded( LogAppendEvent logAppendEvent ) throws IOException;
+    void checkPointIfNeeded() throws IOException;
 
     /**
      * This method forces the write of a check point in the transaction log.

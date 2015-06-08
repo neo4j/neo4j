@@ -51,4 +51,20 @@ public final class Consumers
     {
         return (Consumer<T>) NOOP;
     }
+
+
+    public static LongConsumer seq( final LongConsumer... consumers )
+    {
+        return new LongConsumer()
+        {
+            @Override
+            public void accept( long input )
+            {
+                for ( LongConsumer consumer : consumers )
+                {
+                    consumer.accept( input );
+                }
+            }
+        };
+    }
 }

@@ -131,6 +131,11 @@ public interface JobScheduler extends Lifecycle
          * Rotates internal diagnostic logs
          */
         public static final Group internalLogRotation = new Group( "InternalLogRotation", POOLED );
+
+        /**
+         * Checkpoint and store flush
+         */
+        public static final Group checkPoint = new Group( "CheckPoint", POOLED );
     }
 
     interface JobHandle
@@ -146,6 +151,9 @@ public interface JobScheduler extends Lifecycle
 
     /** Schedule a new job in the specified group, passing in metadata for the scheduling strategy to use. */
     JobHandle schedule( Group group, Runnable job, Map<String, String> metadata );
+
+    /** Schedule a new job in the specified group with the given delay */
+    JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit );
 
     /** Schedule a recurring job */
     JobHandle scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit );

@@ -30,7 +30,6 @@ import org.neo4j.function.LongConsumer;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -82,7 +81,6 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogFile logFile;
     private final LogRotation logRotation;
-    private final CheckPointer checkPointer;
     private final LongConsumer transactionCommitConsumer;
     private final TransactionIdStore transactionIdStore;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
@@ -93,14 +91,13 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     private TransactionLogWriter transactionLogWriter;
     private IndexCommandDetector indexCommandDetector;
 
-    public BatchingTransactionAppender( LogFile logFile, LogRotation logRotation, CheckPointer checkPointer,
+    public BatchingTransactionAppender( LogFile logFile, LogRotation logRotation,
             LongConsumer transactionCommitConsumer, TransactionMetadataCache transactionMetadataCache,
             TransactionIdStore transactionIdStore, IdOrderingQueue legacyIndexTransactionOrdering,
             KernelHealth kernelHealth )
     {
         this.logFile = logFile;
         this.logRotation = logRotation;
-        this.checkPointer = checkPointer;
         this.transactionCommitConsumer = transactionCommitConsumer;
         this.transactionIdStore = transactionIdStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
@@ -126,7 +123,6 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         // we generate the next transaction id
         boolean logRotated = logRotation.rotateLogIfNeeded( logAppendEvent );
         logAppendEvent.setLogRotated( logRotated );
-        checkPointer.checkPointIfNeeded( logAppendEvent );
 
         TransactionCommitment commit;
         try
