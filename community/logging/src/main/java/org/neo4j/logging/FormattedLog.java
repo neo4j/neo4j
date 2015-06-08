@@ -79,6 +79,10 @@ public class FormattedLog extends AbstractLog
         private Level level = Level.INFO;
         private boolean autoFlush = true;
 
+        private Builder()
+        {
+        }
+
         /**
          * Set the timezone for datestamps in the log
          *

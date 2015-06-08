@@ -50,6 +50,10 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         private int maxInternalLogArchives = 0;
         private Consumer<LogProvider> rotationListener = Consumers.noop();
 
+        private Builder()
+        {
+        }
+
         public Builder withUserLogProvider( LogProvider userLogProvider )
         {
             this.userLogProvider = userLogProvider;

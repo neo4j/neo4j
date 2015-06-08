@@ -103,12 +103,13 @@ public abstract class Configuration
 
     public static final class Builder
     {
-        public Configuration build()
-        {
-            return fromMap( new HashMap<String, String>( config ) );
-        }
 
         private final Map<String, String> config;
+
+        public Configuration build()
+        {
+            return fromMap( new HashMap<>( config ) );
+        }
 
         private Builder( HashMap<String, String> config )
         {

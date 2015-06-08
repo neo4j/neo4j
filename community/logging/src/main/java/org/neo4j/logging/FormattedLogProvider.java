@@ -50,6 +50,10 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         private Level level = Level.INFO;
         private boolean autoFlush = true;
 
+        private Builder()
+        {
+        }
+
         /**
          * Disable rendering of the context (or class name) in each output line.
          *
