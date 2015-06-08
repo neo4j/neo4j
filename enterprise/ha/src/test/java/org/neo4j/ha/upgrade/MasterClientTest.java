@@ -21,6 +21,7 @@ package org.neo4j.ha.upgrade;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.util.Random;
@@ -41,6 +42,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient214;
+import org.neo4j.kernel.ha.com.master.ConversationManager;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
 import org.neo4j.kernel.ha.com.master.MasterImplTest;
@@ -96,6 +98,8 @@ public class MasterClientTest
 
     private static final int TX_LOG_COUNT = 10;
 
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
     @Rule
     public final CleanupRule cleanupRule = new CleanupRule();
     private final Monitors monitors = new Monitors();
@@ -170,14 +174,16 @@ public class MasterClientTest
 
     private MasterServer newMasterServer( MasterImpl.SPI masterImplSPI ) throws Throwable
     {
-        MasterImpl masterImpl = new MasterImpl( masterImplSPI, mock( Monitor.class ), masterConfig() );
+        MasterImpl masterImpl = new MasterImpl( masterImplSPI, mock(
+                ConversationManager.class ), mock( Monitor.class ), masterConfig() );
 
         return newMasterServer( masterImpl );
     }
 
     private static MasterImpl newMasterImpl( MasterImpl.SPI masterImplSPI )
     {
-        return new MasterImpl( masterImplSPI, mock( Monitor.class ), masterConfig() );
+        return new MasterImpl( masterImplSPI, mock(
+                ConversationManager.class ), mock( Monitor.class ), masterConfig() );
     }
 
     private MasterServer newMasterServer( MasterImpl masterImpl ) throws Throwable
@@ -186,7 +192,8 @@ public class MasterClientTest
                 masterServerConfiguration(),
                 mock( TxChecksumVerifier.class ),
                 monitors.newMonitor( ByteCounterMonitor.class, MasterClient.class ),
-                monitors.newMonitor( RequestMonitor.class, MasterClient.class ) ) );
+                monitors.newMonitor( RequestMonitor.class, MasterClient.class ), mock(
+                ConversationManager.class ) ) );
     }
 
     private MasterClient214 newMasterClient214( StoreId storeId ) throws Throwable

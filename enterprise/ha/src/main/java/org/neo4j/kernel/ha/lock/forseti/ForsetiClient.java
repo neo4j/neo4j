@@ -21,8 +21,8 @@ package org.neo4j.kernel.ha.lock.forseti;
 
 import java.util.concurrent.ConcurrentMap;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.pool.LinkedQueuePool;
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
@@ -45,7 +45,7 @@ import static java.lang.String.format;
 public class ForsetiClient implements Locks.Client
 {
     /** Id for this client */
-    private final int myId;
+    private final int clientId;
 
     /** resourceType -> lock map. These are the global lock maps, shared across all clients. */
     private final ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps;
@@ -81,11 +81,11 @@ public class ForsetiClient implements Locks.Client
                           WaitStrategy<AcquireLockTimeoutException>[] waitStrategies,
                           LinkedQueuePool<ForsetiClient> clientPool )
     {
-        this.myId                = id;
-        this.lockMaps            = lockMaps;
-        this.waitStrategies      = waitStrategies;
-        this.clientPool          = clientPool;
-        this.sharedLockCounts    = new PrimitiveLongIntMap[lockMaps.length];
+        this.clientId = id;
+        this.lockMaps = lockMaps;
+        this.waitStrategies = waitStrategies;
+        this.clientPool = clientPool;
+        this.sharedLockCounts = new PrimitiveLongIntMap[lockMaps.length];
         this.exclusiveLockCounts = new PrimitiveLongIntMap[lockMaps.length];
 
         for ( int i = 0; i < sharedLockCounts.length; i++ )
@@ -427,7 +427,7 @@ public class ForsetiClient implements Locks.Client
     @Override
     public int getLockSessionId()
     {
-        return myId;
+        return clientId;
     }
 
     public int waitListSize()
@@ -439,13 +439,13 @@ public class ForsetiClient implements Locks.Client
     {
         other.put( waitList );
         // TODO It might make sense to somehow put a StoreLoad barrier here,
-        // TODO to expidite the observation of the updated waitList in other clients.
+        // TODO to expedite the observation of the updated waitList in other clients.
     }
 
     public boolean isWaitingFor( int clientId )
     {
         // TODO Similarly to the above, make reading the waitList a volatile load.
-        return clientId != myId && waitList.contains( clientId );
+        return clientId != this.clientId && waitList.contains( clientId );
     }
 
     @Override
@@ -462,20 +462,20 @@ public class ForsetiClient implements Locks.Client
 
         ForsetiClient that = (ForsetiClient) o;
 
-        return myId == that.myId;
+        return clientId == that.clientId;
 
     }
 
     @Override
     public int hashCode()
     {
-        return myId;
+        return clientId;
     }
 
     @Override
     public String toString()
     {
-        return String.format( "ForsetiClient[%d]", myId );
+        return String.format( "ForsetiClient[%d]", clientId );
     }
 
     /** Release a lock from the global pool. */
@@ -588,14 +588,14 @@ public class ForsetiClient implements Locks.Client
     private void clearWaitList()
     {
         waitList.clear();
-        waitList.put( myId );
+        waitList.put( clientId );
     }
 
     private void markAsWaitingFor( ForsetiLockManager.Lock lock, Locks.ResourceType type, long resourceId )
     {
         clearWaitList();
         lock.copyHolderWaitListsInto( waitList );
-        if(lock.anyHolderIsWaitingFor( myId ) && lock.holderWaitListSize() >= waitListSize())
+        if(lock.anyHolderIsWaitingFor( clientId ) && lock.holderWaitListSize() >= waitListSize())
         {
             // Create message before we clear the wait-list, to lower the chance of the message being insane
             String message = this + " can't acquire " + lock + " on " + type + "(" + resourceId + "), because holders of that lock " +
@@ -612,7 +612,7 @@ public class ForsetiClient implements Locks.Client
         for ( boolean first = true; iter.hasNext(); )
         {
             int next = iter.next();
-            if(next == myId)
+            if(next == clientId)
             {
                 // Skip our own id from the wait list, that's an implementation detail
                 continue;
@@ -626,7 +626,7 @@ public class ForsetiClient implements Locks.Client
 
     public int id()
     {
-        return myId;
+        return clientId;
     }
 
     // Visitors used for bulk ops on the lock maps (such as releasing all locks)

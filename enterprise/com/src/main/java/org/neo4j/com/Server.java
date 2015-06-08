@@ -19,17 +19,6 @@
  */
 package org.neo4j.com;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.net.InetSocketAddress;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -47,6 +36,17 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
@@ -55,14 +55,13 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
-
 import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
@@ -116,7 +115,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     private final int frameLength;
     private final ByteCounterMonitor byteCounterMonitor;
     private final RequestMonitor requestMonitor;
-    private final Clock clock;
     private final byte applicationProtocolVersion;
     private final TxChecksumVerifier txVerifier;
     private ServerBootstrap bootstrap;
@@ -140,7 +138,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         this.logProvider = logProvider;
         this.msgLog = this.logProvider.getLog( getClass() );
         this.txVerifier = txVerifier;
-        this.clock = clock;
         this.byteCounterMonitor = byteCounterMonitor;
         this.requestMonitor = requestMonitor;
 
@@ -343,7 +340,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     {
         try
         {
-            finishOffChannel( channel, slave );
+            cleanConversation( slave );
             unmapSlave( channel );
         }
         catch ( Throwable failure ) // Unknown error trying to finish off the tx
@@ -378,7 +375,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             {
                 try
                 {
-                    finishOffChannel( null, slave );
+                    cleanConversation( slave );
                 }
                 catch ( Throwable e )
                 {
@@ -544,7 +541,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         return requestTarget;
     }
 
-    protected abstract void finishOffChannel( Channel channel, RequestContext context );
+    protected abstract void cleanConversation( RequestContext context );
 
     private ChunkingChannelBuffer newChunkingBuffer( Channel channel )
     {

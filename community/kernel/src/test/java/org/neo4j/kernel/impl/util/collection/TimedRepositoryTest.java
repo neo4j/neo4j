@@ -226,4 +226,19 @@ public class TimedRepositoryTest
         }
         assertThat(reapedValues, equalTo(asList(1l)));
     }
+
+    @Test
+    public void shouldAllowBeginWithSameKeyAfterSessionRemoval() throws Exception
+    {
+        // Given
+        repo.begin( 1l );
+        repo.acquire( 1l );
+
+        // when
+        repo.remove( 1l );
+
+        //then
+        repo.begin( 1l );
+        assertThat( reapedValues, equalTo( asList( 0l ) ) );
+    }
 }

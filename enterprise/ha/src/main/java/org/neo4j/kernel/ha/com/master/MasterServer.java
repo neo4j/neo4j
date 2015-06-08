@@ -19,14 +19,10 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import org.jboss.netty.channel.Channel;
-
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
-import org.neo4j.com.Response;
 import org.neo4j.com.Server;
-import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.kernel.ha.HaRequestType210;
@@ -43,13 +39,15 @@ import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 public class MasterServer extends Server<Master, Void>
 {
     public static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
+    private ConversationManager conversationManager;
 
     public MasterServer( Master requestTarget, LogProvider logProvider, Configuration config,
                          TxChecksumVerifier txVerifier, ByteCounterMonitor byteCounterMonitor,
-                         RequestMonitor requestMonitor )
+                         RequestMonitor requestMonitor, ConversationManager conversationManager )
     {
         super( requestTarget, config, logProvider, FRAME_LENGTH, MasterClient214.PROTOCOL_VERSION, txVerifier,
                 SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
+        this.conversationManager = conversationManager;
     }
 
     @Override
@@ -59,20 +57,9 @@ public class MasterServer extends Server<Master, Void>
     }
 
     @Override
-    protected void finishOffChannel( Channel channel, RequestContext context )
+    protected void cleanConversation( RequestContext context )
     {
-        try
-        {
-            try ( Response<Void> ignored = getRequestTarget().endLockSession( context, false ) )
-            {
-                // Lock session is closed
-            }
-        }
-        catch ( TransactionNotPresentOnMasterException e )
-        {
-            // This is OK. This method has been called due to some connection problem or similar,
-            // it's a best-effort to finish of a channel and transactions associated with it.
-        }
+        conversationManager.remove( context );
     }
 
 }

@@ -25,12 +25,14 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.ServerUtil;
+import org.neo4j.function.BiFunction;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
 import org.neo4j.function.Supplier;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
+import org.neo4j.kernel.ha.com.master.ConversationManager;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
@@ -44,8 +46,9 @@ import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 public class SwitchToMaster implements AutoCloseable
 {
     private LogService logService;
-    private Factory<Master> masterFactory;
-    private Function<Master, MasterServer> masterServerFactory;
+    Factory<ConversationManager> conversationManagerFactory;
+    Function<ConversationManager, Master> masterFactory;
+    BiFunction<Master, ConversationManager, MasterServer> masterServerFactory;
     private Log userLog;
     private HaIdGeneratorFactory idGeneratorFactory;
     private Config config;
@@ -56,12 +59,14 @@ public class SwitchToMaster implements AutoCloseable
 
     public SwitchToMaster( LogService logService,
             HaIdGeneratorFactory idGeneratorFactory, Config config, Supplier<SlaveFactory> slaveFactorySupplier,
-            Factory<Master> masterFactory,
-            Function<Master, MasterServer> masterServerFactory,
+            Factory<ConversationManager> conversationManagerFactory,
+            Function<ConversationManager, Master> masterFactory,
+            BiFunction<Master, ConversationManager, MasterServer> masterServerFactory,
             DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
             Supplier<NeoStoreDataSource> dataSourceSupplier)
     {
         this.logService = logService;
+        this.conversationManagerFactory = conversationManagerFactory;
         this.masterFactory = masterFactory;
         this.masterServerFactory = masterServerFactory;
         this.userLog = logService.getUserLog( getClass() );
@@ -97,9 +102,10 @@ public class SwitchToMaster implements AutoCloseable
             NeoStoreDataSource neoStoreXaDataSource = dataSourceSupplier.get();
             neoStoreXaDataSource.afterModeSwitch();
 
-            Master master = masterFactory.newInstance();
+            ConversationManager conversationManager = conversationManagerFactory.newInstance();
+            Master master = masterFactory.apply( conversationManager );
 
-            MasterServer masterServer = masterServerFactory.apply( master );
+            MasterServer masterServer = masterServerFactory.apply( master, conversationManager );
 
             haCommunicationLife.add( master );
             haCommunicationLife.add( masterServer );
@@ -138,6 +144,7 @@ public class SwitchToMaster implements AutoCloseable
     {
         logService = null;
         userLog = null;
+        conversationManagerFactory = null;
         masterFactory = null;
         masterServerFactory = null;
         idGeneratorFactory = null;

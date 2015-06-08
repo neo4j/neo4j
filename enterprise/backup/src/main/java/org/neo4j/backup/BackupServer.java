@@ -89,7 +89,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
     }
 
     @Override
-    protected void finishOffChannel( Channel channel, RequestContext context )
+    protected void cleanConversation( RequestContext context )
     {
     }
 }

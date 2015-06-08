@@ -45,6 +45,7 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
+import org.neo4j.function.BiFunction;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
 import org.neo4j.function.Supplier;
@@ -78,6 +79,8 @@ import org.neo4j.kernel.ha.TransactionChecksumLookup;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.kernel.ha.UpdatePullingTransactionObligationFulfiller;
+import org.neo4j.kernel.ha.cluster.ConversationSPI;
+import org.neo4j.kernel.ha.cluster.DefaultConversationSPI;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.kernel.ha.cluster.DefaultMasterImplSPI;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
@@ -93,6 +96,7 @@ import org.neo4j.kernel.ha.cluster.SwitchToSlave;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.ConversationManager;
 import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
@@ -406,46 +410,65 @@ public class EnterpriseEditionModule
                 return new DefaultMasterImplSPI( platformModule.graphDatabaseFacade, platformModule.fileSystem,
                         platformModule.monitors,
                         labelTokenHolder, propertyKeyTokenHolder, relationshipTypeTokenHolder, idGeneratorFactory,
-                        lockManager, platformModule.dependencies.resolveDependency( TransactionCommitProcess.class ),
+                        platformModule.dependencies.resolveDependency( TransactionCommitProcess.class ),
                         platformModule.dependencies.resolveDependency( StoreFlusher.class ),
                         platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
                         platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ),
-                        platformModule.dependencies.resolveDependency( NeoStoreDataSource.class ),
-                        platformModule.jobScheduler );
+                        platformModule.dependencies.resolveDependency( NeoStoreDataSource.class ));
             }
         };
 
-        Factory<Master> masterFactory = new Factory<Master>()
+        final Factory<ConversationSPI> conversationSPIFactory = new Factory<ConversationSPI>()
         {
             @Override
-            public Master newInstance()
+            public ConversationSPI newInstance()
+            {
+                return new DefaultConversationSPI( lockManager, platformModule.jobScheduler );
+            }
+        };
+        Factory<ConversationManager> conversationManagerFactory = new Factory<ConversationManager>()
+
+        {
+            @Override
+            public ConversationManager newInstance()
+            {
+                return new ConversationManager( conversationSPIFactory.newInstance(), config );
+            }
+        };
+
+        Function<ConversationManager, Master> masterFactory = new Function<ConversationManager, Master>()
+        {
+            @Override
+            public Master apply(ConversationManager conversationManager)
             {
                 return new MasterImpl( masterSPIFactory.newInstance(),
-                        monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ), config );
+                        conversationManager, monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ), config );
             }
         };
 
-        Function<Master, MasterServer> masterServerFactory = new Function<Master, MasterServer>()
+        BiFunction<Master, ConversationManager, MasterServer> masterServerFactory = new BiFunction<Master, ConversationManager, MasterServer>()
         {
             @Override
-            public MasterServer apply( Master master ) throws RuntimeException
+            public MasterServer apply( final Master master, ConversationManager conversationManager ) throws RuntimeException
             {
                 TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup(
                         platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
                         platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ) );
 
+
+
                 MasterServer masterServer = new MasterServer( master, logging.getInternalLogProvider(),
-                        masterServerConfig(
-                                config ),
+                        masterServerConfig( config ),
                         new BranchDetectingTxVerifier( logging.getInternalLogProvider(), txChecksumLookup ),
                         monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ),
-                        monitors.newMonitor( RequestMonitor.class, MasterServer.class ) );
+                        monitors.newMonitor( RequestMonitor.class, MasterServer.class ), conversationManager );
                 return masterServer;
             }
         };
 
         SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, (HaIdGeneratorFactory) idGeneratorFactory,
                 config, dependencies.provideDependency( SlaveFactory.class ),
+                conversationManagerFactory,
                 masterFactory,
                 masterServerFactory,
                 masterDelegateInvocationHandler, clusterMemberAvailability,

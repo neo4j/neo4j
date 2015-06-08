@@ -80,4 +80,6 @@ public interface Master
     Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type, long... resourceIds );
 
     Response<LockResult> acquireSharedLock( RequestContext context, Locks.ResourceType type, long... resourceIds );
+
+
 }

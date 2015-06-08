@@ -103,7 +103,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     }
 
     @Override
-    protected void finishOffChannel( Channel channel, RequestContext context )
+    protected void cleanConversation( RequestContext context )
     {
     }
 
