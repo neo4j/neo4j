@@ -23,10 +23,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 import java.util
 
 import org.neo4j.codegen
+import org.neo4j.codegen.CodeGeneratorOption.BLANK_OPTION
 import org.neo4j.codegen.ExpressionTemplate._
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen.TypeReference.{extending, parameterizedType, typeParameter}
 import org.neo4j.codegen._
+import org.neo4j.codegen.source.SourceVisitor
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.compiler.v2_3._
@@ -50,7 +52,8 @@ import scala.collection.mutable
 
 // <SPI>
 trait CodeStructure[T] {
-  def generateQuery(packageName: String, className: String, columns: Seq[String], operatorIds: Map[String, Id])
+  type SourceSink = (String, String) => Unit
+  def generateQuery(packageName: String, className: String, columns: Seq[String], operatorIds: Map[String, Id], sourceSink: Option[SourceSink])
                    (block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext): T
 }
 
@@ -154,9 +157,13 @@ object CodeStructure {
 
   val __TODO__MOVE_IMPLEMENTATION = new CodeStructure[GeneratedQuery] {
 
-    override def generateQuery(packageName: String, className: String, columns: Seq[String], operatorIds: Map[String, Id])(block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext) = {
+    override def generateQuery(packageName: String, className: String, columns: Seq[String], operatorIds: Map[String, Id], sourceSink: Option[SourceSink])
+                              (block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext) = {
       val generator = try {
-        codegen.CodeGenerator.generateCode(CodeStructure.getClass.getClassLoader/*, SourceCode.PRINT_SOURCE*/)
+        codegen.CodeGenerator.generateCode(CodeStructure.getClass.getClassLoader, sourceSink.map(sink => new SourceVisitor {
+          override protected def visitSource(reference: TypeReference, sourceCode: CharSequence): Unit =
+            sink.apply(reference.name(), sourceCode.toString)
+        }).getOrElse(BLANK_OPTION))
       } catch {
         case e: Exception => throw new CantCompileQueryException(e.getMessage, e)
       }
