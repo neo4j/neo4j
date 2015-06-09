@@ -26,12 +26,12 @@ case class TracingInstruction(id: String, instruction: Instruction) extends Inst
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = super.init(generator)
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
-    generator.trace(operatorId.get) { body =>
+    generator.trace(id) { body =>
       body.incrementRows()
       instruction.body(body)
     }
 
   override def children = Seq(instruction)
 
-  override protected def operatorId: Option[String] = Some(id)
+  override protected def operatorId = Set(id)
 }

@@ -33,7 +33,7 @@ trait LoopDataGenerator extends Instruction {
 
   def id: String
 
-  override protected def operatorId = Some(id)
+  override protected def operatorId = Set(id)
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = ???
 }
