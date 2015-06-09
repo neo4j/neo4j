@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure, Variable}
 
-case class HasLabel(opName: String, nodeVariable: Variable, labelVariable: String, labelName: String)
+case class HasLabel(nodeVariable: Variable, labelVariable: String, labelName: String)
   extends CodeGenExpression {
+
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
     generator.lookupLabelId(labelVariable, labelName)
 
@@ -30,12 +31,31 @@ case class HasLabel(opName: String, nodeVariable: Variable, labelVariable: Strin
     val localName = context.namer.newVarName()
     structure.declarePredicate(localName)
 
-    structure.trace(opName) { inner =>
-      inner.incrementDbHits()
-      if (nodeVariable.nullable)
-        inner.nullable(nodeVariable.name, nodeVariable.cypherType, inner.hasLabel(nodeVariable.name, labelVariable, localName))
-      else
-        inner.hasLabel(nodeVariable.name, labelVariable, localName)
-    }
+    structure.incrementDbHits()
+    if (nodeVariable.nullable)
+      structure.nullable(nodeVariable.name, nodeVariable.cypherType,
+                         structure.hasLabel(nodeVariable.name, labelVariable, localName))
+    else
+      structure.hasLabel(nodeVariable.name, labelVariable, localName)
+  }
+}
+
+case class HasLabelPredicate(nodeVariable: Variable, labelVariable: String, labelName: String)
+  extends CodeGenExpression {
+
+  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    generator.lookupLabelId(labelVariable, labelName)
+
+  def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+    val localName = context.namer.newVarName()
+    structure.declarePredicate(localName)
+
+    structure.incrementDbHits()
+    if (nodeVariable.nullable)
+      structure.coerceToPredicate(
+        structure.nullable(nodeVariable.name, nodeVariable.cypherType,
+                         structure.hasLabel(nodeVariable.name, labelVariable, localName)))
+    else
+      structure.hasLabel(nodeVariable.name, labelVariable, localName)
   }
 }

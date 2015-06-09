@@ -19,24 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
-case class Project(opName: String, projections: Seq[CodeGenExpression], parent: Instruction) extends Instruction {
-
-  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.trace(opName) { inner =>
-      inner.incrementRows()
-    }
-    parent.body(generator)
-  }
-
-  override protected def children = Seq(parent)
-
-  override protected def operatorId = Set(opName)
+/**
+ * Generates instruction for for updating a provided flag before creating generating the inner instruction
+ */
+case class CheckingInstruction(inner: Instruction, yieldedFlagVar: String)
+  extends Instruction {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    super.init(generator)
-    projections.foreach(_.init(generator))
+    inner.init(generator)
   }
+
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    generator.updateFlag(yieldedFlagVar, newValue = true)
+    inner.body(generator)
+  }
+
+  override def children = Seq(inner)
 }

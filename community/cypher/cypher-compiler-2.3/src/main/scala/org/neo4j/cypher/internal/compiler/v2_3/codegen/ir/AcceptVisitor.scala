@@ -22,19 +22,30 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
-case class AcceptVisitor(id: String, columns: Map[String, CodeGenExpression]) extends Instruction {
+case class AcceptVisitor(produceResultOpName: String, projectionOpName: String, columns: Map[String, CodeGenExpression])
+  extends Instruction {
 
   override protected def columnNames = columns.keys
 
-  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = generator.trace(id) { body =>
-    columns.foreach { case (k, v) =>
-      body.setInRow(k, v.generateExpression(body))
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    generator.trace(projectionOpName) { body =>
+      body.incrementRows()
+      columns.foreach { case (k, v) =>
+        body.setInRow(k, v.generateExpression(body))
+      }
     }
-    body.visitRow()
-    body.incrementRows()
+    generator.trace(produceResultOpName) { body =>
+      body.visitRow()
+      body.incrementRows()
+    }
   }
 
-  override protected def operatorId = Set(id)
+  override protected def operatorId = Set(produceResultOpName, projectionOpName)
 
   override protected def children = Seq.empty
+
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) {
+    columns.values.foreach(_.init(generator))
+    super.init(generator)
+  }
 }

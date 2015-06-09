@@ -22,13 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
 
 /**
- * Generates code that runs a loop and afterwards checks if the provided variable has been set,
- * if not it sets all provided variables to null and runs the inner body of the loop
- * @param loop
- * @param yieldedFlagVar
- * @param nullableVars
+ * Generates code that runs and afterwards checks if the provided variable has been set,
+ * if not it sets all provided variables to null and runs the alternativeAction
  */
-case class NullingWhileLoop(loop: WhileLoop, yieldedFlagVar: String, nullableVars: Variable*)
+case class NullingInstruction(loop: Instruction, yieldedFlagVar: String, alternativeAction: Instruction,
+                            nullableVars: Variable*)
   extends Instruction {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
@@ -40,7 +38,7 @@ case class NullingWhileLoop(loop: WhileLoop, yieldedFlagVar: String, nullableVar
     generator.ifStatement(generator.not(generator.load(yieldedFlagVar))){ ifBody =>
       //mark variables as null
       nullableVars.foreach(v => ifBody.markAsNull(v.name, v.cypherType))
-      loop.action.body(ifBody)
+      alternativeAction.body(ifBody)
     }
   }
 

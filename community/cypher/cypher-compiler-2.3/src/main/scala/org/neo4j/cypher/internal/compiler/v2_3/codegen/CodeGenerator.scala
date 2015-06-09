@@ -43,7 +43,7 @@ import scala.collection.immutable
 object CodeGenerator {
   type SourceSink = Option[(String, String) => Unit]
 
-  def generateQuery(plan: LogicalPlan, semantics: SemanticTable, ids: Map[LogicalPlan, Id], sources:SourceSink=None): GeneratedQuery = {
+  def generateQuery(plan: LogicalPlan, semantics: SemanticTable, ids: Map[LogicalPlan, Id], sources: SourceSink = None): GeneratedQuery = {
     import LogicalPlanConverter._
     implicit val context = new CodeGenContext(semantics, ids)
     val (_, instructions) = plan.asCodeGenPlan.produce(context)
