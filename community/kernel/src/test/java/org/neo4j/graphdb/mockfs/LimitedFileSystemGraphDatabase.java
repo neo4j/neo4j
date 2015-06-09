@@ -22,10 +22,14 @@ package org.neo4j.graphdb.mockfs;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-@SuppressWarnings("deprecation")
 public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
 {
     private LimitedFilesystemAbstraction fs;
+
+    public LimitedFileSystemGraphDatabase( String storeDir )
+    {
+        super( storeDir );
+    }
 
     @Override
     protected FileSystemAbstraction createFileSystemAbstraction()
@@ -41,5 +45,10 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
     public void somehowGainMoreDiskSpace()
     {
         this.fs.runOutOfDiskSpace( false );
+    }
+
+    public LimitedFilesystemAbstraction getFileSystem()
+    {
+        return fs;
     }
 }

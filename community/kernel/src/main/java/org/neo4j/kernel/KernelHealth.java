@@ -50,12 +50,11 @@ public class KernelHealth
      * @param panicDisguise the cause of the unhealthy state wrapped in an exception of this type.
      * @throws EXCEPTION exception type to wrap cause in.
      */
-    public <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise )
-            throws EXCEPTION
+    public <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION
     {
         if ( !tmOk )
         {
-            EXCEPTION exception = null;
+            EXCEPTION exception;
             try
             {
                 try
@@ -94,6 +93,11 @@ public class KernelHealth
         // Keeps the "setting TM not OK string for grep:ability
         log.error( "setting TM not OK. " + panicMessage, cause );
         kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK, causeOfPanic );
+    }
+
+    public boolean isHealthy()
+    {
+        return tmOk;
     }
 
     public void healed()
