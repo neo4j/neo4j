@@ -147,6 +147,7 @@ public class TestUniqueness extends TraversalTestBase
                 count++;
                 paths.next();
             }
+            assertEquals( "wrong number of paths calculated with relationship level uniqueness", 2, count );
             /*
             *  And yet again, but this time with global uniqueness, it should present only one path, since
             *  c TO d is contained on all paths.
