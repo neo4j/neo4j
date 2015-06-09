@@ -30,22 +30,52 @@ angular.module('neo4jApp.services')
       return  {
         exploreNeighbours: (node, graph, withInternalRelationships) ->
           q = $q.defer()
-          @findNeighbours(node).then (neighboursResult) =>
-            if neighboursResult.nodes.length > Settings.maxNeighbours
-              return q.reject('Sorry! Too many neighbours')
+          currentNeighbourIds = graph.findNodeNeighbourIds node.id
+          returnObj =
+            neighbourDisplayedSize: currentNeighbourIds.length
+            neighbourSize: currentNeighbourIds.length
+
+          if returnObj.neighbourDisplayedSize >= Settings.maxNeighbours
+            @findNumberOfNeighbours(node).then (numberNeighboursResult) =>
+              returnObj.neighbourSize = numberNeighboursResult._response.data[0]?.row[0]
+              q.resolve(returnObj)
+            return q.promise
+
+          @findNeighbours(node, currentNeighbourIds).then (neighboursResult) =>
             graph.addNodes(neighboursResult.nodes.map(CypherGraphModel.convertNode()))
             graph.addRelationships(neighboursResult.relationships.map(CypherGraphModel.convertRelationship(graph)))
+
+            currentNeighbourIds = graph.findNodeNeighbourIds node.id
+            returnObj =
+              neighbourDisplayedSize: currentNeighbourIds.length
+              neighbourSize: neighboursResult._response.data[0]?.row[1]
             if withInternalRelationships
               @internalRelationships(graph, graph.nodes(), neighboursResult.nodes).then ->
-                q.resolve()
+                q.resolve(returnObj)
             else
-              q.resolve()
+              q.resolve(returnObj)
           q.promise
 
-        findNeighbours: (node) ->
+        findNeighbours: (node, currentNeighbourIds) ->
           q = $q.defer()
           Cypher.transaction()
-          .commit("MATCH (a)-[r]-() WHERE id(a)= #{node.id} RETURN r;")
+          .commit("""
+            MATCH path = (a)--(o)
+            WHERE id(a)= #{node.id}
+            AND NOT (id(o) IN[#{currentNeighbourIds.join(',')}])
+            RETURN path, size((a)--()) as c
+            ORDER BY id(o)
+            LIMIT #{Settings.maxNeighbours-currentNeighbourIds.length}""")
+          .then(q.resolve)
+          q.promise
+
+        findNumberOfNeighbours: (node) ->
+          q = $q.defer()
+          Cypher.transaction()
+          .commit("""
+              MATCH (a)
+              WHERE id(a)= #{node.id}
+              RETURN size((a)--()) as c""")
           .then(q.resolve)
           q.promise
 
