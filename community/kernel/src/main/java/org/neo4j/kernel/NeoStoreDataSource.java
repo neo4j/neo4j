@@ -1099,11 +1099,16 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 // Force all pending store changes to disk.
                 logRotationControl.forceEverything();
 
-                // We simply increment the version, essentially "rotating" away
-                // the current active log file, to avoid having a recovery on
-                // next startup. Not necessary, simply speeds up the startup
-                // process.
-                neoStoreModule.neoStore().incrementAndGetVersion();
+                // Rotate away the latest log only if the kernel is healthy.
+                // We cannot throw here since we need to shutdown without exceptions.
+                if ( kernelHealth.isHealthy() )
+                {
+                    // We simply increment the version, essentially "rotating" away
+                    // the current active log file, to avoid having a recovery on
+                    // next startup. Not necessary, simply speeds up the startup
+                    // process.
+                    neoStoreModule.neoStore().incrementAndGetVersion();
+                }
 
                 // Shut down all services in here, effectively making the database unusable for anyone who tries.
                 life.shutdown();

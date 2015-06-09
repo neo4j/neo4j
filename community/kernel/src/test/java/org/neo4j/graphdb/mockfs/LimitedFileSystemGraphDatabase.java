@@ -29,10 +29,14 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-@SuppressWarnings("deprecation")
 public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
 {
     private LimitedFilesystemAbstraction fs;
+
+    public LimitedFileSystemGraphDatabase( String storeDir )
+    {
+        super( new File( storeDir ) );
+    }
 
     @Override
     protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
@@ -63,5 +67,10 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
     public void somehowGainMoreDiskSpace()
     {
         this.fs.runOutOfDiskSpace( false );
+    }
+
+    public LimitedFilesystemAbstraction getFileSystem()
+    {
+        return fs;
     }
 }
