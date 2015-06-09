@@ -110,19 +110,19 @@ public class IndexDefineCommand extends Command
         Byte id = stringToId.get( string );
         if ( id != null )
         {
-            return id.byteValue();
+            return id;
         }
 
         int nextIdInt = nextId.incrementAndGet();
-        id = (byte) nextIdInt;
-        if ( nextIdInt != id )
+        if ( nextIdInt > 63 )
         {
-            throw new IllegalArgumentException( "Too many names " + nextIdInt );
+            throw new IllegalStateException( "Modifying more than 63 indexes in a single transaction is not supported" );
         }
+        id = (byte) nextIdInt;
 
         stringToId.put( string, id );
         idToString.put( id, string );
-        return id.byteValue();
+        return id;
     }
 
 
