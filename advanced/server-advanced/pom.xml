@@ -40,7 +40,7 @@
     <bundle.namespace>org.neo4j.server.advanced</bundle.namespace>
     <short-name>server-advanced</short-name>
     <version-package>server.advanced</version-package>
-    <neo4j-server.mainClass>org.neo4j.server.Bootstrapper</neo4j-server.mainClass>
+    <neo4j-server.mainClass>org.neo4j.server.advanced.AdvancedBootstrapper</neo4j-server.mainClass>
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
