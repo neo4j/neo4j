@@ -69,11 +69,7 @@ public class ConcurrentInstanceStartupIT
                         barrier.await();
                         dbs[ finalI-1 ] = startDbAtBase( finalI, initialHosts );
                     }
-                    catch ( InterruptedException e )
-                    {
-                        throw new RuntimeException( e );
-                    }
-                    catch ( BrokenBarrierException e )
+                    catch ( InterruptedException | BrokenBarrierException e )
                     {
                         throw new RuntimeException( e );
                     }

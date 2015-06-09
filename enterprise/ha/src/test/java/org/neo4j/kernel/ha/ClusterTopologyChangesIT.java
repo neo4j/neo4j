@@ -163,7 +163,7 @@ public class ClusterTopologyChangesIT
         // now adding another failing listener and wait for the failure due to stale epoch
         final CountDownLatch slave1Unavailable = new CountDownLatch( 1 );
         final CountDownLatch slave2Unavailable = new CountDownLatch( 1 );
-        ClusterMemberEvents clusterEvents = ((GraphDatabaseAPI) newMaster).getDependencyResolver().resolveDependency(
+        ClusterMemberEvents clusterEvents = newMaster.getDependencyResolver().resolveDependency(
                 ClusterMemberEvents.class );
         clusterEvents.addClusterMemberListener( new ClusterMemberListener.Adapter()
         {

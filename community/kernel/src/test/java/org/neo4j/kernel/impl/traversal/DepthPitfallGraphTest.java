@@ -100,8 +100,7 @@ public class DepthPitfallGraphTest extends TraversalTestBase
     {
         Traverser traversal = traversal().traverse( node( "1" ) );
         int count = 0;
-        Transaction transaction = beginTx();
-        try
+        try (Transaction transaction = beginTx())
         {
             for ( Path position : traversal )
             {
@@ -115,10 +114,6 @@ public class DepthPitfallGraphTest extends TraversalTestBase
                 assertNotNull( position.length() );
             }
             assertFalse( "empty traversal", count == 0 );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 

@@ -222,9 +222,8 @@ public class GraphDescription implements GraphDefinition
     @Override
     public Map<String, Node> create( GraphDatabaseService graphdb )
     {
-        Map<String, Node> result = new HashMap<String, Node>();
-        Transaction tx = graphdb.beginTx();
-        try
+        Map<String, Node> result = new HashMap<>();
+        try ( Transaction tx = graphdb.beginTx() )
         {
             graphdb.index().getRelationshipAutoIndexer().setEnabled( autoIndexRelationships );
             for ( NODE def : nodes )
@@ -243,10 +242,6 @@ public class GraphDescription implements GraphDefinition
                         def.properties(), graphdb.index().getRelationshipAutoIndexer(), autoIndexRelationships );
             }
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
         return result;
     }
@@ -290,7 +285,7 @@ public class GraphDescription implements GraphDefinition
         public Map<String, Node> create( GraphDatabaseService graphdb )
         {
             // don't bother with creating a transaction
-            return new HashMap<String, Node>();
+            return new HashMap<>();
         }
     };
     private final NODE[] nodes;
@@ -300,8 +295,8 @@ public class GraphDescription implements GraphDefinition
 
     public static GraphDescription create( String... definition )
     {
-        Map<String, NODE> nodes = new HashMap<String, NODE>();
-        List<REL> relationships = new ArrayList<REL>();
+        Map<String, NODE> nodes = new HashMap<>();
+        List<REL> relationships = new ArrayList<>();
         parse( definition, nodes, relationships );
         return new GraphDescription( nodes.values().toArray( NO_NODES ), relationships.toArray( NO_RELS ), false, false );
     }
@@ -310,8 +305,7 @@ public class GraphDescription implements GraphDefinition
     {
         if ( nodes.isEmpty() ) return;
         GraphDatabaseService db = nodes.values().iterator().next().getGraphDatabase();
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
             {
@@ -321,10 +315,6 @@ public class GraphDescription implements GraphDefinition
             }
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public static GraphDescription create( Graph graph )
@@ -333,7 +323,7 @@ public class GraphDescription implements GraphDefinition
         {
             return EMPTY;
         }
-        Map<String, NODE> nodes = new HashMap<String, NODE>();
+        Map<String, NODE> nodes = new HashMap<>();
         for ( NODE node : graph.nodes() )
         {
             if ( nodes.put( defined( node.name() ), node ) != null )
@@ -341,8 +331,8 @@ public class GraphDescription implements GraphDefinition
                 throw new IllegalArgumentException( "Node \"" + node.name() + "\" defined more than once" );
             }
         }
-        Map<String, REL> rels = new HashMap<String, REL>();
-        List<REL> relationships = new ArrayList<REL>();
+        Map<String, REL> rels = new HashMap<>();
+        List<REL> relationships = new ArrayList<>();
         for ( REL rel : graph.relationships() )
         {
             createIfAbsent( nodes, rel.start() );
@@ -371,7 +361,7 @@ public class GraphDescription implements GraphDefinition
         {
             NODE preexistingNode = nodes.get( name );
             // Join with any new labels
-            HashSet<String> joinedLabels = new HashSet<String>( asList( labels ));
+            HashSet<String> joinedLabels = new HashSet<>( asList( labels ) );
             for ( LABEL label : preexistingNode.labels() )
             {
                 joinedLabels.add( label.value() );

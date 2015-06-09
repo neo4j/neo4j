@@ -20,6 +20,7 @@
 package org.neo4j.graphdb;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -50,7 +51,7 @@ public class SchemaIndexWaitingAcceptanceTest
         protected void configure( GraphDatabaseFactory databaseFactory )
         {
             List<KernelExtensionFactory<?>> extensions;
-            extensions = Arrays.<KernelExtensionFactory<?>>asList( singleInstanceSchemaIndexProviderFactory(
+            extensions = Collections.<KernelExtensionFactory<?>>singletonList( singleInstanceSchemaIndexProviderFactory(
                     "test", provider ) );
             databaseFactory.addKernelExtensions( extensions );
         }
@@ -63,16 +64,17 @@ public class SchemaIndexWaitingAcceptanceTest
         GraphDatabaseService db = rule.getGraphDatabaseService();
         DoubleLatch latch = provider.installPopulationJobCompletionLatch();
 
-        Transaction tx = db.beginTx();
-        IndexDefinition index = db.schema().indexFor( DynamicLabel.label( "Person" ) ).on( "name" ).create();
-        tx.success();
-        tx.finish();
+        IndexDefinition index;
+        try ( Transaction tx = db.beginTx() )
+        {
+            index = db.schema().indexFor( DynamicLabel.label( "Person" ) ).on( "name" ).create();
+            tx.success();
+        }
 
         latch.awaitStart();
-        tx = db.beginTx();
 
         // when
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             // then
             db.schema().awaitIndexOnline( index, 1, TimeUnit.MILLISECONDS );
@@ -86,7 +88,6 @@ public class SchemaIndexWaitingAcceptanceTest
         }
         finally
         {
-            tx.finish();
             latch.finish();
         }
     }
@@ -98,16 +99,16 @@ public class SchemaIndexWaitingAcceptanceTest
         GraphDatabaseService db = rule.getGraphDatabaseService();
         DoubleLatch latch = provider.installPopulationJobCompletionLatch();
 
-        Transaction tx = db.beginTx();
-        db.schema().indexFor( DynamicLabel.label( "Person" ) ).on( "name" ).create();
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( DynamicLabel.label( "Person" ) ).on( "name" ).create();
+            tx.success();
+        }
 
         latch.awaitStart();
 
-        tx = db.beginTx();
         // when
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             // then
             db.schema().awaitIndexesOnline( 1, TimeUnit.MILLISECONDS );
@@ -122,7 +123,6 @@ public class SchemaIndexWaitingAcceptanceTest
         finally
         {
             latch.finish();
-            tx.finish();
         }
     }
 }

@@ -142,8 +142,7 @@ public class BigJumpingStoreIT
         }
 
         tx.success();
-        //noinspection deprecation
-        tx.finish();
+        tx.close();
 
         // Verify
         tx = db.beginTx();
@@ -160,8 +159,7 @@ public class BigJumpingStoreIT
             }
         }
         assertEquals( numberOfRels, relCount );
-        //noinspection deprecation
-        tx.finish();
+        tx.close();
 
         // Remove stuff
         tx = db.beginTx();
@@ -218,8 +216,7 @@ public class BigJumpingStoreIT
             }
         }
         tx.success();
-        //noinspection deprecation
-        tx.finish();
+        tx.close();
 
         // Verify again
         tx = db.beginTx();
@@ -272,8 +269,7 @@ public class BigJumpingStoreIT
                 nodeCount++;
             }
         }
-        //noinspection deprecation
-        tx.finish();
+        tx.close();
     }
 
     private void setPropertyOnAll( Iterable<Relationship> relationships, String key,

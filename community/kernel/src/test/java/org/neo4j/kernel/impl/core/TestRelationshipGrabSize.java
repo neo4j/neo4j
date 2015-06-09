@@ -90,7 +90,7 @@ public class TestRelationshipGrabSize
         RelationshipType type2 = DynamicRelationshipType.withName( "type2" );
         // This will the last relationship in the chain
         node1.createRelationshipTo( node3, type1 );
-        Collection<Relationship> type2Relationships = new HashSet<Relationship>();
+        Collection<Relationship> type2Relationships = new HashSet<>();
         // Create exactly grabSize relationships and store them in a set
         for ( int i = 0; i < GRAB_SIZE; i++ )
         {
@@ -141,10 +141,11 @@ public class TestRelationshipGrabSize
         {
             node1.createRelationshipTo( node2, type );
         }
-        tx.success();
-        tx.finish();
+        finishTx( true );
 
-        tx = db.beginTx();
+
+        beginTx();
+
 
         node1.getRelationships().iterator().next().delete();
         node1.setProperty( "foo", "bar" );
@@ -161,8 +162,7 @@ public class TestRelationshipGrabSize
         }
         assertEquals( relCount, GRAB_SIZE + 1 );
         assertEquals( "bar", node1.getProperty( "foo" ) );
-        tx.success();
-        tx.finish();
+        finishTx( true );
     }
 
     @Test
@@ -213,8 +213,7 @@ public class TestRelationshipGrabSize
             Relationship rel = node1.createRelationshipTo( node2, type2 );
             count++;
         }
-        tx.success();
-        tx.finish();
+        finishTx( true );
 
         clearCacheAndCreateDeleteCount( db, node1, node2, type1, type2, count );
         clearCacheAndCreateDeleteCount( db, node1, node2, type2, type1, count );
@@ -225,20 +224,24 @@ public class TestRelationshipGrabSize
     private void clearCacheAndCreateDeleteCount( GraphDatabaseAPI db, Node node1, Node node2,
             RelationshipType createType, RelationshipType deleteType, int expectedCount )
     {
-        Transaction tx = db.beginTx();
+        try ( Transaction tx = db.beginTx() )
+        {
 
-        node1.createRelationshipTo( node2, createType );
-        node1.getRelationships( deleteType ).iterator().next().delete();
+            node1.createRelationshipTo( node2, createType );
+            node1.getRelationships( deleteType ).iterator().next().delete();
 
-        assertEquals( expectedCount, count( node1.getRelationships() ) );
-        assertEquals( expectedCount, count( node2.getRelationships() ) );
+            assertEquals( expectedCount, count( node1.getRelationships() ) );
+            assertEquals( expectedCount, count( node2.getRelationships() ) );
 
-        tx.success();
-        tx.finish();
+            tx.success();
+        }
 
-        tx = db.beginTx();
-        assertEquals( expectedCount, count( node1.getRelationships() ) );
-        assertEquals( expectedCount, count( node2.getRelationships() ) );
-        tx.finish();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertEquals( expectedCount, count( node1.getRelationships() ) );
+            assertEquals( expectedCount, count( node2.getRelationships() ) );
+            tx.success();
+        }
     }
 }

@@ -128,19 +128,13 @@ public class ForeignStoreIdIT
     
     private long findNode( GraphDatabaseService db, String name )
     {
-        Transaction transaction = db.beginTx();
-
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
             for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
                 if ( name.equals( node.getProperty( "name", null ) ) )
                     return node.getId();
             fail( "Didn't find node '" + name + "' in " + db );
             return -1; // will never happen
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -161,17 +155,12 @@ public class ForeignStoreIdIT
 
     private long createNode( GraphDatabaseService db, String name )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
             node.setProperty( "name", name );
             tx.success();
             return node.getId();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

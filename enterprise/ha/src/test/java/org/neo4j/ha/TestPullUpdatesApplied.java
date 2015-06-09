@@ -231,15 +231,10 @@ public class TestPullUpdatesApplied
     {
         HighlyAvailableGraphDatabase db = dbs[dbId];
         long result = -1;
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             result = db.createNode().getId();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
         return result;
     }

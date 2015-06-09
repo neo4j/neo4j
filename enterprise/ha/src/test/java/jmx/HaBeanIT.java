@@ -65,14 +65,15 @@ public class HaBeanIT
 {
     @Rule
     public final TestName testName = new TestName();
-
-    private static final TargetDirectory dir = TargetDirectory.forTest( HaBeanIT.class );
+    @Rule
+    public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( HaBeanIT.class );
     private ManagedCluster cluster;
     private ClusterManager clusterManager;
 
     public void startCluster( int size ) throws Throwable
     {
-        clusterManager = new ClusterManager( clusterOfSize( size ), dir.cleanDirectory( testName.getMethodName() ), MapUtil.stringMap() )
+        clusterManager = new ClusterManager( clusterOfSize( size ), dir.directory( testName.getMethodName() ),
+                MapUtil.stringMap() )
         {
             @Override
             protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
@@ -143,10 +144,11 @@ public class HaBeanIT
         startCluster( 2 );
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        Transaction tx = master.beginTx();
-        master.createNode();
-        tx.success();
-        tx.finish();
+        try (Transaction tx = master.beginTx())
+        {
+            master.createNode();
+            tx.success();
+        }
         HighAvailability slaveBean = ha( slave );
         DateFormat format = new SimpleDateFormat( "yyyy-MM-DD kk:mm:ss.SSSZZZZ" );
         // To begin with, no updates
@@ -352,11 +354,9 @@ public class HaBeanIT
     private void await( HighAvailability ha, Predicate<ClusterMemberInfo> predicate ) throws InterruptedException
     {
         long end = System.currentTimeMillis() + SECONDS.toMillis( 300 );
-        boolean conditionMet = false;
         while ( System.currentTimeMillis() < end )
         {
-            conditionMet = predicate.test( member( ha.getInstancesInCluster(), 2 ) );
-            if ( conditionMet )
+            if ( predicate.test( member( ha.getInstancesInCluster(), 2 ) ) )
             {
                 return;
             }

@@ -86,7 +86,7 @@ public class TestExceptionTypeOnInvalidIds
     @After
     public void endTransaction()
     {
-        tx.finish();
+        tx.close();
         tx = null;
     }
 

@@ -99,18 +99,13 @@ public class PartialTransactionFailureIT
 
 
         Node a, b, c, d;
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             a = db.createNode();
             b = db.createNode();
             c = db.createNode();
             d = db.createNode();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
 
         adversary.enable();
@@ -131,8 +126,7 @@ public class PartialTransactionFailureIT
 
         // We should observe the store in a consistent state
         EmbeddedGraphDatabase db2 = new TestEmbeddedGraphDatabase( storeDir, params );
-        tx = db2.beginTx();
-        try
+        try ( Transaction tx = db2.beginTx() )
         {
             Node x = db2.getNodeById( a.getId() );
             Node y = db2.getNodeById( b.getId() );
@@ -169,14 +163,7 @@ public class PartialTransactionFailureIT
         }
         finally
         {
-            try
-            {
-                tx.finish();
-            }
-            finally
-            {
-                db2.shutdown();
-            }
+            db2.shutdown();
         }
     }
 
@@ -191,14 +178,12 @@ public class PartialTransactionFailureIT
             @Override
             public void run()
             {
-                Transaction tx = db.beginTx();
-                try
+                try ( Transaction tx = db.beginTx() )
                 {
                     x.createRelationshipTo( y, DynamicRelationshipType.withName( "r" ) );
                     tx.success();
                     latch.await();
                     db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
-                    tx.finish();
                 }
                 catch ( Exception ignore )
                 {

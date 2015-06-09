@@ -172,6 +172,6 @@ public class TestInstanceJoin
 
     private static void awaitStart( HighlyAvailableGraphDatabase db )
     {
-        db.beginTx().finish();
+        db.beginTx().close();
     }
 }

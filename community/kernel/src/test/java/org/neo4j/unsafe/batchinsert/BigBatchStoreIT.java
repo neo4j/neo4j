@@ -94,7 +94,7 @@ public class BigBatchStoreIT implements RelationshipType
     
     private void testHighIds( long highMark, int minus, int requiredHeapMb ) throws Exception
     {
-        assumeTrue( machineIsOkToRunThisTest( testName.getMethodName(), requiredHeapMb ) );
+        assumeTrue( machineIsOkToRunThisTest(requiredHeapMb ) );
         
         long idBelow = highMark-minus;
         setHighId( IdType.NODE, idBelow );

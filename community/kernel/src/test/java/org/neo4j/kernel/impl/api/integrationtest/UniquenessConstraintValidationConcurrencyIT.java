@@ -144,8 +144,7 @@ public class UniquenessConstraintValidationConcurrencyIT
             @Override
             public Boolean doWork( Void nothing ) throws Exception
             {
-                Transaction tx = db.beginTx();
-                try
+                try ( Transaction tx = db.beginTx() )
                 {
                     db.createNode( label( label ) ).setProperty( propertyKey, propertyValue );
 
@@ -155,10 +154,6 @@ public class UniquenessConstraintValidationConcurrencyIT
                 catch ( ConstraintViolationException e )
                 {
                     return false;
-                }
-                finally
-                {
-                    tx.finish();
                 }
             }
         };

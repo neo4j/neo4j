@@ -135,7 +135,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     @Test
     public void testNodeChangePropertyArray() throws Exception
     {
-        getTransaction().finish();
+        getTransaction().close();
 
         Node node;
         try ( Transaction tx = getGraphDb().beginTx() )
@@ -180,7 +180,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         getGraphDb().createNode();
         graphDb2.createNode();
         tx2.success();
-        tx2.finish();
+        tx2.close();
         graphDb2.shutdown();
     }
 

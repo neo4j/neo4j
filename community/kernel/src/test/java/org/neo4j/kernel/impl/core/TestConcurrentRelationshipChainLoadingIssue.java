@@ -77,7 +77,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
 
         checkStateToHelpDiagnoseFlakeyTest( db, node );
 
-        long end = currentTimeMillis()+SECONDS.toMillis( 5 );
+        long end = currentTimeMillis() + SECONDS.toMillis( 5 );
         int iterations = 0;
         while ( currentTimeMillis() < end )
         {
@@ -106,7 +106,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
         try
         {
             startSignal.await();
-            idleLoop( (int) (System.currentTimeMillis()%100000) );
+            idleLoop( (int) (System.currentTimeMillis() % 100000) );
         }
         catch ( InterruptedException e )
         {
@@ -128,17 +128,13 @@ public class TestConcurrentRelationshipChainLoadingIssue
                 public void run()
                 {
                     awaitStartSignalAndRandomTimeLonger( startSignal );
-                    Transaction transaction = db.beginTx();
-                    try
+                    try ( Transaction transaction = db.beginTx() )
                     {
                         assertEquals( relCount, count( node.getRelationships() ) );
                     }
                     catch ( Throwable e )
                     {
                         errors.add( e );
-                    }
-                    finally {
-                        transaction.finish();
                     }
                 }
             } );
@@ -172,9 +168,8 @@ public class TestConcurrentRelationshipChainLoadingIssue
 
     private Node createNodeWithRelationships( GraphDatabaseAPI db )
     {
-        Transaction tx = db.beginTx();
         Node node;
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
             for ( int i = 0; i < relCount / 2; i++ )
@@ -187,10 +182,6 @@ public class TestConcurrentRelationshipChainLoadingIssue
             }
             tx.success();
             return node;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

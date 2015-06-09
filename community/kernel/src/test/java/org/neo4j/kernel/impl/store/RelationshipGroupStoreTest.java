@@ -289,7 +289,7 @@ public class RelationshipGroupStoreTest
         Relationship rel5 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
         Relationship rel6 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
         tx.success();
-        tx.finish();
+        tx.close();
 
         NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
         NodeStore nodeStore = neoStore.getNodeStore();

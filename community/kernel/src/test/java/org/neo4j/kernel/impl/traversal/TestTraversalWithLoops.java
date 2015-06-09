@@ -43,8 +43,7 @@ public class TestTraversalWithLoops extends TraversalTestBase
         
         createGraph( "a TO b", "b TO c", "c TO c", "c TO d", "d TO d", "d TO e" );
 
-        Transaction tx = beginTx();
-        try
+        try ( Transaction tx = beginTx() )
         {
             Node a = getNodeWithName( "a" );
             final Node e = getNodeWithName( "e" );
@@ -62,10 +61,5 @@ public class TestTraversalWithLoops extends TraversalTestBase
                     "a,b,c,d,e", "a,b,c,c,d,e", "a,b,c,d,d,e", "a,b,c,c,d,d,e" );
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
-
     }
 }

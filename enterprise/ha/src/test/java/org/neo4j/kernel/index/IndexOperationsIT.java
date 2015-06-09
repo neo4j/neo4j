@@ -98,16 +98,11 @@ public class IndexOperationsIT
         Map<HighlyAvailableGraphDatabase,Index<Node>> indexes = new HashMap<>();
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            Transaction transaction = db.beginTx();
-            try
+            try ( Transaction transaction = db.beginTx() )
             {
                 indexManagers.put( db, db.index() );
                 indexes.put( db, db.index().forNodes( key ) );
                 transaction.success();
-            }
-            finally
-            {
-                transaction.finish();
             }
         }
 
@@ -125,31 +120,21 @@ public class IndexOperationsIT
         for ( Map.Entry<HighlyAvailableGraphDatabase, IndexManager> entry : indexManagers.entrySet() )
         {
             HighlyAvailableGraphDatabase db = entry.getKey();
-            Transaction transaction = db.beginTx();
-            try
+            try ( Transaction transaction = db.beginTx() )
             {
                 IndexManager indexManager = entry.getValue();
                 assertTrue( indexManager.existsForNodes( key ) );
                 assertEquals( nodeId, indexManager.forNodes( key ).get( key, value ).getSingle().getId() );
-            }
-            finally
-            {
-                transaction.finish();
             }
         }
 
         for ( Map.Entry<HighlyAvailableGraphDatabase, Index<Node>> entry : indexes.entrySet() )
         {
             HighlyAvailableGraphDatabase db = entry.getKey();
-            Transaction transaction = db.beginTx();
-            try
+            try ( Transaction transaction = db.beginTx() )
             {
                 Index<Node> index = entry.getValue();
                 assertEquals( nodeId, index.get( key, value ).getSingle().getId() );
-            }
-            finally
-            {
-                transaction.finish();
             }
         }
     }
@@ -177,7 +162,7 @@ public class IndexOperationsIT
         // -- second instance completes tx
         w2.execute( new FinishTx( tx2, true ) );
         tx2.success();
-        tx2.finish();
+        tx2.close();
 
         // THEN
         // -- first instance can complete the future with a non-null result
@@ -195,8 +180,8 @@ public class IndexOperationsIT
 
     private long createNode( HighlyAvailableGraphDatabase author, String key, Object value, boolean index )
     {
-        Transaction tx = author.beginTx();
-        try
+
+        try (Transaction tx = author.beginTx())
         {
             Node node = author.createNode();
             node.setProperty( key, value );
@@ -210,25 +195,16 @@ public class IndexOperationsIT
             e.printStackTrace( System.err );
             throw e;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     private void assertNodeAndIndexingExists( HighlyAvailableGraphDatabase db, long nodeId, String key, Object value )
     {
-        Transaction transaction = db.beginTx();
-        try
+        try (Transaction transaction = db.beginTx())
         {
             Node node = db.getNodeById( nodeId );
             assertEquals( value, node.getProperty( key ) );
             assertTrue( db.index().existsForNodes( key ) );
             assertEquals( node, db.index().forNodes( key ).get( key, value ).getSingle() );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 

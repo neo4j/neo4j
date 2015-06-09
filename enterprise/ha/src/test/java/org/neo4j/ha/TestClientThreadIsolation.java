@@ -81,7 +81,7 @@ public class TestClientThreadIsolation
                 DynamicRelationshipType.withName( "master" ) ).setProperty(
                 "largeArray", new int[20000] );
         masterTx.success();
-        masterTx.finish();
+        masterTx.close();
 
         Thread thread1 = new Thread( new Runnable()
         {

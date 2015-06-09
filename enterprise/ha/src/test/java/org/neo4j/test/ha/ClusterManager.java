@@ -25,6 +25,7 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -304,25 +305,26 @@ public class ClusterManager
      * There must be a master available. Optionally exceptions, useful for when awaiting a
      * re-election of a different master.
      */
-    public static Predicate<ManagedCluster> masterAvailable( HighlyAvailableGraphDatabase... except )
+    public static Predicate<ManagedCluster> masterAvailable( final HighlyAvailableGraphDatabase... except )
     {
-        final Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<>( asList( except ) );
+        final Collection<HighlyAvailableGraphDatabase> excludedNodes = asList( except );
         return new Predicate<ClusterManager.ManagedCluster>()
         {
             @Override
             public boolean test( ManagedCluster cluster )
             {
-                for ( HighlyAvailableGraphDatabase graphDatabaseService : cluster.getAllMembers() )
-                {
-                    if ( !exceptSet.contains( graphDatabaseService ) )
-                    {
-                        if ( graphDatabaseService.isAvailable( 0 ) && graphDatabaseService.isMaster() )
+                Predicate<HighlyAvailableGraphDatabase> filterMasterPredicate =
+                        new Predicate<HighlyAvailableGraphDatabase>()
                         {
-                            return true;
-                        }
-                    }
-                }
-                return false;
+                            @Override
+                            public boolean test( HighlyAvailableGraphDatabase node )
+                            {
+                                return !excludedNodes.contains( node ) &&
+                                       node.isAvailable( 0 ) &&
+                                       node.isMaster();
+                            }
+                        };
+                return Iterables.filter( filterMasterPredicate, cluster.getAllMembers() ).iterator().hasNext();
             }
 
             @Override
@@ -407,21 +409,21 @@ public class ClusterManager
             @Override
             public boolean test( ManagedCluster cluster )
             {
-                int nrOfMembers = cluster.size();
+                int clusterSize = cluster.size();
 
                 for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
                 {
                     ClusterMembers members = database.getDependencyResolver().resolveDependency( ClusterMembers.class );
 
-                    if ( count( members.getMembers() ) < nrOfMembers )
+                    if ( count( members.getMembers() ) < clusterSize )
                     {
                         return false;
                     }
                 }
 
-                for ( ClusterMembers clusterMembers : cluster.getArbiters() )
+                for ( ClusterMembers arbiter : cluster.getArbiters() )
                 {
-                    if ( count( clusterMembers.getMembers() ) < nrOfMembers )
+                    if ( count( arbiter.getMembers() ) < clusterSize )
                     {
                         return false;
                     }
@@ -446,11 +448,11 @@ public class ClusterManager
             @Override
             public boolean test( ManagedCluster item )
             {
-                for ( HighlyAvailableGraphDatabaseProxy member : item.members.values() )
+                for ( HighlyAvailableGraphDatabase member : item.getAllMembers())
                 {
                     try
                     {
-                        member.get().beginTx().close();
+                        member.beginTx().close();
                     }
                     catch ( TransactionFailureException e )
                     {
@@ -498,9 +500,8 @@ public class ClusterManager
         // shutdown() or stop()ped properly
         life.start();
 
-        for ( int i = 0; i < clusters.getClusters().size(); i++ )
+        for ( Clusters.Cluster cluster : clusters.getClusters())
         {
-            Clusters.Cluster cluster = clusters.getClusters().get( i );
             ManagedCluster managedCluster = new ManagedCluster( cluster );
             clusterMap.put( cluster.getName(), managedCluster );
             life.add( managedCluster );

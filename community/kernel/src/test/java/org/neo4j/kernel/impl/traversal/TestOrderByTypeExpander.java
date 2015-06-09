@@ -97,15 +97,16 @@ public class TestOrderByTypeExpander extends TraversalTestBase
     
     private void assertOrder( Iterator<Node> itr, String... names )
     {
-        Transaction tx = beginTx();
-        for ( String name : names )
+        try ( Transaction tx = beginTx() )
         {
-            Node node = itr.next();
-            assertEquals( "expected " + name + ", was " + node.getProperty( "name" ),
-                    getNodeWithName( name ), node );
+            for ( String name : names )
+            {
+                Node node = itr.next();
+                assertEquals( "expected " + name + ", was " + node.getProperty( "name" ),
+                        getNodeWithName( name ), node );
+            }
+            assertFalse( itr.hasNext() );
+            tx.success();
         }
-        assertFalse( itr.hasNext() );
-        tx.success();
-        tx.finish();
     }
 }

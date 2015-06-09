@@ -78,27 +78,17 @@ public class SchemaAcceptanceTest
         IndexDefinition index;
 
         // WHEN
-        Transaction tx = db.beginTx();
         IndexDefinition indexDef;
-        try
+        try (Transaction tx = db.beginTx())
         {
-            Transaction tx1 = db.beginTx();
-            try
+            try ( Transaction nestedTransaction = db.beginTx() )
             {
                 indexDef = db.schema().indexFor( label ).on( propertyKey ).create();
-                tx1.success();
-            }
-            finally
-            {
-                tx1.finish();
+                nestedTransaction.success();
             }
 
             index = indexDef;
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
         waitForIndex( db, indexDef );
 
@@ -110,8 +100,7 @@ public class SchemaAcceptanceTest
     public void shouldThrowConstraintViolationIfAskedToIndexSamePropertyAndLabelTwiceInSameTx() throws Exception
     {
         // WHEN
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Schema schema = db.schema();
             schema.indexFor( label ).on( propertyKey ).create();
@@ -127,37 +116,30 @@ public class SchemaAcceptanceTest
             }
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     @Test
     public void shouldThrowConstraintViolationIfAskedToIndexPropertyThatIsAlreadyIndexed() throws Exception
     {
         // GIVEN
-        Transaction tx = db.beginTx();
-        Schema schema = db.schema();
-        schema.indexFor( label ).on( propertyKey ).create();
-        tx.success();
-        tx.finish();
+        Schema schema;
+        try ( Transaction tx = db.beginTx() )
+        {
+            schema = db.schema();
+            schema.indexFor( label ).on( propertyKey ).create();
+            tx.success();
+        }
 
         // WHEN
         ConstraintViolationException caught = null;
-        tx = db.beginTx();
-        try
+        try (Transaction tx = db.beginTx())
         {
             schema.indexFor( label ).on( propertyKey ).create();
             tx.success();
         }
-        catch(ConstraintViolationException e)
+        catch ( ConstraintViolationException e )
         {
             caught = e;
-        }
-        finally
-        {
-            tx.finish();
         }
 
         // THEN
@@ -168,8 +150,7 @@ public class SchemaAcceptanceTest
     public void shouldThrowConstraintViolationIfAskedToCreateCompoundIndex() throws Exception
     {
         // WHEN
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Schema schema = db.schema();
             schema.indexFor( label )
@@ -182,18 +163,13 @@ public class SchemaAcceptanceTest
         {
             assertThat( e.getMessage(), containsString( "Compound indexes" ) );
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     @Test
     public void shouldThrowConstraintViolationIfAskedToCreateCompoundConstraint() throws Exception
     {
         // WHEN
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Schema schema = db.schema();
             schema.constraintFor( label )
@@ -205,10 +181,6 @@ public class SchemaAcceptanceTest
         catch ( UnsupportedOperationException e )
         {
             assertThat( e.getMessage(), containsString( "can only create one unique constraint" ) );
-        }
-        finally
-        {
-            tx.finish();
         }
     }
     
@@ -232,8 +204,7 @@ public class SchemaAcceptanceTest
         IndexDefinition index = createIndex( db, label , propertyKey );
 
         // WHEN
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             index.drop();
             try
@@ -246,10 +217,6 @@ public class SchemaAcceptanceTest
                 assertThat( e.getMessage(), containsString( "Unable to drop index" ) );
             }
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
 
         // THEN
@@ -287,17 +254,12 @@ public class SchemaAcceptanceTest
         IndexDefinition index = createIndex( db, label, propertyKey );
 
         // PASS
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
 
             // THEN
             assertEquals( Schema.IndexState.ONLINE, db.schema().getIndexState( index ) );
-        }
-        finally
-        {
-            tx.finish();
         }
     }
     
@@ -312,17 +274,12 @@ public class SchemaAcceptanceTest
 
         // PASS
         waitForIndex( db, index );
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1L, TimeUnit.MINUTES );
 
             // THEN
             assertEquals( Schema.IndexState.ONLINE, db.schema().getIndexState( index ) );
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -412,8 +369,8 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( format( "There already exists an index for label 'MY_LABEL' on property 'my_property_key'. " +
-                                  "A constraint cannot be created until the index has been dropped." ), e.getMessage() );
+            assertEquals( "There already exists an index for label 'MY_LABEL' on property 'my_property_key'. " +
+                                  "A constraint cannot be created until the index has been dropped.", e.getMessage() );
         }
     }
 
@@ -421,15 +378,11 @@ public class SchemaAcceptanceTest
     public void addingUniquenessConstraintWhenDuplicateDataExistsGivesNiceError() throws Exception
     {
         // GIVEN
-        Transaction transaction = db.beginTx();
-        try {
+        try ( Transaction transaction = db.beginTx() )
+        {
             db.createNode( label ).setProperty( propertyKey, "value1" );
             db.createNode( label ).setProperty( propertyKey, "value1" );
             transaction.success();
-        }
-        finally
-        {
-            transaction.finish();
         }
 
         // WHEN
@@ -534,60 +487,40 @@ public class SchemaAcceptanceTest
 
     private void dropConstraint( GraphDatabaseService db, ConstraintDefinition constraint )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             constraint.drop();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
     private ConstraintDefinition createConstraint( Label label, String prop )
     {
-        Transaction tx = db.beginTx();
-        try
+        try (Transaction tx = db.beginTx())
         {
             ConstraintDefinition constraint = db.schema().constraintFor( label ).assertPropertyIsUnique( prop ).create();
             tx.success();
             return constraint;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     private void dropIndex( IndexDefinition index )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             index.drop();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
     private Node createNode( GraphDatabaseService db, String key, Object value, Label label )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( label );
             node.setProperty( key, value );
             tx.success();
             return node;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

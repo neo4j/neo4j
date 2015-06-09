@@ -158,7 +158,7 @@ public abstract class AbstractNeo4jTestCase
     {
         if ( tx != null )
         {
-            tx.finish();
+            tx.close();
         }
 
         if ( restartGraphDbBetweenTests() )
@@ -193,7 +193,7 @@ public abstract class AbstractNeo4jTestCase
         if ( tx != null )
         {
             tx.success();
-            tx.finish();
+            tx.close();
         }
         tx = graphDb.beginTx();
         return tx;
@@ -206,7 +206,7 @@ public abstract class AbstractNeo4jTestCase
             try
             {
                 tx.success();
-                tx.finish();
+                tx.close();
             }
             finally
             {
@@ -221,7 +221,7 @@ public abstract class AbstractNeo4jTestCase
         {
             try
             {
-                tx.finish();
+                tx.close();
             }
             finally
             {
@@ -237,7 +237,7 @@ public abstract class AbstractNeo4jTestCase
             try
             {
                 tx.failure();
-                tx.finish();
+                tx.close();
             }
             finally
             {

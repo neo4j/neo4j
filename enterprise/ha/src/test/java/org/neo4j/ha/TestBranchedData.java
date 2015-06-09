@@ -100,7 +100,7 @@ public class TestBranchedData
 
         // THEN
         cluster.await( allSeesAllAsAvailable() );
-        slave.beginTx().finish();
+        slave.beginTx().close();
     }
     
     private final LifeSupport life = new LifeSupport();
@@ -126,15 +126,10 @@ public class TestBranchedData
 
     private void createNode( GraphDatabaseService db, String name )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             db.createNode();//.setProperty( "name", name );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -157,10 +152,11 @@ public class TestBranchedData
     private void startDbAndCreateNode()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.getAbsolutePath() );
-        Transaction tx = db.beginTx();
-        db.createNode();
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
         db.shutdown();
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import java.io.File;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicLabel;
@@ -45,10 +46,13 @@ public class HACountsPropagationTest
 {
     private static final int PULL_INTERVAL = 100;
 
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void shouldPropagateNodeCountsInHA() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).cleanDirectory( "shouldPropagateNodeCountsInHA" );
+        File root = testDirectory.directory( "shouldPropagateNodeCountsInHA" );
         ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root,
                 MapUtil.stringMap( HaSettings.pull_interval.name(), PULL_INTERVAL + "ms" ) );
         clusterManager.start();
@@ -84,7 +88,7 @@ public class HACountsPropagationTest
     @Test
     public void shouldPropagateRelationshipCountsInHA() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).cleanDirectory( "shouldPropagateRelationshipCountsInHA" );
+        File root = testDirectory.directory( "shouldPropagateRelationshipCountsInHA" );
         ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root,
                 MapUtil.stringMap( HaSettings.pull_interval.name(), PULL_INTERVAL + "ms" ) );
         clusterManager.start();

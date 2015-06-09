@@ -88,32 +88,24 @@ public class TestIdReuse
     
     private void setAndRemoveSomeProperties( GraphDatabaseService graphDatabaseService, Object value )
     {
-        Transaction tx = graphDatabaseService.beginTx();
-        Node commonNode = graphDatabaseService.createNode();
-        try
+        Node commonNode;
+        try ( Transaction transaction = graphDatabaseService.beginTx() )
         {
+            commonNode = graphDatabaseService.createNode();
             for ( int i = 0; i < 10; i++ )
             {
                 commonNode.setProperty( "key" + i, value );
             }
-            tx.success();
+            transaction.success();
         }
-        finally
-        {
-            tx.finish();
-        }
-        tx = graphDatabaseService.beginTx();
-        try
+
+        try ( Transaction transaction = graphDatabaseService.beginTx() )
         {
             for ( int i = 0; i < 10; i++ )
             {
                 commonNode.removeProperty( "key" + i );
             }
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
+            transaction.success();
         }
     }
 }

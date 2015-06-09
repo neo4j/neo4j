@@ -80,7 +80,7 @@ public class TestGraphProperties
         graphProperties.setProperty( "test", "yo" );
         assertEquals( "yo", graphProperties.getProperty( "test" ) );
         tx.success();
-        tx.finish();
+        tx.close();
         assertThat( graphProperties, inTx( db, hasProperty( "test" ).withValue( "yo" ) ) );
         tx = db.beginTx();
         assertNull( graphProperties.removeProperty( "something non existent" ) );
@@ -90,7 +90,7 @@ public class TestGraphProperties
         assertEquals( 10, graphProperties.getProperty( "other" ) );
         graphProperties.setProperty( "new", "third" );
         tx.success();
-        tx.finish();
+        tx.close();
         assertThat( graphProperties, inTx( db, not( hasProperty( "test" ) ) ) );
         assertThat( graphProperties, inTx( db, hasProperty( "other" ).withValue( 10 ) ) );
         assertThat( getPropertyKeys( db, graphProperties ), containsOnly( "other", "new" ) );
@@ -98,7 +98,7 @@ public class TestGraphProperties
         tx = db.beginTx();
         graphProperties.setProperty( "rollback", true );
         assertEquals( true, graphProperties.getProperty( "rollback" ) );
-        tx.finish();
+        tx.close();
         assertThat( graphProperties, inTx( db, not( hasProperty( "rollback" ) ) ) );
         db.shutdown();
     }
@@ -117,7 +117,7 @@ public class TestGraphProperties
             properties( db ).setProperty( "key" + i, values[i % values.length] );
         }
         tx.success();
-        tx.finish();
+        tx.close();
 
         for ( int i = 0; i < count; i++ )
         {
@@ -144,7 +144,7 @@ public class TestGraphProperties
         properties( db ).setProperty( key, array );
         assertThat( properties( db ), hasProperty( key ).withValue( array ) );
         tx.success();
-        tx.finish();
+        tx.close();
 
         assertThat( properties( db ), inTx( db, hasProperty( key ).withValue( array ) ) );
         assertThat( properties( db ), inTx( db, hasProperty( key ).withValue( array ) ) );
@@ -165,14 +165,14 @@ public class TestGraphProperties
         Node node = db.createNode();
         node.setProperty( "name", "Yo" );
         tx.success();
-        tx.finish();
+        tx.close();
         db.shutdown();
 
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
         tx = db.beginTx();
         properties( db ).setProperty( "test", "something" );
         tx.success();
-        tx.finish();
+        tx.close();
         db.shutdown();
 
         Config config = new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class );
@@ -254,15 +254,10 @@ public class TestGraphProperties
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         PropertyContainer graphProperties = properties( db );
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             graphProperties.setProperty( "test", "test" );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
 
         assertEquals( graphProperties, properties( db ) );
@@ -354,7 +349,7 @@ public class TestGraphProperties
         node.setProperty( "name", "Something" );
         properties( (GraphDatabaseAPI) db ).setProperty( "prop", "Some value" );
         tx.success();
-        tx.finish();
+        tx.close();
         EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
         db.shutdown();
         return snapshot;

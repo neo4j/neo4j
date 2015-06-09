@@ -51,16 +51,11 @@ public class TestBranchState extends TraversalTestBase
          */
         createGraph( "a to b", "b to c", "c to d", "b to e", "e to f", "f to d", "f to g", "g to h" );
 
-        Transaction tx = beginTx();
-        try
+        try (Transaction tx = beginTx())
         {
             DepthStateExpander expander = new DepthStateExpander();
             count( traversal().expand( expander, initialState( 0 ) ).traverse( getNodeWithName( "a" ) ) );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -71,8 +66,7 @@ public class TestBranchState extends TraversalTestBase
          * (a) -> (b) -> (c) -> (e)
          */
         createGraph( "a to b", "b to c", "c to d", "d to e" );
-        Transaction tx = beginTx();
-        try
+        try ( Transaction tx = beginTx() )
         {
 
         /*
@@ -82,12 +76,6 @@ public class TestBranchState extends TraversalTestBase
             IncrementEveryOtherDepthCountingExpander expander = new IncrementEveryOtherDepthCountingExpander();
             count( traversal().expand( expander, initialState( 0 ) ).traverse( getNodeWithName( "a" ) ) );
             tx.success();
-        }
-
-        finally
-
-        {
-            tx.finish();
         }
     }
 
@@ -102,8 +90,7 @@ public class TestBranchState extends TraversalTestBase
          */
         createGraph( "a TO b", "b TO c", "c TO d", "a TO e", "e TO f", "f TO c" );
 
-        Transaction tx = beginTx();
-        try
+        try ( Transaction tx = beginTx() )
         {
             PathEvaluator<Integer> evaluator = new PathEvaluator.Adapter<Integer>()
             {
@@ -117,10 +104,6 @@ public class TestBranchState extends TraversalTestBase
             expectPaths( traversal( NODE_PATH ).expand( new RelationshipWeightExpander(), new InitialBranchState.State<Integer>( 1, 1 ) )
                     .evaluator( evaluator ).traverse( getNodeWithName( "a" ) ), "a,b,c" );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
     

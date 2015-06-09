@@ -77,13 +77,14 @@ public class PullStormIT
             // Create data
             final HighlyAvailableGraphDatabase master = cluster.getMaster();
             {
-                Transaction tx = master.beginTx();
-                for ( int i = 0; i < 1000; i++ )
+                try ( Transaction tx = master.beginTx() )
                 {
-                    master.createNode().setProperty( "foo", "bar" );
+                    for ( int i = 0; i < 1000; i++ )
+                    {
+                        master.createNode().setProperty( "foo", "bar" );
+                    }
+                    tx.success();
                 }
-                tx.success();
-                tx.finish();
             }
 
             // Slave goes down
@@ -94,14 +95,15 @@ public class PullStormIT
             for ( int i = 0; i < 1000; i++ )
             {
                 {
-                    Transaction tx = master.beginTx();
-                    for ( int j = 0; j < 1000; j++ )
+                    try (Transaction tx = master.beginTx())
                     {
-                        master.createNode().setProperty( "foo", "bar" );
-                        master.createNode().setProperty( "foo", "bar" );
+                        for ( int j = 0; j < 1000; j++ )
+                        {
+                            master.createNode().setProperty( "foo", "bar" );
+                            master.createNode().setProperty( "foo", "bar" );
+                        }
+                        tx.success();
                     }
-                    tx.success();
-                    tx.finish();
                 }
             }
 
@@ -122,10 +124,12 @@ public class PullStormIT
                     @Override
                     public void run()
                     {
-                        Transaction tx = master.beginTx();
-                        master.createNode().setProperty( "foo", "bar" );
-                        tx.success();
-                        tx.finish(); // This should cause lots of concurrent calls to pullUpdate()
+                        // Transaction close should cause lots of concurrent calls to pullUpdate()
+                        try ( Transaction tx = master.beginTx() )
+                        {
+                            master.createNode().setProperty( "foo", "bar" );
+                            tx.success();
+                        }
                     }
                 } );
             }

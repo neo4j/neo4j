@@ -220,14 +220,9 @@ public class QuorumWritesIT
 
         Node finalNode = doTx( master );
 
-        Transaction transaction = replacement.beginTx();
-        try
+        try (Transaction transaction = replacement.beginTx())
         {
             replacement.getNodeById( finalNode.getId() );
-        }
-        finally
-        {
-            transaction.finish();
         }
 
         clusterManager.stop();
@@ -283,10 +278,11 @@ public class QuorumWritesIT
 
     private Node doTx( HighlyAvailableGraphDatabase db )
     {
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        tx.success();
-        tx.finish();
-        return node;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            tx.success();
+            return node;
+        }
     }
 }

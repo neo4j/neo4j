@@ -33,7 +33,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 
@@ -42,7 +41,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -318,8 +316,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         try
         {
             getTransaction().success();
-            //noinspection deprecation
-            getTransaction().finish();
+            getTransaction().close();
             fail( "deleting node with relationship should not commit." );
         }
         catch ( Exception e )
@@ -627,8 +624,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         node1.delete();
         rel1.delete();
         getTransaction().failure();
-        //noinspection deprecation
-        getTransaction().finish();
+        getTransaction().close();
         setTransaction( getGraphDb().beginTx() );
         node1.delete();
         node2.delete();
@@ -912,7 +908,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     public void shouldLoadAllRelationships() throws Exception
     {
         // GIVEN
-        GraphDatabaseAPI db = getGraphDbAPI();
+        GraphDatabaseService db = getGraphDbAPI();
         Node node;
         try ( Transaction tx = db.beginTx() )
         {

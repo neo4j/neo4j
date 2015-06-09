@@ -19,20 +19,20 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Arrays;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collections;
+
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -42,7 +42,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.getIndexState;
 import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
@@ -55,6 +54,29 @@ import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstan
 
 public class IndexRestartIT
 {
+
+    private GraphDatabaseService db;
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private TestGraphDatabaseFactory factory;
+    private final ControlledPopulationSchemaIndexProvider provider = new ControlledPopulationSchemaIndexProvider();
+    private final Label myLabel = label( "MyLabel" );
+
+
+    @Before
+    public void before() throws Exception
+    {
+        factory = new TestGraphDatabaseFactory();
+        factory.setFileSystem( fs.get() );
+        factory.addKernelExtensions( Collections.<KernelExtensionFactory<?>>singletonList(
+                singleInstanceSchemaIndexProviderFactory( "test", provider ) ) );
+    }
+
+    @After
+    public void after() throws Exception
+    {
+        db.shutdown();
+    }
+
     /* This is somewhat difficult to test since dropping an index while it's populating forces it to be cancelled
      * first (and also awaiting cancellation to complete). So this is a best-effort to have the timing as close
      * as possible. If this proves to be flaky, remove it right away.
@@ -123,11 +145,27 @@ public class IndexRestartIT
         assertEquals( 2, provider.populatorCallCount.get() );
     }
 
-    private GraphDatabaseAPI db;
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private TestGraphDatabaseFactory factory;
-    private final ControlledPopulationSchemaIndexProvider provider = new ControlledPopulationSchemaIndexProvider();
-    private final Label myLabel = label( "MyLabel" );
+
+
+    private IndexDefinition createIndex()
+    {
+        try (Transaction tx = db.beginTx())
+        {
+            IndexDefinition index = db.schema().indexFor( myLabel ).on( "number_of_bananas_owned" ).create();
+            tx.success();
+            return index;
+        }
+    }
+
+    private void dropIndex( IndexDefinition index, DoubleLatch populationCompletionLatch )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            index.drop();
+            populationCompletionLatch.finish();
+            tx.success();
+        }
+    }
 
     private void startDb()
     {
@@ -136,53 +174,14 @@ public class IndexRestartIT
             db.shutdown();
         }
 
-        db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        db = factory.newImpermanentDatabase();
     }
 
     private void stopDb()
     {
-        if(db != null)
+        if ( db != null )
         {
             db.shutdown();
-        }
-    }
-
-    @Before
-    public void before() throws Exception
-    {
-        factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fs.get() );
-        factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList(
-                singleInstanceSchemaIndexProviderFactory( "test", provider ) ) );
-    }
-
-    @After
-    public void after() throws Exception
-    {
-        db.shutdown();
-    }
-
-    private IndexDefinition createIndex()
-    {
-        Transaction tx = db.beginTx();
-        IndexDefinition index = db.schema().indexFor( myLabel ).on( "number_of_bananas_owned" ).create();
-        tx.success();
-        tx.finish();
-        return index;
-    }
-
-    private void dropIndex( IndexDefinition index, DoubleLatch populationCompletionLatch )
-    {
-        Transaction tx = db.beginTx();
-        try
-        {
-            index.drop();
-            populationCompletionLatch.finish();
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

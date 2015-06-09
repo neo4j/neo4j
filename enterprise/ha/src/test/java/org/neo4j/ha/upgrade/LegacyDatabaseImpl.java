@@ -156,7 +156,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
     @Override
     public void awaitStarted( long time, TimeUnit unit )
     {
-        db.beginTx().finish();
+        db.beginTx().close();
     }
 
     @Override

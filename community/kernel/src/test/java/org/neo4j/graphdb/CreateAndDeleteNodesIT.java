@@ -38,42 +38,34 @@ public class CreateAndDeleteNodesIT
     public void addingALabelUsingAValidIdentifierShouldSucceed() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService dataBase = dbRule.getGraphDatabaseService();
         Node myNode;
 
         // When
-        Transaction tx = beansAPI.beginTx();
-        try
+        try (Transaction bobTransaction = dataBase.beginTx())
         {
-            myNode = beansAPI.createNode();
+            myNode = dataBase.createNode();
             myNode.setProperty( "Name", "Bob" );
 
-            myNode.createRelationshipTo( beansAPI.createNode(), RelTypes.ASD );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
+            myNode.createRelationshipTo( dataBase.createNode(), RelTypes.ASD );
+            bobTransaction.success();
         }
 
+
         // When
-        Transaction tx2 = beansAPI.beginTx();
-        try
+        try ( Transaction tx2 = dataBase.beginTx() )
         {
-            for ( Relationship r : GlobalGraphOperations.at( beansAPI ).getAllRelationships() )
+            for ( Relationship r : GlobalGraphOperations.at( dataBase ).getAllRelationships() )
             {
                 r.delete();
             }
 
-            for ( Node n : GlobalGraphOperations.at( beansAPI ).getAllNodes() )
+            for ( Node n : GlobalGraphOperations.at( dataBase ).getAllNodes() )
             {
                 n.delete();
             }
 
             tx2.success();
-        } finally
-        {
-            tx2.finish();
         }
     }
 }
