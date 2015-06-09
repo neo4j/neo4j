@@ -493,7 +493,10 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                     kernelModule );
         }
         catch ( Throwable e )
-        { // Something unexpected happened during startup
+        {
+            // Something unexpected happened during startup
+            msgLog.logMessage( "Exception occurred while setting up store modules. Attempting to close things down.",
+                    e, true);
             try
             { // Close the neostore, so that locks are released properly
                 neoStoreModule.neoStore().close();
@@ -510,8 +513,10 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             life.start();
         }
         catch ( Throwable e )
-        { // Something unexpected happened during startup
-
+        {
+            // Something unexpected happened during startup
+            msgLog.logMessage( "Exception occurred while starting the datasource. Attempting to close things down.",
+                    e, true);
             try
             { // Close the neostore, so that locks are released properly
                 neoStoreModule.neoStore().close();

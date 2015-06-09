@@ -65,4 +65,46 @@ public class PhysicalLogNeoCommandReaderV2Test
         assertEquals( startNode, readCommand.getStartNode() );
         assertEquals( endNode, readCommand.getEndNode() );
     }
+
+    @Test
+    public void shouldProperlyMaskIndexIdFieldInIndexHeader() throws Exception
+    {
+        /* This is how the index command header is laid out
+         * [x   ,    ] start node needs long
+         * [ x  ,    ] end node needs long
+         * [  xx,xxxx] index name id
+         * This means that the index name id can be in the range of 0 to 63. This test verifies that
+         * this constraint is actually respected
+         */
+
+        // GIVEN
+        PhysicalLogNeoCommandReaderV2 reader = new PhysicalLogNeoCommandReaderV2();
+        InMemoryLogChannel data = new InMemoryLogChannel();
+        CommandWriter writer = new CommandWriter( data );
+        // Here we take advantage of the fact that all index commands have the same header written out
+        AddRelationshipCommand command = new AddRelationshipCommand();
+        long entityId = 123;
+        byte keyId = (byte)1;
+        Object value = "test value";
+        long startNode = 14;
+        long endNode = 15;
+
+        for ( byte indexByteId = 0; indexByteId < 63; indexByteId++ )
+        {
+            // WHEN
+            command.init( indexByteId, entityId, keyId, value, startNode, endNode );
+            writer.visitIndexAddRelationshipCommand( command );
+
+            // THEN
+            AddRelationshipCommand readCommand = (AddRelationshipCommand) reader.read( data );
+            assertEquals( indexByteId, readCommand.getIndexNameId() );
+            assertEquals( entityId, readCommand.getEntityId() );
+            assertEquals( keyId, readCommand.getKeyId() );
+            assertEquals( value, readCommand.getValue() );
+            assertEquals( startNode, readCommand.getStartNode() );
+            assertEquals( endNode, readCommand.getEndNode() );
+
+            data.reset();
+        }
+    }
 }
