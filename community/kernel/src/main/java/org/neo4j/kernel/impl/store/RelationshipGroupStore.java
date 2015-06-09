@@ -90,6 +90,31 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         }
     }
 
+    public RelationshipGroupRecord getRecord( long id, RelationshipGroupRecord recordInstance )
+    {
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
+        {
+            if ( cursor.next() )
+            {
+                RelationshipGroupRecord record;
+                do
+                {
+                    record = getRecord( id, cursor, recordInstance );
+                } while ( cursor.shouldRetry() );
+
+                if ( record != null )
+                {
+                    return record;
+                }
+            }
+            throw new InvalidRecordException( "Record[" + id + "] not in use" );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
     @Override
     public int getNumberOfReservedLowIds()
     {
@@ -113,6 +138,12 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     }
 
     private RelationshipGroupRecord getRecord( long id, PageCursor cursor )
+    {
+        RelationshipGroupRecord record = new RelationshipGroupRecord( -1, -1 );
+        return getRecord( id, cursor, record );
+    }
+
+    private RelationshipGroupRecord getRecord( long id, PageCursor cursor, RelationshipGroupRecord record )
     {
         cursor.setOffset( offsetForId( id ) );
 
@@ -142,8 +173,9 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         long nextInMod = (highByte & 0xE) << 31;
         long nextLoopMod = (highByte & 0x70) << 28;
 
-        RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
-        record.setInUse( inUse );
+        record.setId( id );
+        record.setType( type );
+        record.setInUse( true );
         record.setNext( longFromIntAndMod( nextLowBits, nextMod ) );
         record.setFirstOut( longFromIntAndMod( nextOutLowBits, nextOutMod ) );
         record.setFirstIn( longFromIntAndMod( nextInLowBits, nextInMod ) );

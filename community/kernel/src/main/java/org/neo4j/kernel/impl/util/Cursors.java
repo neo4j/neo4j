@@ -21,8 +21,13 @@ package org.neo4j.kernel.impl.util;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.NoSuchElementException;
 
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Function;
+import org.neo4j.function.ToIntFunction;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -113,38 +118,151 @@ public class Cursors
         };
     }
 
-    public static Cursor countDownCursor( final int count )
+    public static <T,C extends Cursor> ResourceIterator<T> iterator( final C resourceCursor, final Function<C, T> map)
     {
-        return new CountDownCursor( count );
+        return new CursorResourceIterator<>( resourceCursor, map );
     }
 
-    public static class CountDownCursor implements Cursor
+    public static <C extends Cursor> PrimitiveIntIterator intIterator( final C resourceCursor, final ToIntFunction<C> map)
     {
-        private final int count;
-        private int current;
+        return new CursorPrimitiveIntIterator<>( resourceCursor, map );
+    }
 
-        public CountDownCursor( int count )
+    private static class CursorPrimitiveIntIterator<C extends Cursor> implements PrimitiveIntIterator, Resource
+    {
+        private final ToIntFunction<C> map;
+        private C cursor;
+        private boolean hasNext;
+
+        public CursorPrimitiveIntIterator( C resourceCursor, ToIntFunction<C> map )
         {
-            this.count = count;
-            current = count;
+            this.map = map;
+            cursor = resourceCursor;
+            hasNext = nextCursor();
+        }
+
+        private boolean nextCursor()
+        {
+            if (cursor != null)
+            {
+                boolean hasNext = cursor.next();
+                if ( !hasNext )
+                {
+                    close();
+                }
+                return hasNext;
+            } else
+            {
+                return false;
+            }
         }
 
         @Override
-        public boolean next()
+        public boolean hasNext()
         {
-            return current-- > 0;
+            return hasNext;
         }
 
         @Override
-        public void reset()
+        public int next()
         {
-            current = count;
+            if ( hasNext )
+            {
+                try
+                {
+                    return map.apply( cursor );
+                }
+                finally
+                {
+                    hasNext = nextCursor();
+                }
+            }
+            else
+            {
+                throw new NoSuchElementException();
+            }
         }
 
         @Override
         public void close()
         {
-            current = 0;
+            if (cursor != null )
+            {
+                cursor.close();
+                cursor = null;
+            }
+        }
+    }
+
+    private static class CursorResourceIterator<T, C extends Cursor> implements ResourceIterator<T>
+    {
+        private final Function<C, T> map;
+        private C cursor;
+        private boolean hasNext;
+
+        public CursorResourceIterator( C resourceCursor, Function<C, T> map )
+        {
+            this.map = map;
+            cursor = resourceCursor;
+            hasNext = nextCursor();
+        }
+
+        private boolean nextCursor()
+        {
+            if (cursor != null)
+            {
+                boolean hasNext = cursor.next();
+                if ( !hasNext )
+                {
+                    close();
+                }
+                return hasNext;
+            } else
+            {
+                return false;
+            }
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return hasNext;
+        }
+
+        @Override
+        public T next()
+        {
+            if ( hasNext )
+            {
+                try
+                {
+                    return map.apply( cursor );
+                }
+                finally
+                {
+                    hasNext = nextCursor();
+                }
+            }
+            else
+            {
+                throw new NoSuchElementException();
+            }
+        }
+
+        @Override
+        public void remove()
+        {
+            throw new UnsupportedOperationException(  );
+        }
+
+        @Override
+        public void close()
+        {
+            if (cursor != null )
+            {
+                cursor.close();
+                cursor = null;
+            }
         }
     }
 }

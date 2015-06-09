@@ -63,9 +63,9 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
     singleDbHit(inner.removeLabelsFromNode(node, labelIds))
 
-  def getPropertiesForNode(node: Long): Iterator[Long] = singleDbHit(inner.getPropertiesForNode(node))
+  def getPropertiesForNode(node: Long): Iterator[Int] = singleDbHit(inner.getPropertiesForNode(node))
 
-  def getPropertiesForRelationship(relId: Long): Iterator[Long] = singleDbHit(inner.getPropertiesForRelationship(relId))
+  def getPropertiesForRelationship(relId: Long): Iterator[Int] = singleDbHit(inner.getPropertiesForRelationship(relId))
 
   def getPropertyKeyName(propertyKeyId: Int): String = singleDbHit(inner.getPropertyKeyName(propertyKeyId))
 

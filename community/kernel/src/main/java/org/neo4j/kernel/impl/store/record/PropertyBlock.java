@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -247,6 +248,11 @@ public class PropertyBlock implements Cloneable
 
     public DefinedProperty newPropertyData( PropertyStore propertyStore )
     {
-        return getType().readProperty( getKeyIndexId(), this, Suppliers.singleton( propertyStore ) );
+        return newPropertyData( Suppliers.singleton( propertyStore ) );
+    }
+
+    public DefinedProperty newPropertyData( Supplier<PropertyStore> propertyStore )
+    {
+        return getType().readProperty( getKeyIndexId(), this, propertyStore );
     }
 }

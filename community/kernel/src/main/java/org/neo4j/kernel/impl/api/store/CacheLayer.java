@@ -42,11 +42,12 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.cursor.NodeCursor;
+import org.neo4j.kernel.api.cursor.RelationshipCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -59,7 +60,6 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -69,8 +69,6 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
-import org.neo4j.kernel.impl.util.register.NeoRegister;
-import org.neo4j.register.Register;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -78,7 +76,7 @@ import static org.neo4j.helpers.collection.Iterables.map;
 /**
  * This is the object-caching layer. It delegates to the legacy object cache system if possible, or delegates to the
  * disk layer if there is no relevant caching.
- *
+ * <p/>
  * An important consideration when working on this is that there are plans to remove the object cache, which means that
  * the aim for this layer is to disappear.
  */
@@ -86,15 +84,15 @@ public class CacheLayer implements StoreReadLayer
 {
     private static final Function<? super SchemaRule, IndexDescriptor> TO_INDEX_RULE =
             new Function<SchemaRule, IndexDescriptor>()
-    {
-        @Override
-        public IndexDescriptor apply( SchemaRule from )
-        {
-            IndexRule rule = (IndexRule) from;
-            // We know that we only have int range of property key ids.
-            return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
-        }
-    };
+            {
+                @Override
+                public IndexDescriptor apply( SchemaRule from )
+                {
+                    IndexRule rule = (IndexRule) from;
+                    // We know that we only have int range of property key ids.
+                    return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
+                }
+            };
 
     private final SchemaCache schemaCache;
     private final DiskLayer diskLayer;
@@ -111,21 +109,27 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
+    public StoreStatement acquireStatement()
+    {
+        return diskLayer.acquireStatement();
+    }
+
+    @Override
     public boolean nodeExists( long nodeId )
     {
         return diskLayer.nodeExists( nodeId );
     }
 
     @Override
-    public boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException
+    public boolean nodeHasLabel( StoreStatement statement, long nodeId, int labelId ) throws EntityNotFoundException
     {
-        return diskLayer.nodeHasLabel( nodeId, labelId );
+        return diskLayer.nodeHasLabel( statement, nodeId, labelId );
     }
 
     @Override
-    public PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException
+    public PrimitiveIntIterator nodeGetLabels( StoreStatement statement, long nodeId ) throws EntityNotFoundException
     {
-        return diskLayer.nodeGetLabels( nodeId );
+        return diskLayer.nodeGetLabels( statement, nodeId );
     }
 
     @Override
@@ -154,7 +158,7 @@ public class CacheLayer implements StoreReadLayer
     }
 
     private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<SchemaRule> rules,
-                                                                 final SchemaRule.Kind kind )
+            final SchemaRule.Kind kind )
     {
         Iterator<SchemaRule> filteredRules = filter( new Predicate<SchemaRule>()
         {
@@ -209,46 +213,50 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException
+    public PrimitiveIntIterator nodeGetPropertyKeys( StoreStatement statement,
+            long nodeId ) throws EntityNotFoundException
     {
-        return diskLayer.nodeGetPropertyKeys( nodeId );
+        return diskLayer.nodeGetPropertyKeys( statement, nodeId );
     }
 
     @Override
-    public Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public Property nodeGetProperty( StoreStatement statement,
+            long nodeId,
+            int propertyKeyId ) throws EntityNotFoundException
     {
-        return diskLayer.nodeGetProperty( nodeId, propertyKeyId );
+        return diskLayer.nodeGetProperty( statement, nodeId, propertyKeyId );
     }
 
     @Override
-    public Iterator<DefinedProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
+    public Iterator<DefinedProperty> nodeGetAllProperties( StoreStatement statement,
+            long nodeId ) throws EntityNotFoundException
     {
-        return diskLayer.nodeGetAllProperties( nodeId );
+        return diskLayer.nodeGetAllProperties( statement, nodeId );
     }
 
     @Override
-    public PrimitiveLongIterator relationshipGetPropertyKeys( long relationshipId )
+    public PrimitiveIntIterator relationshipGetPropertyKeys( StoreStatement statement, long relationshipId )
             throws EntityNotFoundException
     {
-        return new PropertyKeyIdIterator( relationshipGetAllProperties( relationshipId ) );
+        return diskLayer.relationshipGetPropertyKeys( statement, relationshipId );
     }
 
     @Override
-    public Property relationshipGetProperty( long relationshipId, int propertyKeyId )
+    public Property relationshipGetProperty( StoreStatement statement, long relationshipId, int propertyKeyId )
             throws EntityNotFoundException
     {
-        return diskLayer.relationshipGetProperty( relationshipId, propertyKeyId );
+        return diskLayer.relationshipGetProperty( acquireStatement(), relationshipId, propertyKeyId );
     }
 
     @Override
-    public Iterator<DefinedProperty> relationshipGetAllProperties( long relationshipId )
+    public Iterator<DefinedProperty> relationshipGetAllProperties( StoreStatement statement, long relationshipId )
             throws EntityNotFoundException
     {
-        return diskLayer.relationshipGetAllProperties( relationshipId );
+        return diskLayer.relationshipGetAllProperties( statement, relationshipId );
     }
 
     @Override
-    public PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state )
+    public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state )
     {
         return diskLayer.graphGetPropertyKeys( state );
     }
@@ -300,7 +308,9 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
+    public PrimitiveLongResourceIterator nodesGetFromIndexLookup( KernelStatement state,
+            IndexDescriptor index,
+            Object value )
             throws IndexNotFoundKernelException
     {
         return diskLayer.nodesGetFromIndexLookup( state, schemaCache.indexId( index ), value );
@@ -411,44 +421,48 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public RelationshipIterator nodeListRelationships( long nodeId, Direction direction )
+    public RelationshipIterator nodeListRelationships( StoreStatement statement,
+            long nodeId,
+            Direction direction )
             throws EntityNotFoundException
     {
-        return diskLayer.nodeListRelationships( nodeId, direction );
+        return diskLayer.nodeListRelationships( statement, nodeId, direction );
     }
 
     @Override
-    public RelationshipIterator nodeListRelationships( long nodeId, Direction direction,
-                                                        int[] relTypes ) throws EntityNotFoundException
+    public RelationshipIterator nodeListRelationships( StoreStatement statement, long nodeId, Direction direction,
+            int[] relTypes ) throws EntityNotFoundException
     {
-        return diskLayer.nodeListRelationships( nodeId, direction, relTypes );
+        return diskLayer.nodeListRelationships( statement, nodeId, direction, relTypes );
     }
 
     @Override
-    public int nodeGetDegree( long nodeId, Direction direction )
+    public int nodeGetDegree( StoreStatement statement, long nodeId, Direction direction )
             throws EntityNotFoundException
     {
-        return diskLayer.nodeGetDegree( nodeId, direction );
+        return diskLayer.nodeGetDegree( statement, nodeId, direction );
     }
 
     @Override
-    public int nodeGetDegree( long nodeId, Direction direction, int relType )
+    public int nodeGetDegree( StoreStatement statement, long nodeId,
+            Direction direction,
+            int relType )
             throws EntityNotFoundException
     {
-        return diskLayer.nodeGetDegree( nodeId, direction, relType );
+        return diskLayer.nodeGetDegree( statement, nodeId, direction, relType );
     }
 
     @Override
-    public boolean nodeVisitDegrees( long nodeId, DegreeVisitor visitor )
+    public boolean nodeVisitDegrees( StoreStatement statement, long nodeId, DegreeVisitor visitor )
     {
-        return diskLayer.nodeVisitDegrees( nodeId, visitor );
+        return diskLayer.nodeVisitDegrees( statement, nodeId, visitor );
     }
 
     @Override
-    public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId )
+    public PrimitiveIntIterator nodeGetRelationshipTypes( StoreStatement statement, long nodeId )
             throws EntityNotFoundException
     {
-        return diskLayer.nodeGetRelationshipTypes( nodeId );
+        return diskLayer.nodeGetRelationshipTypes( statement, nodeId );
     }
 
     @Override
@@ -456,15 +470,6 @@ public class CacheLayer implements StoreReadLayer
             RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION
     {
         diskLayer.relationshipVisit( relationshipId, relationshipVisitor );
-    }
-
-    @Override
-    public Cursor expand( Cursor inputCursor, NeoRegister.Node.In nodeId, Register.Object.In<int[]> types,
-                          Register.Object.In<Direction> expandDirection, NeoRegister.Relationship.Out relId,
-                          NeoRegister.RelType.Out relType, Register.Object.Out<Direction> direction,
-                          NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId )
-    {
-        return new StoreExpandCursor( this, inputCursor, nodeId, types, expandDirection, relId, relType, direction, startNodeId, neighborNodeId );
     }
 
     @Override
@@ -489,6 +494,18 @@ public class CacheLayer implements StoreReadLayer
     public PrimitiveLongIterator nodesGetAll()
     {
         return diskLayer.nodesGetAll();
+    }
+
+    @Override
+    public NodeCursor nodesGetAllCursor( StoreStatement statement )
+    {
+        return diskLayer.nodesGetAllCursor( statement );
+    }
+
+    @Override
+    public RelationshipCursor relationshipsGetAllCursor( StoreStatement storeStatement )
+    {
+        return diskLayer.relationshipsGetAllCursor( storeStatement );
     }
 
     @Override

@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
+
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -39,20 +39,24 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
@@ -70,7 +74,9 @@ public class StateHandlingStatementOperationsTest
     public void shouldNeverDelegateWrites() throws Exception
     {
         KernelStatement state = mockedState();
-        when( inner.nodeGetAllProperties( anyLong() ) )
+        StoreStatement storeStatement = mock(StoreStatement.class);
+        when (state.getStoreStatement()).thenReturn( storeStatement );
+        when( inner.nodeGetAllProperties( same( storeStatement), anyLong() ) )
                 .thenReturn( IteratorUtil.<DefinedProperty>emptyIterator() );
         StateHandlingStatementOperations ctx = newTxStateOps( inner );
 
@@ -87,8 +93,8 @@ public class StateHandlingStatementOperationsTest
         // ctx.getOrCreateLabelId("0");
         // ctx.getOrCreatePropertyKeyId("0");
 
-        verify( inner, times( 1 ) ).nodeGetAllProperties( 0 );
-        verify( inner, times( 2 ) ).nodeHasLabel( 0, 0 );
+        verify( inner, times( 1 ) ).nodeGetAllProperties( storeStatement, 0 );
+        verify( inner, times( 2 ) ).nodeHasLabel( storeStatement, 0, 0 );
         verifyNoMoreInteractions( inner );
     }
 

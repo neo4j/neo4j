@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -33,6 +27,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
@@ -66,8 +67,8 @@ import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.NeoStoreDataSourceRule;
 import org.neo4j.test.PageCacheRule;
@@ -405,7 +406,7 @@ public class TestNeoStore
         }
         assertEquals( 3, count );
         count = 0;
-        PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( node, Direction.BOTH );
+        PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), node, Direction.BOTH );
         while ( relationships.hasNext() )
         {
             long rel = relationships.next();
@@ -499,7 +500,7 @@ public class TestNeoStore
         assertEquals( 3, count );
         count = 0;
 
-        PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( node, Direction.BOTH );
+        PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), node, Direction.BOTH );
         while ( relationships.hasNext() )
         {
             long rel = relationships.next();
@@ -720,9 +721,9 @@ public class TestNeoStore
         assertEquals( 3, propertyCounter.count );
         assertRelationshipData( rel, firstNode, secondNode, relType );;
         transaction.relDelete( rel );
-        PrimitiveLongIterator first = storeLayer.nodeListRelationships( firstNode, Direction.BOTH );
+        PrimitiveLongIterator first = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), firstNode, Direction.BOTH );
         first.next();
-        PrimitiveLongIterator second = storeLayer.nodeListRelationships( secondNode, Direction.BOTH );
+        PrimitiveLongIterator second = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), secondNode, Direction.BOTH );
         second.next();
         assertTrue( first.hasNext() );
         assertTrue( second.hasNext() );
@@ -783,8 +784,8 @@ public class TestNeoStore
         assertEquals( 3, propertyCounter.count );
         assertRelationshipData( rel, firstNode, secondNode, relType );
         transaction.relDelete( rel );
-        PrimitiveLongIterator first = storeLayer.nodeListRelationships( firstNode, Direction.BOTH );
-        PrimitiveLongIterator second = storeLayer.nodeListRelationships( secondNode, Direction.BOTH );
+        PrimitiveLongIterator first = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), firstNode, Direction.BOTH );
+        PrimitiveLongIterator second = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), secondNode, Direction.BOTH );
         assertTrue( first.hasNext() );
         assertTrue( second.hasNext() );
     }
@@ -831,7 +832,7 @@ public class TestNeoStore
         CountingPropertyReceiver propertyCounter = new CountingPropertyReceiver();
         propertyLoader.nodeLoadProperties( node, propertyCounter );
         assertEquals( 3, propertyCounter.count );
-        PrimitiveLongIterator rels = storeLayer.nodeListRelationships( node, Direction.BOTH );
+        PrimitiveLongIterator rels = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), node, Direction.BOTH );
         assertTrue( rels.hasNext() );
         transaction.nodeDelete( node );
     }
@@ -878,7 +879,7 @@ public class TestNeoStore
         CountingPropertyReceiver propertyCounter = new CountingPropertyReceiver();
         propertyLoader.nodeLoadProperties( node, propertyCounter );
         assertEquals( 3, propertyCounter.count );
-        PrimitiveLongIterator rels = storeLayer.nodeListRelationships( node, Direction.BOTH );
+        PrimitiveLongIterator rels = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), node, Direction.BOTH );
         assertTrue( rels.hasNext() );
         transaction.nodeDelete( node );
     }
@@ -916,7 +917,8 @@ public class TestNeoStore
         startTx();
         for ( int i = 0; i < 3; i += 2 )
         {
-            PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( nodeIds[i], Direction.BOTH );
+            PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), nodeIds[i], Direction.BOTH
+            );
             while ( relationships.hasNext() )
             {
                 transaction.relDelete( relationships.next() );
@@ -955,7 +957,8 @@ public class TestNeoStore
         startTx();
         for ( int i = 0; i < 3; i++ )
         {
-            PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( nodeIds[i], Direction.BOTH );
+            PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), nodeIds[i], Direction.BOTH
+            );
             while ( relationships.hasNext() )
             {
                 transaction.relDelete( relationships.next() );

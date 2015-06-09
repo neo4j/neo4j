@@ -96,8 +96,12 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     @Override
     public RelationshipRecord getRecord( long id )
     {
-        RelationshipRecord record = new RelationshipRecord( id );
-        return fillRecord( id, record, RecordLoad.NORMAL ) ? record : null;
+        return getRecord( new RelationshipRecord( id ) );
+    }
+
+    public RelationshipRecord getRecord( RelationshipRecord record )
+    {
+        return fillRecord( record.getId(), record, RecordLoad.NORMAL ) ? record : null;
     }
 
     @Override

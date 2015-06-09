@@ -34,7 +34,13 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.cursor.TxLabelCursor;
+import org.neo4j.kernel.impl.api.cursor.TxNodeCursor;
+import org.neo4j.kernel.impl.api.cursor.TxPropertyCursor;
+import org.neo4j.kernel.impl.api.cursor.TxRelationshipCursor;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.util.InstanceCache;
 
 public class KernelStatement implements TxStateHolder, Statement
 {
@@ -42,22 +48,63 @@ public class KernelStatement implements TxStateHolder, Statement
     protected final TxStateHolder txStateHolder;
     protected final IndexReaderFactory indexReaderFactory;
     protected final LabelScanStore labelScanStore;
+    private final StoreStatement storeStatement;
     private final KernelTransactionImplementation transaction;
     private final OperationsFacade facade;
     private LabelScanReader labelScanReader;
     private int referenceCount;
     private boolean closed;
 
+    private InstanceCache<TxNodeCursor> nodeCursor;
+    private InstanceCache<TxPropertyCursor> propertyCursor;
+    private InstanceCache<TxLabelCursor> labelCursor;
+    private InstanceCache<TxRelationshipCursor> relationshipCursor;
+
+
     public KernelStatement( KernelTransactionImplementation transaction, IndexReaderFactory indexReaderFactory,
-                            LabelScanStore labelScanStore, TxStateHolder txStateHolder, Locks.Client locks,
-                            StatementOperationParts operations )
+            LabelScanStore labelScanStore, TxStateHolder txStateHolder, Locks.Client locks,
+            StatementOperationParts operations, StoreStatement storeStatement )
     {
         this.transaction = transaction;
         this.locks = locks;
         this.indexReaderFactory = indexReaderFactory;
         this.txStateHolder = txStateHolder;
         this.labelScanStore = labelScanStore;
+        this.storeStatement = storeStatement;
         this.facade = new OperationsFacade( this, operations );
+
+        nodeCursor = new InstanceCache<TxNodeCursor>()
+        {
+            @Override
+            protected TxNodeCursor create()
+            {
+                return new TxNodeCursor( KernelStatement.this, this );
+            }
+        };
+        propertyCursor = new InstanceCache<TxPropertyCursor>()
+        {
+            @Override
+            protected TxPropertyCursor create()
+            {
+                return new TxPropertyCursor( KernelStatement.this, this );
+            }
+        };
+        labelCursor = new InstanceCache<TxLabelCursor>()
+        {
+            @Override
+            protected TxLabelCursor create()
+            {
+                return new TxLabelCursor( KernelStatement.this, this );
+            }
+        };
+        relationshipCursor = new InstanceCache<TxRelationshipCursor>()
+        {
+            @Override
+            protected TxRelationshipCursor create()
+            {
+                return new TxRelationshipCursor( KernelStatement.this, this );
+            }
+        };
     }
 
     @Override
@@ -185,5 +232,34 @@ public class KernelStatement implements TxStateHolder, Statement
         }
 
         transaction.releaseStatement( this );
+    }
+
+    public TxNodeCursor acquireNodeCursor()
+    {
+        assertOpen();
+        return nodeCursor.acquire();
+    }
+
+    public TxPropertyCursor acquireNodePropertyCursor()
+    {
+        assertOpen();
+        return propertyCursor.acquire();
+    }
+
+    public TxLabelCursor acquireLabelCursor()
+    {
+        assertOpen();
+        return labelCursor.acquire();
+    }
+
+    public TxRelationshipCursor acquireRelationshipCursor()
+    {
+        assertOpen();
+        return relationshipCursor.acquire();
+    }
+
+    public StoreStatement getStoreStatement()
+    {
+        return storeStatement;
     }
 }

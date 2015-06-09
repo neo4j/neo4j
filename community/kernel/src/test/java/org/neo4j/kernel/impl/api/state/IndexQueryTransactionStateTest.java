@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Collections;
+
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Collections;
+import org.mockito.Matchers;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -42,16 +43,20 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -63,6 +68,9 @@ import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class IndexQueryTransactionStateTest
 {
+
+    private StoreStatement statement;
+
     @Test
     public void shouldExcludeRemovedNodesFromIndexQuery() throws Exception
     {
@@ -102,7 +110,7 @@ public class IndexQueryTransactionStateTest
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
-        when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
+        when( store.nodeHasLabel( statement, 1l, labelId ) ).thenReturn( false );
         state.txState().nodeDoReplaceProperty( 1l, Property.noNodeProperty( 1l, propertyKeyId ),
                 Property.intProperty( propertyKeyId, 10 ) );
 
@@ -119,7 +127,7 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator() );
-        when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
+        when( store.nodeHasLabel( statement, 1l, labelId ) ).thenReturn( false );
         state.txState().nodeDoReplaceProperty( 1l, Property.noNodeProperty( 1l, propertyKeyId ),
                 Property.intProperty( propertyKeyId, 10 ) );
 
@@ -136,11 +144,11 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
-        when( store.nodeGetProperty( anyLong(), eq( propertyKeyId ) ) ).thenReturn(
+        when( store.nodeGetProperty( Matchers.any( StoreStatement.class ), anyLong(), eq( propertyKeyId ) ) ).thenReturn(
                 noNodeProperty( 1, propertyKeyId ) );
-        when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( IteratorUtil
+        when( store.nodeGetAllProperties( same( statement ), anyLong() ) ).thenReturn( IteratorUtil
                 .<DefinedProperty>emptyIterator() );
-        when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
+        when( store.nodeHasLabel( statement, 1l, labelId ) ).thenReturn( false );
 
         state.txState().nodeDoReplaceProperty( 1l, noNodeProperty( 1l, propertyKeyId ),
                                                    stringProperty( propertyKeyId, value ) );
@@ -159,11 +167,11 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator() );
-        when( store.nodeGetProperty( anyLong(), eq( propertyKeyId ) ) ).thenReturn(
+        when( store.nodeGetProperty( Matchers.any( StoreStatement.class ), anyLong(), eq( propertyKeyId ) ) ).thenReturn(
                 noNodeProperty( 1, propertyKeyId ) );
-        when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( IteratorUtil
+        when( store.nodeGetAllProperties( same( statement ), anyLong() ) ).thenReturn( IteratorUtil
                 .<DefinedProperty>emptyIterator() );
-        when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
+        when( store.nodeHasLabel(statement , 1l, labelId ) ).thenReturn( false );
 
         state.txState().nodeDoReplaceProperty( 1l, noNodeProperty( 1l, propertyKeyId ),
                                                    stringProperty( propertyKeyId, value ) );
@@ -183,10 +191,10 @@ public class IndexQueryTransactionStateTest
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
-        when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
+        when( store.nodeHasLabel( statement, 1l, labelId ) ).thenReturn( false );
         DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
-        when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( stringProperty );
-        when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( iterator( stringProperty ) );
+        when( store.nodeGetProperty( null, 1l, propertyKeyId ) ).thenReturn( stringProperty );
+        when( store.nodeGetAllProperties( same( statement ), anyLong() ) ).thenReturn( iterator( stringProperty ) );
 
         txContext.nodeAddLabel( state, 1l, labelId );
 
@@ -203,11 +211,11 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator() );
-        when( store.nodeHasLabel( 2l, labelId ) ).thenReturn( false );
+        when( store.nodeHasLabel( statement, 2l, labelId ) ).thenReturn( false );
 
         DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
-        when( store.nodeGetProperty( 2l, propertyKeyId ) ).thenReturn( stringProperty );
-        when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( iterator( stringProperty ) );
+        when( store.nodeGetProperty( statement, 2l, propertyKeyId ) ).thenReturn( stringProperty );
+        when( store.nodeGetAllProperties( same( statement ), anyLong()) ).thenReturn( iterator( stringProperty ) );
 
         txContext.nodeAddLabel( state, 2l, labelId );
 
@@ -224,11 +232,11 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, 2l, 3l ) ) );
-        when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( true );
+        when( store.nodeHasLabel( statement, 1l, labelId ) ).thenReturn( true );
 
         DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
-        when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( stringProperty );
-        when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( iterator( stringProperty ) );
+        when( store.nodeGetProperty( statement, 1l, propertyKeyId ) ).thenReturn( stringProperty );
+        when( store.nodeGetAllProperties( same(statement), anyLong() ) ).thenReturn( iterator( stringProperty ) );
 
         txContext.nodeRemoveLabel( state, 1l, labelId );
 
@@ -245,11 +253,11 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator( 1l ) );
-        when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( true );
+        when( store.nodeHasLabel(statement , 1l, labelId ) ).thenReturn( true );
 
         DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
-        when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( stringProperty );
-        when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( iterator( stringProperty ) );
+        when( store.nodeGetProperty( null, 1l, propertyKeyId ) ).thenReturn( stringProperty );
+        when( store.nodeGetAllProperties( same( statement ), anyLong() ) ).thenReturn( iterator( stringProperty ) );
 
         txContext.nodeRemoveLabel( state, 1l, labelId );
 
@@ -267,7 +275,7 @@ public class IndexQueryTransactionStateTest
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
-        when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( true );
+        when( store.nodeHasLabel( statement, 1l, labelId ) ).thenReturn( true );
         state.txState().nodeDoReplaceProperty( 1l, Property.noNodeProperty( 1l, propertyKeyId ),
                 Property.intProperty( propertyKeyId, 10 ) );
 
@@ -284,12 +292,13 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeUniqueNodeWithRemovedProperty() throws Exception
     {
         // Given
+
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator( 1l ) );
-        when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( stringProperty( propertyKeyId, value ) );
+        when( store.nodeGetProperty( statement, 1l, propertyKeyId ) ).thenReturn( stringProperty( propertyKeyId, value ) );
 
-        when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( true );
-        when( store.nodeGetLabels( 1l ) ).thenReturn( PrimitiveIntCollections.iterator( labelId ) );
+        when( store.nodeHasLabel(statement , 1l, labelId ) ).thenReturn( true );
+        when( store.nodeGetLabels( statement, 1l ) ).thenReturn( PrimitiveIntCollections.iterator( labelId ) );
         txContext.nodeRemoveProperty( state, 1l, propertyKeyId );
 
         // When
@@ -327,6 +336,9 @@ public class IndexQueryTransactionStateTest
         when( store.nodeExists( anyLong() ) ).thenReturn( true );
         when( store.indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) )
                 .thenReturn( new IndexDescriptor( labelId, propertyKeyId ) );
+
+        statement = mock(StoreStatement.class);
+        when (state.getStoreStatement()).thenReturn( statement );
 
         StateHandlingStatementOperations stateHandlingOperations = new StateHandlingStatementOperations(
                 store,

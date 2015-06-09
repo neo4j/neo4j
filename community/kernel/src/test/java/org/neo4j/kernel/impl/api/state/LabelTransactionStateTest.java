@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -39,14 +39,17 @@ import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveIntIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
@@ -223,7 +226,7 @@ public class LabelTransactionStateTest
     public void should_return_true_when_adding_new_label() throws Exception
     {
         // GIVEN
-        when( store.nodeHasLabel( 1337, 12 ) ).thenReturn( false );
+        when( store.nodeHasLabel( storeStatement, 1337, 12 ) ).thenReturn( false );
 
         // WHEN and THEN
         assertTrue( "Label should have been added", txContext.nodeAddLabel( state, 1337, 12 ) );
@@ -233,7 +236,7 @@ public class LabelTransactionStateTest
     public void should_return_false_when_adding_existing_label() throws Exception
     {
         // GIVEN
-        when( store.nodeHasLabel( 1337, 12 ) ).thenReturn( true );
+        when( store.nodeHasLabel( storeStatement, 1337, 12 ) ).thenReturn( true );
 
         // WHEN and THEN
         assertFalse( "Label should have been added", txContext.nodeAddLabel( state, 1337, 12 ) );
@@ -243,7 +246,7 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_existing_label() throws Exception
     {
         // GIVEN
-        when( store.nodeHasLabel( 1337, 12 ) ).thenReturn( true );
+        when( store.nodeHasLabel( storeStatement, 1337, 12 ) ).thenReturn( true );
 
         // WHEN and THEN
         assertTrue( "Label should have been removed", txContext.nodeRemoveLabel( state, 1337, 12 ) );
@@ -253,7 +256,7 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_non_existant_label() throws Exception
     {
         // GIVEN
-        when( store.nodeHasLabel( 1337, 12 ) ).thenReturn( false );
+        when( store.nodeHasLabel( storeStatement, 1337, 12 ) ).thenReturn( false );
 
         // WHEN and THEN
         assertFalse( "Label should have been removed", txContext.nodeRemoveLabel( state, 1337, 12 ) );
@@ -269,6 +272,7 @@ public class LabelTransactionStateTest
     private StateHandlingStatementOperations txContext;
 
     private KernelStatement state;
+    private StoreStatement storeStatement;
 
     @Before
     public void before() throws Exception
@@ -279,13 +283,16 @@ public class LabelTransactionStateTest
         when( store.indexesGetForLabel( labelId2 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
-              when( store.nodeGetAllProperties( anyLong() ) )
-                      .thenReturn( asResourceIterator( IteratorUtil.<DefinedProperty>emptyIterator() ) );
+        when( store.nodeGetAllProperties( isA( StoreStatement.class ), anyLong() ) )
+                .thenReturn( asResourceIterator( IteratorUtil.<DefinedProperty>emptyIterator() ) );
 
         txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );
         txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
+
+        storeStatement = mock( StoreStatement.class );
+        when( state.getStoreStatement() ).thenReturn( storeStatement );
     }
 
     private static class Labels
@@ -310,11 +317,11 @@ public class LabelTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( store.nodeGetLabels( nodeLabels.nodeId ) )
+            when( store.nodeGetLabels( storeStatement, nodeLabels.nodeId ) )
                     .then( answerAsPrimitiveIntIteratorFrom( Arrays.<Integer>asList( nodeLabels.labelIds ) ) );
             for ( int label : nodeLabels.labelIds )
             {
-                when( store.nodeHasLabel( nodeLabels.nodeId, label ) ).thenReturn( true );
+                when( store.nodeHasLabel( storeStatement, nodeLabels.nodeId, label ) ).thenReturn( true );
 
                 Collection<Long> nodes = allLabels.get( label );
                 if ( nodes == null )

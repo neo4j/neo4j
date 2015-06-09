@@ -25,7 +25,6 @@ import java.util.Map;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.DataWriteOperations;
@@ -34,6 +33,8 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.cursor.NodeCursor;
+import org.neo4j.kernel.api.cursor.RelationshipCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -68,8 +69,6 @@ import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.util.register.NeoRegister;
-import org.neo4j.register.Register;
 
 public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations
 {
@@ -136,6 +135,64 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     final CountsOperations counting()
     {
         return operations.counting();
+    }
+
+    // <DataReadCursors>
+
+    @Override
+    public NodeCursor nodeCursor( long nodeId )
+    {
+        return statement.acquireNodeCursor().init(
+                statement.getStoreStatement().acquireSingleNodeCursor( nodeId ) );
+    }
+
+    @Override
+    public RelationshipCursor relationshipCursor( long relId )
+    {
+        return statement.acquireRelationshipCursor().init(
+                statement.getStoreStatement().acquireSingleRelationshipCursor( relId ) );
+    }
+
+    @Override
+    public RelationshipCursor relationshipCursorGetAll(  )
+    {
+        return statement.acquireRelationshipCursor().init( dataRead().relationshipCursorGetAll( statement ) );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetForLabel( int labelId )
+    {
+        return statement.acquireNodeCursor().init( statement.getStoreStatement().acquireIteratorNodeCursor().init(
+                nodesGetForLabel( labelId ) ));
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexLookup(  IndexDescriptor index,
+            Object value ) throws IndexNotFoundKernelException
+    {
+        return statement.acquireNodeCursor().init( statement.getStoreStatement().acquireIteratorNodeCursor().init( nodesGetFromIndexLookup(
+                index, value )));
+    }
+
+    @Override
+    public NodeCursor nodeGetFromIndexScan( IndexDescriptor index ) throws IndexNotFoundKernelException
+    {
+        return statement.acquireNodeCursor().init( statement.getStoreStatement().acquireIteratorNodeCursor().init( nodesGetFromIndexScan(
+                index )));
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetUniqueFromIndexLookup( IndexDescriptor index,
+            Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        return statement.acquireNodeCursor().init( statement.getStoreStatement().acquireIteratorNodeCursor().init( PrimitiveLongCollections.singleton(
+                        nodeGetUniqueFromIndexLookup( index, value ) )));
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetAll( )
+    {
+        return statement.acquireNodeCursor().init(operations.entityReadOperations().nodeCursorGetAll( statement ));
     }
 
     // <DataRead>
@@ -288,10 +345,10 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetAllPropertiesKeys( long nodeId ) throws EntityNotFoundException
+    public PrimitiveIntIterator nodeGetAllPropertiesKeys( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        return dataRead().nodeGetPropertyKeys(statement, nodeId);
+        return dataRead().nodeGetPropertyKeys( statement, nodeId );
     }
 
     @Override
@@ -302,7 +359,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator relationshipGetAllPropertiesKeys( long nodeId ) throws EntityNotFoundException
+    public PrimitiveIntIterator relationshipGetAllPropertiesKeys( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         return dataRead().relationshipGetPropertyKeys(statement, nodeId);
@@ -329,36 +386,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         dataRead().relationshipVisit( statement, relId, visitor );
-    }
-
-    @Override
-    public Cursor expand( Cursor inputCursor, NeoRegister.Node.In nodeId, Register.Object.In<int[]> types,
-                          Register.Object.In<Direction> expandDirection,
-                          NeoRegister.Relationship.Out relId, NeoRegister.RelType.Out relType,
-                          Register.Object.Out<Direction> direction,
-                          NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId )
-    {
-        statement.assertOpen();
-        return dataRead().expand( statement, inputCursor, nodeId, types, expandDirection,
-                relId, relType, direction, startNodeId, neighborNodeId );
-    }
-
-    @Override
-    public Cursor nodeGetRelationships( long nodeId, Direction direction,
-                                 RelationshipVisitor<? extends RuntimeException> visitor )
-            throws EntityNotFoundException
-    {
-        statement.assertOpen();
-        return dataRead().nodeGetRelationships( statement, nodeId, direction, visitor );
-    }
-
-    @Override
-    public Cursor nodeGetRelationships( long nodeId, Direction direction, int[] types,
-                                 RelationshipVisitor<? extends RuntimeException> visitor )
-            throws EntityNotFoundException
-    {
-        statement.assertOpen();
-        return dataRead().nodeGetRelationships( statement, nodeId, direction, types, visitor );
     }
 
     // </DataRead>

@@ -23,8 +23,9 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.api.cursor.NodeCursor;
+import org.neo4j.kernel.api.cursor.RelationshipCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -36,8 +37,6 @@ import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.kernel.impl.util.register.NeoRegister;
-import org.neo4j.register.Register;
 
 public class GuardingStatementOperations implements
         EntityWriteOperations,
@@ -58,7 +57,10 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public long relationshipCreate( KernelStatement statement, int relationshipTypeId, long startNodeId, long endNodeId )
+    public long relationshipCreate( KernelStatement statement,
+            int relationshipTypeId,
+            long startNodeId,
+            long endNodeId )
             throws EntityNotFoundException
     {
         guard.check();
@@ -228,7 +230,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetPropertyKeys( KernelStatement state, long nodeId )
+    public PrimitiveIntIterator nodeGetPropertyKeys( KernelStatement state, long nodeId )
             throws EntityNotFoundException
     {
         guard.check();
@@ -244,7 +246,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId )
+    public PrimitiveIntIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId )
             throws EntityNotFoundException
     {
         guard.check();
@@ -260,7 +262,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state )
+    public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state )
     {
         guard.check();
         return entityReadDelegate.graphGetPropertyKeys( state );
@@ -278,7 +280,8 @@ public class GuardingStatementOperations implements
             int[] relTypes ) throws EntityNotFoundException
     {
         guard.check();
-        return entityReadDelegate.nodeGetRelationships( statement, nodeId, direction, relTypes );
+        return new GuardedRelationshipIterator( guard,
+                entityReadDelegate.nodeGetRelationships( statement, nodeId, direction, relTypes ) );
     }
 
     @Override
@@ -286,7 +289,8 @@ public class GuardingStatementOperations implements
             throws EntityNotFoundException
     {
         guard.check();
-        return entityReadDelegate.nodeGetRelationships( statement, nodeId, direction );
+        return new GuardedRelationshipIterator( guard,
+                entityReadDelegate.nodeGetRelationships( statement, nodeId, direction ) );
     }
 
     @Override
@@ -337,53 +341,48 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Cursor expand( KernelStatement statement, Cursor inputCursor, NeoRegister.Node.In nodeId,
-                          Register.Object.In<int[]> types, Register.Object.In<Direction> expandDirection,
-                          NeoRegister.Relationship.Out relId, NeoRegister.RelType.Out relType,
-                          Register.Object.Out<Direction> direction,
-                          NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId )
+    public NodeCursor nodeCursorGetAll( KernelStatement state )
     {
         guard.check();
-        return entityReadDelegate.expand( statement, inputCursor, nodeId, types, expandDirection,
-                relId, relType, direction, startNodeId, neighborNodeId );
+        return entityReadDelegate.nodeCursorGetAll( state );
     }
 
     @Override
-    public Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
-                                        final RelationshipVisitor<? extends RuntimeException> visitor )
-            throws EntityNotFoundException
+    public RelationshipCursor relationshipCursorGetAll( KernelStatement state )
     {
         guard.check();
-        return entityReadDelegate.nodeGetRelationships( statement, nodeId, direction,
-                                                        new GuardedRelationshipVisitor<>( guard, visitor ) );
+        return entityReadDelegate.relationshipCursorGetAll( state );
     }
 
-    @Override
-    public Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction, int[] types,
-                                        RelationshipVisitor<? extends RuntimeException> visitor )
-            throws EntityNotFoundException
-    {
-        guard.check();
-        return entityReadDelegate.nodeGetRelationships( statement, nodeId, direction, types,
-                                                        new GuardedRelationshipVisitor<>( guard, visitor ) );
-    }
-
-    private static class GuardedRelationshipVisitor<EX extends Exception> implements RelationshipVisitor<EX>
+    private static class GuardedRelationshipIterator implements RelationshipIterator
     {
         private final Guard guard;
-        private final RelationshipVisitor<EX> visitor;
+        private final RelationshipIterator iterator;
 
-        public GuardedRelationshipVisitor( Guard guard, RelationshipVisitor<EX> visitor )
+        public GuardedRelationshipIterator( Guard guard, RelationshipIterator iterator )
         {
             this.guard = guard;
-            this.visitor = visitor;
+            this.iterator = iterator;
         }
 
         @Override
-        public void visit( long relId, int type, long startNode, long endNode ) throws EX
+        public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
+                RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
         {
             guard.check();
-            visitor.visit( relId, type, startNode, endNode );
+            return iterator.relationshipVisit( relationshipId, visitor );
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return iterator.hasNext();
+        }
+
+        @Override
+        public long next()
+        {
+            return iterator.next();
         }
     }
 }

@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
-
-import java.util.Map;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.DependencyResolver;
@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 /**
@@ -76,7 +77,7 @@ public class DiskLayerTest
                 indexingService );
         this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ),
                 resolver.resolveDependency( LabelScanStore.class ), null,
-                null, null );
+                null, null, disk.acquireStatement());
     }
 
     @After

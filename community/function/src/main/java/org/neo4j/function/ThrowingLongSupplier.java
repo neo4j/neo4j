@@ -32,5 +32,6 @@ public interface ThrowingLongSupplier<E extends Exception>
      * @return a result
      * @throws E an exception if the supplier fails
      */
-    long getAsLong();
+    long getAsLong()
+        throws E;
 }

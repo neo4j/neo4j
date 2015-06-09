@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -144,13 +145,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionType transactionType = TransactionType.ANY;
     private TransactionHooks.TransactionHooksState hooksState;
     private Locks.Client locks;
+    private StoreStatement storeStatement;
     private boolean closing, closed;
     private boolean failure, success;
     private volatile boolean terminated;
     // Some header information
     private long startTimeMillis;
     private long lastTransactionIdWhenStarted;
-    /** Implements reusing the same underlying {@link KernelStatement} for overlapping statements. */
+    /**
+     * Implements reusing the same underlying {@link KernelStatement} for overlapping statements.
+     */
     private KernelStatement currentStatement;
     // Event tracing
     private final TransactionTracer tracer;
@@ -158,21 +162,21 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
 
     public KernelTransactionImplementation( StatementOperationParts operations,
-                                            SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
-                                            IndexingService indexService,
-                                            UpdateableSchemaState schemaState,
-                                            TransactionRecordState recordState,
-                                            SchemaIndexProviderMap providerMap, NeoStore neoStore,
-                                            Locks.Client locks, TransactionHooks hooks,
-                                            ConstraintIndexCreator constraintIndexCreator,
-                                            TransactionHeaderInformationFactory headerInformationFactory,
-                                            TransactionCommitProcess commitProcess,
-                                            TransactionMonitor transactionMonitor,
-                                            StoreReadLayer storeLayer,
-                                            LegacyIndexTransactionState legacyIndexTransactionState,
-                                            Pool<KernelTransactionImplementation> pool,
-                                            Clock clock,
-                                            TransactionTracer tracer )
+            SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
+            IndexingService indexService,
+            UpdateableSchemaState schemaState,
+            TransactionRecordState recordState,
+            SchemaIndexProviderMap providerMap, NeoStore neoStore,
+            Locks.Client locks, TransactionHooks hooks,
+            ConstraintIndexCreator constraintIndexCreator,
+            TransactionHeaderInformationFactory headerInformationFactory,
+            TransactionCommitProcess commitProcess,
+            TransactionMonitor transactionMonitor,
+            StoreReadLayer storeLayer,
+            LegacyIndexTransactionState legacyIndexTransactionState,
+            Pool<KernelTransactionImplementation> pool,
+            Clock clock,
+            TransactionTracer tracer )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -195,7 +199,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.tracer = tracer;
     }
 
-    /** Reset this transaction to a vanilla state, turning it into a logically new transaction. */
+    /**
+     * Reset this transaction to a vanilla state, turning it into a logically new transaction.
+     */
     public KernelTransactionImplementation initialize( long lastCommittedTx )
     {
         assert locks != null : "This transaction has been disposed off, it should not be used.";
@@ -209,7 +215,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.startTimeMillis = clock.currentTimeMillis();
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.transactionEvent = tracer.beginTransaction();
-        assert transactionEvent != null: "transactionEvent was null!";
+        assert transactionEvent != null : "transactionEvent was null!";
         return this;
     }
 
@@ -254,8 +260,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assertTransactionOpen();
         if ( currentStatement == null )
         {
+            if (storeStatement == null)
+            {
+                storeStatement = storeLayer.acquireStatement();
+            }
+
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, locks, operations );
+                    labelScanStore, this, locks, operations, storeStatement );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -297,7 +308,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 catch ( DropIndexFailureException e )
                 {
                     throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
-                                                     "possible to drop during rollback of that transaction.", e );
+                            "possible to drop during rollback of that transaction.", e );
                 }
             }
         }
@@ -373,9 +384,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private boolean hasChanges()
     {
         return hasTxStateWithChanges() ||
-               recordState.hasChanges() ||
-               legacyIndexTransactionState.hasChanges() ||
-               counts.hasChanges();
+                recordState.hasChanges() ||
+                legacyIndexTransactionState.hasChanges() ||
+                counts.hasChanges();
     }
 
     public TransactionRecordState getTransactionRecordState()
@@ -575,11 +586,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    /** Release resources held up by this transaction & return it to the transaction pool. */
+    /**
+     * Release resources held up by this transaction & return it to the transaction pool.
+     */
     private void release()
     {
         locks.releaseAll();
         pool.release( this );
+        if (storeStatement != null)
+        {
+            storeStatement.close();
+            storeStatement = null;
+        }
     }
 
     private class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
@@ -612,10 +630,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public void visitDeletedNode( long id )
         {
-            try
+            try ( StoreStatement statement = storeLayer.acquireStatement() )
             {
                 counts.incrementNodeCount( ANY_LABEL, -1 );
-                PrimitiveIntIterator labels = storeLayer.nodeGetLabels( id );
+                PrimitiveIntIterator labels = storeLayer.nodeGetLabels( statement, id );
                 if ( labels.hasNext() )
                 {
                     final int[] removed = PrimitiveIntCollections.asArray( labels );
@@ -623,7 +641,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     {
                         counts.incrementNodeCount( label, -1 );
                     }
-                    storeLayer.nodeVisitDegrees( id, new DegreeVisitor()
+                    storeLayer.nodeVisitDegrees( statement, id, new DegreeVisitor()
                     {
                         @Override
                         public void visitDegree( int type, int outgoing, int incoming )
@@ -679,7 +697,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         @Override
         public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
-                                              Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+                Iterator<DefinedProperty> changed, Iterator<Integer> removed )
         {
             while ( removed.hasNext() )
             {
@@ -699,7 +717,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         @Override
         public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added,
-                                             Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+                Iterator<DefinedProperty> changed, Iterator<Integer> removed )
         {
             while ( removed.hasNext() )
             {
@@ -719,7 +737,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         @Override
         public void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
-                                               Iterator<Integer> removed )
+                Iterator<Integer> removed )
         {
             while ( removed.hasNext() )
             {
@@ -740,34 +758,37 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
         {
-            // update counts
-            if ( !(added.isEmpty() && removed.isEmpty()) )
+            try ( StoreStatement statement = storeLayer.acquireStatement() )
             {
-                for ( Integer label : added )
+                // update counts
+                if ( !(added.isEmpty() && removed.isEmpty()) )
                 {
-                    counts.incrementNodeCount( label, 1 );
-                }
-                for ( Integer label : removed )
-                {
-                    counts.incrementNodeCount( label, -1 );
-                }
-                // get the relationship counts from *before* this transaction,
-                // the relationship changes will compensate for what happens during the transaction
-                storeLayer.nodeVisitDegrees( id, new DegreeVisitor()
-                {
-                    @Override
-                    public void visitDegree( int type, int outgoing, int incoming )
+                    for ( Integer label : added )
                     {
-                        for ( Integer label : added )
-                        {
-                            updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming );
-                        }
-                        for ( Integer label : removed )
-                        {
-                            updateRelationshipsCountsFromDegrees( type, label, -outgoing, -incoming );
-                        }
+                        counts.incrementNodeCount( label, 1 );
                     }
-                } );
+                    for ( Integer label : removed )
+                    {
+                        counts.incrementNodeCount( label, -1 );
+                    }
+                    // get the relationship counts from *before* this transaction,
+                    // the relationship changes will compensate for what happens during the transaction
+                    storeLayer.nodeVisitDegrees( statement, id, new DegreeVisitor()
+                    {
+                        @Override
+                        public void visitDegree( int type, int outgoing, int incoming )
+                        {
+                            for ( Integer label : added )
+                            {
+                                updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming );
+                            }
+                            for ( Integer label : removed )
+                            {
+                                updateRelationshipsCountsFromDegrees( type, label, -outgoing, -incoming );
+                            }
+                        }
+                    } );
+                }
             }
 
             // record the state changes to be made to the store
@@ -785,7 +806,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
         {
             SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider()
-                                                                           .getProviderDescriptor();
+                    .getProviderDescriptor();
             IndexRule rule;
             if ( isConstraintIndex )
             {
@@ -805,8 +826,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
         {
             SchemaStorage.IndexRuleKind kind = isConstraintIndex ?
-                                               SchemaStorage.IndexRuleKind.CONSTRAINT
-                                                                 : SchemaStorage.IndexRuleKind.INDEX;
+                    SchemaStorage.IndexRuleKind.CONSTRAINT
+                    : SchemaStorage.IndexRuleKind.INDEX;
             IndexRule rule = schemaStorage.indexRule( element.getLabelId(), element.getPropertyKeyId(), kind );
             recordState.dropSchemaRule( rule );
         }
@@ -840,7 +861,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throw new ThisShouldNotHappenError(
                         "Tobias Lindaaker",
                         "Constraint to be removed should exist, since its existence should " +
-                        "have been validated earlier and the schema should have been locked." );
+                                "have been validated earlier and the schema should have been locked." );
             }
             // Remove the index for the constraint as well
             visitRemovedIndex( new IndexDescriptor( element.label(), element.propertyKeyId() ), true );
@@ -865,13 +886,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         @Override
-        public void visitCreatedNodeLegacyIndex( String name, Map<String,String> config )
+        public void visitCreatedNodeLegacyIndex( String name, Map<String, String> config )
         {
             legacyIndexTransactionState.createIndex( IndexEntityType.Node, name, config );
         }
 
         @Override
-        public void visitCreatedRelationshipLegacyIndex( String name, Map<String,String> config )
+        public void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config )
         {
             legacyIndexTransactionState.createIndex( IndexEntityType.Relationship, name, config );
         }
@@ -903,6 +924,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private PrimitiveIntIterator labelsOf( long nodeId ) throws EntityNotFoundException
     {
-        return StateHandlingStatementOperations.nodeGetLabels( storeLayer, txState, nodeId );
+        try ( StoreStatement statement = storeLayer.acquireStatement() )
+        {
+            return StateHandlingStatementOperations.nodeGetLabels( storeLayer, statement,
+                    txState, nodeId );
+        }
     }
 }
