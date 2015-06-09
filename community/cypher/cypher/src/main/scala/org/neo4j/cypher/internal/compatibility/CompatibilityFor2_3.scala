@@ -290,6 +290,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       NotificationCode.PLANNER_UNSUPPORTED.notification(InputPosition.empty)
     case RuntimeUnsupportedNotification =>
       NotificationCode.RUNTIME_UNSUPPORTED.notification(InputPosition.empty)
+    case IndexHintUnfulfillableNotification =>
+       NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty)
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_3.runSafely {

@@ -46,6 +46,9 @@ public enum NotificationCode
     RUNTIME_UNSUPPORTED( SeverityLevel.WARNING,
                     Status.Statement.RuntimeUnsupportedWarning,
                     "Using COMPILED runtime is unsupported for this query, please use interpreted runtime instead"),
+    INDEX_HINT_UNFULFILLABLE( SeverityLevel.WARNING,
+                    Status.Schema.NoSuchIndex,
+                    "The hinted index does not exist, please check the schema"),
     LENGTH_ON_NON_PATH( SeverityLevel.WARNING,
                     Status.Statement.DeprecationWarning,
                     "Using 'length' on anything that is not a path is deprecated, please use 'size' instead");

@@ -63,7 +63,8 @@ class RuleExecutablePlanBuilderTest
     rewriterSequencer = rewriterSequencer,
     plannerName = None,
     runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, mock[Monitors]), CompiledPlanBuilder(Clock.SYSTEM_CLOCK)),
-    semanticChecker = mock[SemanticChecker]
+    semanticChecker = mock[SemanticChecker],
+    useErrorsOverWarnings = false
   )
 
   class FakePreparedQuery(q: AbstractQuery)

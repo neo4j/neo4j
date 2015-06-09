@@ -85,7 +85,8 @@ object CypherCompilerFactory {
       rewriterSequencer = rewriterSequencer,
       plannerName = plannerName,
       runtimeBuilder = runtimeBuilder,
-      semanticChecker = checker
+      semanticChecker = checker,
+      useErrorsOverWarnings = useErrorsOverWarnings
     )
     val rulePlanProducer = new LegacyExecutablePlanBuilder(monitors, rewriterSequencer)
 

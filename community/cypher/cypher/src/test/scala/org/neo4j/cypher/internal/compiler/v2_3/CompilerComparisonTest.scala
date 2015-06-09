@@ -297,7 +297,8 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
       rewriterSequencer = rewriterSequencer,
       queryPlanner = queryPlanner,
       runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(clock, monitors), CompiledPlanBuilder(clock)),
-      semanticChecker = checker
+      semanticChecker = checker,
+      useErrorsOverWarnings = false
     )
     val pipeBuilder = new SilentFallbackPlanBuilder(new LegacyExecutablePlanBuilder(monitors, rewriterSequencer), planner,
                                                     planBuilderMonitor)
