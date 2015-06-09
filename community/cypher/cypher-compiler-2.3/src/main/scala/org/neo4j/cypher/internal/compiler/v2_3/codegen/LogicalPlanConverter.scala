@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
+import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{RangeQueryExpression, ManyQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, RangeQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.{ast, InternalException, symbols}
+import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, ast, symbols}
 
 object LogicalPlanConverter {
 
@@ -36,14 +38,14 @@ object LogicalPlanConverter {
       case p: AllNodesScan => p
       case p: NodeByLabelScan => p
       case p: NodeIndexSeek => p
-      case p: ProduceResult => p
       case p: Expand => p
       case p: OptionalExpand => p
       case p: NodeHashJoin => p
       case p: CartesianProduct => p
-      case p: Projection => p
       case p: Selection => p
       case p: plans.Limit => p
+      case produceResult@ProduceResult(_, _, _, projection: Projection) =>
+        ProduceProjectionResults(produceResult, projection)
 
       case _ =>
         throw new CantCompileQueryException(s"$logicalPlan is not yet supported")
@@ -56,6 +58,26 @@ object LogicalPlanConverter {
       val (methodHandle, actions) = context.popParent().consume(context, this)
       (methodHandle, Seq(actions))
     }
+  }
+
+  private case class ProduceProjectionResults(produceResults: ProduceResult, projection: Projection)
+    extends CodeGenPlan {
+
+    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+      val projectionOpName = context.registerOperator(projection)
+      val produceResultOpName = context.registerOperator(produceResults)
+      val projections = Eagerly.immutableMapValues(projection.expressions,
+                                                   (e: Expression) => ExpressionConverter.createExpression(e)(context))
+
+      (None, AcceptVisitor(produceResultOpName, projectionOpName, projections))
+    }
+
+    override def produce(context: CodeGenContext) = {
+      context.pushParent(this)
+      projection.lhs.get.asCodeGenPlan.produce(context)
+    }
+
+    override val logicalPlan: LogicalPlan = produceResults
   }
 
   private implicit class AllNodesScanCodeGen(val logicalPlan: AllNodesScan) extends LeafCodeGenPlan {
@@ -92,13 +114,13 @@ object LogicalPlanConverter {
       val indexSeekInstruction = logicalPlan.valueExpr match {
         //single expression, do a index lookup for that value
         case SingleQueryExpression(e) =>
-          val expression = ExpressionConverter.createExpression(e)(opName, context)
+          val expression = ExpressionConverter.createExpression(e)(context)
           WhileLoop(nodeVar,
                     IndexSeek(opName, logicalPlan.label.name, logicalPlan.propertyKey.name,
                               context.namer.newVarName(), expression), actions)
         //collection, create set and for each element of the set do an index lookup
         case ManyQueryExpression(e: ast.Collection) =>
-          val expression = ToSet(ExpressionConverter.createExpression(e)(opName, context))
+          val expression = ToSet(ExpressionConverter.createExpression(e)(context))
           val expressionVar = context.namer.newVarName()
           ForEachExpression(expressionVar, expression,
                             WhileLoop(nodeVar,
@@ -106,7 +128,7 @@ object LogicalPlanConverter {
                                                 context.namer.newVarName(), LoadVariable(expressionVar)), actions))
         //Unknown, try to cast to collection and then same as above
         case ManyQueryExpression(e) =>
-          val expression = ToSet(CastToCollection(ExpressionConverter.createExpression(e)(opName, context)))
+          val expression = ToSet(CastToCollection(ExpressionConverter.createExpression(e)(context)))
           val expressionVar = context.namer.newVarName()
           ForEachExpression(expressionVar, expression,
                             WhileLoop(nodeVar,
@@ -184,16 +206,6 @@ object LogicalPlanConverter {
     }
   }
 
-  private implicit class ProduceResultCodeGen(val logicalPlan: ProduceResult) extends SingleChildPlan {
-    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
-      val nodeVars = logicalPlan.nodes.map(n => n -> context.getProjection(n))
-      val relVars = logicalPlan.relationships.map(r => r -> context.getProjection(r))
-      val otherVars = logicalPlan.other.map(o => o -> context.getProjection(o))
-      val opName = context.registerOperator(logicalPlan)
-      (None, AcceptVisitor(opName, nodeVars.toMap ++ relVars.toMap ++ otherVars.toMap))
-    }
-  }
-
   private implicit class ExpandCodeGen(val logicalPlan: Expand) extends SingleChildPlan {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
@@ -257,20 +269,20 @@ object LogicalPlanConverter {
       val typeVar2TypeName = logicalPlan.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(logicalPlan)
 
-      //wrap inner instructions with predicates
-      val instructionWithPredicates = logicalPlan.predicates
-        .reverseMap(ExpressionConverter.createExpression(_)(opName, context)).foldLeft[Instruction](action) {
-        case (acc, predicate) => If(predicate, acc)
-      }
       //name of flag to check if results were yielded
       val yieldFlag = context.namer.newVarName()
 
+      //wrap inner instructions with predicates
+      val instructionWithPredicates = logicalPlan.predicates
+        .reverseMap(ExpressionConverter.createPredicate(_)(context)).foldLeft[Instruction](CheckingInstruction(action, yieldFlag)) {
+        case (acc, predicate) => If(predicate, acc)
+      }
+
       val expand = ExpandAllLoopDataGenerator(opName, fromNodeVar, logicalPlan.dir, typeVar2TypeName, toNodeVar)
 
-      val dataGenerator = CheckingLoopDataGenerator(expand, yieldFlag)
-      val loop = WhileLoop(relVar, dataGenerator, instructionWithPredicates)
+      val loop = WhileLoop(relVar, expand, instructionWithPredicates)
 
-      (methodHandle, NullingWhileLoop(loop, yieldFlag, relVar, toNodeVar))
+      (methodHandle, NullingInstruction(loop, yieldFlag, action, relVar, toNodeVar))
     }
   }
 
@@ -297,39 +309,21 @@ object LogicalPlanConverter {
     }
   }
 
-  private implicit class ProjectionCodeGen(val logicalPlan: Projection) extends SingleChildPlan {
-
-    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
-      val opName = context.registerOperator(logicalPlan)
-      val projectionInstructions = logicalPlan.expressions.map {
-        case (identifier, expression) =>
-          val instruction = ExpressionConverter.createExpression(expression)(opName, context)
-
-          context.addProjection(identifier, instruction)
-          instruction
-      }.toSeq
-
-      val (methodHandle, action) = context.popParent().consume(context, this)
-
-      (methodHandle, Project(opName, projectionInstructions, action))
-    }
-  }
-
   private implicit class SelectionCodeGen(val logicalPlan: Selection) extends SingleChildPlan {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
       val opName = context.registerOperator(logicalPlan)
       val predicates = logicalPlan.predicates.map(
-        ExpressionConverter.createPredicate(_)(opName, context)
+        ExpressionConverter.createPredicate(_)(context)
       )
 
       val (methodHandle, innerBlock) = context.popParent().consume(context, this)
 
-      val instruction = predicates.reverse.foldLeft[Instruction](TracingInstruction(opName, innerBlock)) {
+      val instruction = predicates.reverse.foldLeft[Instruction](innerBlock) {
         case (acc, predicate) => If(predicate, acc)
       }
 
-      (methodHandle, instruction)
+      (methodHandle, TracingInstruction(opName, instruction))
     }
   }
 
@@ -337,7 +331,7 @@ object LogicalPlanConverter {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
       val opName = context.registerOperator(logicalPlan)
-      val count = ExpressionConverter.createExpression(logicalPlan.count)(opName, context)
+      val count = ExpressionConverter.createExpression(logicalPlan.count)(context)
       val counterName = context.namer.newVarName()
 
       val (methodHandle, innerBlock) = context.popParent().consume(context, this)

@@ -131,7 +131,8 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
                                                  statements = Seq(buildWhileLoop))
 
 
-    val acceptVisitor = AcceptVisitor("visitorOp", Map(resultRowKey -> expressions.Node(Variable(probeKeyVarName, symbols.CTNode))))
+    val acceptVisitor = AcceptVisitor("visitorOp", "projectionOp",
+                                      Map(resultRowKey -> expressions.Node(Variable(probeKeyVarName, symbols.CTNode))))
 
     val probeTheTable = GetMatchesFromProbeTable(key = Variable(probeKeyVarName, symbols.CTNode),
                                                  code = buildInstruction.joinData,

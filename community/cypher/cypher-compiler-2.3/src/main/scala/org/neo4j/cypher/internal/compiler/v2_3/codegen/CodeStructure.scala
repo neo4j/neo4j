@@ -133,7 +133,7 @@ trait MethodStructure[E] {
   def relationshipGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
   def relationshipGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
   def lookupPropertyKey(propName: String, propVar: String)
-  def propertyValueAsPredicate(propertyExpression: E): E
+  def coerceToPredicate(propertyExpression: E): E
 
   def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
 
@@ -708,8 +708,8 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     }
   }
 
-  override def propertyValueAsPredicate(propertyExpression: Expression): Expression =
-    Expression.invoke(Methods.propertyAsPredicate, propertyExpression)
+  override def coerceToPredicate(propertyExpression: Expression): Expression =
+    Expression.invoke(Methods.coerceToPredicate, propertyExpression)
 
   override def newTableValue(targetVar: String, structure: Map[String, CypherType]) = {
     val valueType = aux.typeReference(structure)
@@ -748,7 +748,7 @@ private object Methods {
   val mapContains = method[util.Map[String, Object], Boolean]("containsKey", typeRef[String])
   val labelGetForName = method[ReadOperations, Int]("labelGetForName", typeRef[String])
   val propertyKeyGetForName = method[ReadOperations, Int]("propertyKeyGetForName", typeRef[String])
-  val propertyAsPredicate = method[CompiledConversionUtils, Boolean]("isPropertyValueTrue", typeRef[Object])
+  val coerceToPredicate = method[CompiledConversionUtils, Boolean]("coerceToPredicate", typeRef[Object])
   val toCollection = method[CompiledConversionUtils, java.util.Collection[Object]]("toCollection", typeRef[Object])
   val relationshipTypeGetForName = method[ReadOperations, Int]("relationshipTypeGetForName", typeRef[String])
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")

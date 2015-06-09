@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure, Variable}
 
-abstract class ElementProperty(id: String, token: Option[Int], propName: String, elementIdVar: String, propKeyVar: String)
+abstract class ElementProperty(token: Option[Int], propName: String, elementIdVar: String, propKeyVar: String)
   extends CodeGenExpression {
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
     if (token.isEmpty) generator.lookupPropertyKey(propName, propKeyVar)
@@ -29,13 +29,11 @@ abstract class ElementProperty(id: String, token: Option[Int], propName: String,
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E = {
     val localName = context.namer.newVarName()
     structure.declareProperty(localName)
-    structure.trace(id) { body =>
-      if (token.isEmpty)
-        propertyByName(body, localName)
-      else
-        propertyById(body, localName)
-      body.incrementDbHits()
-    }
+    if (token.isEmpty)
+      propertyByName(structure, localName)
+    else
+      propertyById(structure, localName)
+    structure.incrementDbHits()
     structure.load(localName)
   }
 
@@ -44,8 +42,8 @@ abstract class ElementProperty(id: String, token: Option[Int], propName: String,
   def propertyById[E](body: MethodStructure[E], localName: String): Unit
 }
 
-case class NodeProperty(id: String, token: Option[Int], propName: String, nodeIdVar: Variable, propKeyVar: String)
-  extends ElementProperty(id, token, propName, nodeIdVar.name, propKeyVar) {
+case class NodeProperty(token: Option[Int], propName: String, nodeIdVar: Variable, propKeyVar: String)
+  extends ElementProperty(token, propName, nodeIdVar.name, propKeyVar) {
 
   override def propertyByName[E](body: MethodStructure[E], localName: String) =
     body.nodeGetPropertyForVar(nodeIdVar.name, propKeyVar, localName)
@@ -54,8 +52,8 @@ case class NodeProperty(id: String, token: Option[Int], propName: String, nodeId
     body.nodeGetPropertyById(nodeIdVar.name, token.get, localName)
 }
 
-case class RelProperty(id: String, token: Option[Int], propName: String, relIdVar: Variable, propKeyVar: String)
-  extends ElementProperty(id, token, propName, relIdVar.name, propKeyVar) {
+case class RelProperty(token: Option[Int], propName: String, relIdVar: Variable, propKeyVar: String)
+  extends ElementProperty(token, propName, relIdVar.name, propKeyVar) {
 
   override def propertyByName[E](body: MethodStructure[E], localName: String) =
     body.relationshipGetPropertyForVar(relIdVar.name, propKeyVar, localName)

@@ -38,7 +38,7 @@ trait Instruction {
 
   protected def operatorId: Set[String] = Set.empty
 
-  protected def columnNames: Iterable[String] = None
+  protected def columnNames: Iterable[String] = Iterable.empty
 }
 
 object Instruction {
