@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
 case class Project(opName: String, projections: Seq[CodeGenExpression], parent: Instruction) extends Instruction {
 
@@ -33,7 +33,7 @@ case class Project(opName: String, projections: Seq[CodeGenExpression], parent: 
 
   override protected def children = Seq(parent)
 
-  override protected def operatorId = Some(opName)
+  override protected def operatorId = Set(opName)
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     super.init(generator)

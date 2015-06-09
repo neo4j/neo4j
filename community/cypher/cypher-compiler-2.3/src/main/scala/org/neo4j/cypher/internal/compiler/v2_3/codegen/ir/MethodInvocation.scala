@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen._
 
-case class MethodInvocation(override val operatorId: Option[String],
+case class MethodInvocation(override val operatorId: Set[String],
                             symbol:JoinTableMethod,
                             methodName: String,
                             statements: Seq[Instruction]) extends Instruction {

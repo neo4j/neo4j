@@ -23,7 +23,7 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, JoinTableMethod}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, JoinTableMethod, Variable}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.symbols
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
@@ -125,7 +125,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private def buildProbeTableWithTwoAllNodeScans(buildInstruction: BuildProbeTable): Seq[Instruction] = {
     val buildWhileLoop = WhileLoop(Variable(tableKeyVarName, symbols.CTNode), ScanAllNodes("scanOp1"), buildInstruction)
 
-    val buildProbeTableMethod = MethodInvocation(operatorId = None,
+    val buildProbeTableMethod = MethodInvocation(operatorId = Set.empty,
                                                  symbol = JoinTableMethod(tableVarName, buildInstruction.tableType),
                                                  methodName = buildTableMethodName,
                                                  statements = Seq(buildWhileLoop))

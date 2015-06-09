@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen._
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 sealed trait BuildProbeTable extends Instruction {
 
@@ -55,7 +54,7 @@ case class BuildRecordingProbeTable(id:String, name: String, node: Variable, val
     generator.updateProbeTable(valueStructure, name, node.name, value)
   }
 
-  override protected def operatorId = Some(id)
+  override protected def operatorId = Set(id)
 
   private val fieldToVarName = valueSymbols.map {
     case (identifier, variable) => (context.namer.newVarName(), VariableData(identifier, variable,  variable.copy(name = context.namer.newVarName())))
@@ -77,7 +76,7 @@ case class BuildCountingProbeTable(id: String, name: String, node: Variable) ext
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
     generator.updateProbeTableCount(name, node.name)
 
-  override protected def operatorId = Some(id)
+  override protected def operatorId = Set(id)
 
   override val tableType = LongToCountTable
 

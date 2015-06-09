@@ -133,7 +133,7 @@ object LogicalPlanConverter {
       context.pushParent(this)
       val (Some(symbol), leftInstructions) = logicalPlan.lhs.get.asCodeGenPlan.produce(context)
       val opName = context.registerOperator(logicalPlan)
-      val lhsMethod = MethodInvocation(Some(opName), symbol, context.namer.newMethodName(), leftInstructions)
+      val lhsMethod = MethodInvocation(Set(opName), symbol, context.namer.newMethodName(), leftInstructions)
 
       context.pushParent(this)
       val (otherSymbol, rightInstructions) = logicalPlan.rhs.get.asCodeGenPlan.produce(context)
