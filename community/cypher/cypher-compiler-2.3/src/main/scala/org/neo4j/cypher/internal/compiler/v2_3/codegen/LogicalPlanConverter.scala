@@ -122,6 +122,9 @@ object LogicalPlanConverter {
 
   private implicit class NodeHashJoinCodeGen(val logicalPlan: NodeHashJoin) extends CodeGenPlan {
 
+    if (logicalPlan.nodes.size > 1)
+      throw new CantCompileQueryException("Joining on multiple nodes is not yet supported in compiled runtim")
+
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
       context.pushParent(this)
       val (Some(symbol), leftInstructions) = logicalPlan.lhs.get.asCodeGenPlan.produce(context)
