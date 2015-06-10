@@ -19,7 +19,16 @@
  */
 package org.neo4j.server.modules;
 
+import java.net.URI;
+import java.util.List;
+
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.rest.management.MonitorService;
+import org.neo4j.server.rest.management.console.ConsoleService;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
+
+import static org.neo4j.server.JAXRSHelper.listFrom;
 
 public class WebAdminModule implements ServerModule
 {
@@ -27,21 +36,43 @@ public class WebAdminModule implements ServerModule
     private static final String DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION = "webadmin-html";
 
     private final WebServer webServer;
+    private Config config;
 
-    public WebAdminModule( WebServer webServer )
+    public WebAdminModule( WebServer webServer, Config config )
     {
         this.webServer = webServer;
+        this.config = config;
     }
 
     @Override
 	public void start()
     {
-        webServer.addStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
+        if(config.get( ServerInternalSettings.webadmin_enabled ))
+        {
+            String serverMountPoint = managementApiUri().toString();
+            webServer.addStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
+            webServer.addJAXRSClasses( getClassNames(), serverMountPoint, null );
+        }
+    }
+
+    private List<String> getClassNames()
+    {
+        return listFrom(
+                MonitorService.class.getName(),
+                ConsoleService.class.getName() );
+    }
+
+    private URI managementApiUri( )
+    {
+        return config.get( ServerInternalSettings.management_api_path );
     }
 
     @Override
 	public void stop()
     {
-        webServer.removeStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
+        if(config.get( ServerInternalSettings.webadmin_enabled ))
+        {
+            webServer.removeStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
+        }
     }
 }

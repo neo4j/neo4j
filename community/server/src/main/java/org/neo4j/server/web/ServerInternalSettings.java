@@ -84,4 +84,6 @@ public class ServerInternalSettings
             PATH, File.separator + "etc" + File.separator + "neo" + File.separator + ServerInternalSettings.DB_TUNING_CONFIG_FILE_NAME );
 
     public static final Setting<String> legacy_db_mode = setting( "org.neo4j.server.database.mode", STRING, "SINGLE" );
+
+    public static final Setting<Boolean> webadmin_enabled = setting( "dbms.webadmin.enabled", BOOLEAN, TRUE );
 }

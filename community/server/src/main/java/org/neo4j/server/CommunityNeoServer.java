@@ -107,7 +107,7 @@ public class CommunityNeoServer extends AbstractNeoServer
                 new NDPModule( configurator.configuration(), getDependencyResolver() ),
                 new ManagementApiModule( webServer, configurator.configuration() ),
                 new ThirdPartyJAXRSModule( webServer, configurator.configuration(), logProvider, this ),
-                new WebAdminModule( webServer ),
+                new WebAdminModule( webServer, configurator.configuration() ),
                 new Neo4jBrowserModule( webServer ),
                 new AuthorizationModule( webServer, authManager, configurator.configuration(), logProvider ),
                 new SecurityRulesModule( webServer, configurator.configuration(), logProvider ) );

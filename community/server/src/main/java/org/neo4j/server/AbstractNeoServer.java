@@ -197,10 +197,13 @@ public abstract class AbstractNeoServer implements NeoServer
 
                 databaseActions = createDatabaseActions();
 
-                // TODO: RrdDb is not needed once we remove the old webadmin
-                rrdDbScheduler = new RoundRobinJobScheduler( logProvider );
-                rrdDbWrapper = new RrdFactory( configurator.configuration(), logProvider )
-                        .createRrdDbAndSampler( database, rrdDbScheduler );
+                if(getConfig().get( ServerInternalSettings.webadmin_enabled ))
+                {
+                    // TODO: RrdDb is not needed once we remove the old webadmin
+                    rrdDbScheduler = new RoundRobinJobScheduler( logProvider );
+                    rrdDbWrapper = new RrdFactory( configurator.configuration(), logProvider )
+                            .createRrdDbAndSampler( database, rrdDbScheduler );
+                }
 
                 transactionFacade = createTransactionalActions();
 
@@ -271,7 +274,8 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         return new DatabaseActions(
                 new LeaseManager( SYSTEM_CLOCK ),
-                configurator.configuration().get( ServerInternalSettings.script_sandboxing_enabled ), database.getGraph() );
+                configurator.configuration().get(
+                        ServerInternalSettings.script_sandboxing_enabled ), database.getGraph() );
     }
 
     private TransactionFacade createTransactionalActions()
@@ -299,8 +303,7 @@ public abstract class AbstractNeoServer implements NeoServer
         return new TransactionFacade(
                 new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
                 database.getGraph().getDependencyResolver().resolveDependency( QueryExecutionEngine.class ),
-                transactionRegistry,
-                logProvider
+                transactionRegistry, logProvider
         );
     }
 
@@ -683,7 +686,10 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( providerForSingleton( new ConfigWrappingConfiguration( getConfig() ), Configuration.class ) );
         singletons.add( providerForSingleton( getConfig(), Config.class ) );
 
-        singletons.add( new RrdDbProvider( rrdDbWrapper ) );
+        if(getConfig().get( ServerInternalSettings.webadmin_enabled ))
+        {
+            singletons.add( new RrdDbProvider( rrdDbWrapper ) );
+        }
 
         singletons.add( new WebServerProvider( getWebServer() ) );
 
