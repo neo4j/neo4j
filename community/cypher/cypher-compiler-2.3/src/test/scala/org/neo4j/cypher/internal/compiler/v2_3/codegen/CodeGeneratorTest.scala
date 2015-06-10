@@ -82,7 +82,6 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Map("a" -> bNode),
       Map("a" -> cNode)
     ))
-    println(compiled.executionPlanDescription())
   }
 
   test("hash join of all nodes scans") { // MATCH a RETURN a
