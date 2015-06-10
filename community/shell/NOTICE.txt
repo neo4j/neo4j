@@ -25,6 +25,6 @@ Full license texts are found in LICENSES.txt.
 Third-party licenses
 --------------------
 
-Apache Software License, Version 2.0
-  Apache ServiceMix Bundles: jline-0.9.94
+BSD License
+  JLine
 

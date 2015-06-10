@@ -23,10 +23,10 @@
 
   <properties>
     <sun.jta.version>1.1</sun.jta.version>
-    <jline.groupId>org.apache.servicemix.bundles</jline.groupId>
-    <jline.artifactId>org.apache.servicemix.bundles.jline</jline.artifactId>
-    <jline.version>0.9.94_1</jline.version>
-    <jline.main.version>0.9.94</jline.main.version>
+    <jline.groupId>jline</jline.groupId>
+    <jline.artifactId>jline</jline.artifactId>
+    <jline.version>2.12</jline.version>
+    <jline.main.version>2.12</jline.main.version>
     <bundle.namespace>org.neo4j.shell</bundle.namespace>
     <short-name>shell</short-name>
     <version-package>shell.impl</version-package>
