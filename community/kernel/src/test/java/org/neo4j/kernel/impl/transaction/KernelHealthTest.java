@@ -70,7 +70,7 @@ public class KernelHealthTest
         // THEN
         logProvider.assertAtLeastOnce(
                 inLog( KernelHealth.class ).error(
-                        is("setting TM not OK. Kernel has encountered some problem, please perform neccesary action (tx recovery/restart)" ),
+                        is("setting TM not OK. Kernel has encountered some problem, please perform necessary action (tx recovery/restart)" ),
                         sameInstance( exception )
                 )
         );
