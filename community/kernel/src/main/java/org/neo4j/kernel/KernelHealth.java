@@ -28,7 +28,7 @@ import static org.neo4j.helpers.Exceptions.withCause;
 public class KernelHealth
 {
     private static final String panicMessage = "Kernel has encountered some problem, "
-            + "please perform neccesary action (tx recovery/restart)";
+            + "please perform necessary action (tx recovery/restart)";
 
     // Keep that cozy name for legacy purposes
     private volatile boolean tmOk = true; // TODO rather skip volatile if possible here.
@@ -70,7 +70,7 @@ public class KernelHealth
             catch ( Exception e )
             {
                 throw new Error( panicMessage + ". An exception of type " + panicDisguise.getName() +
-                        " was requested to be thrown but that proved imposslble", e );
+                        " was requested to be thrown but that proved impossible", e );
             }
             throw exception;
         }
