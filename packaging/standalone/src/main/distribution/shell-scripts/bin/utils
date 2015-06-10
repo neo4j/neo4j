@@ -181,7 +181,7 @@ detectos() {
       # HP-UX needs the XPG4 version of ps (for -o args)
       DIST_OS="hpux"
       UNIX95=""
-      export UNIX95   
+      export UNIX95
       ;;
     'darwin')
       DIST_OS="macosx"
@@ -241,9 +241,25 @@ stopit() {
       checkstatus
       x=$[$x+1]
     done
-	  [  $x -eq $TIMEOUT ] && ( echo " force shutdown" ;  kill -9 $NEO4J_PID >/dev/null ) || echo " done"
+	  [ $x -eq $TIMEOUT ] && killit $NEO4J_PID $TIMEOUT || echo " done"
 	  [ -e "$PID_FILE" ] && rm  "$PID_FILE"
   fi
+}
+
+killit() {
+   NEO4J_PID=$1
+   TIMEOUT=$2
+   echo " force shutdown"
+
+   x=0
+   while [ $x -lt $TIMEOUT ] && [ "$NEO4J_PID" != "" ]  ; do
+     kill -9 $NEO4J_PID >/dev/null
+     printf "."
+     sleep 1
+     checkstatus
+     x=$[$x+1]
+   done
+     [ $x -eq $TIMEOUT ] && echo " failed" || echo " done"
 }
 
 # Creates a user on the system
@@ -266,12 +282,12 @@ remove_user() {
     else
       DELETE_CMD='/usr/sbin/userdel'
     fi
-    
+
     case $yn in
       [Yy]* ) $DELETE_CMD $wrapper_user
               modify_user_config "" "true"
         ;;
-      * ) echo "OK, we'll let that user live, for now." 
+      * ) echo "OK, we'll let that user live, for now."
         ;;
     esac
   else
