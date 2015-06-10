@@ -22,8 +22,8 @@ package org.neo4j.shell.impl;
 import java.rmi.RemoteException;
 import java.util.List;
 
-import jline.Completor;
-import jline.SimpleCompletor;
+import jline.console.completer.Completer;
+import jline.console.completer.StringsCompleter;
 
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
@@ -34,25 +34,25 @@ import org.neo4j.shell.TabCompletion;
  * This class is instantiated by reflection (in {@link JLineConsole#newConsoleOrNullIfNotFound}) in order to ensure
  * that there is no hard dependency on jLine and the console can run in degraded form without it.
  */
-class ShellTabCompletor implements Completor
+class ShellTabCompleter implements Completer
 {
     private final ShellClient client;
-    
-    private long timeWhenCached;
-    private Completor appNameCompletor;
 
-    public ShellTabCompletor( ShellClient client )
+    private long timeWhenCached;
+    private Completer appNameCompleter;
+
+    public ShellTabCompleter( ShellClient client )
     {
         this.client = client;
     }
-    
+
     public int complete( String buffer, int cursor, List candidates )
     {
         if ( buffer == null || buffer.length() == 0 )
         {
             return cursor;
         }
-        
+
         try
         {
             if ( buffer.contains( " " ) )
@@ -65,7 +65,7 @@ class ShellTabCompletor implements Completor
             else
             {
                 // Complete the app name
-                return getAppNameCompletor().complete( buffer, cursor, candidates );
+                return getAppNameCompleter().complete( buffer, cursor, candidates );
             }
         }
         catch ( RemoteException e )
@@ -80,14 +80,14 @@ class ShellTabCompletor implements Completor
         }
         return cursor;
     }
-    
-    private Completor getAppNameCompletor() throws RemoteException
+
+    private Completer getAppNameCompleter() throws RemoteException
     {
         if ( timeWhenCached != client.timeForMostRecentConnection() )
         {
             timeWhenCached = client.timeForMostRecentConnection();
-            appNameCompletor = new SimpleCompletor( client.getServer().getAllAvailableCommands() );
+            appNameCompleter = new StringsCompleter( client.getServer().getAllAvailableCommands() );
         }
-        return this.appNameCompletor;
+        return this.appNameCompleter;
     }
 }

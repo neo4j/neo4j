@@ -28,7 +28,6 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Configuration
   Apache Commons Lang
-  Apache ServiceMix Bundles: jline-0.9.94
   ColorBrewer
   Commons BeanUtils
   Commons Digester
@@ -68,6 +67,7 @@ BSD License
   D3.js
   Easing Equations (in easing.js)
   Janino
+  JLine
   JQuery Easing Plugin
   Scala Compiler
   scala-parser-combinators

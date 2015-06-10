@@ -92,7 +92,7 @@
       <useStrictFiltering>true</useStrictFiltering>
       <includes>
         <include>org.neo4j:*</include>
-        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</include>
+        <include>jline:jline</include>
         <include>org.apache.lucene:lucene-core</include>
         <include>io.netty:netty</include>
         <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
@@ -116,7 +116,7 @@
       <excludes>
         <exclude>org.neo4j:*</exclude>
         <exclude>org.neo4j.doc:*</exclude>
-        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</exclude>
+        <exclude>jline:jline</exclude>
         <exclude>org.apache.lucene:lucene-core</exclude>
         <exclude>io.netty:netty</exclude>
         <exclude>org.scala-lang:scala-library</exclude>

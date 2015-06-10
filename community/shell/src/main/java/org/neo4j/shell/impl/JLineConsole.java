@@ -20,7 +20,6 @@
 package org.neo4j.shell.impl;
 
 import java.io.File;
-import java.nio.file.Paths;
 
 import org.neo4j.shell.Console;
 import org.neo4j.shell.ShellClient;
@@ -32,30 +31,30 @@ import org.neo4j.shell.ShellClient;
 public class JLineConsole implements Console
 {
 	private final Object consoleReader;
-	
+
 	static JLineConsole newConsoleOrNullIfNotFound( ShellClient client )
 	{
 		try
 		{
 			Object consoleReader =
-				Class.forName( "jline.ConsoleReader" ).newInstance();
+				Class.forName( "jline.console.ConsoleReader" ).newInstance();
 			consoleReader.getClass().getMethod( "setBellEnabled",
 				Boolean.TYPE ).invoke( consoleReader, false );
 			consoleReader.getClass().getMethod( "setBellEnabled", Boolean.TYPE ).invoke(
 			        consoleReader, false );
-            consoleReader.getClass().getMethod( "setUseHistory", Boolean.TYPE ).invoke(
+            consoleReader.getClass().getMethod( "setHistoryEnabled", Boolean.TYPE ).invoke(
                     consoleReader, true );
 
-	        Object completor = Class.forName( JLineConsole.class.getPackage().getName() + "." +
-	                "ShellTabCompletor" ).getConstructor( ShellClient.class ).newInstance( client );
-            Class<?> completorClass = Class.forName( "jline.Completor" );
-	        consoleReader.getClass().getMethod( "addCompletor",
-	            completorClass ).invoke( consoleReader, completor );
-	        
-            Class<?> historyClass = Class.forName( "jline.History" );
-            Object history = historyClass.newInstance();
-            history.getClass().getMethod( "setHistoryFile", File.class ).invoke( history,
-                    Paths.get( System.getProperty( "user.home" ), ".neo4j_shell_history" ).toFile() );
+	        Object completer = Class.forName( JLineConsole.class.getPackage().getName() + "." +
+	                "ShellTabCompleter" ).getConstructor( ShellClient.class ).newInstance( client );
+            Class<?> completerClass = Class.forName( "jline.console.completer.Completer" );
+	        consoleReader.getClass().getMethod( "addCompleter",
+	            completerClass ).invoke( consoleReader, completer );
+
+            Class<?> historyClass = Class.forName( "jline.console.history.History" );
+	        Object history = Class.forName( "jline.console.history.FileHistory" ).getConstructor(
+	                File.class ).newInstance( new File( System.getProperty(
+	                        "user.home" ), ".neo4j_shell_history" ) );
             consoleReader.getClass().getMethod( "setHistory", historyClass ).invoke( consoleReader, history );
 
 			return new JLineConsole( consoleReader, client );
@@ -72,25 +71,30 @@ public class JLineConsole implements Console
             return null;
         }
     }
-	
+
 	private JLineConsole( Object consoleReader, ShellClient client )
 	{
 		this.consoleReader = consoleReader;
 	}
-	
+
 	@Override
     public void format( String format, Object... args )
 	{
 		System.out.print( format );
 	}
-	
+
 	@Override
     public String readLine( String prompt )
 	{
 		try
 		{
-		    consoleReader.getClass().getMethod( "setDefaultPrompt", String.class ).invoke(
+		    consoleReader.getClass().getMethod( "setPrompt", String.class ).invoke(
 		            consoleReader, prompt );
+		    Class<?> fileHistoryClass = Class.forName( "jline.console.history.FileHistory" );
+		    Object history = consoleReader.getClass().getMethod( "getHistory" ).invoke(
+		            consoleReader );
+		    Class.forName( "jline.console.history.FileHistory" ).getMethod( "flush" ).invoke(
+		            history );
 			return ( String ) consoleReader.getClass().getMethod( "readLine" ).
 				invoke( consoleReader );
 		}

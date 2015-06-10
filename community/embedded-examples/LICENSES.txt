@@ -4,7 +4,6 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
   Apache Commons Lang
-  Apache ServiceMix Bundles: jline-0.9.94
   ConcurrentLinkedHashMap
   Lucene Core
   opencsv
@@ -260,6 +259,7 @@ SUCH DAMAGE.
 ------------------------------------------------------------------------------
 BSD License
   ASM Core
+  JLine
   Scala Compiler
   scala-parser-combinators
 ------------------------------------------------------------------------------

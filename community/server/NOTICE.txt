@@ -28,7 +28,6 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Configuration
   Apache Commons Lang
-  Apache ServiceMix Bundles: jline-0.9.94
   Commons BeanUtils
   Commons Digester
   Commons IO
@@ -60,6 +59,7 @@ BSD License
   ASM Core
   Commons Compiler
   Janino
+  JLine
   Scala Compiler
   scala-parser-combinators
 

@@ -27,7 +27,6 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
-  Apache ServiceMix Bundles: jline-0.9.94
   ConcurrentLinkedHashMap
   Lucene Core
   opencsv
@@ -39,6 +38,7 @@ BSD - Scala License
 
 BSD License
   ASM Core
+  JLine
   Scala Compiler
   scala-parser-combinators
 
