@@ -174,8 +174,9 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             @Override
             protected void triggered( Void event )
             {
-                stringLogger.info( format( "Waiting for all transactions to close...%n  committed: %s%n  closed:    %s",
-                        lastCommittedTx, lastClosedTx ) );
+                stringLogger.info( format(
+                        "Waiting for all transactions to close...%n committed:  %s%n  committing: %s%n  closed:     %s",
+                        lastCommittedTx, lastCommittingTxField, lastClosedTx ) );
             }
         };
         counts.setInitializer( new DataInitializer<CountsAccessor.Updater>()
