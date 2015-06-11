@@ -40,14 +40,6 @@ public class SharedServerTestBase
         return server;
     }
 
-    protected final void cleanDatabase()
-    {
-        if ( !useExternal )
-        {
-            ServerHelper.cleanTheDatabase( server );
-        }
-    }
-
     private static NeoServer server;
 
 	@Rule
@@ -64,6 +56,7 @@ public class SharedServerTestBase
                 public Void call() throws Exception
                 {
                     server = ServerHolder.allocate();
+                    ServerHelper.cleanTheDatabase( server );
                     return null;
                 }
             } );

@@ -19,20 +19,19 @@
  */
 package org.neo4j.server;
 
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Map;
 
-import org.junit.Ignore;
-import org.junit.Test;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import static org.junit.Assert.assertEquals;
+
 public class DatabaseTuningDocIT extends ExclusiveServerTestBase
 {
-    @Ignore("Relies on internal config, which is bad")
     @Test
     public void shouldLoadAKnownGoodPropertyFile() throws IOException
     {
@@ -41,23 +40,16 @@ public class DatabaseTuningDocIT extends ExclusiveServerTestBase
                 .withDefaultDatabaseTuning()
                 .build();
         server.start();
-        Map<Object, Object> params = null; // TODO This relies on internal stuff,
-        // which is no good: server.getDatabase().graph.getConfig().getParams();
+
+        Map<String,String> params = server.configurator.getDatabaseTuningProperties();
 
 
-        assertTrue( propertyAndValuePresentIn( "neostore.nodestore.db.mapped_memory", "25M", params ) );
-        assertTrue( propertyAndValuePresentIn( "neostore.relationshipstore.db.mapped_memory", "50M", params ) );
-        assertTrue( propertyAndValuePresentIn( "neostore.propertystore.db.mapped_memory", "90M", params ) );
-        assertTrue( propertyAndValuePresentIn( "neostore.propertystore.db.strings.mapped_memory", "130M", params ) );
-        assertTrue( propertyAndValuePresentIn( "neostore.propertystore.db.arrays.mapped_memory", "130M", params ) );
+        for ( Map.Entry<String, String> entry : CommunityServerBuilder.good_tuning_file_properties.entrySet() )
+        {
+            assertEquals( entry.getValue(), params.get( entry.getKey() ) );
+        }
 
         server.stop();
-    }
-
-    private boolean propertyAndValuePresentIn( String name, String value, Map<Object, Object> params )
-    {
-        Object paramValue = params.get( name );
-        return paramValue != null && paramValue.toString().equals( value );
     }
 
     @Test
