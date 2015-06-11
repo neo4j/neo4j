@@ -28,6 +28,6 @@ case class PropertyAsPredicate(prop: CodeGenExpression) extends CodeGenExpressio
   }
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E = {
-    structure.coerceToPredicate(prop.generateExpression(structure))
+    structure.coerceToBoolean(prop.generateExpression(structure))
   }
 }

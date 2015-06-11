@@ -283,9 +283,15 @@ object LogicalPlanConverter {
         //name of flag to check if results were yielded
         val yieldFlag = context.namer.newVarName()
 
-        //wrap inner instructions with predicates
-        val instructionWithPredicates = optionalExpand.predicates
-          .reverseMap(ExpressionConverter.createPredicate(_)(context)).foldLeft[Instruction](CheckingInstruction(action, yieldFlag)) {
+        val predicatesAsCodeGenExpressions =
+          optionalExpand.
+            predicates.
+            // We reverse the order of the predicates so the least selective comes first in line
+            reverseMap(ExpressionConverter.createPredicate(_)(context))
+
+        //wrap inner instructions with predicates -
+        // the least selective predicate gets wrapped in an If, which is then wrapped in an If, until we reach the action
+        val instructionWithPredicates = predicatesAsCodeGenExpressions.foldLeft[Instruction](CheckingInstruction(action, yieldFlag)) {
           case (acc, predicate) => If(predicate, acc)
         }
 

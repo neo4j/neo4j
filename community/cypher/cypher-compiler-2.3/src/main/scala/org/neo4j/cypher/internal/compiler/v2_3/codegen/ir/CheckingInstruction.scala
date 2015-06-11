@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
 /**
- * Generates instruction for for updating a provided flag before creating generating the inner instruction
+ * Generates instruction for for updating a provided flag before creating the inner instruction
  */
 case class CheckingInstruction(inner: Instruction, yieldedFlagVar: String)
   extends Instruction {

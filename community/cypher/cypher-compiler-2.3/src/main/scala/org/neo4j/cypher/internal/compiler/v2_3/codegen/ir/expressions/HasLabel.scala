@@ -52,7 +52,7 @@ case class HasLabelPredicate(nodeVariable: Variable, labelVariable: String, labe
 
     structure.incrementDbHits()
     if (nodeVariable.nullable)
-      structure.coerceToPredicate(
+      structure.coerceToBoolean(
         structure.nullable(nodeVariable.name, nodeVariable.cypherType,
                          structure.hasLabel(nodeVariable.name, labelVariable, localName)))
     else

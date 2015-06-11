@@ -133,7 +133,7 @@ trait MethodStructure[E] {
   def relationshipGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
   def relationshipGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
   def lookupPropertyKey(propName: String, propVar: String)
-  def coerceToPredicate(propertyExpression: E): E
+  def coerceToBoolean(propertyExpression: E): E
 
   def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
 
@@ -708,7 +708,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     }
   }
 
-  override def coerceToPredicate(propertyExpression: Expression): Expression =
+  override def coerceToBoolean(propertyExpression: Expression): Expression =
     Expression.invoke(Methods.coerceToPredicate, propertyExpression)
 
   override def newTableValue(targetVar: String, structure: Map[String, CypherType]) = {
