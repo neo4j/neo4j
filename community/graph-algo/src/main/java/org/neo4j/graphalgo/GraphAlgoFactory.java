@@ -23,9 +23,11 @@ import org.neo4j.graphalgo.impl.path.AStar;
 import org.neo4j.graphalgo.impl.path.AllPaths;
 import org.neo4j.graphalgo.impl.path.AllSimplePaths;
 import org.neo4j.graphalgo.impl.path.Dijkstra;
+import org.neo4j.graphalgo.impl.path.DijkstraBidirectional;
 import org.neo4j.graphalgo.impl.path.ExactDepthPathFinder;
 import org.neo4j.graphalgo.impl.path.ShortestPath;
 import org.neo4j.graphalgo.impl.util.DoubleEvaluator;
+import org.neo4j.graphalgo.impl.util.PathInterestFactory;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
@@ -33,6 +35,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.InitialStateFactory;
+import org.neo4j.kernel.impl.util.NoneStrictMath;
+
+import static org.neo4j.kernel.StandardExpander.toPathExpander;
 
 /**
  * Static factory methods for the recommended implementations of common
@@ -288,7 +293,7 @@ public abstract class GraphAlgoFactory
     public static PathFinder<WeightedPath> dijkstra( RelationshipExpander expander,
             CostEvaluator<Double> costEvaluator )
     {
-        return new Dijkstra( expander, costEvaluator );
+        return new DijkstraBidirectional( toPathExpander( expander ), costEvaluator );
     }
 
     /**
@@ -298,6 +303,11 @@ public abstract class GraphAlgoFactory
      * the cost is returned from {@code costEvaluator}. These returned paths
      * cannot contain loops (i.e. a node cannot occur more than once in any
      * returned path).
+     *
+     * Dijkstra assumes none negative costs on all considered relationships.
+     * If this is not the case behaviour is undefined. Do not use Dijkstra
+     * with negative weights or use a {@link CostEvaluator} that handles
+     * negative weights.
      *
      * See http://en.wikipedia.org/wiki/Dijkstra%27s_algorithm for more
      * information.
@@ -312,11 +322,13 @@ public abstract class GraphAlgoFactory
     public static PathFinder<WeightedPath> dijkstra( PathExpander expander,
             CostEvaluator<Double> costEvaluator )
     {
-        return new Dijkstra( expander, costEvaluator );
+        return new DijkstraBidirectional( expander, costEvaluator );
     }
 
     /**
-     * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
+     * @deprecated In favor for {@link #dijkstra(PathExpander, String)}
+     *
+     * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation.
      *
      * Uses a cost evaluator which uses the supplied property key to
      * represent the cost (values of type <bold>double</bold>).
@@ -335,7 +347,7 @@ public abstract class GraphAlgoFactory
     }
 
     /**
-     * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
+     * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation.
      *
      * Uses a cost evaluator which uses the supplied property key to
      * represent the cost (values of type <bold>double</bold>).
@@ -354,7 +366,54 @@ public abstract class GraphAlgoFactory
     }
 
     /**
-     * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
+     * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation
+     *
+     * Instead of finding all shortest paths with equal cost, find the top {@param numberOfWantedPaths} paths.
+     * This is usually slower than finding all shortest paths with equal cost.
+     *
+     * Uses a cost evaluator which uses the supplied property key to
+     * represent the cost (values of type <bold>double</bold>).
+     *
+     * @param expander the {@link PathExpander} to use for expanding
+     * {@link Relationship}s for each {@link Path}.
+     * @param relationshipPropertyRepresentingCost the property to represent cost
+     * on each relationship the algorithm traverses.
+     * @param numberOfWantedPaths number of paths to find.
+     * @return an algorithm which finds the cheapest path between two nodes
+     * using the Dijkstra algorithm.
+     */
+    public static PathFinder<WeightedPath> dijkstra( PathExpander expander,
+            String relationshipPropertyRepresentingCost, int numberOfWantedPaths )
+    {
+        return dijkstra( expander, new DoubleEvaluator( relationshipPropertyRepresentingCost ), numberOfWantedPaths );
+    }
+
+    /**
+     * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation
+     *
+     * Instead of finding all shortest paths with equal cost, find the top {@param numberOfWantedPaths} paths.
+     * This is usually slower than finding all shortest paths with equal cost.
+     *
+     * @param expander the {@link PathExpander} to use for expanding
+     * {@link Relationship}s for each {@link Path}.
+     * @param costEvaluator evaluator that can return the cost represented
+     * by each relationship the algorithm traverses.
+     * @param numberOfWantedPaths number of paths to find.
+     * @return an algorithm which finds the cheapest path between two nodes
+     * using the Dijkstra algorithm.
+     */
+    public static PathFinder<WeightedPath> dijkstra( PathExpander expander,
+            CostEvaluator<Double> costEvaluator, int numberOfWantedPaths )
+    {
+        return new Dijkstra( expander, costEvaluator, NoneStrictMath.EPSILON,
+                PathInterestFactory.numberOfShortest( NoneStrictMath.EPSILON, numberOfWantedPaths ) );
+    }
+
+    /**
+     * @deprecated Dijkstra should not be used with state on {@link PathExpander}
+     * Use {@link #dijkstra(PathExpander, CostEvaluator)}.
+     *
+     * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation.
      *
      * Uses a cost evaluator which uses the supplied property key to
      * represent the cost (values of type <bold>double</bold>).
@@ -373,7 +432,10 @@ public abstract class GraphAlgoFactory
     }
 
     /**
-     * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
+     * @deprecated Dijkstra should not be used with state on {@link PathExpander}
+     * See {@link #dijkstra(PathExpander, CostEvaluator)}.
+     *
+     * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation.
      *
      * Uses a cost evaluator which uses the supplied property key to
      * represent the cost (values of type <bold>double</bold>).
@@ -392,7 +454,10 @@ public abstract class GraphAlgoFactory
     }
 
     /**
+     * @deprecated Dijkstra should not be used with state on {@link PathExpander}
      * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
+     *
+     * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation.
      *
      * Uses a cost evaluator which uses the supplied property key to
      * represent the cost (values of type <bold>double</bold>).
@@ -412,7 +477,10 @@ public abstract class GraphAlgoFactory
     }
 
     /**
+     * @deprecated Dijkstra should not be used with state on {@link PathExpander}
      * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
+     *
+     * See {@link #dijkstra(PathExpander, CostEvaluator)} for documentation.
      *
      * Uses a cost evaluator which uses the supplied property key to
      * represent the cost (values of type <bold>double</bold>).

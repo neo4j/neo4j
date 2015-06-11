@@ -749,7 +749,7 @@ public class Dijkstra<CostType> implements
      * This sets the maximum depth in the form of a maximum number of nodes to
      * scan.
      *
-     * @param maxRelationShipsToTraverse
+     * @param maxNodesToTraverse
      */
     public void limitMaxNodesToTraverse( long maxNodesToTraverse )
     {
@@ -798,7 +798,7 @@ public class Dijkstra<CostType> implements
      * Set the evaluator for pruning the paths when the maximum cost is
      * exceeded.
      *
-     * @param evaluator The evaluator for
+     * @param maxCost
      */
     public void limitMaxCostToTraverse( CostType maxCost )
     {

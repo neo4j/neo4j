@@ -17,32 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphalgo.impl.util;
+package org.neo4j.kernel.impl.util;
 
-import org.neo4j.graphalgo.CostEvaluator;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Relationship;
-
-public class IntegerEvaluator implements CostEvaluator<Integer>
+public class MutableInteger
 {
-    private String costPropertyName;
+    public int value;
 
-    public IntegerEvaluator( String costPropertyName)
+    public MutableInteger( int initialValue )
     {
-        super();
-        this.costPropertyName = costPropertyName;
-    }
-
-    public Integer getCost( Relationship relationship, Direction direction )
-    {
-        Object costProp = relationship.getProperty( costPropertyName );
-        if ( costProp instanceof Number )
-        {
-            return ((Number) costProp).intValue();
-        }
-        else
-        {
-            return Integer.parseInt( costProp.toString() );
-        }
+        this.value = initialValue;
     }
 }

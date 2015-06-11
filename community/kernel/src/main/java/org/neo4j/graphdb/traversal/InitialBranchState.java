@@ -43,6 +43,20 @@ public interface InitialBranchState<STATE> extends InitialStateFactory<STATE>
         }
     };
 
+    InitialBranchState<Double> DOUBLE_ZERO = new InitialBranchState()
+    {
+        @Override
+        public Number initialState( Path path )
+        {
+            return 0d;
+        }
+
+        public InitialBranchState reverse()
+        {
+            return this;
+        }
+    };
+
     /**
      * Creates a version of this state factory which produces reversed initial state,
      * used in bidirectional traversals.

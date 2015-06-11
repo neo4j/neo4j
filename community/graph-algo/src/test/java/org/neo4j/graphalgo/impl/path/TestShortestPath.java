@@ -31,7 +31,7 @@ import java.util.Set;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.graphalgo.PathFinder;
-import org.neo4j.graphalgo.impl.path.ShortestPath.MutableInteger;
+import org.neo4j.kernel.impl.util.MutableInteger;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
