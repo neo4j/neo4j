@@ -20,16 +20,6 @@
 package org.neo4j.logging;
 
 import org.junit.Test;
-import org.neo4j.adversaries.Adversary;
-import org.neo4j.adversaries.RandomAdversary;
-import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
-import org.neo4j.adversaries.fs.AdversarialOutputStream;
-import org.neo4j.function.LongSupplier;
-import org.neo4j.function.Supplier;
-import org.neo4j.function.Suppliers;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.RotatingFileOutputStreamSupplier.RotationListener;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -37,16 +27,32 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.adversaries.Adversary;
+import org.neo4j.adversaries.RandomAdversary;
+import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
+import org.neo4j.adversaries.fs.AdversarialOutputStream;
+import org.neo4j.function.LongSupplier;
+import org.neo4j.function.Supplier;
+import org.neo4j.function.Suppliers;
+import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.logging.RotatingFileOutputStreamSupplier.RotationListener;
+
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -333,6 +339,46 @@ public class RotatingFileOutputStreamSupplierTest
 
         assertStreamClosed( outputStream );
         assertStreamClosed( outputStream2 );
+    }
+
+    @Test
+    public void shouldCloseAllStreamsDespiteError() throws Exception
+    {
+        final List<OutputStream> mockStreams = new ArrayList<>();
+        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( fileSystem )
+        {
+            @Override
+            public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
+            {
+                final OutputStream stream = spy( super.openAsOutputStream( fileName, append ) );
+                mockStreams.add( stream );
+                return stream;
+            }
+        };
+
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fs, logFile, 10, 0, 10, DIRECT_EXECUTOR );
+        OutputStream outputStream = supplier.get();
+        assertThat( outputStream, sameInstance( mockStreams.get( 0 ) ) );
+
+        write( outputStream, "A string longer than 10 bytes" );
+        OutputStream outputStream2 = supplier.get();
+        assertThat( outputStream2, sameInstance( mockStreams.get( 1 ) ) );
+
+        IOException exception1 = new IOException( "test exception" );
+        doThrow( exception1 ).when( outputStream ).close();
+
+        IOException exception2 = new IOException( "test exception" );
+        doThrow( exception2 ).when( outputStream2 ).close();
+
+        try
+        {
+            supplier.close();
+        }
+        catch ( IOException e )
+        {
+            assertThat( e, sameInstance( exception2 ) );
+        }
+        verify( outputStream ).close();
     }
 
     @Test

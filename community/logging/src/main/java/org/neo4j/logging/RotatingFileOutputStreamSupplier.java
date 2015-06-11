@@ -154,15 +154,22 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
         synchronized (outRef)
         {
             closed.set( true );
-            outRef.get().close();
             for ( WeakReference<OutputStream> archivedStream : archivedStreams )
             {
                 OutputStream outputStream = archivedStream.get();
                 if ( outputStream != null )
                 {
-                    outputStream.close();
+                    try
+                    {
+                        outputStream.close();
+                    }
+                    catch ( Exception e )
+                    {
+                        // ignore
+                    }
                 }
             }
+            outRef.get().close();
         }
     }
 
