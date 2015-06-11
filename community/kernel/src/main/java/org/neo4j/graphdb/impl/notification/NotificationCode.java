@@ -39,38 +39,59 @@ public enum NotificationCode
                     "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH" ),
     LEGACY_PLANNER( SeverityLevel.WARNING,
                     Status.Statement.DeprecationWarning,
-                    "Using PLANNER for switching between planners has been deprecated, please use CYPHER planner=[rule,cost] instead"),
+                    "Using PLANNER for switching between planners has been deprecated, please use CYPHER planner=[rule,cost] instead" ),
     PLANNER_UNSUPPORTED( SeverityLevel.WARNING,
                     Status.Statement.PlannerUnsupportedWarning,
-                    "Using COST planner is unsupported for this query, please use RULE planner instead"),
+                    "Using COST planner is unsupported for this query, please use RULE planner instead" ),
     RUNTIME_UNSUPPORTED( SeverityLevel.WARNING,
                     Status.Statement.RuntimeUnsupportedWarning,
-                    "Using COMPILED runtime is unsupported for this query, please use interpreted runtime instead"),
+                    "Using COMPILED runtime is unsupported for this query, please use interpreted runtime instead" ),
+    INDEX_HINT_UNFULFILLABLE( SeverityLevel.WARNING,
+                    Status.Schema.NoSuchIndex,
+                    "The hinted index does not exist, please check the schema" ),
     LENGTH_ON_NON_PATH( SeverityLevel.WARNING,
                     Status.Statement.DeprecationWarning,
-                    "Using 'length' on anything that is not a path is deprecated, please use 'size' instead");
+                    "Using 'length' on anything that is not a path is deprecated, please use 'size' instead" );
     private final Status status;
     private final String description;
     private final SeverityLevel severity;
-    NotificationCode(SeverityLevel severity, Status status, String description)
+
+    NotificationCode( SeverityLevel severity, Status status, String description )
     {
         this.severity = severity;
         this.status = status;
         this.description = description;
     }
 
-    public Notification notification( InputPosition position )
+    // TODO: Move construction of Notifications to a factory with explicit methods per type of notification
+    public Notification notification( InputPosition position, NotificationDetail... details )
     {
-        return new Notification( position );
+        return new Notification( position, details );
     }
 
     private final class Notification implements org.neo4j.graphdb.Notification
     {
         private final InputPosition position;
+        private final String detailedDescription;
 
-        public Notification( InputPosition position )
+        public Notification( InputPosition position, NotificationDetail... details )
         {
             this.position = position;
+
+            StringBuilder builder = new StringBuilder( description.length() );
+            builder.append( description );
+            builder.append( ' ' );
+            builder.append( '(' );
+            String comma = "";
+            for ( NotificationDetail detail : details )
+            {
+                builder.append( comma );
+                builder.append( detail );
+                comma = ", ";
+            }
+            builder.append( ')' );
+
+            this.detailedDescription = builder.toString();
         }
 
         public String getCode()
@@ -85,7 +106,7 @@ public enum NotificationCode
 
         public String getDescription()
         {
-            return description;
+            return detailedDescription;
         }
 
         public InputPosition getPosition()

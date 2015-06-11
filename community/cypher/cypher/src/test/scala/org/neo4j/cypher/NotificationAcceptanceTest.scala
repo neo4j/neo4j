@@ -20,8 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
-import org.neo4j.cypher.internal.compiler.v2_3.notification.{RuntimeUnsupportedNotification, PlannerUnsupportedNotification, LengthOnNonPathNotification, CartesianProductNotification}
-
+import org.neo4j.cypher.internal.compiler.v2_3.notification._
 
 class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -101,5 +100,24 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("warn when requesting runtime=compiled on an unsupported query") {
     val result = innerExecute("EXPLAIN CYPHER runtime=compiled MATCH (a)-->(b), (c)-->(d) RETURN *")
     result.notifications should contain(RuntimeUnsupportedNotification)
+  }
+
+  test("warn once when a single index hint cannot be fulfilled") {
+    val result = innerExecute("EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
+    result.notifications.toSet should equal(Set(IndexHintUnfulfillableNotification("Person", "name")))
+  }
+
+  test("warn for each unfulfillable index hint") {
+    val result = innerExecute(
+      """EXPLAIN MATCH (n:Person), (m:Party), (k:Animal)
+        |USING INDEX n:Person(name)
+        |USING INDEX m:Party(city)
+        |USING INDEX k:Animal(species)
+        |WHERE n.name = 'John' AND m.city = 'Reykjavik' AND k.species = 'Sloth'
+        |RETURN n""".stripMargin)
+
+    result.notifications should contain(IndexHintUnfulfillableNotification("Person", "name"))
+    result.notifications should contain(IndexHintUnfulfillableNotification("Party", "city"))
+    result.notifications should contain(IndexHintUnfulfillableNotification("Animal", "species"))
   }
 }

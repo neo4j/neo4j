@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutablePlanBuil
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.closing
 import org.neo4j.cypher.internal.compiler.v2_3.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.{RewriterStep, ApplyRewriter, RewriterCondition, RewriterStepSequencer}
@@ -43,7 +43,8 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           rewriterSequencer: (String) => RewriterStepSequencer,
                                           semanticChecker: SemanticChecker,
                                           plannerName: CostBasedPlannerName,
-                                          runtimeBuilder: RuntimeBuilder)
+                                          runtimeBuilder: RuntimeBuilder,
+                                          useErrorsOverWarnings: Boolean)
   extends ExecutablePlanBuilder {
 
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer) = {
@@ -64,7 +65,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     statement match {
       case (ast: Query, rewrittenSemanticTable) =>
         val (logicalPlan, pipeBuildContext) = closing(tracer.beginPhase(LOGICAL_PLANNING)) {
-          produceLogicalPlan(ast, rewrittenSemanticTable)(planContext)
+          produceLogicalPlan(ast, rewrittenSemanticTable)(planContext, inputQuery.notificationLogger)
         }
         runtimeBuilder(logicalPlan, pipeBuildContext, planContext, tracer, rewrittenSemanticTable, planBuilderMonitor,
                       plannerName, inputQuery)
@@ -74,13 +75,13 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
   }
 
   def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)
-                        (planContext: PlanContext): (LogicalPlan, PipeExecutionBuilderContext) = {
+                        (planContext: PlanContext,  notificationLogger: InternalNotificationLogger): (LogicalPlan, PipeExecutionBuilderContext) = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
     val unionQuery = ast.asUnionQuery
 
     val metrics = metricsFactory.newMetrics(planContext.statistics)
     val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-    val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, semanticTable, queryGraphSolver)
+    val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, semanticTable, queryGraphSolver, notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings)
     val plan = queryPlanner.plan(unionQuery)(context)
 
     val pipeBuildContext = PipeExecutionBuilderContext(metrics.cardinality, semanticTable, plannerName)

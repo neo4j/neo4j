@@ -71,6 +71,8 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def addHints(addedHints: GenTraversableOnce[Hint]): QueryGraph = copy(hints = hints ++ addedHints)
 
+  def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]): QueryGraph = copy(hints = hints -- hintsToIgnore)
+
   def withoutArguments(): QueryGraph = withArgumentIds(Set.empty)
   def withArgumentIds(newArgumentIds: Set[IdName]): QueryGraph =
     copy(argumentIds = newArgumentIds)

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify, when}
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{ASTAnnotationMap, Expression}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{Hint, UsingIndexHint, ASTAnnotationMap, Expression}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LazyMode, LogicalPlan, ProduceResult, Projection}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
@@ -87,6 +87,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(plannerQuery.horizon).thenReturn(RegularQueryProjection())
     when(plannerQuery.lastQueryHorizon).thenReturn(RegularQueryProjection())
     when(plannerQuery.tail).thenReturn(None)
+    when(plannerQuery.allHints).thenReturn(Set[Hint]())
 
     val lp = {
       val plan = mock[Projection]

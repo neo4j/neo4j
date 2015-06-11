@@ -17,14 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
+package org.neo4j.graphdb.impl.notification;
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
+import org.junit.Test;
 
-case class LeafPlannerList(leafPlanners: LeafPlanner*) {
-  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan )(implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
-    val logicalPlans = leafPlanners.flatMap(_(qg)).map(f(_,qg))
-    logicalPlans.groupBy(_.availableSymbols).values
-  }
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+
+public class NotificationDetailTest
+{
+    @Test
+    public void shouldConstructIndexDetails()
+    {
+        NotificationDetail detail = NotificationDetail.Factory.index( "hinted index", "Person", "name" );
+
+        assertThat( detail.name(), equalTo( "hinted index" ) );
+        assertThat( detail.value(), equalTo( "index on :Person(name)" ) );
+        assertThat( detail.toString(), equalTo( "hinted index is index on :Person(name)" ) );
+    }
 }
