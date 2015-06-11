@@ -17,23 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
+package org.neo4j.cypher.internal.compiler.v2_3.helpers
 
-import org.neo4j.cypher.internal.compiler.v2_3._
-import pipes.QueryState
-import symbols._
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{LiteralTypeSupport, IsCollection, IsMap}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
-case class Literal(v: Any) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = v
-
-  def rewrite(f: (Expression) => Expression) = f(this)
-
-  def arguments = Nil
-
-  def calculateType(symbols: SymbolTable): CypherType = LiteralTypeSupport.deriveType(v)
-
-  def symbolTableDependencies = Set()
-
-  override def toString = "Literal(" + v + ")"
+object LiteralTypeSupport {
+  def deriveType(obj: Any): CypherType = obj match {
+    case _: String                          => CTString
+    case _: Char                            => CTString
+    case _: Integer|Long|Short|Byte         => CTInteger
+    case _: Number                          => CTFloat
+    case _: Boolean                         => CTBoolean
+    case IsMap(_)                           => CTMap
+    case IsCollection(coll) if coll.isEmpty => CTCollection(CTAny)
+    case IsCollection(coll)                 => CTCollection(coll.map(deriveType).reduce(_ leastUpperBound _))
+    case _                                  => CTAny
+  }
 }
