@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case class ToSet(expression: CodeGenExpression) extends CodeGenExpression {
 
@@ -27,4 +28,8 @@ case class ToSet(expression: CodeGenExpression) extends CodeGenExpression {
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
     structure.toSet(expression.generateExpression(structure))
+
+  override def nullable(implicit context: CodeGenContext) = false
+
+  override def cypherType(implicit context: CodeGenContext) = CTCollection(CTAny)
 }

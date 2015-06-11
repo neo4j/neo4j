@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure, Variable}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 abstract class ElementProperty(token: Option[Int], propName: String, elementIdVar: String, propKeyVar: String)
   extends CodeGenExpression {
@@ -40,6 +41,8 @@ abstract class ElementProperty(token: Option[Int], propName: String, elementIdVa
   def propertyByName[E](body: MethodStructure[E], localName: String): Unit
 
   def propertyById[E](body: MethodStructure[E], localName: String): Unit
+
+  override def nullable(implicit context: CodeGenContext) = true
 }
 
 case class NodeProperty(token: Option[Int], propName: String, nodeIdVar: Variable, propKeyVar: String)
@@ -50,6 +53,8 @@ case class NodeProperty(token: Option[Int], propName: String, nodeIdVar: Variabl
 
   override def propertyById[E](body: MethodStructure[E], localName: String) =
     body.nodeGetPropertyById(nodeIdVar.name, token.get, localName)
+
+  override def cypherType(implicit context: CodeGenContext) = CTAny
 }
 
 case class RelProperty(token: Option[Int], propName: String, relIdVar: Variable, propKeyVar: String)
@@ -60,4 +65,6 @@ case class RelProperty(token: Option[Int], propName: String, relIdVar: Variable,
 
   override def propertyById[E](body: MethodStructure[E], localName: String) =
     body.relationshipGetPropertyById(relIdVar.name, token.get, localName)
+
+  override def cypherType(implicit context: CodeGenContext) = CTAny
 }

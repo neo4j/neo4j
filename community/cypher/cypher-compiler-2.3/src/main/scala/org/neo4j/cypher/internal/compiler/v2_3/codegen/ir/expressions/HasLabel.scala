@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure, Variable}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.CypherType
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case class HasLabel(nodeVariable: Variable, labelVariable: String, labelName: String)
   extends CodeGenExpression {
@@ -38,6 +40,10 @@ case class HasLabel(nodeVariable: Variable, labelVariable: String, labelName: St
     else
       structure.hasLabel(nodeVariable.name, labelVariable, localName)
   }
+
+  override def nullable(implicit context: CodeGenContext) = nodeVariable.nullable
+
+  override def cypherType(implicit context: CodeGenContext): CypherType = CTBoolean
 }
 
 case class HasLabelPredicate(nodeVariable: Variable, labelVariable: String, labelName: String)
@@ -58,4 +64,8 @@ case class HasLabelPredicate(nodeVariable: Variable, labelVariable: String, labe
     else
       structure.hasLabel(nodeVariable.name, labelVariable, localName)
   }
+
+  override def nullable(implicit context: CodeGenContext) = false
+
+  override def cypherType(implicit context: CodeGenContext) = CTBoolean
 }

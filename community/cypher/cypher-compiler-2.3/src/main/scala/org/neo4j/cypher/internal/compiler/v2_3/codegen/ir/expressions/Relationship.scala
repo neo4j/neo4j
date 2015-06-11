@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case class Relationship(relId: Variable) extends CodeGenExpression {
   assert(relId.cypherType == symbols.CTRelationship)
@@ -33,4 +34,8 @@ case class Relationship(relId: Variable) extends CodeGenExpression {
     else
       structure.materializeRelationship(relId.name)
   }
+
+  override def nullable(implicit context: CodeGenContext) = relId.nullable
+
+  override def cypherType(implicit context: CodeGenContext) = CTRelationship
 }

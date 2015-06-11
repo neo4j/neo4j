@@ -19,9 +19,35 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
-case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends BinaryOperator(lhs, rhs) {
+case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression with BinaryOperator {
 
   override protected def generator[E](structure: MethodStructure[E]) = structure.add
+
+  override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
+
+  val validTypes = Seq(CTString, CTFloat, CTInteger, CTCollection(CTAny))
+
+  override def cypherType(implicit context: CodeGenContext) = (lhs.cypherType, rhs.cypherType) match {
+    // Strings
+    case (CTString, CTString) => CTString
+
+    // Collections
+    case (CollectionType(left), CollectionType(right)) => CollectionType(left leastUpperBound right)
+    case (CollectionType(innerType), singleElement) => CollectionType(innerType leastUpperBound singleElement)
+    case (singleElement, CollectionType(innerType)) => CollectionType(innerType leastUpperBound singleElement)
+
+    // Numbers
+    case (CTInteger, CTInteger) => CTInteger
+    case (Number(_), Number(_)) => CTFloat
+
+    // Runtime we'll figure it out
+    case _ => CTAny
+  }
+
+  object Number {
+    def unapply(x: CypherType): Option[CypherType] = if (CTNumber.isAssignableFrom(x)) Some(x) else None
+  }
 }
