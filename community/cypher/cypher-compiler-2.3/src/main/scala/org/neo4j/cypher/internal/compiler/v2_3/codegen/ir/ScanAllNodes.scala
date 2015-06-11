@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
 
-case class ScanAllNodes(id: String) extends LoopDataGenerator {
+case class ScanAllNodes(opName: String) extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
@@ -30,8 +30,7 @@ case class ScanAllNodes(id: String) extends LoopDataGenerator {
     generator.incrementDbHits()
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) =
+  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
+                             (implicit context: CodeGenContext) =
     generator.nextNode(nextVar.name, iterVar)
-
-  override protected def children = Seq.empty
 }
