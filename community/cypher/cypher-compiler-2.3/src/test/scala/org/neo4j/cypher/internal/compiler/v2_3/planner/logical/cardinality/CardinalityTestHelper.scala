@@ -44,6 +44,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
   def not(number: Double) = Selectivity(number).negate.factor
   def and(numbers: Double*) = combiner.andTogetherSelectivities(numbers.map(Selectivity.apply)).get.factor
   def or(numbers: Double*) = combiner.orTogetherSelectivities(numbers.map(Selectivity.apply)).get.factor
+  def orTimes(times: Int, number: Double) = combiner.orTogetherSelectivities(1.to(times).map(_ => Selectivity(number))).get.factor
 
   def degree(above: Double, below: Double) = above / below
 

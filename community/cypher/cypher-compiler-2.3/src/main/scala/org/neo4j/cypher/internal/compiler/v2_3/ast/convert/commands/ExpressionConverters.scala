@@ -19,16 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands
 
-import PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_3._
-import commands.{expressions => commandexpressions, values => commandvalues, Predicate => CommandPredicate}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression, ProjectedPath}
-import commands.values.TokenType._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedRelType, UnresolvedProperty}
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{ParsedLikePattern, LikePatternParser, convertLikePatternToRegex}
-import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression, ProjectedPath}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedRelType
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{Predicate => CommandPredicate, StringSeekRange, expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.compiler.v2_3.parser.{LikePatternParser, convertLikePatternToRegex}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AsStringRangeSeekable, StringRangeSeekable, LowerBounded}
 import org.neo4j.graphdb.Direction
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 object ExpressionConverters {
 
@@ -88,6 +89,7 @@ object ExpressionConverters {
       case e: ast.PathExpression => e.asCommandProjectedPath
       case e: ast.NestedPipeExpression => e.asPipeCommand
       case e: ast.GetDegree => e.asCommandGetDegree
+      case e: ast.StringSeekRange => e.asCommandStringSeekRange
       case _ =>
         throw new ThisShouldNotHappenError("cleishm", s"Unknown expression type during transformation (${expression.getClass})")
     }
@@ -101,6 +103,12 @@ object ExpressionConverters {
         case c: commands.Predicate => c
         case c => commands.CoercedPredicate(c)
       }
+    }
+  }
+
+  implicit class StringSeekRangeConverter(val original: ast.StringSeekRange) extends AnyVal {
+    def asCommandStringSeekRange = {
+      commands.StringSeekRange(original.range)
     }
   }
 

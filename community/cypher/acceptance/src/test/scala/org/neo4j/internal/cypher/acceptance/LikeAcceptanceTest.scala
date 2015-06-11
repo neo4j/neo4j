@@ -41,7 +41,117 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     fNode = createLabeledNode("LABEL")
   }
 
-  // *** TESTS OF %
+  // *** TESTS OF PREFIX SEARCH
+
+  test("should plan an IndexRangeSeek for a % string prefix search when index exists") {
+
+    graph.inTx {
+      (1 to 300).foreach { _ =>
+        createLabeledNode("Address")
+      }
+    }
+    val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
+    val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
+    val a3 = createLabeledNode(Map("prop" -> "ww"), "Address")
+
+    graph.createIndex("Address", "prop")
+
+    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'www%' RETURN a")
+
+    result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
+    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+  }
+
+  test("should plan an IndexRangeSeek for a _ string prefix search when index exists") {
+
+    graph.inTx {
+      (1 to 300).foreach { _ =>
+        createLabeledNode("Address")
+      }
+    }
+    val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
+    val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
+    val a3 = createLabeledNode(Map("prop" -> "ww"), "Address")
+
+    graph.createIndex("Address", "prop")
+
+    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'ww_' RETURN a")
+
+    result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
+    result.toList should equal(List(Map("a" -> a2)))
+  }
+
+  test("should plan an IndexRangeSeek for a string search that starts with a prefix when index exists") {
+
+    graph.inTx {
+      (1 to 300).foreach { _ =>
+        createLabeledNode("Address")
+      }
+    }
+    val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
+    val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
+    val a3 = createLabeledNode(Map("prop" -> "ww"), "Address")
+
+    graph.createIndex("Address", "prop")
+
+    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'ww%w%' RETURN a")
+
+    result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
+    result.executionPlanDescription().toString should include("Filter")
+    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+  }
+
+
+  test("should plan a UniqueIndexSeek when constraint exists") {
+
+    graph.inTx {
+      (1 to 300).foreach { _ =>
+        createLabeledNode("Address")
+      }
+    }
+    val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
+    val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
+    val a3 = createLabeledNode(Map("prop" -> "ww"), "Address")
+
+    graph.createConstraint("Address", "prop")
+
+    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'www%' RETURN a")
+
+    result.executionPlanDescription().toString should include("NodeUniqueIndexRangeSeek")
+    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+  }
+
+  test("should not plan an IndexSeek when index doesn't exist") {
+
+    (1 to 10).foreach { _ =>
+      createLabeledNode("Address")
+    }
+
+    val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
+    val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
+
+    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'www%' RETURN a")
+
+    result.executionPlanDescription().toString should not include("NodeIndexRangeSeek")
+    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+  }
+
+  test("should not plan an IndexSeek when the LIKE pattern does not have a valid prefix") {
+
+    (1 to 10).foreach { _ =>
+      createLabeledNode("Address")
+    }
+
+    graph.createIndex("Address", "prop")
+    val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
+    val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
+    val a3 = createLabeledNode(Map("prop" -> "ww"), "Address")
+
+    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'ww_%' RETURN a")
+
+    result.executionPlanDescription().toString should not include("NodeIndexRangeSeek")
+    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+  }
 
   test("finds exact matches") {
     val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE 'ABCDEF' RETURN a")
@@ -136,6 +246,15 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
   }
 
   // *** TESTS OF _
+
+  test("_ should match exactly one character") {
+    val a1 = createNode(Map("prop" -> "value"))
+    createNode(Map("prop" -> "valu"))
+
+    val result = executeWithAllPlanners("MATCH a WHERE a.prop LIKE 'valu_' RETURN a")
+
+    result.toList should equal(Seq(Map("a" -> a1)))
+  }
 
   test("one letter at the start of a string") {
     val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE '_BCDEF' RETURN a")

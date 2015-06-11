@@ -64,7 +64,7 @@ object BigDecimalCombiner {
     bigDecimals.reduceOption(_ multiply _)
   }
 
-  private def negate(bigDecimal: math.BigDecimal): math.BigDecimal = {
+  def negate(bigDecimal: math.BigDecimal): math.BigDecimal = {
     math.BigDecimal.ONE.subtract(bigDecimal)
   }
 }

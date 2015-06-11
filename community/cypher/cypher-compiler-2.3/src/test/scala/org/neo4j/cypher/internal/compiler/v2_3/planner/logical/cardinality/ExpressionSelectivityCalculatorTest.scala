@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  test("should consider parameter expressions when calculating index selectivity") {
+  test("Should consider parameter expressions when calculating index selectivity") {
     implicit val semanticTable = SemanticTable()
     semanticTable.resolvedLabelIds.put("Page", LabelId(0))
     semanticTable.resolvedPropertyKeyNames.put("title", PropertyKeyId(0))
@@ -46,5 +46,21 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val result = calculator(In(Property(ident("n"), PropertyKeyName("title")_)_, Parameter("titles")_)_)
 
     result.factor should equal (0.92 +- 0.01)
+  }
+
+  test("Should peek inside sub predicates") {
+    implicit val semanticTable = SemanticTable()
+    semanticTable.resolvedLabelIds.put("Page", LabelId(0))
+
+    implicit val selections = Selections(Set(Predicate(Set(IdName("n")), HasLabels(ident("n"), Seq(LabelName("Page")_))_)))
+
+    val stats = mock[GraphStatistics]
+    Mockito.when(stats.nodesWithLabelCardinality(None)).thenReturn(2000.0)
+    Mockito.when(stats.nodesWithLabelCardinality(Some(LabelId(0)))).thenReturn(1000.0)
+    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
+
+    val result = calculator(PartialPredicate[HasLabels](HasLabels(ident("n"), Seq(LabelName("Page")_))_, mock[HasLabels]))
+
+    result.factor should equal(0.5)
   }
 }

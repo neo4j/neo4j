@@ -104,6 +104,24 @@ case class In(lhs: Expression, rhs: Expression)(val position: InputPosition) ext
     specifyType(CTBoolean)
 }
 
+// Partial predicates are predicates that are covered by a larger predicate which is going to be solved later during planning
+// (and then will replace this predicate).  This is needed for LIKE such that things work out regarding verifyBestPlan
+// (i.e. final query graph matches up with original query)
+sealed trait PartialPredicate[+P <: Expression] extends Expression {
+  def coveredPredicate: P
+  def coveringPredicate: Expression
+}
+
+object PartialPredicate {
+  def apply[P <: Expression](coveredPredicate: P, coveringPredicate: Expression): Expression =
+    if (coveredPredicate == coveringPredicate) coveringPredicate else PartialPredicateWrapper(coveredPredicate, coveringPredicate)
+
+  final case class PartialPredicateWrapper[P <: Expression](coveredPredicate: P, coveringPredicate: Expression) extends PartialPredicate[P] {
+    override def semanticCheck(ctx: SemanticContext): SemanticCheck = coveredPredicate.semanticCheck(ctx)
+    override def position: InputPosition = coveredPredicate.position
+  }
+}
+
 final case class LikePattern(expr: Expression) extends ASTNode {
   def position = expr.position
 }

@@ -34,17 +34,13 @@ case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,
                              propertyKey: PropertyKeyToken,
                              valueExpr: QueryExpression[Expression],
-                             unique: Boolean = false)
+                             indexMode: IndexSeekMode = NonUniqueIndexEqualitySeek)
                             (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe with RonjaPipe {
 
   private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
-  private val indexFactory: (QueryState) => (Any) => Iterator[Node] =
-    if (unique)
-      (state: QueryState) => (x: Any) => state.query.exactUniqueIndexSearch(descriptor, x).toIterator
-    else
-      (state: QueryState) => (x: Any) => state.query.exactIndexSearch(descriptor, x)
+  private val indexFactory = indexMode.indexFactory(descriptor)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
@@ -59,7 +55,7 @@ case class NodeIndexSeekPipe(ident: String,
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
   def planDescriptionWithoutCardinality = {
-    val name = if (unique) "NodeUniqueIndexSeek" else "NodeIndexSeek"
+    val name = indexMode.name
     new PlanDescriptionImpl(this.id, name, NoChildren, Seq(Index(label.name, propertyKey.name)), identifiers)
   }
 

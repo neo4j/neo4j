@@ -30,6 +30,33 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   val nodeA = ident("a")
 
+  test("StringRangeSeekable finds n.prop LIKE 'prefix%'") {
+    val propKey: PropertyKeyName = PropertyKeyName("prop") _
+    val leftExpr: Property = Property(nodeA, propKey) _
+    val like: Like = Like(leftExpr, LikePattern(StringLiteral("prefix%") _)) _
+    assertMatches(like) {
+      case AsStringRangeSeekable(StringRangeSeekable(range, expr, ident, propertyKey)) =>
+        range should equal(LowerBounded(InclusiveBound("prefix")))
+        expr should equal(like)
+        ident should equal(nodeA)
+        propertyKey should equal(propKey)
+    }
+  }
+
+  test("StringRangeSeekable finds n.prop LIKE 'prefix%suffix'") {
+    val propKey: PropertyKeyName = PropertyKeyName("prop") _
+    val leftExpr: Property = Property(nodeA, propKey) _
+    val originalLike: Like = Like(leftExpr, LikePattern(StringLiteral("prefix%suffix") _)) _
+    val prefixLike: Like = Like(leftExpr, LikePattern(StringLiteral("prefix%") _)) _
+    assertMatches(originalLike) {
+      case AsStringRangeSeekable(StringRangeSeekable(range, expr, ident, propertyKey)) =>
+        range should equal(LowerBounded(InclusiveBound("prefix")))
+        expr should equal(prefixLike)
+        ident should equal(nodeA)
+        propertyKey should equal(propKey)
+    }
+  }
+
   test("Seekable finds Equals") {
     assertMatches(Equals(expr1, expr2)_) {
       case WithSeekableArgs(lhs, rhs) =>

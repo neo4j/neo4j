@@ -20,16 +20,81 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{SingleQueryExpression, ManyQueryExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, PropertyKeyId}
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+
+  test("should use index seek for simple prefix search using like with %") {
+    (new given {
+      indexOn("Person", "name")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (a:Person) WHERE a.name LIKE 'prefix%' RETURN a").innerPlan should equal(
+      NodeIndexSeek(
+        "a",
+        LabelToken("Person", LabelId(0)),
+        PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+        RangeQueryExpression(StringSeekRange(LowerBounded(InclusiveBound("prefix"))) _),
+        Set.empty)(solved)
+    )
+  }
+
+  test("should use index seek for complex prefix search using like with %") {
+    (new given {
+      indexOn("Person", "name")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (a:Person) WHERE a.name LIKE 'prefix%suffix' RETURN a").innerPlan should equal(
+      Selection(
+        Seq(Like(Property(ident("a"), PropertyKeyName("name")_)_, LikePattern(StringLiteral("prefix%suffix")_))_),
+        NodeIndexSeek(
+          "a",
+          LabelToken("Person", LabelId(0)),
+          PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+          RangeQueryExpression(StringSeekRange(LowerBounded(InclusiveBound("prefix"))) _),
+          Set.empty)(solved)
+      )(solved)
+    )
+  }
+
+  test("should prefer property equality index seek over range index seek") {
+    val like: Like = Like(Property(Identifier("a") _, PropertyKeyName("name") _) _,
+                          LikePattern(StringLiteral("prefix%") _)) _
+    (new given {
+      indexOn("Person", "name")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (a:Person) WHERE a.name LIKE 'prefix%' AND a.name = 'prefix1' RETURN a").innerPlan should equal(
+      Selection(Seq(like),
+                NodeIndexSeek(
+                  "a",
+                  LabelToken("Person", LabelId(0)),
+                  PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+                  SingleQueryExpression(StringLiteral("prefix1") _),
+                  Set.empty)(solved)
+      )(solved))
+  }
+
+  test("should prefer property equality index seek over collection over range index seek") {
+    val like: Like = Like(Property(Identifier("a") _, PropertyKeyName("name") _) _,
+                          LikePattern(StringLiteral("prefix%") _)) _
+    (new given {
+      indexOn("Person", "name")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (a:Person) WHERE a.name LIKE 'prefix%' AND a.name in ['prefix1', 'prefix2'] RETURN a").innerPlan should equal(
+      Selection(Seq(like),
+                NodeIndexSeek(
+                  "a",
+                  LabelToken("Person", LabelId(0)),
+                  PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+                  ManyQueryExpression(Collection(List(StringLiteral("prefix1") _, StringLiteral("prefix2") _)) _),
+                  Set.empty)(solved)
+      )(solved))
+  }
 
   test("should build plans for all nodes scans") {
     (new given {

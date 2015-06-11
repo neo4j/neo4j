@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v2_3.mutation._
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.IndexSeekMode
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.SeekRange
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 trait NodeStartItemIdentifiers extends StartItem {
@@ -99,7 +101,6 @@ case object UniqueIndex extends SchemaIndexKind
 
 trait QueryExpression[+T] {
   def expression: T
-
   def map[R](f: T => R): QueryExpression[R]
 }
 
@@ -113,6 +114,10 @@ case class SingleQueryExpression[T](expression: T) extends QueryExpression[T] {
 
 case class ManyQueryExpression[T](expression: T) extends QueryExpression[T] {
   def map[R](f: (T) => R) = ManyQueryExpression(f(expression))
+}
+
+case class RangeQueryExpression[T](expression: T) extends QueryExpression[T] {
+  override def map[R](f: (T) => R) = RangeQueryExpression(f(expression))
 }
 
 case class SchemaIndex(identifier: String, label: String, property: String, kind: SchemaIndexKind, query: Option[QueryExpression[Expression]])

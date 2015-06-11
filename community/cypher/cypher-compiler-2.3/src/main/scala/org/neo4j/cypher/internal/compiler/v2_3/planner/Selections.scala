@@ -97,7 +97,18 @@ case class Selections(predicates: Set[Predicate] = Set.empty) extends PageDocFor
 
   def contains(e: Expression): Boolean = predicates.exists { _.expr == e }
 
-  def ++(other: Selections): Selections = Selections(predicates ++ other.predicates)
+  def ++(other: Selections): Selections = {
+    val otherPredicates = other.predicates
+    val keptPredicates  = predicates.filter {
+      case pred@Predicate(_, expr: PartialPredicate[_]) =>
+        !expr.coveringPredicate.asPredicates.forall(expr => otherPredicates.contains(expr) || predicates.contains(expr))
+
+      case pred =>
+        true
+    }
+
+    Selections(keptPredicates ++ other.predicates)
+  }
 
   def ++(expressions: Expression*): Selections = Selections(predicates ++ expressions.flatMap(_.asPredicates))
 }

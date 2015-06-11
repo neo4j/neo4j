@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{RangeQueryExpression, ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
@@ -113,8 +113,12 @@ object LogicalPlanConverter {
                                       IndexSeek(opName, logicalPlan.label.name, logicalPlan.propertyKey.name,
                                                 context.namer.newVarName(), LoadVariable(expressionVar)), actions))
 
-         case e => throw new InternalException(s"$e is not a valid QueryExpression")
-        }
+        case e: RangeQueryExpression[_] =>
+          throw new CantCompileQueryException(s"To be done")
+
+        case e =>
+         throw new InternalException(s"$e is not a valid QueryExpression")
+      }
 
       (methodHandle, Seq(indexSeekInstruction))
     }

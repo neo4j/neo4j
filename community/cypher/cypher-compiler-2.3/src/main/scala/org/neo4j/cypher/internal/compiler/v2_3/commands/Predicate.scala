@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CastSupport, CollectionSupport, IsCollection}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{SeekRange, LowerBounded, StringRangeSeekable}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.graphdb._
 
@@ -249,6 +250,19 @@ case class PropertyExists(identifier: Expression, propertyKey: KeyToken) extends
   def symbolTableDependencies = identifier.symbolTableDependencies
 
   override def localEffects(symbols: SymbolTable) = Effects.propertyRead(identifier, symbols)(propertyKey.name)
+}
+
+case class StringSeekRange(range: SeekRange[String])(implicit converter: String => String = identity) extends Expression {
+
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = throw new InternalException("This should never be called")
+
+  override def rewrite(f: (Expression) => Expression): Expression = f(this)
+
+  override def arguments: Seq[Expression] = Seq.empty
+
+  override protected def calculateType(symbols: SymbolTable): CypherType = CTCollection(CTNode)
+
+  override def symbolTableDependencies: Set[String] = Set.empty
 }
 
 case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)(implicit converter: String => String = identity) extends Predicate {

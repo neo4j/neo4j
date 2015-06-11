@@ -81,6 +81,8 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = manyDbHits(inner.exactIndexSearch(index, value))
 
+  override def rangeIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = manyDbHits(inner.rangeIndexSearch(index, value))
+
   def indexScan(index: IndexDescriptor): Iterator[Node] = manyDbHits(inner.indexScan(index))
 
   def getNodesByLabel(id: Int): Iterator[Node] = manyDbHits(inner.getNodesByLabel(id))
