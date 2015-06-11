@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
 sealed trait SeekRange[V]
-final case class LowerBounded[V](lowerBound: Bound[V]) extends SeekRange[V]
-final case class Between[V](lowerBound: Bound[V], upperBound: Bound[V]) extends SeekRange[V]
+final case class LowerBounded[V](lower: Bound[V]) extends SeekRange[V]
+final case class Between[V](lower: Bound[V], upper: Bound[V]) extends SeekRange[V]
 
 sealed trait Bound[V] {
   def endPoint: V

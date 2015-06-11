@@ -58,7 +58,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
         if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
         producePlanFor(seekable.name, seekable.propertyKey, predicate, seekable.args.asQueryExpression)
       case predicate@AsStringRangeSeekable(seekable) =>
-        producePlanFor(seekable.name, seekable.propertyKey, PartialPredicate(seekable.expr, predicate), seekable.asQueryExpression)
+        producePlanFor(seekable.name, seekable.propertyKey, PartialPredicate.ifNotEqual(seekable.expr, predicate), seekable.asQueryExpression)
     }.flatten
   }
 

@@ -109,7 +109,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("prunes away sub predicates") {
     val covering = And(aIsPerson, aIsProgrammer)(pos)
     val covered = aIsProgrammer
-    val selections = Selections(Set(Predicate(idNames("a"), PartialPredicate(covered, covering))))
+    val selections = Selections(Set(Predicate(idNames("a"), PartialPredicate.ifNotEqual(covered, covering))))
 
     val result = selections ++ Selections(Set(Predicate(idNames("a"), covering)))
 
