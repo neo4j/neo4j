@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper.RichString
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.notification.CartesianProductNotification
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 import scala.annotation.tailrec
 
@@ -96,20 +96,19 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
     def pickFirst(a: Identifier, b: Identifier) = if (a.position.offset < b.position.offset) a else b
 
     @tailrec
-    def loop(compare: Set[Identifier], rest: Seq[Set[Identifier]]) {
-      val shouldWarn = rest.exists( o => (compare intersect o).isEmpty)
-
-      if (shouldWarn) {
-        val notification = CartesianProductNotification(compare.reduce(pickFirst).position)
-        state.notificationLogger += notification
+    def loop(compare: Set[Identifier], rest: Seq[Set[Identifier]], intermediateState: SemanticState): SemanticState = {
+      val updatedState = rest.filter { o =>
+        (compare intersect o).isEmpty
+      }.foldLeft(intermediateState) { (innerState, identifiers) =>
+        innerState.addNotification(CartesianProductNotification(position, identifiers.map(_.name)))
       }
 
-      if (rest.nonEmpty) loop(rest.head, rest.tail)
+      if (rest.nonEmpty) loop(rest.head, rest.tail, updatedState) else updatedState
     }
 
-    if (nodes.nonEmpty) loop(nodes.head, nodes.tail)
+    val finalState = if (nodes.nonEmpty) loop(nodes.head, nodes.tail, state) else state
 
-    SemanticCheckResult(state, Seq.empty)
+    SemanticCheckResult(finalState, Seq.empty)
   }
 
   private def checkHints: SemanticCheck = {

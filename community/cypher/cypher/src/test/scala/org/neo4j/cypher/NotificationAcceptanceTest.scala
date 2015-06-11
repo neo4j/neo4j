@@ -27,19 +27,20 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("Warn for cartesian product") {
     val result = executeWithAllPlanners("explain match (a)-->(b), (c)-->(d) return *")
 
-    result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(7, 1, 8))))
+    result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d"))))
   }
 
   test("Warn for cartesian product with runtime=compiled") {
     val result = innerExecute("explain cypher runtime=compiled match (a)-->(b), (c)-->(d) return *")
 
-    result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(7, 1, 8)), RuntimeUnsupportedNotification))
+    result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d")),
+                                                  RuntimeUnsupportedNotification))
   }
 
   test("Warn for cartesian product with runtime=interpreted") {
     val result = executeWithAllPlanners("explain cypher runtime=interpreted match (a)-->(b), (c)-->(d) return *")
 
-    result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(7, 1, 8))))
+    result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d"))))
   }
 
   test("Don't warn for cartesian product when not using explain") {

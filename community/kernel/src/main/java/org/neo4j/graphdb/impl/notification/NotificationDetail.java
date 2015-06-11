@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.impl.notification;
 
+import java.util.Set;
+
 public interface NotificationDetail
 {
     String name();
@@ -27,12 +29,30 @@ public interface NotificationDetail
 
     public final static class Factory
     {
-        public static NotificationDetail index( final String name, final String labelName, final String propertyKeyName )
+        public static NotificationDetail index( final String labelName, final String propertyKeyName )
         {
-            return createNotificationDetail( name, String.format( "index on :%s(%s)", labelName, propertyKeyName ) );
+            return createNotificationDetail( "hinted index",
+                    String.format( "index on :%s(%s)", labelName, propertyKeyName ), true );
         }
 
-        private static NotificationDetail createNotificationDetail( final String name, final String value )
+        public static NotificationDetail cartesianProduct( Set<String> identifiers )
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.append( "(" );
+            String separator = "";
+            for ( String identifier : identifiers )
+            {
+                builder.append( separator );
+                builder.append( identifier );
+                separator = ", ";
+            }
+            builder.append( ")" );
+            boolean singular = identifiers.size() == 1;
+            return createNotificationDetail( singular ? "identifier" : "identifiers", builder.toString(), singular );
+        }
+
+        private static NotificationDetail createNotificationDetail( final String name, final String value,
+                final boolean singular )
         {
             return new NotificationDetail()
             {
@@ -51,7 +71,7 @@ public interface NotificationDetail
                 @Override
                 public String toString()
                 {
-                    return String.format( "%s is %s", name, value );
+                    return String.format( "%s %s %s", name, singular ? "is" : "are:", value );
                 }
             };
         }
