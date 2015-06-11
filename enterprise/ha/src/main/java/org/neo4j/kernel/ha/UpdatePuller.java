@@ -132,7 +132,7 @@ public class UpdatePuller implements Runnable, Lifecycle
     private final PauseListener listener;
     private final HighAvailabilityMemberStateMachine memberStateMachine;
     private final InstanceId instanceId;
-    private final InvalidEpochExceptionHandler invalidEpochHandler;
+    private InvalidEpochExceptionHandler invalidEpochHandler;
     private Thread me;
 
     UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine,
@@ -209,6 +209,8 @@ public class UpdatePuller implements Runnable, Lifecycle
             Thread.sleep( 1 );
             Thread.yield();
         }
+        invalidEpochHandler = null;
+        me = null;
     }
 
     public synchronized void pause()

@@ -19,9 +19,6 @@
  */
 package org.neo4j.test.ha;
 
-import ch.qos.logback.classic.LoggerContext;
-import org.w3c.dom.Document;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -43,6 +40,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+
+import ch.qos.logback.classic.LoggerContext;
+import org.w3c.dom.Document;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
@@ -89,7 +89,9 @@ import org.neo4j.kernel.monitoring.Monitors;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
+
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
 
@@ -406,7 +408,7 @@ public class ClusterManager
             @Override
             public boolean accept( ManagedCluster cluster )
             {
-                int nrOfMembers = cluster.size();
+                int nrOfMembers = cluster.spec.getMembers().size();
 
                 for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
                 {
