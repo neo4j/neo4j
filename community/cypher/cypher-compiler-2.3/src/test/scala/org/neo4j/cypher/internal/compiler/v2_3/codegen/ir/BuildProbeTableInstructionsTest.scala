@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -35,9 +37,7 @@ import scala.collection.mutable
 class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
 
   private val tableVarName = "probeTable"
-  private val tableKeyVarName = "nodeId"
   private val buildTableMethodName = "buildProbeTable"
-  private val probeKeyVarName = "probeKey"
   private val resultRowKey = "resultKey"
 
   private val db = mock[GraphDatabaseService]
@@ -58,13 +58,15 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   test("should generate correct code for simple counting probe table") {
     // Given
     setUpNodeMocks(1, 2, 42)
+    val nodeVar = "node"
+    val nodes = Set(Variable(nodeVar, symbols.CTNode))
 
     val buildInstruction = BuildCountingProbeTable(id = "countingTable",
                                                    name = tableVarName,
-                                                   node = Variable(tableKeyVarName, symbols.CTNode))
+                                                   nodes = nodes)
 
     // When
-    val results = runTest(buildInstruction)
+    val results = runTest(buildInstruction, nodes)
 
     // Then
     results should have size 3
@@ -74,23 +76,65 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
     checkNodeResult(42, c)
   }
 
+  test("should generate correct code for a counting probe table on multiple keys") {
+    // Given
+    setUpNodeMocks(1, 2)
+    val nodes = Set(Variable("node1", symbols.CTNode), Variable("node2", symbols.CTNode))
+    val buildInstruction = BuildCountingProbeTable(id = "countingTable",
+                                                   name = tableVarName,
+                                                   nodes = nodes)
+
+    // When
+    val results = runTest(buildInstruction, nodes)
+
+    // Then
+    results should have size 4
+    val (a :: b :: c :: d :: Nil) = results
+    checkNodeResult(1, a)
+    checkNodeResult(1, b)
+    checkNodeResult(2, c)
+    checkNodeResult(2, d)
+  }
+
   test("should generate correct code for simple recording probe table") {
     // Given
     setUpNodeMocks(42, 4242)
-
+    val nodeVar = "node"
+    val nodes = Set(Variable(nodeVar, symbols.CTNode))
     val buildInstruction = BuildRecordingProbeTable(id = "recordingTable",
                                                     name = tableVarName,
-                                                    node = Variable(tableKeyVarName, symbols.CTNode),
-                                                    valueSymbols = Map(tableKeyVarName -> Variable(tableKeyVarName, symbols.CTNode)))
+                                                    nodes = nodes,
+                                                    valueSymbols = Map(nodeVar -> Variable(nodeVar, symbols.CTNode)))
 
     // When
-    val results = runTest(buildInstruction)
+    val results = runTest(buildInstruction, nodes)
 
     // Then
     results should have size 2
     val (a :: b :: Nil) = results
     checkNodeResult(42, a)
     checkNodeResult(4242, b)
+  }
+
+  test("should generate correct code for recording probe table on multiple keys") {
+    // Given
+    setUpNodeMocks(42, 4242)
+    val joinNodes = Set(Variable("node1", symbols.CTNode), Variable("node2", symbols.CTNode))
+    val buildInstruction = BuildRecordingProbeTable(id = "recordingTable",
+      name = tableVarName,
+      nodes = joinNodes,
+      valueSymbols = Map("node1" -> Variable("node1", symbols.CTNode)))
+
+    // When
+    val results = runTest(buildInstruction, joinNodes)
+
+    // Then
+    results should have size 4
+    val (a :: b :: c:: d :: Nil) = results
+    checkNodeResult(42, a)
+    checkNodeResult(42, b)
+    checkNodeResult(4242, c)
+    checkNodeResult(4242, d)
   }
 
   private def setUpNodeMocks(ids: Long*): Unit = {
@@ -116,32 +160,37 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
     override def next() = inner.next()
   }
 
-  private def runTest(buildInstruction: BuildProbeTable): List[Map[String, Object]] = {
-    val instructions = buildProbeTableWithTwoAllNodeScans(buildInstruction)
+  private def runTest(buildInstruction: BuildProbeTable, nodes: Set[Variable]): List[Map[String, Object]] = {
+    val instructions = buildProbeTableWithTwoAllNodeScans(buildInstruction, nodes)
     val ids = instructions.flatMap(_.allOperatorIds.map(id => id -> null)).toMap
     evaluate(instructions, statement, db, Map.empty[String, Object], ids)
   }
 
-  private def buildProbeTableWithTwoAllNodeScans(buildInstruction: BuildProbeTable): Seq[Instruction] = {
-    val buildWhileLoop = WhileLoop(Variable(tableKeyVarName, symbols.CTNode), ScanAllNodes("scanOp1"), buildInstruction)
+  private def buildProbeTableWithTwoAllNodeScans(buildInstruction: BuildProbeTable, nodes: Set[Variable]): Seq[Instruction] = {
+    val counter = new AtomicInteger(0)
+    val buildWhileLoop = nodes.foldRight[Instruction](buildInstruction){
+      case (variable, instruction) => WhileLoop(variable, ScanAllNodes("scanOp" + counter.incrementAndGet()), instruction)
+    }
 
     val buildProbeTableMethod = MethodInvocation(operatorId = Set.empty,
                                                  symbol = JoinTableMethod(tableVarName, buildInstruction.tableType),
                                                  methodName = buildTableMethodName,
                                                  statements = Seq(buildWhileLoop))
 
+    val probeVars = nodes.map(n => n.copy(name = s"probe" + n.name))
+    //just put one node in the actual result
+    val resultVar = probeVars.head
 
     val acceptVisitor = AcceptVisitor("visitorOp", "projectionOp",
-                                      Map(resultRowKey -> expressions.Node(Variable(probeKeyVarName, symbols.CTNode))))
+                                      Map(resultRowKey -> expressions.Node(resultVar)))
 
-    val probeTheTable = GetMatchesFromProbeTable(key = Variable(probeKeyVarName, symbols.CTNode),
+    val probeTheTable = GetMatchesFromProbeTable(keys = probeVars,
                                                  code = buildInstruction.joinData,
                                                  action = acceptVisitor)
 
-    val probeTheTableWhileLoop = WhileLoop(variable = Variable(probeKeyVarName, symbols.CTNode),
-                                           producer = ScanAllNodes("scanOp2"),
-                                           action = probeTheTable)
-
+    val probeTheTableWhileLoop = probeVars.foldRight[Instruction](probeTheTable){
+      case (variable, instruction) => WhileLoop(variable, ScanAllNodes("scanOp" + counter.incrementAndGet()), instruction)
+    }
     Seq(buildProbeTableMethod, probeTheTableWhileLoop)
   }
 

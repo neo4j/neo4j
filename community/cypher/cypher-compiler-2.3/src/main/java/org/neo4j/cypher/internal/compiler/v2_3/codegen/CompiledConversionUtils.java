@@ -20,10 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException;
+import org.neo4j.helpers.collection.MapUtil;
 
 // Class with static methods used by compiled execution plans
 public abstract class CompiledConversionUtils
@@ -57,5 +60,40 @@ public abstract class CompiledConversionUtils
         }
 
         throw new CypherTypeException( "Don't know how to create an iterable out of " + value.getClass().getSimpleName(), null );
+    }
+
+    public static CompositeKey compositeKey( long... keys )
+    {
+        return new CompositeKey( keys );
+    }
+
+    public static class CompositeKey
+    {
+        private final long[] key;
+
+        private CompositeKey( long[] key )
+        {
+            this.key = key;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            { return true; }
+            if ( o == null || getClass() != o.getClass() )
+            { return false; }
+
+            CompositeKey that = (CompositeKey) o;
+
+            return Arrays.equals( key, that.key );
+
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Arrays.hashCode( key );
+        }
     }
 }

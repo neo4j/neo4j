@@ -63,4 +63,13 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     CompiledConversionUtils.toCollection(null) shouldBe empty
   }
 
+  test("should be able to use a composite key in a hash map") {
+    //given
+    val theKey = CompiledConversionUtils.compositeKey(1l, 2L, 11L)
+    val theObject = mock[Object]
+    val theMap = Map(theKey -> theObject)
+
+    //when/then
+    theMap(theKey) should equal(theObject)
+  }
 }
