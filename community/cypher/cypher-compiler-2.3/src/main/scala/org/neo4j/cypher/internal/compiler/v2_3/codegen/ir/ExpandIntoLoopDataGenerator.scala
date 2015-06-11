@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure, Variable}
 import org.neo4j.graphdb.Direction
 
-case class ExpandIntoLoopDataGenerator(id: String, fromVar: Variable, dir: Direction,
+case class ExpandIntoLoopDataGenerator(opName: String, fromVar: Variable, dir: Direction,
                    types: Map[String, String], toVar: Variable)
   extends LoopDataGenerator {
 
@@ -40,8 +40,7 @@ case class ExpandIntoLoopDataGenerator(id: String, fromVar: Variable, dir: Direc
     generator.incrementDbHits()
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) =
+  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
+                             (implicit context: CodeGenContext) =
     generator.nextRelationship(iterVar, dir, nextVar.name)
-
-  override def children = Seq.empty
 }
