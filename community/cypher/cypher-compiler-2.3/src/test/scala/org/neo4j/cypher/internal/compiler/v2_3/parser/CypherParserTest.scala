@@ -1467,8 +1467,8 @@ class CypherParserTest extends CypherFunSuite {
         matches(RelatedTo(SingleNode("x"), SingleNode("z"), "r", Seq.empty, Direction.OUTGOING, Map.empty)).
         namedPaths(NamedPath("p", ParsedRelation("r", "x", "z", Seq.empty, Direction.OUTGOING))).
         returns(
-        ReturnItem(CollectionIndex(NodesFunction(Identifier("p")), Literal(0)), "head(nodes(p))"),
-        ReturnItem(CollectionIndex(NodesFunction(Identifier("p")), Literal(-1)), "last(nodes(p))"),
+        ReturnItem(ContainerIndex(NodesFunction(Identifier("p")), Literal(0)), "head(nodes(p))"),
+        ReturnItem(ContainerIndex(NodesFunction(Identifier("p")), Literal(-1)), "last(nodes(p))"),
         ReturnItem(CollectionSliceExpression(NodesFunction(Identifier("p")), Some(Literal(1)), None), "tail(nodes(p))"))
     )
   }

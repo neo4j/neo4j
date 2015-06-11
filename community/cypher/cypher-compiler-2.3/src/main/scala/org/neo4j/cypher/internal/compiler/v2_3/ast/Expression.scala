@@ -140,6 +140,9 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
     }
   }
 
+  def typeSwitch(choice: TypeSpec => SemanticCheck): SemanticCheck =
+    (state: SemanticState) => choice(types(state))(state)
+
   def containsAggregate = this.exists {
     case IsAggregate(_) => true
   }

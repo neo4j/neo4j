@@ -59,6 +59,16 @@ class WhereTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
+  @Test def filter_on_dynamic_property() {
+    testQuery(
+      title = "Filter on dynamic node property",
+      text = "To filter on a property using a dynamically computed name, use square bracket syntax.",
+      queryText = """match (n) where n[toLower({prop})] < 30 return n""",
+      optionalResultExplanation = """The "+Tobias+" node will be returned.""",
+      parameters = Map("prop" -> "AGE"),
+      assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
+  }
+
   @Test def boolean_operations() {
     testQuery(
       title = "Boolean operations",

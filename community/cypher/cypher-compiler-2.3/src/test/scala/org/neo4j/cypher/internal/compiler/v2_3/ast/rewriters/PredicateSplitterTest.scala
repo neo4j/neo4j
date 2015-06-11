@@ -28,7 +28,7 @@ object PredicateSplitterTest extends AstConstructionTestSupport {
   private def query(clauses: Clause*): Statement = Query(None, SingleQuery(clauses)_)_
   private def ri(name: String): ReturnItem = AliasedReturnItem(ident(name), ident(name))_
   private def items(name: String*): ReturnItems = ReturnItems(includeExisting = false, name.toSet.toSeq.map(ri))_
-  private def pathPred(num: Int): Expression = GreaterThan(CollectionIndex(ident("p"), SignedDecimalIntegerLiteral(num.toString)_)_, SignedDecimalIntegerLiteral("1")_)_
+  private def pathPred(num: Int): Expression = GreaterThan(ContainerIndex(ident("p"), SignedDecimalIntegerLiteral(num.toString)_)_, SignedDecimalIntegerLiteral("1")_)_
 }
 
 class PredicateSplitterTest extends CypherFunSuite with AstConstructionTestSupport {

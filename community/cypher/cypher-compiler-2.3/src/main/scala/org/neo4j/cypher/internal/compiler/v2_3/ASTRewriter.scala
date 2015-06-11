@@ -52,7 +52,8 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, shouldEx
       enableCondition(normalizedEqualsArguments),
       addUniquenessPredicates,
       isolateAggregation,
-      enableCondition(aggregationsAreIsolated)
+      enableCondition(aggregationsAreIsolated),
+      replaceLiteralDynamicPropertyLookups
     )
 
     val rewrittenStatement = statement.rewrite(contract.rewriter).asInstanceOf[ast.Statement]
