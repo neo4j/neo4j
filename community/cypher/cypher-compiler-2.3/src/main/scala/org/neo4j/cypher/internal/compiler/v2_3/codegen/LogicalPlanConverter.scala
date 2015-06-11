@@ -219,11 +219,9 @@ object LogicalPlanConverter {
 
       override val logicalPlan: LogicalPlan = expand
 
-      override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
-        if (expand.mode == ExpandAll)
-          expandAllConsume(context, child)
-        else
-          expandIntoConsume(context, child)
+      override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = expand.mode match {
+        case ExpandAll => expandAllConsume(context, child)
+        case ExpandInto => expandIntoConsume(context, child)
       }
 
       private def expandAllConsume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
@@ -258,11 +256,8 @@ object LogicalPlanConverter {
   }
 
   private implicit class OptionalExpandCodeGen(optionalExpand: OptionalExpand) {
-    def asCodeGenPlan = new CodeGenPlan {
 
-      if (optionalExpand.mode != ExpandAll) {
-        throw new CantCompileQueryException(s"OptionalExpand ${optionalExpand.mode} not yet supported")
-      }
+    def asCodeGenPlan = new CodeGenPlan {
 
       override val logicalPlan: LogicalPlan = optionalExpand
 
@@ -271,7 +266,14 @@ object LogicalPlanConverter {
         optionalExpand.lhs.get.asCodeGenPlan.produce(context)
       }
 
-      override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+      override def consume(context: CodeGenContext,
+                           child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = optionalExpand.mode match {
+        case ExpandAll => expandAllConsume(context, child)
+        case ExpandInto => expandIntoConsume(context, child)
+      }
+
+      private def expandAllConsume(context: CodeGenContext,
+                                   child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
         //mark relationship and node to visit as nullable
         val relVar = Variable(context.namer.newVarName(), symbols.CTRelationship, nullable = true)
         val toNodeVar = Variable(context.namer.newVarName(), symbols.CTNode, nullable = true)
@@ -294,7 +296,8 @@ object LogicalPlanConverter {
 
         //wrap inner instructions with predicates -
         // the least selective predicate gets wrapped in an If, which is then wrapped in an If, until we reach the action
-        val instructionWithPredicates = predicatesAsCodeGenExpressions.foldLeft[Instruction](CheckingInstruction(action, yieldFlag)) {
+        val instructionWithPredicates = predicatesAsCodeGenExpressions.foldLeft[Instruction](
+          CheckingInstruction(action, yieldFlag)) {
           case (acc, predicate) => If(predicate, acc)
         }
 
@@ -303,6 +306,41 @@ object LogicalPlanConverter {
         val loop = WhileLoop(relVar, expand, instructionWithPredicates)
 
         (methodHandle, NullingInstruction(loop, yieldFlag, action, relVar, toNodeVar))
+      }
+
+      private def expandIntoConsume(context: CodeGenContext,
+                                    child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
+        //mark relationship  to visit as nullable
+        val relVar = Variable(context.namer.newVarName(), symbols.CTRelationship, nullable = true)
+        context.addVariable(optionalExpand.relName.name, relVar)
+
+        val (methodHandle, action) = context.popParent().consume(context, this)
+        val fromNodeVar = context.getVariable(optionalExpand.from.name)
+        val toNodeVar = context.getVariable(optionalExpand.to.name)
+        val typeVar2TypeName = optionalExpand.types.map(t => context.namer.newVarName() -> t.name).toMap
+        val opName = context.registerOperator(optionalExpand)
+
+        //name of flag to check if results were yielded
+        val yieldFlag = context.namer.newVarName()
+
+        val predicatesAsCodeGenExpressions =
+          optionalExpand.
+            predicates.
+            // We reverse the order of the predicates so the least selective comes first in line
+            reverseMap(ExpressionConverter.createPredicate(_)(context))
+
+        //wrap inner instructions with predicates -
+        // the least selective predicate gets wrapped in an If, which is then wrapped in an If, until we reach the action
+        val instructionWithPredicates = predicatesAsCodeGenExpressions.foldLeft[Instruction](
+          CheckingInstruction(action, yieldFlag)) {
+          case (acc, predicate) => If(predicate, acc)
+        }
+
+        val expand = ExpandIntoLoopDataGenerator(opName, fromNodeVar, optionalExpand.dir, typeVar2TypeName, toNodeVar)
+
+        val loop = WhileLoop(relVar, expand, instructionWithPredicates)
+
+        (methodHandle, NullingInstruction(loop, yieldFlag, action, relVar))
       }
     }
   }

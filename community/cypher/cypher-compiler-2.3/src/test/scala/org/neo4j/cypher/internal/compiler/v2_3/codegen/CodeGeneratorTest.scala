@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSuppo
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.{CostBasedPlannerName, NormalMode, ParameterNotFoundException, TaskCloser}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.graphdb.{Direction, GraphDatabaseService, Node}
+import org.neo4j.graphdb.{Relationship, Direction, GraphDatabaseService, Node}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
@@ -312,6 +312,35 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     ))
   }
 
+  test("optional expand into on top of expand all") {
+    //given
+    val scanT1 = NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved)
+    val expandAll = Expand(
+      scanT1, IdName("a"), Direction.OUTGOING,
+      Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
+    val optionalExpandInto = OptionalExpand(
+      expandAll, IdName("a"), Direction.OUTGOING,
+      Seq.empty, IdName("b"), IdName("r2"), ExpandInto, Seq(HasLabels(ident("b"), Seq(LabelName("T2")(pos)))(pos)))(solved)
+
+
+    val plan = ProduceResult(List("a", "b"), List("r2"), List.empty,
+      Projection(
+        optionalExpandInto,
+        Map("a" -> ident("a"), "b" -> ident("b"), "r2" -> ident("r2")))(solved))
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "a", "b", "r2")
+
+    result should equal(List(
+      Map("a" -> aNode, "b" -> dNode, "r2" -> null),
+      Map("a" -> bNode, "b" -> dNode, "r2" -> null),
+      Map("a" -> cNode, "b" -> eNode, "r2" -> null)
+    ))
+  }
+
   test("expand into on top of expand all with relationship types") {
     //given
     val scanT2 = NodeByLabelScan(IdName("a"), LazyLabel("T2"), Set.empty)(solved)
@@ -340,6 +369,35 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     ))
   }
 
+  test("optional expand into on top of expand all with relationship types") {
+    //given
+    val scanT2 = NodeByLabelScan(IdName("a"), LazyLabel("T2"), Set.empty)(solved)
+    val expandAll = Expand(
+      scanT2, IdName("a"), Direction.OUTGOING,
+      Seq(RelTypeName("R2")(pos)), IdName("b"), IdName("r1"), ExpandAll)(solved)
+    val expandInto = OptionalExpand(
+      expandAll, IdName("b"), Direction.INCOMING,
+      Seq(RelTypeName("R2")(pos)), IdName("a"), IdName("r2"), ExpandInto)(solved)
+
+
+    val plan = ProduceResult(List("a", "b"), List("r2"), List.empty,
+      Projection(
+        expandInto,
+        Map("a" -> ident("a"), "b" -> ident("b"), "r2" -> ident("r2")))(solved))
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "a", "b", "r2")
+
+    result should equal(List(
+      Map("a" -> fNode, "b" -> dNode, "r2" -> relMap(14L).relationship),
+      Map("a" -> gNode, "b" -> eNode, "r2" -> relMap(15L).relationship)
+    ))
+  }
+
+
   test("expand into on top of expand all with a loop") {
     //given
     val scanT3 = NodeByLabelScan(IdName("a"), LazyLabel("T3"), Set.empty)(solved)
@@ -365,6 +423,35 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result should equal(List(
       Map("a" -> hNode, "b" -> iNode),
       Map("a" -> iNode, "b" -> hNode)
+    ))
+  }
+
+  test("optional expand into on top of expand all with a loop") {
+    //given
+    val scanT3 = NodeByLabelScan(IdName("a"), LazyLabel("T3"), Set.empty)(solved)
+    val expandAll = Expand(
+      scanT3, IdName("a"), Direction.OUTGOING,
+      Seq(RelTypeName("R3")(pos)), IdName("b"), IdName("r1"), ExpandAll)(solved)
+    val expandInto = OptionalExpand(
+      expandAll, IdName("b"), Direction.INCOMING,
+      Seq(RelTypeName("R3")(pos)), IdName("a"), IdName("r2"), ExpandInto,
+      Seq(HasLabels(ident("b"), Seq(LabelName("T2")(pos)))(pos)))(solved)
+
+
+    val plan = ProduceResult(List("a", "b"), List("r2"), List.empty,
+      Projection(
+        expandInto,
+        Map("a" -> ident("a"), "b" -> ident("b"), "r2" -> ident("r2")))(solved))
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "a", "b", "r2")
+
+    result should equal(List(
+      Map("a" -> hNode, "b" -> iNode, "r2" -> null),
+      Map("a" -> iNode, "b" -> hNode, "r2" -> null)
     ))
   }
 
@@ -686,7 +773,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
    *
    * (c:T1) -[:R1] ->(e)<-[:R2]-(g:T2)
    *
-   * (t1:T3)-(t2:T3)-(t1:T3)
+   * (h:T3)-(t2:T3)-(g:T3)
    *
    */
   private val labelTokens = Map("T1" -> 1, "T2" -> 2, "T3" -> 3)
@@ -712,18 +799,20 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   when(semanticTable.isNode(ident("g"))).thenReturn(true)
   when(semanticTable.isNode(ident("h"))).thenReturn(true)
   when(semanticTable.isNode(ident("i"))).thenReturn(true)
+  when(semanticTable.isRelationship(ident("r1"))).thenReturn(true)
+  when(semanticTable.isRelationship(ident("r2"))).thenReturn(true)
 
   private val allNodes = Seq(aNode, bNode, cNode, dNode, eNode, fNode, gNode, hNode, iNode)
   private val nodesForLabel = Map("T1" -> Seq(aNode, bNode, cNode), "T2" -> Seq(fNode, gNode), "T3" -> Seq(hNode, iNode))
 
   private val relMap = Map(
-    11L -> Relationship(aNode, dNode, 11L, 1),
-    12L -> Relationship(bNode, dNode, 12L, 1),
-    13L -> Relationship(cNode, eNode, 13L, 1),
-    14L -> Relationship(fNode, dNode, 14L, 2),
-    15L -> Relationship(gNode, eNode, 15L, 2),
-    16L -> Relationship(hNode, iNode, 16L, 3),
-    17L -> Relationship(iNode, hNode, 17L, 3))
+    11L -> RelationshipData(aNode, dNode, 11L, 1),
+    12L -> RelationshipData(bNode, dNode, 12L, 1),
+    13L -> RelationshipData(cNode, eNode, 13L, 1),
+    14L -> RelationshipData(fNode, dNode, 14L, 2),
+    15L -> RelationshipData(gNode, eNode, 15L, 2),
+    16L -> RelationshipData(hNode, iNode, 16L, 3),
+    17L -> RelationshipData(iNode, hNode, 17L, 3))
 
   val ro = mock[ReadOperations]
   val statement = mock[org.neo4j.kernel.api.Statement]
@@ -798,6 +887,12 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       allNodes(id)
     }
   })
+  when(graphDatabaseService.getRelationshipById(anyLong())).thenAnswer(new Answer[Relationship]() {
+    override def answer(invocationOnMock: InvocationOnMock): Relationship = {
+      val id = invocationOnMock.getArguments.apply(0).asInstanceOf[Long].toInt
+      relMap(id).relationship
+    }
+  })
 
   private def mockNode(id: Long, name: String) = {
     val node = mock[Node]
@@ -806,8 +901,18 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     node
   }
 
+  private def mockRelationship(relationshipData: RelationshipData) = {
+    val rel = mock[Relationship]
+    val toStringValue = relationshipData.toString
+    when(rel.getId).thenReturn(relationshipData.id)
+    when(rel.getStartNode).thenReturn(relationshipData.from)
+    when(rel.getEndNode).thenReturn(relationshipData.to)
+    when(rel.toString).thenReturn(toStringValue)
+    rel
+  }
+
   private def getRelsForNode(node: Node, dir: Direction, types: Set[Int]) = {
-    def hasType(relationship: Relationship) = types.isEmpty || types(relationship.relType)
+    def hasType(relationship: RelationshipData) = types.isEmpty || types(relationship.relType)
     if (dir == Direction.OUTGOING) {
       val relIds = relMap.values.filter(n => n.from == node && hasType(n)).map(_.id).toSeq
       relationshipIterator(relIds)
@@ -820,7 +925,11 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     }
   }
 
-  case class Relationship(from: Node, to: Node, id: Long, relType: Int)
+  case class RelationshipData(from: Node, to: Node, id: Long, relType: Int) {
+    val relationship = mockRelationship(this)
+
+    override def toString: String = s"($from)-[$relType]->($to)"
+  }
 
   private def primitiveIterator(longs: Seq[Long]) = new PrimitiveLongIterator {
     val inner = longs.toIterator
