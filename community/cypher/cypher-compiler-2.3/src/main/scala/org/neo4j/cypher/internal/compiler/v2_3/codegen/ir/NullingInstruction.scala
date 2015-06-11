@@ -19,24 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
 
-case class Project(opName: String, projections: Seq[CodeGenExpression], parent: Instruction) extends Instruction {
+/**
+ * Generates code that runs and afterwards checks if the provided variable has been set,
+ * if not it sets all provided variables to null and runs the alternativeAction
+ */
+case class NullingInstruction(loop: Instruction, yieldedFlagVar: String, alternativeAction: Instruction,
+                            nullableVars: Variable*)
+  extends Instruction {
+
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    loop.init(generator)
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.trace(opName) { inner =>
-      inner.incrementRows()
+    generator.declareFlag(yieldedFlagVar, initialValue = false)
+    loop.body(generator)
+    generator.ifStatement(generator.not(generator.load(yieldedFlagVar))){ ifBody =>
+      //mark variables as null
+      nullableVars.foreach(v => ifBody.markAsNull(v.name, v.cypherType))
+      alternativeAction.body(ifBody)
     }
-    parent.body(generator)
   }
 
-  override protected def children = Seq(parent)
-
-  override protected def operatorId = Some(opName)
-
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    super.init(generator)
-    projections.foreach(_.init(generator))
-  }
+  override def children = Seq(loop)
 }

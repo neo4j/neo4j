@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.JoinData
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
@@ -35,7 +34,6 @@ case class Variable(name: String, cypherType: CypherType, nullable: Boolean = fa
 class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id], val namer: Namer = Namer()) {
 
   private val variables: mutable.Map[String, Variable] = mutable.Map()
-  private val projections: mutable.Map[String, CodeGenExpression] = mutable.Map()
   private val probeTables: mutable.Map[CodeGenPlan, JoinData] = mutable.Map()
   private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
   val operatorIds: mutable.Map[Id, String] = mutable.Map()
@@ -44,13 +42,7 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
     variables.put(name, variable)
   }
 
-  def addProjection(name: String, projection: CodeGenExpression) {
-    projections.put(name, projection)
-  }
-
   def getVariable(name: String): Variable = variables(name)
-
-  def getProjection(name: String): CodeGenExpression = projections(name)
 
   def variableNames(): Set[String] = variables.keySet.toSet
 

@@ -82,7 +82,6 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Map("a" -> bNode),
       Map("a" -> cNode)
     ))
-    println(compiled.executionPlanDescription())
   }
 
   test("hash join of all nodes scans") { // MATCH a RETURN a
@@ -238,6 +237,28 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = getNodesFromResult(compiled, "a", "b")
 
     result shouldBe empty
+  }
+
+  test("label scan + optional expand incoming") {
+  //given
+  val plan = ProduceResult(List("a", "b"), List.empty, List.empty,
+                           Projection(
+                             OptionalExpand(
+                               NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"),
+                               Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll,
+                               Seq(HasLabels(ident("b"), Seq(LabelName("T1")(pos)))(pos)))(solved),
+                             Map("a" -> ident("a"), "b" -> ident("b")))(solved))
+
+    //when
+    val compiled: InternalExecutionResult = compileAndExecute(plan)
+    //then
+    val result = getNodesFromResult(compiled, "a", "b")
+
+    result should equal(List(
+      Map("a" -> aNode, "b" -> null),
+      Map("a" -> bNode, "b" -> null),
+      Map("a" -> cNode, "b" -> null)
+      ))
   }
 
   test("label scan + expand both directions") { // MATCH (a:T1)-[r]-(b) RETURN a, b
@@ -758,6 +779,18 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   })
   when(ro.nodeGetDegree(anyLong(), any())).thenReturn(1)
   when(ro.nodeGetDegree(anyLong(), any(), anyInt())).thenReturn(1)
+  when(ro.nodeHasLabel(anyLong(), anyInt())).thenAnswer(new Answer[Boolean] {
+    override def answer(invocationOnMock: InvocationOnMock) = {
+      val nodeId = invocationOnMock.getArguments.apply(0).asInstanceOf[Long]
+      val labelId = invocationOnMock.getArguments.apply(1).asInstanceOf[Int]
+      val label = labelTokens.map {
+        case (labelName, t) if t == labelId => Some(labelName)
+        case _ => None
+      }.head
+      label.exists(l => nodesForLabel.contains(l) && nodesForLabel(l).exists(_.getId == nodeId)
+      )
+    }
+  })
   val graphDatabaseService = mock[GraphDatabaseService]
   when(graphDatabaseService.getNodeById(anyLong())).thenAnswer(new Answer[Node]() {
     override def answer(invocationOnMock: InvocationOnMock): Node = {

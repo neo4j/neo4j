@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException;
 // Class with static methods used by compiled execution plans
 public abstract class CompiledConversionUtils
 {
-    public static boolean isPropertyValueTrue( Object value )
+    public static boolean coerceToPredicate( Object value )
     {
         if ( value == null )
         {

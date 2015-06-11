@@ -94,6 +94,18 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     ))
   }
 
+  test("optional match with labels on the optional end node") {
+    createLabeledNode("X")
+    val x2 = createLabeledNode("X")
+    val b1 = createLabeledNode("Y")
+    val b2 = createLabeledNode("Y", "Z")
+
+    relate(x2, b1)
+    relate(x2, b2)
+
+    val result = executeWithAllPlannersAndRuntimes("MATCH (a:X) OPTIONAL MATCH (a)-->(b:Y) RETURN b")
+    result.toSet should equal(Set(Map("b" -> null), Map("b" -> b1), Map("b" -> b2)))
+  }
 
   test("should support names paths inside of option matches with node predicates") {
     val result = executeWithAllPlanners("match (a:A), (b:B) optional match p = a-[:X]->b return p")

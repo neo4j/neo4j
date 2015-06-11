@@ -36,9 +36,9 @@ trait Instruction {
 
   final def allColumns: Set[String] = treeView.flatMap(_.columnNames).toSet
 
-  protected def operatorId: Option[String] = None
+  protected def operatorId: Set[String] = Set.empty
 
-  protected def columnNames: Iterable[String] = None
+  protected def columnNames: Iterable[String] = Iterable.empty
 }
 
 object Instruction {

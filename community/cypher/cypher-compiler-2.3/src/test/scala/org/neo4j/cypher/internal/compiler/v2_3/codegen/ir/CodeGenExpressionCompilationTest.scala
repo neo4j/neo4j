@@ -116,8 +116,7 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
     }
 
     def project(lhs: CodeGenExpression, rhs: CodeGenExpression) =
-      Seq(Project("X", Seq.empty, AcceptVisitor("id", Map("result" -> apply(lhs, rhs)))))
-
+      Seq(AcceptVisitor("id", "X", Map("result" -> apply(lhs, rhs))))
     inputs.foreach {
       case (lhs, rhs, expected) =>
 

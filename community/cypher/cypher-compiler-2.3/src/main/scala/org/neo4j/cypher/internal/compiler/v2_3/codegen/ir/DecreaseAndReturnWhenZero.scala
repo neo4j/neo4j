@@ -48,5 +48,5 @@ case class DecreaseAndReturnWhenZero(opName: String, variableName: String, actio
 
   override protected def children: Seq[Instruction] = Seq(action)
 
-  override protected def operatorId = Some(opName)
+  override protected def operatorId = Set(opName)
 }

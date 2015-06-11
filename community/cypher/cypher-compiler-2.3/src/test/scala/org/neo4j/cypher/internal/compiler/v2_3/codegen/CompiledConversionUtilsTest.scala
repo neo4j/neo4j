@@ -37,13 +37,13 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
   tests.foreach {
     case (v, expected) =>
       test(s"$v") {
-        CompiledConversionUtils.isPropertyValueTrue(v) should equal(expected)
+        CompiledConversionUtils.coerceToPredicate(v) should equal(expected)
       }
   }
 
   test("should throw for string and int") {
-    intercept[CypherTypeException](CompiledConversionUtils.isPropertyValueTrue("APA"))
-    intercept[CypherTypeException](CompiledConversionUtils.isPropertyValueTrue(12))
+    intercept[CypherTypeException](CompiledConversionUtils.coerceToPredicate("APA"))
+    intercept[CypherTypeException](CompiledConversionUtils.coerceToPredicate(12))
   }
 
   test("should convert List") {

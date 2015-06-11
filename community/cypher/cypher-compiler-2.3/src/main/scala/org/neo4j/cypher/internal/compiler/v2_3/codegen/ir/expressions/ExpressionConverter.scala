@@ -27,9 +27,11 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 
 object ExpressionConverter {
   def createPredicate(expression: Expression)
-                     (implicit opName: String, context: CodeGenContext): CodeGenExpression = expression match {
-    case expression: HasLabels =>
-      createExpression(expression)
+                     (implicit context: CodeGenContext): CodeGenExpression = expression match {
+    case HasLabels(Identifier(name), label :: Nil) =>
+      val labelIdVariable = context.namer.newVarName()
+      val nodeVariable = context.getVariable(name)
+      HasLabelPredicate(nodeVariable, labelIdVariable, label.name)
 
     case exp@Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
       PropertyAsPredicate(createExpression(exp))
@@ -43,7 +45,7 @@ object ExpressionConverter {
   }
 
   def createExpression(expression: Expression)
-                      (implicit opName: String, context: CodeGenContext): CodeGenExpression = {
+                      (implicit context: CodeGenContext): CodeGenExpression = {
 
     expression match {
       case node@Identifier(name) if context.semanticTable.isNode(node) =>
@@ -54,11 +56,11 @@ object ExpressionConverter {
 
       case Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
         val token = propKey.id(context.semanticTable).map(_.id)
-        NodeProperty(opName, token, propKey.name, context.getVariable(name), context.namer.newVarName())
+        NodeProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
       case Property(rel@Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
         val token = propKey.id(context.semanticTable).map(_.id)
-        RelProperty(opName, token, propKey.name, context.getVariable(name), context.namer.newVarName())
+        RelProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
       case ast.Parameter(name) => expressions.Parameter(name)
 
@@ -92,7 +94,7 @@ object ExpressionConverter {
       case HasLabels(Identifier(name), label :: Nil) =>
         val labelIdVariable = context.namer.newVarName()
         val nodeVariable = context.getVariable(name)
-        HasLabel(opName, nodeVariable, labelIdVariable, label.name)
+        HasLabel(nodeVariable, labelIdVariable, label.name)
 
       case other => throw new CantCompileQueryException(s"Expression of $other not yet supported")
     }
