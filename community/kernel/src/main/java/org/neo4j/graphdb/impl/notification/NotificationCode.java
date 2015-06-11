@@ -78,20 +78,27 @@ public enum NotificationCode
         {
             this.position = position;
 
-            StringBuilder builder = new StringBuilder( description.length() );
-            builder.append( description );
-            builder.append( ' ' );
-            builder.append( '(' );
-            String comma = "";
-            for ( NotificationDetail detail : details )
+            if ( details.length == 0 )
             {
-                builder.append( comma );
-                builder.append( detail );
-                comma = ", ";
+                this.detailedDescription = description;
             }
-            builder.append( ')' );
+            else
+            {
+                StringBuilder builder = new StringBuilder( description.length() );
+                builder.append( description );
+                builder.append( ' ' );
+                builder.append( '(' );
+                String comma = "";
+                for ( NotificationDetail detail : details )
+                {
+                    builder.append( comma );
+                    builder.append( detail );
+                    comma = ", ";
+                }
+                builder.append( ')' );
 
-            this.detailedDescription = builder.toString();
+                this.detailedDescription = builder.toString();
+            }
         }
 
         public String getCode()
