@@ -241,6 +241,29 @@ class CypherCompatibilityTest extends CypherFunSuite {
     }
   }
 
+  test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING SCAN'") {
+    runWithConfig() {
+      engine =>
+        shouldHaveNoWarnings(engine.execute(s"EXPLAIN MATCH (n:Person) USING SCAN n:Person WHERE n.name = 'John' RETURN n"))
+    }
+  }
+
+  test("should succeed if executing a query using both 'USING SCAN' and 'USING INDEX' if index exists") {
+    runWithConfig() {
+      engine =>
+        engine.execute("CREATE INDEX ON :Person(name)")
+        shouldHaveNoWarnings(engine.execute(s"EXPLAIN MATCH (n:Person)-[:WORKS_FOR]->(c:Company) USING INDEX n:Person(name) USING SCAN c:Company WHERE n.name = 'John' RETURN n"))
+    }
+  }
+
+  test("should fail outright if executing a query using a 'USING SCAN' and 'USING INDEX' on the same identifier, even if index exists") {
+    runWithConfig() {
+      engine =>
+        engine.execute("CREATE INDEX ON :Person(name)")
+        intercept[SyntaxException](engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) USING SCAN n:Person WHERE n.name = 'John' RETURN n"))
+    }
+  }
+
   test("should not support old 2.0 and 2.1 compilers") {
     runWithConfig() {
       engine =>
