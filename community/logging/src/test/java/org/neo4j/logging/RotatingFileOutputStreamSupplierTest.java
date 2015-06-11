@@ -37,10 +37,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.channels.ClosedChannelException;
-import java.nio.charset.Charset;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -51,12 +51,12 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
 
 public class RotatingFileOutputStreamSupplierTest
 {
-    private static final Charset UTF_8 = Charset.forName( "UTF-8" );
     private static final java.util.concurrent.Executor DIRECT_EXECUTOR = new Executor()
     {
         @Override
@@ -193,7 +193,7 @@ public class RotatingFileOutputStreamSupplierTest
     }
 
     @Test
-    public void shouldNotifyMonitorWhenNewLogIsCreated() throws Exception
+    public void shouldNotifyListenerWhenNewLogIsCreated() throws Exception
     {
         final CountDownLatch allowRotationComplete = new CountDownLatch( 1 );
         final CountDownLatch rotationComplete = new CountDownLatch( 1 );
@@ -236,7 +236,42 @@ public class RotatingFileOutputStreamSupplierTest
     }
 
     @Test
-    public void shouldNotifyMonitorOnRotationError() throws Exception
+    public void shouldNotifyListenerOnRotationErrorDuringJobExecution() throws Exception
+    {
+        RotationListener rotationListener = mock( RotationListener.class );
+        Executor executor = mock( Executor.class );
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 10, executor, rotationListener );
+        OutputStream outputStream = supplier.get();
+
+        RejectedExecutionException exception = new RejectedExecutionException( "text exception" );
+        doThrow( exception ).when( executor ).execute( any( Runnable.class ) );
+
+        write( outputStream, "A string longer than 10 bytes" );
+        assertThat( supplier.get(), is( outputStream ) );
+
+        verify( rotationListener ).rotationError( exception, outputStream );
+    }
+
+    @Test
+    public void shouldReattemptRotationAfterExceptionDuringJobExecution() throws Exception
+    {
+        RotationListener rotationListener = mock( RotationListener.class );
+        Executor executor = mock( Executor.class );
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 10, executor, rotationListener );
+        OutputStream outputStream = supplier.get();
+
+        RejectedExecutionException exception = new RejectedExecutionException( "text exception" );
+        doThrow( exception ).when( executor ).execute( any( Runnable.class ) );
+
+        write( outputStream, "A string longer than 10 bytes" );
+        assertThat( supplier.get(), is( outputStream ) );
+        assertThat( supplier.get(), is( outputStream ) );
+
+        verify( rotationListener, times( 2 ) ).rotationError( exception, outputStream );
+    }
+
+    @Test
+    public void shouldNotifyListenerOnRotationErrorDuringRotationIO() throws Exception
     {
         RotationListener rotationListener = mock( RotationListener.class );
         FileSystemAbstraction fs = spy( fileSystem );

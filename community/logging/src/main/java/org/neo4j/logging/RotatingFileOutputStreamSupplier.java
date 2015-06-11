@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,7 +42,10 @@ import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 /**
  * A {@link Supplier} of {@link OutputStream}s backed by on-disk files, which
- * are rotated and archived when a specified size is reached.
+ * are rotated and archived when a specified size is reached. The {@link #get()} method
+ * will always return an OutputStream to the current output file without directly performing
+ * any IO or blocking, and, when necessary, will trigger rotation via the {@link Executor}
+ * supplied during construction.
  */
 public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>, Closeable
 {
@@ -227,10 +229,10 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
         {
             rotationExecutor.execute( runnable );
         }
-        catch ( RejectedExecutionException e )
+        catch ( Exception e )
         {
-            // Run directly instead
-            runnable.run();
+            rotationListener.rotationError( e, outRef.get() );
+            rotating.set( false );
         }
     }
 
