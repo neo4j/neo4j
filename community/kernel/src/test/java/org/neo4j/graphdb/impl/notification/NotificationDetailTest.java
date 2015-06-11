@@ -17,23 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.notification
+package org.neo4j.graphdb.impl.notification;
 
-import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
+import org.junit.Test;
 
-/**
- * Describes a notification
- */
-sealed trait InternalNotification
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
 
-case class CartesianProductNotification(position: InputPosition) extends InternalNotification
+public class NotificationDetailTest
+{
+    @Test
+    public void shouldConstructIndexDetails()
+    {
+        NotificationDetail detail = NotificationDetail.Factory.index( "hinted index", "Person", "name" );
 
-case class LengthOnNonPathNotification(position: InputPosition) extends InternalNotification
-
-case object LegacyPlannerNotification extends InternalNotification
-
-case object PlannerUnsupportedNotification extends InternalNotification
-
-case object RuntimeUnsupportedNotification extends InternalNotification
-
-case class IndexHintUnfulfillableNotification(label: String, propertyKey: String) extends InternalNotification
+        assertThat( detail.name(), equalTo( "hinted index" ) );
+        assertThat( detail.value(), equalTo( "index on :Person(name)" ) );
+        assertThat( detail.toString(), equalTo( "hinted index is index on :Person(name)" ) );
+    }
+}

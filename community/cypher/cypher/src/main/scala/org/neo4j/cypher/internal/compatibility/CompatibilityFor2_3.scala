@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, Tran
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.cypher.{ArithmeticException, CypherExecutionException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, HintException, _}
 import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.graphdb.impl.notification.NotificationCode
+import org.neo4j.graphdb.impl.notification.{NotificationDetail, NotificationCode}
 import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, QueryExecutionType, ResourceIterator}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -290,8 +290,9 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       NotificationCode.PLANNER_UNSUPPORTED.notification(InputPosition.empty)
     case RuntimeUnsupportedNotification =>
       NotificationCode.RUNTIME_UNSUPPORTED.notification(InputPosition.empty)
-    case IndexHintUnfulfillableNotification =>
-       NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty)
+    case IndexHintUnfulfillableNotification(label, propertyKey) =>
+      // TODO: Construction of the detail should move to a factory in the kernel
+      NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, NotificationDetail.Factory.index("hinted index", label, propertyKey))
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_3.runSafely {

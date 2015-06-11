@@ -122,7 +122,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       notificationLogger = notificationLogger)
 
     verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, getQueryWithIdxHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification)
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("User", "name"))
   }
 
   test("should succeed when finding plan that contains fulfillable index hint") {

@@ -47,7 +47,9 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
           val firstIndexHint = unfulfillableHints.head
           throw new IndexHintException(firstIndexHint.identifier.name, firstIndexHint.label.name, firstIndexHint.property.name, "No such index")
         } else {
-          context.notificationLogger.log(IndexHintUnfulfillableNotification)
+          unfulfillableHints.foreach { hint =>
+            context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.label.name, hint.property.name))
+          }
         }
       }
     }
@@ -58,8 +60,8 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     query.allHints.flatMap {
       // using index name:label(property)
       case hint@UsingIndexHint(Identifier(name), LabelName(label), Identifier(property))
-        if(planContext.getIndexRule(label, property).isDefined ||
-          planContext.getUniqueIndexRule(label, property).isDefined) => None
+        if planContext.getIndexRule( label, property ).isDefined ||
+           planContext.getUniqueIndexRule( label, property ).isDefined => None
       // no such index exists
       case hint@UsingIndexHint(Identifier(name), LabelName(label), Identifier(property)) => Option(hint)
       // don't care about other hints
