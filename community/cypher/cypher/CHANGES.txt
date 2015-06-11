@@ -1,3 +1,11 @@
+2.3-M03
+-------
+
+Cypher:
+o Unfulfillable index hints (e.g. on non-existing indices) will now produce a warning or throw an error as configured
+o String prefix searches using LIKE are now solved using a index scans
+o Now supports dynamic property lookup (f.e. using n['property'])
+
 2.3-M02
 -------
 
@@ -15,8 +23,8 @@ o Specifying a default Cypher planner in the settings now only applies to the de
 
 Cypher:
 o Added new warning mechanism. The first supported warning is generated for queries that contain a potentially
-  unintended catesian product
-o Cypher may now use full index scans to solve queries containing has(n.prop) if apropriate
+  unintended cartesian product
+o Cypher may now use full index scans to solve queries containing has(n.prop) if appropriate
 
 2.2.3
 -----
