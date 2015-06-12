@@ -36,7 +36,7 @@ public class GitHub1304Test
     @Test
     public void givenBatchInserterWhenArrayPropertyUpdated4TimesThenShouldNotFail() throws Exception
     {
-        BatchInserter batchInserter = BatchInserters.inserter( folder.getRoot().getAbsolutePath() );
+        BatchInserter batchInserter = BatchInserters.inserter( folder.getRoot() );
 
         long nodeId = batchInserter.createNode( Collections.<String, Object>emptyMap() );
 
