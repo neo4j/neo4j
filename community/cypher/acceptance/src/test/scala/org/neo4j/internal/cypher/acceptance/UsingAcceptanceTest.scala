@@ -209,4 +209,20 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     e.getMessage should startWith("Multiple hints for same identifier are not supported")
   }
+
+  test("scan hint must fail if using an identifier not used in the query") {
+    // GIVEN
+
+    // WHEN
+    intercept[SyntaxException](
+      executeWithAllPlanners("MATCH (n:Person)-->() USING SCAN x:Person return n"))
+  }
+
+  test("scan hint must fail if using label not used in the query") {
+    // GIVEN
+
+    // WHEN
+    intercept[SyntaxException](
+      executeWithAllPlanners("MATCH n-->() USING SCAN n:Person return n"))
+  }
 }
