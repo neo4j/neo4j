@@ -21,19 +21,27 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.After;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -41,12 +49,19 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static java.util.Arrays.asList;
+
+import static org.neo4j.helpers.Exceptions.contains;
+import static org.neo4j.helpers.Exceptions.containsStackTraceElement;
+import static org.neo4j.helpers.Exceptions.forMethod;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -111,7 +126,7 @@ public class NodeStoreTest
     {
         // GIVEN
         // -- a store
-        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fs = efs.get();
         NodeStore nodeStore = newNodeStore( fs );
 
         // -- a record with the msb carrying a negative value
@@ -165,7 +180,7 @@ public class NodeStoreTest
     public void shouldTellNodeInUse() throws Exception
     {
         // Given
-        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fs = efs.get();
         NodeStore store = newNodeStore( fs );
 
         long exists = store.nextId();
@@ -185,7 +200,7 @@ public class NodeStoreTest
     public void scanningRecordsShouldVisitEachInUseRecordOnce() throws IOException
     {
         // GIVEN we have a NodeStore with data that spans several pages...
-        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        EphemeralFileSystemAbstraction fs = efs.get();
         NodeStore store = newNodeStore( fs );
 
         ThreadLocalRandom rng = ThreadLocalRandom.current();
@@ -228,7 +243,54 @@ public class NodeStoreTest
         assertTrue( nextRelSet.isEmpty() );
     }
 
-    private NodeStore newNodeStore( EphemeralFileSystemAbstraction fs )
+    @Test
+    public void shouldCloseStoreFileOnFailureToOpen() throws Exception
+    {
+        // GIVEN
+        final AtomicBoolean fired = new AtomicBoolean();
+        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( efs.get() )
+        {
+            @Override
+            public StoreChannel open( File fileName, String mode ) throws IOException
+            {
+                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                {
+                    @Override
+                    public int read( ByteBuffer dst ) throws IOException
+                    {
+                        Exception stack = new Exception();
+                        if ( containsStackTraceElement( stack, forMethod( "initGenerator" ) ) &&
+                            !containsStackTraceElement( stack, forMethod( "createNodeStore" ) ) )
+                        {
+                            fired.set( true );
+                            throw new IOException( "Proving a point here" );
+                        }
+                        return super.read( dst );
+                    }
+                };
+            }
+        };
+
+        // WHEN
+        try ( PageCache pageCache = pageCacheRule.getPageCache( fs ) )
+        {
+            newNodeStore( fs );
+            fail( "Should fail" );
+        }   // Close the page cache here so that we can see failure to close (due to still mapped files)
+        catch ( Exception e )
+        {
+            // THEN
+            assertTrue( contains( e, IOException.class ) );
+            assertTrue( fired.get() );
+        }
+    }
+
+    private NodeStore newNodeStore( FileSystemAbstraction fs ) throws IOException
+    {
+        return newNodeStore( fs, pageCacheRule.getPageCache( fs ) );
+    }
+
+    private NodeStore newNodeStore( FileSystemAbstraction fs, PageCache pageCache ) throws IOException
     {
         File storeDir = new File( "dir" );
         fs.mkdirs( storeDir );
@@ -238,7 +300,7 @@ public class NodeStoreTest
         StoreFactory factory = new StoreFactory(
                 config,
                 idGeneratorFactory,
-                pageCacheRule.getPageCache( fs ),
+                pageCache,
                 fs,
                 DEV_NULL,
                 monitors );
@@ -261,4 +323,5 @@ public class NodeStoreTest
 
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public final @Rule EphemeralFileSystemRule efs = new EphemeralFileSystemRule();
 }
