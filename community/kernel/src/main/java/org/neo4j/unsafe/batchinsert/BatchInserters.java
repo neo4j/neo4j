@@ -34,9 +34,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * <p>
  * A {@link BatchInserter} retrieved from the {@link #inserter(String)} or
  * {@link #inserter(String, Map)} methods is more performant while the
- * {@link GraphDatabaseService} retrievied from {@link #batchDatabase(String)}
- * or {@link #batchDatabase(String, Map)} methods is there for convenience, so
- * you can reuse existing code.
  */
 public final class BatchInserters
 {

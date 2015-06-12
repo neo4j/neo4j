@@ -112,6 +112,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -122,6 +123,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
 import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
+import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
@@ -134,7 +136,6 @@ import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Boolean.parseBoolean;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -199,6 +200,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private boolean isShutdown = false;
 
+    private FlushStrategy flushStrategy;
     // Helper structure for setNodeProperty
     private final RelationshipCreator relationshipCreator;
     private final DirectRecordAccessSet recordAccess;
@@ -284,6 +286,9 @@ public class BatchInserterImpl implements BatchInserter
         propertyTraverser = new PropertyTraverser();
         propertyCreator = new PropertyCreator( getPropertyStore(), propertyTraverser );
         propertyDeletor = new PropertyDeleter( getPropertyStore(), propertyTraverser );
+
+        flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
+                .batch_inserter_batch_size ) );
     }
 
     private Map<String, String> getDefaultParams()
@@ -307,19 +312,21 @@ public class BatchInserterImpl implements BatchInserter
     }
 
     @Override
-    public void setNodeProperty( long node, String propertyName, Object newValue )
+    public void setNodeProperty( long node, String propertyName, Object propertyValue )
     {
-        propertyCreator.setPrimitiveProperty( getNodeRecord( node ), getOrCreatePropertyKeyId( propertyName ),
-                newValue, recordAccess.getPropertyRecords() );
-        recordAccess.commit();
+        RecordProxy<Long,NodeRecord,Void> nodeRecord = getNodeRecord( node );
+        setPrimitiveProperty( nodeRecord, propertyName, propertyValue );
+
+        flushStrategy.flush();
     }
 
     @Override
     public void setRelationshipProperty( long relationship, String propertyName, Object propertyValue )
     {
-        propertyCreator.setPrimitiveProperty( getRelationshipRecord( relationship ),
-                getOrCreatePropertyKeyId( propertyName ), propertyValue, recordAccess.getPropertyRecords() );
-        recordAccess.commit();
+        RecordProxy<Long,RelationshipRecord,Void> relationshipRecord = getRelationshipRecord( relationship );
+        setPrimitiveProperty( relationshipRecord, propertyName, propertyValue );
+
+        flushStrategy.flush();
     }
 
     @Override
@@ -327,7 +334,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         int propertyKey = getOrCreatePropertyKeyId( propertyName );
         propertyDeletor.removeProperty( getNodeRecord( node ), propertyKey, recordAccess.getPropertyRecords() );
-        recordAccess.commit();
+        flushStrategy.flush();
     }
 
     @Override
@@ -337,13 +344,33 @@ public class BatchInserterImpl implements BatchInserter
         int propertyKey = getOrCreatePropertyKeyId( propertyName );
         propertyDeletor.removeProperty( getRelationshipRecord( relationship ), propertyKey,
                 recordAccess.getPropertyRecords() );
-        recordAccess.commit();
+        flushStrategy.flush();
     }
 
     @Override
     public IndexCreator createDeferredSchemaIndex( Label label )
     {
         return new IndexCreatorImpl( actions, label );
+    }
+
+    private void removePropertyIfExist( RecordProxy<Long, ? extends PrimitiveRecord,Void> recordProxy,
+            int propertyKey, RecordAccess<Long,PropertyRecord,PrimitiveRecord> propertyRecords )
+    {
+        if ( propertyTraverser.findPropertyRecordContaining( recordProxy.forReadingData(),
+                propertyKey, propertyRecords, false ) != Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            propertyDeletor.removeProperty( recordProxy, propertyKey, propertyRecords );
+        }
+    }
+
+    private void setPrimitiveProperty( RecordProxy<Long,? extends PrimitiveRecord,Void> primitiveRecord,
+            String propertyName, Object propertyValue )
+    {
+        int propertyKey = getOrCreatePropertyKeyId( propertyName );
+        RecordAccess<Long,PropertyRecord,PrimitiveRecord> propertyRecords = recordAccess.getPropertyRecords();
+
+        removePropertyIfExist( primitiveRecord, propertyKey, propertyRecords );
+        propertyCreator.primitiveAddProperty( primitiveRecord, propertyKey, propertyValue, propertyRecords );
     }
 
     private void checkSchemaCreationConstraints( int labelId, int propertyKeyId )
@@ -385,7 +412,7 @@ public class BatchInserterImpl implements BatchInserter
         }
         schemaCache.addSchemaRule( schemaRule );
         labelsTouched = true;
-        recordAccess.commit();
+        flushStrategy.forceFlush();
     }
 
     private void repopulateAllIndexes() throws IOException, IndexCapacityExceededException
@@ -557,7 +584,7 @@ public class BatchInserterImpl implements BatchInserter
         }
         schemaCache.addSchemaRule( indexRule );
         labelsTouched = true;
-        recordAccess.commit();
+        flushStrategy.forceFlush();
     }
 
     private int getOrCreatePropertyKeyId( String name )
@@ -636,7 +663,7 @@ public class BatchInserterImpl implements BatchInserter
             setNodeLabels( nodeRecord, labels );
         }
 
-        recordAccess.commit();
+        flushStrategy.flush();
         return nodeId;
     }
 
@@ -725,7 +752,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         NodeRecord record = getNodeRecord( node ).forChangingData();
         setNodeLabels( record, labels );
-        recordAccess.commit();
+        flushStrategy.flush();
     }
 
     @Override
@@ -776,7 +803,7 @@ public class BatchInserterImpl implements BatchInserter
             record.setNextProp( propertyCreator.createPropertyChain( record,
                     propertiesIterator( properties ), recordAccess.getPropertyRecords() ) );
         }
-        recordAccess.commit();
+        flushStrategy.flush();
         return id;
     }
 
@@ -790,7 +817,7 @@ public class BatchInserterImpl implements BatchInserter
         }
         record.setNextProp( propertyCreator.createPropertyChain( record, propertiesIterator( properties ),
                 recordAccess.getPropertyRecords() ) );
-        recordAccess.commit();
+        flushStrategy.flush();
     }
 
     @Override
@@ -803,12 +830,13 @@ public class BatchInserterImpl implements BatchInserter
         }
         record.setNextProp( propertyCreator.createPropertyChain( record, propertiesIterator( properties ),
                 recordAccess.getPropertyRecords() ) );
-        recordAccess.commit();
+        flushStrategy.flush();
     }
 
     @Override
     public boolean nodeExists( long nodeId )
     {
+        flushStrategy.forceFlush();
         return neoStore.getNodeStore().loadLightNode( nodeId ) != null;
     }
 
@@ -826,12 +854,14 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public Iterable<Long> getRelationshipIds( long nodeId )
     {
+        flushStrategy.forceFlush();
         return map( REL_RECORD_TO_ID, new BatchRelationshipIterable( neoStore, nodeId ) );
     }
 
     @Override
     public Iterable<BatchRelationship> getRelationships( long nodeId )
     {
+        flushStrategy.forceFlush();
         return map( REL_RECORD_TO_BATCH_REL, new BatchRelationshipIterable( neoStore, nodeId ) );
     }
 
@@ -859,7 +889,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public void shutdown()
     {
-        recordAccess.close();
+        flushStrategy.forceFlush();
 
         if ( isShutdown )
         {
@@ -925,7 +955,7 @@ public class BatchInserterImpl implements BatchInserter
                 String key = propertyKeyTokens.nameOf( propBlock.getKeyIndexId() );
                 DefinedProperty propertyData = propBlock.newPropertyData( getPropertyStore() );
                 Object value = propertyData.value() != null ? propertyData.value() :
-                    propBlock.getType().getValue( propBlock, getPropertyStore() );
+                               propBlock.getType().getValue( propBlock, getPropertyStore() );
                 map.put( key, value );
             }
         } );
@@ -1142,6 +1172,45 @@ public class BatchInserterImpl implements BatchInserter
                 } );
             }
             throw new IllegalArgumentException( "Unknown dependency " + type );
+        }
+    }
+
+    interface FlushStrategy
+    {
+        void flush();
+
+        void forceFlush();
+
+    }
+
+    static final class BatchedFlushStrategy implements FlushStrategy
+    {
+        private DirectRecordAccessSet directRecordAccess;
+        private int batchSize;
+        private int attempts;
+
+        public BatchedFlushStrategy(DirectRecordAccessSet directRecordAccess,  int batchSize )
+        {
+            this.directRecordAccess = directRecordAccess;
+            this.batchSize = batchSize;
+        }
+
+
+        @Override
+        public void flush()
+        {
+            attempts++;
+            if ( attempts >= batchSize)
+            {
+                forceFlush();
+            }
+        }
+
+        @Override
+        public void forceFlush()
+        {
+            directRecordAccess.commit();
+            attempts = 0;
         }
     }
 }

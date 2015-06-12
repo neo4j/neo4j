@@ -19,12 +19,13 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import org.neo4j.collection.pool.LinkedQueuePool;
-import org.neo4j.function.Factory;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.impl.store.AbstractRecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -40,30 +41,14 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
 {
     private final AbstractRecordStore<RECORD> store;
     private final Loader<KEY, RECORD, ADDITIONAL> loader;
-    private final SortedMap<KEY,DirectRecordProxy> batch = new TreeMap<>( new Comparator<KEY>()
-    {
-        @Override
-        public int compare( KEY o1, KEY o2 )
-        {
-            return -o1.compareTo( o2 );
-        }
-    });
-    private final LinkedQueuePool<DirectRecordProxy> proxyFlyweightPool;
+    private final Map<KEY,DirectRecordProxy> batch = new HashMap<>();
+
     private final IntCounter changeCounter = new IntCounter();
 
     public DirectRecordAccess( AbstractRecordStore<RECORD> store, Loader<KEY, RECORD, ADDITIONAL> loader )
     {
         this.store = store;
         this.loader = loader;
-        // TODO: We should modify marshlandpool to support multiple items pooled per thread, and use that here.
-        proxyFlyweightPool = new LinkedQueuePool<>( 100, new Factory<DirectRecordProxy>()
-        {
-            @Override
-            public DirectRecordProxy newInstance()
-            {
-                return new DirectRecordProxy();
-            }
-        } );
     }
 
     @Override
@@ -124,9 +109,7 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
 
     private DirectRecordProxy proxy( final KEY key, final RECORD record, final ADDITIONAL additionalData, boolean created )
     {
-        DirectRecordProxy result = proxyFlyweightPool.acquire();
-        result.bind( key, record, additionalData, created );
-        return result;
+        return new DirectRecordProxy( key, record, additionalData, created );
     }
 
     private class DirectRecordProxy implements RecordProxy<KEY,RECORD,ADDITIONAL>
@@ -134,11 +117,10 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
         private KEY key;
         private RECORD record;
         private ADDITIONAL additionalData;
-        private boolean changed;
+        private boolean changed = false;
 
-        public void bind( KEY key, RECORD record, ADDITIONAL additionalData, boolean created )
+        public DirectRecordProxy( KEY key, RECORD record, ADDITIONAL additionalData, boolean created )
         {
-            this.changed = false;
             this.key = key;
             this.record = record;
             this.additionalData = additionalData;
@@ -237,10 +219,18 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
             return;
         }
 
-        for ( DirectRecordProxy proxy : batch.values() )
+        List<DirectRecordProxy> directRecordProxies = new ArrayList<>( batch.values() );
+        Collections.sort(directRecordProxies, new Comparator<DirectRecordProxy>()
+        {
+            @Override
+            public int compare( DirectRecordProxy o1, DirectRecordProxy o2 )
+            {
+                return -o1.getKey().compareTo( o2.getKey() );
+            }
+        } );
+        for ( DirectRecordProxy proxy : directRecordProxies )
         {
             proxy.store();
-            proxyFlyweightPool.release( proxy );
         }
         changeCounter.clear();
         batch.clear();
