@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-class RelationshipDataExtractor implements RelationshipVisitor<RuntimeException>
+public class RelationshipDataExtractor implements RelationshipVisitor<RuntimeException>
 {
     private int type;
     private long startNode;

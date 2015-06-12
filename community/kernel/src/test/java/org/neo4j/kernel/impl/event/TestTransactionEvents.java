@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,6 +47,7 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -58,6 +60,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
@@ -846,6 +849,79 @@ public class TestTransactionEvents
         finally
         {
             db.unregisterTransactionEventHandler( labels );
+        }
+    }
+
+    @Test
+    public void shouldAccessRelationshipDataInAfterCommit() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        final AtomicInteger accessCount = new AtomicInteger();
+        TransactionEventHandler<Void> handler = new TransactionEventHandler.Adapter<Void>()
+        {
+            @Override
+            public void afterCommit( TransactionData data, Void state )
+            {
+                accessCount.set( 0 );
+                for ( Relationship relationship : data.createdRelationships() )
+                {
+                    accessData( relationship );
+                }
+                for ( PropertyEntry<Relationship> change : data.assignedRelationshipProperties() )
+                {
+                    accessData( change.entity() );
+                }
+                for ( PropertyEntry<Relationship> change : data.removedRelationshipProperties() )
+                {
+                    accessData( change.entity() );
+                }
+            }
+
+            private void accessData( Relationship relationship )
+            {
+                accessCount.incrementAndGet();
+                relationship.getStartNode();
+                relationship.getEndNode();
+                relationship.getType();
+            }
+        };
+        db.registerTransactionEventHandler( handler );
+
+        // WHEN
+        try
+        {
+            Relationship relationship;
+            try ( Transaction tx = db.beginTx() )
+            {
+                relationship = db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+                tx.success();
+            }
+            // THEN
+            assertEquals( 1, accessCount.get() );
+
+            // and WHEN
+            try ( Transaction tx = db.beginTx() )
+            {
+                relationship.setProperty( "name", "Smith" );
+                db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+                tx.success();
+            }
+            // THEN
+            assertEquals( 2, accessCount.get() );
+
+            // and WHEN
+            try ( Transaction tx = db.beginTx() )
+            {
+                relationship.delete();
+                tx.success();
+            }
+            // THEN
+            assertEquals( 1, accessCount.get() );
+        }
+        finally
+        {
+            db.unregisterTransactionEventHandler( handler );
         }
     }
 
