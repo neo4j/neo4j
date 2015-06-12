@@ -197,18 +197,13 @@ final class MuninnPagedFile implements PagedFile
                     }
                 }
             }
-            force();
+
+            swapper.force();
         }
         finally
         {
             pageCache.unpauseBackgroundFlushTask();
         }
-    }
-
-    @Override
-    public void force() throws IOException
-    {
-        swapper.force();
     }
 
     @Override
