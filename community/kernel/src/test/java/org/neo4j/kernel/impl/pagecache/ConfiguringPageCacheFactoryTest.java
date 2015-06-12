@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -44,6 +47,15 @@ public class ConfiguringPageCacheFactoryTest
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
+    @Before
+    public void setUp()
+    {
+        PageSwapperFactoryForTesting.createdCounter.set( 0 );
+        PageSwapperFactoryForTesting.configuredCounter.set( 0 );
+        PageSwapperFactoryForTesting.cachePageSizeHint.set( 0 );
+        PageSwapperFactoryForTesting.cachePageSizeHintIsStrict.set( false );
+    }
+
     @Test
     public void shouldUseConfiguredPageSizeAndFitAsManyPagesAsItCan() throws Throwable
     {
@@ -54,11 +66,11 @@ public class ConfiguringPageCacheFactoryTest
                 pagecache_memory.name(), Integer.toString( 4096 * 16 ) ) );
 
         // When
-        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
+        ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
                 fsRule.get(), config, PageCacheTracer.NULL, NullLog.getInstance() );
 
         // Then
-        try ( PageCache cache = pageCacheFactory.getOrCreatePageCache() )
+        try ( PageCache cache = factory.getOrCreatePageCache() )
         {
             assertThat( cache.pageSize(), equalTo( 4096 ) );
             assertThat( cache.maxCachedPages(), equalTo( 16 ) );
@@ -82,12 +94,58 @@ public class ConfiguringPageCacheFactoryTest
         assertThat( PageSwapperFactoryForTesting.countConfiguredPageSwapperFactories(), is( 1 ) );
     }
 
+    @Test
+    public void mustUsePageSwapperCachePageSizeHintAsDefault() throws Exception
+    {
+        // Given
+        int cachePageSizeHint = 16 * 1024;
+        PageSwapperFactoryForTesting.cachePageSizeHint.set( cachePageSizeHint );
+        Config config = new Config();
+        config.applyChanges( stringMap(
+                GraphDatabaseSettings.pagecache_swapper.name(), "test" ) );
+
+        // When
+        ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
+                fsRule.get(), config, PageCacheTracer.NULL, NullLog.getInstance() );
+
+        // Then
+        try ( PageCache cache = factory.getOrCreatePageCache() )
+        {
+            assertThat( cache.pageSize(), is( cachePageSizeHint ) );
+        }
+    }
+
+    @Test
+    public void mustIgnoreExplicitlySpecifiedCachePageSizeIfPageSwapperHintIsStrict() throws Exception
+    {
+        // Given
+        int cachePageSizeHint = 16 * 1024;
+        PageSwapperFactoryForTesting.cachePageSizeHint.set( cachePageSizeHint );
+        PageSwapperFactoryForTesting.cachePageSizeHintIsStrict.set( true );
+        Config config = new Config();
+        config.applyChanges( stringMap(
+                GraphDatabaseSettings.mapped_memory_page_size.name(), "4096",
+                GraphDatabaseSettings.pagecache_swapper.name(), "test" ) );
+
+        // When
+        ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
+                fsRule.get(), config, PageCacheTracer.NULL, NullLog.getInstance() );
+
+        // Then
+        try ( PageCache cache = factory.getOrCreatePageCache() )
+        {
+            assertThat( cache.pageSize(), is( cachePageSizeHint ) );
+        }
+    }
+
     public static class PageSwapperFactoryForTesting
             extends SingleFilePageSwapperFactory
             implements ConfigurablePageSwapperFactory
     {
         private static final AtomicInteger createdCounter = new AtomicInteger();
         private static final AtomicInteger configuredCounter = new AtomicInteger();
+        private static final AtomicInteger cachePageSizeHint = new AtomicInteger( 8192 );
+        private static final AtomicBoolean cachePageSizeHintIsStrict = new AtomicBoolean();
 
         public static int countCreatedPageSwapperFactories()
         {
@@ -108,6 +166,18 @@ public class ConfiguringPageCacheFactoryTest
         public String implementationName()
         {
             return "test";
+        }
+
+        @Override
+        public int getCachePageSizeHint()
+        {
+            return cachePageSizeHint.get();
+        }
+
+        @Override
+        public boolean isCachePageSizeHintStrict()
+        {
+            return cachePageSizeHintIsStrict.get();
         }
 
         @Override

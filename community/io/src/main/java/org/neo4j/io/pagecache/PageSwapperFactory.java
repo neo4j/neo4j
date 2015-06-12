@@ -46,6 +46,17 @@ public interface PageSwapperFactory
     String implementationName();
 
     /**
+     * Get the most optimal cache page size (in bytes) for these PageSwapper implementations.
+     */
+    int getCachePageSizeHint();
+
+    /**
+     * Gives <code>true</code> if the {@link #getCachePageSizeHint()} is the only cache page size that is supported for
+     * these PageSwapper implementations, otherwise <code>false</code>.
+     */
+    boolean isCachePageSizeHintStrict();
+
+    /**
      * Create a PageSwapper for the given file.
      * @param file The file that the PageSwapper will move file pages in and
      *             out of.

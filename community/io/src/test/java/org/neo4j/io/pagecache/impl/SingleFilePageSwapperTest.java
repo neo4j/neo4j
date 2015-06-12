@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl;
 
+import org.junit.After;
 import org.junit.Test;
 
 import java.io.File;
@@ -26,7 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
@@ -38,12 +39,25 @@ import static org.neo4j.test.ByteArrayMatcher.byteArray;
 public class SingleFilePageSwapperTest extends PageSwapperTest
 {
     private final File file = new File( "file" );
+    private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
 
-    protected PageSwapperFactory swapperFactory( FileSystemAbstraction fs )
+    @After
+    public void tearDown()
+    {
+        fs.shutdown();
+    }
+
+    protected PageSwapperFactory swapperFactory()
     {
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
         factory.setFileSystemAbstraction( fs );
         return factory;
+    }
+
+    @Override
+    protected void ensureFileExists( File file ) throws IOException
+    {
+        fs.create( file ).close();
     }
 
     @Test
@@ -54,7 +68,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         channel.writeAll( wrap( bytes ) );
         channel.close();
 
-        PageSwapperFactory factory = swapperFactory( fs );
+        PageSwapperFactory factory = swapperFactory();
         PageSwapper swapper = factory.createPageSwapper( file, 4, null );
         ByteBuffer target = ByteBuffer.allocateDirect( 4 );
         ByteBufferPage page = new ByteBufferPage( target );
@@ -76,7 +90,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         channel.writeAll( wrap( bytes ) );
         channel.close();
 
-        PageSwapperFactory factory = swapperFactory( fs );
+        PageSwapperFactory factory = swapperFactory();
         PageSwapper swapper = factory.createPageSwapper( file, 4, null );
         ByteBuffer target = ByteBuffer.allocateDirect( 4 );
         ByteBufferPage page = new ByteBufferPage( target );
@@ -93,7 +107,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         byte[] expected = new byte[] { 1, 2, 3, 4 };
         ByteBufferPage page = new ByteBufferPage( wrap( expected ) );
 
-        PageSwapperFactory factory = swapperFactory( fs );
+        PageSwapperFactory factory = swapperFactory();
         PageSwapper swapper = factory.createPageSwapper( file, 4, null );
         swapper.write( 0, page );
 
@@ -130,7 +144,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         byte[] change = new byte[] { 8, 7, 6, 5 };
         ByteBufferPage page = new ByteBufferPage( wrap( change ) );
 
-        PageSwapperFactory factory = swapperFactory( fs );
+        PageSwapperFactory factory = swapperFactory();
         PageSwapper swapper = factory.createPageSwapper( file, 4, null );
         swapper.write( 1, page );
 

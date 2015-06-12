@@ -20,58 +20,66 @@
 package org.neo4j.io.pagecache;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.ByteBufferPage;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public abstract class PageSwapperTest
 {
-    private static PageEvictionCallback NO_CALLBACK = new PageEvictionCallback()
+    public static final PageEvictionCallback NO_CALLBACK = new PageEvictionCallback()
     {
         @Override
         public void onEvict( long pageId, Page page )
         {
         }
     };
+    public static final long X = 0xcafebabedeadbeefl;
+    public static final long Y = X ^ (X << 1);
+    public static final int Z = 0xfefefefe;
 
-    protected static EphemeralFileSystemAbstraction fs;
     protected static final int cachePageSize = 32;
 
-    @BeforeClass
-    public static void setUp()
+    protected abstract PageSwapperFactory swapperFactory() throws Exception;
+
+    protected abstract void ensureFileExists( File file ) throws IOException;
+
+    protected int cachePageSize()
     {
-        Thread.interrupted(); // Clear stray interrupts
-        fs = new EphemeralFileSystemAbstraction();
+        return cachePageSize;
     }
 
-    @AfterClass
-    public static void tearDown()
-    {
-        fs.shutdown();
-    }
-
-    protected abstract PageSwapperFactory swapperFactory( FileSystemAbstraction fs );
-
-    private ByteBufferPage createPage( int cachePageSize )
+    protected ByteBufferPage createPage( int cachePageSize )
     {
         return new ByteBufferPage( ByteBuffer.allocateDirect( cachePageSize ) );
+    }
+
+    protected ByteBufferPage createPage() {
+        return createPage( cachePageSize() );
+    }
+
+    protected void clear( ByteBufferPage page )
+    {
+        byte b = (byte) 0;
+        for ( int i = 0; i < cachePageSize(); i++ )
+        {
+            page.putByte( b, i );
+        }
     }
 
     @Before
@@ -82,14 +90,14 @@ public abstract class PageSwapperTest
     }
 
     @Test
-    public void swappingOutMustNotSwallowInterrupts() throws IOException
+    public void swappingOutMustNotSwallowInterrupts() throws Exception
     {
         File file = new File( "a" );
-        fs.create( file ).close();
+        ensureFileExists( file );
 
-        ByteBufferPage page = createPage( cachePageSize );
-        PageSwapperFactory swapperFactory = swapperFactory( fs );
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
+        ByteBufferPage page = createPage();
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
 
         Thread.currentThread().interrupt();
 
@@ -98,13 +106,13 @@ public abstract class PageSwapperTest
     }
 
     @Test
-    public void forcingMustNotSwallowInterrupts() throws IOException
+    public void forcingMustNotSwallowInterrupts() throws Exception
     {
         File file = new File( "a" );
-        fs.create( file ).close();
+        ensureFileExists( file );
 
-        PageSwapperFactory swapperFactory = swapperFactory( fs );
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
 
         Thread.currentThread().interrupt();
         swapper.force();
@@ -112,25 +120,18 @@ public abstract class PageSwapperTest
     }
 
     @Test
-    public void mustReopenChannelWhenReadFailsWithAsynchronousCloseException() throws IOException
+    public void mustReopenChannelWhenReadFailsWithAsynchronousCloseException() throws Exception
     {
-        long x = ThreadLocalRandom.current().nextLong();
-        long y = ThreadLocalRandom.current().nextLong();
-        int z = ThreadLocalRandom.current().nextInt();
-
-        ByteBufferPage page = createPage( cachePageSize );
         File file = new File( "a" );
-        StoreChannel channel = fs.create( file );
-        ByteBuffer buf = ByteBuffer.allocate( cachePageSize );
-        buf.putLong( x );
-        buf.putLong( y );
-        buf.putInt( z );
-        buf.flip();
-        channel.writeAll( buf );
-        channel.close();
+        ensureFileExists( file );
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
 
-        PageSwapperFactory swapperFactory = swapperFactory( fs );
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
+        ByteBufferPage page = createPage();
+        page.putLong( X, 0 );
+        page.putLong( Y, 8 );
+        page.putInt( Z, 16 );
+        swapper.write( 0, page );
 
         Thread.currentThread().interrupt();
 
@@ -139,30 +140,26 @@ public abstract class PageSwapperTest
         // Clear the interrupted flag and assert that it was still raised
         assertTrue( Thread.interrupted() );
 
-        assertThat( page.getLong( 0 ), is( x ) );
-        assertThat( page.getLong( 8 ), is( y ) );
-        assertThat( page.getInt( 16 ), is( z ) );
+        assertThat( page.getLong( 0 ), is( X ) );
+        assertThat( page.getLong( 8 ), is( Y ) );
+        assertThat( page.getInt( 16 ), is( Z ) );
 
         // This must not throw because we should still have a usable channel
         swapper.force();
     }
 
     @Test
-    public void mustReopenChannelWhenWriteFailsWithAsynchronousCloseException() throws IOException
+    public void mustReopenChannelWhenWriteFailsWithAsynchronousCloseException() throws Exception
     {
-        long x = ThreadLocalRandom.current().nextLong();
-        long y = ThreadLocalRandom.current().nextLong();
-        int z = ThreadLocalRandom.current().nextInt();
-
-        ByteBufferPage page = createPage( cachePageSize );
-        page.putLong( x, 0 );
-        page.putLong( y, 8 );
-        page.putInt( z, 16 );
+        ByteBufferPage page = createPage();
+        page.putLong( X, 0 );
+        page.putLong( Y, 8 );
+        page.putInt( Z, 16 );
         File file = new File( "a" );
-        fs.create( file ).close();
+        ensureFileExists( file );
 
-        PageSwapperFactory swapperFactory = swapperFactory( fs );
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
 
         Thread.currentThread().interrupt();
 
@@ -174,25 +171,21 @@ public abstract class PageSwapperTest
         // This must not throw because we should still have a usable channel
         swapper.force();
 
-        ByteBuffer buf = ByteBuffer.allocate( cachePageSize );
-        StoreChannel channel = fs.open( file, "r" );
-        int bytesRead = channel.read( buf );
-        channel.close();
-        assertThat( bytesRead, is( cachePageSize ) );
-        buf.flip();
-        assertThat( buf.getLong(), is( x ) );
-        assertThat( buf.getLong(), is( y ) );
-        assertThat( buf.getInt(), is( z ) );
+        clear( page );
+        swapper.read( 0, page );
+        assertThat( page.getLong( 0 ), is( X ) );
+        assertThat( page.getLong( 8 ), is( Y ) );
+        assertThat( page.getInt( 16 ), is( Z ) );
     }
 
     @Test
-    public void mustReopenChannelWhenForceFailsWithAsynchronousCloseException() throws IOException
+    public void mustReopenChannelWhenForceFailsWithAsynchronousCloseException() throws Exception
     {
         File file = new File( "a" );
-        fs.create( file ).close();
+        ensureFileExists( file );
 
-        PageSwapperFactory swapperFactory = swapperFactory( fs );
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
 
         for ( int i = 0; i < 10; i++ )
         {
@@ -207,17 +200,15 @@ public abstract class PageSwapperTest
     }
 
     @Test
-    public void readMustNotReopenExplicitlyClosedChannel() throws IOException
+    public void readMustNotReopenExplicitlyClosedChannel() throws Exception
     {
         File file = new File( "a" );
-        StoreChannel channel = fs.create( file );
-        ByteBuffer buf = ByteBuffer.allocate( cachePageSize );
-        channel.writeAll( buf );
-        channel.close();
+        ensureFileExists( file );
 
-        ByteBufferPage page = createPage( cachePageSize );
-        PageSwapperFactory swapperFactory = swapperFactory( fs );
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
+        ByteBufferPage page = createPage();
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
+        swapper.write( 0, page );
         swapper.close();
 
         try
@@ -232,14 +223,14 @@ public abstract class PageSwapperTest
     }
 
     @Test
-    public void writeMustNotReopenExplicitlyClosedChannel() throws IOException
+    public void writeMustNotReopenExplicitlyClosedChannel() throws Exception
     {
         File file = new File( "a" );
-        fs.create( file ).close();
+        ensureFileExists( file );
 
-        ByteBufferPage page = createPage( cachePageSize );
-        PageSwapperFactory swapperFactory = swapperFactory( fs );
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
+        ByteBufferPage page = createPage();
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
         swapper.close();
 
         try
@@ -254,13 +245,13 @@ public abstract class PageSwapperTest
     }
 
     @Test
-    public void forceMustNotReopenExplicitlyClosedChannel() throws IOException
+    public void forceMustNotReopenExplicitlyClosedChannel() throws Exception
     {
         File file = new File( "a" );
-        fs.create( file ).close();
+        ensureFileExists( file );
 
-        PageSwapperFactory swapperFactory = swapperFactory( fs );
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
         swapper.close();
 
         try
@@ -272,5 +263,76 @@ public abstract class PageSwapperTest
         {
             // This is fine.
         }
+    }
+
+    @Test
+    public void mustNotOverwriteDataInOtherFiles() throws Exception {
+        File fileA = new File( "a" );
+        File fileB = new File( "b" );
+        ensureFileExists( fileA );
+        ensureFileExists( fileB );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapperA =
+                factory.createPageSwapper( fileA, cachePageSize(), NO_CALLBACK);
+        PageSwapper swapperB =
+                factory.createPageSwapper( fileB, cachePageSize(), NO_CALLBACK );
+
+        ByteBufferPage page = createPage();
+        page.putLong( X, 0 );
+        swapperA.write( 0, page );
+        page.putLong( Y, 8 );
+        swapperB.write( 0, page );
+
+        clear( page );
+        swapperA.read( 0, page );
+
+        assertThat( page.getLong( 0 ), is( X ) );
+        assertThat( page.getLong( 8 ), is( 0L ) );
+    }
+
+    @Test
+    public void mustRunEvictionCallbackOnEviction() throws Exception
+    {
+        final AtomicLong callbackFilePageId = new AtomicLong();
+        final AtomicReference<Page> callbackPage = new AtomicReference<>();
+        PageEvictionCallback callback = new PageEvictionCallback()
+        {
+            @Override
+            public void onEvict( long filePageId, Page page )
+            {
+                callbackFilePageId.set( filePageId );
+                callbackPage.set( page );
+            }
+        };
+        File file = new File( "file" );
+        ensureFileExists( file );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, cachePageSize(), callback );
+        Page page = createPage();
+        swapper.evicted( 42, page );
+        assertThat( callbackFilePageId.get(), is( 42L ) );
+        assertThat( callbackPage.get(), sameInstance( page ) );
+    }
+
+    @Test
+    public void mustNotIssueEvictionCallbacksAfterSwapperHasBeenClosed() throws Exception
+    {
+        final AtomicBoolean gotCallback = new AtomicBoolean();
+        PageEvictionCallback callback = new PageEvictionCallback()
+        {
+            @Override
+            public void onEvict( long filePageId, Page page )
+            {
+                gotCallback.set( true );
+            }
+        };
+        File file = new File( "file" );
+        ensureFileExists( file );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, cachePageSize(), callback );
+        Page page = createPage();
+        swapper.close();
+        swapper.evicted( 42, page );
+        assertFalse( gotCallback.get() );
     }
 }

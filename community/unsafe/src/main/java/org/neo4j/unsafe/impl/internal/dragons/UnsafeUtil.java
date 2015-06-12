@@ -54,6 +54,8 @@ public final class UnsafeUtil
     private static final long directByteBufferMarkOffset;
     private static final long directByteBufferAddressOffset;
 
+    private static final int pageSize;
+
     public static final boolean allowUnalignedMemoryAccess;
     public static final boolean storeByteOrderIsNative;
 
@@ -71,6 +73,7 @@ public final class UnsafeUtil
         long dbbLimitOffset = 0;
         long dbbMarkOffset = 0;
         long dbbAddressOffset = 0;
+        int ps = 4096;
         try
         {
             dbbClass = Class.forName( "java.nio.DirectByteBuffer" );
@@ -79,6 +82,7 @@ public final class UnsafeUtil
             dbbLimitOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "limit" ) );
             dbbMarkOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "mark" ) );
             dbbAddressOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "address" ) );
+            ps = unsafe.pageSize();
         }
         catch ( Throwable e )
         {
@@ -102,6 +106,7 @@ public final class UnsafeUtil
         directByteBufferLimitOffset = dbbLimitOffset;
         directByteBufferMarkOffset = dbbMarkOffset;
         directByteBufferAddressOffset = dbbAddressOffset;
+        pageSize = ps;
 
         // See java.nio.Bits.unaligned() and its uses.
         String alignmentProperty = System.getProperty(
@@ -330,6 +335,14 @@ public final class UnsafeUtil
     public static void free( long pointer )
     {
         unsafe.freeMemory( pointer );
+    }
+
+    /**
+     * Return the power-of-2 native memory page size.
+     */
+    public static int pageSize()
+    {
+        return pageSize;
     }
 
     public static byte getByte( long address )

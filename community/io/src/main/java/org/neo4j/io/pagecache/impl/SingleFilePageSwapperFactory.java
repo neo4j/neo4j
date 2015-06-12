@@ -56,4 +56,16 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     {
         return "striped";
     }
+
+    @Override
+    public int getCachePageSizeHint()
+    {
+        return 8192;
+    }
+
+    @Override
+    public boolean isCachePageSizeHintStrict()
+    {
+        return false;
+    }
 }
