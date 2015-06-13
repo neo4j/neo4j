@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -87,7 +88,9 @@ public class NeoStoreDataSourceRule extends ExternalResource
         Caches caches = new DefaultCaches( StringLogger.DEV_NULL, new Monitors() );
         caches.configure( new NoCacheProvider(), config );
 
-        theDs = new NeoStoreDataSource( config, sf, StringLogger.DEV_NULL, mock( JobScheduler.class ),
+        JobScheduler jobScheduler = mock( JobScheduler.class, RETURNS_MOCKS );
+
+        theDs = new NeoStoreDataSource( config, sf, StringLogger.DEV_NULL, jobScheduler,
                 DevNullLoggingService.DEV_NULL, mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locks,
