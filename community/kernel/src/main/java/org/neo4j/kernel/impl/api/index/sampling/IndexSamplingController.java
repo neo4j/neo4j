@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.JobScheduler.JobHandle;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
@@ -45,6 +46,8 @@ public class IndexSamplingController
     private final Predicate<IndexDescriptor> indexRecoveryCondition;
     private final boolean backgroundSampling;
     private final Lock samplingLock = new ReentrantLock( true );
+
+    private JobHandle backgroundSamplingHandle;
 
     // use IndexSamplingControllerFactory.create do not instantiate directly
     IndexSamplingController( IndexSamplingConfig config,
@@ -211,7 +214,16 @@ public class IndexSamplingController
                     sampleIndexes( BACKGROUND_REBUILD_UPDATED );
                 }
             };
-            scheduler.scheduleRecurring( indexSamplingController, samplingRunner, 10, SECONDS );
+            backgroundSamplingHandle = scheduler.scheduleRecurring( indexSamplingController, samplingRunner, 10, SECONDS );
         }
+    }
+
+    public void stop()
+    {
+        if ( backgroundSamplingHandle != null )
+        {
+            backgroundSamplingHandle.cancel( true );
+        }
+        jobTracker.stopAndAwaitAllJobs();
     }
 }
