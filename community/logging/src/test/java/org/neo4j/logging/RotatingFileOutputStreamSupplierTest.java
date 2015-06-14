@@ -20,16 +20,6 @@
 package org.neo4j.logging;
 
 import org.junit.Test;
-import org.neo4j.adversaries.Adversary;
-import org.neo4j.adversaries.RandomAdversary;
-import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
-import org.neo4j.adversaries.fs.AdversarialOutputStream;
-import org.neo4j.function.LongSupplier;
-import org.neo4j.function.Supplier;
-import org.neo4j.function.Suppliers;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.RotatingFileOutputStreamSupplier.RotationListener;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -37,26 +27,42 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.channels.ClosedChannelException;
-import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.adversaries.Adversary;
+import org.neo4j.adversaries.RandomAdversary;
+import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
+import org.neo4j.adversaries.fs.AdversarialOutputStream;
+import org.neo4j.function.LongSupplier;
+import org.neo4j.function.Supplier;
+import org.neo4j.function.Suppliers;
+import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.logging.RotatingFileOutputStreamSupplier.RotationListener;
+
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
 
 public class RotatingFileOutputStreamSupplierTest
 {
-    private static final Charset UTF_8 = Charset.forName( "UTF-8" );
     private static final java.util.concurrent.Executor DIRECT_EXECUTOR = new Executor()
     {
         @Override
@@ -193,7 +199,7 @@ public class RotatingFileOutputStreamSupplierTest
     }
 
     @Test
-    public void shouldNotifyMonitorWhenNewLogIsCreated() throws Exception
+    public void shouldNotifyListenerWhenNewLogIsCreated() throws Exception
     {
         final CountDownLatch allowRotationComplete = new CountDownLatch( 1 );
         final CountDownLatch rotationComplete = new CountDownLatch( 1 );
@@ -236,7 +242,42 @@ public class RotatingFileOutputStreamSupplierTest
     }
 
     @Test
-    public void shouldNotifyMonitorOnRotationError() throws Exception
+    public void shouldNotifyListenerOnRotationErrorDuringJobExecution() throws Exception
+    {
+        RotationListener rotationListener = mock( RotationListener.class );
+        Executor executor = mock( Executor.class );
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 10, executor, rotationListener );
+        OutputStream outputStream = supplier.get();
+
+        RejectedExecutionException exception = new RejectedExecutionException( "text exception" );
+        doThrow( exception ).when( executor ).execute( any( Runnable.class ) );
+
+        write( outputStream, "A string longer than 10 bytes" );
+        assertThat( supplier.get(), is( outputStream ) );
+
+        verify( rotationListener ).rotationError( exception, outputStream );
+    }
+
+    @Test
+    public void shouldReattemptRotationAfterExceptionDuringJobExecution() throws Exception
+    {
+        RotationListener rotationListener = mock( RotationListener.class );
+        Executor executor = mock( Executor.class );
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fileSystem, logFile, 10, 0, 10, executor, rotationListener );
+        OutputStream outputStream = supplier.get();
+
+        RejectedExecutionException exception = new RejectedExecutionException( "text exception" );
+        doThrow( exception ).when( executor ).execute( any( Runnable.class ) );
+
+        write( outputStream, "A string longer than 10 bytes" );
+        assertThat( supplier.get(), is( outputStream ) );
+        assertThat( supplier.get(), is( outputStream ) );
+
+        verify( rotationListener, times( 2 ) ).rotationError( exception, outputStream );
+    }
+
+    @Test
+    public void shouldNotifyListenerOnRotationErrorDuringRotationIO() throws Exception
     {
         RotationListener rotationListener = mock( RotationListener.class );
         FileSystemAbstraction fs = spy( fileSystem );
@@ -298,6 +339,46 @@ public class RotatingFileOutputStreamSupplierTest
 
         assertStreamClosed( outputStream );
         assertStreamClosed( outputStream2 );
+    }
+
+    @Test
+    public void shouldCloseAllStreamsDespiteError() throws Exception
+    {
+        final List<OutputStream> mockStreams = new ArrayList<>();
+        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( fileSystem )
+        {
+            @Override
+            public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
+            {
+                final OutputStream stream = spy( super.openAsOutputStream( fileName, append ) );
+                mockStreams.add( stream );
+                return stream;
+            }
+        };
+
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( fs, logFile, 10, 0, 10, DIRECT_EXECUTOR );
+        OutputStream outputStream = supplier.get();
+        assertThat( outputStream, sameInstance( mockStreams.get( 0 ) ) );
+
+        write( outputStream, "A string longer than 10 bytes" );
+        OutputStream outputStream2 = supplier.get();
+        assertThat( outputStream2, sameInstance( mockStreams.get( 1 ) ) );
+
+        IOException exception1 = new IOException( "test exception" );
+        doThrow( exception1 ).when( outputStream ).close();
+
+        IOException exception2 = new IOException( "test exception" );
+        doThrow( exception2 ).when( outputStream2 ).close();
+
+        try
+        {
+            supplier.close();
+        }
+        catch ( IOException e )
+        {
+            assertThat( e, sameInstance( exception2 ) );
+        }
+        verify( outputStream ).close();
     }
 
     @Test
