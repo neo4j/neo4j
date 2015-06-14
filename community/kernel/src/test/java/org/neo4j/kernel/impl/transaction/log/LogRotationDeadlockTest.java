@@ -32,7 +32,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.LogRotationImpl;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
@@ -52,6 +51,7 @@ import org.neo4j.test.OtherThreadRule;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 
 public class LogRotationDeadlockTest
 {
@@ -103,7 +103,7 @@ public class LogRotationDeadlockTest
         when( txStore.getAppender() ).thenReturn( appender );
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( txStore,
                 health, txIdStore, mock( TransactionRepresentationStoreApplier.class ),
-                mock( IndexUpdatesValidator.class ), TransactionApplicationMode.INTERNAL );
+                mock( IndexUpdatesValidator.class ) );
 
         // WHEN
         // trapping an appender in between having its transaction committed and closed
@@ -130,7 +130,7 @@ public class LogRotationDeadlockTest
             @Override
             public Void doWork( Void state ) throws Exception
             {
-                commitProcess.commit( arbitraryTransaction(), new LockGroup(), CommitEvent.NULL );
+                commitProcess.commit( arbitraryTransaction(), new LockGroup(), CommitEvent.NULL, INTERNAL );
                 return null;
             }
         };

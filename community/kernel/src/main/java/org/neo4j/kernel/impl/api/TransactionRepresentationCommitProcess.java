@@ -42,34 +42,33 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
     private final TransactionIdStore transactionIdStore;
     private final TransactionRepresentationStoreApplier storeApplier;
     private final IndexUpdatesValidator indexUpdatesValidator;
-    private final TransactionApplicationMode mode;
 
     public TransactionRepresentationCommitProcess( LogicalTransactionStore logicalTransactionStore,
             KernelHealth kernelHealth, TransactionIdStore transactionIdStore,
-            TransactionRepresentationStoreApplier storeApplier, IndexUpdatesValidator indexUpdatesValidator,
-            TransactionApplicationMode mode )
+            TransactionRepresentationStoreApplier storeApplier, IndexUpdatesValidator indexUpdatesValidator )
     {
         this.logicalTransactionStore = logicalTransactionStore;
         this.transactionIdStore = transactionIdStore;
         this.kernelHealth = kernelHealth;
         this.storeApplier = storeApplier;
         this.indexUpdatesValidator = indexUpdatesValidator;
-        this.mode = mode;
     }
 
     @Override
-    public long commit( TransactionRepresentation transaction, LockGroup locks, CommitEvent commitEvent ) throws TransactionFailureException
+    public long commit( TransactionRepresentation transaction, LockGroup locks, CommitEvent commitEvent,
+                        TransactionApplicationMode mode ) throws TransactionFailureException
     {
-        try ( ValidatedIndexUpdates indexUpdates = validateIndexUpdates( transaction ) )
+        try ( ValidatedIndexUpdates indexUpdates = validateIndexUpdates( transaction, mode ) )
         {
             long transactionId = appendToLog( transaction, commitEvent );
-            applyToStore( transaction, locks, commitEvent, indexUpdates, transactionId );
+            applyToStore( transaction, locks, commitEvent, indexUpdates, transactionId, mode );
             return transactionId;
         }
     }
 
-    private ValidatedIndexUpdates validateIndexUpdates(
-            TransactionRepresentation transaction ) throws TransactionFailureException
+    private ValidatedIndexUpdates validateIndexUpdates( TransactionRepresentation transaction,
+                                                        TransactionApplicationMode mode)
+            throws TransactionFailureException
     {
         try
         {
@@ -100,7 +99,8 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
 
     private void applyToStore(
             TransactionRepresentation transaction, LockGroup locks, CommitEvent commitEvent,
-            ValidatedIndexUpdates indexUpdates, long transactionId ) throws TransactionFailureException
+            ValidatedIndexUpdates indexUpdates, long transactionId, TransactionApplicationMode mode )
+            throws TransactionFailureException
     {
         try ( StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply() )
         {

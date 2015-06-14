@@ -361,14 +361,13 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                             dependencyResolver.resolveDependency( KernelHealth.class ),
                             dependencyResolver.resolveDependency( NeoStoreProvider.class ).evaluate(),
                             dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
-                            dependencyResolver.resolveDependency( IndexUpdatesValidator.class ),
-                            TransactionApplicationMode.EXTERNAL );
+                            dependencyResolver.resolveDependency( IndexUpdatesValidator.class ) );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
             NodeStore nodes = database.getDependencyResolver().resolveDependency( NeoStore.class ).getNodeStore();
             commitProcess.commit( transaction.representation( idGenerator(), masterId(), myId(),
-                    transactionIdStore.getLastCommittedTransactionId(), nodes ), locks,
-                    CommitEvent.NULL );
+                    transactionIdStore.getLastCommittedTransactionId(), nodes ), locks, CommitEvent.NULL,
+                    TransactionApplicationMode.EXTERNAL );
         }
         finally
         {
