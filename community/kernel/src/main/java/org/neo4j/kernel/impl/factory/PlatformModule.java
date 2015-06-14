@@ -208,7 +208,8 @@ public class PlatformModule
         int internalLogMaxArchives = config.get( GraphDatabaseSettings.store_internal_log_max_archives );
 
         final StoreLogService.Builder builder =
-                StoreLogService.withRotation( internalLogRotationThreshold, internalLogRotationDelay, internalLogMaxArchives, jobScheduler );
+                StoreLogService.withRotation( internalLogRotationThreshold, internalLogRotationDelay,
+                        internalLogMaxArchives, jobScheduler );
 
         if ( userLogProvider != null )
         {
