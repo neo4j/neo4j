@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 public class DenseNodeIT

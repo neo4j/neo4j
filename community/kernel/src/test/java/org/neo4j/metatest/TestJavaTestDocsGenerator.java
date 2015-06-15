@@ -31,7 +31,6 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
