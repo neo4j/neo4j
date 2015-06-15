@@ -43,6 +43,46 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
   // *** TESTS OF PREFIX SEARCH
 
+  test("should be case insensitive") {
+    val london = createLabeledNode(Map("name" -> "London"), "Location")
+    val smallLondon = createLabeledNode(Map("name" -> "london"), "Location")
+    graph.inTx {
+      (1 to 300).foreach { _ =>
+        createLabeledNode("Location")
+      }
+    }
+    graph.createIndex("Location", "name")
+
+    val query = "MATCH (l:Location) WHERE l.name LIKE 'Lon%' RETURN l"
+
+    val result = executeWithCostPlannerOnly(query)
+
+    result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
+    result.toList should equal(List(Map("l" -> london), Map("l" -> smallLondon)))
+  }
+
+  test("should only match on the actual prefix") {
+    val london = createLabeledNode(Map("name" -> "London"), "Location")
+    graph.inTx {
+      createLabeledNode(Map("name" -> "Johannesburg"), "Location")
+      createLabeledNode(Map("name" -> "Paris"), "Location")
+      createLabeledNode(Map("name" -> "Malmo"), "Location")
+      createLabeledNode(Map("name" -> "Loondon"), "Location")
+      createLabeledNode(Map("name" -> "Lolndon"), "Location")
+      (1 to 300).foreach { _ =>
+        createLabeledNode("Location")
+      }
+    }
+    graph.createIndex("Location", "name")
+
+    val query = "MATCH (l:Location) WHERE l.name LIKE 'Lon%' RETURN l"
+
+    val result = executeWithCostPlannerOnly(query)
+
+    result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
+    result.toList should equal(List(Map("l" -> london)))
+  }
+
   test("should plan an IndexRangeSeek for a % string prefix search when index exists") {
 
     graph.inTx {
