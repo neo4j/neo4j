@@ -44,6 +44,8 @@ public interface ExpressionVisitor
 
     void eq( Expression lhs, Expression rhs );
 
+    void or( Expression lhs, Expression rhs );
+
     void add( Expression lhs, Expression rhs );
 
     void gt( Expression lhs, Expression rhs );

@@ -335,6 +335,14 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
+    public void or( Expression lhs, Expression rhs )
+    {
+        lhs.accept( this );
+        append( " || ");
+        rhs.accept( this );
+    }
+
+    @Override
     public void add( Expression lhs, Expression rhs )
     {
         lhs.accept( this );

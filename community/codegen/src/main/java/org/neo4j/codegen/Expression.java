@@ -47,6 +47,18 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
+    public static Expression or( final Expression lhs, final Expression rhs )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.or( lhs, rhs );
+            }
+        };
+    }
+
     public static Expression eq( final Expression lhs, final Expression rhs )
     {
         return new Expression()

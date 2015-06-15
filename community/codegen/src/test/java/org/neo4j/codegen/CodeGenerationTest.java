@@ -383,6 +383,46 @@ public class CodeGenerationTest
         verifyZeroInteractions( runner2 );
     }
 
+    @Test
+    public void shouldGenerateOr() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
+                    param( boolean.class, "test1" ), param( boolean.class, "test2" ), param( Runnable.class, "runner" ) ) )
+            {
+                try ( CodeBlock doStuff = conditional.ifStatement( Expression.or( conditional.load( "test1" ),
+                        conditional.load( "test2" ) ) ) )
+                {
+                    doStuff.expression(
+                            invoke( doStuff.load( "runner" ), RUN ) );
+                }
+            }
+
+            handle = simple.handle();
+        }
+
+        Runnable runner1 = mock( Runnable.class );
+        Runnable runner2 = mock( Runnable.class );
+        Runnable runner3 = mock( Runnable.class );
+        Runnable runner4 = mock( Runnable.class );
+
+        // when
+        MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", boolean.class,  boolean.class, Runnable.class );
+        conditional.invoke( true, true, runner1 );
+        conditional.invoke( true, false, runner2 );
+        conditional.invoke( false, true, runner3 );
+        conditional.invoke( false, false, runner4 );
+
+        // then
+        verify( runner1 ).run();
+        verify( runner2 ).run();
+        verify( runner3 ).run();
+        verifyZeroInteractions( runner4 );
+    }
+
     public static class ResourceFactory
     {
         int open, close, inside;
