@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class CompiledConversionUtilsTest extends CypherFunSuite {
 
-  val tests = Seq(
+  val testPredicates = Seq(
     (true, true),
     (false, false),
     (null, false),
@@ -34,7 +34,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     (Array[Int](), false)
   )
 
-  tests.foreach {
+  testPredicates.foreach {
     case (v, expected) =>
       test(s"$v") {
         CompiledConversionUtils.coerceToPredicate(v) should equal(expected)
@@ -71,5 +71,43 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
 
     //when/then
     theMap(theKey) should equal(theObject)
+  }
+  val testEquality = Seq(
+    (null, "foo") -> null,
+    (false, false) -> true,
+    (1, null) -> null,
+    ("foo", "foo") -> true,
+    ("foo", "bar") -> false,
+    (42L, 42) -> true,
+    (42, 43) -> false)
+
+  testEquality.foreach {
+    case (v, expected) =>
+      test(s"${v._1} == ${v._2}") {
+        CompiledConversionUtils.equals _ tupled v should equal(expected)
+      }
+  }
+
+  val testOr = Seq(
+    (null, true) -> true,
+    (null, false) -> null,
+    (true, null) -> true,
+    (false, null) -> null,
+    (true, true) -> true,
+    (true, false) -> true,
+    (false, true) -> true,
+    (false, false) -> false)
+
+  testOr.foreach {
+    case (v, expected) =>
+      test(s"${v._1} || ${v._2}") {
+        CompiledConversionUtils.or _ tupled v should equal(expected)
+      }
+  }
+
+  test("not tests"){
+    CompiledConversionUtils.not(null) shouldBe null
+    CompiledConversionUtils.not(false) shouldBe true
+    CompiledConversionUtils.not(true) shouldBe false
   }
 }

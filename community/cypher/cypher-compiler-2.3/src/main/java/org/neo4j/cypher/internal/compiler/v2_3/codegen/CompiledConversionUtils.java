@@ -23,10 +23,11 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 
 import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.cypher.internal.compiler.v2_3.IncomparableValuesException;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 
 // Class with static methods used by compiled execution plans
 public abstract class CompiledConversionUtils
@@ -95,5 +96,77 @@ public abstract class CompiledConversionUtils
         {
             return Arrays.hashCode( key );
         }
+    }
+
+    public static Boolean equals( Object lhs, Object rhs )
+    {
+        if ( lhs == null || rhs == null )
+        {
+            return null;
+        }
+
+        //if floats compare float values if integer types,
+        //compare long values
+        if ( lhs instanceof Number && rhs instanceof Number )
+        {
+            if ( lhs instanceof Double || rhs instanceof Double ||
+                 lhs instanceof Float || rhs instanceof Float )
+            {
+                double left = ((Number) lhs).doubleValue();
+                double right = ((Number) rhs).doubleValue();
+                return left == right;
+            }
+            if ( lhs instanceof Long || rhs instanceof Long ||
+                 lhs instanceof Integer || rhs instanceof Integer ||
+                 lhs instanceof Short || rhs instanceof Short ||
+                 lhs instanceof Byte || rhs instanceof Byte )
+            {
+                long left = ((Number) lhs).longValue();
+                long right = ((Number) rhs).longValue();
+                return left == right;
+            }
+        }
+
+        //for everything else call equals
+        return lhs.equals( rhs );
+    }
+
+    public static Boolean or( Object lhs, Object rhs )
+    {
+        if ( lhs == null && rhs == null )
+        {
+            return null;
+        }
+        else if ( lhs == null && rhs instanceof Boolean )
+        {
+            return (Boolean) rhs ? true : null;
+        }
+        else if ( rhs == null && lhs instanceof Boolean )
+        {
+            return (Boolean) lhs ? true : null;
+        }
+        else if ( lhs instanceof Boolean && rhs instanceof Boolean )
+        {
+            return (Boolean) lhs || (Boolean) rhs;
+        }
+
+        throw new CypherTypeException(
+                "Don't know how to do or on: " + (lhs != null ? lhs.toString() : null) + " and " +
+                (rhs != null ? rhs.toString() : null), null );
+    }
+
+    public static Boolean not( Object predicate )
+    {
+        if ( predicate == null )
+        {
+            return null;
+        }
+
+        if ( predicate instanceof Boolean )
+        {
+            return !(Boolean) predicate;
+        }
+
+        throw new CypherTypeException( "Don't know how to treat that as a boolean: " + predicate.toString(), null );
     }
 }
