@@ -105,6 +105,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
 
   import scala.collection.JavaConverters._
   private def javaValue(value: Any): Object = value match {
+    case null => null
     case iter: Seq[_] => iter.map(javaValue).asJava
     case iter: scala.collection.Map[_, _] => Eagerly.immutableMapValues(iter, javaValue).asJava
     case x: Any => x.asInstanceOf[AnyRef]

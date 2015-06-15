@@ -52,7 +52,7 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("predicates on optional matches should be respected") {
-    val result = executeWithAllPlanners("match (n:Single) optional match n-[r]-(m) where m.prop = 42 return m")
+    val result = executeWithAllPlannersAndRuntimes("match (n:Single) optional match n-[r]-(m) where m.prop = 42 return m")
     assert(result.toList === List(Map("m" -> nodeA)))
   }
 
@@ -136,7 +136,7 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("should support optional match to not find self loops") {
-    val result = executeWithAllPlanners("match (a) where not (a:B) optional match (a)-[r]->(a) return r")
+    val result = executeWithAllPlannersAndRuntimes("match (a) where not (a:B) optional match (a)-[r]->(a) return r")
 
     assert(result.toSet === Set(Map("r" -> null)))
   }

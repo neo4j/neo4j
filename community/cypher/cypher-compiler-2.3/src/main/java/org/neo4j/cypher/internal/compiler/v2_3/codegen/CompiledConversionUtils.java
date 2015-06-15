@@ -105,6 +105,15 @@ public abstract class CompiledConversionUtils
             return null;
         }
 
+        if ( (lhs instanceof Node && !(rhs instanceof Node)) ||
+             (rhs instanceof Node && !(lhs instanceof Node)) ||
+             (lhs instanceof Relationship && !(rhs instanceof Relationship)) ||
+             (rhs instanceof Relationship && !(lhs instanceof Relationship)) )
+        {
+
+            throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
+        }
+
         //if floats compare float values if integer types,
         //compare long values
         if ( lhs instanceof Number && rhs instanceof Number )

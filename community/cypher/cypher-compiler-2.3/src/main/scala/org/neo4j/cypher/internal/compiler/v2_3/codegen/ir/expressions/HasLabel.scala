@@ -45,27 +45,3 @@ case class HasLabel(nodeVariable: Variable, labelVariable: String, labelName: St
 
   override def cypherType(implicit context: CodeGenContext): CypherType = CTBoolean
 }
-
-case class HasLabelPredicate(nodeVariable: Variable, labelVariable: String, labelName: String)
-  extends CodeGenExpression {
-
-  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
-    generator.lookupLabelId(labelVariable, labelName)
-
-  def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
-    val localName = context.namer.newVarName()
-    structure.declarePredicate(localName)
-
-    structure.incrementDbHits()
-    if (nodeVariable.nullable)
-      structure.coerceToBoolean(
-        structure.nullable(nodeVariable.name, nodeVariable.cypherType,
-                         structure.hasLabel(nodeVariable.name, labelVariable, localName)))
-    else
-      structure.hasLabel(nodeVariable.name, labelVariable, localName)
-  }
-
-  override def nullable(implicit context: CodeGenContext) = false
-
-  override def cypherType(implicit context: CodeGenContext) = CTBoolean
-}

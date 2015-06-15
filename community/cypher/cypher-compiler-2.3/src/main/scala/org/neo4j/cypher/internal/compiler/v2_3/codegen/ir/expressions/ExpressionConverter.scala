@@ -19,84 +19,113 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compiler.v2_3.{symbols, ast}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{MethodStructure, CodeGenContext}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 
 object ExpressionConverter {
-  def createPredicate(expression: Expression)
+
+  implicit class ExpressionToPredicate(expression: CodeGenExpression) {
+    def asPredicate = new CodeGenExpression {
+
+      override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+        if (expression.nullable) structure.coerceToBoolean(expression.generateExpression(structure))
+        else expression.generateExpression(structure)
+      }
+
+      override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = expression.init(generator)
+
+      override def nullable(implicit context: CodeGenContext) = false
+
+      override def cypherType(implicit context: CodeGenContext) = symbols.CTBoolean
+    }
+  }
+
+  def createPredicate(expression: ast.Expression)
                      (implicit context: CodeGenContext): CodeGenExpression = expression match {
-    case HasLabels(Identifier(name), label :: Nil) =>
+    case ast.HasLabels(ast.Identifier(name), label :: Nil) =>
       val labelIdVariable = context.namer.newVarName()
       val nodeVariable = context.getVariable(name)
-      HasLabelPredicate(nodeVariable, labelIdVariable, label.name)
+      HasLabel(nodeVariable, labelIdVariable, label.name).asPredicate
 
-    case exp@Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
-      PropertyAsPredicate(createExpression(exp))
+    case exp@ast.Property(node@ast.Identifier(name), propKey) if context.semanticTable.isNode(node) =>
+      createExpression(exp).asPredicate
 
-    case exp@Property(node@Identifier(name), propKey) if context.semanticTable.isRelationship(node) =>
-      PropertyAsPredicate(createExpression(exp))
+    case exp@ast.Property(node@ast.Identifier(name), propKey) if context.semanticTable.isRelationship(node) =>
+      createExpression(exp).asPredicate
+
+    case ast.Not(e) => Not(createPredicate(e)).asPredicate
+
+    case ast.Equals(lhs, rhs) => Equals(createExpression(lhs), createExpression(rhs)).asPredicate
+
+    case ast.Or(lhs, rhs) => Or(createExpression(lhs), createExpression(rhs)).asPredicate
 
     case other =>
       throw new CantCompileQueryException(s"Predicate of $other not yet supported")
 
   }
 
-  def createExpression(expression: Expression)
+  def createExpression(expression: ast.Expression)
                       (implicit context: CodeGenContext): CodeGenExpression = {
 
     expression match {
-      case node@Identifier(name) if context.semanticTable.isNode(node) =>
+      case node@ast.Identifier(name) if context.semanticTable.isNode(node) =>
         Node(context.getVariable(name))
 
-      case rel@Identifier(name) if context.semanticTable.isRelationship(rel) =>
+      case rel@ast.Identifier(name) if context.semanticTable.isRelationship(rel) =>
         Relationship(context.getVariable(name))
 
-      case Property(node@Identifier(name), propKey) if context.semanticTable.isNode(node) =>
+      case ast.Property(node@ast.Identifier(name), propKey) if context.semanticTable.isNode(node) =>
         val token = propKey.id(context.semanticTable).map(_.id)
         NodeProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
-      case Property(rel@Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
+      case ast.Property(rel@ast.Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
         val token = propKey.id(context.semanticTable).map(_.id)
         RelProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
       case ast.Parameter(name) => expressions.Parameter(name)
 
-      case lit: IntegerLiteral => Literal(lit.value)
+      case lit: ast.IntegerLiteral => Literal(lit.value)
 
-      case lit: DoubleLiteral => Literal(lit.value)
+      case lit: ast.DoubleLiteral => Literal(lit.value)
 
-      case lit: StringLiteral => Literal(lit.value)
+      case lit: ast.StringLiteral => Literal(lit.value)
 
       case lit: ast.Literal => Literal(lit.value)
 
       case ast.Collection(exprs) =>
         expressions.Collection(exprs.map(e => createExpression(e)))
 
-      case Add(lhs, rhs) =>
+      case ast.Add(lhs, rhs) =>
         val leftOp = createExpression(lhs)
         val rightOp = createExpression(rhs)
         Addition(leftOp, rightOp)
 
-      case Subtract(lhs, rhs) =>
+      case ast.Subtract(lhs, rhs) =>
         val leftOp = createExpression(lhs)
         val rightOp = createExpression(rhs)
         Subtraction(leftOp, rightOp)
 
-      case MapExpression(items: Seq[(PropertyKeyName, Expression)]) =>
+      case ast.MapExpression(items) =>
         val map = items.map {
           case (key, expr) => (key.name, createExpression(expr))
         }.toMap
         MyMap(map)
 
-      case HasLabels(Identifier(name), label :: Nil) =>
+      case ast.HasLabels(ast.Identifier(name), label :: Nil) =>
         val labelIdVariable = context.namer.newVarName()
         val nodeVariable = context.getVariable(name)
         HasLabel(nodeVariable, labelIdVariable, label.name)
 
+      case ast.Equals(lhs, rhs) => Equals(createExpression(lhs), createExpression(rhs))
+
+      case ast.Or(lhs, rhs) => Or(createExpression(lhs), createExpression(rhs))
+
+      case ast.Not(inner) => Not(createExpression(inner))
+
       case other => throw new CantCompileQueryException(s"Expression of $other not yet supported")
     }
   }
+
 }

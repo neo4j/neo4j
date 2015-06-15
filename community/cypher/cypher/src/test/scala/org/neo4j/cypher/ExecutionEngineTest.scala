@@ -423,8 +423,8 @@ order by a.COL1""")
 
     relate(refNode, a, "X")
 
-    executeWithAllPlanners("match a-->b where a = {a} return b", "a" -> a) should have size 1
-    executeWithAllPlanners("match a-->b where a = {a} return b", "a" -> b) shouldBe empty
+    executeWithAllPlannersAndRuntimes("match a-->b where a = {a} return b", "a" -> a) should have size 1
+    executeWithAllPlannersAndRuntimes("match a-->b where a = {a} return b", "a" -> b) shouldBe empty
   }
 
   test("shouldHandleParametersNamedAsIdentifiers") {
@@ -683,7 +683,7 @@ order by a.COL1""")
     relate(a, b)
     relate(b, c)
 
-    val result = executeWithAllPlanners("MATCH n-[r]->m WHERE n = {a} AND m = {b} RETURN *", "a"->a, "b"->c)
+    val result = executeWithAllPlannersAndRuntimes("MATCH n-[r]->m WHERE n = {a} AND m = {b} RETURN *", "a"->a, "b"->c)
 
     result.toList shouldBe empty
   }
