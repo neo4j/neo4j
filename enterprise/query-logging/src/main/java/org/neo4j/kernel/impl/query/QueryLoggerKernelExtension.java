@@ -34,6 +34,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_THRESHOLD_FOR_ROTATION;
+
 @Service.Implementation(KernelExtensionFactory.class)
 public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLoggerKernelExtension.Dependencies>
 {
@@ -54,14 +56,13 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     @Override
     public Lifecycle newKernelExtension( Dependencies the ) throws Throwable
     {
-        if ( the.config().get( GraphDatabaseSettings.log_queries ) )
+        Config config = the.config();
+        if ( config.get( GraphDatabaseSettings.log_queries ) )
         {
-            QueryLogger logger = new QueryLogger(
-                    Clock.SYSTEM_CLOCK,
-                    new LoggerFactory(
-                            the.filesystem(),
-                            the.config().get( GraphDatabaseSettings.log_queries_filename ) ),
-                    the.config().get( GraphDatabaseSettings.log_queries_threshold ) );
+            File logfile = config.get( GraphDatabaseSettings.log_queries_filename );
+            long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold );
+            LoggerFactory loggerFactory = new LoggerFactory( the.filesystem(), logfile );
+            QueryLogger logger = new QueryLogger( Clock.SYSTEM_CLOCK, loggerFactory, thresholdMillis );
             the.monitoring().addMonitorListener( logger );
             return logger;
         }
@@ -154,7 +155,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         @Override
         public StringLogger newInstance()
         {
-            return StringLogger.loggerDirectory( filesystem, logfile );
+            return StringLogger.logger( filesystem, logfile, DEFAULT_THRESHOLD_FOR_ROTATION, false );
         }
     }
 }
