@@ -38,6 +38,6 @@ Recommended::  ext4, ZFS
 Neo4j is Java-based.
 
 Java:: http://openjdk.java.net/[OpenJDK 7] or http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 7]
-Operating Systems::  Linux, HP UX, Windows 2008 for production; additionally Windows XP, Mac OS X for development.
+Operating Systems::  Linux, HP UX, Windows 2012 for production; additionally Windows XP, Mac OS X for development.
 
 
