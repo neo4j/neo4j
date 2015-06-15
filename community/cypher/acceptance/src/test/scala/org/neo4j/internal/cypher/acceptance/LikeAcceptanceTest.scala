@@ -43,9 +43,9 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
   // *** TESTS OF PREFIX SEARCH
 
-  test("should be case insensitive") {
+  test("should be case sensitive") {
     val london = createLabeledNode(Map("name" -> "London"), "Location")
-    val smallLondon = createLabeledNode(Map("name" -> "london"), "Location")
+    createLabeledNode(Map("name" -> "london"), "Location")
     graph.inTx {
       (1 to 300).foreach { _ =>
         createLabeledNode("Location")
@@ -58,7 +58,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     val result = executeWithCostPlannerOnly(query)
 
     result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
-    result.toList should equal(List(Map("l" -> london), Map("l" -> smallLondon)))
+    result.toList should equal(List(Map("l" -> london)))
   }
 
   test("should only match on the actual prefix") {

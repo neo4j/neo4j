@@ -201,7 +201,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     // WHEN
     result.toList
-    println(result.executionPlanDescription())
 
     // THEN PASS
     assertRows(1)(result)("AllNodesScan", "ProduceResults", "Projection")

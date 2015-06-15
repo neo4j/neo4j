@@ -14,4 +14,6 @@ include::drop-index-on-a-label.asciidoc[]
 include::use-index.asciidoc[]
 include::use-index-with-where.asciidoc[]
 include::use-index-with-in.asciidoc[]
+include::use-index-with-like.asciidoc[]
+include::use-index-when-checking-for-the-existence-of-a-property.asciidoc[]
 
