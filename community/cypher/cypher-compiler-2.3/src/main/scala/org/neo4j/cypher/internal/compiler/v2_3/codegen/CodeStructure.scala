@@ -318,11 +318,40 @@ private class AuxGenerator(val packageName: String, val generator: codegen.CodeG
   }
 }
 
-
 private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator, tracing: Boolean = true,
                           event: Option[String] = None, var locals:Map[String,LocalVariable]=Map.empty)(implicit context: CodeGenContext)
   extends MethodStructure[Expression] {
   import CodeStructure.typeRef
+
+  private case class HashTable(valueType: TypeReference, listType: TypeReference, tableType: TypeReference,
+                               get: MethodReference, put: MethodReference, add: MethodReference)
+  private implicit class RichTableType(tableType: RecordingJoinTableType) {
+
+    def extractHashTable(): HashTable = tableType match {
+      case LongToListTable(structure, localMap) =>
+        // compute the participating types
+        val valueType = aux.typeReference(structure)
+        val listType = TypeReference.parameterizedType(classOf[util.ArrayList[_]], valueType)
+        val tableType = TypeReference.parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
+        // the methods we use on those types
+        val get = MethodReference.methodReference(tableType, listType, "get", typeRef[Long])
+        val put = MethodReference.methodReference(tableType, listType, "put", typeRef[Long], listType)
+        val add = MethodReference.methodReference(listType, typeRef[Boolean], "add", valueType)
+
+        HashTable(valueType, listType, tableType, get, put, add)
+
+      case LongsToListTable(structure, localMap) =>
+        // compute the participating types
+        val valueType = aux.typeReference(structure)
+        val listType = TypeReference.parameterizedType(classOf[util.ArrayList[_]], valueType)
+        val tableType = TypeReference.parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey], valueType)
+        // the methods we use on those types
+        val get = MethodReference.methodReference(tableType, listType, "get", typeRef[CompositeKey])
+        val put = MethodReference.methodReference(tableType, listType, "put", typeRef[CompositeKey], listType)
+        val add = MethodReference.methodReference(listType, typeRef[Boolean], "add", valueType)
+        HashTable(valueType, listType, tableType, get, put, add)
+    }
+  }
 
   override def nextNode(targetVar: String, iterVar: String) =
     generator.assign(typeRef[Long], targetVar, Expression.invoke(generator.load(iterVar), Methods.nextLong))
@@ -624,53 +653,45 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
         body.assign(times, Expression.sub(times, Expression.constant(1)))
       }
 
-    case LongToListTable(structure,localVars) =>
+    case tableType@LongToListTable(structure,localVars) =>
       assert(keyVars.size == 1)
       val keyVar = keyVars.head
-      // compute the participating types
-      val valueType = aux.typeReference(structure)
-      val listType = TypeReference.parameterizedType(classOf[util.ArrayList[_]], valueType)
-      val tableType = TypeReference.parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
-      // the methods we use on those types
-      val get = MethodReference.methodReference(tableType, listType, "get", typeRef[Long])
+
+      val hashTable = tableType.extractHashTable()
       // generate the code
-      val list = generator.declare(listType, context.namer.newVarName())
+      val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
-      generator.assign(list, Expression.invoke(generator.load(tableVar), get, generator.load(keyVar)))
+      generator.assign(list, Expression.invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar)))
       using(generator.ifStatement(Expression.not(Expression.eq(list, Expression.constant(null))))) { onTrue =>
-        using(onTrue.forEach(Parameter.param(valueType, elementName), list)) { forEach =>
+        using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (local, field) =>
               val fieldType = CodeStructure.lowerType(structure(field))
-              forEach.assign(fieldType, local, Expression.get(forEach.load(elementName),FieldReference.field(valueType, fieldType, field)))
+              forEach.assign(fieldType, local, Expression.get(forEach.load(elementName),FieldReference.field(hashTable.valueType, fieldType, field)))
           }
           block(copy(generator=forEach))
         }
       }
 
-    case LongsToListTable(structure,localVars) =>
-      // compute the participating types
-      val valueType = aux.typeReference(structure)
-      val listType = TypeReference.parameterizedType(classOf[util.ArrayList[_]], valueType)
-      val tableType = TypeReference.parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey], valueType)
-      // the methods we use on those types
-      val get = MethodReference.methodReference(tableType, listType, "get", typeRef[CompositeKey])
-      // generate the code
-      val list = generator.declare(listType, context.namer.newVarName())
+    case tableType@LongsToListTable(structure,localVars) =>
+      val hashTable = tableType.extractHashTable()
+      val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
 
-      generator.assign(list, Expression.invoke(generator.load(tableVar), get, Expression.invoke(Methods.compositeKey, keyVars.map(generator.load): _*)))
+      generator.assign(list, Expression.invoke(generator.load(tableVar),hashTable.get, Expression.invoke(Methods.compositeKey, keyVars.map(generator.load): _*)))
       using(generator.ifStatement(Expression.not(Expression.eq(list, Expression.constant(null))))) { onTrue =>
-        using(onTrue.forEach(Parameter.param(valueType, elementName), list)) { forEach =>
+        using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (local, field) =>
               val fieldType = CodeStructure.lowerType(structure(field))
-              forEach.assign(fieldType, local, Expression.get(forEach.load(elementName),FieldReference.field(valueType, fieldType, field)))
+              forEach.assign(fieldType, local, Expression.get(forEach.load(elementName),FieldReference.field(hashTable.valueType, fieldType, field)))
           }
           block(copy(generator=forEach))
         }
       }
   }
+
+
 
   override def putField(structure: Map[String, CypherType], value: Expression, fieldType: CypherType, fieldName: String, localVar: String) = {
     generator.put(value, field(structure, fieldType, fieldName), generator.load(localVar))
@@ -680,51 +701,37 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     case _: LongToListTable =>
       assert(keyVars.size == 1)
       val keyVar = keyVars.head
-      // compute the participating types
-      val valueType = aux.typeReference(structure)
-      val listType = TypeReference.parameterizedType(classOf[util.ArrayList[_]], valueType)
-      val tableType = TypeReference.parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
-      // the methods we use on those types
-      val get = MethodReference.methodReference(tableType, listType, "get", typeRef[Long])
-      val put = MethodReference.methodReference(tableType, listType, "put", typeRef[Long], listType)
-      val add = MethodReference.methodReference(listType, typeRef[Boolean], "add", valueType)
+      val hashTable = tableType.extractHashTable()
       // generate the code
       val listName = context.namer.newVarName()
-      val list = generator.declare(listType, listName) // ProbeTable list;
+      val list = generator.declare(hashTable.listType, listName) // ProbeTable list;
       generator.assign(list, Expression
-        .invoke(generator.load(tableVar), get, generator.load(keyVar))) // list = tableVar.get(keyVar);
+        .invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar))) // list = tableVar.get(keyVar);
       using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load(listName))))
       { onTrue => // if (null == list)
-        onTrue.assign(list, Templates.newInstance(listType)) // list = new ListType();
-        onTrue.expression(Expression.invoke(generator.load(tableVar), put, generator.load(keyVar),
+        onTrue.assign(list, Templates.newInstance(hashTable.listType)) // list = new ListType();
+        onTrue.expression(Expression.invoke(generator.load(tableVar), hashTable.put, generator.load(keyVar),
                                             generator.load(listName))) // tableVar.put(keyVar, list);
       }
-      generator.expression(Expression.invoke(list, add, element)) // list.add( element );
+      generator.expression(Expression.invoke(list, hashTable.add, element)) // list.add( element );
 
     case _: LongsToListTable =>
-      // compute the participating types
-      val valueType = aux.typeReference(structure)
-      val listType = TypeReference.parameterizedType(classOf[util.ArrayList[_]], valueType)
-      val tableType = TypeReference.parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey], valueType)
-      // the methods we use on those types
-      val get = MethodReference.methodReference(tableType, listType, "get", typeRef[CompositeKey])
-      val put = MethodReference.methodReference(tableType, listType, "put", typeRef[CompositeKey], listType)
-      val add = MethodReference.methodReference(listType, typeRef[Boolean], "add", valueType)
+      val hashTable = tableType.extractHashTable()
       // generate the code
       val listName = context.namer.newVarName()
       val keyName = context.namer.newVarName()
-      val list = generator.declare(listType, listName) // ProbeTable list;
+      val list = generator.declare(hashTable.listType, listName) // ProbeTable list;
       generator
         .assign(typeRef[CompositeKey], keyName, Expression.invoke(Methods.compositeKey, keyVars.map(generator.load): _*))
       generator.assign(list, Expression
-        .invoke(generator.load(tableVar), get, generator.load(keyName))) // list = tableVar.get(keyVar);
+        .invoke(generator.load(tableVar), hashTable.get, generator.load(keyName))) // list = tableVar.get(keyVar);
       using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load(listName))))
       { onTrue => // if (null == list)
-        onTrue.assign(list, Templates.newInstance(listType)) // list = new ListType();
-        onTrue.expression(Expression.invoke(generator.load(tableVar), put, generator.load(keyName),
+        onTrue.assign(list, Templates.newInstance(hashTable.listType)) // list = new ListType();
+        onTrue.expression(Expression.invoke(generator.load(tableVar), hashTable.put, generator.load(keyName),
                                             generator.load(listName))) // tableVar.put(keyVar, list);
       }
-      generator.expression(Expression.invoke(list, add, element)) // list.add( element );
+      generator.expression(Expression.invoke(list, hashTable.add, element)) // list.add( element );
 
 
   }
