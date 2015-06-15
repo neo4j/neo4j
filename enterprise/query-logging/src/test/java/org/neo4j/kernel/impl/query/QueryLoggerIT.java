@@ -24,6 +24,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -32,11 +38,6 @@ import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
