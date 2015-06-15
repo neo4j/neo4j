@@ -26,7 +26,6 @@ import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class RecentKTest
@@ -37,7 +36,7 @@ public class RecentKTest
         // When & Then
         assertThat( appendSequence( 1, 1, 1, 1, 1, 1, 1 ), yieldsSet( 1 ));
         assertThat( appendSequence( 1, 2, 3, 4, 1, 1, 1 ), yieldsSet( 1, 3, 4 ));
-        assertThat( appendSequence( 1, 2, 6, 4, 1, 2, 2, 2, 5, 5 ), yieldsSet( 1, 2, 5 ));
+        assertThat( appendSequence( 1, 1, 1, 2, 2, 6, 4, 4, 1, 1, 2, 2, 2, 5, 5 ), yieldsSet( 1, 2, 5 ));
     }
 
     private Matcher<RecentK<Integer>> yieldsSet( final Integer ... expectedItems )
