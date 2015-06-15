@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.configuration;
 
-import java.net.URI;
-
 import org.junit.Test;
+
+import java.net.URI;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.web.ServerInternalSettings;
@@ -36,7 +36,7 @@ public class ConfigWrappingConfigurationTest
     {
         // GIVEN
         final Config config = new Config();
-        PropertyFileConfigurator.setServerSettingsClasses( config );
+        ServerConfigFactory.setServerSettingsClasses( config );
         final ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
 
         // WHEN
@@ -51,7 +51,7 @@ public class ConfigWrappingConfigurationTest
     {
         // GIVEN
         final Config config = new Config();
-        PropertyFileConfigurator.setServerSettingsClasses( config );
+        ServerConfigFactory.setServerSettingsClasses( config );
         final ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
 
         // WHEN
@@ -62,16 +62,15 @@ public class ConfigWrappingConfigurationTest
         assertEquals( new URI( ServerInternalSettings.rest_api_path.getDefaultValue() ), dataPath );
     }
 
-
     @Test
     public void shouldContainAllKeysOfPropertiesWithDefaultOrUserDefinedValues() throws Exception
     {
         // GIVEN
         final Config config = new Config();
-        PropertyFileConfigurator.setServerSettingsClasses( config );
-        final ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
+        ServerConfigFactory.setServerSettingsClasses( config );
 
         // WHEN
+        final ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
 
         // THEN
         assertTrue( wrappingConfiguration.getKeys().hasNext() );

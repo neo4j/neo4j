@@ -28,7 +28,6 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.advanced.AdvancedNeoServer;
-import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.modules.ServerModule;
@@ -55,14 +54,9 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
         }
     };
 
-    public EnterpriseNeoServer( ConfigurationBuilder configurator, Dependencies dependencies, LogProvider logProvider )
+    public EnterpriseNeoServer( Config config, Dependencies dependencies, LogProvider logProvider )
     {
-        super( configurator, createDbFactory( configurator.configuration() ), dependencies, logProvider );
-    }
-
-    public EnterpriseNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, Dependencies dependencies, LogProvider logProvider )
-    {
-        super( configurator, dbFactory, dependencies, logProvider );
+        super( config, createDbFactory( config ), dependencies, logProvider );
     }
 
     protected static Database.Factory createDbFactory( Config config )

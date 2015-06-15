@@ -48,7 +48,7 @@ public class MapConfigurator implements ConfigurationBuilder
     @Override
     public Config configuration()
     {
-        Map<String, String> serverConfigParams = new HashMap();
+        Map<String, String> serverConfigParams = new HashMap<>();
         serverConfigParams.putAll( config );
         serverConfigParams.put( ServerSettings.third_party_packages.name(),
                 ConfiguratorWrappingConfigurationBuilder.toStringForThirdPartyPackageProperty( extensions ) );

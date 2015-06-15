@@ -20,25 +20,26 @@
 package org.neo4j.server.enterprise;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.advanced.AdvancedBootstrapper;
-import org.neo4j.server.configuration.ConfigurationBuilder;
 
 public class EnterpriseBootstrapper extends AdvancedBootstrapper
 {
-	public static void main( String[] args )
-	{
-		Integer exit = new EnterpriseBootstrapper().start();
-		if ( exit != 0 )
-		{
-			System.exit( exit );
-		}
-	}
+    public static void main( String[] args )
+    {
+        int exit = start( new EnterpriseBootstrapper(), args );
+        if ( exit != 0 )
+        {
+            System.exit( exit );
+        }
+    }
 
     @Override
-	protected NeoServer createNeoServer( ConfigurationBuilder configurator, GraphDatabaseDependencies dependencies, LogProvider userLogProvider )
-	{
-		return new EnterpriseNeoServer( configurator, dependencies, userLogProvider );
-	}
+    protected NeoServer createNeoServer( Config configurator, GraphDatabaseDependencies dependencies, LogProvider
+            userLogProvider )
+    {
+        return new EnterpriseNeoServer( configurator, dependencies, userLogProvider );
+    }
 }

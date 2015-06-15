@@ -32,9 +32,9 @@ import org.neo4j.server.web.ServerInternalSettings;
 
 import static java.util.Arrays.asList;
 
-//TODO put the server and db configuration file into one file per database.
-// the configuration for each db could either be passed from the server or created locally
-// if no server (server config) is specified.
+/**
+ * @deprecated this will be removed in the next major version of Neo4j
+ */
 public class PropertyFileConfigurator implements ConfigurationBuilder
 {
     private final Config serverConfig;

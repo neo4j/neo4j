@@ -19,14 +19,14 @@
  */
 package org.neo4j.desktop.runtime;
 
-import java.io.File;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
+
 import org.neo4j.desktop.config.Installation;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.server.web.ServerInternalSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -54,17 +54,16 @@ public class DesktopConfiguratorTest
         // Given
         Installation installation = mock( Installation.class );
         when( installation.getServerConfigurationsFile() ).thenReturn( emptyServerConfigFile );
-        DesktopConfigurator config = new DesktopConfigurator( installation );
 
-        File storeDir = new File( "graph.db" ); // will not create any file
+        File storeDir = new File( "graph.db" ).getAbsoluteFile(); // will not create any file
 
         // When
-        config.setDatabaseDirectory( storeDir );
+        DesktopConfigurator config = new DesktopConfigurator( installation, storeDir );
 
         // Then
         assertEquals( storeDir.getAbsolutePath(), config.getDatabaseDirectory() );
 
-        String pathToStoreDir = config.getDatabaseTuningProperties().get( GraphDatabaseSettings.store_dir.name() );
-        assertEquals( storeDir.getAbsolutePath(), pathToStoreDir );
+        File pathToStoreDir = config.configuration().get( ServerInternalSettings.legacy_db_location );
+        assertEquals( storeDir, pathToStoreDir );
     }
 }

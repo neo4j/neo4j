@@ -20,26 +20,28 @@
 package org.neo4j.server;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.configuration.ConfigurationBuilder;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
-import org.neo4j.server.web.ServerInternalSettings;
 
 import static java.lang.String.format;
+import static org.neo4j.server.configuration.ServerConfigFactory.loadConfig;
+import static org.neo4j.server.web.ServerInternalSettings.SERVER_CONFIG_FILE;
+import static org.neo4j.server.web.ServerInternalSettings.SERVER_CONFIG_FILE_KEY;
 
 /**
  * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
@@ -48,13 +50,13 @@ import static java.lang.String.format;
 @Deprecated
 public abstract class Bootstrapper
 {
-    public static final Integer OK = 0;
-    public static final Integer WEB_SERVER_STARTUP_ERROR_CODE = 1;
-    public static final Integer GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
+    public static final int OK = 0;
+    public static final int WEB_SERVER_STARTUP_ERROR_CODE = 1;
+    public static final int GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
 
     protected final LifeSupport life = new LifeSupport();
     protected NeoServer server;
-    protected ConfigurationBuilder configurator;
+    protected Config config;
     private Thread shutdownHook;
     protected GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
 
@@ -68,7 +70,7 @@ public abstract class Bootstrapper
                 "support." );
     }
 
-    public Integer start()
+    public int start( File configFile, Pair<String, String> ... configOverrides )
     {
         LogProvider userLogProvider = FormattedLogProvider.withoutRenderingContext().toOutputStream( System.out );
 
@@ -82,15 +84,15 @@ public abstract class Bootstrapper
         serverPort = "unknown port";
         try
         {
-            configurator = createConfigurationBuilder( log );
-            serverPort = String.valueOf( configurator.configuration().get( ServerSettings.webserver_port ) );
+            config = createConfig( log, configFile, configOverrides );
+            serverPort = String.valueOf( config.get( ServerSettings.webserver_port ) );
             dependencies = dependencies.userLogProvider( userLogProvider );
 
             life.start();
 
             checkCompatibility();
 
-            server = createNeoServer( configurator, dependencies, userLogProvider );
+            server = createNeoServer( config, dependencies, userLogProvider );
             server.start();
 
             addShutdownHook();
@@ -121,7 +123,8 @@ public abstract class Bootstrapper
         new JvmChecker( log, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
     }
 
-    protected abstract NeoServer createNeoServer( ConfigurationBuilder configurator, GraphDatabaseDependencies dependencies, LogProvider userLogProvider );
+    protected abstract NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
+            LogProvider userLogProvider );
 
     public int stop()
     {
@@ -182,11 +185,16 @@ public abstract class Bootstrapper
                 .addShutdownHook( shutdownHook );
     }
 
-    protected ConfigurationBuilder createConfigurationBuilder( Log log )
+    /**
+     * Create a new config instance for the DBMS. For legacy reasons, this method contains convoluted logic to load two additional config files - one
+     * determined by a system property (neo4j-server.properties) and one determined by a config key (neo4j.properties).
+     *
+     * It will also override defaults set in neo4j embedded (remote shell default on/off, query log file name). Whether it's correct to do that here is
+     * dubious, it makes it confusing in the documentation that the defaults do not match the behavior of the server.
+     */
+    protected Config createConfig( Log log, File file, Pair<String, String>[] configOverrides ) throws IOException
     {
-        File configFile = new File( System.getProperty(
-                ServerInternalSettings.SERVER_CONFIG_FILE_KEY, Configurator.DEFAULT_CONFIG_DIR ) );
-        return new PropertyFileConfigurator( configFile, log );
+        return loadConfig( file, new File( System.getProperty( SERVER_CONFIG_FILE_KEY, SERVER_CONFIG_FILE ) ), log, configOverrides );
     }
 
 }

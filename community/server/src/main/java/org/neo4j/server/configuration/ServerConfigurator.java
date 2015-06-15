@@ -50,7 +50,10 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * <p>
  * See the neo4j manual for information about what configuration directives the
  * server takes, or take a look at the settings in {@link ServerSettings}.
+ *
+ * @deprecated this will be removed in the next major version of Neo4j
  */
+@Deprecated
 public class ServerConfigurator extends Configurator.Adapter
 {
     private final MapConfiguration config = new MapConfiguration(new HashMap<String,Object>());

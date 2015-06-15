@@ -22,11 +22,11 @@ package org.neo4j.server.enterprise.helpers;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.web.DatabaseActions;
@@ -62,25 +62,25 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     }
 
     @Override
-    protected CommunityNeoServer build(File configFile, ConfigurationBuilder configurator, GraphDatabaseFacadeFactory.Dependencies dependencies)
+    protected CommunityNeoServer build(File configFile, Config config, GraphDatabaseFacadeFactory.Dependencies dependencies)
     {
-        return new TestEnterpriseNeoServer( configurator, configFile, dependencies, logProvider );
+        return new TestEnterpriseNeoServer( config, configFile, dependencies, logProvider );
     }
 
     private class TestEnterpriseNeoServer extends EnterpriseNeoServer
     {
         private final File configFile;
 
-        public TestEnterpriseNeoServer( ConfigurationBuilder propertyFileConfigurator, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
+        public TestEnterpriseNeoServer( Config config, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
         {
-            super( propertyFileConfigurator, dependencies, logProvider );
+            super( config, dependencies, logProvider );
             this.configFile = configFile;
         }
 
         @Override
         protected DatabaseActions createDatabaseActions()
         {
-            return createDatabaseActionsObject( database, configurator );
+            return createDatabaseActionsObject( database, getConfig() );
         }
 
         @Override

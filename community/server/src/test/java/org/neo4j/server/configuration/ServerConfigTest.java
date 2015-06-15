@@ -19,17 +19,17 @@
  */
 package org.neo4j.server.configuration;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -37,8 +37,9 @@ import org.neo4j.server.ServerTestUtils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.server.configuration.ServerConfigFactory.loadConfig;
 
-public class ConfiguratorTest
+public class ServerConfigTest
 {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -48,21 +49,29 @@ public class ConfiguratorTest
     @Test
     public void shouldProvideAConfiguration() throws IOException
     {
+        // given
         File configFile = PropertyFileBuilder.builder( folder.getRoot() )
                 .build();
-        Config config = new PropertyFileConfigurator( configFile, log ).configuration();
+
+        // when
+        Config config = loadConfig( null, configFile, log );
+
+        // then
         assertNotNull( config );
     }
 
     @Test
     public void shouldUseSpecifiedConfigFile() throws Exception
     {
+        // given
         File configFile = PropertyFileBuilder.builder( folder.getRoot() )
                 .withNameValue( "foo", "bar" )
                 .build();
 
-        Config testConf = new PropertyFileConfigurator( configFile, log ).configuration();
+        // when
+        Config testConf = loadConfig( null, configFile, log );
 
+        // then
         final String EXPECTED_VALUE = "bar";
         assertEquals( EXPECTED_VALUE, testConf.getParams().get( "foo" ) );
     }
@@ -70,14 +79,16 @@ public class ConfiguratorTest
     @Test
     public void shouldAcceptDuplicateKeysWithSameValue() throws IOException
     {
+        // given
         File configFile = PropertyFileBuilder.builder( folder.getRoot() )
                 .withNameValue( "foo", "bar" )
                 .withNameValue( "foo", "bar" )
                 .build();
 
-        ConfigurationBuilder configurator = new PropertyFileConfigurator( configFile, log );
-        Config testConf = configurator.configuration();
+        // when
+        Config testConf = loadConfig( null, configFile, log );
 
+        // then
         assertNotNull( testConf );
         final String EXPECTED_VALUE = "bar";
         assertEquals( EXPECTED_VALUE, testConf.getParams().get( "foo" ) );
@@ -86,38 +97,43 @@ public class ConfiguratorTest
     @Test
     public void shouldSupportProvidingDatabaseTuningParametersSeparately() throws IOException
     {
+        // given
         File databaseTuningPropertyFile = DatabaseTuningPropertyFileBuilder.builder( folder.getRoot() )
+                .withKernelId( "kernelfromseparatedbtuningfile" )
                 .build();
-
         File propertyFileWithDbTuningProperty = PropertyFileBuilder.builder( folder.getRoot() )
                 .withDbTuningPropertyFile( databaseTuningPropertyFile )
                 .build();
 
-        ConfigurationBuilder configurator = new PropertyFileConfigurator( propertyFileWithDbTuningProperty, log );
+        // when
+        Config config = loadConfig( null, propertyFileWithDbTuningProperty, log );
 
-        Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
-        assertNotNull( databaseTuningProperties );
-        assertEquals( 5, databaseTuningProperties.size() );
+        // then
+        assertNotNull( config );
+        assertEquals( config.get( GraphDatabaseSettings.forced_kernel_id ), "kernelfromseparatedbtuningfile" );
     }
 
     @Test
     public void shouldFindThirdPartyJaxRsPackages() throws IOException
     {
+        // given
         File file = ServerTestUtils.createTempPropertyFile( folder.getRoot() );
 
-        FileWriter fstream = new FileWriter( file, true );
-        BufferedWriter out = new BufferedWriter( fstream );
-        out.write( Configurator.THIRD_PARTY_PACKAGES_KEY );
-        out.write( "=" );
-        out.write( "com.foo.bar=\"mount/point/foo\"," );
-        out.write( "com.foo.baz=\"/bar\"," );
-        out.write( "com.foo.foobarbaz=\"/\"" );
-        out.write( System.getProperty( "line.separator" ) );
-        out.close();
+        try(BufferedWriter out = new BufferedWriter( new FileWriter( file, true ) ))
+        {
+            out.write( Configurator.THIRD_PARTY_PACKAGES_KEY );
+            out.write( "=" );
+            out.write( "com.foo.bar=\"mount/point/foo\"," );
+            out.write( "com.foo.baz=\"/bar\"," );
+            out.write( "com.foo.foobarbaz=\"/\"" );
+            out.write( System.getProperty( "line.separator" ) );
+        }
 
-        ConfigurationBuilder configurator = new PropertyFileConfigurator( file, log );
+        // when
+        Config config = loadConfig( null, file, log );
 
-        List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = configurator.configuration().get( ServerSettings.third_party_packages );
+        // then
+        List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
         assertNotNull( thirdpartyJaxRsPackages );
         assertEquals( 3, thirdpartyJaxRsPackages.size() );
     }

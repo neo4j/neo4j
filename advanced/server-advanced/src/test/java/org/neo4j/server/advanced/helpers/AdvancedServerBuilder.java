@@ -22,11 +22,11 @@ package org.neo4j.server.advanced.helpers;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.advanced.AdvancedNeoServer;
-import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.web.DatabaseActions;
 
@@ -56,25 +56,26 @@ public class AdvancedServerBuilder extends CommunityServerBuilder
     }
 
     @Override
-    protected AdvancedNeoServer build(File configFile, ConfigurationBuilder configurator, GraphDatabaseFacadeFactory.Dependencies dependencies)
+    protected AdvancedNeoServer build(File configFile, Config config, GraphDatabaseFacadeFactory.Dependencies dependencies)
     {
-        return new TestAdvancedNeoServer( configurator, configFile, dependencies, logProvider );
+        return new TestAdvancedNeoServer( config, configFile, dependencies, logProvider );
     }
 
     private class TestAdvancedNeoServer extends AdvancedNeoServer
     {
         private final File configFile;
 
-        public TestAdvancedNeoServer( ConfigurationBuilder propertyFileConfigurator, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
+        public TestAdvancedNeoServer( Config config, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider
+                logProvider )
         {
-            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? COMMUNITY_FACTORY : IN_MEMORY_DB ), dependencies, logProvider );
+            super( config, lifecycleManagingDatabase( persistent ? COMMUNITY_FACTORY : IN_MEMORY_DB ), dependencies, logProvider );
             this.configFile = configFile;
         }
 
         @Override
         protected DatabaseActions createDatabaseActions()
         {
-            return createDatabaseActionsObject( database, configurator );
+            return createDatabaseActionsObject( database, getConfig() );
         }
 
         @Override

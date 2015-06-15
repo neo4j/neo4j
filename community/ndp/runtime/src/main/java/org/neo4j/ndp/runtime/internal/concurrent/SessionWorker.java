@@ -95,8 +95,7 @@ public class SessionWorker implements Runnable
         {
             log.error( "Worker for session '" + session.key() + "' crashed: " + e.getMessage(), e );
             userLog.error( "Fatal, worker for session '" + session.key() + "' crashed. Please" +
-                           " contact your support representative if you are unable to resolve this error. Error " +
-                           "message was: " + e.getMessage() );
+                           " contact your support representative if you are unable to resolve this.", e );
 
             // Attempt to close the session, as an effort to release locks and other resources held by the session
             session.close();

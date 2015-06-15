@@ -79,7 +79,7 @@ public interface ServerSettings
 
     @Description( "Number of Neo4j worker threads." )
     Setting<Integer> webserver_max_threads = setting( "org.neo4j.server.webserver.maxthreads",
-            INTEGER, NO_DEFAULT, min( 1 ) );
+            INTEGER, ""+Math.min(Runtime.getRuntime().availableProcessors(),500), min( 1 ) );
 
     @Description( "If execution time limiting is enabled in the database, this configures the maximum request execution time." )
     Setting<Long> webserver_limit_execution_time = setting(

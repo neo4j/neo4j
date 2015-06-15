@@ -140,9 +140,22 @@ public class Config implements DiagnosticsProvider
     }
 
     /**
+     * Augment the existing config with new settings, overriding any conflicting settings, but keeping all old
+     * non-overlapping ones.
+     * @param changes settings to add and override
+     */
+    public Config augment( Map<String,String> changes )
+    {
+        Map<String,String> params = getParams();
+        params.putAll( changes );
+        applyChanges( params );
+        return this;
+    }
+
+    /**
      * Replace the current set of configuration parameters with another one.
      */
-    public synchronized void applyChanges( Map<String, String> newConfiguration )
+    public synchronized Config applyChanges( Map<String, String> newConfiguration )
     {
         newConfiguration = migrator.apply( newConfiguration, log );
 
@@ -174,7 +187,7 @@ public class Config implements DiagnosticsProvider
             if ( configurationChanges.isEmpty() )
             {
                 // Don't bother... nothing changed.
-                return;
+                return this;
             }
 
             // Make the change
@@ -196,6 +209,8 @@ public class Config implements DiagnosticsProvider
                 listener.notifyConfigurationChanges( configurationChanges );
             }
         }
+
+        return this;
     }
 
     public Iterable<Class<?>> getSettingsClasses()
