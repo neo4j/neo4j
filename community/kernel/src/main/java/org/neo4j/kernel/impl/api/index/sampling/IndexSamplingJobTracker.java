@@ -35,10 +35,12 @@ public class IndexSamplingJobTracker
     private final Set<IndexDescriptor> executingJobDescriptors;
     private final Lock lock = new ReentrantLock( true );
     private final Condition canSchedule = lock.newCondition();
+    private final Condition allJobsFinished = lock.newCondition();
+
+    private boolean stopped;
 
     public IndexSamplingJobTracker( IndexSamplingConfig config, JobScheduler jobScheduler )
     {
-
         this.jobScheduler = jobScheduler;
         this.jobLimit = config.jobLimit();
         this.executingJobDescriptors = new HashSet<>();
@@ -49,7 +51,7 @@ public class IndexSamplingJobTracker
         lock.lock();
         try
         {
-            return executingJobDescriptors.size() < jobLimit;
+            return !stopped && executingJobDescriptors.size() < jobLimit;
         }
         finally
         {
@@ -62,6 +64,8 @@ public class IndexSamplingJobTracker
         lock.lock();
         try
         {
+            assertNotStopped();
+
             IndexDescriptor descriptor = samplingJob.descriptor();
             if ( executingJobDescriptors.contains( descriptor ) )
             {
@@ -98,6 +102,7 @@ public class IndexSamplingJobTracker
         {
             executingJobDescriptors.remove( samplingJob.descriptor() );
             canSchedule.signalAll();
+            allJobsFinished.signalAll();
         }
         finally
         {
@@ -110,14 +115,42 @@ public class IndexSamplingJobTracker
         lock.lock();
         try
         {
-            while ( ! canExecuteMoreSamplingJobs() )
+            while ( !canExecuteMoreSamplingJobs() )
             {
+                assertNotStopped();
                 canSchedule.awaitUninterruptibly();
             }
         }
         finally
         {
             lock.unlock();
+        }
+    }
+
+    public void stopAndAwaitAllJobs()
+    {
+        lock.lock();
+        try
+        {
+            stopped = true;
+
+            while ( !executingJobDescriptors.isEmpty() )
+            {
+                allJobsFinished.awaitUninterruptibly();
+            }
+        }
+        finally
+        {
+            lock.unlock();
+        }
+
+    }
+
+    private void assertNotStopped()
+    {
+        if ( stopped )
+        {
+            throw new IllegalStateException( getClass().getSimpleName() + " is stopped" );
         }
     }
 }
