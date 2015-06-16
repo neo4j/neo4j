@@ -20,7 +20,6 @@
 package org.neo4j.kernel.configuration;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -39,6 +38,7 @@ import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.kernel.logging.BufferingLogger;
 
 import static java.lang.Character.isDigit;
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 
 /**
@@ -77,7 +77,7 @@ public class Config implements DiagnosticsProvider
 
     public Config( Map<String, String> inputParams, Class<?>... settingsClasses )
     {
-        this( inputParams, Arrays.asList( settingsClasses ) );
+        this( inputParams, asList( settingsClasses ) );
     }
 
     public Config( Map<String, String> inputParams, Iterable<Class<?>> settingsClasses )
@@ -85,6 +85,12 @@ public class Config implements DiagnosticsProvider
         this.settingsFunction = Functions.map( params );
         this.params.putAll( inputParams );
         registerSettingsClasses( settingsClasses );
+    }
+
+    /** Add more settings classes */
+    public Config registerSettingsClasses( Class<?> ... settingsClasses )
+    {
+        return registerSettingsClasses( asList(settingsClasses) );
     }
 
     /** Add more settings classes. */

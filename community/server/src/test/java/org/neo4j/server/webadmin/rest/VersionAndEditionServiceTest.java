@@ -19,9 +19,8 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import javax.ws.rs.core.Response;
-
 import org.junit.Test;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -40,9 +39,9 @@ import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.VersionAndEditionService;
 import org.neo4j.server.web.WebServer;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class VersionAndEditionServiceTest
 {
@@ -69,54 +68,6 @@ public class VersionAndEditionServiceTest
 
         // then
         assertEquals( "server/version", serverPath );
-    }
-
-    @Test
-    public void shouldReturnDatabaseCommunityEditionAndVersion() throws Exception
-    {
-        // given
-        AbstractNeoServer neoServer = setUpMocksAndStub( CommunityNeoServer.class );
-
-        VersionAndEditionService service = new VersionAndEditionService( neoServer );
-
-        // when
-        Response response = service.getVersionAndEditionData();
-
-        // then
-        assertEquals( 200, response.getStatus() );
-        assertEquals( "{version: \"2.0.0\", edition: \"community\"}", response.getEntity().toString() );
-    }
-
-    @Test
-    public void shouldReturnDatabaseAdvancedEditionAndVersion() throws Exception
-    {
-        // given
-        AbstractNeoServer neoServer = setUpMocksAndStub( FakeAdvancedNeoServer.class );
-
-        VersionAndEditionService service = new VersionAndEditionService( neoServer );
-
-        // when
-        Response response = service.getVersionAndEditionData();
-
-        // then
-        assertEquals( 200, response.getStatus() );
-        assertEquals( "{version: \"2.0.0\", edition: \"advanced\"}", response.getEntity().toString() );
-    }
-
-    @Test
-    public void shouldReturnDatabaseEnterpriseEditionAndVersion() throws Exception
-    {
-        // given
-        AbstractNeoServer neoServer = setUpMocksAndStub( FakeEnterpriseNeoServer.class );
-
-        VersionAndEditionService service = new VersionAndEditionService( neoServer );
-
-        // when
-        Response response = service.getVersionAndEditionData();
-
-        // then
-        assertEquals( 200, response.getStatus() );
-        assertEquals( "{version: \"2.0.0\", edition: \"enterprise\"}", response.getEntity().toString() );
     }
 
     private AbstractNeoServer setUpMocksAndStub( Class<? extends AbstractNeoServer> serverClass )

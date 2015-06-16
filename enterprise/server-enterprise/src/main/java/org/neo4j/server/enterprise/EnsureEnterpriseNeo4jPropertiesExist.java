@@ -44,7 +44,7 @@ public class EnsureEnterpriseNeo4jPropertiesExist extends EnsureNeo4jPropertiesE
     @Override
     protected boolean validateProperties( Config config )
     {
-        String dbMode = config.get( ServerInternalSettings.legacy_db_mode );
+        String dbMode = config.get( EnterpriseServerSettings.mode );
         dbMode = dbMode.toUpperCase();
         if ( dbMode.equals( EnterpriseNeoServer.SINGLE ) )
         {
@@ -52,7 +52,8 @@ public class EnsureEnterpriseNeo4jPropertiesExist extends EnsureNeo4jPropertiesE
         }
         if ( !dbMode.equals( EnterpriseNeoServer.HA ) )
         {
-            failureMessage = String.format( "Illegal value for %s \"%s\" in %s", ServerInternalSettings.legacy_db_mode.name(), dbMode,
+            failureMessage = String.format( "Illegal value for %s \"%s\" in %s", EnterpriseServerSettings.mode.name(),
+                    dbMode,
                     ServerInternalSettings.SERVER_CONFIG_FILE_KEY );
             return false;
         }
