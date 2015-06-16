@@ -99,7 +99,7 @@ class ExtractBuilderTest extends BuilderTest {
     val returnItems = result.query.returns.toSet
     returnItems should equal(Set(
       Solved(ReturnItem(CachedExpression("bar", CTFloat), "bar")),
-      Solved(ReturnItem(CachedExpression("foo", CTInteger), "foo"))
+      Solved(ReturnItem(CachedExpression("foo", CTNumber), "foo"))
     ))
   }
 
@@ -119,7 +119,7 @@ class ExtractBuilderTest extends BuilderTest {
 
     returnItems should equal(Set(
       Unsolved(ReturnItem(AbsFunction(RandFunction()), "bar")),
-      Unsolved(ReturnItem(CachedExpression("foo", CTInteger), "foo"))
+      Unsolved(ReturnItem(CachedExpression("foo", CTNumber), "foo"))
     ))
   }
 }

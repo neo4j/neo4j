@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.CypherType
 
 case class LoadVariable(varName: String) extends CodeGenExpression {
 
@@ -28,8 +27,4 @@ case class LoadVariable(varName: String) extends CodeGenExpression {
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
     structure.load(varName)
-
-  override def nullable(implicit context: CodeGenContext): Boolean = context.getVariable(varName).nullable
-
-  override def cypherType(implicit context: CodeGenContext): CypherType = context.getVariable(varName).cypherType
 }

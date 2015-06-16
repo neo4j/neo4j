@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_3._
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{LiteralTypeSupport, IsCollection, IsMap}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.{IsCollection, IsMap}
 
 case class Literal(v: Any) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = v
@@ -31,9 +31,20 @@ case class Literal(v: Any) extends Expression {
 
   def arguments = Nil
 
-  def calculateType(symbols: SymbolTable): CypherType = LiteralTypeSupport.deriveType(v)
+  def calculateType(symbols: SymbolTable): CypherType = deriveType(v)
 
   def symbolTableDependencies = Set()
 
   override def toString = "Literal(" + v + ")"
+
+  private def deriveType(obj: Any): CypherType = obj match {
+    case _: String                          => CTString
+    case _: Char                            => CTString
+    case _: Number                          => CTNumber
+    case _: Boolean                         => CTBoolean
+    case IsMap(_)                           => CTMap
+    case IsCollection(coll) if coll.isEmpty => CTCollection(CTAny)
+    case IsCollection(coll)                 => CTCollection(coll.map(deriveType).reduce(_ leastUpperBound _))
+    case _                                  => CTAny
+  }
 }

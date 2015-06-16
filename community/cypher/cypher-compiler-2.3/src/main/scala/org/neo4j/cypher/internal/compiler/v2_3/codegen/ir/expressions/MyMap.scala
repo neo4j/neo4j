@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 //Named MyMap to avoid conflict with collection.Map which makes everything weird
 case class MyMap(instructions: Map[String, CodeGenExpression]) extends CodeGenExpression {
@@ -32,8 +31,4 @@ case class MyMap(instructions: Map[String, CodeGenExpression]) extends CodeGenEx
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
     structure.asMap(instructions.mapValues(_.generateExpression(structure)))
-
-  override def nullable(implicit context: CodeGenContext) = false
-
-  override def cypherType(implicit context: CodeGenContext) = CTMap
 }

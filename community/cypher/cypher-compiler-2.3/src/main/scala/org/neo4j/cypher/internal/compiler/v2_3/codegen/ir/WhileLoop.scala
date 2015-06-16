@@ -25,7 +25,7 @@ case class WhileLoop(variable: Variable, producer: LoopDataGenerator, action: In
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     val iterator = s"${variable.name}Iter"
-    generator.trace(producer.opName) { body =>
+    generator.trace(producer.id) { body =>
       producer.produceIterator(iterator, body)
       body.whileLoop(body.hasNext(iterator)) { loopBody =>
         loopBody.incrementDbHits()
@@ -36,12 +36,5 @@ case class WhileLoop(variable: Variable, producer: LoopDataGenerator, action: In
     }
   }
 
-  override def operatorId: Set[String] = Set(producer.opName)
-
-  override def children = Seq(action)
-
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
-    super.init(generator)
-    producer.init(generator)
-  }
+  override def children = Seq(producer, action)
 }

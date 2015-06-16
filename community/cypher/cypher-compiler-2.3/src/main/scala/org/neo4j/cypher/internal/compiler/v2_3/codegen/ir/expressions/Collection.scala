@@ -20,23 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
-case class Collection(expressions: Seq[CodeGenExpression]) extends CodeGenExpression {
+case class Collection(instructions: Seq[CodeGenExpression]) extends CodeGenExpression {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
-    expressions.foreach { instruction =>
+    instructions.foreach { instruction =>
       instruction.init(generator)
     }
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.asList(expressions.map(_.generateExpression(structure)))
-
-  override def nullable(implicit context: CodeGenContext) = false
-
-  override def cypherType(implicit context: CodeGenContext) = {
-    val commonType = expressions.map(_.cypherType).reduce[CypherType](_ leastUpperBound _)
-
-    CTCollection(commonType)
-  }
+    structure.asList(instructions.map(_.generateExpression(structure)))
 }

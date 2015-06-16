@@ -20,14 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
-trait BinaryOperator {
-  self: CodeGenExpression =>
+protected abstract class BinaryOperator(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression {
 
-  def lhs: CodeGenExpression
-  def rhs: CodeGenExpression
-  
   override final def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     lhs.init(generator)
     rhs.init(generator)
@@ -37,20 +32,4 @@ trait BinaryOperator {
     generator(structure)(lhs.generateExpression(structure), rhs.generateExpression(structure))
 
   protected def generator[E](structure: MethodStructure[E]): (E, E) => E
-}
-
-// Trait that resolves type based on inputs. 
-trait NumericalOpType {
-  self : CodeGenExpression =>
-
-  def lhs: CodeGenExpression
-  def rhs: CodeGenExpression
-
-  override def cypherType(implicit context: CodeGenContext) =
-    (lhs.cypherType, rhs.cypherType) match {
-      case (CTInteger, CTInteger) => CTInteger
-      case (_: NumberType, _: NumberType) => CTFloat
-      // Runtime we'll figure it out - can't store it in a primitive field unless we are 100% of the type
-      case _ => CTAny
-    }
 }

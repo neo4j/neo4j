@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case class Node(nodeIdVar: Variable) extends CodeGenExpression {
   assert(nodeIdVar.cypherType == symbols.CTNode)
@@ -33,9 +32,6 @@ case class Node(nodeIdVar: Variable) extends CodeGenExpression {
       structure.nullable(nodeIdVar.name, nodeIdVar.cypherType, structure.materializeNode(nodeIdVar.name))
     else
       structure.materializeNode(nodeIdVar.name)
+
   }
-
-  override def nullable(implicit context: CodeGenContext) = nodeIdVar.nullable
-
-  override def cypherType(implicit context: CodeGenContext) = CTNode
 }

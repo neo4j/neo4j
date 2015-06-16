@@ -28,7 +28,7 @@ class CollectionTest extends CypherFunSuite {
   }
 
   test("collection_with_one_item_should_be_typed_for_that_items_type") {
-    Collection(Literal(1)).getType(SymbolTable()) should equal(CTCollection(CTInteger))
+    Collection(Literal(1)).getType(SymbolTable()) should equal(CTCollection(CTNumber))
   }
 
   test("collection_with_several_items_should_be_typed_for_their_common_supertype"){
