@@ -36,6 +36,11 @@ include::property-exists.asciidoc[]
 
 == Regular expressions ==
 
+Cypher supports filtering using regular expressions.
+The regular expression syntax is inherited from https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html[the Java regular expressions].
+This includes support for flags that change how strings are matched, including case-insensitive `(?i)`, multiline `(?m)` and dotall `(?s)`.
+Flags are given at the start of the regular expression, for example `MATCH (n) WHERE n.name =~ '(?i)Lon.*' RETURN n` will return nodes with name `London` or with name `LonDoN`.
+
 :leveloffset: 3
 
 include::regular-expressions.asciidoc[]
