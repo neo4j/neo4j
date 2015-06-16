@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case class Parameter(key: String) extends CodeGenExpression {
 
@@ -28,4 +29,8 @@ case class Parameter(key: String) extends CodeGenExpression {
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E =
     structure.parameter(key)
+
+  override def nullable(implicit context: CodeGenContext) = true
+
+  override def cypherType(implicit context: CodeGenContext) = CTAny
 }

@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.MethodStructure
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
-case class Subtraction(lhs: CodeGenExpression, rhs: CodeGenExpression) extends BinaryOperator(lhs, rhs) {
+case class Subtraction(lhs: CodeGenExpression, rhs: CodeGenExpression)
+  extends CodeGenExpression with BinaryOperator with NumericalOpType {
 
   override protected def generator[E](structure: MethodStructure[E]) = structure.sub
+
+  override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 }

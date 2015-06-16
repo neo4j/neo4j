@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.LiteralTypeSupport
 
 case class Literal(value: Object) extends CodeGenExpression {
 
@@ -27,4 +28,9 @@ case class Literal(value: Object) extends CodeGenExpression {
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
     structure.constant(value)
+
+  override def nullable(implicit context: CodeGenContext) = value == null
+
+  override def cypherType(implicit context: CodeGenContext) =
+    LiteralTypeSupport.deriveType(value)
 }

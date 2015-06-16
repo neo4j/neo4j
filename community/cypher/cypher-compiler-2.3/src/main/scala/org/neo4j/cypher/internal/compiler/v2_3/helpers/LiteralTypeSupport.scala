@@ -17,14 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
+package org.neo4j.cypher.internal.compiler.v2_3.helpers
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.CypherType
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
-trait CodeGenExpression {
-  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
-  def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E
-  def nullable(implicit context: CodeGenContext): Boolean
-  def cypherType(implicit context: CodeGenContext): CypherType
+object LiteralTypeSupport {
+  def deriveType(obj: Any): CypherType = obj match {
+    case _: String                          => CTString
+    case _: Char                            => CTString
+    case _: Integer|Long|Short|Byte         => CTInteger
+    case _: Number                          => CTFloat
+    case _: Boolean                         => CTBoolean
+    case IsMap(_)                           => CTMap
+    case IsCollection(coll) if coll.isEmpty => CTCollection(CTAny)
+    case IsCollection(coll)                 => CTCollection(coll.map(deriveType).reduce(_ leastUpperBound _))
+    case _                                  => CTAny
+  }
 }
