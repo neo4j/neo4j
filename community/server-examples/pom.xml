@@ -45,7 +45,6 @@
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-client</artifactId>
-      <version>1.18.1</version>
     </dependency>
     <!-- Test dependencies -->
     <dependency>
