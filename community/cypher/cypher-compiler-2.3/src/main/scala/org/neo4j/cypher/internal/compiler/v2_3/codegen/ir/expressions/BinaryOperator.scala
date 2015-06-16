@@ -27,7 +27,7 @@ trait BinaryOperator {
 
   def lhs: CodeGenExpression
   def rhs: CodeGenExpression
-
+  
   override final def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     lhs.init(generator)
     rhs.init(generator)
@@ -39,7 +39,7 @@ trait BinaryOperator {
   protected def generator[E](structure: MethodStructure[E]): (E, E) => E
 }
 
-// Trait that resolves type based on inputs.
+// Trait that resolves type based on inputs. 
 trait NumericalOpType {
   self : CodeGenExpression =>
 
