@@ -35,7 +35,7 @@ class IndexTest extends RefcardTest with QueryStatisticsTestSupport {
     name match {
       case "create-index" =>
         assert(result.toList.size === 0)
-        db.schema().awaitIndexesOnline(1, TimeUnit.SECONDS)
+        db.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
       case "drop-index" =>
         // assertStats(result, indexDeleted = 1)
         assert(result.toList.size === 0)
