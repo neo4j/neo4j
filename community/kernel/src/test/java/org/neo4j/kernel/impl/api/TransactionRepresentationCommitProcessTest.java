@@ -73,12 +73,12 @@ public class TransactionRepresentationCommitProcessTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( logicalTransactionStore,
-                kernelHealth, transactionIdStore, storeApplier, mockedIndexUpdatesValidator(), INTERNAL );
+                kernelHealth, transactionIdStore, storeApplier, mockedIndexUpdatesValidator() );
 
         // WHEN
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess.commit( mockedTransaction(), locks, commitEvent );
+            commitProcess.commit( mockedTransaction(), locks, commitEvent, INTERNAL );
             fail( "Should have failed, something is wrong with the mocking in this test" );
         }
         catch ( TransactionFailureException e )
@@ -107,13 +107,13 @@ public class TransactionRepresentationCommitProcessTest
         doThrow( new IOException( rootCause ) ).when( storeApplier ).apply( any( TransactionRepresentation.class ),
                 any( ValidatedIndexUpdates.class ), any( LockGroup.class ), eq( txId ), eq( INTERNAL ) );
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( logicalTransactionStore,
-                kernelHealth, transactionIdStore, storeApplier, mockedIndexUpdatesValidator(), INTERNAL );
+                kernelHealth, transactionIdStore, storeApplier, mockedIndexUpdatesValidator() );
         TransactionRepresentation transaction = mockedTransaction();
 
         // WHEN
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess.commit( transaction, locks, commitEvent );
+            commitProcess.commit( transaction, locks, commitEvent, INTERNAL );
         }
         catch ( TransactionFailureException e )
         {
@@ -138,12 +138,12 @@ public class TransactionRepresentationCommitProcessTest
 
         TransactionRepresentationCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
                 mock( LogicalTransactionStore.class ), mock( KernelHealth.class ), mock( TransactionIdStore.class ),
-                mock( TransactionRepresentationStoreApplier.class ), indexUpdatesValidator, INTERNAL );
+                mock( TransactionRepresentationStoreApplier.class ), indexUpdatesValidator );
 
         try ( LockGroup lockGroup = new LockGroup() )
         {
             // When
-            commitProcess.commit( mock( TransactionRepresentation.class ), lockGroup, CommitEvent.NULL );
+            commitProcess.commit( mock( TransactionRepresentation.class ), lockGroup, CommitEvent.NULL, INTERNAL );
             fail( "Should have thrown " + TransactionFailureException.class.getSimpleName() );
         }
         catch ( TransactionFailureException e )

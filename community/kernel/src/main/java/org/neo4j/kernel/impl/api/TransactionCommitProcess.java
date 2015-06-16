@@ -25,14 +25,28 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 /*
- * This interface represents the contract for committing a transaction. It's quite
- * straightforward - you pass in a TransactionRepresentation and that's it. A simple
- * implementation of this would be to append to a log and then apply the
+ * This interface represents the contract for committing a transaction. While the concept of a transaction is
+ * captured in {@link TransactionRepresentation}, commit requires some more information to proceed, since a transaction
+ * can come from various sources (normal commit, recovery etc) each of which can be committed but requires special
+ * handling.
+ *
+ * A simple implementation of this would be to append to a log and then apply the
  * commands of the representation to the store that generated them. Another could
  * instead of appending to a log, write the transaction over the network to another
  * machine.
  */
 public interface TransactionCommitProcess
 {
-    long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent ) throws TransactionFailureException;
+    /**
+     * The main work method.
+     * @param representation The {@link TransactionRepresentation} to commit
+     * @param locks the {@link LockGroup} to add locks to while committing the transaction. This lock group is expected
+     *              to be managed by the caller - implementations should not attempt to close it.
+     * @param commitEvent A tracer for the commit process
+     * @param mode The {@link TransactionApplicationMode} to use
+     * @return The transaction id assigned to the transaction as part of the commit
+     * @throws TransactionFailureException If the commit process fails
+     */
+    long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent,
+                 TransactionApplicationMode mode ) throws TransactionFailureException;
 }

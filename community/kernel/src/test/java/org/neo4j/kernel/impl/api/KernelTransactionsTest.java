@@ -147,7 +147,8 @@ public class KernelTransactionsTest
         TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
 
         when( commitProcess.commit(
-                any( TransactionRepresentation.class ), any( LockGroup.class ), any( CommitEvent.class ) ) )
+                any( TransactionRepresentation.class ), any( LockGroup.class ), any( CommitEvent.class ),
+                any( TransactionApplicationMode.class ) ) )
                 .then( new Answer<Long>()
                 {
                     @Override

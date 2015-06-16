@@ -90,7 +90,6 @@ import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
@@ -447,20 +446,19 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                                                     KernelHealth kernelHealth, NeoStore neoStore,
                                                     TransactionRepresentationStoreApplier storeApplier,
                                                     NeoStoreInjectedTransactionValidator txValidator,
-                                                    IndexUpdatesValidator indexUpdatesValidator,
-                                                    TransactionApplicationMode mode, Config config )
+                                                    IndexUpdatesValidator indexUpdatesValidator, Config config )
             {
                 if ( config.get( GraphDatabaseSettings.read_only ) )
                 {
                     return defaultCommitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore,
-                            storeApplier, txValidator, indexUpdatesValidator, mode, config );
+                            storeApplier, txValidator, indexUpdatesValidator, config );
                 }
                 else
                 {
 
                     TransactionCommitProcess inner =
                             defaultCommitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore,
-                                    storeApplier, txValidator, indexUpdatesValidator, mode, config );
+                                    storeApplier, txValidator, indexUpdatesValidator, config );
                     new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
                             memberStateMachine, txValidator, inner );
 

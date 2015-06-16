@@ -27,6 +27,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -58,7 +59,7 @@ public class SlaveTransactionCommitProcessTest
         tx.setHeader(new byte[]{}, 1, 1, 1, 1, 1, 1337);
 
         // When
-        process.commit(tx , new LockGroup(), CommitEvent.NULL );
+        process.commit(tx , new LockGroup(), CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
 
         // Then
         verify( reqFactory ).newRequestContext( 1337 );

@@ -230,8 +230,7 @@ public abstract class InternalAbstractGraphDatabase
                                                 KernelHealth kernelHealth, NeoStore neoStore,
                                                 TransactionRepresentationStoreApplier storeApplier,
                                                 NeoStoreInjectedTransactionValidator txValidator,
-                                                IndexUpdatesValidator indexUpdatesValidator,
-                                                TransactionApplicationMode mode, Config config )
+                                                IndexUpdatesValidator indexUpdatesValidator, Config config )
         {
             if ( config.get( GraphDatabaseSettings.read_only ) )
             {
@@ -240,7 +239,7 @@ public abstract class InternalAbstractGraphDatabase
             else
             {
                 return new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
-                        neoStore, storeApplier, indexUpdatesValidator, mode );
+                        neoStore, storeApplier, indexUpdatesValidator );
             }
         }
     };

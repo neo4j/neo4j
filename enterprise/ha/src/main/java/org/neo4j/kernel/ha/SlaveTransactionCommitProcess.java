@@ -26,6 +26,7 @@ import org.neo4j.com.Response;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
@@ -33,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 /**
  * Commit process on slaves in HA. Transactions aren't committed here, but sent to the master, committed
- * there and streamed back.
+ * there and streamed back. Look at {@link org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker}
  */
 public class SlaveTransactionCommitProcess implements TransactionCommitProcess
 {
@@ -47,7 +48,8 @@ public class SlaveTransactionCommitProcess implements TransactionCommitProcess
     }
 
     @Override
-    public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent ) throws TransactionFailureException
+    public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent,
+                        TransactionApplicationMode mode ) throws TransactionFailureException
     {
         try
         {

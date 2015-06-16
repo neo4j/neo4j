@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.TransactionChecksumLookup;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.id.IdAllocation;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -142,7 +143,8 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
             TransactionCommitProcess txCommitProcess = dependencyResolver
                     .resolveDependency( NeoStoreDataSource.class )
                     .getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
-            return txCommitProcess.commit( preparedTransaction, locks, CommitEvent.NULL );
+            return txCommitProcess.commit( preparedTransaction, locks, CommitEvent.NULL,
+                    TransactionApplicationMode.EXTERNAL );
         }
     }
 
