@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import java.io.File;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
@@ -36,7 +38,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
@@ -64,10 +65,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.udc.UsageDataKeys;
 import org.neo4j.udc.UsageData;
-
-import java.io.File;
+import org.neo4j.udc.UsageDataKeys;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -149,38 +148,37 @@ public class CommunityEditionModule
     public static CommitProcessFactory createCommitProcessFactory()
     {
         return new CommitProcessFactory()
+        {
+            @Override
+            public TransactionCommitProcess create( TransactionAppender appender,
+                                                    KernelHealth kernelHealth, NeoStore neoStore,
+                                                    TransactionRepresentationStoreApplier storeApplier,
+                                                    NeoStoreInjectedTransactionValidator txValidator,
+                                                    IndexUpdatesValidator indexUpdatesValidator,
+                                                    Config config )
             {
-                @Override
-                public TransactionCommitProcess create( TransactionAppender appender,
-                                                        KernelHealth kernelHealth, NeoStore neoStore,
-                                                        TransactionRepresentationStoreApplier storeApplier,
-                                                        NeoStoreInjectedTransactionValidator txValidator,
-                                                        IndexUpdatesValidator indexUpdatesValidator,
-                                                        TransactionApplicationMode mode, Config config )
+                if ( config.get( GraphDatabaseSettings.read_only ) )
                 {
-                    if ( config.get( GraphDatabaseSettings.read_only ) )
-                    {
-                        return new ReadOnlyTransactionCommitProcess();
-                    }
-                    else
-                    {
-                        return new TransactionRepresentationCommitProcess( appender, kernelHealth,
-                                neoStore, storeApplier, indexUpdatesValidator, mode );
-                    }
+                    return new ReadOnlyTransactionCommitProcess();
                 }
-            };
+                else
+                {
+                    return new TransactionRepresentationCommitProcess( appender, kernelHealth,
+                            neoStore, storeApplier, indexUpdatesValidator );
+                }
+            }
+        };
     }
 
     protected SchemaWriteGuard createSchemaWriteGuard()
     {
         return new SchemaWriteGuard()
-                {
-                    @Override
-                    public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
-                    {
-
-                    }
-                };
+        {
+            @Override
+            public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
+            {
+            }
+        };
     }
 
 

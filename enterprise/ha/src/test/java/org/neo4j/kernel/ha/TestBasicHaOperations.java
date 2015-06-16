@@ -39,6 +39,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
+
 public class TestBasicHaOperations
 {
     @Rule
@@ -99,31 +100,50 @@ public class TestBasicHaOperations
     public void testBasicPropagationFromSlaveToMaster() throws Throwable
     {
         // given
+        // a cluster of 2
         clusterManager = new ClusterManager( clusterOfSize( 2 ), dir.cleanDirectory( "propagation" ),
-                stringMap( tx_push_factor.name(), "1" ) );
+                stringMap(HaSettings.tx_push_factor.name(), "1" ) );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
         cluster.await( ClusterManager.allSeesAllAsAvailable() );
 
-        long nodeId = 0;
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+        long nodeId;
 
-        try ( Transaction tx = slave.beginTx() )
+        // a node with a property
+        try( Transaction tx = master.beginTx() )
         {
-            Node node = slave.createNode();
-            node.setProperty( "Hello", "World" );
+            Node node = master.createNode();
             nodeId = node.getId();
-
+            node.setProperty( "foo", "bar" );
             tx.success();
         }
 
-        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        try( Transaction tx = master.beginTx() )
+        {
+            // make sure it's in the cache
+            master.getNodeById( nodeId ).getProperty( "foo" );
+            tx.success();
+        }
+
+        // which has propagated to the slaves
+        slave.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
+
+        // when
+        // the slave does a change
+        try ( Transaction tx = slave.beginTx() )
+        {
+            slave.getNodeById( nodeId ).setProperty( "foo", "bar2" );
+            tx.success();
+        }
+
+        // then
+        // the master must pick up the change
         try ( Transaction tx = master.beginTx() )
         {
-            String value = master.getNodeById( nodeId ).getProperty( "Hello" ).toString();
-            logger.getLogger().info( "Hello=" + value );
-            assertEquals( "World", value );
+            assertEquals( "bar2", master.getNodeById( nodeId ).getProperty( "foo" ) );
             tx.success();
         }
     }

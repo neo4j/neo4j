@@ -113,7 +113,6 @@ import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
@@ -150,8 +149,8 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.udc.UsageDataKeys;
 import org.neo4j.udc.UsageData;
+import org.neo4j.udc.UsageDataKeys;
 
 import static java.lang.reflect.Proxy.newProxyInstance;
 
@@ -583,7 +582,7 @@ public class EnterpriseEditionModule
                                                     TransactionRepresentationStoreApplier storeApplier,
                                                     NeoStoreInjectedTransactionValidator txValidator,
                                                     IndexUpdatesValidator indexUpdatesValidator,
-                                                    TransactionApplicationMode mode, Config config )
+                                                    Config config )
             {
                 if ( config.get( GraphDatabaseSettings.read_only ) )
                 {
@@ -592,7 +591,7 @@ public class EnterpriseEditionModule
                 else
                 {
                     TransactionCommitProcess inner = new TransactionRepresentationCommitProcess( appender, kernelHealth,
-                                                neoStore, storeApplier, indexUpdatesValidator, mode );
+                                                neoStore, storeApplier, indexUpdatesValidator );
                     new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
                             memberStateMachine, txValidator, inner );
 

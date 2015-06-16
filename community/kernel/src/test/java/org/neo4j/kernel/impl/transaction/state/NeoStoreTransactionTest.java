@@ -107,7 +107,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static java.lang.Integer.parseInt;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -126,6 +125,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.lang.Integer.parseInt;
+
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -246,7 +248,7 @@ public class NeoStoreTransactionTest
         writeTransaction.createSchemaRule( schemaRule );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionRepresentationOf( writeTransaction ), locks, commitEvent );
+            commitProcess().commit( transactionRepresentationOf( writeTransaction ), locks, commitEvent, INTERNAL );
         }
 
         // THEN
@@ -280,7 +282,7 @@ public class NeoStoreTransactionTest
         writeTransaction.dropSchemaRule( rule );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionRepresentationOf( writeTransaction ), locks, commitEvent );
+            commitProcess().commit( transactionRepresentationOf( writeTransaction ), locks, commitEvent, INTERNAL );
         }
 
         // THEN
@@ -308,7 +310,7 @@ public class NeoStoreTransactionTest
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionCommands, locks, commitEvent );
+            commitProcess().commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
 
@@ -323,7 +325,7 @@ public class NeoStoreTransactionTest
 
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionCommands, locks, commitEvent );
+            commitProcess().commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // THEN
@@ -369,7 +371,7 @@ public class NeoStoreTransactionTest
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionCommands, locks, commitEvent );
+            commitProcess().commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // WHEN
@@ -387,7 +389,7 @@ public class NeoStoreTransactionTest
 
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionCommands, locks, commitEvent );
+            commitProcess().commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         final AtomicBoolean nodeCommandsExist = new AtomicBoolean( false );
@@ -481,7 +483,7 @@ public class NeoStoreTransactionTest
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent );
+            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // THEN
@@ -506,7 +508,7 @@ public class NeoStoreTransactionTest
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionCommands, locks, commitEvent );
+            commitProcess().commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // WHEN
@@ -518,7 +520,7 @@ public class NeoStoreTransactionTest
         transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent );
+            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // THEN
@@ -545,7 +547,7 @@ public class NeoStoreTransactionTest
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionCommands, locks, commitEvent );
+            commitProcess().commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // WHEN
@@ -556,7 +558,7 @@ public class NeoStoreTransactionTest
         transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent );
+            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // THEN
@@ -582,7 +584,7 @@ public class NeoStoreTransactionTest
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionCommands, locks, commitEvent );
+            commitProcess().commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // WHEN
@@ -592,7 +594,7 @@ public class NeoStoreTransactionTest
         transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent );
+            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // THEN
@@ -617,7 +619,7 @@ public class NeoStoreTransactionTest
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionCommands, locks, commitEvent );
+            commitProcess().commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // WHEN
@@ -628,7 +630,7 @@ public class NeoStoreTransactionTest
         transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent );
+            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // THEN
@@ -655,7 +657,7 @@ public class NeoStoreTransactionTest
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionCommands, locks, commitEvent );
+            commitProcess().commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // WHEN
@@ -665,7 +667,7 @@ public class NeoStoreTransactionTest
         transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent );
+            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // THEN
@@ -692,7 +694,7 @@ public class NeoStoreTransactionTest
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionCommands, locks, commitEvent );
+            commitProcess().commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // WHEN
@@ -703,7 +705,7 @@ public class NeoStoreTransactionTest
         transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent );
+            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // THEN
@@ -729,7 +731,7 @@ public class NeoStoreTransactionTest
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionCommands, locks, commitEvent );
+            commitProcess().commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // WHEN
@@ -740,7 +742,7 @@ public class NeoStoreTransactionTest
         transactionCommands = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent );
+            commitProcess( indexingService ).commit( transactionCommands, locks, commitEvent, INTERNAL );
         }
 
         // THEN
@@ -852,7 +854,7 @@ public class NeoStoreTransactionTest
         tx.nodeAddProperty( nodeId, index, string( 70 ) ); // will require a block of size 1
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionRepresentationOf( tx ), locks, commitEvent );
+            commitProcess().commit( transactionRepresentationOf( tx ), locks, commitEvent, INTERNAL );
         }
 
         // WHEN
@@ -885,7 +887,7 @@ public class NeoStoreTransactionTest
         representation.accept( verifier );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( representation, locks, commitEvent );
+            commitProcess().commit( representation, locks, commitEvent, INTERNAL );
         }
     }
 
@@ -908,7 +910,7 @@ public class NeoStoreTransactionTest
         tx.createSchemaRule( rule );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionRepresentationOf( tx ), locks, commitEvent );
+            commitProcess().commit( transactionRepresentationOf( tx ), locks, commitEvent, INTERNAL );
         }
 
         // -- and a tx creating a node with that label and property key
@@ -923,7 +925,7 @@ public class NeoStoreTransactionTest
         representation.accept( recoverer );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( representation, locks, commitEvent );
+            commitProcess().commit( representation, locks, commitEvent, INTERNAL );
         }
         verify( mockIndexing, times( 1 ) ).validate( any( Iterable.class ) );
         indexUpdates.assertContent( expectedUpdate );
@@ -963,7 +965,7 @@ public class NeoStoreTransactionTest
             }
             tx.nodeAddProperty( nodes[3], 0, "old" );
             tx.nodeAddProperty( nodes[4], 0, "old" );
-            commitProcess().commit( transactionRepresentationOf( tx ), lockGroup, commitEvent );
+            commitProcess().commit( transactionRepresentationOf( tx ), lockGroup, commitEvent, INTERNAL );
             reset( locks ); // reset the lock counts
         }
 
@@ -983,7 +985,7 @@ public class NeoStoreTransactionTest
         // when
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionRepresentationOf( tx ), locks, commitEvent );
+            commitProcess().commit( transactionRepresentationOf( tx ), locks, commitEvent, INTERNAL );
         }
 
         // then
@@ -1219,7 +1221,7 @@ public class NeoStoreTransactionTest
 
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( transactionRepresentationOf( writeTransaction ), locks, commitEvent );
+            commitProcess().commit( transactionRepresentationOf( writeTransaction ), locks, commitEvent, INTERNAL );
         }
         writeTransaction = newWriteTransaction().first();
 
@@ -1238,7 +1240,7 @@ public class NeoStoreTransactionTest
         PhysicalTransactionRepresentation tx = transactionRepresentationOf( writeTransaction );
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess().commit( tx, locks, commitEvent );
+            commitProcess().commit( tx, locks, commitEvent, INTERNAL );
         }
 
         // THEN
@@ -1283,7 +1285,7 @@ public class NeoStoreTransactionTest
             tx.createRelationshipTypeToken( "5", type5 );
             tx.createRelationshipTypeToken( "10", type10 );
             tx.createRelationshipTypeToken( "15", type15 );
-            commitProcess().commit( transactionRepresentationOf( tx ), locks, commitEvent );
+            commitProcess().commit( transactionRepresentationOf( tx ), locks, commitEvent, INTERNAL );
         }
         long nodeId = neoStore.getNodeStore().nextId();
         try ( LockGroup locks = new LockGroup() )
@@ -1297,7 +1299,7 @@ public class NeoStoreTransactionTest
             tx.relCreate( neoStore.getRelationshipStore().nextId(), type10, nodeId, otherNode1Id );
             // This relationship will cause the switch to dense
             tx.relCreate( neoStore.getRelationshipStore().nextId(), type10, nodeId, otherNode2Id );
-            commitProcess().commit( transactionRepresentationOf( tx ), locks, commitEvent );
+            commitProcess().commit( transactionRepresentationOf( tx ), locks, commitEvent, INTERNAL );
             // Just a little validation of assumptions
             assertRelationshipGroupsInOrder( nodeId, type10 );
         }
@@ -1309,7 +1311,7 @@ public class NeoStoreTransactionTest
             long otherNodeId = neoStore.getNodeStore().nextId();
             tx.nodeCreate( otherNodeId );
             tx.relCreate( neoStore.getRelationshipStore().nextId(), type5, nodeId, otherNodeId );
-            commitProcess().commit( transactionRepresentationOf( tx ), locks, commitEvent );
+            commitProcess().commit( transactionRepresentationOf( tx ), locks, commitEvent, INTERNAL );
         }
 
         // THEN that group should end up first in the chain
@@ -1322,7 +1324,7 @@ public class NeoStoreTransactionTest
             long otherNodeId = neoStore.getNodeStore().nextId();
             tx.nodeCreate( otherNodeId );
             tx.relCreate( neoStore.getRelationshipStore().nextId(), type15, nodeId, otherNodeId );
-            commitProcess().commit( transactionRepresentationOf( tx ), locks, commitEvent );
+            commitProcess().commit( transactionRepresentationOf( tx ), locks, commitEvent, INTERNAL );
         }
 
         // THEN that group should end up last in the chain
@@ -1447,11 +1449,6 @@ public class NeoStoreTransactionTest
         return commitProcess( mockIndexing );
     }
 
-    private TransactionRepresentationCommitProcess commitProcess(TransactionApplicationMode mode) throws IOException
-    {
-        return commitProcess( mockIndexing, mode );
-    }
-
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing) throws IOException
     {
         return commitProcess(indexing, INTERNAL);
@@ -1477,7 +1474,7 @@ public class NeoStoreTransactionTest
         PropertyLoader propertyLoader = new PropertyLoader( neoStore );
 
         return new TransactionRepresentationCommitProcess( appenderMock, mock( KernelHealth.class ),
-                neoStore, applier, new IndexUpdatesValidator( neoStore, propertyLoader, indexing ), mode );
+                neoStore, applier, new IndexUpdatesValidator( neoStore, propertyLoader, indexing ) );
     }
 
     @After
@@ -1523,7 +1520,7 @@ public class NeoStoreTransactionTest
 
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess( mode ).commit( recoveredTx, locks, CommitEvent.NULL );
+            commitProcess().commit( recoveredTx, locks, CommitEvent.NULL, mode );
         }
     }
 

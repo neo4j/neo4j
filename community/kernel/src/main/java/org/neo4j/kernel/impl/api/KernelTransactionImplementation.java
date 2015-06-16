@@ -71,6 +71,7 @@ import org.neo4j.kernel.impl.util.collection.ArrayCollection;
 
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 
 /**
  * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon
@@ -502,7 +503,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                 locks.getLockSessionId() );
 
                         // Commit the transaction
-                        commitProcess.commit( transactionRepresentation, lockGroup, commitEvent );
+                        commitProcess.commit( transactionRepresentation, lockGroup, commitEvent, INTERNAL );
                     }
                 }
             }

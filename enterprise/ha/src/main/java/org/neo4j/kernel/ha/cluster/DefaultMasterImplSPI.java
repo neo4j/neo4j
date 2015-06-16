@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.TransactionChecksumLookup;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.id.IdAllocation;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -47,9 +48,9 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -163,7 +164,8 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     {
         try ( LockGroup locks = new LockGroup() )
         {
-            return transactionCommitProcess.commit( preparedTransaction, locks, CommitEvent.NULL );
+            return transactionCommitProcess.commit( preparedTransaction, locks, CommitEvent.NULL,
+                    TransactionApplicationMode.EXTERNAL );
         }
     }
 

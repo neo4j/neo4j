@@ -31,6 +31,5 @@ public interface CommitProcessFactory
     TransactionCommitProcess create( TransactionAppender appender, KernelHealth kernelHealth,
                                      NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
                                      NeoStoreInjectedTransactionValidator txValidator,
-                                     IndexUpdatesValidator indexUpdatesValidator, TransactionApplicationMode mode,
-                                     Config config );
+                                     IndexUpdatesValidator indexUpdatesValidator, Config config );
 }

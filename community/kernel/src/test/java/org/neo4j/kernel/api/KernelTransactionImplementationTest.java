@@ -31,6 +31,7 @@ import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
@@ -386,7 +387,8 @@ public class KernelTransactionImplementationTest
         private TransactionRepresentation transaction;
 
         @Override
-        public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent ) throws TransactionFailureException
+        public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent,
+                            TransactionApplicationMode mode ) throws TransactionFailureException
         {
             assert transaction == null : "Designed to only allow one transaction";
             transaction = representation;

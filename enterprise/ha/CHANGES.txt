@@ -1,3 +1,7 @@
+2.2.3
+-----
+o Transactions executed on slaves will now properly invalidate the master's cache on commit
+
 2.2.2
 -----
 o Fixes an issue in the high-performance cache, HPC, where the array would be much bigger than intended

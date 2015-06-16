@@ -73,6 +73,9 @@ o Fixes #4758 - OPTIONAL MATCH when either side is null
 o Fixes problem with projection of named paths
 o Identifiers in scope of ORDER BY are no longer lost in rewriting
 
+HA:
+o Transactions executed on slaves will now properly invalidate the master's cache on commit
+
 2.2.2
 -----
 General:
