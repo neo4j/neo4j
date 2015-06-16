@@ -129,20 +129,20 @@ case class CypherCompiler(parser: CypherParser,
                           monitors: Monitors) {
 
   def planQuery(queryText: String, context: PlanContext, offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) =
-    planPreparedQuery(prepareQuery(queryText, offset), context)
+    planPreparedQuery(prepareQuery(queryText, queryText, offset), context)
 
-  def prepareQuery(queryText: String, offset: Option[InputPosition] = None): PreparedQuery = {
-    val parsedStatement = parser.parse(queryText, offset)
+  def prepareQuery(preparsedQueryText: String, rawQueryText: String, offset: Option[InputPosition] = None): PreparedQuery = {
+    val parsedStatement = parser.parse(preparsedQueryText, offset)
 
-    val mkException = new SyntaxExceptionCreator(queryText, offset)
+    val mkException = new SyntaxExceptionCreator(rawQueryText, offset)
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-    val originalSemanticState = semanticChecker.check(queryText, cleanedStatement, mkException)
+    val originalSemanticState = semanticChecker.check(preparsedQueryText, cleanedStatement, mkException)
 
-    val (rewrittenStatement, extractedParams, postConditions) = astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
-    val postRewriteSemanticState = semanticChecker.check(queryText, rewrittenStatement, mkException)
+    val (rewrittenStatement, extractedParams, postConditions) = astRewriter.rewrite(preparsedQueryText, cleanedStatement, originalSemanticState)
+    val postRewriteSemanticState = semanticChecker.check(preparsedQueryText, rewrittenStatement, mkException)
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
-    PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree)
+    PreparedQuery(rewrittenStatement, preparsedQueryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree)
   }
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
