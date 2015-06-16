@@ -193,10 +193,10 @@
                   <target name="media">
                     <mkdir dir="${project.build.directory}/install4j" />
                     <!--suppress MavenModelInspection -->
-                    <condition property="install4j.code.signing" value="&lt;codeSigning macEnabled=&quot;true&quot; macPkcs12File=&quot;&quot; windowsEnabled=&quot;true&quot; windowsKeySource=&quot;pkcs12&quot; windowsPvkFile=&quot;&quot; windowsSpcFile=&quot;&quot; windowsPkcs12File=&quot;${install4j.win.pkcs12}&quot; /&gt;">
-                      <isset property="install4j.win.pkcs12"/>
+                    <condition property="install4j.code.signing.mac.enabled" value="true">
+                      <isset property="install4j.mac.pkcs12" />
                     </condition>
-                    <property name="install4j.code.signing.mac.enabled" value="true" />
+                    <property name="install4j.code.signing.mac.enabled" value="false" />
                     <property name="install4j.mac.pkcs12" value="" />
                     <condition property="install4j.code.signing.win.enabled" value="true">
                       <isset property="install4j.win.pkcs12" />
