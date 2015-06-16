@@ -85,10 +85,9 @@ public class LookupFilter
             {
                 return nodeProperty( nodeId, propertyKeyId ).valueEquals( value );
             }
-            catch ( EntityNotFoundException e )
+            catch ( EntityNotFoundException ignored )
             {
-                throw new ThisShouldNotHappenError( "Chris", "An index claims a node by id " + nodeId
-                        + " has the value. However, it looks like that node does not exist.", e );
+                return false;
             }
         }
 
