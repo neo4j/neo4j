@@ -524,6 +524,15 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
+    public PrimitiveLongResourceIterator nodesGetFromIndexByPrefixSearch( KernelStatement state,
+            IndexDescriptor index,
+            String prefix )
+            throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public PrimitiveLongResourceIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index ) throws
             IndexNotFoundKernelException
     {
@@ -798,7 +807,7 @@ public class DiskLayer implements StoreReadLayer
                 throw new EntityNotFoundException( EntityType.NODE, nodeId );
             }
 
-            return Cursors.intIterator(nodeCursor.properties(), GET_KEY_INDEX_ID);
+            return Cursors.intIterator( nodeCursor.properties(), GET_KEY_INDEX_ID );
         }
     }
 
@@ -893,6 +902,13 @@ public class DiskLayer implements StoreReadLayer
     {
         IndexReader reader = state.getIndexReader( index );
         return resourceIterator( reader.lookup( value ), reader );
+    }
+
+    public PrimitiveLongResourceIterator nodesGetFromIndexByPrefixSearch( KernelStatement state, long index, String prefix )
+            throws IndexNotFoundKernelException
+    {
+        IndexReader reader = state.getIndexReader( index );
+        return resourceIterator( reader.lookupByPrefixSearch( prefix ), reader );
     }
 
     public PrimitiveLongResourceIterator nodesGetFromIndexScan( KernelStatement state, long index )

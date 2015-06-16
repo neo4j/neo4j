@@ -75,6 +75,12 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
+    public PrimitiveLongIterator lookupByPrefixSearch( String prefix )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public PrimitiveLongIterator scan()
     {
         Iterable<Long> all = Iterables.flattenIterable( data.values() );

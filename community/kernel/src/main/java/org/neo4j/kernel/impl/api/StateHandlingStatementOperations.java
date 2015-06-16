@@ -294,7 +294,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public RelationshipCursor relationshipCursorGetAll(KernelStatement state)
     {
-        return state.acquireRelationshipCursor().init( storeLayer.relationshipsGetAllCursor(state.getStoreStatement()) );
+        return state.acquireRelationshipCursor().init( storeLayer.relationshipsGetAllCursor( state.getStoreStatement() ) );
     }
 
     @Override
@@ -603,6 +603,18 @@ public class StateHandlingStatementOperations implements
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
         PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, value, exactMatches );
         return resourceIterator( changeFilteredMatches, committed );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetFromIndexByPrefixSearch( KernelStatement state, IndexDescriptor index,
+            String prefix ) throws IndexNotFoundKernelException
+    {
+        if ( state.hasTxStateWithChanges() )
+        {
+            throw new UnsupportedOperationException( "not yet implemented" );
+        }
+        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexByPrefixSearch( state, index, prefix );
+        return committed;
     }
 
     @Override

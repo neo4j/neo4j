@@ -102,6 +102,12 @@ class LuceneIndexAccessorReader implements IndexReader
     }
 
     @Override
+    public PrimitiveLongIterator lookupByPrefixSearch( String prefix )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public PrimitiveLongIterator scan()
     {
         try
