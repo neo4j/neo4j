@@ -58,8 +58,9 @@ final class MuninnPagedFile implements PagedFile
     final PageSwapper swapper;
     private final CursorPool cursorPool;
 
-    // Accessed via Unsafe
+    @SuppressWarnings( "unused" ) // Accessed via Unsafe
     private volatile int referenceCounter;
+    @SuppressWarnings( "unused" ) // Accessed via Unsafe
     private volatile long lastPageId;
 
     MuninnPagedFile(
