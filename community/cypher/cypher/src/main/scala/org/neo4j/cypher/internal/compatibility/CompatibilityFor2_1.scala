@@ -48,6 +48,8 @@ case class CompatibilityFor2_1(graph: GraphDatabaseService, queryCacheSize: Int,
     }
 
     def isPeriodicCommit = preparedQueryForV_2_1.map(_.isPeriodicCommit).getOrElse(false)
+
+    def hasErrors = preparedQueryForV_2_1.isFailure
   }
 
   class ExecutionPlanWrapper(inner: ExecutionPlan_v2_1) extends ExecutionPlan {

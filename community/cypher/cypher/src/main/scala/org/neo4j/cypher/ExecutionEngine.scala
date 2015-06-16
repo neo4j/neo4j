@@ -113,8 +113,14 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     parsePreParsedQuery(preParseQuery(queryText))
 
   @throws(classOf[SyntaxException])
-  private def parsePreParsedQuery(preParsedQuery: PreParsedQuery): ParsedQuery =
-    parsedQueries.getOrElseUpdate(preParsedQuery.statementWithVersionAndPlanner, compiler.parseQuery(preParsedQuery))
+  private def parsePreParsedQuery(preParsedQuery: PreParsedQuery): ParsedQuery = {
+    parsedQueries.get(preParsedQuery.statementWithVersionAndPlanner).getOrElse {
+      val parsedQuery = compiler.parseQuery(preParsedQuery)
+      //don't cache failed queries
+      if (!parsedQuery.hasErrors) parsedQueries.put(preParsedQuery.statementWithVersionAndPlanner, parsedQuery)
+      parsedQuery
+    }
+  }
 
   @throws(classOf[SyntaxException])
   private def preParseQuery(queryText: String): PreParsedQuery =

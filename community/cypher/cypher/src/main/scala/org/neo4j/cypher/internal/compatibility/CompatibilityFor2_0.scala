@@ -44,6 +44,9 @@ case class CompatibilityFor2_0(graph: GraphDatabaseService, queryCacheSize: Int,
     }
 
     def isPeriodicCommit = false
+
+    //we lack the knowledge whether or not this query is correct
+    def hasErrors = false
   }
 
   class ExecutionPlanWrapper(inner: ExecutionPlan_v2_0) extends ExecutionPlan {

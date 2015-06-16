@@ -161,6 +161,8 @@ trait CompatibilityFor2_2 {
       val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_2.get, planContext)
       (new ExecutionPlanWrapper(planImpl), extractedParameters)
     }
+
+    def hasErrors = preparedQueryForV_2_2.isFailure
   }
 
   class ExecutionPlanWrapper(inner: ExecutionPlan_v2_2) extends ExecutionPlan {

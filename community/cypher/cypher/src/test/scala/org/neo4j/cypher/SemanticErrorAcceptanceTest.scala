@@ -511,6 +511,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     third should startWith(" "*33 + "^")
   }
 
+  test("positions should not be cached") {
+    executeAndEnsureError("EXPLAIN MATCH m, n RETURN m, n, o LIMIT 25",
+      "o not defined (line 1, column 33 (offset: 32))")
+    executeAndEnsureError("MATCH m, n RETURN m, n, o LIMIT 25",
+      "o not defined (line 1, column 25 (offset: 24))")
+
+  }
+
   def executeAndEnsureError(query: String, expected: String) {
     import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper._
 
