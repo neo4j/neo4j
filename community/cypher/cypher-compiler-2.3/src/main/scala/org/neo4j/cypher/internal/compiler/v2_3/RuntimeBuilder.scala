@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhase._
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeGenerator
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, NewRuntimeSuccessRateMonitor, PipeInfo}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeStructure, CodeGenerator}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{GeneratedQuery, CompiledPlan, NewRuntimeSuccessRateMonitor, PipeInfo}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers._
 import org.neo4j.cypher.internal.compiler.v2_3.notification.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v2_3.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
@@ -106,14 +106,14 @@ case class InterpretedPlanBuilder(clock: Clock, monitors: Monitors) {
     }
 }
 
-case class CompiledPlanBuilder(clock: Clock) {
+case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQuery]) {
 
   def apply(logicalPlan: LogicalPlan, semanticTable: SemanticTable, planContext: PlanContext,
             monitor: NewRuntimeSuccessRateMonitor, tracer: CompilationPhaseTracer,
             plannerName: PlannerName) = {
     monitor.newPlanSeen(logicalPlan)
+    val codeGen = new CodeGenerator(structure)
     closing(tracer.beginPhase(CODE_GENERATION)) {
-      val codeGen = new CodeGenerator
       codeGen.generate(logicalPlan, planContext, clock, semanticTable, plannerName)
     }
   }

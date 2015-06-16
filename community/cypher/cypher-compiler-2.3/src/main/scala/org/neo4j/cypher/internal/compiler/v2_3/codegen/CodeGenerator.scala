@@ -40,35 +40,9 @@ import org.neo4j.kernel.api.Statement
 
 import scala.collection.immutable
 
-object CodeGenerator {
-  type SourceSink = Option[(String, String) => Unit]
+class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
 
-  def generateQuery(plan: LogicalPlan, semantics: SemanticTable, ids: Map[LogicalPlan, Id], sources: SourceSink = None): GeneratedQuery = {
-    import LogicalPlanConverter._
-    implicit val context = new CodeGenContext(semantics, ids)
-    val (_, instructions) = plan.asCodeGenPlan.produce(context)
-    generate(instructions, context.operatorIds.map {
-      case (id: Id, field: String) => field -> id
-    }.toMap, sources)
-  }
-
-  def generate(instructions: Seq[Instruction], operatorIds: Map[String, Id], sources:SourceSink=None)(implicit context: CodeGenContext): GeneratedQuery = {
-    val columns = instructions.flatMap(_.allColumns)
-    CodeStructure.__TODO__MOVE_IMPLEMENTATION.generateQuery(packageName, Namer.newClassName(), columns, operatorIds, sources) { accept =>
-      instructions.foreach(insn => insn.init(accept))
-      instructions.foreach(insn => insn.body(accept))
-    }
-  }
-
-  private val packageName = "org.neo4j.cypher.internal.compiler.v2_3.generated"
-}
-
-
-class CodeGenerator {
-
-  import CodeGenerator.generateQuery
-
-  import scala.collection.JavaConverters._
+  import CodeGenerator.generateCode
 
   type PlanDescriptionProvider = (InternalPlanDescription) => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer])
 
@@ -112,6 +86,15 @@ class CodeGenerator {
     }
   }
 
+  private def generateQuery(plan: LogicalPlan, semantics: SemanticTable, ids: Map[LogicalPlan, Id], sources: SourceSink = None): GeneratedQuery = {
+    import LogicalPlanConverter._
+    implicit val context = new CodeGenContext(semantics, ids)
+    val (_, instructions) = plan.asCodeGenPlan.produce(context)
+    generateCode(structure)(instructions, context.operatorIds.map {
+      case (id: Id, field: String) => field -> id
+    }.toMap, sources)
+  }
+
   private def asJavaHashMap(params: scala.collection.Map[String, Any]) = {
     val jMap = new util.HashMap[String, Object]()
     params.foreach {
@@ -120,10 +103,24 @@ class CodeGenerator {
     jMap
   }
 
+  import scala.collection.JavaConverters._
   private def javaValue(value: Any): Object = value match {
     case iter: Seq[_] => iter.map(javaValue).asJava
     case iter: scala.collection.Map[_, _] => Eagerly.immutableMapValues(iter, javaValue).asJava
     case x: Any => x.asInstanceOf[AnyRef]
   }
+}
 
+object CodeGenerator {
+  type SourceSink = Option[(String, String) => Unit]
+
+  def generateCode[T](structure: CodeStructure[T])(instructions: Seq[Instruction], operatorIds: Map[String, Id], sources:SourceSink=None)(implicit context: CodeGenContext): T = {
+    val columns = instructions.flatMap(_.allColumns)
+    structure.generateQuery(packageName, Namer.newClassName(), columns, operatorIds, sources) { accept =>
+      instructions.foreach(insn => insn.init(accept))
+      instructions.foreach(insn => insn.body(accept))
+    }
+  }
+
+  private val packageName = "org.neo4j.cypher.internal.compiler.v2_3.generated"
 }

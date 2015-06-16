@@ -22,15 +22,15 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.Namer
-import org.neo4j.cypher.internal.compiler.v2_3.codegen._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{GeneratedQueryExecution, CompiledExecutionResult, GeneratedQuery, InternalExecutionResult, CompiledPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Namer, _}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.tracer
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionResult, CompiledPlan, GeneratedQuery, GeneratedQueryExecution, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_3.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
+import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure
 import org.neo4j.function.Supplier
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
@@ -49,7 +49,7 @@ trait CodeGenSugar extends MockitoSugar {
     val statistics: GraphStatistics = mock[GraphStatistics]
     val context = mock[PlanContext]
     doReturn(statistics).when(context).statistics
-    new CodeGenerator().generate(plan, context, Clock.SYSTEM_CLOCK, semanticTable, CostBasedPlannerName.default)
+    new CodeGenerator(GeneratedQueryStructure).generate(plan, context, Clock.SYSTEM_CLOCK, semanticTable, CostBasedPlannerName.default)
   }
 
   def compileAndExecute(plan: LogicalPlan,
@@ -102,8 +102,9 @@ trait CodeGenSugar extends MockitoSugar {
   def compile(instructions: Seq[Instruction], operatorIds: Map[String, Id] = Map.empty): GeneratedQuery = {
     //In reality the same namer should be used for construction Instruction as in generating code
     //these tests separate the concerns so we give this namer non-standard prefixes
-    CodeGenerator.generate(instructions, operatorIds)(new CodeGenContext(new SemanticTable(), Map.empty,
-                                                                         new Namer(new AtomicInteger(0), varPrefix = "TEST_VAR", methodPrefix = "TEST_METHOD")))
+    CodeGenerator.generateCode(GeneratedQueryStructure)(instructions, operatorIds)(
+      new CodeGenContext(new SemanticTable(), Map.empty, new Namer(
+        new AtomicInteger(0), varPrefix = "TEST_VAR", methodPrefix = "TEST_METHOD")))
   }
 
   def newInstance(clazz: GeneratedQuery,
@@ -117,7 +118,6 @@ trait CodeGenSugar extends MockitoSugar {
     val generated = clazz.execute(taskCloser, statement, graphdb, executionMode, supplier, queryExecutionTracer, JavaConversions.mapAsJavaMap(params))
     new CompiledExecutionResult(taskCloser, statement, generated, supplier)
   }
-
 
   def insertStatic(clazz: Class[GeneratedQueryExecution], mappings: (String, Id)*) = mappings.foreach {
     case (name, id) => setStaticField(clazz, name, id)
