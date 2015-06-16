@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -33,9 +34,14 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
-public class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
+
+public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
     protected IndexAccessor accessor;
+    private static final int PROPERTY_KEY_ID = 100;
 
     private boolean isUnique = true;
 
@@ -63,12 +69,51 @@ public class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSu
         accessor.close();
     }
 
-    protected List<Long> getAllNodes( String propertyValue ) throws IOException
+    @Test
+    public void testIndexPrefixSearch() throws Exception
+    {
+        updateAndCommit( asList(
+                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
+                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "A", new long[]{1000} ),
+                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
+                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "apA", new long[]{1000} ),
+                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "b", new long[]{1000} ) ) );
+
+        assertThat( getAllNodesFromPrefixSearch( "a" ), equalTo( asList( 1L, 3L, 4L ) ) );
+        assertThat( getAllNodesFromPrefixSearch( "A" ), equalTo( asList( 2L ) ) );
+        assertThat( getAllNodesFromPrefixSearch( "ba" ), equalTo( Collections.EMPTY_LIST ) );
+        assertThat( getAllNodesFromPrefixSearch( "" ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+    }
+
+    @Test
+    public void testIndexPrefixSearchOnNonStrings() throws Exception
+    {
+        updateAndCommit( asList(
+                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
+                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, 2L, new long[]{1000} ) ) );
+        assertThat( getAllNodesFromPrefixSearch( "2" ), equalTo( Collections.EMPTY_LIST ) );
+    }
+
+    protected List<Long> getAllNodesWithProperty( String propertyValue ) throws IOException
     {
         try ( IndexReader reader = accessor.newReader() )
         {
             List<Long> list = new LinkedList<>();
             for ( PrimitiveLongIterator iterator = reader.lookup( propertyValue ); iterator.hasNext(); )
+            {
+                list.add( iterator.next() );
+            }
+            Collections.sort( list );
+            return list;
+        }
+    }
+
+    protected List<Long> getAllNodesFromPrefixSearch( String prefix ) throws IOException
+    {
+        try ( IndexReader reader = accessor.newReader() )
+        {
+            List<Long> list = new LinkedList<>();
+            for ( PrimitiveLongIterator iterator = reader.lookupByPrefixSearch( prefix ); iterator.hasNext(); )
             {
                 list.add( iterator.next() );
             }

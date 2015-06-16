@@ -90,42 +90,26 @@ class LuceneIndexAccessorReader implements IndexReader
     @Override
     public PrimitiveLongIterator lookup( Object value )
     {
-        try
-        {
-            Hits hits = new Hits( searcher, documentLogic.newQuery( value ), null );
-            return new HitsPrimitiveLongIterator( hits, documentLogic );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return query( documentLogic.newValueQuery( value ) );
     }
 
     @Override
     public PrimitiveLongIterator lookupByPrefixSearch( String prefix )
     {
-        throw new UnsupportedOperationException();
+        return query( documentLogic.newPrefixQuery( prefix ) );
     }
 
     @Override
     public PrimitiveLongIterator scan()
     {
-        try
-        {
-            Hits hits = new Hits( searcher, documentLogic.newMatchAllQuery(), null );
-            return new HitsPrimitiveLongIterator( hits, documentLogic );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return query( documentLogic.newAllQuery() );
     }
 
     @Override
     public int getIndexedCount( long nodeId, Object propertyValue )
     {
-        Query nodeIdQuery = new TermQuery( documentLogic.newQueryForChangeOrRemove( nodeId ) );
-        Query valueQuery = documentLogic.newQuery( propertyValue );
+        Query nodeIdQuery = new TermQuery( documentLogic.newTermForChangeOrRemove( nodeId ) );
+        Query valueQuery = documentLogic.newValueQuery( propertyValue );
         BooleanQuery nodeIdAndValueQuery = new BooleanQuery( true );
         nodeIdAndValueQuery.add( nodeIdQuery, BooleanClause.Occur.MUST );
         nodeIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );
@@ -202,5 +186,19 @@ class LuceneIndexAccessorReader implements IndexReader
     protected org.apache.lucene.index.IndexReader luceneIndexReader()
     {
         return searcher.getIndexReader();
+    }
+
+
+    protected PrimitiveLongIterator query( Query query )
+    {
+        try
+        {
+            Hits hits = new Hits( searcher, query, null );
+            return new HitsPrimitiveLongIterator( hits, documentLogic );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

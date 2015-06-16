@@ -19,16 +19,22 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.io.IOException;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.NumericUtils;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.index.ArrayEncoder;
 
 import static java.lang.String.format;
@@ -213,12 +219,12 @@ public class LuceneDocumentStructure
         return result;
     }
 
-    public Query newMatchAllQuery()
+    public Query newAllQuery()
     {
         return new MatchAllDocsQuery();
     }
 
-    public Query newQuery( Object value )
+    public Query newValueQuery( Object value )
     {
         for ( ValueEncoding encoding : ValueEncoding.values() )
         {
@@ -227,10 +233,15 @@ public class LuceneDocumentStructure
                 return encoding.encodeQuery( value );
             }
         }
-        throw new IllegalArgumentException( format( "Unable to create newQuery for %s", value ) );
+        throw new IllegalArgumentException( format( "Unable to create query for %s", value ) );
     }
 
-    public Term newQueryForChangeOrRemove( long nodeId )
+    public Query newPrefixQuery( String prefix )
+    {
+        return new PrefixQuery( new Term( ValueEncoding.String.key(), prefix ) );
+    }
+
+    public Term newTermForChangeOrRemove( long nodeId )
     {
         return new Term( NODE_ID_KEY, "" + nodeId );
     }

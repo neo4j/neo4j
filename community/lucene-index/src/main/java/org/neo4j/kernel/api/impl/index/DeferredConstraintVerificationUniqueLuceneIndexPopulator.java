@@ -181,7 +181,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
 
                         // We don't look at the "before" value, so adding and changing idempotently is done the same way.
                         Fieldable encodedValue = documentStructure.encodeAsFieldable( update.getValueAfter() );
-                        writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
+                        writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
                                 documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
                         updatedPropertyValues.add( update.getValueAfter() );
                         break;
@@ -192,13 +192,13 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
 
                         // We don't look at the "before" value, so adding and changing idempotently is done the same way.
                         Fieldable encodedValueAfter = documentStructure.encodeAsFieldable( update.getValueAfter() );
-                        writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
+                        writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
                                 documentStructure.newDocumentRepresentingProperty( nodeId, encodedValueAfter ) );
                         updatedPropertyValues.add( update.getValueAfter() );
                         break;
                     case REMOVED:
                         sampler.increment( -1 ); // remove old value
-                        writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );
+                        writer.deleteDocuments( documentStructure.newTermForChangeOrRemove( nodeId ) );
                         break;
                     default:
                         throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );
@@ -216,7 +216,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                     for ( Object propertyValue : updatedPropertyValues )
                     {
                         collector.reset();
-                        Query query = documentStructure.newQuery( propertyValue );
+                        Query query = documentStructure.newValueQuery( propertyValue );
                         searcher.search( query, collector );
                     }
                 }
