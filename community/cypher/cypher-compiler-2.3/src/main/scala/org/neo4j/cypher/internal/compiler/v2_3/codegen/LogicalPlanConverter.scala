@@ -161,9 +161,6 @@ object LogicalPlanConverter {
   private implicit class NodeHashJoinCodeGen(nodeHashJoin: NodeHashJoin) {
     def asCodeGenPlan = new CodeGenPlan {
 
-      if (nodeHashJoin.nodes.size > 1)
-        throw new CantCompileQueryException("Joining on multiple nodes is not yet supported in compiled runtim")
-
       override val logicalPlan: LogicalPlan = nodeHashJoin
 
       override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
@@ -179,8 +176,7 @@ object LogicalPlanConverter {
 
       override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
         if (child.logicalPlan eq logicalPlan.lhs.get) {
-
-          val nodeId = context.getVariable(nodeHashJoin.nodes.head.name)
+          val joinNodes = nodeHashJoin.nodes.map(n => context.getVariable(n.name))
           val probeTableName = context.namer.newVarName()
 
           val lhsSymbols = nodeHashJoin.left.availableSymbols.map(_.name)
@@ -188,24 +184,26 @@ object LogicalPlanConverter {
           val notNodeSymbols = lhsSymbols intersect context.variableNames() diff nodeNames
           val symbols = notNodeSymbols.map(s => s -> context.getVariable(s)).toMap
 
+
           val opName = context.registerOperator(nodeHashJoin)
-          val probeTable = BuildProbeTable(opName, probeTableName, nodeId, symbols)(context)
+          val probeTable = BuildProbeTable(opName, probeTableName, joinNodes, symbols)(context)
           val probeTableSymbol = JoinTableMethod(probeTableName, probeTable.tableType)
 
           context.addProbeTable(this, probeTable.joinData)
+
 
           (Some(probeTableSymbol), probeTable)
 
         }
         else if (child.logicalPlan eq logicalPlan.rhs.get) {
 
-          val nodeId = context.getVariable(nodeHashJoin.nodes.head.name)
+          val joinNodes = nodeHashJoin.nodes.map(n => context.getVariable(n.name))
           val joinData = context.getProbeTable(this)
           joinData.vars foreach { case (_, symbol) => context.addVariable(symbol.identifier, symbol.outgoing) }
 
           val (methodHandle, actions) = context.popParent().consume(context, this)
 
-          (methodHandle, GetMatchesFromProbeTable(nodeId, joinData, actions))
+          (methodHandle, GetMatchesFromProbeTable(joinNodes, joinData, actions))
         }
         else {
           throw new InternalException(s"Unexpected consume call by $child")

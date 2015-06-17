@@ -36,13 +36,13 @@ sealed trait BuildProbeTable extends Instruction {
 
 object BuildProbeTable {
 
-  def apply(id: String, name: String, node: Variable, valueSymbols: Map[String, Variable])(implicit context: CodeGenContext): BuildProbeTable = {
-    if (valueSymbols.isEmpty) BuildCountingProbeTable(id, name, node)
-    else BuildRecordingProbeTable(id, name, node, valueSymbols)
+  def apply(id: String, name: String, nodes: Set[Variable], valueSymbols: Map[String, Variable])(implicit context: CodeGenContext): BuildProbeTable = {
+    if (valueSymbols.isEmpty) BuildCountingProbeTable(id, name, nodes)
+    else BuildRecordingProbeTable(id, name, nodes, valueSymbols)
   }
 }
 
-case class BuildRecordingProbeTable(id:String, name: String, node: Variable, valueSymbols: Map[String, Variable])
+case class BuildRecordingProbeTable(id:String, name: String, nodes: Set[Variable], valueSymbols: Map[String, Variable])
                                    (implicit context: CodeGenContext)
   extends BuildProbeTable {
 
@@ -51,7 +51,7 @@ case class BuildRecordingProbeTable(id:String, name: String, node: Variable, val
     fieldToVarName.foreach {
       case (fieldName, localName) => generator.putField(valueStructure, value, localName.incoming.cypherType, fieldName, localName.incoming.name)
     }
-    generator.updateProbeTable(valueStructure, name, node.name, value)
+    generator.updateProbeTable(valueStructure, name, tableType, nodes.toSeq.map(_.name), value)
   }
 
   override protected def operatorId = Set(id)
@@ -66,19 +66,20 @@ case class BuildRecordingProbeTable(id:String, name: String, node: Variable, val
 
   private val valueStructure = fieldToVarName.mapValues(_.outgoing.cypherType)
 
-  override val tableType = LongToListTable(valueStructure, varNameToField)
+  override val tableType = if(nodes.size == 1 ) LongToListTable(valueStructure, varNameToField)
+                           else LongsToListTable(valueStructure, varNameToField)
 
   val joinData: JoinData = JoinData(fieldToVarName, name, tableType, id)
 }
 
-case class BuildCountingProbeTable(id: String, name: String, node: Variable) extends BuildProbeTable {
+case class BuildCountingProbeTable(id: String, name: String, nodes: Set[Variable]) extends BuildProbeTable {
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
-    generator.updateProbeTableCount(name, node.name)
+    generator.updateProbeTableCount(name, tableType, nodes.toSeq.map(_.name))
 
   override protected def operatorId = Set(id)
 
-  override val tableType = LongToCountTable
+  override val tableType = if (nodes.size == 1) LongToCountTable else LongsToCountTable
 
   override def joinData = {
     JoinData(Map.empty, name, tableType, id)

@@ -109,6 +109,30 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Map("a" -> iNode)))
   }
 
+  test("hash join on multiple keys") {
+    //given
+    val lhs = Expand(AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
+    val rhs = Expand(AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
+    val join = NodeHashJoin(Set(IdName("a"), IdName("b")), lhs, rhs)(solved)
+    val plan = ProduceResult(List("a"), List.empty, List.empty,
+      Projection(join, Map("a" -> ident("a"), "b" -> ident("b")))(solved))
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getNodesFromResult(compiled, "a")
+    result should equal(List(
+      Map("a" -> aNode),
+      Map("a" -> bNode),
+      Map("a" -> cNode),
+      Map("a" -> fNode),
+      Map("a" -> gNode),
+      Map("a" -> hNode),
+      Map("a" -> iNode)
+    ))
+  }
+
   test("cartesian product of two label scans") {
     //given
     val lhs = NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved)

@@ -32,6 +32,7 @@ import org.neo4j.codegen.source.SourceVisitor
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{GeneratedQuery, GeneratedQueryExecution, SuccessfulCloseable}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.using
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription}
@@ -58,9 +59,13 @@ trait CodeStructure[T] {
 }
 
 sealed trait JoinTableType
+sealed trait CountingJoinTableType extends JoinTableType
+sealed trait RecordingJoinTableType extends JoinTableType
 
-case object LongToCountTable extends JoinTableType
-case class LongToListTable(structure: Map[String, CypherType], localMap: Map[String, String]) extends JoinTableType
+case object LongToCountTable extends CountingJoinTableType
+case object LongsToCountTable extends CountingJoinTableType
+case class LongToListTable(structure: Map[String, CypherType], localMap: Map[String, String]) extends RecordingJoinTableType
+case class LongsToListTable(structure: Map[String, CypherType], localMap: Map[String, String]) extends RecordingJoinTableType
 
 trait MethodStructure[E] {
 
@@ -71,9 +76,9 @@ trait MethodStructure[E] {
   def declareProperty(name: String): Unit
   def declareCounter(name: String, initialValue: E): Unit
   def putField(structure: Map[String, CypherType], value: E, fieldType: CypherType, fieldName: String, localVar: String): Unit
-  def updateProbeTable(structure: Map[String, CypherType], tableVar: String, keyVar: String, element: E): Unit
-  def probe(tableVar: String, tableType: JoinTableType, keyVar:String)(block: MethodStructure[E]=>Unit): Unit
-  def updateProbeTableCount(tableVar: String, keyVar: String): Unit
+  def updateProbeTable(structure: Map[String, CypherType], tableVar: String, tableType: RecordingJoinTableType, keyVars: Seq[String], element: E): Unit
+  def probe(tableVar: String, tableType: JoinTableType, keyVars: Seq[String])(block: MethodStructure[E]=>Unit): Unit
+  def updateProbeTableCount(tableVar: String, tableType: CountingJoinTableType, keyVar: Seq[String]): Unit
   def allocateProbeTable(tableVar: String, tableType: JoinTableType): Unit
   def method(resultType: JoinTableType, resultVar: String, methodName: String)(block: MethodStructure[E]=>Unit): Unit
 
@@ -313,11 +318,40 @@ private class AuxGenerator(val packageName: String, val generator: codegen.CodeG
   }
 }
 
-
 private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator, tracing: Boolean = true,
                           event: Option[String] = None, var locals:Map[String,LocalVariable]=Map.empty)(implicit context: CodeGenContext)
   extends MethodStructure[Expression] {
   import CodeStructure.typeRef
+
+  private case class HashTable(valueType: TypeReference, listType: TypeReference, tableType: TypeReference,
+                               get: MethodReference, put: MethodReference, add: MethodReference)
+  private implicit class RichTableType(tableType: RecordingJoinTableType) {
+
+    def extractHashTable(): HashTable = tableType match {
+      case LongToListTable(structure, localMap) =>
+        // compute the participating types
+        val valueType = aux.typeReference(structure)
+        val listType = TypeReference.parameterizedType(classOf[util.ArrayList[_]], valueType)
+        val tableType = TypeReference.parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
+        // the methods we use on those types
+        val get = MethodReference.methodReference(tableType, listType, "get", typeRef[Long])
+        val put = MethodReference.methodReference(tableType, listType, "put", typeRef[Long], listType)
+        val add = MethodReference.methodReference(listType, typeRef[Boolean], "add", valueType)
+
+        HashTable(valueType, listType, tableType, get, put, add)
+
+      case LongsToListTable(structure, localMap) =>
+        // compute the participating types
+        val valueType = aux.typeReference(structure)
+        val listType = TypeReference.parameterizedType(classOf[util.ArrayList[_]], valueType)
+        val tableType = TypeReference.parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey], valueType)
+        // the methods we use on those types
+        val get = MethodReference.methodReference(tableType, listType, "get", typeRef[CompositeKey])
+        val put = MethodReference.methodReference(tableType, listType, "put", typeRef[CompositeKey], listType)
+        val add = MethodReference.methodReference(listType, typeRef[Boolean], "add", valueType)
+        HashTable(valueType, listType, tableType, get, put, add)
+    }
+  }
 
   override def nextNode(targetVar: String, iterVar: String) =
     generator.assign(typeRef[Long], targetVar, Expression.invoke(generator.load(iterVar), Methods.nextLong))
@@ -551,8 +585,11 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   private def joinTableType(resultType: JoinTableType): TypeReference = {
     val returnType = resultType match {
       case LongToCountTable => typeRef[PrimitiveLongIntMap]
+      case LongsToCountTable => TypeReference.parameterizedType(classOf[util.HashMap[_, _]], classOf[CompositeKey], classOf[java.lang.Integer])
       case LongToListTable(structure,_) => TypeReference.parameterizedType(classOf[PrimitiveLongObjectMap[_]],
         TypeReference.parameterizedType(classOf[util.ArrayList[_]], aux.typeReference(structure)))
+      case LongsToListTable(structure,_) => TypeReference.parameterizedType(classOf[util.HashMap[_,_]], typeRef[CompositeKey],
+         TypeReference.parameterizedType(classOf[util.ArrayList[_]], aux.typeReference(structure)))
     }
     returnType
   }
@@ -560,70 +597,143 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   private def allocate(resultType: JoinTableType): Expression = resultType match {
     case LongToCountTable => Templates.newCountingMap
     case LongToListTable(_,_) => Templates.newLongObjectMap
+    case LongsToCountTable => Templates.newInstance(joinTableType(LongsToCountTable))
+    case typ: LongsToListTable => Templates.newInstance(joinTableType(typ))
   }
 
-  override def updateProbeTableCount(tableVar: String, keyVar: String) = {
-    val countName = context.namer.newVarName()
-    generator.assign(typeRef[Int], countName, Expression.invoke(generator.load(tableVar), Methods.countingTableGet, generator.load(keyVar)))
-    generator.expression(Expression.invoke(generator.load(tableVar), Methods.countingTablePut, generator.load(keyVar), Expression.ternary(
-      Expression.eq(generator.load(countName), Expression.get(CodeStructure.staticField[LongKeyIntValueTable, Int]("NULL"))),
-      Expression.constant(1),
-      Expression.add(generator.load(countName), Expression.constant(1)))))
-  }
-
-  override def probe(tableVar: String, tableType: JoinTableType, keyVar:String)(block: MethodStructure[Expression] => Unit) = tableType match {
+  override def updateProbeTableCount(tableVar: String, tableType: CountingJoinTableType,
+                                     keyVars: Seq[String]) = tableType match {
     case LongToCountTable =>
+      assert(keyVars.size == 1)
+      val keyVar = keyVars.head
+      val countName = context.namer.newVarName()
+      generator.assign(typeRef[Int], countName,
+                       Expression.invoke(generator.load(tableVar), Methods.countingTableGet, generator.load(keyVar)))
+      generator.expression(Expression.invoke(generator.load(tableVar), Methods.countingTablePut, generator.load(keyVar),
+                                             Expression.ternary(
+                                               Expression.eq(generator.load(countName), Expression
+                                                 .get(CodeStructure.staticField[LongKeyIntValueTable, Int]("NULL"))),
+                                               Expression.constant(1),
+                                               Expression.add(generator.load(countName), Expression.constant(1)))))
+    case LongsToCountTable =>
+      val countName = context.namer.newVarName()
+      val keyName = context.namer.newVarName()
+      generator.assign(typeRef[CompositeKey], keyName, Expression.invoke(Methods.compositeKey, keyVars.map(generator.load): _*))
+      generator.assign(typeRef[java.lang.Integer], countName, Expression.invoke(generator.load(tableVar), Methods.countingTableCompositeKeyGet, generator.load(keyName)))
+      generator.expression(Expression.invoke(generator.load(tableVar), Methods.countingTableCompositeKeyPut,
+                                             generator.load(keyName), Expression.ternary(
+          Expression.eq(generator.load(countName), Expression.constant(null)),
+          Expression.constant(1),
+          Expression.add(generator.load(countName), Expression.constant(1)))))
+  }
+
+  override def probe(tableVar: String, tableType: JoinTableType, keyVars: Seq[String])(block: MethodStructure[Expression] => Unit) = tableType match {
+    case LongToCountTable =>
+      assert(keyVars.size == 1)
+      val keyVar = keyVars.head
       val times = generator.declare(typeRef[Int], context.namer.newVarName())
       generator.assign(times, Expression.invoke(generator.load(tableVar), Methods.countingTableGet, generator.load(keyVar)))
       using(generator.whileLoop(Expression.gt(times, Expression.constant(0)))) { body =>
         block(copy(generator=body))
         body.assign(times, Expression.sub(times, Expression.constant(1)))
       }
-    case LongToListTable(structure,locals) =>
-      // compute the participating types
-      val valueType = aux.typeReference(structure)
-      val listType = TypeReference.parameterizedType(classOf[util.ArrayList[_]], valueType)
-      val tableType = TypeReference.parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
-      // the methods we use on those types
-      val get = MethodReference.methodReference(tableType, listType, "get", typeRef[Long])
+    case LongsToCountTable =>
+      val times = generator.declare(typeRef[Int], context.namer.newVarName())
+      val intermediate = generator.declare(typeRef[java.lang.Integer], context.namer.newVarName())
+      generator.assign(intermediate, Expression.invoke(generator.load(tableVar),
+        Methods.countingTableCompositeKeyGet,
+        Expression.invoke(Methods.compositeKey, keyVars.map(generator.load): _*)))
+      generator.assign(times,
+        Expression.ternary(
+          Expression.eq(generator.load(intermediate.name()), Expression.constant(null)),
+          Expression.constant(-1), generator.load(intermediate.name())))
+
+      using(generator.whileLoop(Expression.gt(times, Expression.constant(0)))) { body =>
+        block(copy(generator=body))
+        body.assign(times, Expression.sub(times, Expression.constant(1)))
+      }
+
+    case tableType@LongToListTable(structure,localVars) =>
+      assert(keyVars.size == 1)
+      val keyVar = keyVars.head
+
+      val hashTable = tableType.extractHashTable()
       // generate the code
-      val list = generator.declare(listType, context.namer.newVarName())
+      val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
-      generator.assign(list, Expression.invoke(generator.load(tableVar), get, generator.load(keyVar)))
+      generator.assign(list, Expression.invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar)))
       using(generator.ifStatement(Expression.not(Expression.eq(list, Expression.constant(null))))) { onTrue =>
-        using(onTrue.forEach(Parameter.param(valueType, elementName), list)) { forEach =>
-          locals.foreach {
+        using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
+          localVars.foreach {
             case (local, field) =>
               val fieldType = CodeStructure.lowerType(structure(field))
-              forEach.assign(fieldType, local, Expression.get(forEach.load(elementName),FieldReference.field(valueType, fieldType, field)))
+              forEach.assign(fieldType, local, Expression.get(forEach.load(elementName),FieldReference.field(hashTable.valueType, fieldType, field)))
+          }
+          block(copy(generator=forEach))
+        }
+      }
+
+    case tableType@LongsToListTable(structure,localVars) =>
+      val hashTable = tableType.extractHashTable()
+      val list = generator.declare(hashTable.listType, context.namer.newVarName())
+      val elementName = context.namer.newVarName()
+
+      generator.assign(list, Expression.invoke(generator.load(tableVar),hashTable.get, Expression.invoke(Methods.compositeKey, keyVars.map(generator.load): _*)))
+      using(generator.ifStatement(Expression.not(Expression.eq(list, Expression.constant(null))))) { onTrue =>
+        using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
+          localVars.foreach {
+            case (local, field) =>
+              val fieldType = CodeStructure.lowerType(structure(field))
+              forEach.assign(fieldType, local, Expression.get(forEach.load(elementName),FieldReference.field(hashTable.valueType, fieldType, field)))
           }
           block(copy(generator=forEach))
         }
       }
   }
 
+
+
   override def putField(structure: Map[String, CypherType], value: Expression, fieldType: CypherType, fieldName: String, localVar: String) = {
     generator.put(value, field(structure, fieldType, fieldName), generator.load(localVar))
   }
 
-  override def updateProbeTable(structure: Map[String, CypherType], tableVar: String, keyVar: String, element: Expression) = {
-    // compute the participating types
-    val valueType = aux.typeReference(structure)
-    val listType = TypeReference.parameterizedType(classOf[util.ArrayList[_]], valueType)
-    val tableType = TypeReference.parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
-    // the methods we use on those types
-    val get = MethodReference.methodReference(tableType, listType, "get", typeRef[Long])
-    val put = MethodReference.methodReference(tableType, listType, "put", typeRef[Long], listType)
-    val add = MethodReference.methodReference(listType, typeRef[Boolean], "add", valueType)
-    // generate the code
-    val listName = context.namer.newVarName()
-    val list = generator.declare(listType, listName) // ProbeTable list;
-    generator.assign(list, Expression.invoke(generator.load(tableVar), get, generator.load(keyVar))) // list = tableVar.get(keyVar);
-    using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load(listName)))) { onTrue =>  // if (null == list)
-      onTrue.assign(list, Templates.newInstance(listType)) // list = new ListType();
-      onTrue.expression(Expression.invoke(generator.load(tableVar), put, generator.load(keyVar), generator.load(listName))) // tableVar.put(keyVar, list);
-    }
-    generator.expression(Expression.invoke(list, add, element)) // list.add( element );
+  override def updateProbeTable(structure: Map[String, CypherType], tableVar: String, tableType: RecordingJoinTableType, keyVars: Seq[String], element: Expression) = tableType match {
+    case _: LongToListTable =>
+      assert(keyVars.size == 1)
+      val keyVar = keyVars.head
+      val hashTable = tableType.extractHashTable()
+      // generate the code
+      val listName = context.namer.newVarName()
+      val list = generator.declare(hashTable.listType, listName) // ProbeTable list;
+      generator.assign(list, Expression
+        .invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar))) // list = tableVar.get(keyVar);
+      using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load(listName))))
+      { onTrue => // if (null == list)
+        onTrue.assign(list, Templates.newInstance(hashTable.listType)) // list = new ListType();
+        onTrue.expression(Expression.invoke(generator.load(tableVar), hashTable.put, generator.load(keyVar),
+                                            generator.load(listName))) // tableVar.put(keyVar, list);
+      }
+      generator.expression(Expression.invoke(list, hashTable.add, element)) // list.add( element );
+
+    case _: LongsToListTable =>
+      val hashTable = tableType.extractHashTable()
+      // generate the code
+      val listName = context.namer.newVarName()
+      val keyName = context.namer.newVarName()
+      val list = generator.declare(hashTable.listType, listName) // ProbeTable list;
+      generator
+        .assign(typeRef[CompositeKey], keyName, Expression.invoke(Methods.compositeKey, keyVars.map(generator.load): _*))
+      generator.assign(list, Expression
+        .invoke(generator.load(tableVar), hashTable.get, generator.load(keyName))) // list = tableVar.get(keyVar);
+      using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load(listName))))
+      { onTrue => // if (null == list)
+        onTrue.assign(list, Templates.newInstance(hashTable.listType)) // list = new ListType();
+        onTrue.expression(Expression.invoke(generator.load(tableVar), hashTable.put, generator.load(keyName),
+                                            generator.load(listName))) // tableVar.put(keyVar, list);
+      }
+      generator.expression(Expression.invoke(list, hashTable.add, element)) // list.add( element );
+
+
   }
 
   override def declareProperty(propertyVar: String) = {
@@ -727,7 +837,10 @@ private object Methods {
   import CodeStructure.{method, typeRef}
 
   val countingTablePut = method[PrimitiveLongIntMap, Int]("put", typeRef[Long], typeRef[Int])
+  val countingTableCompositeKeyPut = method[util.HashMap[_, _], Int]("put", typeRef[CompositeKey], typeRef[Int])
   val countingTableGet = method[PrimitiveLongIntMap, Int]("get", typeRef[Long])
+  val countingTableCompositeKeyGet = method[util.HashMap[_, _], Int]("get", typeRef[CompositeKey])
+  val compositeKey = method[CompiledConversionUtils, CompositeKey]("compositeKey", typeRef[Array[Long]])
   val hasNext = method[PrimitiveLongIterator, Boolean]("hasNext")
   val arrayAsList = method[MapUtil, util.Map[String, Object]]("map", typeRef[Array[Object]])
   val relationshipVisit = method[RelationshipIterator, Boolean]("relationshipVisit", typeRef[Long], typeRef[RelationshipVisitor[RuntimeException]])
