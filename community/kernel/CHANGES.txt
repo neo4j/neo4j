@@ -1,3 +1,9 @@
+2.3.0-SNAPSHOT
+--------------
+o Status codes of the 'transient' classification now cause transactions to be rolled back. This resolves several
+  outstanding issues where deadlocks, network errors and other similar problems required clients to manually roll back
+  transactions. Only ClientError and ClientNotification classified status codes leave open transactions running.
+
 2.3.0-M01
 ---------
 o Object cache (i.e. node/relationship/property data cached as java objects in heap) has been removed.

@@ -66,7 +66,7 @@ public interface Status
             return code;
         }
 
-        private Network( Classification classification, String description )
+        Network( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -86,7 +86,7 @@ public interface Status
             return code;
         }
 
-        private Request( Classification classification, String description )
+        Request( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -132,7 +132,7 @@ public interface Status
             return code;
         }
 
-        private Transaction( Classification classification, String description )
+        Transaction( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -172,7 +172,7 @@ public interface Status
             return code;
         }
 
-        private Statement( Classification classification, String description )
+        Statement( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -224,7 +224,7 @@ public interface Status
             return code;
         }
 
-        private Schema( Classification classification, String description )
+        Schema( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -244,7 +244,7 @@ public interface Status
             return code;
         }
 
-        private LegacyIndex( Classification classification, String description )
+        LegacyIndex( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -266,7 +266,7 @@ public interface Status
             return code;
         }
 
-        private Security( Classification classification, String description )
+        Security( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -293,7 +293,7 @@ public interface Status
             return code;
         }
 
-        private General( Classification classification, String description )
+        General( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -413,7 +413,7 @@ public interface Status
         DatabaseError( TransactionEffect.ROLLBACK,
                 "The database failed to service the request. " ),
         /** The database cannot service the request right now, retrying later might yield a successful outcome. */
-        TransientError( TransactionEffect.NONE,
+        TransientError( TransactionEffect.ROLLBACK,
                 "The database cannot service the request right now, retrying later might yield a successful outcome. "),
         ;
 

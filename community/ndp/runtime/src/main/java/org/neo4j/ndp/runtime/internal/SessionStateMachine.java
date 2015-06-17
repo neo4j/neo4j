@@ -25,7 +25,6 @@ import java.util.UUID;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.TopLevelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -37,9 +36,9 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 /**
- * State-machine based implementation of {@link SessionState}. With this approach,
- * the discrete states a session can be in are explicitly denoted. Each state describes which actions from the context
- * interface are legal given that particular state.
+ * State-machine based implementation of {@link Session}. With this approach,
+ * the discrete states a session can be in are explicit. Each state describes which actions from the context
+ * interface are legal given that particular state, and how those actions behave given the current state.
  */
 public class SessionStateMachine implements Session, SessionState
 {
@@ -229,6 +228,27 @@ public class SessionStateMachine implements Session, SessionState
                     }
                 },
 
+        /**
+         * A recoverable error has occurred within an explicitly opened transaction. After the client acknowledges
+         * it, we will move back to {@link #IN_TRANSACTION}.
+         */
+        RECOVERABLE_ERROR
+                {
+                    @Override
+                    public State acknowledgeError (SessionStateMachine ctx)
+                    {
+                        return IN_TRANSACTION;
+                    }
+
+                    @Override
+                    protected State onNoImplementation (SessionStateMachine ctx, String command)
+                    {
+                        ctx.ignored();
+                        return RECOVERABLE_ERROR;
+                    }
+                },
+
+
         /** The state machine is permanently stopped. */
         STOPPED
                 {
@@ -322,25 +342,40 @@ public class SessionStateMachine implements Session, SessionState
 
         State error( SessionStateMachine ctx, Neo4jError err )
         {
+            State outcome = ERROR;
             if ( ctx.hasTransaction() )
             {
-                try
+                // Is this error bad enough that we should roll back, or did the failure occur in an implicit
+                // transaction?
+                if(  err.status().code().classification().rollbackTransaction() || ctx.implicitTransaction )
                 {
-                    ctx.currentTransaction.failure();
-                    ctx.currentTransaction.close();
+                    try
+                    {
+                        ctx.currentTransaction.failure();
+                        ctx.currentTransaction.close();
+                    }
+                    catch ( Throwable t )
+                    {
+                        ctx.log.error( "While handling '" + err.status() + "', a second failure occurred when " +
+                                       "rolling back transaction: " + t.getMessage(), t );
+                    }
+                    finally
+                    {
+                        ctx.currentTransaction = null;
+                    }
                 }
-                catch ( Throwable t )
+                else
                 {
-                    ctx.log.error( "While handling '" + err.status() + "', a second failure occurred when rolling " +
-                                   "back transaction: " + t.getMessage(), t );
-                }
-                finally
-                {
-                    ctx.currentTransaction = null;
+                    // A non-fatal error occurred inside an explicit transaction, such as a syntax error.
+                    // These are recoverable, so we leave the transaction open for the user.
+                    // This is mainly to cover cases of direct user-driven work, where someone might have
+                    // manually built up a large transaction, and we'd rather not have it all be thrown out
+                    // because of a spelling mistake.
+                    outcome = RECOVERABLE_ERROR;
                 }
             }
             ctx.error( err );
-            return ERROR;
+            return outcome;
         }
     }
 
@@ -473,6 +508,8 @@ public class SessionStateMachine implements Session, SessionState
         finally { after(); }
     }
 
+    // Below are methods used from within the state machine, to alter state while its executing an action
+
     @Override
     public void beginImplicitTransaction()
     {
@@ -495,12 +532,6 @@ public class SessionStateMachine implements Session, SessionState
     public void rollbackTransaction()
     {
         state = state.rollbackTransaction( this );
-    }
-
-    @Override
-    public Statement statement()
-    {
-        return txBridge.get();
     }
 
     @Override

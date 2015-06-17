@@ -22,9 +22,12 @@ package org.neo4j.ndp.runtime.internal;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.ndp.runtime.Session;
@@ -34,8 +37,12 @@ import org.neo4j.udc.UsageDataKeys;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class SessionStateMachineTest
@@ -44,14 +51,68 @@ public class SessionStateMachineTest
     private final ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
     private final Transaction tx = mock( TopLevelTransaction.class );
     private final UsageData usageData = new UsageData();
-    private final SessionStateMachine machine = new SessionStateMachine( usageData,
-            db, txBridge, mock( StatementRunner.class ), NullLogService.getInstance() );
+    private final StatementRunner runner = mock( StatementRunner.class );
+    private final SessionStateMachine machine = new SessionStateMachine(
+            usageData, db, txBridge, runner, NullLogService.getInstance() );
 
     @Test
     public void initialStateShouldBeUninitalized()
     {
         // When & Then
         assertThat( machine.state(), equalTo( SessionStateMachine.State.UNITIALIZED ) );
+    }
+
+    @Test
+    public void shouldRollbackOpenTransactionOnRollbackInducingError() throws Throwable
+    {
+        // Given
+        final TopLevelTransaction tx = mock( TopLevelTransaction.class );
+        when( db.beginTx()).thenReturn( tx );
+        when( runner.run( any( SessionState.class ), anyString(), anyMap() ) )
+                .thenThrow( new RollbackInducingKernelException() );
+
+        machine.initialize( "FunClient/1.2", null, Session.Callback.NO_OP );
+        machine.beginTransaction();
+
+        // When
+        machine.run( "Hello, world!", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
+
+        // Then
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        verify(tx).failure();
+        verify(tx).close();
+
+        // And when
+        machine.acknowledgeFailure( null, Session.Callback.NO_OP );
+
+        // Then the machine goes back to an idle (no open transaction) state
+        assertThat(machine.state(), equalTo( SessionStateMachine.State.IDLE ));
+    }
+
+    @Test
+    public void shouldLeaveTransactionOpenOnClientErrors() throws Throwable
+    {
+        // Given
+        final TopLevelTransaction tx = mock( TopLevelTransaction.class );
+        when( db.beginTx()).thenReturn( tx );
+        when( runner.run( any( SessionState.class ), anyString(), anyMap() ) )
+                .thenThrow( new NoTransactionEffectException() );
+
+        machine.initialize( "FunClient/1.2", null, Session.Callback.NO_OP );
+        machine.beginTransaction();
+
+        // When
+        machine.run( "Hello, world!", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
+
+        // Then
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.RECOVERABLE_ERROR ) );
+        verifyNoMoreInteractions( tx );
+
+        // And when
+        machine.acknowledgeFailure( null, Session.Callback.NO_OP );
+
+        // Then the machine goes back to an idle (no open transaction) state
+        assertThat(machine.state(), equalTo( SessionStateMachine.State.IN_TRANSACTION ));
     }
 
     @Test
@@ -82,5 +143,23 @@ public class SessionStateMachineTest
     public void setup()
     {
         when( db.beginTx() ).thenReturn( tx );
+    }
+
+    public static class RollbackInducingKernelException extends RuntimeException implements Status.HasStatus
+    {
+        @Override
+        public Status status()
+        {
+            return Status.General.UnknownFailure;
+        }
+    }
+
+    public static class NoTransactionEffectException extends RuntimeException implements Status.HasStatus
+    {
+        @Override
+        public Status status()
+        {
+            return Status.Statement.InvalidSyntax;
+        }
     }
 }
