@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -42,6 +43,10 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class BatchInserterImplTest
 {
+
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void testHonorsPassedInParams() throws Exception
     {
@@ -55,10 +60,10 @@ public class BatchInserterImplTest
     public void testCreatesStoreLockFile() throws Exception
     {
         // Given
-        File file = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+        File file = testDirectory.graphDbDir();
 
         // When
-        BatchInserter inserter = BatchInserters.inserter( file.getAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( file );
 
         // Then
         assertThat( new File( file, StoreLocker.STORE_LOCK_FILENAME ).exists(), equalTo( true ) );
@@ -69,14 +74,14 @@ public class BatchInserterImplTest
     public void testFailsOnExistingStoreLockFile() throws IOException
     {
         // Given
-        File parent = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+        File parent = testDirectory.graphDbDir();
         StoreLocker lock = new StoreLocker( new DefaultFileSystemAbstraction() );
         lock.checkLock( parent );
 
         // When
         try
         {
-            BatchInserters.inserter( parent.getAbsolutePath() );
+            BatchInserters.inserter( parent );
 
             // Then
             fail();
@@ -93,8 +98,7 @@ public class BatchInserterImplTest
     
     private int createInserterAndGetMemoryMappingConfig( Map<String, String> initialConfig ) throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter(
-                TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsoluteFile(), initialConfig );
+        BatchInserter inserter = BatchInserters.inserter( testDirectory.graphDbDir(), initialConfig );
         NeoStore neoStore = ReflectionUtil.getPrivateField( inserter, "neoStore", NeoStore.class );
         PageCache pageCache = ReflectionUtil.getPrivateField( neoStore, "pageCache", PageCache.class );
         inserter.shutdown();

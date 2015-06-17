@@ -372,10 +372,11 @@ public enum PropertyType
             return SHORT_STRING;
         case 12:
             return SHORT_ARRAY;
-        default: if (nullOnIllegal)
-        {
-            return null;
-        }
+        default:
+            if ( nullOnIllegal )
+            {
+                return null;
+            }
             throw new InvalidRecordException( "Unknown property type for type "
                                               + type );
         }
