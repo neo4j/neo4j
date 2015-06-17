@@ -266,7 +266,9 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("reports COST planner when showing plan description") {
-    val executionPlanDescription = eengine.execute("CYPHER planner=cost match n return n").executionPlanDescription()
+    val result = eengine.execute("CYPHER planner=cost match n return n")
+    result.toList
+    val executionPlanDescription = result.executionPlanDescription()
     executionPlanDescription.toString should include("Planner COST" + System.lineSeparator())
   }
 
@@ -384,6 +386,13 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     // then
     assertDbHits(1)(result)("Projection")
     assertRows(1)(result)("Projection")
+  }
+
+  test("should throw if accessing profiled results before they have been materialized") {
+    createNode()
+    val res = eengine.execute("profile match n return n")
+    intercept[ProfilerStatisticsNotReadyException](res.executionPlanDescription())
+    res.close()
   }
 
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {

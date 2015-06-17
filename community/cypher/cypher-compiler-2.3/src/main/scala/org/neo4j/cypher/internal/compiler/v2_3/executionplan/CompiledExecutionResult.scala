@@ -258,7 +258,10 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit =
     compiledCode.accept(visitor)
 
-  override def executionPlanDescription(): InternalPlanDescription =
+  override def executionPlanDescription(): InternalPlanDescription = {
+    if (!taskCloser.isClosed) throw new ProfilerStatisticsNotReadyException
+
     compiledCode.executionPlanDescription()
+  }
 }
 
