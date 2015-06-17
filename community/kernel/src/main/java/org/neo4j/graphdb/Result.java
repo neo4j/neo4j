@@ -25,18 +25,18 @@ import java.util.Map;
 
 /**
  * Represents the result of {@link GraphDatabaseService#execute(String, java.util.Map) executing} a query.
- * <p/>
+ * <p>
  * The result is comprised of a number of rows, potentially computed lazily, with this result object being an iterator
  * over those rows. Each row is represented as a <code>{@link Map}&lt;{@link String}, {@link Object}&gt;</code>, the
  * keys in this map are the names of the columns in the row, as specified by the {@code return} clause of the query,
  * and the values of the map is the corresponding computed value of the expression in the {@code return} clause. Each
  * row will thus have the same set of keys, and these keys can be retrieved using the
  * {@linkplain #columns() columns-method}.
- * <p/>
+ * <p>
  * To ensure that any resource, including transactions bound to the query, are properly freed, the result must either
  * be fully exhausted, by means of the {@linkplain java.util.Iterator iterator protocol}, or the result has to be
  * explicitly closed, by invoking the {@linkplain #close() close-method}.
- * <p/>
+ * <p>
  * Idiomatic use of the Result object would look like this:
  * <pre><code>
  * try ( Result result = graphDatabase.execute( query, parameters ) )
@@ -56,13 +56,13 @@ import java.util.Map;
  * should be noted that this iterator consumes the rows of the result in the same way as invoking {@link #next()} on
  * this object would, and that the {@link #close() close-method} on either iterator has the same effect. It is thus
  * safe to either close the projected column iterator, or this iterator, or both if all rows have not been consumed.
- * <p/>
+ * <p>
  * In addition to the {@link #next() iteration methods} on this interface, {@link #close()}, and the
  * {@link #columnAs(String) column projection method}, there are two methods for getting a string representation of the
  * result that also consumes the entire result if invoked. {@link #resultAsString()} returns a single string
  * representation of all (remaining) rows in the result, and {@link #writeAsStringTo(PrintWriter)} does the same, but
  * streams the result to the provided {@link PrintWriter} instead, without allocating large string objects.
- * <p/>
+ * <p>
  * The methods that do not consume any rows from the result, or in other ways alter the state of the result are safe to
  * invoke at any time, even after the result has been {@linkplain #close() closed} or fully exhausted. These methods
  * are:
@@ -72,7 +72,7 @@ import java.util.Map;
  * <li>{@link #getQueryExecutionType()}</li>
  * <li>{@link #getExecutionPlanDescription()}</li>
  * </ul>
- * <p/>
+ * <p>
  * Not all queries produce an actual result, and some queries that do might yield an empty result set. In order to
  * distinguish between these cases the {@link QueryExecutionType} {@linkplain #getQueryExecutionType() of this result}
  * can be queried.

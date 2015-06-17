@@ -730,7 +730,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
     /**
      * At end of startup, wait for instance to become either master or slave.
-     * <p/>
+     * <p>
      * This helps users who expect to be able to access the instance after
      * the constructor is run.
      */

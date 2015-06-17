@@ -52,7 +52,7 @@ import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
  * {@link TransactionStream transaction streams} are {@link TransactionRepresentationStoreApplier applied to the
  * store},
  * in batches.
- * <p/>
+ * <p>
  * It is assumed that any {@link TransactionStreamResponse response carrying transaction data} comes from the one
  * and same thread.
  */

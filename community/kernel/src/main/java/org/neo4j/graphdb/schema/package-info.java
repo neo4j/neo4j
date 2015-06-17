@@ -19,7 +19,7 @@
  */
 /**
  * Optional graph schema including indexes and constraints.
- * <p/>
+ * <p>
  * Use indexes to find nodes with specific property values.
  * Use constraints to enforce rules in the graph.
  * Both indexes and constraints are configured based on node {@linkplain org.neo4j.graphdb.Label labels}.

@@ -23,7 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Signifies how a query is executed, as well as what side effects and results could be expected from the query.
- * <p/>
+ * <p>
  * In Cypher there are three different modes of execution:
  * <ul>
  * <li>Normal execution,</li>
@@ -36,12 +36,12 @@ import static java.util.Objects.requireNonNull;
  * It also contains information about what effects the query could have, and whether it could yield any results, in
  * form
  * of the {@link QueryType QueryType enum}.
- * <p/>
+ * <p>
  * Queries executed with the {@code PROFILE} directive can have side effects and produce results in the same way as a
  * normally executed method. The difference being that the user has expressed an interest in seeing the plan used to
  * execute the query, and that this plan will (after execution completes) be annotated with
  * {@linkplain ExecutionPlanDescription#getProfilerStatistics() profiling information} from the execution of the query.
- * <p/>
+ * <p>
  * Queries executed with the {@code EXPLAIN} directive never have any side effects, nor do they ever yield any rows in
  * the results, the sole purpose of this mode of execution is to
  * {@linkplain Result#getExecutionPlanDescription() get a description of the plan} that <i>would</i> be executed

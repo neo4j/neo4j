@@ -503,7 +503,7 @@ public class StoreFactory
      * reserved (contains info about the block size). There will be an overhead
      * for each block of <CODE>AbstractDynamicStore.BLOCK_HEADER_SIZE</CODE>
      * bytes.
-     * <p/>
+     * <p>
      * This method will create a empty store with descriptor returned by the
      * {@link CommonAbstractStore#getTypeDescriptor()}. The internal id generator used by
      * this store will also be created.

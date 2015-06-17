@@ -22,7 +22,7 @@ package org.neo4j.collection.primitive;
 import static java.util.Arrays.copyOf;
 
 /**
- * Like a {@link Stack<Integer>} but for primitive ints. Virtually GC free in that it has an {@code int[]}
+ * Like a {@code Stack<Integer>} but for primitive ints. Virtually GC free in that it has an {@code int[]}
  * and merely moves a cursor where to {@link #push(int)} and {@link #poll()} values to and from.
  * If many items goes in the stack the {@code int[]} will grow to accomodate all of them, but not shrink again.
  */

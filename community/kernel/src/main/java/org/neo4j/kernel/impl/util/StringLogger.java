@@ -711,7 +711,7 @@ public abstract class StringLogger
          * Will move:
          * messages.log.1 -> messages.log.2
          * messages.log   -> messages.log.1
-         * <p/>
+         * <p>
          * Will delete (if exists):
          * messages.log.2
          */

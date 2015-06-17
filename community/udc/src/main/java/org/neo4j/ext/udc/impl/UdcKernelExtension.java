@@ -32,7 +32,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  * Kernel extension for UDC, the Usage Data Collector. The UDC runs as a background
  * daemon, waking up once a day to collect basic usage information about a long
  * running graph database.
- * <p/>
+ * <p>
  * The first update is delayed to avoid needless activity during integration
  * testing and short-run applications. Subsequent updates are made at regular
  * intervals. Both times are specified in milliseconds.

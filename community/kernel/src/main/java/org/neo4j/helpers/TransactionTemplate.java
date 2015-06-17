@@ -34,10 +34,10 @@ import static org.neo4j.helpers.Predicates.or;
  * Neo4j transaction template that automates the retry-on-exception logic. It uses the builder
  * pattern for configuration, with copy-semantics, so you can iteratively build up instances for
  * different scenarios.
- * <p/>
+ * <p>
  * First instantiate and configure the template using the fluent API methods, and then
  * invoke execute which will begin/commit transactions in a loop for the specified number of times.
- * <p/>
+ * <p>
  * By default all exceptions (except Errors and TransactionTerminatedException) cause a retry, and the monitor does nothing, but these can be overridden
  * with
  * custom behaviour.

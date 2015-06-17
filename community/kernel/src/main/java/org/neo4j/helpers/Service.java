@@ -42,10 +42,10 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
  * <code>ServiceLoader</code> if available, but backports the functionality to
  * previous Java versions and adds some error handling to ignore misconfigured
  * service implementations.
- * <p/>
+ * <p>
  * Additionally this class can be used as a base class for implementing services
  * that are differentiated by a String key. An example implementation might be:
- * <p/>
+ * <p>
  * <pre>
  * <code>
  * public abstract class StringConverter extends org.neo4j.commons.Service
@@ -64,9 +64,9 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
  * }
  * </code>
  * </pre>
- * <p/>
+ * <p>
  * With for example these implementations:
- * <p/>
+ * <p>
  * <pre>
  * <code>
  * public final class UppercaseConverter extends StringConverter
@@ -103,9 +103,9 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
  * }
  * </code>
  * </pre>
- * <p/>
+ * <p>
  * This would then be used as:
- * <p/>
+ * <p>
  * <pre>
  * <code>
  * String atad = StringConverter.load( "reverse" ).convert( "data" );
@@ -125,7 +125,7 @@ public abstract class Service
     /**
      * Designates that a class implements the specified service and should be
      * added to the services listings file (META-INF/services/[service-name]).
-     * <p/>
+     * <p>
      * The annotation in itself does not provide any functionality for adding
      * the implementation class to the services listings file. But it serves as
      * a handle for an Annotation Processing Tool to utilize for performing that

@@ -76,12 +76,15 @@ package org.neo4j.graphdb;
  * <p>
  * However, you usually want to check whether a specific relationship
  * <i>instance</i> is of a certain type. That is best achieved with the
- * {@link Relationship#isType Relationship.isType} method, such as: <code><pre>
+ * {@link Relationship#isType Relationship.isType} method, such as:
+ * <pre>
+ * <code>
  * if ( rel.isType( MyRelationshipTypes.CONTAINED_IN ) )
  * {
  *     ...
  * }
- * </pre></code>
+ * </code>
+ * </pre>
  */
 public interface RelationshipType
 {

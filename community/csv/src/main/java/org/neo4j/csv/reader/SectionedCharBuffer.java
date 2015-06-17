@@ -88,14 +88,14 @@ public class SectionedCharBuffer
      * <pre>
      * pivot (i.e. effective buffer size) = 16
      * buffer A
-     * <------ back ------> <------ front ----->
+     * &lt;------ back ------&gt; &lt;------ front -----&gt;
      * [    .    .    .    |abcd.efgh.ijkl.mnop]
      *                                 ^ = 25
      *
      * A.compactInto( B, 25 )
      *
      * buffer B
-     * <------ back ------> <------ front ----->
+     * &lt;------ back ------&gt; &lt;------ front -----&gt;
      * [    .    . jkl.mnop|    .    .    .    ]
      * </pre>
      *

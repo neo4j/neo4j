@@ -29,10 +29,10 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Support class for handling collections of Lifecycle instances. Manages the transitions from one state to another.
- * <p/>
+ * <p>
  * To use this, first add instances to it that implement the Lifecycle interface. When lifecycle methods on this
  * class are called it will try to invoke the same methods on the registered instances.
- * <p/>
+ * <p>
  * Components that internally owns other components that has a lifecycle can use this to control them as well.
  */
 public class LifeSupport
@@ -55,7 +55,7 @@ public class LifeSupport
 
     /**
      * Initialize all registered instances, transitioning from status NONE to STOPPED.
-     * <p/>
+     * <p>
      * If transition fails, then it goes to STOPPED and then SHUTDOWN, so it cannot be restarted again.
      */
     @Override
@@ -91,9 +91,9 @@ public class LifeSupport
 
     /**
      * Start all registered instances, transitioning from STOPPED to STARTED.
-     * <p/>
+     * <p>
      * If it was previously not initialized, it will be initialized first.
-     * <p/>
+     * <p>
      * If any instance fails to start, the already started instances will be stopped, so
      * that the overall status is STOPPED.
      *
@@ -135,7 +135,7 @@ public class LifeSupport
 
     /**
      * Stop all registered instances, transitioning from STARTED to STOPPED.
-     * <p/>
+     * <p>
      * If any instance fails to stop, the rest of the instances will still be stopped,
      * so that the overall status is STOPPED.
      */
@@ -171,7 +171,7 @@ public class LifeSupport
 
     /**
      * Shutdown all registered instances, transitioning from either STARTED or STOPPED to SHUTDOWN.
-     * <p/>
+     * <p>
      * If any instance fails to shutdown, the rest of the instances will still be shut down,
      * so that the overall status is SHUTDOWN.
      */

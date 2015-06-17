@@ -28,11 +28,11 @@ import org.neo4j.kernel.api.index.IndexEntryConflictException;
  * This class represents validated and prepared index updates that are ready to be flushed.
  * Flushing is performed with {@link ValidatedIndexUpdates#flush()} method.
  * Releasing of resources is performed with {@link ValidatedIndexUpdates#close()} method.
- * <p/>
+ * <p>
  * Notion of being 'prepared' indicates that index updates are placed in internal data structures and no
  * pre-processing before {@link ValidatedIndexUpdates#flush()} is needed. Such data structure might represent simply
  * a mapping 'Index -> [set of updates]'.
- * <p/>
+ * <p>
  * Notion of being 'validated' indicates that all updates in this batch can be consumed by corresponding indexes.
  * This mostly mean that index size permit new insertions {@see IndexCapacityExceededException}.
  */

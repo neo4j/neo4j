@@ -28,13 +28,13 @@ import org.neo4j.helpers.collection.Iterables;
 /**
  * Utility for {@linkplain #get(TxState, Object) retrieving} and
  * {@linkplain #getOrCreate(TxState, Object) initializing} lazy state held in maps in {@link TxState}.
- * <p/>
+ * <p>
  * {@linkplain #get(TxState, Object) Retrieving} state only guarantees that a readable object is returned, it does not
  * guarantee a writable version. This allows us to return a read-only default value if the state has not been
  * initialized. Only when invoking {@link #getOrCreate(TxState, Object)} do we need to return a writable version, and
  * at this point the state is initialized, if it has not been before, by creating a new instance and putting it in the
  * map.
- * <p/>
+ * <p>
  * There are two categories of methods in this class, one category concerns the value type, and the other concerns the
  * {@linkplain TxState value holder}. Implementations for methods of these two categories are preferably provided in
  * two stages, as to have each of those participating types contribute their part to the final implementation.

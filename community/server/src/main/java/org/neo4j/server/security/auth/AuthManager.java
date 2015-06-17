@@ -28,7 +28,7 @@ import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 
 /**
  * Manages server authentication and authorization.
- * <p/>
+ * <p>
  * Through the AuthManager you can create, update and delete users, and authenticate using credentials.
  */
 public class AuthManager extends LifecycleAdapter

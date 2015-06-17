@@ -26,7 +26,7 @@ import java.util.Set;
 
 /**
  * Simple implementation of Least-recently-used cache.
- * <p/>
+ * <p>
  * The cache has a <CODE>maxSize</CODE> set and when the number of cached
  * elements exceeds that limit the least recently used element will be removed.
  */
@@ -148,12 +148,12 @@ public class LruCache<K, E>
      * greater then <CODE>maxSize()</CODE> next invoke to <CODE>maxSize()</CODE>
      * will return <CODE>newMaxSize</CODE> and the entries in cache will not
      * be modified.
-     * <p/>
+     * <p>
      * If <CODE>newMaxSize</CODE> is less then <CODE>size()</CODE>
      * the cache will shrink itself removing least recently used element until
      * <CODE>size()</CODE> equals <CODE>newMaxSize</CODE>. For each element
      * removed the {@link #elementCleaned} method is invoked.
-     * <p/>
+     * <p>
      * If <CODE>newMaxSize</CODE> is less then <CODE>1</CODE> an
      * {@link IllegalArgumentException} is thrown.
      *

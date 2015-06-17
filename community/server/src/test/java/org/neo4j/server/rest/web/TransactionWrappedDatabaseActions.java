@@ -41,7 +41,7 @@ import org.neo4j.server.rest.repr.RelationshipRepresentation;
 
 /**
  * A class that is helpful when testing DatabaseActions. The alternative would be to writ tx-scaffolding in each test.
- * <p/>
+ * <p>
  * Some methods are _not_ wrapped: those are the ones that return a representation which is later serialised,
  * as that requires a transaction. For those, the test have scaffolding added.
  */

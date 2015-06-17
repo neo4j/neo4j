@@ -29,11 +29,11 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 
 /**
  * Version aware factory of LogEntryReaders
- * <p/>
+ * <p>
  * Starting with Neo4j version 2.2, we can read older format log versions at runtime. Support for this comes from
  * {@link org.neo4j.kernel.impl.transaction.xaframework.log.entry.LogEntryParserFactory} which can provide different
  * parsers for the log entries.
- * <p/>
+ * <p>
  * Starting with Neo4j version 2.1, log entries are prefixed with a version. This allows for Neo4j instances of
  * different versions to exchange transaction data, either directly or via logical logs. This implementation of
  * LogEntryReader makes use of the version information to deserialize command entries that hold commands created

@@ -54,7 +54,7 @@ import org.neo4j.kernel.Traversal;
  *         }
  *         {@link Node} node = position.{@link TraversalPosition#currentNode() currentNode}();
  *         Object someProp = node.{@link Node#getProperty(String, Object) getProperty}( "key", null );
- *         return someProp instanceof String &&
+ *         return someProp instanceof String &amp;&amp;
  *             ((String) someProp).equals( "someValue" );
  *     }
  * };

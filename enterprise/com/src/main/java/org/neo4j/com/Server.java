@@ -76,7 +76,7 @@ import static org.neo4j.helpers.NamedThreadFactory.named;
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
  * of a specified communication interface, injected in the constructor.
- * <p/>
+ * <p>
  * frameLength vs. chunkSize: frameLength is the maximum and hardcoded size in each
  * Netty buffer created by this server and handed off to a {@link Client}. If the
  * client has got a smaller frameLength than this server it will fail on reading a frame
