@@ -25,4 +25,5 @@ import org.neo4j.kernel.api.Statement
 trait ParsedQuery {
   def isPeriodicCommit: Boolean
   def plan(statement: Statement, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any])
+  def hasErrors: Boolean
 }

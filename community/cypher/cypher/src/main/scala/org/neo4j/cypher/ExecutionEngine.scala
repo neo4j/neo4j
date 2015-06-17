@@ -122,8 +122,14 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
     parsePreParsedQuery(preParseQuery(queryText), CompilationPhaseTracer.NO_TRACING)
 
   @throws(classOf[SyntaxException])
-  private def parsePreParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery =
-    parsedQueries.getOrElseUpdate(preParsedQuery.statementWithVersionAndPlanner, compiler.parseQuery(preParsedQuery, tracer))
+  private def parsePreParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
+    parsedQueries.get(preParsedQuery.statementWithVersionAndPlanner).getOrElse {
+      val parsedQuery = compiler.parseQuery(preParsedQuery, tracer)
+      //don't cache failed queries
+      if (!parsedQuery.hasErrors) parsedQueries.put(preParsedQuery.statementWithVersionAndPlanner, parsedQuery)
+      parsedQuery
+    }
+  }
 
   @throws(classOf[SyntaxException])
   private def preParseQuery(queryText: String): PreParsedQuery =

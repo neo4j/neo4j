@@ -137,16 +137,16 @@ case class CypherCompiler(parser: CypherParser,
 
   def planQuery(queryText: String, context: PlanContext, notificationLogger: InternalNotificationLogger,
                 offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) =
-    planPreparedQuery(prepareQuery(queryText, notificationLogger), context, CompilationPhaseTracer.NO_TRACING)
+    planPreparedQuery(prepareQuery(queryText, queryText, notificationLogger), context, CompilationPhaseTracer.NO_TRACING)
 
-  def prepareQuery(queryText: String, notificationLogger: InternalNotificationLogger,
+  def prepareQuery(queryText: String, rawQueryText: String, notificationLogger: InternalNotificationLogger,
                    offset: Option[InputPosition] = None,
                    tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuery = {
     val parsedStatement = closing(tracer.beginPhase(PARSING)) {
       parser.parse(queryText, offset)
     }
 
-    val mkException = new SyntaxExceptionCreator(queryText, offset)
+    val mkException = new SyntaxExceptionCreator(rawQueryText, offset)
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException),
                                                                              normalizeWithClauses(mkException)))
     val originalSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
