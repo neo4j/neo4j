@@ -26,18 +26,35 @@ angular.module('neo4jApp.services')
   '$base64'
   (localStorageService, $base64) ->
     cached_authorization_data = localStorageService.get('authorization_data') || ''
+    cached_store_credentials = null
+    cached_credential_timeout = null
     @setAuthData = (authdata) ->
       return unless authdata
       encoded = $base64.encode(authdata)
       cached_authorization_data = encoded
-      localStorageService.set('authorization_data', encoded)
+      if @getPolicies().storeCredentials isnt no
+        localStorageService.set('authorization_data', encoded)
+    @persistCachedAuthData = ->
+      if @getPolicies().storeCredentials isnt no
+        localStorageService.set('authorization_data', cached_authorization_data)
     @clearAuthData = ->
       localStorageService.remove('authorization_data')
       cached_authorization_data = null
+    @clearPersistentAuthData = ->
+      localStorageService.remove('authorization_data')
     @getAuthData = ->
       return cached_authorization_data || localStorageService.get('authorization_data') || ''
     @getPlainAuthData = ->
-      data = (cached_authorization_data || localStorageService.get('authorization_data'))
+      data = @getAuthData()
       if data then $base64.decode(data) else ''
+    @setStoreCredentials = (storeCredentials) ->
+      cached_store_credentials = storeCredentials
+    @setCredentialTimeout = (credentialTimeout) ->
+      cached_credential_timeout = credentialTimeout
+    @getPolicies = ->
+      return {storeCredentials: cached_store_credentials, credentialTimeout: cached_credential_timeout}
+    @clearPolicies = ->
+      cached_store_credentials = null
+      cached_credential_timeout = null
     @
 ]

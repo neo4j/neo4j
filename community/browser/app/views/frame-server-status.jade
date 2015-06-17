@@ -19,6 +19,8 @@ div(ng-controller="AuthCtrl")
                       | You are connected as user:&nbsp;
                     code
                       | {{connection_summary.user}}
+                  li
+                    p.lead {{policy_message}}
               .details.col-sm-9(ng-show="!connection_summary.is_connected")
                 p You are not connected to the server.
               .details.col-sm-9(ng-show="!connection_summary.authorization_required")

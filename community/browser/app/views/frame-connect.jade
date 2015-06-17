@@ -54,6 +54,8 @@ div(ng-controller="AuthCtrl")
                       | You are connected as user:&nbsp;
                     code
                       | {{static_user}}
+                  li
+                    p.lead {{policy_message}}
       .view-result.fade(ng-show="password_change_required")
         include partials/frame-change-password
       .status-bar(ng-class='{error: frame.detailedErrorText, loading: frame.isLoading}')
