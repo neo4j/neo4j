@@ -36,7 +36,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_THRESHOLD_FOR_ROTATION;
 
-@Service.Implementation(KernelExtensionFactory.class)
+@Service.Implementation( KernelExtensionFactory.class )
 public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLoggerKernelExtension.Dependencies>
 {
     public interface Dependencies
@@ -46,6 +46,8 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         Config config();
 
         Monitors monitoring();
+
+        StringLogger logger();
     }
 
     public QueryLoggerKernelExtension()
@@ -59,9 +61,18 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         Config config = the.config();
         if ( config.get( GraphDatabaseSettings.log_queries ) )
         {
-            File logfile = config.get( GraphDatabaseSettings.log_queries_filename );
+            File logFilename = config.get( GraphDatabaseSettings.log_queries_filename );
+            if ( logFilename == null)
+            {
+                the.logger().warn( GraphDatabaseSettings.log_queries.name() +
+                                   " is enabled but no " +
+                                   GraphDatabaseSettings.log_queries_filename.name() +
+                                   " has not been provided in configuration, hence query logging is suppressed" );
+                return null;
+            }
+
             long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold );
-            LoggerFactory loggerFactory = new LoggerFactory( the.filesystem(), logfile );
+            LoggerFactory loggerFactory = new LoggerFactory( the.filesystem(), logFilename );
             QueryLogger logger = new QueryLogger( Clock.SYSTEM_CLOCK, loggerFactory, thresholdMillis );
             the.monitoring().addMonitorListener( logger );
             return logger;
@@ -135,7 +146,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 if ( time >= thresholdMillis )
                 {
                     logger.logMessage( String.format( "SUCCESS %d ms: %s - %s", time, session,
-                            query == null ? "<unknown query>" : query ));
+                            query == null ? "<unknown query>" : query ) );
                 }
             }
         }

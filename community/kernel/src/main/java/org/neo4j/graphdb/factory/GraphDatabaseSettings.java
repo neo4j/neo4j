@@ -114,8 +114,6 @@ public abstract class GraphDatabaseSettings
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
     public static Setting<Boolean> allow_file_urls = setting( "allow_file_urls", BOOLEAN, TRUE );
 
-
-
     // Store files
     @Description("The directory where the database files are located.")
     public static final Setting<File> store_dir = setting("store_dir", PATH, NO_DEFAULT );
@@ -390,7 +388,7 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> log_queries = setting("dbms.querylog.enabled", BOOLEAN, FALSE );
 
     @Description( "The file where queries will be recorded." )
-    public static final Setting<File> log_queries_filename = setting("dbms.querylog.filename", PATH, "queries.log", basePath(store_dir) );
+    public static final Setting<File> log_queries_filename = setting("dbms.querylog.filename", PATH, NO_DEFAULT );
 
     @Description("If the execution of query takes more time than this threshold, the query is logged - " +
             "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
