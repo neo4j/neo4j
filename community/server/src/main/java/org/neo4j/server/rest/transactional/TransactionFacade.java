@@ -32,9 +32,9 @@ import org.neo4j.server.rest.web.TransactionUriScheme;
 /**
  * Transactional actions contains the business logic for executing statements against Neo4j across long-running
  * transactions.
- * <p/>
+ * <p>
  * The idiom for the public methods here is:
- * <p/>
+ * <p>
  * response.begin()
  * try {
  * // Do internal calls, saving errors into a common error list
@@ -45,7 +45,7 @@ import org.neo4j.server.rest.web.TransactionUriScheme;
  * {
  * response.finish(errors)
  * }
- * <p/>
+ * <p>
  * This is done to ensure we stick to the contract of the response handler, which is important, because if we skimp on
  * it, clients may be left waiting for results that never arrive.
  */

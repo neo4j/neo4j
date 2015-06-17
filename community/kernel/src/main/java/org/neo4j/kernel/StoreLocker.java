@@ -47,7 +47,7 @@ public class StoreLocker
 
     /**
      * Obtains lock on store file so that we can ensure the store is not shared between database instances
-     * <p/>
+     * <p>
      * Creates store dir if necessary, creates store lock file if necessary
      *
      * @throws StoreLockException if lock could not be acquired

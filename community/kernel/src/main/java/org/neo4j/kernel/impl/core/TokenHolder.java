@@ -30,12 +30,12 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 /**
  * Exists:
  * get from map
- * <p/>
+ * <p>
  * Previously when it doesn't exist:
  * tokenCreator.create
  * record changes
  * command execution
- * <p/>
+ * <p>
  * Doesn't exist:
  * tokenCreator.create( name, id )
  * new kernel transaction

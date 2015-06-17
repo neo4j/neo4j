@@ -24,7 +24,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * When a specified change happens, restart the given LifeSupport instance.
- * <p/>
+ * <p>
  * Typically, provide a specification for the settings that a service uses, and then set it to restart
  * an internal LifeSupport instance when any of those settings change.
  */

@@ -25,7 +25,7 @@ import org.neo4j.cluster.InstanceId;
 
 /**
  * Generate id's for state machine conversations. This should be shared between all state machines in a server.
- * <p/>
+ * <p>
  * These conversation id's can be used to uniquely identify conversations between distributed state machines.
  */
 public class StateMachineConversations

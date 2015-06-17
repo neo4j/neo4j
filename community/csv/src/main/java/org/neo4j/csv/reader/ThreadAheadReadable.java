@@ -24,7 +24,7 @@ import java.nio.CharBuffer;
 
 /**
  * Like an ordinary {@link CharReadable}, it's just that the reading happens in a separate thread, so when
- * a consumer wants to {@link #read(CharBuffer)} more data it's already available, merely a memcopy away.
+ * a consumer wants to {@link #read(SectionedCharBuffer, int)} more data it's already available, merely a memcopy away.
  */
 public class ThreadAheadReadable extends ThreadAhead implements CharReadable
 {

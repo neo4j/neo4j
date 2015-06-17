@@ -54,7 +54,7 @@ import static java.util.Collections.newSetFromMap;
 
 /**
  * Central source of transactions in the database.
- * <p/>
+ * <p>
  * This class maintains references to all transactions, a pool of passive kernel transactions, and provides
  * capabilities
  * for enumerating all running transactions. During normal operation, acquiring new transactions and enumerating live
@@ -89,12 +89,12 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
 
     /**
      * Used to enumerate all transactions in the system, active and idle ones.
-     * <p/>
+     * <p>
      * This data structure is *only* updated when brand-new transactions are created, or when transactions are disposed
      * of. During normal operation (where all transactions come from and are returned to the pool), this will be left
      * in peace, working solely as a collection of references to all transaction objects (idle and active) in the
      * database.
-     * <p/>
+     * <p>
      * As such, it provides a good mechanism for listing all transactions without requiring synchronization when
      * starting and committing transactions.
      */

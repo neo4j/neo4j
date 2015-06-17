@@ -51,17 +51,17 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
  * An abstract representation of a dynamic store. The difference between a
  * normal {@link AbstractStore} and a <CODE>AbstractDynamicStore</CODE> is
  * that the size of a record/entry can be dynamic.
- * <p/>
+ * <p>
  * Instead of a fixed record this class uses blocks to store a record. If a
  * record size is greater than the block size the record will use one or more
  * blocks to store its data.
- * <p/>
+ * <p>
  * A dynamic store don't have a {@link IdGenerator} because the position of a
  * record can't be calculated just by knowing the id. Instead one should use a
  * {@link AbstractStore} and store the start block of the record located in the
  * dynamic store. Note: This class makes use of an id generator internally for
  * managing free and non free blocks.
- * <p/>
+ * <p>
  * Note, the first block of a dynamic store is reserved and contains information
  * about the store.
  */

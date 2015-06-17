@@ -31,7 +31,7 @@ public enum HighAvailabilityMemberState
 {
     /**
      * This state is the initial state, and is also the state used when leaving the cluster.
-     * <p/>
+     * <p>
      * Here we are waiting for events that transitions this member either to becoming a master or slave.
      */
     PENDING

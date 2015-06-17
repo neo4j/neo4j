@@ -19,7 +19,7 @@
  */
 /**
  * Integrated API for node and relationship indexing.
- * <p/>
+ * <p>
  * A concrete implementation like the neo4j-lucene-index component must be available
  * on the classpath for indexing to work.
  */

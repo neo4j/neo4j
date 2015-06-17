@@ -920,7 +920,7 @@ public class ClusterManager
 
         /**
          * WARNING: beware of hacks.
-         * <p/>
+         * <p>
          * Fails a member of this cluster by making it not respond to heart beats.
          * A {@link RepairKit} is returned which is able to repair the instance
          * (i.e start the network) again.

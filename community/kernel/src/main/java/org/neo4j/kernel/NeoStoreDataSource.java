@@ -320,12 +320,12 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
      * {@link Properties#load}). Any parameter that exist in the config file
      * and in the map passed into this constructor will take the value from the
      * map.
-     * <p/>
+     * <p>
      * If <CODE>config</CODE> parameter is set but file doesn't exist an
      * <CODE>IOException</CODE> is thrown. If any problem is found with that
      * configuration file or Neo4j store can't be loaded an <CODE>IOException is
      * thrown</CODE>.
-     * <p/>
+     * <p>
      * Note that the tremendous number of dependencies for this class, clearly, is an architecture smell. It is part
      * of the ongoing work on introducing the Kernel API, where components that were previously spread throughout the
      * core API are now slowly accumulating in the Kernel implementation. Over time, these components should be

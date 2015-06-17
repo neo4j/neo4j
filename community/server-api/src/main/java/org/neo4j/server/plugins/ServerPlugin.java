@@ -30,7 +30,7 @@ import org.neo4j.helpers.Service;
 
 /**
  * API for creating extensions for the Neo4j server.
- * <p/>
+ * <p>
  * Extensions are created by creating a subclass of this class. The subclass
  * should have a public no-argument constructor (or no constructor at all).
  * Then place this class in a jar-file that contains a file called
@@ -42,7 +42,7 @@ import org.neo4j.helpers.Service;
  * extension classes, each class name on its own line in the file. When the jar
  * file is placed on the class path of the server, it will be loaded
  * automatically when the server starts.
- * <p/>
+ * <p>
  * The easiest way to implement Neo4j server extensions is by defining public
  * methods on the extension class annotated with
  * <code>@{@link PluginTarget}</code>. The parameter for the
@@ -75,7 +75,7 @@ import org.neo4j.helpers.Service;
  * <li>{@link java.util.List lists}, {@link java.util.Set sets} or arrays of any
  * of the above types.</li>
  * </ul>
- * <p/>
+ * <p>
  * All exceptions thrown by an {@link PluginTarget} method are treated as
  * server errors, unless the method has declared the ability to throw such an
  * exception, in that case the exception is treated as a bad request and

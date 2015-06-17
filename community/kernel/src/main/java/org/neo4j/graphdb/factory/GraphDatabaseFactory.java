@@ -34,7 +34,7 @@ import static java.util.Arrays.asList;
 
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
- * <p/>
+ * <p>
  * Use {@link #newEmbeddedDatabase(File)} or
  * {@link #newEmbeddedDatabaseBuilder(File)} to create a database instance.
  */

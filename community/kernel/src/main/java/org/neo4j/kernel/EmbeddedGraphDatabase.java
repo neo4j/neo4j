@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
  * in an application. You typically instantiate it by using
  * {@link org.neo4j.graphdb.factory.GraphDatabaseFactory} like so:
- * <p/>
+ * <p>
  *
  * <pre>
  * <code>
@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
  * graphDb.shutdown();
  * </code>
  * </pre>
- * <p/>
+ * <p>
  * For more information, see {@link GraphDatabaseService}.
  *
  * @deprecated This will be moved to internal packages in the next major release.

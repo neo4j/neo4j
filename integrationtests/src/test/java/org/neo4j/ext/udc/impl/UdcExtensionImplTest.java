@@ -72,7 +72,7 @@ import static org.neo4j.ext.udc.UdcConstants.VERSION;
 
 /**
  * Unit testing for the UDC kernel extension.
- * <p/>
+ * <p>
  * The UdcExtensionImpl is loaded when a new
  * GraphDatabase is instantiated, as part of
  * {@link org.neo4j.helpers.Service#load}.

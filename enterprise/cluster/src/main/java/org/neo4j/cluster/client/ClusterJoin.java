@@ -43,7 +43,7 @@ import org.neo4j.logging.Log;
 
 /**
  * This service starts quite late, and is available for the instance to join as a member in the cluster.
- * <p/>
+ * <p>
  * It can either use manual listing of hosts, or auto discovery protocols.
  */
 public class ClusterJoin

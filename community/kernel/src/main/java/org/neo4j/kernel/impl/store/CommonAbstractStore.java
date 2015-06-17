@@ -83,12 +83,12 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * Opens and validates the store contained in <CODE>fileName</CODE>
      * loading any configuration defined in <CODE>config</CODE>. After
      * validation the <CODE>initStorage</CODE> method is called.
-     * <p/>
+     * <p>
      * If the store had a clean shutdown it will be marked as <CODE>ok</CODE>
      * and the {@link #getStoreOk()} method will return true.
      * If a problem was found when opening the store the {@link #makeStoreOk()}
      * must be invoked.
-     * <p/>
+     * <p>
      * throws IOException if the unable to open the storage or if the
      * <CODE>initStorage</CODE> method fails
      *
@@ -207,7 +207,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     /**
      * Should do first validation on store validating stuff like version and id
      * generator. This method is called by constructors.
-     * <p/>
+     * <p>
      * Note: This method will map the file with the page cache. The store file must not
      * be accessed directly until it has been unmapped - the store file must only be
      * accessed through the page cache.
@@ -332,7 +332,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     /**
      * Should rebuild the id generator from scratch.
-     * <p/>
+     * <p>
      * Note: This method may be called both while the store has the store file mapped in the
      * page cache, and while the store file is not mapped. Implementers must therefore
      * map their own temporary PagedFile for the store file, and do their file IO through that,
@@ -454,9 +454,9 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * This method should close/release all resources that the implementation of
      * this store has allocated and is called just before the <CODE>close()</CODE>
      * method returns. Override this method to clean up stuff the constructor.
-     * <p/>
+     * <p>
      * This default implementation does nothing.
-     * <p/>
+     * <p>
      * Note: This method runs before the store file is unmapped from the page cache,
      * and is therefore not allowed to operate on the store files directly.
      */
@@ -578,7 +578,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     /**
      * Opens the {@link IdGenerator} used by this store.
-     * <p/>
+     * <p>
      * Note: This method may be called both while the store has the store file mapped in the
      * page cache, and while the store file is not mapped. Implementers must therefore
      * map their own temporary PagedFile for the store file, and do their file IO through that,
@@ -591,7 +591,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     /**
      * Opens the {@link IdGenerator} given by the fileName.
-     * <p/>
+     * <p>
      * Note: This method may be called both while the store has the store file mapped in the
      * page cache, and while the store file is not mapped. Implementers must therefore
      * map their own temporary PagedFile for the store file, and do their file IO through that,
@@ -684,7 +684,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * Closes this store. This will cause all buffers and channels to be closed.
      * Requesting an operation from after this method has been invoked is
      * illegal and an exception will be thrown.
-     * <p/>
+     * <p>
      * This method will start by invoking the {@link #closeStorage} method
      * giving the implementing store way to do anything that it needs to do
      * before the fileChannel is closed.
@@ -768,7 +768,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * Returns a <CODE>StoreChannel</CODE> to this storage's file. If
      * <CODE>close()</CODE> method has been invoked <CODE>null</CODE> will be
      * returned.
-     * <p/>
+     * <p>
      * Note: You can only operate directly on the StoreChannel while the file
      * is not mapped in the page cache.
      *

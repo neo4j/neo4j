@@ -976,8 +976,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
      * methods like:
      * {@link #makeStoreOk()},
      * {@link #closeStorage()} (where that method could be deleted all together and do a visit in {@link #close()}),
-     * {@link #logIdUsage(org.neo4j.kernel.impl.util.StringLogger.LineLogger)},
-     * {@link #logVersions(org.neo4j.kernel.impl.util.StringLogger.LineLogger)},
+     * {@link #logIdUsage(Logger)},
+     * {@link #logVersions(Logger)},
      * For a good samaritan to pick up later.
      */
     @Override

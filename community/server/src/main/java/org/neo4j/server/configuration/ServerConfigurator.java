@@ -36,18 +36,18 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 /**
  * Used by the {@link WrappingNeoServerBootstrapper}, passing the minimum amount
  * of required configuration on to the neo4j server.
- * <p/>
+ * <p>
  * If you want to change configuration for your
  * {@link WrappingNeoServerBootstrapper}, create an instance of this class, and
  * add configuration like so:
- * <p/>
+ * <p>
  * <pre>
  * {
  *     &#064;code ServerConfigurator conf = new ServerConfigurator( myDb );
  *     conf.setProperty( ServerSettings.webserver_port.name(), "8080" );
  * }
  * </pre>
- * <p/>
+ * <p>
  * See the neo4j manual for information about what configuration directives the
  * server takes, or take a look at the settings in {@link ServerSettings}.
  */

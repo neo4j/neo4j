@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Transaction;
  * entirely closes automatically. Typical use:
  * 
  * <pre>
+ * <code>
  * IndexHits<Node> hits = index.get( "key", "value" );
  * try
  * {
@@ -54,7 +55,8 @@ import org.neo4j.graphdb.Transaction;
  * {
  *     hits.close();
  * }
- * </pre> 
+ * </code>
+ * </pre>
  * 
  * @param <T> the type of items in the Iterator.
  */

@@ -35,7 +35,7 @@ import static org.neo4j.helpers.collection.Iterables.join;
 /**
  * The availability guard is what ensures that the database will only take calls when it is in an ok state. It allows
  * query handling to easily determine if it is ok to call the database by calling {@link #isAvailable(long)}.
- * <p/>
+ * <p>
  * The implementation uses an atomic integer that is initialized to the nr of conditions that must be met for the
  * database to be available. Each such condition will then call grant/deny accordingly,
  * and if the integer becomes 0 access is granted.

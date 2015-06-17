@@ -45,10 +45,10 @@ import static java.util.Collections.emptyList;
 /**
  * This class holds the overall configuration of a Neo4j database instance. Use the accessors
  * to convert the internal key-value settings to other types.
- * <p/>
+ * <p>
  * Users can assume that old settings have been migrated to their new counterparts, and that defaults
  * have been applied.
- * <p/>
+ * <p>
  * UI's can change configuration by calling applyChanges. Any listener, such as services that use
  * this configuration, can be notified of changes by implementing the {@link ConfigurationChangeListener} interface.
  */

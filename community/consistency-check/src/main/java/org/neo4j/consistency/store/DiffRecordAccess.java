@@ -28,11 +28,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 /**
  * A {@link RecordAccess} for use with incremental checking. Provides access to
- * <p/>
+ * <p>
  * {@link #previousNode(long) Node}, {@link #previousRelationship(long) Relationship}, and {@link
  * #previousProperty(long) Property} are the only record types one might need a previous version of when checking
  * another type of record.
- * <p/>
+ * <p>
  * Getting the new version of a record is an operation that can always be performed without any I/O, therefore these
  * return the records immediately, instead of returning {@link RecordReference} objects. New versions of records can be
  * retrieved for {@link #changedNode(long)} Node}, {@link #changedRelationship(long)} (long) Relationship}, {@link
