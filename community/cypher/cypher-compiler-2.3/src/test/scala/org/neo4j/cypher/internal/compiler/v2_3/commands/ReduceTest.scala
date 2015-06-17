@@ -52,7 +52,7 @@ class ReduceTest extends CypherFunSuite {
 
   test("reduce_has_the_expected_type_string") {
     val expression = Add(Identifier("acc"), Identifier("n"))
-    val collection = Literal(Seq(1,2,3))
+    val collection = Literal(Seq("a", "b", "c"))
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(""))
     val typ = reduce.calculateType(SymbolTable())
@@ -67,7 +67,7 @@ class ReduceTest extends CypherFunSuite {
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
     val typ = reduce.calculateType(SymbolTable())
 
-    typ should equal(CTNumber)
+    typ should equal(CTInteger)
   }
 
   test("reduce_has_the_expected_type_array") {
@@ -77,6 +77,6 @@ class ReduceTest extends CypherFunSuite {
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(Seq(1,2)))
     val typ = reduce.calculateType(new SymbolTable())
 
-    typ should equal(CTCollection(CTNumber))
+    typ should equal(CTCollection(CTInteger))
   }
 }

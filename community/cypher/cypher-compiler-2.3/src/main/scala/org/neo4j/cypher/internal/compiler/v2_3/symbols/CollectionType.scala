@@ -57,7 +57,13 @@ object CollectionType {
 
     override def rewrite(f: CypherType => CypherType) = f(copy(innerType.rewrite(f)))
   }
+
+  def unapply(x: CypherType): Option[CypherType] = x match {
+    case x: CollectionType => Some(x.innerType)
+    case _ => None
+  }
 }
+
 
 sealed abstract class CollectionType extends CypherType {
   def innerType: CypherType

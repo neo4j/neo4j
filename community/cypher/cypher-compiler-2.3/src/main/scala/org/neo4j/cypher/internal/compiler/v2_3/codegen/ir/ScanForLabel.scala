@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
 
-case class ScanForLabel(id: String, labelName: String, labelVar: String) extends LoopDataGenerator {
+case class ScanForLabel(opName: String, labelName: String, labelVar: String) extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
     generator.lookupLabelId(labelVar, labelName)
@@ -31,8 +31,7 @@ case class ScanForLabel(id: String, labelName: String, labelVar: String) extends
     generator.incrementDbHits()
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) =
+  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
+                             (implicit context: CodeGenContext) =
     generator.nextNode(nextVar.name, iterVar)
-
-  override protected def children = Seq.empty
 }

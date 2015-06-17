@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
 
-case class IndexSeek(id: String, labelName: String, propName: String, descriptorVar: String, expression: CodeGenExpression) extends LoopDataGenerator {
+case class IndexSeek(opName: String, labelName: String, propName: String, descriptorVar: String,
+                     expression: CodeGenExpression) extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     val labelVar = context.namer.newVarName()
@@ -37,8 +38,7 @@ case class IndexSeek(id: String, labelName: String, propName: String, descriptor
       generator.incrementDbHits()
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) =
+  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
+                             (implicit context: CodeGenContext) =
     generator.nextNode(nextVar.name, iterVar)
-
-  override protected def children = Seq.empty
 }
