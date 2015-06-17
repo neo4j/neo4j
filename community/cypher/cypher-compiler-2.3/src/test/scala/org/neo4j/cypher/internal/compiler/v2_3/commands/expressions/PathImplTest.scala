@@ -73,7 +73,7 @@ class PathImplTest extends CypherFunSuite {
     badPaths.foreach(p => intercept[IllegalArgumentException](new expressions.PathImpl(p:_*)))
   }
 
-  @Test def retrieveLastRelationshipOnLongPath() {
+  def retrieveLastRelationshipOnLongPath() {
     val nodA = new FakeNode
     val nodB = new FakeNode
     val nodC = new FakeNode
