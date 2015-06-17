@@ -28,10 +28,12 @@ angular.module('neo4jApp.controllers')
       'Server'
       'Frame'
       'AuthService'
+      'ConnectionStatusService'
       'Settings'
       'motdService'
       'UsageDataCollectionService'
-      ($scope, $window, Server, Frame, AuthService, Settings, motdService, UDC) ->
+      'Utils'
+      ($scope, $window, Server, Frame, AuthService, ConnectionStatusService, Settings, motdService, UDC, Utils) ->
         refresh = ->
           return '' if $scope.unauthorized || $scope.offline
 
@@ -39,6 +41,7 @@ angular.module('neo4jApp.controllers')
           $scope.relationships = Server.relationships()
           $scope.propertyKeys = Server.propertyKeys()
           $scope.server = Server.info()
+          $scope.version = Server.version()
           $scope.host = $window.location.host
           $scope.kernel = {}
           # gather info from jmx
@@ -53,7 +56,13 @@ angular.module('neo4jApp.controllers')
                   $scope.kernel[a.name] = a.value
               UDC.set('store_id',   $scope.kernel['StoreId'])
               UDC.set('neo4j_version', $scope.server.neo4j_version)
+              refreshPolicies $scope.kernel['dbms.browser.store_credentials'], $scope.kernel['dbms.browser.credential_timeout']
             ).error((r)-> $scope.kernel = {})
+
+        refreshPolicies = (storeCredentials = yes, credentialTimeout = 0) ->
+          storeCredentials = [no, 'false', 'no'].indexOf(storeCredentials) < 0 ? yes : no
+          credentialTimeout = Utils.parseTimeMillis(credentialTimeout) / 1000
+          ConnectionStatusService.setAuthPolicies {storeCredentials, credentialTimeout}
 
         $scope.identity = angular.identity
 
@@ -64,7 +73,8 @@ angular.module('neo4jApp.controllers')
           license =
             type: "GPLv3"
             url: "http://www.gnu.org/licenses/gpl.html"
-            edition: "Enterprise" # TODO: determine edition via REST
+            edition: 'community'
+            enterpriseEdition: no
 
         $scope.$on 'db:changed:labels', refresh
 
@@ -85,8 +95,10 @@ angular.module('neo4jApp.controllers')
         $scope.$watch 'unauthorized', (isUnauthorized) ->
           refresh()
 
-        $scope.$on 'auth:status_updated', () ->
+        $scope.$on 'auth:status_updated', (e, is_connected) ->
           $scope.check()
+          if is_connected
+            ConnectionStatusService.setSessionStartTimer new Date()
 
         # Authorization
         AuthService.hasValidAuthorization().then(
@@ -100,11 +112,15 @@ angular.module('neo4jApp.controllers')
               Frame.createOne({input:"#{Settings.cmdchar}server connect"})
         )
 
-        $scope.$watch 'server', (val) ->
+        $scope.$watch 'version', (val) ->
           return '' if not val
-          $scope.neo4j.version = val.neo4j_version
 
-          if val.neo4j_version then $scope.motd.setCallToActionVersion(val.neo4j_version)
+          $scope.neo4j.version = val.version
+          $scope.neo4j.edition = val.edition
+          $scope.neo4j.enterpriseEdition = val.edition is 'enterprise'
+          $scope.$emit 'db:updated:edition', val.edition
+
+          if val.version then $scope.motd.setCallToActionVersion(val.version)
         , true
 
         refresh()
