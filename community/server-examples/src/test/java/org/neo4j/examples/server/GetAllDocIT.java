@@ -18,7 +18,6 @@
  */
 package org.neo4j.examples.server;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
@@ -45,12 +44,6 @@ public class GetAllDocIT extends AbstractPluginTestBase
         return "rest-api";
     }
 
-    @Before
-    public void setup()
-    {
-        cleanDatabase();
-    }
-
     @Test
     public void testName() throws Exception
     {
@@ -65,6 +58,7 @@ public class GetAllDocIT extends AbstractPluginTestBase
     @Test
     public void shouldReturnAllNodesOnPost() throws JsonParseException
     {
+        int numberOfNodes = helper.getNumberOfNodes();
         helper.createNode( DynamicLabel.label( "test" ) );
 
         String uri = (String) getDatabaseLevelPluginMetadata( GetAll.class ).get( GET_ALL_NODES );
@@ -72,7 +66,7 @@ public class GetAllDocIT extends AbstractPluginTestBase
         String result = performPost( uri );
         List<Map<String, Object>> list = JsonHelper.jsonToList( result );
         assertThat( list, notNullValue() );
-        assertThat( list.size(), equalTo( 1 ) );
+        assertThat( list.size(), equalTo( numberOfNodes + 1 ) );
         Map<String, Object> map = list.get( 0 );
         assertThat( map.get( "data" ), notNullValue() );
     }
@@ -90,6 +84,7 @@ public class GetAllDocIT extends AbstractPluginTestBase
     @Test
     public void shouldReturnAllRelationshipsOnPost() throws JsonParseException
     {
+        int numberOfRelationships = helper.getNumberOfRelationships();
         helper.createRelationship( "test" );
 
         String uri = (String) getDatabaseLevelPluginMetadata( GetAll.class ).get( GET_ALL_RELATIONSHIPS );
@@ -97,7 +92,7 @@ public class GetAllDocIT extends AbstractPluginTestBase
         String result = performPost( uri );
         List<Map<String, Object>> list = JsonHelper.jsonToList( result );
         assertThat( list, notNullValue() );
-        assertThat( list.size(), equalTo( 1 ) );
+        assertThat( list.size(), equalTo( numberOfRelationships + 1 ) );
         Map<String, Object> map = list.get( 0 );
         assertThat( map.get( "data" ), notNullValue() );
     }

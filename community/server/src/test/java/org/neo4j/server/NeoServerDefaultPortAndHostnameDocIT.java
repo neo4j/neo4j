@@ -19,28 +19,30 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import org.junit.Test;
+
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JaxRsResponse;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 public class NeoServerDefaultPortAndHostnameDocIT extends AbstractRestFunctionalTestBase
 {
     @Test
-    public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception {
+    public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception
+    {
+        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server() );
 
-        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server());
+        JaxRsResponse response = functionalTestHelper.get( functionalTestHelper.webAdminUri() );
 
-        JaxRsResponse response = functionalTestHelper.get(functionalTestHelper.webAdminUri());
-
-        assertThat(response.getStatus(), is(200));
+        assertThat( response.getStatus(), is( 200 ) );
     }
 
     @Test
-    public void shouldDefaultToLocalhostOfNoneSpecifiedInConfig() throws Exception {
-        assertThat(server().baseUri().getHost(), is("localhost"));
+    public void shouldDefaultToLocalhostOfNoneSpecifiedInConfig() throws Exception
+    {
+        assertThat( server().baseUri().getHost(), is( "localhost" ) );
     }
 }

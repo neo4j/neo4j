@@ -19,14 +19,13 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import org.neo4j.function.Factory;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
@@ -35,13 +34,15 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static java.util.Collections.singletonList;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.getConstraints;
 import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
@@ -49,12 +50,6 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
 {
-    @Before
-    public void setup()
-    {
-        cleanDatabase();
-    }
-
     /**
      * Create uniqueness constraint.
      * Create a uniqueness constraint on a property.
@@ -66,16 +61,20 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = "Person", propertyKey = "name";
-        Map<String, Object> definition = map( "property_keys", asList( propertyKey ) );
+        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        Map<String, Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
         String result = gen.get().noGraph().expectedStatus( 200 ).payload( createJsonFrom( definition ) ).post(
                 getSchemaConstraintLabelUniquenessUri( labelName ) ).entity();
 
         Map<String, Object> serialized = jsonToMap( result );
-        assertEquals( labelName, serialized.get( "label" ) );
-        assertEquals( ConstraintType.UNIQUENESS.name(), serialized.get( "type" ) );
-        assertEquals( asList( propertyKey ), serialized.get( "property_keys" ) );
+
+        Map<String, Object> constraint = new HashMap<>(  );
+        constraint.put( "type", ConstraintType.UNIQUENESS.name() );
+        constraint.put( "label", labelName );
+        constraint.put( "property_keys", singletonList( propertyKey ) );
+
+        assertThat( serialized, equalTo( constraint ) );
     }
 
     /**
@@ -89,18 +88,20 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = "User", propertyKey = "name";
+        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey );
 
         String result = gen.get().noGraph().expectedStatus( 200 ).get(
                 getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) ).entity();
 
         List<Map<String, Object>> serializedList = jsonToList( result );
-        assertEquals( 1, serializedList.size() );
-        Map<String, Object> serialized = serializedList.get( 0 );
-        assertEquals( labelName, serialized.get( "label" ) );
-        assertEquals( ConstraintType.UNIQUENESS.name(), serialized.get( "type" ) );
-        assertEquals( asList( propertyKey ), serialized.get( "property_keys" ) );
+
+        Map<String, Object> constraint = new HashMap<>(  );
+        constraint.put( "type", ConstraintType.UNIQUENESS.name() );
+        constraint.put( "label", labelName );
+        constraint.put( "property_keys", singletonList( propertyKey ) );
+
+        assertThat( serializedList, hasItem( constraint ) );
     }
 
     /**
@@ -114,7 +115,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = "User", propertyKey1 = "name1", propertyKey2 = "name2";
+        String labelName = labels.newInstance(), propertyKey1 = properties.newInstance(), propertyKey2 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey1 );
         createLabelUniquenessPropertyConstraint( labelName, propertyKey2 );
 
@@ -122,19 +123,17 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
 
         List<Map<String, Object>> serializedList = jsonToList( result );
 
-        assertEquals( 2, serializedList.size() );
+        Map<String, Object> constraint1 = new HashMap<>(  );
+        constraint1.put( "type", ConstraintType.UNIQUENESS.name() );
+        constraint1.put( "label", labelName );
+        constraint1.put( "property_keys", singletonList( propertyKey1 ) );
 
-        Map<String, Object> serialized1 = serializedList.get( 0 );
-        assertEquals( labelName, serialized1.get( "label" ) );
-        assertEquals( ConstraintType.UNIQUENESS.name(), serialized1.get( "type" ) );
-        List<String> keyList1 = (List<String>) serialized1.get( "property_keys" );
+        Map<String, Object> constraint2 = new HashMap<>(  );
+        constraint2.put( "type", ConstraintType.UNIQUENESS.name() );
+        constraint2.put( "label", labelName );
+        constraint2.put( "property_keys", singletonList( propertyKey2 ) );
 
-        Map<String, Object> serialized2 = serializedList.get( 1 );
-        assertEquals( labelName, serialized2.get( "label" ) );
-        assertEquals( ConstraintType.UNIQUENESS.name(), serialized2.get( "type" ) );
-        List<String> keyList2 = (List<String>) serialized2.get( "property_keys" );
-
-        assertEquals( asSet( asList( propertyKey1 ), asList( propertyKey2 ) ), asSet( keyList1, keyList2 ) );
+        assertThat( serializedList, hasItems( constraint1, constraint2 ) );
     }
 
     /**
@@ -148,7 +147,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = "User", propertyKey1 = "name1", propertyKey2 = "name2";
+        String labelName = labels.newInstance(), propertyKey1 = properties.newInstance(), propertyKey2 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey1 );
         createLabelUniquenessPropertyConstraint( labelName, propertyKey2 );
 
@@ -156,19 +155,17 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
 
         List<Map<String, Object>> serializedList = jsonToList( result );
 
-        assertEquals( 2, serializedList.size() );
+        Map<String, Object> constraint1 = new HashMap<>(  );
+        constraint1.put( "type", ConstraintType.UNIQUENESS.name() );
+        constraint1.put( "label", labelName );
+        constraint1.put( "property_keys", singletonList( propertyKey1 ) );
 
-        Map<String, Object> serialized1 = serializedList.get( 0 );
-        assertEquals( labelName, serialized1.get( "label" ) );
-        assertEquals( ConstraintType.UNIQUENESS.name(), serialized1.get( "type" ) );
-        List<String> keyList1 = (List<String>) serialized1.get( "property_keys" );
+        Map<String, Object> constraint2 = new HashMap<>(  );
+        constraint2.put( "type", ConstraintType.UNIQUENESS.name() );
+        constraint2.put( "label", labelName );
+        constraint2.put( "property_keys", singletonList( propertyKey2 ) );
 
-        Map<String, Object> serialized2 = serializedList.get( 1 );
-        assertEquals( labelName, serialized2.get( "label" ) );
-        assertEquals( ConstraintType.UNIQUENESS.name(), serialized2.get( "type" ) );
-        List<String> keyList2 = (List<String>) serialized2.get( "property_keys" );
-
-        assertEquals( asSet( asList( propertyKey1 ), asList( propertyKey2 ) ), asSet( keyList1, keyList2 ) );
+        assertThat( serializedList, hasItems( constraint1, constraint2 ) );
     }
 
     /**
@@ -182,8 +179,8 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName1 = "User", propertyKey1 = "name1";
-        String labelName2 = "Prog", propertyKey2 = "name2";
+        String labelName1 = labels.newInstance(), propertyKey1 = properties.newInstance();
+        String labelName2 = labels.newInstance(), propertyKey2 = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName1, propertyKey1 );
         createLabelUniquenessPropertyConstraint( labelName2, propertyKey2 );
 
@@ -191,23 +188,17 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
 
         List<Map<String, Object>> serializedList = jsonToList( result );
 
-        assertEquals( 2, serializedList.size() );
+        Map<String, Object> constraint1 = new HashMap<>(  );
+        constraint1.put( "type", ConstraintType.UNIQUENESS.name() );
+        constraint1.put( "label", labelName1 );
+        constraint1.put( "property_keys", singletonList( propertyKey1 ) );
 
-        Set<String> labelNames = new HashSet<>();
-        Set<List<String>> propertyKeys = new HashSet<>();
+        Map<String, Object> constraint2 = new HashMap<>(  );
+        constraint2.put( "type", ConstraintType.UNIQUENESS.name() );
+        constraint2.put( "label", labelName2 );
+        constraint2.put( "property_keys", singletonList( propertyKey2 ) );
 
-        Map<String, Object> serialized1 = serializedList.get( 0 );
-        labelNames.add( (String) serialized1.get( "label" ) );
-        propertyKeys.add( (List<String>) serialized1.get( "property_keys" ) );
-        assertEquals( ConstraintType.UNIQUENESS.name(), serialized1.get( "type" ) );
-
-        Map<String, Object> serialized2 = serializedList.get( 1 );
-        labelNames.add( (String) serialized2.get( "label" ) );
-        propertyKeys.add( (List<String>) serialized2.get( "property_keys" ) );
-        assertEquals( ConstraintType.UNIQUENESS.name(), serialized2.get( "type" ) );
-
-        assertEquals( asSet( labelName1, labelName2 ), labelNames );
-        assertEquals( asSet( asList( propertyKey1 ), asList( propertyKey2 ) ), propertyKeys );
+        assertThat( serializedList, hasItems( constraint1, constraint2 ) );
     }
 
     /**
@@ -221,9 +212,8 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = "SomeLabel", propertyKey = "name";
-        ConstraintDefinition constraintDefinition = createLabelUniquenessPropertyConstraint( labelName,
-                propertyKey );
+        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        ConstraintDefinition constraintDefinition = createLabelUniquenessPropertyConstraint( labelName, propertyKey );
         assertThat( getConstraints( graphdb(), label( labelName ) ), containsOnly( constraintDefinition ) );
 
         gen.get().noGraph().expectedStatus( 204 ).delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) ).entity();
@@ -237,18 +227,21 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_existing_constraint()
     {
-        String labelName = "Mylabel", propertyKey = "name";
+        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
         createLabelUniquenessPropertyConstraint( labelName, propertyKey );
+
+        Map<String, Object> definition = map( "property_keys", singletonList( propertyKey ) );
+        gen.get().noGraph().expectedStatus( 409 ).payload( createJsonFrom( definition ) )
+                .post( getSchemaConstraintLabelUniquenessUri( labelName ) ).entity();
     }
 
     @Test
     public void drop_non_existent_constraint() throws Exception
     {
-        // GIVEN
-        String labelName = "ALabel", propertyKey = "name";
+        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
 
-        // WHEN
-        gen.get().noGraph().expectedStatus( 404 ).delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) );
+        gen.get().noGraph().expectedStatus( 404 )
+                .delete( getSchemaConstraintLabelUniquenessPropertyUri( labelName, propertyKey ) );
     }
 
     /**
@@ -257,10 +250,10 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_compound_schema_index()
     {
-        Map<String, Object> definition = map( "property_keys", asList( "first", "other" ) );
+        Map<String, Object> definition = map( "property_keys", asList( properties.newInstance(), properties.newInstance() ) );
 
-        gen.get().noGraph().expectedStatus( 400 ).payload( createJsonFrom( definition ) ).post(
-                getSchemaIndexLabelUri( "a_label" ) );
+        gen.get().noGraph().expectedStatus( 400 )
+                .payload( createJsonFrom( definition ) ).post( getSchemaIndexLabelUri( labels.newInstance() ) );
     }
 
     private ConstraintDefinition createLabelUniquenessPropertyConstraint( String labelName, String propertyKey )
@@ -273,4 +266,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
             return constraintDefinition;
         }
     }
+
+    private final Factory<String> labels =  UniqueStrings.withPrefix( "label" );
+    private final Factory<String> properties =  UniqueStrings.withPrefix( "property" );
 }

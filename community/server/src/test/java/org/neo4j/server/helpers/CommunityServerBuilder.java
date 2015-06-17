@@ -91,7 +91,7 @@ public class CommunityServerBuilder
         }
     };
 
-    private static enum WhatToDo
+    private enum WhatToDo
     {
         CREATE_GOOD_TUNING_FILE,
         CREATE_DANGLING_TUNING_FILE_PROPERTY,
@@ -99,7 +99,7 @@ public class CommunityServerBuilder
     }
 
     private WhatToDo action;
-    protected Clock clock = null; 
+    protected Clock clock = null;
     private String[] autoIndexedNodeKeys = null;
     private String[] autoIndexedRelationshipKeys = null;
     private String host = null;
@@ -223,14 +223,15 @@ public class CommunityServerBuilder
         ServerTestUtils.writePropertiesToFile( properties, temporaryConfigFile );
     }
 
+    public static final Map<String, String> good_tuning_file_properties =
+            MapUtil.stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+
     private void createTuningFile( File temporaryConfigFile ) throws IOException
     {
         if ( action == WhatToDo.CREATE_GOOD_TUNING_FILE )
         {
             File databaseTuningPropertyFile = createTempPropertyFile();
-            Map<String, String> properties = MapUtil.stringMap(
-                    GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-            writePropertiesToFile( properties, databaseTuningPropertyFile );
+            writePropertiesToFile( good_tuning_file_properties, databaseTuningPropertyFile );
             writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY,
                     databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile );
         }

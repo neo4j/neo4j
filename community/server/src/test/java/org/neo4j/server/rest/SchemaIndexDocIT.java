@@ -19,14 +19,13 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import org.neo4j.function.Factory;
 import org.neo4j.graphdb.Neo4jMatchers;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -35,12 +34,14 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
@@ -48,15 +49,9 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
 {
-    @Before
-    public void setup()
-    {
-        cleanDatabase();
-    }
-
     /**
      * Create index.
-     *
+     * <p/>
      * This will start a background job in the database that will create and populate the index.
      * You can check the status of your index by listing all the indexes for the relevant label.
      * The created index will show up, but have a state of +POPULATING+ until the index is ready,
@@ -69,19 +64,24 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = "person", propertyKey = "name";
-        Map<String, Object> definition = map( "property_keys", asList( propertyKey ) );
+        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
+        Map<String,Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
         String result = gen.get()
-            .noGraph()
-            .expectedStatus( 200 )
-            .payload( createJsonFrom( definition ) )
-            .post( getSchemaIndexLabelUri( labelName ) )
-            .entity();
+                .noGraph()
+                .expectedStatus( 200 )
+                .payload( createJsonFrom( definition ) )
+                .post( getSchemaIndexLabelUri( labelName ) )
+                .entity();
 
-        Map<String, Object> serialized = jsonToMap( result );
-        assertEquals( labelName, serialized.get( "label" ) );
-        assertEquals( asList( propertyKey ), serialized.get( "property_keys" ) );
+        Map<String,Object> serialized = jsonToMap( result );
+
+
+        Map<String,Object> index = new HashMap<>();
+        index.put( "label", labelName );
+        index.put( "property_keys", singletonList( propertyKey ) );
+
+        assertThat( serialized, equalTo( index ) );
     }
 
     /**
@@ -94,25 +94,25 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = "user", propertyKey = "name";
+        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
         createIndex( labelName, propertyKey );
-        Map<String, Object> definition = map( "property_keys", asList( propertyKey ) );
+        Map<String,Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
         String result = gen.get()
-            .noGraph()
-            .expectedStatus( 200 )
-            .payload( createJsonFrom( definition ) )
-            .get( getSchemaIndexLabelUri( labelName ) )
-            .entity();
+                .noGraph()
+                .expectedStatus( 200 )
+                .payload( createJsonFrom( definition ) )
+                .get( getSchemaIndexLabelUri( labelName ) )
+                .entity();
 
-        List<Map<String, Object>> serializedList = jsonToList( result );
-        assertEquals( 1, serializedList.size() );
-        Map<String, Object> serialized = serializedList.get( 0 );
-        assertEquals( labelName, serialized.get( "label" ) );
-        assertEquals( asList( propertyKey ), serialized.get( "property_keys" ) );
+        List<Map<String,Object>> serializedList = jsonToList( result );
+
+        Map<String,Object> index = new HashMap<>();
+        index.put( "label", labelName );
+        index.put( "property_keys", singletonList( propertyKey ) );
+
+        assertThat( serializedList, hasItem( index ) );
     }
-
-
 
     /**
      * Get all indexes.
@@ -125,30 +125,24 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName1 = "user", propertyKey1 = "name1";
-        String labelName2 = "prog", propertyKey2 = "name2";
+        String labelName1 = labels.newInstance(), propertyKey1 = properties.newInstance();
+        String labelName2 = labels.newInstance(), propertyKey2 = properties.newInstance();
         createIndex( labelName1, propertyKey1 );
         createIndex( labelName2, propertyKey2 );
 
         String result = gen.get().noGraph().expectedStatus( 200 ).get( getSchemaIndexUri() ).entity();
 
-        List<Map<String, Object>> serializedList = jsonToList( result );
+        List<Map<String,Object>> serializedList = jsonToList( result );
 
-        assertEquals( 2, serializedList.size() );
+        Map<String,Object> index1 = new HashMap<>();
+        index1.put( "label", labelName1 );
+        index1.put( "property_keys", singletonList( propertyKey1 ) );
 
-        Set<String> labelNames = new HashSet<>();
-        Set<List<String>> propertyKeys = new HashSet<>();
+        Map<String,Object> index2 = new HashMap<>();
+        index2.put( "label", labelName2 );
+        index2.put( "property_keys", singletonList( propertyKey2 ) );
 
-        Map<String, Object> serialized1 = serializedList.get( 0 );
-        labelNames.add( (String) serialized1.get( "label" ) );
-        propertyKeys.add( (List<String>) serialized1.get( "property_keys" ) );
-
-        Map<String, Object> serialized2 = serializedList.get( 1 );
-        labelNames.add( (String) serialized2.get( "label" ) );
-        propertyKeys.add( (List<String>) serialized2.get( "property_keys" ) );
-
-        assertEquals( asSet( labelName1, labelName2 ), labelNames );
-        assertEquals( asSet( asList( propertyKey1 ), asList( propertyKey2 ) ), propertyKeys );
+        assertThat( serializedList, hasItems( index1, index2 ) );
     }
 
     /**
@@ -161,15 +155,15 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = "SomeLabel", propertyKey = "name";
+        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
         IndexDefinition schemaIndex = createIndex( labelName, propertyKey );
         assertThat( Neo4jMatchers.getIndexes( graphdb(), label( labelName ) ), containsOnly( schemaIndex ) );
 
         gen.get()
-            .noGraph()
-            .expectedStatus( 204 )
-            .delete( getSchemaIndexLabelPropertyUri( labelName, propertyKey ) )
-            .entity();
+                .noGraph()
+                .expectedStatus( 204 )
+                .delete( getSchemaIndexLabelPropertyUri( labelName, propertyKey ) )
+                .entity();
 
         assertThat( Neo4jMatchers.getIndexes( graphdb(), label( labelName ) ), not( containsOnly( schemaIndex ) ) );
     }
@@ -180,27 +174,25 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_existing_index()
     {
-        String labelName = "mylabel", propertyKey = "name";
+        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
         createIndex( labelName, propertyKey );
-        Map<String, Object> definition = map( "property_keys", asList( propertyKey ) );
+        Map<String,Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
         gen.get()
-            .noGraph()
-            .expectedStatus( 409 )
-            .payload( createJsonFrom( definition ) )
-            .post( getSchemaIndexLabelUri( labelName ) );
+                .noGraph()
+                .expectedStatus( 409 )
+                .payload( createJsonFrom( definition ) )
+                .post( getSchemaIndexLabelUri( labelName ) );
     }
 
     @Test
     public void drop_non_existent_index() throws Exception
     {
-        // GIVEN
-        String labelName = "ALabel", propertyKey = "name";
+        String labelName = labels.newInstance(), propertyKey = properties.newInstance();
 
-        // WHEN
         gen.get()
-            .expectedStatus( 404 )
-            .delete( getSchemaIndexLabelPropertyUri( labelName, propertyKey ) );
+                .expectedStatus( 404 )
+                .delete( getSchemaIndexLabelPropertyUri( labelName, propertyKey ) );
     }
 
     /**
@@ -209,13 +201,13 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_compound_index()
     {
-        Map<String, Object> definition = map( "property_keys", asList( "first", "other" ) );
+        Map<String,Object> definition = map( "property_keys", asList( properties.newInstance(), properties.newInstance()) );
 
         gen.get()
                 .noGraph()
                 .expectedStatus( 400 )
                 .payload( createJsonFrom( definition ) )
-                .post( getSchemaIndexLabelUri( "a_label" ) );
+                .post( getSchemaIndexLabelUri( labels.newInstance() ) );
     }
 
     private IndexDefinition createIndex( String labelName, String propertyKey )
@@ -228,4 +220,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
             return indexDefinition;
         }
     }
+
+    private final Factory<String> labels =  UniqueStrings.withPrefix( "label" );
+    private final Factory<String> properties =  UniqueStrings.withPrefix( "property" );
 }

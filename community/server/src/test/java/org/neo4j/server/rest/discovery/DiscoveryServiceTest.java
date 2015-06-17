@@ -19,12 +19,11 @@
  */
 package org.neo4j.server.rest.discovery;
 
-import java.net.URI;
+import org.junit.Test;
 
+import java.net.URI;
 import javax.ws.rs.core.Response;
 
-import org.junit.Ignore;
-import org.junit.Test;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
@@ -35,8 +34,10 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class DiscoveryServiceTest
 {
@@ -64,35 +65,6 @@ public class DiscoveryServiceTest
 
         assertThat( json, containsString( "\"management\" : \"" + baseUri + managementUri + "/\"" ) );
         assertThat( json, containsString( "\"data\" : \"" + baseUri + dataUri + "/\"" ) );
-
-    }
-
-    @Ignore( "Absolute URIs not supported in this config" )
-    @Test
-    public void shouldReturnConfiguredUrlIfConfigIsAbsolute() throws Exception
-    {
-        Config mockConfig = mock( Config.class );
-        URI managementUri = new URI( "http://absolutedomain/management" );
-        when(
-                mockConfig.get( ServerInternalSettings.management_api_path ) ).thenReturn( managementUri );
-        URI dataUri = new URI( "http://absolutedomain/management" );
-        when( mockConfig.get( ServerInternalSettings.rest_api_path ) ).thenReturn(
-                dataUri );
-
-        String baseUri = "http://www.example.com";
-        DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
-                baseUri ), null ) );
-        Response response = ds.getDiscoveryDocument();
-
-        String json = new String( (byte[]) response.getEntity() );
-
-        assertNotNull( json );
-        assertThat( json.length(), is( greaterThan( 0 ) ) );
-        assertThat( json, is( not( "\"\"" ) ) );
-        assertThat( json, is( not( "null" ) ) );
-
-        assertThat( json, containsString( "\"management\" : \"" + managementUri + "/\"" ) );
-        assertThat( json, containsString( "\"data\" : \"" + dataUri + "/\"" ) );
 
     }
 
