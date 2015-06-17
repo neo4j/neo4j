@@ -27,6 +27,7 @@ angular.module('neo4jApp.settings', ['neo4jApp.utils'])
     cmdchar: ':'
     endpoint:
       console: "#{baseURL}/db/manage/server/console"
+      version: "#{baseURL}/db/manage/server/version"
       jmx: "#{baseURL}/db/manage/server/jmx/query"
       rest: restAPI
       cypher: "#{restAPI}/cypher"
@@ -49,11 +50,12 @@ angular.module('neo4jApp.settings', ['neo4jApp.utils'])
     initCmd: ":play start"
     refreshInterval: 10 # in seconds
     userName: "Graph Friend"
+    storeCredentials: yes
   })
 
 angular.module('neo4jApp.settings')
-.service('SettingsStore', ['localStorageService','Settings', 'Utils'
-  (localStorageService, Settings, Utils) ->
+.service('SettingsStore', ['$rootScope', 'localStorageService','Settings', 'Utils'
+  ($rootScope, localStorageService, Settings, Utils) ->
     originalSettings = angular.copy(Settings)
     load: ->
       settings = localStorageService.get('settings')
@@ -66,6 +68,7 @@ angular.module('neo4jApp.settings')
 
     save: ->
       localStorageService.set('settings', angular.copy(Settings))
+      $rootScope.$emit('settings:saved')
 
 ])
 

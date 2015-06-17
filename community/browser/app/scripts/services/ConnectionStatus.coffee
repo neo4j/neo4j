@@ -24,19 +24,40 @@ angular.module('neo4jApp.services')
 .service 'ConnectionStatusService', [
   '$rootScope'
   'AuthDataService'
-  ($rootScope, AuthDataService) ->
+  'Settings'
+  '$timeout'
+  ($rootScope, AuthDataService, Settings, $timeout) ->
 
-    updatePersistentAuthData = (data) ->
+    @updatePersistentAuthData = (data) ->
       return AuthDataService.clearAuthData() unless data
       AuthDataService.setAuthData data
 
+    @unpersistCredentials = ->
+      AuthDataService.clearPersistentAuthData()
+
+    @updateStoreCredentials = (storeCredentials)->
+      if not $rootScope.neo4j?.enterpriseEdition
+        storeCredentials = yes
+      else if storeCredentials is yes
+        storeCredentials = [no, 'false', 'no'].indexOf(Settings.storeCredentials) < 0 ? yes : no
+
+      @unpersistCredentials() unless storeCredentials
+      AuthDataService.setStoreCredentials storeCredentials
+
+    @updateCredentialTimeout = (credentialTimeout) ->
+      if not $rootScope.neo4j?.enterpriseEdition then credentialTimeout = 0
+      AuthDataService.setCredentialTimeout credentialTimeout
+
     @connected_user = ''
-    @authorization_required = true
-    @is_connected = false
+    @authorization_required = yes
+    @is_connected = no
+    @session_start_time = new Date()
+    @session_countdown = null
+    @waiting_policies = no
 
     @setConnectionAuthData = (username, password) ->
       @setConnectedUser username
-      updatePersistentAuthData "#{username}:#{password}"
+      @updatePersistentAuthData "#{username}:#{password}"
     @connectionAuthData = ->
       AuthDataService.getAuthData()
     @plainConnectionAuthData = ->
@@ -46,7 +67,8 @@ angular.module('neo4jApp.services')
       @setConnectedUser ''
       @setAuthorizationRequired true
       @setConnected false
-      updatePersistentAuthData false
+      @updatePersistentAuthData false
+      AuthDataService.clearPolicies()
 
     @setConnectedUser = (username) ->
       @connected_user = username
@@ -59,16 +81,82 @@ angular.module('neo4jApp.services')
       return @authorization_required
 
     @setConnected = (is_connected) ->
-      if @is_connected != is_connected
-        $rootScope.$emit 'auth:status_updated'
+      old_connection = @is_connected
       @is_connected = is_connected
+      if old_connection != is_connected
+        $rootScope.$emit 'auth:status_updated', is_connected
     @isConnected = ->
       return @is_connected
 
+    @setAuthPolicies = (policies) ->
+      if not $rootScope.neo4j or not $rootScope.neo4j.version
+        return @waiting_policies = policies
+      if not policies.storeCredentials
+        @updateStoreCredentials no
+      else if policies.storeCredentials
+        @updateStoreCredentials yes
+        AuthDataService.persistCachedAuthData()
+      if @getCredentialTimeout() isnt policies.credentialTimeout
+        @updateCredentialTimeout policies.credentialTimeout
+        @clearSessionCountdown()
+        @startSessionCountdown()
+      @waiting_policies = no
+
+    @getStoreCredentials = ->
+      AuthDataService.getPolicies().storeCredentials
+
+    @getCredentialTimeout = ->
+      AuthDataService.getPolicies().credentialTimeout
+
+    @setSessionStartTimer = (start_date) ->
+      @session_start_time = start_date
+      @startSessionCountdown()
+
+    @startSessionCountdown = ->
+      if not @isConnected()
+        @clearSessionCountdown()
+        return
+      if not AuthDataService.getPolicies().credentialTimeout
+        @clearSessionCountdown()
+        return
+      that = @
+      ttl = (new Date()).getTime()/1000 + AuthDataService.getPolicies().credentialTimeout - @session_start_time.getTime()/1000
+      @session_countdown = $timeout(->
+        that.clearConnectionAuthData()
+      ,
+        ttl*1000
+      )
+
+    @clearSessionCountdown = ->
+      if @session_countdown then $timeout.cancel @session_countdown
+
+    @getConnectionAge = ->
+      Math.ceil(((new Date()).getTime() - @session_start_time.getTime())/1000)
+
     @getConnectionStatusSummary = ->
-      {user: @connectedAsUser(), authorization_required: @authorizationRequired(), is_connected: @isConnected()}
+      {
+        user: @connectedAsUser(),
+        authorization_required: @authorizationRequired(),
+        is_connected: @isConnected(),
+        store_credentials: @getStoreCredentials(),
+        credential_timeout: @getCredentialTimeout(),
+        connection_age: @getConnectionAge()
+      }
+
+    $rootScope.$on('settings:saved', ->
+      that.setAuthPolicies({storeCredentials: Settings.storeCredentials, credentialTimeout: AuthDataService.getPolicies().credentialTimeout})
+      if AuthDataService.getPolicies().storeCredentials is no
+        that.unpersistCredentials()
+      else
+        AuthDataService.persistCachedAuthData()
+    )
+
+    $rootScope.$on 'db:updated:edition', (e, edition) ->
+      AuthDataService.clearPolicies()
+      if that.waiting_policies then that.setAuthPolicies that.waiting_policies
+
     #Load user from AuthDataService
     @setConnectedUser @plainConnectionAuthData()[0]
-
+    that = @
     @
 ]
