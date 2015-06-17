@@ -101,7 +101,7 @@ public class ErrorTranslator
                               "%s%n" +
                               "---- END OF REPORT ----%n",
                 dateFormatGmt.format( new Date() ),
-                Version.getKernelRevision(),
+                Version.getKernelVersion(),
                 System.getProperty("java.version"),
                 System.getProperty("os.name"),
                 reference,

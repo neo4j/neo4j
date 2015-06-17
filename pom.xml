@@ -55,67 +55,6 @@
         </configuration>
       </plugin>
       <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-version</id>
-            <phase>generate-sources</phase>
-            <configuration>
-              <target if="version-package" unless="componentversion.skip">
-                <macrodef name="generate-version">
-                  <attribute name="package" />
-                  <sequential>
-                    <local name="the-package" />
-                    <local name="version-dir" />
-                    <property name="the-package" value="@{package}" />
-                    <loadresource property="version-dir">
-                      <propertyresource name="the-package"/>
-                      <filterchain>
-                        <tokenfilter>
-                          <filetokenizer/>
-                          <replacestring from="." to="/"/>
-                        </tokenfilter>
-                      </filterchain>
-                    </loadresource>
-                    <mkdir dir="target/generated-sources/version/org/neo4j/${version-dir}/" />
-                    <property name="build.number" value="${env.BUILD_NUMBER}" />
-                    <property name="git.describe" value="${git.commit.id.describe}" />
-                    <property name="git.branch" value="${git.commit.id.branch}" />
-                    <property name="git.commit" value="${git.commit.id}" />
-                    <echo file="target/generated-sources/version/org/neo4j/${version-dir}/ComponentVersion.java">package org.neo4j.${the-package};
-
-import org.neo4j.kernel.Version;
-import org.neo4j.helpers.Service;
-
-@Service.Implementation(Version.class)
-@SuppressWarnings("deprecation")
-public class ComponentVersion extends Version
-{
-    public ComponentVersion() { super("${project.artifactId}", "${project.version}"); }
-    public @Override String getReleaseVersion() { return "${project.version}"; }
-    protected @Override String getBuildNumber() { return "${build.number}"; }
-    protected @Override String getCommitId() { return "${git.commit}"; }
-    protected @Override String getBranchName() { return "${git.branch}"; }
-    protected @Override String getCommitDescription() { return "${git.describe}"; }
-}
-</echo>
-                  </sequential>
-                </macrodef>
-                <generate-version package="${version-package}" />
-              </target>
-            </configuration>
-            <goals><goal>run</goal></goals>
-          </execution>
-        </executions>
-        <dependencies>
-          <dependency>
-            <groupId>org.apache.ant</groupId>
-            <artifactId>ant-launcher</artifactId>
-            <version>1.8.4</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
         <executions>

@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.TimeZone;
 
 import org.neo4j.helpers.Format;
-import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
@@ -56,12 +55,7 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
         void dump( Logger logger )
         {
             logger.log( "Graph Database: " + edition + " " + storeId );
-            logger.log( "Kernel version: " + Version.getKernel() );
-            logger.log( "Neo4j component versions:" );
-            for ( Version componentVersion : Service.load( Version.class ) )
-            {
-                logger.log( "  " + componentVersion + "; revision: " + componentVersion.getRevision() );
-            }
+            logger.log( "Kernel version: " + Version.getKernelVersion() );
         }
     }
 
