@@ -395,6 +395,35 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     res.close()
   }
 
+  test("should handle cartesian products") {
+    createNode()
+    createNode()
+    createNode()
+    createNode()
+
+    val result = profileWithAllPlannersAndRuntimes("match n, m return n, m")
+    assertRows(16)(result)("CartesianProduct")
+  }
+
+  test("should properly handle filters") {
+    // given
+    val n = createLabeledNode(Map("name" -> "Seymour"), "Glass")
+    val o = createNode()
+    relate(n, o, "R1")
+    relate(o, createLabeledNode(Map("name" -> "Zoey"), "Glass"), "R2")
+    relate(o, createLabeledNode(Map("name" -> "Franny"), "Glass"), "R2")
+    relate(o, createNode(), "R2")
+    relate(o, createNode(), "R2")
+    graph.createIndex("Glass", "name")
+
+    // when
+    val result = profileWithAllPlannersAndRuntimes(
+      "match (n:Glass {name: 'Seymour'})-[:R1]->(o)-[:R2]->(p:Glass) USING INDEX n:Glass(name) return p.name")
+
+    // then
+    assertRows(2)(result)("Filter")
+  }
+
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
       plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")
