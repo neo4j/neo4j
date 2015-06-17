@@ -80,7 +80,7 @@ class PathImplTest extends CypherFunSuite {
     val rel2 = new FakeRel(nodB, nodC, typ)
     val path = new PathImpl(nodA, rel1, nodB, rel2, nodC)
 
-    assert(path.lastRelationship() == rel2)
+    path.lastRelationship() should equal(rel2)
   }
 
 
