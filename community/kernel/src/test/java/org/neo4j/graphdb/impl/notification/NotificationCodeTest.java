@@ -21,13 +21,16 @@ package org.neo4j.graphdb.impl.notification;
 
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.SeverityLevel;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-
+import static org.neo4j.graphdb.impl.notification.NotificationCode.CARTESIAN_PRODUCT;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;
 
 public class NotificationCodeTest
@@ -35,7 +38,7 @@ public class NotificationCodeTest
     @Test
     public void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE()
     {
-        NotificationDetail indexDetail = NotificationDetail.Factory.index( "hinted index", "Person", "name" );
+        NotificationDetail indexDetail = NotificationDetail.Factory.index( "Person", "name" );
         Notification notification = INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty, indexDetail );
 
         assertThat( notification.getTitle(), equalTo( "The request (directly or indirectly) referred to an index that does not exist." ) );
@@ -43,6 +46,26 @@ public class NotificationCodeTest
         assertThat( notification.getCode(), equalTo( "Neo.ClientError.Schema.NoSuchIndex" ) );
         assertThat( notification.getPosition(), equalTo( InputPosition.empty ) );
         assertThat( notification.getDescription(), equalTo( "The hinted index does not exist, please check the schema (hinted index is index on :Person(name))" ) );
+    }
+
+    @Test
+    public void shouldConstructNotificationFor_CARTESIAN_PRODUCT()
+    {
+        Set<String> idents = new HashSet<>();
+        idents.add( "n" );
+        idents.add( "node2" );
+        NotificationDetail identifierDetail = NotificationDetail.Factory.cartesianProduct( idents );
+        Notification notification = CARTESIAN_PRODUCT.notification( InputPosition.empty, identifierDetail );
+
+        assertThat( notification.getTitle(), equalTo( "This query builds a cartesian product between disconnected patterns." ) );
+        assertThat( notification.getSeverity(), equalTo( SeverityLevel.WARNING ) );
+        assertThat( notification.getCode(), equalTo( "Neo.ClientNotification.Statement.CartesianProduct" ) );
+        assertThat( notification.getPosition(), equalTo( InputPosition.empty ) );
+        assertThat( notification.getDescription(), equalTo( "If a part of a query contains multiple disconnected patterns, this will build a cartesian product " +
+                                                            "between all those parts. This may produce a large amount of data and slow down query processing. While " +
+                                                            "occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross " +
+                                                            "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH " +
+                                                            "(identifiers are: (n, node2))" ) );
     }
 
 }

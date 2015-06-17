@@ -24,8 +24,8 @@ import org.mockito.Mockito.{verify, _}
 import org.neo4j.cypher.internal.compatibility.{StringInfoLogger2_3, WrappedMonitors2_3}
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.notification.CartesianProductNotification
-import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.helpers.Clock
 import org.neo4j.logging.NullLog
 
@@ -35,13 +35,14 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     //given
     val logger = mock[InternalNotificationLogger]
     val compiler = createCompiler()
-    val executionMode = NormalMode
 
     //when
-    graph.inTx(compiler.planQuery("MATCH (a)-->(b), (c)-->(d) RETURN *", planContext, logger))
+    graph.inTx {
+      compiler.planQuery("MATCH (a)-->(b), (c)-->(d) RETURN *", planContext, logger)
+    }
 
     //then
-    verify(logger, times(1)) += CartesianProductNotification(InputPosition( 7, 1, 8 ))
+    verify(logger, times(1)) += CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d"))
   }
 
   test("should not warn when connected patterns") {
@@ -60,13 +61,14 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     //given
     val logger = mock[InternalNotificationLogger]
     val compiler = createCompiler()
-    val executionMode = NormalMode
 
     //when
-    graph.inTx(compiler.planQuery("MATCH (a)-->(b), (b)-->(c), (x)-->(y), (c)-->(d), (d)-->(e) RETURN *", planContext, logger))
+    graph.inTx {
+      compiler.planQuery("MATCH (a)-->(b), (b)-->(c), (x)-->(y), (c)-->(d), (d)-->(e) RETURN *", planContext, logger)
+    }
 
     //then
-    verify(logger, times(1)) += CartesianProductNotification(InputPosition(29, 1, 30))
+    verify(logger, times(1)) += CartesianProductNotification(InputPosition(0, 1, 1), Set("x", "y"))
   }
 
   test("should not warn when disconnected patterns in multiple match clauses") {

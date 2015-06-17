@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{ASTAnnotationMap, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{TreeElem, TreeZipper}
+import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 import scala.collection.immutable.HashMap
@@ -186,7 +187,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.SemanticState.ScopeLocation
 case class SemanticState(currentScope: ScopeLocation,
                          typeTable: ASTAnnotationMap[ast.Expression, ExpressionTypeInfo],
                          recordedScopes: ASTAnnotationMap[ast.ASTNode, Scope],
-                         notificationLogger: InternalNotificationLogger = devNullLogger) {
+                         notifications: Set[InternalNotification] = Set.empty) {
   def scopeTree = currentScope.rootScope
 
   def newChildScope = copy(currentScope = currentScope.newChildScope)
@@ -210,7 +211,7 @@ case class SemanticState(currentScope: ScopeLocation,
         Left(SemanticError(s"${identifier.name} already declared", identifier.position, symbol.positions.toSeq: _*))
     }
 
-  def withNotificationLogger(notificationLogger: InternalNotificationLogger) = copy(notificationLogger = notificationLogger)
+  def addNotification(notification: InternalNotification) = copy(notifications = notifications + notification)
 
   def implicitIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     this.symbol(identifier.name) match {

@@ -21,6 +21,9 @@ package org.neo4j.graphdb.impl.notification;
 
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
@@ -29,10 +32,35 @@ public class NotificationDetailTest
     @Test
     public void shouldConstructIndexDetails()
     {
-        NotificationDetail detail = NotificationDetail.Factory.index( "hinted index", "Person", "name" );
+        NotificationDetail detail = NotificationDetail.Factory.index( "Person", "name" );
 
         assertThat( detail.name(), equalTo( "hinted index" ) );
         assertThat( detail.value(), equalTo( "index on :Person(name)" ) );
         assertThat( detail.toString(), equalTo( "hinted index is index on :Person(name)" ) );
+    }
+
+    @Test
+    public void shouldConstructCartesianProductDetailsSingular()
+    {
+        Set<String> idents = new HashSet<>();
+        idents.add( "n" );
+        NotificationDetail detail = NotificationDetail.Factory.cartesianProduct( idents );
+
+        assertThat( detail.name(), equalTo( "identifier" ) );
+        assertThat( detail.value(), equalTo( "(n)" ) );
+        assertThat( detail.toString(), equalTo( "identifier is (n)" ) );
+    }
+
+    @Test
+    public void shouldConstructCartesianProductDetails()
+    {
+        Set<String> idents = new HashSet<>();
+        idents.add( "n" );
+        idents.add( "node2" );
+        NotificationDetail detail = NotificationDetail.Factory.cartesianProduct( idents );
+
+        assertThat( detail.name(), equalTo( "identifiers" ) );
+        assertThat( detail.value(), equalTo( "(n, node2)" ) );
+        assertThat( detail.toString(), equalTo( "identifiers are: (n, node2)" ) );
     }
 }
