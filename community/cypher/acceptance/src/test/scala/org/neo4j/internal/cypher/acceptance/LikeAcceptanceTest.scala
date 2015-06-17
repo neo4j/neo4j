@@ -83,8 +83,26 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     result.toList should equal(List(Map("l" -> london)))
   }
 
-  test("should plan an IndexRangeSeek for a % string prefix search when index exists") {
+  test("should plan the leaf with the longest prefix if multiple LIKE patterns") {
+    graph.inTx {
+      (1 to 300).foreach { _ =>
+        createLabeledNode("Address")
+      }
+    }
+    val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
+    val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
+    createLabeledNode(Map("prop" -> "ww"), "Address")
 
+    graph.createIndex("Address", "prop")
+
+    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'w%' AND a.prop LIKE 'www%' RETURN a")
+
+    result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
+    result.executionPlanDescription().toString should include("prop LIKE www%")
+    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+  }
+
+  test("should plan an IndexRangeSeek for a % string prefix search when index exists") {
     graph.inTx {
       (1 to 300).foreach { _ =>
         createLabeledNode("Address")

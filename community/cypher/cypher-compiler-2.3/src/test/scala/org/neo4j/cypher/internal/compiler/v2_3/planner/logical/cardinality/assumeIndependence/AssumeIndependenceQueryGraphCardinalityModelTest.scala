@@ -68,8 +68,11 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
       "MATCH (a:A) WHERE a.prop = 42"
         -> A * Aprop,
 
-      "MATCH (a:A) WHERE a.prop LIKE 'prefix%'"
-        -> (A * (orTimes(DEFAULT_NUMBER_OF_INDEX_LOOKUPS, Aprop) + ((1d - Aprop) * DEFAULT_RANGE_SEEK_FACTOR))),
+      "MATCH (a:A) WHERE a.prop LIKE 'p%'"
+        -> {
+        val equalitySelectivity = orTimes(DEFAULT_NUMBER_OF_INDEX_LOOKUPS, Aprop)
+        A * (equalitySelectivity + ((1d - equalitySelectivity) * DEFAULT_RANGE_SEEK_FACTOR))
+      },
 
       "MATCH (a:B) WHERE a.bar = 42"
         -> B * DEFAULT_EQUALITY_SELECTIVITY,
@@ -108,11 +111,11 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
         -> A * B * or(A_T1_B_sel, B_T1_A_sel),
 
       "MATCH (a:A)-[r:T1]->(b)"
-        -> A_T1_STAR,
+        -> A_T1_ANY,
 
       "MATCH (a:A)-[r:T1]-(b)"
         -> {
-        A_T1_STAR + STAR_T1_A
+        A_T1_ANY + ANY_T1_A
       },
 
       "MATCH (a:A)-[*0..0]-(b:A)"
@@ -124,8 +127,8 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
       "MATCH (a:A:B)-->()"
         -> {
         val maxRelCount = N * N * Asel * Bsel
-        val A_relSelectivity = A_STAR_STAR / maxRelCount
-        val B_relSelectivity = B_STAR_STAR / maxRelCount
+        val A_relSelectivity = A_ANY_ANY / maxRelCount
+        val B_relSelectivity = B_ANY_ANY / maxRelCount
         val relSelectivity = A_relSelectivity * B_relSelectivity
         A * B * relSelectivity
       },
@@ -139,14 +142,14 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
         patternNodeCrossProduct * labelSelectivity * relSelectivity
       },
 
-      "MATCH (a:A:B)-[:T1|:T2]->()"
+      "MATCH (a:A:E)-[:T1|:T2]->()"
         -> {
-        val B_T2_STAR = 0
+//        val B_T1_STAR = 0
         val patternNodeCrossProduct = N * N
-        val labelSelectivity = Asel * Bsel
+        val labelSelectivity = Asel * Esel
         val maxRelCount = patternNodeCrossProduct * labelSelectivity
-        val relSelectivityT1 = (A_T1_STAR / maxRelCount) * (B_T1_STAR / maxRelCount)
-        val relSelectivityT2 = (A_T2_STAR / maxRelCount) * (B_T2_STAR / maxRelCount)
+        val relSelectivityT1 = (A_T1_ANY / maxRelCount) * (E_T1_ANY / maxRelCount)
+        val relSelectivityT2 = (A_T2_ANY / maxRelCount) * (E_T2_ANY / maxRelCount)
         val relSelectivity = or(relSelectivityT1, relSelectivityT2)
         patternNodeCrossProduct * labelSelectivity * relSelectivity
       },
@@ -156,8 +159,8 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
         val patternNodeCrossProduct = N * N
         val labelSelectivity = Asel * Dsel
         val maxRelCount = patternNodeCrossProduct * labelSelectivity
-        val relSelectivityT1 = (A_T1_STAR / maxRelCount) * (D_T1_STAR / maxRelCount)
-        val relSelectivityT2 = (A_T2_STAR / maxRelCount) * (D_T2_STAR / maxRelCount)
+        val relSelectivityT1 = (A_T1_ANY / maxRelCount) * (D_T1_ANY / maxRelCount)
+        val relSelectivityT2 = (A_T2_ANY / maxRelCount) * (D_T2_ANY / maxRelCount)
         val relSelectivity = or(relSelectivityT1, relSelectivityT2)
         patternNodeCrossProduct * labelSelectivity * relSelectivity
       },
@@ -257,7 +260,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
 
     val maxRelCount = A * N * B
     val l1Selectivity = A_T1_B / maxRelCount
-    val l2Selectivities = Seq(A_T1_STAR / maxRelCount, STAR_T1_B / maxRelCount)
+    val l2Selectivities = Seq(A_T1_ANY / maxRelCount, ANY_T1_B / maxRelCount)
     val l2Selectivity = l2Selectivities.reduce(_ * _)
     val totalSelectivity = or(l1Selectivity, l2Selectivity)
 

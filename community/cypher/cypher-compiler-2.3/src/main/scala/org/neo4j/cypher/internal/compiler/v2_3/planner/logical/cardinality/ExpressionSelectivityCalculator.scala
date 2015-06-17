@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality
 
+import java.math.RoundingMode
+
 import org.neo4j.cypher.internal.compiler.v2_3.LabelId
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, _}
@@ -51,8 +53,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       calculateSelectivityForPropertyEquality(seekable.name, seekable.args.sizeHint, selections, seekable.propertyKey)
 
     // WHERE x.prop LIKE ...
-    case AsStringRangeSeekable(seekable) =>
-      calculateSelectivityForRangeSeekable(seekable.name, selections, seekable.propertyKey)
+    case AsStringRangeSeekable(seekable@StringRangeSeekable(LowerBounded(lower), _, _, _)) =>
+      calculateSelectivityForRangeSeekable(seekable.name, selections, seekable.propertyKey, lower.endPoint)
 
     // WHERE has(x.prop)
     case AsPropertyScannable(scannable) =>
@@ -124,10 +126,21 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
   private def calculateSelectivityForRangeSeekable(identifier: String,
                                                    selections: Selections,
-                                                   propertyKey: PropertyKeyName)
+                                                   propertyKey: PropertyKeyName,
+                                                   prefix: String)
                                                   (implicit semanticTable: SemanticTable): Selectivity = {
+    /*
+     * c = DEFAULT_RANGE_SEEK_FACTOR
+     * p = prefix length
+     * f in (0,c) = (1 / p) * c
+     * e in [0,1] = selectivity for equality comparison
+     * s in (0,1) = (1 - e) * f
+     * return e + s in (0,1)
+     */
     val equality = java.math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(identifier, None, selections, propertyKey).factor)
-    val slack = BigDecimalCombiner.negate(equality).multiply(java.math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR))
+    val factor = java.math.BigDecimal.ONE.divide(java.math.BigDecimal.valueOf(prefix.length), 17, RoundingMode.HALF_UP)
+      .multiply(java.math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)).stripTrailingZeros()
+    val slack = BigDecimalCombiner.negate(equality).multiply(factor)
     Selectivity(equality.add(slack).doubleValue())
   }
 
