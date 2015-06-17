@@ -76,6 +76,11 @@ which results in
 Hello World, nodeId=123
 ----
 
+[CAUTION]
+Whilst Neo4j is tested to run on JVM 8, Neo4j server is currently compiled using
+JDK 7, to ensure compatibility for JVM 7 deployments. When compiling plugins for
+Neo4j Server, we strongly recommend using JDK 7 also.
+
 :leveloffset: 3
 
 include::server-unmanaged-extensions-streaming.asciidoc[]

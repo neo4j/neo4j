@@ -73,6 +73,11 @@ https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/server-examples/sr
 To deploy the code, simply compile it into a .jar file and place it onto the server classpath (which by
 convention is the plugins directory under the Neo4j server home directory).
 
+[CAUTION]
+Whilst Neo4j is tested to run on JVM 8, Neo4j server is currently compiled using
+JDK 7, to ensure compatibility for JVM 7 deployments. When compiling plugins for
+Neo4j Server, we strongly recommend using JDK 7 also.
+
 [TIP]
 Make sure the directories listings are retained in the jarfile by either building with default Maven, or with `jar -cvf myext.jar *`, making sure
 to jar directories instead of specifying single files.
