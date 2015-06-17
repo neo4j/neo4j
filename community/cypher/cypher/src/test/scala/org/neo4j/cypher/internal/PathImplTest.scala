@@ -72,6 +72,18 @@ class PathImplTest extends CypherFunSuite {
     badPaths.foreach(p => intercept[IllegalArgumentException](new PathImpl(p:_*)))
   }
 
+  @Test def retrieveLastRelationshipOnLongPath() {
+    val nodA = new FakeNode
+    val nodB = new FakeNode
+    val nodC = new FakeNode
+    val rel1 = new FakeRel(nodA, nodB, typ)
+    val rel2 = new FakeRel(nodB, nodC, typ)
+    val path = new PathImpl(nodA, rel1, nodB, rel2, nodC)
+
+    assert(path.lastRelationship() == rel2)
+  }
+
+
   class FakeRel(start: Node, end: Node, typ: RelationshipType) extends Relationship {
     def getId: Long = 0L
 
