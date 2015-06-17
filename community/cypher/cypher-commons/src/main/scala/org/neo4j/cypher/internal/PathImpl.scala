@@ -60,7 +60,7 @@ case class PathImpl(pathEntities: PropertyContainer*)
 
   def endNode(): Node = nodeList.last
 
-  def lastRelationship(): Relationship = if (relList.isEmpty) null else relList.head
+  def lastRelationship(): Relationship = if (relList.isEmpty) null else relList.last
 
   def relationships(): JavaIterable[Relationship] = relList.asJava
 
