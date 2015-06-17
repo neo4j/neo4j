@@ -315,6 +315,7 @@ public class IndexingService extends LifecycleAdapter
     public void stop()
     {
         state = State.STOPPED;
+        samplingController.stop();
         closeAllIndexes();
     }
 

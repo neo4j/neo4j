@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+
 import java.io.File;
 import java.util.Map;
 
@@ -56,9 +57,9 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NeoStoreDataSourceRule extends ExternalResource
@@ -82,8 +83,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
         Locks locks = mock( Locks.class );
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
-        theDs = new NeoStoreDataSource( storeDir, config, sf, NullLogProvider.getInstance(), mock( JobScheduler.class ),
-                mock( TokenNameLookup.class ),
+        theDs = new NeoStoreDataSource( storeDir, config, sf, NullLogProvider.getInstance(),
+                mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locks,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
