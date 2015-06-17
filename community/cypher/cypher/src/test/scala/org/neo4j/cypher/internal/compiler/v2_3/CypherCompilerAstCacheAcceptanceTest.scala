@@ -151,7 +151,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val compiler = createCompiler(queryPlanTTL = 0, clock = clock, log = logProvider.getLog(getClass))
     compiler.monitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
-    val statement = compiler.prepareQuery(query, devNullLogger).statement
+    val statement = compiler.prepareQuery(query, query, devNullLogger).statement
 
     createLabeledNode("Dog")
     (0 until 50).foreach { _ => createLabeledNode("Person") }

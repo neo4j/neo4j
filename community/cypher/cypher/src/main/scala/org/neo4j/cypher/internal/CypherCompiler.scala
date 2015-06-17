@@ -43,8 +43,9 @@ object CypherCompiler {
     }
 }
 
-case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: CypherExecutionMode,
-                          planner: CypherPlanner, runtime: CypherRuntime, notificationLogger: InternalNotificationLogger)
+case class PreParsedQuery(statement: String, rawStatement: String, version: CypherVersion,
+                          executionMode: CypherExecutionMode, planner: CypherPlanner, runtime: CypherRuntime,
+                          notificationLogger: InternalNotificationLogger)
                          (val offset: InputPosition) {
   val statementWithVersionAndPlanner = {
     val plannerInfo = planner match {
@@ -77,9 +78,9 @@ class CypherCompiler(graph: GraphDatabaseService,
     override def create[S](spec: PlannerSpec { type SPI = S }): S = spec match {
       case PlannerSpec_v1_9 => CompatibilityFor1_9(graph, queryCacheSize, kernelMonitors)
       case PlannerSpec_v2_2(planner) => planner match {
-          case CypherPlanner.rule => CompatibilityFor2_2Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
-          case _ => CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner)
-        }
+        case CypherPlanner.rule => CompatibilityFor2_2Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
+        case _ => CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner)
+      }
       case PlannerSpec_v2_3(planner, runtime) => planner match {
         case CypherPlanner.rule => CompatibilityFor2_3Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
         case _ => CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner, runtime, useErrorsOverWarnings)
@@ -111,7 +112,7 @@ class CypherCompiler(graph: GraphDatabaseService,
     val logger = notificationLoggerBuilder(pickedExecutionMode)
     notifications.foreach( logger += _ )
 
-    PreParsedQuery(statement, cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime, logger)(offset)
+    PreParsedQuery(statement, queryText, cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime, logger)(offset)
   }
 
   private def pick[O <: CypherOption](candidate: Option[O], companion: CypherOptionCompanion[O], configured: Option[O]): O = {
