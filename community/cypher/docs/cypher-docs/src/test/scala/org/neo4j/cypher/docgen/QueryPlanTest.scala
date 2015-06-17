@@ -175,6 +175,51 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     )
   }
 
+  @Test def nodeIndexRangeSeek() {
+    // Need to make index preferable in terms of cost
+    executePreparationQueries((0 to 250).map { i =>
+      "CREATE (:Location)"
+    }.toList)
+    profileQuery(title = "Node index range seek",
+                 text = """
+                          |Finds nodes using an index seek where the value of the property matches a given prefix string.
+                          |The following query will return all location nodes which have a name property starting with the text 'Lon'.
+                        """.stripMargin,
+                 queryText = "MATCH (l:Location) WHERE l.name LIKE 'Lon%' RETURN l",
+                 assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeIndexRangeSeek"))
+    )
+  }
+
+  @Test def nodeUniqueIndexRangeSeek() {
+    // Need to make index preferable in terms of cost
+    executePreparationQueries((0 to 250).map { i =>
+      "CREATE (:Team)"
+    }.toList)
+    profileQuery(title = "Node unique index range seek",
+                 text = """
+                          |Finds nodes using a unique index seek where the value of the property matches a given prefix string.
+                          |The following query will return all location nodes which have a name property starting with the text 'Engineer'.
+                        """.stripMargin,
+                 queryText = "MATCH (t:Team) WHERE t.name LIKE 'Engineer%' RETURN t",
+                 assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeUniqueIndexRangeSeek"))
+    )
+  }
+
+  @Test def nodeIndexScan() {
+    // Need to make index preferable in terms of cost
+    executePreparationQueries((0 to 250).map { i =>
+      "CREATE (:Location)"
+    }.toList)
+    profileQuery(title = "Node index scan",
+                 text = """
+                          |Uses an index scan to find all nodes with a particular label having a specified property (e.g. `has(n.prop)`).
+                          |The following query will return all location nodes having a name property.
+                        """.stripMargin,
+                 queryText = "MATCH (l:Location) WHERE has(l.name) RETURN l",
+                 assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeIndexScan"))
+    )
+  }
+
   @Test def nodeByIdSeek() {
     profileQuery(
       title = "Node by Id seek",

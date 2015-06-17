@@ -150,7 +150,17 @@ n["property"] = {value}
 
 RETURN n###
 
-Properties may also be accessed using a dynamically computed property name
+Properties may also be accessed using a dynamically computed property name.
+
+###assertion=returns-one
+MATCH n
+WHERE HAS(n.property) AND
+
+n.property LIKE "Tob%" OR n.property LIKE "Tob_"
+
+RETURN n###
+
+String pattern matching. % matches zero or more characters, _ matches exactly one character.
 
 ###assertion=returns-one parameters=regex
 MATCH n
@@ -161,16 +171,6 @@ n.property =~ "Tob.*"
 RETURN n###
 
 Regular expression.
-
-###assertion=returns-one
-MATCH n
-WHERE HAS(n.property) AND
-
-n.property LIKE "Tob%"
-
-RETURN n###
-
-String pattern matching.
 
 ###assertion=returns-four
 MATCH n, m

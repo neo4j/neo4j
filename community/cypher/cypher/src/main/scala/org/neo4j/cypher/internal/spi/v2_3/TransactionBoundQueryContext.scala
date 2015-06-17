@@ -148,7 +148,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
             allNodesInIndex.filter { (node: Node) =>
               val nodeId = node.getId
               readOps.nodeGetProperty(nodeId, propertyKeyId).value() match {
-                case s: String => s >= bound
+                case s: String => s.startsWith(bound)
                 case _ => false
               }
             }

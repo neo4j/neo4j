@@ -121,6 +121,42 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     )
   }
 
+  @Test def use_index_with_like() {
+    // Need to make index preferable in terms of cost
+    executePreparationQueries((0 to 250).map { i =>
+      "CREATE (:Person)"
+    }.toList)
+    profileQuery(
+      title = "Use index with LIKE",
+      text =
+        "The `LIKE` predicate on `person.name` in the following query will use the `Person(name)` index, if it exists. ",
+      queryText = "MATCH (person:Person) WHERE person.name LIKE 'And%' return person",
+      assertion = {
+        (p) =>
+          assertEquals(1, p.size)
+          assertThat(p.executionPlanDescription().toString, containsString("NodeIndexRangeSeek"))
+      }
+    )
+  }
+
+  @Test def use_index_with_has_property() {
+    // Need to make index preferable in terms of cost
+    executePreparationQueries((0 to 250).map { i =>
+      "CREATE (:Person)"
+    }.toList)
+    profileQuery(
+      title = "Use index when checking for the existence of a property",
+      text =
+        "The `has(p.name)` predicate in the following query will use the `Person(name)` index, if it exists.",
+      queryText = "MATCH (p:Person) WHERE has(p.name) RETURN p",
+      assertion = {
+        (p) =>
+          assertEquals(2, p.size)
+          assertThat(p.executionPlanDescription().toString, containsString("NodeIndexScan"))
+      }
+    )
+  }
+
   def assertIndexesOnLabels(label: String, expectedIndexes: List[List[String]]) {
     assert(expectedIndexes === db.indexPropsForLabel(label))
   }
