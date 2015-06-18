@@ -33,8 +33,6 @@
 
     <webdriver.version>2.42.2</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
-
-    <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
 
   <packaging>jar</packaging>
@@ -257,6 +255,26 @@
           </systemPropertyVariables>
           <useManifestOnlyJar>false</useManifestOnlyJar>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-source-based-documentation</id>
+            <phase>${generate-config-docs-phase}</phase>
+            <configuration>
+              <target>
+                <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
+                      classpathref="maven.compile.classpath" failonerror="true">
+                  <arg value="org.neo4j.server.enterprise.EnterpriseServerSettings" />
+                  <arg value="${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />
+                </java>
+              </target>
+            </configuration>
+            <goals><goal>run</goal></goals>
+          </execution>
+        </executions>
       </plugin>
 
     </plugins>

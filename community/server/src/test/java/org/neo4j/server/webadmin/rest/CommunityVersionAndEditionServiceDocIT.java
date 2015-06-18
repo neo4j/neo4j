@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import java.util.concurrent.Callable;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -28,24 +26,24 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.util.concurrent.Callable;
+
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
-import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.management.VersionAndEditionService;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.test.Mute.muteAll;
-import static org.neo4j.test.TestData.Title;
 
 /*
 Note that when running this test from within an IDE, the version field will be an empty string. This is because the
@@ -112,23 +110,20 @@ public class CommunityVersionAndEditionServiceDocIT extends ExclusiveServerTestB
         } );
     }
 
-    /**
-     * The Neo4j server hosts a resource that contains the edition (i.e. Community, Advanced or Enterprise) and
-     * version (e.g. 1.9.3 or 2.0.0) of the database. By accessing this resource via a HTTP GET, callers will know
-     * precisely which kind of database server is running.
-     */
     @Test
-    @Documented
-    @Title("Get the edition and version of the database")
     public void shouldReportCommunityEdition() throws Exception
     {
+        // Given
         String releaseVersion = server.getDatabase().getGraph().getDependencyResolver().resolveDependency( KernelData
                 .class ).version().getReleaseVersion();
-        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.managementUri() + "/" +
-                VersionAndEditionService.SERVER_PATH );
 
-        assertEquals( 200, response.getStatus() );
-        assertThat( response.getEntity(), containsString( "edition: \"community\"" ) );
-        assertThat( response.getEntity(), containsString( "version: \"" + releaseVersion + "\"" ) );
+        // When
+        HTTP.Response res =
+                HTTP.GET( functionalTestHelper.managementUri() + "/" + VersionAndEditionService.SERVER_PATH );
+
+        // Then
+        assertEquals( 200, res.status() );
+        assertThat( res.get( "edition" ).asText(), equalTo( "community" ) );
+        assertThat( res.get( "version" ).asText(), equalTo( releaseVersion ) );
     }
 }

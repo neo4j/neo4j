@@ -254,6 +254,7 @@ public abstract class AbstractNeoServer implements NeoServer
                 configurator.configuration().get( ServerInternalSettings.legacy_db_location ).getAbsolutePath() );
 
         putIfAbsent( result, ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
+        result.putAll( configurator.configuration().getParams() );
         return result;
     }
 

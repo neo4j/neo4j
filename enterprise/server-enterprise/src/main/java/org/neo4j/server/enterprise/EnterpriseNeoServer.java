@@ -45,7 +45,6 @@ import org.neo4j.server.webadmin.rest.MasterInfoServerModule;
 import org.neo4j.server.webadmin.rest.MasterInfoService;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.Iterables.mix;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
@@ -75,7 +74,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
 
     protected static Database.Factory createDbFactory( Config config )
     {
-        final String mode = config.get( ServerInternalSettings.legacy_db_mode ).toUpperCase();
+        final String mode = config.get( EnterpriseServerSettings.mode ).toUpperCase();
         return mode.equals( HA ) ? lifecycleManagingDatabase( ENTERPRISE_FACTORY ) : lifecycleManagingDatabase( COMMUNITY_FACTORY );
     }
 
@@ -104,7 +103,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
         // If we are in HA mode, database startup can take a very long time, so
         // we default to disabling the startup timeout here, unless explicitly overridden
         // by configuration.
-        if ( getConfig().get( ServerInternalSettings.legacy_db_mode ).equalsIgnoreCase( "ha" ) )
+        if ( getConfig().get( EnterpriseServerSettings.mode ).equalsIgnoreCase( "ha" ) )
         {
             final long startupTimeout = getStartTimeoutFromPropertiesOrSetToZeroIfNoKeyFound();
             InterruptThreadTimer stopStartupTimer;

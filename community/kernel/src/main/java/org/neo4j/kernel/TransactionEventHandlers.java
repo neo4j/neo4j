@@ -126,7 +126,8 @@ public class TransactionEventHandlers
         }
 
         TransactionData txData = state == null ? EMPTY_DATA :
-                new TxStateTransactionDataSnapshot( state, nodeActions, storeReadLayer, ((KernelStatement)transaction.acquireStatement()).getStoreStatement() );
+                new TxStateTransactionDataSnapshot( state, nodeActions, relationshipActions, storeReadLayer,
+                        ((KernelStatement)transaction.acquireStatement()).getStoreStatement() );
 
         TransactionHandlerState handlerStates = new TransactionHandlerState( txData );
         for ( TransactionEventHandler<?> handler : this.transactionEventHandlers )

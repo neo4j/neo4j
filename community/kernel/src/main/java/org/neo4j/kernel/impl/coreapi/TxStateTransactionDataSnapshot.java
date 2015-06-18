@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -33,18 +32,21 @@ import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.ReadableTxState;
+import org.neo4j.kernel.impl.api.RelationshipDataExtractor;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 
 /**
@@ -55,6 +57,8 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final ReadableTxState state;
     private final NodeProxy.NodeActions nodeActions;
     private final StoreStatement storeStatement;
+    private final RelationshipActions relationshipActions;
+    private final RelationshipDataExtractor relationshipData = new RelationshipDataExtractor();
 
     private final Collection<PropertyEntry<Node>> assignedNodeProperties = new ArrayList<>();
     private final Collection<PropertyEntry<Relationship>> assignedRelationshipProperties = new ArrayList<>();
@@ -66,15 +70,17 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
     public TxStateTransactionDataSnapshot(
             ReadableTxState state,
-            NodeProxy.NodeActions nodeActions,
+            NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions relationshipActions,
             StoreReadLayer storeReadLayer,
             StoreStatement storeStatement )
     {
         this.state = state;
         this.nodeActions = nodeActions;
+        this.relationshipActions = relationshipActions;
         this.storeStatement = storeStatement;
 
-        // Load all changes eagerly, because we won't have access to the after state after the tx has been committed.
+        // Load changes that require store access eagerly, because we won't have access to the after-state
+        // after the tx has been committed.
         takeSnapshot( state, storeReadLayer );
     }
 
@@ -173,11 +179,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             }
             for ( Long relId : state.addedAndRemovedRelationships().getRemoved() )
             {
+                Relationship relationship = relationship( relId );
                 Iterator<DefinedProperty> props = storeReadLayer.relationshipGetAllProperties(storeStatement , relId );
                 while(props.hasNext())
                 {
                     DefinedProperty prop = props.next();
-                    removedRelationshipProperties.add( new RelationshipPropertyEntryView( relId,
+                    removedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
                             storeReadLayer.propertyKeyGetName( prop.propertyKeyId() ), null, prop.value() ) );
                 }
             }
@@ -211,11 +218,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             }
             for ( RelationshipState relState : state.modifiedRelationships() )
             {
+                Relationship relationship = relationship( relState.getId() );
                 Iterator<DefinedProperty> added = relState.addedAndChangedProperties();
                 while ( added.hasNext()  )
                 {
                     DefinedProperty property = added.next();
-                    assignedRelationshipProperties.add( new RelationshipPropertyEntryView( relState.getId(),
+                    assignedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
                             storeReadLayer.propertyKeyGetName( property.propertyKeyId() ), property.value(),
                             committedValue( storeReadLayer, relState, property.propertyKeyId() ) ) );
                 }
@@ -223,7 +231,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 while ( removed.hasNext()  )
                 {
                     Integer property = removed.next();
-                    removedRelationshipProperties.add( new RelationshipPropertyEntryView( relState.getId(),
+                    removedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
                             storeReadLayer.propertyKeyGetName( property ), null,
                             committedValue( storeReadLayer, relState, property ) ) );
                 }
@@ -235,26 +243,35 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
     }
 
+    private Relationship relationship( long relId )
+    {
+        state.relationshipVisit( relId, relationshipData );
+        return new RelationshipProxy( relationshipActions, relId,
+                relationshipData.startNode(), relationshipData.type(), relationshipData.endNode() );
+    }
+
     private Iterable<Node> map2Nodes( Iterable<Long> added )
     {
-        return Iterables.map(new Function<Long, Node>(){
+        return new IterableWrapper<Node,Long>( added )
+        {
             @Override
-            public Node apply( Long id )
+            protected Node underlyingObjectToObject( Long id )
             {
                 return new NodeProxy( nodeActions, id );
             }
-        }, added);
+        };
     }
 
-    private Iterable<Relationship> map2Rels( Iterable<Long> added )
+    private Iterable<Relationship> map2Rels( Iterable<Long> ids )
     {
-        return Iterables.map(new Function<Long, Relationship>(){
+        return new IterableWrapper<Relationship,Long>( ids )
+        {
             @Override
-            public Relationship apply( Long id )
+            protected Relationship underlyingObjectToObject( Long id )
             {
-                return nodeActions.lazyRelationshipProxy( id );
+                return relationship( id );
             }
-        }, added);
+        };
     }
 
     private Object committedValue( StoreReadLayer storeReadLayer, NodeState nodeState, int property )
@@ -345,14 +362,15 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
     private class RelationshipPropertyEntryView implements PropertyEntry<Relationship>
     {
-        private final long relId;
+        private final Relationship relationship;
         private final String key;
         private final Object newValue;
         private final Object oldValue;
 
-        public RelationshipPropertyEntryView( long relId, String key, Object newValue, Object oldValue )
+        public RelationshipPropertyEntryView( Relationship relationship,
+                String key, Object newValue, Object oldValue )
         {
-            this.relId = relId;
+            this.relationship = relationship;
             this.key = key;
             this.newValue = newValue;
             this.oldValue = oldValue;
@@ -361,7 +379,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         @Override
         public Relationship entity()
         {
-            return nodeActions.lazyRelationshipProxy( relId );
+            return relationship;
         }
 
         @Override
@@ -390,7 +408,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         public String toString()
         {
             return "RelationshipPropertyEntryView{" +
-                    "relId=" + relId +
+                    "relId=" + relationship.getId() +
                     ", key='" + key + '\'' +
                     ", newValue=" + newValue +
                     ", oldValue=" + oldValue +

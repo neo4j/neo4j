@@ -19,17 +19,18 @@
  */
 package org.neo4j.server.enterprise.functional;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Properties;
-
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Properties;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.NeoServer;
@@ -40,8 +41,10 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_WEBSERVER_PORT;
+import static org.neo4j.server.enterprise.EnterpriseServerSettings.mode;
 
 public class EnterpriseServerIT
 {
@@ -58,7 +61,7 @@ public class EnterpriseServerIT
 
         NeoServer server = EnterpriseServerBuilder.server()
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
-                .withProperty( Configurator.DB_MODE_KEY, "HA" )
+                .withProperty( mode.name(), "HA" )
                 .withProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, tuningFile.getAbsolutePath() )
                 .persistent()
                 .build();

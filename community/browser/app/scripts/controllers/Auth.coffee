@@ -27,13 +27,38 @@ angular.module('neo4jApp.controllers')
     'ConnectionStatusService'
     'Frame'
     'Settings'
-    ($scope, AuthService, ConnectionStatusService, Frame, Settings) ->
+    '$timeout'
+    ($scope, AuthService, ConnectionStatusService, Frame, Settings, $timeout) ->
       $scope.username = 'neo4j'
       $scope.password = ''
       $scope.current_password = ''
       $scope.connection_summary = ConnectionStatusService.getConnectionStatusSummary()
       $scope.static_user = $scope.connection_summary.user
       $scope.static_is_authenticated = $scope.connection_summary.is_connected
+      $scope.policy_message = ''
+
+      setPolicyMessage = ->
+        return unless $scope.static_is_authenticated
+        _connection_summary = ConnectionStatusService.getConnectionStatusSummary()
+        if _connection_summary.credential_timeout is null
+          $timeout(->
+            setPolicyMessage()
+          , 1000)
+          return
+        msg = ""
+        if _connection_summary.store_credentials
+          msg += "Connection credentials are stored in your web browser"
+        else
+          msg += "Connection credentials are not stored in your web browser"
+        if _connection_summary.credential_timeout > 0
+          msg += " and your credential timeout is #{_connection_summary.credential_timeout} seconds. "
+          msg += "You have #{_connection_summary.credential_timeout - _connection_summary.connection_age} seconds "
+          msg += " until you are disconnected."
+        else
+          msg += "."
+        $scope.$evalAsync(->
+          $scope.policy_message = msg
+        )
 
       $scope.authenticate = ->
         $scope.frame.resetError()
@@ -50,7 +75,7 @@ angular.module('neo4jApp.controllers')
             $scope.connection_summary = ConnectionStatusService.getConnectionStatusSummary()
             $scope.static_user = $scope.connection_summary.user
             $scope.static_is_authenticated = $scope.connection_summary.is_connected
-
+            setPolicyMessage()
             Frame.create({input:"#{Settings.initCmd}"})
             $scope.focusEditor()
           ,
@@ -67,4 +92,6 @@ angular.module('neo4jApp.controllers')
           $scope.static_user = ConnectionStatusService.connectedAsUser()
           $scope.static_is_authenticated = ConnectionStatusService.isConnected()
         )
+
+      setPolicyMessage()
   ]

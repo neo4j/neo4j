@@ -29,6 +29,8 @@ import org.neo4j.kernel.KernelData;
 import org.neo4j.server.NeoServer;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
 @Path(VersionAndEditionService.SERVER_PATH)
 public class VersionAndEditionService implements AdvertisableService
@@ -57,8 +59,9 @@ public class VersionAndEditionService implements AdvertisableService
     @Produces(APPLICATION_JSON)
     public Response getVersionAndEditionData()
     {
-        return Response.ok( "{version: \"" + neoDatabaseVersion( neoServer ) + "\", " +
-                "edition: \"" + neoServerEdition( neoServer ) + "\"}",
+        return Response.ok( createJsonFrom( map(
+                        "version", neoDatabaseVersion( neoServer ),
+                        "edition", neoServerEdition( neoServer ) ) ),
                 APPLICATION_JSON )
                 .build();
     }

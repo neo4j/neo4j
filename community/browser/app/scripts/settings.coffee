@@ -27,6 +27,7 @@ angular.module('neo4jApp.settings', ['neo4jApp.utils'])
     cmdchar: ':'
     endpoint:
       console: "#{baseURL}/db/manage/server/console"
+      version: "#{baseURL}/db/manage/server/version"
       jmx: "#{baseURL}/db/manage/server/jmx/query"
       rest: restAPI
       cypher: "#{restAPI}/cypher"
@@ -50,6 +51,7 @@ angular.module('neo4jApp.settings', ['neo4jApp.utils'])
     refreshInterval: 10 # in seconds
     userName: "Graph Friend"
     theme: "normal"
+    storeCredentials: yes
   })
 
 angular.module('neo4jApp.settings')
