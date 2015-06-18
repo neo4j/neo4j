@@ -36,8 +36,8 @@ class ExecutionEngineIT extends CypherFunSuite {
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
 
     //when
-    val plan1 = db.execute("PROFILE MATCH (a) RETURN a").getExecutionPlanDescription
-    val plan2 = db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
+    val plan1 = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
+    val plan2 = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
 
     //then
     plan1.getArguments.get("planner") should equal("COST")
@@ -51,8 +51,8 @@ class ExecutionEngineIT extends CypherFunSuite {
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
 
     //when
-    val plan1 = db.execute("PROFILE MATCH (a) RETURN a").getExecutionPlanDescription
-    val plan2 = db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
+    val plan1 = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
+    val plan2 = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
 
     //then
     plan1.getArguments.get("planner") should equal("COST")
@@ -69,7 +69,7 @@ class ExecutionEngineIT extends CypherFunSuite {
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
 
     //when
-    val plan = db.execute("PROFILE MATCH (a) RETURN a").getExecutionPlanDescription
+    val plan = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
 
     //then
     plan.getArguments.get("planner") should equal("RULE")
@@ -83,7 +83,7 @@ class ExecutionEngineIT extends CypherFunSuite {
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
 
     //when
-    val plan = db.execute("PROFILE MATCH (a) RETURN a").getExecutionPlanDescription
+    val plan = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
 
     //then
     plan.getArguments.get("planner") should equal("RULE")
@@ -98,7 +98,7 @@ class ExecutionEngineIT extends CypherFunSuite {
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
 
     //when
-    val plan = db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
+    val plan = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
 
     //then
     plan.getArguments.get("planner") should equal("COST")
@@ -113,7 +113,7 @@ class ExecutionEngineIT extends CypherFunSuite {
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
 
     //when
-    val plan = db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
+    val plan = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
 
     //then
     plan.getArguments.get("planner") should equal("COST")
@@ -128,7 +128,7 @@ class ExecutionEngineIT extends CypherFunSuite {
         .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
         .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.0").newGraphDatabase()
 
-      db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
+      db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
     }
   }
 
@@ -204,6 +204,15 @@ class ExecutionEngineIT extends CypherFunSuite {
     // then
     txBridge(db).hasTransaction shouldBe false
   }
+
+  private implicit class RichDb(db: GraphDatabaseService) {
+    def planDescriptionForQuery(query: String) = {
+      val res = db.execute(query)
+      res.resultAsString()
+      res.getExecutionPlanDescription
+    }
+  }
+
 
   private def txBridge(db: GraphDatabaseService) = {
     db.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
