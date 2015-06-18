@@ -231,6 +231,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public PrimitiveLongIterator nodesGetFromIndexByPrefixSearch( IndexDescriptor index, String prefix )
+            throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return dataRead().nodesGetFromIndexByPrefixSearch( statement, index, prefix );
+    }
+
+    @Override
     public PrimitiveLongIterator nodesGetFromIndexScan( IndexDescriptor index )
             throws IndexNotFoundKernelException
     {

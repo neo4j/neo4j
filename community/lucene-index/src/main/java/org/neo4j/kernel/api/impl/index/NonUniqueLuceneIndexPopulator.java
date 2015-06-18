@@ -145,11 +145,11 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
             case CHANGED:
                 // We don't look at the "before" value, so adding and changing idempotently is done the same way.
                 Fieldable encodedValue = documentStructure.encodeAsFieldable( update.getValueAfter() );
-                writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
+                writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
                                        documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
                 break;
             case REMOVED:
-                writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );
+                writer.deleteDocuments( documentStructure.newTermForChangeOrRemove( nodeId ) );
                 break;
             default:
                 throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );

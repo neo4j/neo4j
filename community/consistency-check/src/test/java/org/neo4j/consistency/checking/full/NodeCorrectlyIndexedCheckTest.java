@@ -221,6 +221,12 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
+                public PrimitiveLongIterator lookupByPrefixSearch( String prefix )
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
                 public PrimitiveLongIterator scan()
                 {
                     List<Long> ids = new ArrayList<>();

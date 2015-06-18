@@ -55,7 +55,7 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
                 NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
                 NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "a", new long[]{1000} ) ) );
 
-        assertThat( getAllNodes( "a" ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( getAllNodesWithProperty( "a" ), equalTo( asList( 1L, 2L ) ) );
     }
 
     @Test
@@ -66,7 +66,21 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
                 NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
                 NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "b", new long[]{1000} ) ) );
 
-        assertThat( getAllNodes( "a" ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( getAllNodesWithProperty( "a" ), equalTo( asList( 1L, 2L ) ) );
         assertThat( getAllNodes(), equalTo( asList( 1L, 2L, 3L ) ) );
+    }
+
+    @Test
+    public void testIndexPrefixSearchWithDuplicates() throws Exception
+    {
+        updateAndCommit( asList(
+                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
+                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "A", new long[]{1000} ),
+                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
+                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
+                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "apa", new long[]{1000} ) ) );
+
+        assertThat( getAllNodesFromPrefixSearch( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromPrefixSearch( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
     }
 }

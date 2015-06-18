@@ -42,6 +42,11 @@ public interface IndexReader extends Resource
     PrimitiveLongIterator lookup( Object value );
 
     /**
+     * Index lookup by prefix search
+     */
+    PrimitiveLongIterator lookupByPrefixSearch( String prefix );
+
+    /**
      * Index scan for all objects
      */
     PrimitiveLongIterator scan();
@@ -78,6 +83,12 @@ public interface IndexReader extends Resource
         public PrimitiveLongIterator lookup( Object value )
         {
             return delegate.lookup( value );
+        }
+
+        @Override
+        public PrimitiveLongIterator lookupByPrefixSearch( String prefix )
+        {
+            return delegate.lookupByPrefixSearch( prefix );
         }
 
         @Override
@@ -121,6 +132,12 @@ public interface IndexReader extends Resource
     {
         @Override
         public PrimitiveLongIterator lookup( Object value )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        @Override
+        public PrimitiveLongIterator lookupByPrefixSearch( String prefix )
         {
             return PrimitiveLongCollections.emptyIterator();
         }

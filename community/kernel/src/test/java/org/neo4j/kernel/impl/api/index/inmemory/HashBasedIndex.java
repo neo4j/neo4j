@@ -75,6 +75,24 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
+    public PrimitiveLongIterator lookupByPrefixSearch( String prefix )
+    {
+        Set<Long> nodeIds = new HashSet<>();
+        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        {
+            Object key = entry.getKey();
+            if ( key instanceof String )
+            {
+                if ( key.toString().startsWith( prefix ) )
+                {
+                    nodeIds.addAll( entry.getValue() );
+                }
+            }
+        }
+        return toPrimitiveIterator( nodeIds.iterator() );
+    }
+
+    @Override
     public PrimitiveLongIterator scan()
     {
         Iterable<Long> all = Iterables.flattenIterable( data.values() );

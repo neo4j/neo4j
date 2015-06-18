@@ -19,20 +19,19 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.search.IndexSearcher;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Query;
+import org.junit.Before;
+import org.junit.Test;
+
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
@@ -40,26 +39,25 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.CancellationRequest.NEVER_CANCELLED;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
-public class LuceneIndexAccessorReaderTest
+public class LuceneIndexAccessorReaderTest extends AbstractLuceneIndexAccessorReaderTest<LuceneIndexAccessorReader>
 {
-    private static final int BUFFER_SIZE_LIMIT = 100_000;
-
-    private final Closeable closeable = mock( Closeable.class );
-    private final LuceneDocumentStructure documentLogic = mock( LuceneDocumentStructure.class );
-    private final IndexSearcher searcher = mock( IndexSearcher.class );
-    private final IndexReader reader = mock( IndexReader.class );
-    private final TermEnum terms = mock( TermEnum.class );
-    private final LuceneIndexAccessorReader accessor =
-            new LuceneIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED, BUFFER_SIZE_LIMIT );
-
     @Before
     public void setup() throws IOException
     {
+        this.accessor = new LuceneIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED, BUFFER_SIZE_LIMIT )
+        {
+            @Override
+            public PrimitiveLongIterator query( Query query )
+            {
+                return Primitive.iterator();
+            }
+        };
+
         when( searcher.getIndexReader() ).thenReturn( reader );
         when( reader.terms() ).thenReturn( terms );
     }
@@ -118,26 +116,6 @@ public class LuceneIndexAccessorReaderTest
         assertEquals( 1, indexSize );
         assertEquals( 1, output.readFirst() );
         assertEquals( 1, output.readSecond() );
-    }
-
-    @Test
-    public void shouldWrapAnIOExceptionIntoARuntimeExceptionWhenCalculatingIndexUniqueValues() throws Exception
-    {
-        // Given
-        final IOException ioex = new IOException();
-        when( terms.next() ).thenThrow( ioex );
-
-        // When
-        try
-        {
-            accessor.sampleIndex( Registers.newDoubleLongRegister() );
-            fail( "should have thrown" );
-        }
-        catch ( RuntimeException ex )
-        {
-            // Then
-            assertSame( ioex, ex.getCause() );
-        }
     }
 
     @Test

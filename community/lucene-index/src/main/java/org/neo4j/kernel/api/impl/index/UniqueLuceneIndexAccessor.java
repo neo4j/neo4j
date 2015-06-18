@@ -76,7 +76,7 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor implements UniquePro
         IndexSearcher searcher = searcherManager.acquire();
         try
         {
-            TopDocs docs = searcher.search( documentStructure.newQuery( value ), 1 );
+            TopDocs docs = searcher.search( documentStructure.newValueQuery( value ), 1 );
             if ( docs.scoreDocs.length > 0 )
             {
                 Document doc = searcher.getIndexReader().document( docs.scoreDocs[0].doc );
