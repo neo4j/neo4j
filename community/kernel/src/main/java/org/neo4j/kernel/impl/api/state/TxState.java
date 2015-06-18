@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -1006,6 +1008,60 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
                 getIndexUpdates( descriptor.getLabelId(), descriptor.getPropertyKeyId() ) :
                 getIndexUpdates( descriptor.getLabelId(), /*create=*/false,
                                  property( descriptor.getPropertyKeyId(), value ) ) );
+    }
+
+    @Override
+    public ReadableDiffSets<Long> indexUpdatesForPrefix( IndexDescriptor descriptor, String prefix )
+    {
+        return ReadableDiffSets.Empty.ifNull( getIndexUpdatesForPrefix( descriptor, prefix ) );
+    }
+
+    private ReadableDiffSets<Long> getIndexUpdatesForPrefix( IndexDescriptor descriptor, String prefix )
+    {
+        if ( indexUpdates == null )
+        {
+            return null;
+        }
+        Map<DefinedProperty, DiffSets<Long>> updates = indexUpdates.get( descriptor.getLabelId() );
+        if ( updates == null )
+        {
+            return null;
+        }
+        TreeMap<DefinedProperty,DiffSets<Long>> sortedUpdates = null;
+        if ( updates instanceof TreeMap )
+        {
+            sortedUpdates = (TreeMap<DefinedProperty,DiffSets<Long>>) updates;
+        }
+        else
+        {
+            sortedUpdates = new TreeMap<>(new Comparator<DefinedProperty>(){
+                @Override
+                public int compare( DefinedProperty o1, DefinedProperty o2 )
+                {
+                    return (o1.propertyKeyId() == o2.propertyKeyId()) ?
+                           o1.valueAsString().compareTo( o2.valueAsString() ) :
+                           o1.propertyKeyId() - o2.propertyKeyId();
+                }
+            });
+            sortedUpdates.putAll( updates );
+            indexUpdates.put( descriptor.getLabelId(), sortedUpdates );
+        }
+        DiffSets<Long> diffs = new DiffSets<Long>();
+        DefinedProperty floor = DefinedProperty.stringProperty( descriptor.getPropertyKeyId(), prefix );
+        for ( Map.Entry<DefinedProperty,DiffSets<Long>> entry : sortedUpdates.tailMap( floor ).entrySet() )
+        {
+            if ( entry.getKey().value().toString().startsWith( prefix ) )
+            {
+                DiffSets<Long> diffSets = entry.getValue();
+                diffs.addAll( diffSets.getAdded().iterator() );
+                diffs.removeAll( diffSets.getRemoved().iterator() );
+            }
+            else
+            {
+                break;
+            }
+        }
+        return diffs;
     }
 
     @Override

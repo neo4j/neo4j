@@ -609,12 +609,10 @@ public class StateHandlingStatementOperations implements
     public PrimitiveLongIterator nodesGetFromIndexByPrefixSearch( KernelStatement state, IndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
-        if ( state.hasTxStateWithChanges() )
-        {
-            throw new UnsupportedOperationException( "not yet implemented" );
-        }
-        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexByPrefixSearch( state, index, prefix );
-        return committed;
+        PrimitiveLongResourceIterator committed = storeLayer.nodesGetFromIndexByPrefixSearch( state, index, prefix );
+        // TODO: Consider adding a version of filterPrefixIndexMatches()
+        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChangesForPrefix( state, index, prefix, committed );
+        return resourceIterator( changeFilteredMatches, committed );
     }
 
     @Override
@@ -642,6 +640,20 @@ public class StateHandlingStatementOperations implements
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChanges.augment( nodeIds ) );
+        }
+        return nodeIds;
+    }
+
+    private PrimitiveLongIterator filterIndexStateChangesForPrefix( KernelStatement state, IndexDescriptor index,
+            String prefix, PrimitiveLongIterator nodeIds )
+    {
+        if ( state.hasTxStateWithChanges() )
+        {
+            ReadableDiffSets<Long> labelPropertyChangesForPrefix = state.txState().indexUpdatesForPrefix( index, prefix );
+            ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
+
+            // Apply to actual index lookup
+            return nodes.augmentWithRemovals( labelPropertyChangesForPrefix.augment( nodeIds ) );
         }
         return nodeIds;
     }
