@@ -285,6 +285,25 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     a.executionPlanDescription().toString should include("()<-[r:T]-(n)")
   }
 
+  test("profile projections") {
+    // given
+    val n = createLabeledNode(Map("name" -> "Seymour"), "Glass")
+    val o = createNode()
+    relate(n, o, "R1")
+    relate(o, createLabeledNode(Map("name" -> "Zoey"), "Glass"), "R2")
+    relate(o, createLabeledNode(Map("name" -> "Franny"), "Glass"), "R2")
+    relate(o, createNode(), "R2")
+    relate(o, createNode(), "R2")
+    graph.createIndex("Glass", "name")
+
+    // when
+    val result = innerExecute(
+      "profile match (n:Glass {name: 'Seymour'})-[:R1]->(o)-[:R2]->(p:Glass) USING INDEX n:Glass(name) return p.name")
+
+    // then
+    assertDbHits(2)(result)("Projection")
+  }
+
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
       plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")
