@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.graphdb.Node;
@@ -45,13 +45,13 @@ import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
-import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import static java.util.Arrays.asList;
 
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
@@ -291,6 +291,6 @@ public class TxStateTransactionDataViewTest
                 return new RelationshipProxy( relActions, (Long)invocation.getArguments()[0] );
             }
         } );
-        return new TxStateTransactionDataSnapshot( state, nodeActions, ops );
+        return new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops );
     }
 }
