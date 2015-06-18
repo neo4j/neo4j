@@ -416,14 +416,62 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public NodeCursor nodeCursorGetAll( KernelStatement state )
+    public NodeCursor nodeCursor( KernelStatement statement, long nodeId )
     {
-        return entityReadOperations.nodeCursorGetAll( state );
+        return entityReadOperations.nodeCursor( statement, nodeId );
     }
 
     @Override
-    public RelationshipCursor relationshipCursorGetAll( KernelStatement state )
+    public RelationshipCursor relationshipCursor( KernelStatement statement, long relId )
     {
-        return entityReadOperations.relationshipCursorGetAll( state );
+        return entityReadOperations.relationshipCursor( statement, relId );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetAll( KernelStatement statement )
+    {
+        return entityReadOperations.nodeCursorGetAll( statement );
+    }
+
+    @Override
+    public RelationshipCursor relationshipCursorGetAll( KernelStatement statement )
+    {
+        return entityReadOperations.relationshipCursorGetAll( statement );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetForLabel( KernelStatement statement, int labelId )
+    {
+        return entityReadOperations.nodeCursorGetForLabel( statement, labelId );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexLookup( KernelStatement statement, IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException
+    {
+        return entityReadOperations.nodeCursorGetFromIndexLookup( statement, index, value );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexScan( KernelStatement statement, IndexDescriptor index )
+            throws IndexNotFoundKernelException
+    {
+        return entityReadOperations.nodeCursorGetFromIndexScan( statement, index );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexByPrefixScan( KernelStatement statement,
+            IndexDescriptor index,
+            String prefix ) throws IndexNotFoundKernelException
+    {
+        return entityReadOperations.nodeCursorGetFromIndexByPrefixScan( statement, index, prefix );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetUniqueFromIndexLookup( KernelStatement statement,
+            IndexDescriptor index,
+            Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        return entityReadOperations.nodeCursorGetUniqueFromIndexLookup( statement, index, value );
     }
 }

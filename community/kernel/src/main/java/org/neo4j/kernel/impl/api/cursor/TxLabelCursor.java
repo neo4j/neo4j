@@ -19,48 +19,106 @@
  */
 package org.neo4j.kernel.impl.api.cursor;
 
+import java.util.Iterator;
+
+import org.neo4j.function.Consumer;
 import org.neo4j.kernel.api.cursor.LabelCursor;
-import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.util.InstanceCache;
+import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 
 /**
  * Overlays transaction state on a {@link LabelCursor}.
  */
 public class TxLabelCursor
-    implements LabelCursor
+        implements LabelCursor
 {
-    private KernelStatement statement;
-    private InstanceCache<TxLabelCursor> instanceCache;
-    private LabelCursor cursor;
+    private final Consumer<TxLabelCursor> instanceCache;
 
-    public TxLabelCursor( KernelStatement statement, InstanceCache<TxLabelCursor> instanceCache )
+    private LabelCursor cursor;
+    private DiffSets<Integer> labelDiffSet;
+
+    private int label;
+    private Iterator<Integer> added;
+
+    public TxLabelCursor( Consumer<TxLabelCursor> instanceCache )
     {
-        this.statement = statement;
         this.instanceCache = instanceCache;
     }
 
-    public TxLabelCursor init( LabelCursor cursor )
+    public TxLabelCursor init( LabelCursor cursor, DiffSets<Integer> labelDiffSet )
     {
         this.cursor = cursor;
+        this.labelDiffSet = labelDiffSet;
+        this.added = null;
         return this;
     }
 
     @Override
     public boolean next()
     {
-        return cursor.next();
+        if ( added == null )
+        {
+            while ( cursor != null && cursor.next() )
+            {
+                if ( labelDiffSet.isRemoved( cursor.getLabel() ) )
+                {
+                    continue;
+                }
+
+                label = cursor.getLabel();
+                return true;
+            }
+
+            added = labelDiffSet.getAdded().iterator();
+        }
+
+        if ( added.hasNext() )
+        {
+            label = added.next();
+            return true;
+        }
+        else
+        {
+            label = -1;
+            return false;
+        }
     }
 
     @Override
     public boolean seek( int labelId )
     {
-        return cursor.seek( labelId );
+        if ( labelDiffSet.isAdded( labelId ) )
+        {
+            label = labelId;
+            return true;
+        }
+
+        if ( labelDiffSet.isRemoved( labelId ) )
+        {
+            label = -1;
+            return false;
+        }
+
+        if ( cursor.seek( labelId ) )
+        {
+            label = labelId;
+            return true;
+        }
+        else
+        {
+            label = -1;
+            return false;
+        }
     }
 
     @Override
     public int getLabel()
     {
-        return cursor.getLabel();
+        if ( label == -1 )
+        {
+            throw new IllegalStateException();
+        }
+
+        return label;
     }
 
     @Override
@@ -68,6 +126,6 @@ public class TxLabelCursor
     {
         cursor.close();
         cursor = null;
-        instanceCache.release( this );
+        instanceCache.accept( this );
     }
 }

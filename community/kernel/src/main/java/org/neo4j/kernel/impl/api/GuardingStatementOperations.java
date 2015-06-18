@@ -349,17 +349,72 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public NodeCursor nodeCursorGetAll( KernelStatement state )
+    public NodeCursor nodeCursor( KernelStatement statement, long nodeId )
     {
         guard.check();
-        return entityReadDelegate.nodeCursorGetAll( state );
+        return entityReadDelegate.nodeCursor( statement, nodeId );
     }
 
     @Override
-    public RelationshipCursor relationshipCursorGetAll( KernelStatement state )
+    public RelationshipCursor relationshipCursor( KernelStatement statement, long relId )
     {
         guard.check();
-        return entityReadDelegate.relationshipCursorGetAll( state );
+        return entityReadDelegate.relationshipCursor( statement, relId );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetAll( KernelStatement statement )
+    {
+        guard.check();
+        return entityReadDelegate.nodeCursorGetAll( statement );
+    }
+
+    @Override
+    public RelationshipCursor relationshipCursorGetAll( KernelStatement statement )
+    {
+        guard.check();
+        return entityReadDelegate.relationshipCursorGetAll( statement );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetForLabel( KernelStatement statement, int labelId )
+    {
+        guard.check();
+        return entityReadDelegate.nodeCursorGetForLabel( statement, labelId );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexLookup( KernelStatement statement, IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException
+    {
+        guard.check();
+        return entityReadDelegate.nodeCursorGetFromIndexLookup( statement, index, value );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexScan( KernelStatement statement, IndexDescriptor index )
+            throws IndexNotFoundKernelException
+    {
+        guard.check();
+        return entityReadDelegate.nodeCursorGetFromIndexScan( statement, index );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexByPrefixScan( KernelStatement statement,
+            IndexDescriptor index,
+            String prefix ) throws IndexNotFoundKernelException
+    {
+        guard.check();
+        return entityReadDelegate.nodeCursorGetFromIndexByPrefixScan( statement, index, prefix );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetUniqueFromIndexLookup( KernelStatement statement,
+            IndexDescriptor index,
+            Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        guard.check();
+        return entityReadDelegate.nodeCursorGetUniqueFromIndexLookup( statement, index, value );
     }
 
     private static class GuardedRelationshipIterator implements RelationshipIterator

@@ -32,19 +32,18 @@ public class StoreLabelCursor implements LabelCursor
     private long[] labels;
     private int index;
     private int currentLabel;
-    private StoreStatement storeStatement;
     private InstanceCache<StoreLabelCursor> instanceCache;
 
-    public StoreLabelCursor( StoreStatement storeStatement, InstanceCache<StoreLabelCursor> instanceCache )
+    public StoreLabelCursor( InstanceCache<StoreLabelCursor> instanceCache )
     {
-        this.storeStatement = storeStatement;
         this.instanceCache = instanceCache;
     }
 
-    public void init( long[] labels )
+    public StoreLabelCursor init( long[] labels )
     {
         this.labels = labels;
         index = 0;
+        return this;
     }
 
     @Override
@@ -84,6 +83,6 @@ public class StoreLabelCursor implements LabelCursor
     @Override
     public void close()
     {
-        instanceCache.release( this );
+        instanceCache.accept( this );
     }
 }

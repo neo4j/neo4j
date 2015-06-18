@@ -63,7 +63,11 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         this.instanceCache = instanceCache;
     }
 
-    public void init( boolean isDense, long firstRelId, long fromNodeId, Direction direction, int... relTypes )
+    public StoreNodeRelationshipCursor init( boolean isDense,
+            long firstRelId,
+            long fromNodeId,
+            Direction direction,
+            int... relTypes )
     {
         this.isDense = isDense;
         relationshipId = firstRelId;
@@ -82,6 +86,8 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         {
             relationshipId = firstRelId;
         }
+
+        return this;
     }
 
     public boolean next()
@@ -165,7 +171,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     @Override
     public void close()
     {
-        instanceCache.release( this );
+        instanceCache.accept( this );
     }
 
     private long nextChainStart()

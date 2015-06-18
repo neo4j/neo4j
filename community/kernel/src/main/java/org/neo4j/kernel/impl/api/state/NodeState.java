@@ -28,12 +28,21 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.api.cursor.LabelCursor;
+import org.neo4j.kernel.api.cursor.PropertyCursor;
+import org.neo4j.kernel.api.cursor.RelationshipCursor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.UpdateTriState;
+import org.neo4j.kernel.impl.api.cursor.TxIteratorRelationshipCursor;
+import org.neo4j.kernel.impl.api.cursor.TxLabelCursor;
+import org.neo4j.kernel.impl.api.cursor.TxPropertyCursor;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 
@@ -64,6 +73,13 @@ public interface NodeState extends PropertyContainerState
 
     PrimitiveLongIterator addedRelationships( Direction direction, int[] types );
 
+    LabelCursor augmentLabelCursor( InstanceCache<TxLabelCursor> labelCursorCache, LabelCursor cursor );
+
+    RelationshipCursor augmentNodeRelationshipCursor( InstanceCache<TxIteratorRelationshipCursor>
+            nodeRelationshipCursor,
+            RelationshipCursor cursor,
+            Direction direction, int[] relTypes );
+
     int augmentDegree( Direction direction, int degree );
 
     int augmentDegree( Direction direction, int degree, int typeId );
@@ -86,7 +102,7 @@ public interface NodeState extends PropertyContainerState
 
         private Mutable( long id, TxState state )
         {
-            super( id );
+            super( id, EntityType.NODE );
             this.state = state;
         }
 
@@ -183,6 +199,51 @@ public interface NodeState extends PropertyContainerState
                 return relationshipsAdded.augmentRelationships( direction, types, RelationshipIterator.EMPTY );
             }
             return null;
+        }
+
+        @Override
+        public LabelCursor augmentLabelCursor( InstanceCache<TxLabelCursor> labelCursorCache, LabelCursor cursor )
+        {
+            if ( labelDiffSets == null )
+            {
+                return cursor;
+            }
+            else
+            {
+                return labelCursorCache.get().init( cursor, labelDiffSets );
+            }
+        }
+
+        @Override
+        public RelationshipCursor augmentNodeRelationshipCursor( InstanceCache<TxIteratorRelationshipCursor>
+                nodeRelationshipCursorCache,
+                RelationshipCursor cursor,
+                Direction direction,
+                int[] relTypes )
+        {
+            if ( hasAddedRelationships() || hasRemovedRelationships() )
+            {
+                if ( relTypes == null )
+                {
+                    return nodeRelationshipCursorCache.get().init( cursor,
+                            relationshipsAdded != null ?
+                                    relationshipsAdded.augmentRelationships( direction, RelationshipIterator.EMPTY ) :
+                                    RelationshipIterator.EMPTY );
+                }
+                else
+                {
+                    return nodeRelationshipCursorCache.get().init( cursor,
+                            relationshipsAdded != null ?
+                                    relationshipsAdded.augmentRelationships( direction, relTypes,
+                                            RelationshipIterator.EMPTY ) :
+                                    RelationshipIterator.EMPTY );
+                }
+
+            }
+            else
+            {
+                return cursor;
+            }
         }
 
         @Override
@@ -372,6 +433,29 @@ public interface NodeState extends PropertyContainerState
             public PrimitiveLongIterator addedRelationships( Direction direction, int[] types )
             {
                 return Primitive.iterator();
+            }
+
+            @Override
+            public LabelCursor augmentLabelCursor( InstanceCache<TxLabelCursor> labelCursorCache, LabelCursor cursor )
+            {
+                return cursor;
+            }
+
+            @Override
+            public PropertyCursor augmentPropertyCursor( Supplier<TxPropertyCursor> propertyCursor,
+                    PropertyCursor cursor )
+            {
+                return cursor;
+            }
+
+            @Override
+            public RelationshipCursor augmentNodeRelationshipCursor( InstanceCache<TxIteratorRelationshipCursor>
+                    nodeRelationshipCursor,
+                    RelationshipCursor cursor,
+                    Direction direction,
+                    int[] relTypes )
+            {
+                return cursor;
             }
 
             @Override

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.store;
 import org.neo4j.kernel.api.cursor.PropertyCursor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.util.InstanceCache;
 
 /**
@@ -45,10 +44,11 @@ public class StorePropertyCursor implements PropertyCursor
         this.instanceCache = instanceCache;
     }
 
-    public void init( long firstPropertyId )
+    public StorePropertyCursor init( long firstPropertyId )
     {
         propertyRecordCursor = propertyStore.getPropertyRecordCursor( propertyRecordCursor, firstPropertyId );
         propertyBlockCursor = null;
+        return this;
     }
 
     @Override
@@ -73,7 +73,7 @@ public class StorePropertyCursor implements PropertyCursor
     {
         while ( next() )
         {
-            if ( getKeyIndexId() == keyId )
+            if ( propertyBlockCursor.getPropertyBlock().getKeyIndexId() == keyId )
             {
                 return true;
             }
@@ -83,29 +83,14 @@ public class StorePropertyCursor implements PropertyCursor
     }
 
     @Override
-    public PropertyType getType()
-    {
-        return propertyBlockCursor.getPropertyBlock().getType();
-    }
-
-    public int getKeyIndexId()
-    {
-        return propertyBlockCursor.getPropertyBlock().getKeyIndexId();
-    }
-
     public DefinedProperty getProperty()
     {
         return propertyBlockCursor.getProperty();
     }
 
-    public Object getValue()
-    {
-        return propertyBlockCursor.getValue();
-    }
-
     @Override
     public void close()
     {
-        instanceCache.release( this );
+        instanceCache.accept( this );
     }
 }

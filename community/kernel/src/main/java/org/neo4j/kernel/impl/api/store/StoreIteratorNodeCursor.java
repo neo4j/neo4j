@@ -73,6 +73,6 @@ public class StoreIteratorNodeCursor extends StoreAbstractNodeCursor
         }
         iterator = null;
 
-        instanceCache.release( this );
+        instanceCache.accept( this );
     }
 }

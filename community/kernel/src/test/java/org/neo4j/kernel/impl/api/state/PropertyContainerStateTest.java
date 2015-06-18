@@ -22,12 +22,17 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.Iterator;
 
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class PropertyContainerStateTest
@@ -36,41 +41,41 @@ public class PropertyContainerStateTest
     public void shouldListAddedProperties() throws Exception
     {
         // Given
-        PropertyContainerState.Mutable state = new PropertyContainerState.Mutable( 1 );
+        PropertyContainerState.Mutable state = new PropertyContainerState.Mutable( 1, EntityType.NODE );
         state.addProperty( stringProperty( 1, "Hello" ) );
         state.addProperty( stringProperty( 2, "Hello" ) );
         state.removeProperty( stringProperty( 1, "Hello" ) );
 
         // When
-        Iterator<DefinedProperty> added  = state.addedProperties();
+        Iterator<DefinedProperty> added = state.addedProperties();
 
         // Then
         assertThat( IteratorUtil.asList( added ),
-                equalTo(asList( stringProperty( 2, "Hello" ))) );
+                equalTo( asList( stringProperty( 2, "Hello" ) ) ) );
     }
 
     @Test
     public void shouldListAddedPropertiesEvenIfPropertiesHaveBeenReplaced() throws Exception
     {
         // Given
-        PropertyContainerState.Mutable state = new PropertyContainerState.Mutable( 1 );
+        PropertyContainerState.Mutable state = new PropertyContainerState.Mutable( 1, EntityType.NODE );
         state.addProperty( stringProperty( 1, "Hello" ) );
         state.addProperty( stringProperty( 1, "WAT" ) );
         state.addProperty( stringProperty( 2, "Hello" ) );
 
         // When
-        Iterator<DefinedProperty> added  = state.addedProperties();
+        Iterator<DefinedProperty> added = state.addedProperties();
 
         // Then
         assertThat( IteratorUtil.asList( added ),
-                equalTo(asList( stringProperty( 1, "WAT" ), stringProperty( 2, "Hello" ))) );
+                equalTo( asList( stringProperty( 1, "WAT" ), stringProperty( 2, "Hello" ) ) ) );
     }
 
     @Test
     public void shouldAugmentProperties() throws Exception
     {
         // Given
-        PropertyContainerState.Mutable state = new PropertyContainerState.Mutable( 1 );
+        PropertyContainerState.Mutable state = new PropertyContainerState.Mutable( 1, EntityType.NODE );
         state.addProperty( stringProperty( 1, "Hello" ) );
         state.addProperty( stringProperty( 2, "Hello" ) );
         state.removeProperty( stringProperty( 3, "ShouldBeRemoved" ) );
@@ -82,23 +87,23 @@ public class PropertyContainerStateTest
 
         // Then
         assertThat( IteratorUtil.asList( props ),
-                equalTo(asList( stringProperty( 4, "ShouldShowUp" ), stringProperty( 1, "Hello" ),
-                                stringProperty( 2, "Hello" ))) );
+                equalTo( asList( stringProperty( 4, "ShouldShowUp" ), stringProperty( 1, "Hello" ),
+                        stringProperty( 2, "Hello" ) ) ) );
     }
 
     @Test
     public void shouldConvertAddRemoveToChange() throws Exception
     {
         // Given
-        PropertyContainerState.Mutable state = new PropertyContainerState.Mutable( 1 );
+        PropertyContainerState.Mutable state = new PropertyContainerState.Mutable( 1, EntityType.NODE );
 
         // When
         state.removeProperty( stringProperty( 4, "a value" ) );
-        state.addProperty(    stringProperty( 4, "another value" ) );
+        state.addProperty( stringProperty( 4, "another value" ) );
 
         // Then
         assertThat( IteratorUtil.asList( state.changedProperties() ),
-                equalTo(asList( stringProperty( 4, "another value" ) )) );
+                equalTo( asList( stringProperty( 4, "another value" ) ) ) );
         assertFalse( state.addedProperties().hasNext() );
         assertFalse( state.removedProperties().hasNext() );
     }

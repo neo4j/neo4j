@@ -23,17 +23,15 @@ import java.util.Collections;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Matchers;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.cursor.LabelCursor;
+import org.neo4j.kernel.api.cursor.PropertyCursor;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
@@ -52,19 +50,19 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 
 public class IndexQueryTransactionStateTest
 {
@@ -77,6 +75,9 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, 2l, 3l ) ) );
+
+        when( statement.acquireSingleNodeCursor( 2l ) ).thenReturn(
+                asNodeCursor( 2l, PropertyCursor.EMPTY, LabelCursor.EMPTY ) );
 
         txContext.nodeDelete( state, 2l );
 
@@ -94,6 +95,9 @@ public class IndexQueryTransactionStateTest
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator( 1l ) );
 
+        when( statement.acquireSingleNodeCursor( 1l ) ).thenReturn(
+                asNodeCursor( 2l, PropertyCursor.EMPTY, LabelCursor.EMPTY ) );
+
         txContext.nodeDelete( state, 1l );
 
         // When
@@ -110,7 +114,6 @@ public class IndexQueryTransactionStateTest
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
-        when( store.nodeHasLabel( statement, 1l, labelId ) ).thenReturn( false );
         state.txState().nodeDoReplaceProperty( 1l, Property.noNodeProperty( 1l, propertyKeyId ),
                 Property.intProperty( propertyKeyId, 10 ) );
 
@@ -127,7 +130,6 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator() );
-        when( store.nodeHasLabel( statement, 1l, labelId ) ).thenReturn( false );
         state.txState().nodeDoReplaceProperty( 1l, Property.noNodeProperty( 1l, propertyKeyId ),
                 Property.intProperty( propertyKeyId, 10 ) );
 
@@ -144,14 +146,14 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
-        when( store.nodeGetProperty( Matchers.any( StoreStatement.class ), anyLong(), eq( propertyKeyId ) ) ).thenReturn(
-                noNodeProperty( 1, propertyKeyId ) );
-        when( store.nodeGetAllProperties( same( statement ), anyLong() ) ).thenReturn( IteratorUtil
-                .<DefinedProperty>emptyIterator() );
-        when( store.nodeHasLabel( statement, 1l, labelId ) ).thenReturn( false );
+
+        when( statement.acquireSingleNodeCursor( 1l ) ).thenReturn(
+                asNodeCursor( 1l, PropertyCursor.EMPTY, LabelCursor.EMPTY ) );
+
 
         state.txState().nodeDoReplaceProperty( 1l, noNodeProperty( 1l, propertyKeyId ),
-                                                   stringProperty( propertyKeyId, value ) );
+                stringProperty( propertyKeyId, value ) );
+
         txContext.nodeAddLabel( state, 1l, labelId );
 
         // When
@@ -167,14 +169,13 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator() );
-        when( store.nodeGetProperty( Matchers.any( StoreStatement.class ), anyLong(), eq( propertyKeyId ) ) ).thenReturn(
-                noNodeProperty( 1, propertyKeyId ) );
-        when( store.nodeGetAllProperties( same( statement ), anyLong() ) ).thenReturn( IteratorUtil
-                .<DefinedProperty>emptyIterator() );
-        when( store.nodeHasLabel(statement , 1l, labelId ) ).thenReturn( false );
+
+        when( statement.acquireSingleNodeCursor( 1l ) ).thenReturn(
+                asNodeCursor( 1l, PropertyCursor.EMPTY, LabelCursor.EMPTY ) );
 
         state.txState().nodeDoReplaceProperty( 1l, noNodeProperty( 1l, propertyKeyId ),
-                                                   stringProperty( propertyKeyId, value ) );
+                stringProperty( propertyKeyId, value ) );
+
         txContext.nodeAddLabel( state, 1l, labelId );
 
         // When
@@ -191,10 +192,9 @@ public class IndexQueryTransactionStateTest
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
-        when( store.nodeHasLabel( statement, 1l, labelId ) ).thenReturn( false );
-        DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
-        when( store.nodeGetProperty( null, 1l, propertyKeyId ) ).thenReturn( stringProperty );
-        when( store.nodeGetAllProperties( same( statement ), anyLong() ) ).thenReturn( iterator( stringProperty ) );
+        when( statement.acquireSingleNodeCursor( 1l ) ).thenReturn(
+                asNodeCursor( 1l, asPropertyCursor( stringProperty( propertyKeyId, value ) ),
+                        LabelCursor.EMPTY ) );
 
         txContext.nodeAddLabel( state, 1l, labelId );
 
@@ -211,11 +211,10 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator() );
-        when( store.nodeHasLabel( statement, 2l, labelId ) ).thenReturn( false );
 
-        DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
-        when( store.nodeGetProperty( statement, 2l, propertyKeyId ) ).thenReturn( stringProperty );
-        when( store.nodeGetAllProperties( same( statement ), anyLong()) ).thenReturn( iterator( stringProperty ) );
+        when( statement.acquireSingleNodeCursor( 2l ) ).thenReturn(
+                asNodeCursor( 2l, asPropertyCursor( stringProperty( propertyKeyId, value ) ),
+                        LabelCursor.EMPTY ) );
 
         txContext.nodeAddLabel( state, 2l, labelId );
 
@@ -232,11 +231,10 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, 2l, 3l ) ) );
-        when( store.nodeHasLabel( statement, 1l, labelId ) ).thenReturn( true );
 
-        DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
-        when( store.nodeGetProperty( statement, 1l, propertyKeyId ) ).thenReturn( stringProperty );
-        when( store.nodeGetAllProperties( same(statement), anyLong() ) ).thenReturn( iterator( stringProperty ) );
+        when( statement.acquireSingleNodeCursor( 1l ) ).thenReturn(
+                asNodeCursor( 1l, asPropertyCursor( stringProperty( propertyKeyId, value ) ),
+                        asLabelCursor( labelId ) ) );
 
         txContext.nodeRemoveLabel( state, 1l, labelId );
 
@@ -253,11 +251,10 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator( 1l ) );
-        when( store.nodeHasLabel(statement , 1l, labelId ) ).thenReturn( true );
 
-        DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
-        when( store.nodeGetProperty( null, 1l, propertyKeyId ) ).thenReturn( stringProperty );
-        when( store.nodeGetAllProperties( same( statement ), anyLong() ) ).thenReturn( iterator( stringProperty ) );
+        when( statement.acquireSingleNodeCursor( 1l ) ).thenReturn(
+                asNodeCursor( 1l, asPropertyCursor( stringProperty( propertyKeyId, value ) ),
+                        asLabelCursor( labelId ) ) );
 
         txContext.nodeRemoveLabel( state, 1l, labelId );
 
@@ -275,7 +272,9 @@ public class IndexQueryTransactionStateTest
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
-        when( store.nodeHasLabel( statement, 1l, labelId ) ).thenReturn( true );
+        when( statement.acquireSingleNodeCursor( 1l ) ).thenReturn(
+                asNodeCursor( 1l, PropertyCursor.EMPTY, asLabelCursor( labelId ) ) );
+
         state.txState().nodeDoReplaceProperty( 1l, Property.noNodeProperty( 1l, propertyKeyId ),
                 Property.intProperty( propertyKeyId, 10 ) );
 
@@ -295,10 +294,10 @@ public class IndexQueryTransactionStateTest
 
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator( 1l ) );
-        when( store.nodeGetProperty( statement, 1l, propertyKeyId ) ).thenReturn( stringProperty( propertyKeyId, value ) );
 
-        when( store.nodeHasLabel(statement , 1l, labelId ) ).thenReturn( true );
-        when( store.nodeGetLabels( statement, 1l ) ).thenReturn( PrimitiveIntCollections.iterator( labelId ) );
+        when( statement.acquireSingleNodeCursor( 1l ) ).thenReturn( asNodeCursor( 1l,
+                asPropertyCursor( stringProperty( propertyKeyId, value ) ), asLabelCursor( labelId ) ) );
+
         txContext.nodeRemoveProperty( state, 1l, propertyKeyId );
 
         // When
@@ -326,7 +325,7 @@ public class IndexQueryTransactionStateTest
 
         int labelId1 = 10, labelId2 = 12;
         store = mock( StoreReadLayer.class );
-        when( store.indexGetState( indexDescriptor )).thenReturn( InternalIndexState.ONLINE );
+        when( store.indexGetState( indexDescriptor ) ).thenReturn( InternalIndexState.ONLINE );
         when( store.indexesGetForLabel( labelId1 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetForLabel( labelId2 ) ).then( answerAsIteratorFrom( Collections
@@ -337,8 +336,8 @@ public class IndexQueryTransactionStateTest
         when( store.indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) )
                 .thenReturn( new IndexDescriptor( labelId, propertyKeyId ) );
 
-        statement = mock(StoreStatement.class);
-        when (state.getStoreStatement()).thenReturn( statement );
+        statement = mock( StoreStatement.class );
+        when( state.getStoreStatement() ).thenReturn( statement );
 
         StateHandlingStatementOperations stateHandlingOperations = new StateHandlingStatementOperations(
                 store,
@@ -360,7 +359,8 @@ public class IndexQueryTransactionStateTest
         {
             @Override
             public void close()
-            { }
+            {
+            }
         } );
     }
 }

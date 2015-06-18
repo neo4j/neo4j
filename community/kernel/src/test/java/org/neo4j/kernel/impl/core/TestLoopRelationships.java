@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+
+import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -34,11 +34,11 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
+import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.Arrays.asList;
 
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
@@ -71,11 +71,11 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         txCreateRel( node );
         txCreateLoop( node );
 
-        node.delete();
         for ( Relationship rel : node.getRelationships() )
         {
             rel.delete();
         }
+        node.delete();
 
         commit();
     }
@@ -260,8 +260,8 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
                     newTransaction();
                 }
                 verifyRelationships( String.format(
-                        "loop on %s of %s, delete %s", i, size,
-                        Arrays.toString( delete ) ), root,
+                                "loop on %s of %s, delete %s", i, size,
+                                Arrays.toString( delete ) ), root,
                         i, relationships );
             }
         }
@@ -298,7 +298,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
                             boolean[] result = new boolean[size];
                             for ( int i = 0; i < size; i++ )
                             {
-                                result[i] = ( cur & 1 ) == 1;
+                                result[i] = (cur & 1) == 1;
                                 cur >>= 1;
                             }
                             return result;
@@ -342,7 +342,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         boolean[] loops = new boolean[relationships.length];
         for ( int i = 0; i < relationships.length; i++ )
         {
-            loops[i] = ( i == loop );
+            loops[i] = (i == loop);
         }
         verifyRelationships( message, root, loops, relationships );
     }
@@ -356,7 +356,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
             for ( int i = 0; i < relationships.length; i++ )
             {
                 if ( relationships[i] != null
-                     && ( dir != Direction.INCOMING || loop[i] ) )
+                        && (dir != Direction.INCOMING || loop[i]) )
                 {
                     expected.add( relationships[i] );
                 }
@@ -368,7 +368,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
                         expected.remove( rel ) );
             }
             assertTrue( message + ": expected relationships not seen "
-                        + expected,
+                            + expected,
                     expected.isEmpty() );
         }
     }

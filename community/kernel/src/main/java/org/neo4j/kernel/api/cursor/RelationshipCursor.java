@@ -25,8 +25,53 @@ import org.neo4j.cursor.Cursor;
  * Cursor for iterating over a set of relationships.
  */
 public interface RelationshipCursor
-    extends Cursor
+        extends Cursor
 {
+    RelationshipCursor EMPTY = new RelationshipCursor()
+    {
+        @Override
+        public long getId()
+        {
+            throw new IllegalStateException(  );
+        }
+
+        @Override
+        public int getType()
+        {
+            throw new IllegalStateException(  );
+        }
+
+        @Override
+        public long getStartNode()
+        {
+            throw new IllegalStateException(  );
+        }
+
+        @Override
+        public long getEndNode()
+        {
+            throw new IllegalStateException(  );
+        }
+
+        @Override
+        public PropertyCursor properties()
+        {
+            throw new IllegalStateException(  );
+        }
+
+        @Override
+        public boolean next()
+        {
+            return false;
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+    };
+
     long getId();
 
     int getType();

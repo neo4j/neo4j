@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.cursor;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.ToIntFunction;
 
 /**
  * Cursor for iterating over all the labels on a node.
@@ -27,6 +28,42 @@ import org.neo4j.cursor.Cursor;
 public interface LabelCursor
         extends Cursor
 {
+    ToIntFunction<LabelCursor> GET_LABEL = new ToIntFunction<LabelCursor>()
+    {
+        @Override
+        public int apply( LabelCursor cursor )
+        {
+            return cursor.getLabel();
+        }
+    };
+
+    LabelCursor EMPTY = new LabelCursor()
+    {
+        @Override
+        public boolean seek( int labelId )
+        {
+            return false;
+        }
+
+        @Override
+        public int getLabel()
+        {
+            throw new IllegalStateException(  );
+        }
+
+        @Override
+        public boolean next()
+        {
+            return false;
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+    };
+
     /**
      * Move the cursor to a particular label.
      *

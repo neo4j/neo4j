@@ -33,13 +33,10 @@ public interface DataReadCursors
 
     RelationshipCursor relationshipCursor( long relId );
 
-    /**
-     * Get all nodes that have a particular label.
-     *
-     * @param cursor
-     * @param labelId
-     * @return cursor which will iterate all nodes with given label
-     */
+    NodeCursor nodeCursorGetAll();
+
+    RelationshipCursor relationshipCursorGetAll();
+
     NodeCursor nodeCursorGetForLabel( int labelId );
 
     NodeCursor nodeCursorGetFromIndexLookup( IndexDescriptor index, Object value )
@@ -48,13 +45,10 @@ public interface DataReadCursors
     NodeCursor nodeCursorGetFromIndexByPrefixSearch( IndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException;
 
-    NodeCursor nodeGetFromIndexScan( IndexDescriptor index )
+    NodeCursor nodeCursorGetFromIndexScan( IndexDescriptor index )
             throws IndexNotFoundKernelException;
 
     NodeCursor nodeCursorGetUniqueFromIndexLookup( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
-    NodeCursor nodeCursorGetAll();
-
-    RelationshipCursor relationshipCursorGetAll();
 }

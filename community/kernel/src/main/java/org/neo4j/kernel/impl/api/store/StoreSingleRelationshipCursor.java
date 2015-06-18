@@ -35,19 +35,19 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
     public StoreSingleRelationshipCursor( RelationshipRecord relationshipRecord, RelationshipStore relationshipStore,
             StoreStatement storeStatement, InstanceCache<StoreSingleRelationshipCursor> instanceCache )
     {
-        super(relationshipRecord, relationshipStore, storeStatement);
+        super( relationshipRecord, relationshipStore, storeStatement );
         this.instanceCache = instanceCache;
     }
 
-    public StoreSingleRelationshipCursor init(long relId)
+    public StoreSingleRelationshipCursor init( long relId )
     {
         this.relationshipId = relId;
         return this;
     }
 
-    public boolean next(  )
+    public boolean next()
     {
-        if (relationshipId != -1)
+        if ( relationshipId != -1 )
         {
             try
             {
@@ -67,6 +67,6 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
     @Override
     public void close()
     {
-        instanceCache.release( this );
+        instanceCache.accept( this );
     }
 }

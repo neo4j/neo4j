@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
@@ -34,9 +33,7 @@ import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.Supplier;
-import org.neo4j.function.ToIntFunction;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.ReadOperations;
@@ -95,6 +92,9 @@ import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
+/**
+ * Default implementation of StoreReadLayer. Delegates to NeoStore and indexes.
+ */
 public class DiskLayer implements StoreReadLayer
 {
     private static final Function<UniquenessConstraintRule, UniquenessConstraint> UNIQUENESS_CONSTRAINT_TO_RULE =
@@ -110,30 +110,6 @@ public class DiskLayer implements StoreReadLayer
                     return new UniquenessConstraint( rule.getLabel(), rule.getPropertyKey() );
                 }
             };
-    private static final Function<PropertyCursor,DefinedProperty> GET_PROPERTY = new Function<PropertyCursor, DefinedProperty>()
-    {
-        @Override
-        public DefinedProperty apply( PropertyCursor propertyCursor )
-        {
-            return propertyCursor.getProperty();
-        }
-    };
-    private static final ToIntFunction<PropertyCursor> GET_KEY_INDEX_ID = new ToIntFunction<PropertyCursor>()
-    {
-        @Override
-        public int apply( PropertyCursor value )
-        {
-            return value.getKeyIndexId();
-        }
-    };
-    private static final ToIntFunction<LabelCursor> GET_LABEL = new ToIntFunction<LabelCursor>()
-    {
-        @Override
-        public int apply( LabelCursor cursor )
-        {
-            return cursor.getLabel();
-        }
-    };
 
     // These token holders should perhaps move to the cache layer.. not really any reason to have them here?
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
@@ -235,7 +211,7 @@ public class DiskLayer implements StoreReadLayer
 
             if ( nodeCursor.next() )
             {
-                return Cursors.intIterator(nodeCursor.labels(), GET_LABEL);
+                return Cursors.intIterator( nodeCursor.labels(), LabelCursor.GET_LABEL );
             }
             else
             {
@@ -264,7 +240,7 @@ public class DiskLayer implements StoreReadLayer
         {
             if ( nodeCursor.next() )
             {
-                return new CursorRelationshipIterator(nodeCursor.relationships( direction, relTypes ));
+                return new CursorRelationshipIterator( nodeCursor.relationships( direction, relTypes ) );
             }
             else
             {
@@ -760,7 +736,6 @@ public class DiskLayer implements StoreReadLayer
     public PrimitiveIntIterator relationshipGetPropertyKeys( final StoreStatement statement,
             long relationshipId ) throws EntityNotFoundException
     {
-
         try ( RelationshipCursor relCursor = statement.acquireSingleRelationshipCursor( relationshipId ) )
         {
             if ( !relCursor.next() )
@@ -768,7 +743,7 @@ public class DiskLayer implements StoreReadLayer
                 throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
             }
 
-            return Cursors.intIterator(relCursor.properties(), GET_KEY_INDEX_ID);
+            return Cursors.intIterator( relCursor.properties(), PropertyCursor.GET_KEY_INDEX_ID );
         }
     }
 
@@ -807,7 +782,7 @@ public class DiskLayer implements StoreReadLayer
                 throw new EntityNotFoundException( EntityType.NODE, nodeId );
             }
 
-            return Cursors.intIterator( nodeCursor.properties(), GET_KEY_INDEX_ID );
+            return Cursors.intIterator( nodeCursor.properties(), PropertyCursor.GET_KEY_INDEX_ID );
         }
     }
 
@@ -847,7 +822,7 @@ public class DiskLayer implements StoreReadLayer
                 throw new EntityNotFoundException( EntityType.NODE, nodeId );
             }
 
-            return Cursors.iterator( storeNodeCursor.properties(), GET_PROPERTY );
+            return Cursors.iterator( storeNodeCursor.properties(), PropertyCursor.GET_PROPERTY );
         }
     }
 
@@ -862,7 +837,7 @@ public class DiskLayer implements StoreReadLayer
                 throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
             }
 
-            return Cursors.iterator( storeRelationshipCursor.properties(), GET_PROPERTY );
+            return Cursors.iterator( storeRelationshipCursor.properties(), PropertyCursor.GET_PROPERTY );
         }
     }
 
@@ -1027,7 +1002,7 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public NodeCursor nodesGetAllCursor( StoreStatement statement )
     {
-        return statement.acquireIteratorNodeCursor().init( new AllStoreIdIterator( neoStore.getNodeStore() ) );
+        return statement.acquireIteratorNodeCursor( new AllStoreIdIterator( neoStore.getNodeStore() ) );
     }
 
     @Override
@@ -1087,7 +1062,7 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public RelationshipCursor relationshipsGetAllCursor( StoreStatement storeStatement )
     {
-        return storeStatement.acquireIteratorRelationshipCursor().init(
+        return storeStatement.acquireIteratorRelationshipCursor(
                 new AllStoreIdIterator( neoStore.getRelationshipStore() ) );
     }
 
@@ -1174,86 +1149,4 @@ public class DiskLayer implements StoreReadLayer
         }
     }
 
-    private static class CursorRelationshipIterator implements RelationshipIterator, Resource
-    {
-        private RelationshipCursor cursor;
-        private boolean hasNext;
-
-        private long id;
-        private int type;
-        private long startNode;
-        private long endNode;
-
-        public CursorRelationshipIterator( RelationshipCursor resourceCursor )
-        {
-            cursor = resourceCursor;
-            hasNext = nextCursor();
-        }
-
-        private boolean nextCursor()
-        {
-            if (cursor != null)
-            {
-                boolean hasNext = cursor.next();
-                if ( !hasNext )
-                {
-                    close();
-                }
-                return hasNext;
-            } else
-            {
-                return false;
-            }
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return hasNext;
-        }
-
-        @Override
-        public long next()
-        {
-            if ( hasNext )
-            {
-                try
-                {
-                    id = cursor.getId();
-                    type = cursor.getType();
-                    startNode = cursor.getStartNode();
-                    endNode = cursor.getEndNode();
-
-                    return id;
-                }
-                finally
-                {
-                    hasNext = nextCursor();
-                }
-            }
-            else
-            {
-                throw new NoSuchElementException();
-            }
-        }
-
-        @Override
-        public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
-                RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
-        {
-            visitor.visit( id, type, startNode, endNode );
-            return false;
-        }
-
-
-        @Override
-        public void close()
-        {
-            if (cursor != null )
-            {
-                cursor.close();
-                cursor = null;
-            }
-        }
-    }
 }

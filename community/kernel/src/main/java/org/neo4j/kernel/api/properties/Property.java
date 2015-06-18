@@ -41,7 +41,7 @@ public abstract class Property
         return noProperty( propertyKeyId, EntityType.GRAPH, -1 );
     }
 
-    private static Property noProperty( int propertyKeyId, EntityType type, long entityId )
+    public static Property noProperty( int propertyKeyId, EntityType type, long entityId )
     {
         return new NoProperty( propertyKeyId, type, entityId );
     }

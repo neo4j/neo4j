@@ -25,10 +25,15 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.cursor.LabelCursor;
+import org.neo4j.kernel.api.cursor.NodeCursor;
+import org.neo4j.kernel.api.cursor.PropertyCursor;
+import org.neo4j.kernel.api.cursor.RelationshipCursor;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.state.NodeState;
+import org.neo4j.kernel.impl.api.state.PropertyContainerState;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
@@ -36,7 +41,7 @@ import org.neo4j.kernel.impl.util.diffsets.ReadableRelationshipDiffSets;
 
 /**
  * Kernel transaction state.
- *
+ * <p/>
  * This interface contains the methods for reading the state from the transaction state. The implementation of these
  * methods should be free of any side effects (such as initialising lazy state). Modifying methods are found in the
  * {@link TransactionState} interface.
@@ -49,19 +54,29 @@ public interface ReadableTxState
 
     // ENTITY RELATED
 
-    /** Returns all nodes that, in this tx, have had labelId removed. */
+    /**
+     * Returns all nodes that, in this tx, have had labelId removed.
+     */
     ReadableDiffSets<Long> nodesWithLabelChanged( int labelId );
 
-    /** Returns nodes that have been added and removed in this tx. */
+    /**
+     * Returns nodes that have been added and removed in this tx.
+     */
     ReadableDiffSets<Long> addedAndRemovedNodes();
 
-    /** Returns rels that have been added and removed in this tx. */
+    /**
+     * Returns rels that have been added and removed in this tx.
+     */
     ReadableRelationshipDiffSets<Long> addedAndRemovedRelationships();
 
-    /** Nodes that have had labels, relationships, or properties modified in this tx. */
+    /**
+     * Nodes that have had labels, relationships, or properties modified in this tx.
+     */
     Iterable<NodeState> modifiedNodes();
 
-    /** Rels that have properties modified in this tx. */
+    /**
+     * Rels that have properties modified in this tx.
+     */
     Iterable<RelationshipState> modifiedRelationships();
 
     boolean relationshipIsAddedInThisTx( long relationshipId );
@@ -136,6 +151,29 @@ public interface ReadableTxState
     Long indexCreatedForConstraint( UniquenessConstraint constraint );
 
     ReadableDiffSets<Long> indexUpdates( IndexDescriptor index, Object value );
-
+    
     ReadableDiffSets<Long> indexUpdatesForPrefix( IndexDescriptor index, String prefix );
+
+    NodeState getNodeState( long id );
+
+    RelationshipState getRelationshipState( long id );
+
+    NodeCursor augmentSingleNodeCursor( NodeCursor cursor );
+
+    PropertyCursor augmentPropertyCursor( PropertyCursor cursor, PropertyContainerState propertyContainerState );
+
+    LabelCursor augmentLabelCursor( LabelCursor cursor, NodeState nodeState );
+
+    RelationshipCursor augmentSingleRelationshipCursor( RelationshipCursor cursor );
+
+    RelationshipCursor augmentIteratorRelationshipCursor( RelationshipCursor cursor, RelationshipIterator iterator );
+
+    RelationshipCursor augmentNodeRelationshipCursor( RelationshipCursor cursor,
+            NodeState nodeState,
+            Direction direction,
+            int[] relTypes );
+
+    NodeCursor augmentNodesGetAllCursor( NodeCursor cursor );
+
+    RelationshipCursor augmentRelationshipsGetAllCursor( RelationshipCursor cursor );
 }
