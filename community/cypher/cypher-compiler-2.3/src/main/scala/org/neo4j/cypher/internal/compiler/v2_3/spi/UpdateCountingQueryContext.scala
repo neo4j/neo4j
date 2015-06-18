@@ -34,8 +34,10 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private val labelsRemoved = new Counter
   private val indexesAdded = new Counter
   private val indexesRemoved = new Counter
-  private val constraintsAdded = new Counter
-  private val constraintsRemoved = new Counter
+  private val uniqueConstraintsAdded = new Counter
+  private val uniqueConstraintsRemoved = new Counter
+  private val mandatoryConstraintsAdded = new Counter
+  private val mandatoryConstraintsRemoved = new Counter
 
   def getStatistics = InternalQueryStatistics(
     nodesCreated = nodesCreated.count,
@@ -47,8 +49,10 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     relationshipsDeleted = relationshipsDeleted.count,
     indexesAdded = indexesAdded.count,
     indexesRemoved = indexesRemoved.count,
-    constraintsAdded = constraintsAdded.count,
-    constraintsRemoved = constraintsRemoved.count)
+    uniqueConstraintsAdded = uniqueConstraintsAdded.count,
+    uniqueConstraintsRemoved = uniqueConstraintsRemoved.count,
+    mandatoryConstraintsAdded = mandatoryConstraintsAdded.count,
+    mandatoryConstraintsRemoved = mandatoryConstraintsRemoved.count)
 
   override def getOptStatistics = Some(getStatistics)
 
@@ -92,13 +96,24 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
 
   override def createUniqueConstraint(labelId: Int, propertyKeyId: Int) = {
     val result = inner.createUniqueConstraint(labelId, propertyKeyId)
-    result.ifCreated { constraintsAdded.increase() }
+    result.ifCreated { uniqueConstraintsAdded.increase() }
     result
   }
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) {
     inner.dropUniqueConstraint(labelId, propertyKeyId)
-    constraintsRemoved.increase()
+    uniqueConstraintsRemoved.increase()
+  }
+
+  override def createMandatoryConstraint(labelId: Int, propertyKeyId: Int) = {
+    val result = inner.createMandatoryConstraint(labelId, propertyKeyId)
+    result.ifCreated { mandatoryConstraintsAdded.increase() }
+    result
+  }
+
+  override def dropMandatoryConstraint(labelId: Int, propertyKeyId: Int) {
+    inner.dropMandatoryConstraint(labelId, propertyKeyId)
+    mandatoryConstraintsRemoved.increase()
   }
 
   override def nodeGetDegree(node: Long, dir: Direction): Int = super.nodeGetDegree(node, dir)

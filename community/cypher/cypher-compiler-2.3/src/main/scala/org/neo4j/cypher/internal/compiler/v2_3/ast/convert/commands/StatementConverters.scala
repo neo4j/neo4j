@@ -39,14 +39,26 @@ object StatementConverters {
         commands.CreateIndex(s.label.name, Seq(s.property.name))
       case s: ast.DropIndex =>
         commands.DropIndex(s.label.name, Seq(s.property.name))
-      case s: ast.CreateUniqueConstraint =>
+      case s: ast.CreateUniquePropertyConstraint =>
         commands.CreateUniqueConstraint(
           id = s.identifier.name,
           label = s.label.name,
           idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
           propertyKey = s.property.propertyKey.name)
-      case s: ast.DropUniqueConstraint =>
+      case s: ast.DropUniquePropertyConstraint =>
         commands.DropUniqueConstraint(
+          id = s.identifier.name,
+          label = s.label.name,
+          idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
+          propertyKey = s.property.propertyKey.name)
+      case s: ast.CreateMandatoryPropertyConstraint =>
+        commands.CreateMandatoryPropertyConstraint(
+          id = s.identifier.name,
+          label = s.label.name,
+          idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
+          propertyKey = s.property.propertyKey.name)
+      case s: ast.DropMandatoryPropertyConstraint =>
+        commands.DropMandatoryPropertyConstraint(
           id = s.identifier.name,
           label = s.label.name,
           idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,

@@ -95,6 +95,10 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.dropUniqueConstraint(labelId, propertyKeyId))
 
+  def createMandatoryConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.createMandatoryConstraint(labelId, propertyKeyId))
+
+  def dropMandatoryConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.dropMandatoryConstraint(labelId, propertyKeyId))
+
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 
   def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = singleDbHit(inner.exactUniqueIndexSearch(index, value))

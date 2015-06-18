@@ -13,7 +13,7 @@ CREATE CONSTRAINT ON (movie:Movie) ASSERT movie.title IS UNIQUE
 
 [source,querytest]
 ----
-Constraints added: 1
+Unique constraints added: 1
 ----
 
 // console

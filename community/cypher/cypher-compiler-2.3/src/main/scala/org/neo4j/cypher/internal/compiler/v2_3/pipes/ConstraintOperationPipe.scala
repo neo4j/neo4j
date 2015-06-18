@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
-class ConstraintOperationPipe(op: UniqueConstraintOperation, label: KeyToken, propertyKey: KeyToken)
+class ConstraintOperationPipe(op: PropertyConstraintOperation, label: KeyToken, propertyKey: KeyToken)
                              (implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val labelId = label.getOrCreateId(state.query)
@@ -35,6 +35,8 @@ class ConstraintOperationPipe(op: UniqueConstraintOperation, label: KeyToken, pr
     op match {
       case _: CreateUniqueConstraint => state.query.createUniqueConstraint(labelId, propertyKeyId)
       case _: DropUniqueConstraint   => state.query.dropUniqueConstraint(labelId, propertyKeyId)
+      case _: CreateMandatoryPropertyConstraint => state.query.createMandatoryConstraint(labelId, propertyKeyId)
+      case _: DropMandatoryPropertyConstraint => state.query.dropMandatoryConstraint(labelId, propertyKeyId)
     }
 
     Iterator.empty

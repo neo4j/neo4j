@@ -95,6 +95,10 @@ trait QueryContext extends TokenContext {
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int)
 
+  def createMandatoryConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint]//TODO add MandatoryConstraint when doing kernel work
+
+  def dropMandatoryConstraint(labelId: Int, propertyKeyId: Int)
+
   def getOptStatistics: Option[InternalQueryStatistics] = None
 
   def hasLocalFileAccess: Boolean = false

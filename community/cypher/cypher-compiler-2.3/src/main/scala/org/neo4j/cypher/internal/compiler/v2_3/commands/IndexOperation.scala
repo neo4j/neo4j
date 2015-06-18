@@ -32,7 +32,7 @@ final case class DropIndex(label: String, propertyKeys: Seq[String], queryString
   def setQueryText(t: String): DropIndex = copy(queryString = QueryString(t))
 }
 
-sealed abstract class UniqueConstraintOperation(_id: String, _label: String, _idForProperty: String, _propertyKey: String,
+sealed abstract class PropertyConstraintOperation(_id: String, _label: String, _idForProperty: String, _propertyKey: String,
     _queryString: QueryString = QueryString.empty) extends AbstractQuery {
   def id:String
   def label: String
@@ -41,11 +41,21 @@ sealed abstract class UniqueConstraintOperation(_id: String, _label: String, _id
 }
 
 final case class CreateUniqueConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
-    queryString: QueryString = QueryString.empty) extends UniqueConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
+    queryString: QueryString = QueryString.empty) extends PropertyConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
   def setQueryText(t: String): CreateUniqueConstraint = copy(queryString = QueryString(t))
 }
 
 final case class DropUniqueConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
-    queryString: QueryString = QueryString.empty) extends UniqueConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
+    queryString: QueryString = QueryString.empty) extends PropertyConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
   def setQueryText(t: String): DropUniqueConstraint = copy(queryString = QueryString(t))
+}
+
+final case class CreateMandatoryPropertyConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
+                                        queryString: QueryString = QueryString.empty) extends PropertyConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
+  def setQueryText(t: String): CreateMandatoryPropertyConstraint = copy(queryString = QueryString(t))
+}
+
+final case class DropMandatoryPropertyConstraint(id: String, label: String, idForProperty: String, propertyKey: String,
+                                      queryString: QueryString = QueryString.empty) extends PropertyConstraintOperation(id, label, idForProperty, propertyKey, queryString) {
+  def setQueryText(t: String): DropMandatoryPropertyConstraint = copy(queryString = QueryString(t))
 }

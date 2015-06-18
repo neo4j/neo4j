@@ -29,8 +29,10 @@ trait Command extends Parser
 
   def Command: Rule1[ast.Command] = rule(
     CreateUniqueConstraint
+      | CreateMandatoryConstraint
       | CreateIndex
       | DropUniqueConstraint
+      | DropMandatoryConstraint
       | DropIndex
   )
 
@@ -42,14 +44,25 @@ trait Command extends Parser
     group(keyword("DROP INDEX ON") ~~ NodeLabel ~~ "(" ~~ PropertyKeyName ~~ ")") ~~>> (ast.DropIndex(_, _))
   }
 
-  def CreateUniqueConstraint: Rule1[ast.CreateUniqueConstraint] = rule {
-    group(keyword("CREATE") ~~ ConstraintSyntax) ~~>> (ast.CreateUniqueConstraint(_, _, _))
+  def CreateUniqueConstraint: Rule1[ast.CreateUniquePropertyConstraint] = rule {
+    group(keyword("CREATE") ~~ UniqueConstraintSyntax) ~~>> (ast.CreateUniquePropertyConstraint(_, _, _))
   }
 
-  def DropUniqueConstraint: Rule1[ast.DropUniqueConstraint] = rule {
-    group(keyword("DROP") ~~ ConstraintSyntax) ~~>> (ast.DropUniqueConstraint(_, _, _))
+  def CreateMandatoryConstraint: Rule1[ast.CreateMandatoryPropertyConstraint] = rule {
+    group(keyword("CREATE") ~~ MandatoryConstraintSyntax) ~~>> (ast.CreateMandatoryPropertyConstraint(_, _, _))
   }
 
-  private def ConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~
+  def DropUniqueConstraint: Rule1[ast.DropUniquePropertyConstraint] = rule {
+    group(keyword("DROP") ~~ UniqueConstraintSyntax) ~~>> (ast.DropUniquePropertyConstraint(_, _, _))
+  }
+
+  def DropMandatoryConstraint: Rule1[ast.DropMandatoryPropertyConstraint] = rule {
+    group(keyword("DROP") ~~ MandatoryConstraintSyntax) ~~>> (ast.DropMandatoryPropertyConstraint(_, _, _))
+  }
+
+  private def UniqueConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~
     optional(keyword("ASSERT")) ~~ PropertyExpression ~~ keyword("IS UNIQUE")
+
+  private def MandatoryConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~
+    optional(keyword("ASSERT")) ~~ PropertyExpression ~~ keyword("IS NOT NULL")
 }

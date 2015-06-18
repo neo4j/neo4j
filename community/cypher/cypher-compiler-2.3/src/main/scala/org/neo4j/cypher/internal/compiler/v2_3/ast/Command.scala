@@ -32,7 +32,7 @@ case class DropIndex(label: LabelName, property: PropertyKeyName)(val position: 
   def semanticCheck = Seq()
 }
 
-trait UniqueConstraintCommand extends Command with SemanticChecking {
+trait PropertyConstraintCommand extends Command with SemanticChecking {
   def identifier: Identifier
   def label: LabelName
   def property: Property
@@ -45,6 +45,11 @@ trait UniqueConstraintCommand extends Command with SemanticChecking {
     }
 }
 
-case class CreateUniqueConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends UniqueConstraintCommand
+case class CreateUniquePropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends PropertyConstraintCommand
 
-case class DropUniqueConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends UniqueConstraintCommand
+case class DropUniquePropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends PropertyConstraintCommand
+
+case class CreateMandatoryPropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends PropertyConstraintCommand
+
+case class DropMandatoryPropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends PropertyConstraintCommand
+
