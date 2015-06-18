@@ -27,7 +27,7 @@ import javax.management.ObjectName;
 @Description( "Information about the Neo4j kernel" )
 public interface Kernel
 {
-    final String NAME = "Kernel";
+    String NAME = "Kernel";
 
     @Description( "An ObjectName that can be used as a query for getting all management "
                   + "beans for this Neo4j instance." )

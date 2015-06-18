@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import java.util.concurrent.Callable;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -28,19 +26,21 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.util.concurrent.Callable;
+
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.advanced.helpers.AdvancedServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
-import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.management.VersionAndEditionService;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.test.Mute.muteAll;
@@ -113,13 +113,17 @@ public class AdvancedVersionAndEditionServiceIT extends ExclusiveServerTestBase
     @Test
     public void shouldReportAdvancedEdition() throws Exception
     {
+        // Given
         String releaseVersion = server.getDatabase().getGraph().getDependencyResolver().resolveDependency( KernelData
                 .class ).version().getReleaseVersion();
-        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.managementUri() + "/" +
-                VersionAndEditionService.SERVER_PATH );
 
-        assertEquals( 200, response.getStatus() );
-        assertThat( response.getEntity(), containsString( "edition: \"advanced\"" ) );
-        assertThat( response.getEntity(), containsString( "version: \"" + releaseVersion + "\"" ) );
+        // When
+        HTTP.Response res =
+                HTTP.GET( functionalTestHelper.managementUri() + "/" + VersionAndEditionService.SERVER_PATH );
+
+        // Then
+        assertEquals( 200, res.status() );
+        assertThat( res.get( "edition" ).asText(), equalTo( "advanced" ) );
+        assertThat( res.get( "version" ).asText(), equalTo( releaseVersion ) );
     }
 }

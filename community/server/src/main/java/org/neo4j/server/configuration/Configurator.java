@@ -53,7 +53,7 @@ public interface Configurator
     String DEFAULT_DATABASE_LOCATION_PROPERTY_KEY = ServerInternalSettings.legacy_db_location.getDefaultValue();
 
     String NEO_SERVER_CONFIG_FILE_KEY = ServerInternalSettings.SERVER_CONFIG_FILE_KEY;
-    String DB_MODE_KEY = ServerInternalSettings.legacy_db_mode.name();
+    String DB_MODE_KEY = "org.neo4j.server.database.mode";
 
     int DEFAULT_WEBSERVER_PORT = Integer.valueOf( ServerSettings.webserver_port.getDefaultValue() );
     String WEBSERVER_PORT_PROPERTY_KEY = ServerSettings.webserver_port.name();

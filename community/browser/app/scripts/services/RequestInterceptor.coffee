@@ -26,7 +26,13 @@ angular.module('neo4jApp.services')
     (AuthDataService) ->
       interceptor =
         request: (config) ->
-          return config if config.skipAuthHeader
+          isLocalRequest = yes
+          if /^https?:/.test config.url
+            url = document.location.origin || window.location.protocol + "//" + window.location.host
+            if config.url.indexOf url < 0
+              isLocalRequest = no
+
+          return config if config.skipAuthHeader or not isLocalRequest
           header = AuthDataService.getAuthData()
           if header then config.headers['Authorization'] = "Basic #{header}"
           config

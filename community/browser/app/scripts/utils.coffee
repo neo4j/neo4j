@@ -67,6 +67,21 @@ angular.module('neo4jApp.utils', [])
       )
       dst
 
+    @parseTimeMillis = ( timeWithOrWithoutUnit ) =>
+      # Parses human-readable units like "12h", "2s" and returns milliseconds.
+      # This maps to TimeUtil#parseTimeMillis in the main Neo4j code base, please ensure they are kept in sync
+      unit = timeWithOrWithoutUnit.match /\D+/
+      value = parseInt timeWithOrWithoutUnit
+
+      if unit?.length is 1
+        switch unit[0]
+          when "ms" then return value
+          when "s"  then return value * 1000
+          when "m"  then return value * 1000 * 60
+          else return 0
+      else return value
+
+
     @ua2text = (ua) ->
       s = ''
       for i in [0..ua.length]

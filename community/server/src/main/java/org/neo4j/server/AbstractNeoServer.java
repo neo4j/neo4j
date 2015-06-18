@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.Filter;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -96,7 +95,6 @@ import org.neo4j.shell.ShellSettings;
 import static java.lang.Math.round;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.serverTransactionTimeout;
@@ -161,7 +159,9 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         this.configurator = configurator;
         this.dependencies = dependencies;
+
         this.dbConfig = new Config();
+
         this.log = dependencies.logging().getConsoleLog( getClass() );
 
         this.database = life.add( dependencyResolver.satisfyDependency(dbFactory.newDatabase( dbConfig, dependencies)) );
@@ -266,6 +266,8 @@ public abstract class AbstractNeoServer implements NeoServer
                 .get( ServerInternalSettings.legacy_db_location ).getAbsolutePath() );
 
         putIfAbsent( result, ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
+
+        result.putAll( configurator.configuration().getParams() );
 
         dbConfig.applyChanges( result );
     }

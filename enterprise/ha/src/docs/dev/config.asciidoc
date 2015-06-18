@@ -23,12 +23,7 @@ This means that you can extend the cluster without changing the configuration of
 
 If you are running Neo4j server, specify +org.neo4j.server.database.mode=HA+ in _conf/neo4j-server.properties_.
 
-.HA server configuration parameters
-[options="header", cols="<33m,<35,<20m,<12"]
-|==============================================================================================================
-| Parameter Name                 | Description                                      | Example value | Required?
-| org.neo4j.server.database.mode | Whether to run as a single server or in HA mode. | single or HA  | yes
-|==============================================================================================================
+include::{importdir}/neo4j-server-enterprise-docs-jar/ops/configuration-attributes.asciidoc[]
 
 == Database configuration ==
 
