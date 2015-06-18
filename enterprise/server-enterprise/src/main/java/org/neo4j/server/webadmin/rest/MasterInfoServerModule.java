@@ -29,7 +29,7 @@ import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
+import static java.util.Arrays.asList;
 
 public class MasterInfoServerModule implements ServerModule
 {
@@ -62,7 +62,7 @@ public class MasterInfoServerModule implements ServerModule
 
     private List<String> getClassNames()
     {
-        return listFrom( MasterInfoService.class.getName() );
+        return asList( MasterInfoService.class.getName() );
     }
 
     private URI managementApiUri()

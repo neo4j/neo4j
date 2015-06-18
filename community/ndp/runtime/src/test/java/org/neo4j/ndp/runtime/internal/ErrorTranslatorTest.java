@@ -38,7 +38,7 @@ public class ErrorTranslatorTest
         // Given
         AssertableLogProvider provider = new AssertableLogProvider();
         ErrorTranslator translator =
-                new ErrorTranslator( provider.getLog( "userlog" ), provider.getLog( "internallog" ) );
+                new ErrorTranslator( provider.getLog( "userlog" ) );
 
         Throwable cause = new Throwable( "This is not an error we know how to handle." );
 
@@ -50,8 +50,6 @@ public class ErrorTranslatorTest
         provider.assertExactly(
                 inLog( "userlog" )
                     .error( both(containsString( "START OF REPORT" ))
-                            .and(containsString( "END OF REPORT" )), equalTo( cause ) ),
-                inLog( "internallog" )
-                    .error( containsString( "Client triggered unexpected error, reference" ), equalTo( cause ) ) );
+                            .and(containsString( "END OF REPORT" )) ));
     }
 }
