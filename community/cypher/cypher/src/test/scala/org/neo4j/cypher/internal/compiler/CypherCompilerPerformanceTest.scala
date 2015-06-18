@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, 
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors2_3
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{GreedyPlannerName, CypherCompilerFactory, InfoLogger, _}
+import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure
 
 class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
@@ -173,6 +174,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       statsDivergenceThreshold = STATISTICS_DIVERGENCE_THRESHOLD,
       queryPlanTTL = DEFAULT_QUERY_PLAN_TTL,
       clock = CLOCK,
+      structure = GeneratedQueryStructure,
       monitors = new WrappedMonitors2_3(kernelMonitors),
       logger = DEV_NULL,
       rewriterSequencer = RewriterStepSequencer.newPlain,

@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.spi.v2_3.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.DynamicLabel
 import org.neo4j.helpers.Clock
 import org.scalatest.mock.MockitoSugar
@@ -62,7 +62,7 @@ class RuleExecutablePlanBuilderTest
     queryPlanner = queryPlanner,
     rewriterSequencer = rewriterSequencer,
     plannerName = None,
-    runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, mock[Monitors]), CompiledPlanBuilder(Clock.SYSTEM_CLOCK)),
+    runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, mock[Monitors]), CompiledPlanBuilder(Clock.SYSTEM_CLOCK,GeneratedQueryStructure)),
     semanticChecker = mock[SemanticChecker],
     useErrorsOverWarnings = false
   )
