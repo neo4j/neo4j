@@ -35,6 +35,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.cluster.util.Quorums.isQuorum;
+import static org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
+import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
 
 /**
  * State machine that listens for global cluster events, and coordinates
@@ -42,9 +44,9 @@ import static org.neo4j.cluster.util.Quorums.isQuorum;
  * that wants to know what is going on should register ClusterMemberListener implementations
  * which will receive callbacks on state changes.
  */
-public class HighAvailabilityMemberStateMachine extends LifecycleAdapter implements HighAvailability,
-        AvailabilityGuard.AvailabilityRequirement
+public class HighAvailabilityMemberStateMachine extends LifecycleAdapter implements HighAvailability
 {
+    public static final AvailabilityRequirement AVAILABILITY_REQUIREMENT = availabilityRequirement( "High Availability member state not ready" );
     private final HighAvailabilityMemberContext context;
     private final AvailabilityGuard availabilityGuard;
     private final ClusterMemberEvents events;
@@ -74,7 +76,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     {
         events.addClusterMemberListener( eventsListener = new StateMachineClusterEventListener() );
         // On initial startup, disallow database access
-        availabilityGuard.deny( this );
+        availabilityGuard.require( AVAILABILITY_REQUIREMENT );
     }
 
     @Override
@@ -94,10 +96,10 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             }
         } );
 
-        // If we are in a state that allows access, we must deny now that we shut down.
+        // If we were previously in a state that allowed access, we must now deny access
         if ( oldState.isAccessAllowed() )
         {
-            availabilityGuard.deny(this);
+            availabilityGuard.require( AVAILABILITY_REQUIREMENT );
         }
 
         context.setAvailableHaMasterId( null );
@@ -123,12 +125,6 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     public boolean isMaster()
     {
         return getCurrentState() == HighAvailabilityMemberState.MASTER;
-    }
-
-    @Override
-    public String description()
-    {
-        return "Cluster state is '" + getCurrentState() + "'";
     }
 
     private class StateMachineClusterEventListener implements ClusterMemberListener
@@ -164,7 +160,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
 
                     if ( oldState.isAccessAllowed() && oldState != state )
                     {
-                        availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
+                        availabilityGuard.require( AVAILABILITY_REQUIREMENT );
                     }
 
                     log.debug( "Got masterIsElected(" + coordinatorId + "), moved to " + state + " from " + oldState
@@ -206,7 +202,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                         if ( oldState == HighAvailabilityMemberState.TO_MASTER && state ==
                                 HighAvailabilityMemberState.MASTER )
                         {
-                            availabilityGuard.grant( HighAvailabilityMemberStateMachine.this );
+                            availabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
                         }
                     }
                 }
@@ -231,7 +227,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                     if ( oldState == HighAvailabilityMemberState.TO_SLAVE &&
                             state == HighAvailabilityMemberState.SLAVE )
                     {
-                        availabilityGuard.grant( HighAvailabilityMemberStateMachine.this );
+                        availabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
                     }
                 }
             }
@@ -287,7 +283,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         {
             if ( state.isAccessAllowed() )
             {
-                availabilityGuard.deny( HighAvailabilityMemberStateMachine.this );
+                availabilityGuard.require( AVAILABILITY_REQUIREMENT );
             }
 
             final HighAvailabilityMemberChangeEvent event =

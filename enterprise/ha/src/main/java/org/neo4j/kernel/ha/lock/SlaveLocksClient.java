@@ -318,7 +318,14 @@ class SlaveLocksClient implements Locks.Client
 
     private void makeSureTxHasBeenInitialized()
     {
-        availabilityGuard.checkAvailability( config.getAvailabilityTimeout(), RuntimeException.class );
+        try
+        {
+            availabilityGuard.await( config.getAvailabilityTimeout() );
+        }
+        catch ( AvailabilityGuard.UnavailableException e )
+        {
+            throw new RuntimeException( e.getMessage() );
+        }
         if ( !initialized )
         {
             try ( Response<Void> ignored = master.newLockSession( newRequestContextFor( client ) ) )
