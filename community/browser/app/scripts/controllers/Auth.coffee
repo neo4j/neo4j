@@ -51,9 +51,7 @@ angular.module('neo4jApp.controllers')
         else
           msg += "Connection credentials are not stored in your web browser"
         if _connection_summary.credential_timeout > 0
-          msg += " and your credential timeout is #{_connection_summary.credential_timeout} seconds. "
-          msg += "You have #{_connection_summary.credential_timeout - _connection_summary.connection_age} seconds "
-          msg += " until you are disconnected."
+          msg += " and your credential timeout when idle is #{_connection_summary.credential_timeout} seconds."
         else
           msg += "."
         $scope.$evalAsync(->

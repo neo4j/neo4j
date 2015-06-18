@@ -20,19 +20,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 'use strict';
 
-class RssFeedService
-
-  constructor: ($http) ->
-    RssFeedService::get = () ->
-      format = "json"
-      username = "neo4jmotd"
-      apiUrl = "#{document.location.protocol || 'http:'}//assets.neo4j.org/v2/#{format}/#{username}?callback=JSON_CALLBACK&count=10?plain=true"
-
-      $http.jsonp(apiUrl)
-      .error (results) ->
-        return results
-      .then (response) ->
-        return [] unless response.data
-        response.data
-
-angular.module('neo4jApp.services').service 'rssFeedService', ['$http', RssFeedService]
+angular.module('neo4jApp.directives')
+.directive('mousemove', [
+    '$parse',
+    'Utils'
+    ($parse, Utils) ->
+      restrict: 'A',
+      link: (scope, elem, attr) ->
+        throttle = Utils.throttle(
+          (e) ->
+            exp = $parse(attr.mousemove)
+            scope.$apply(->exp(scope, {'$event': e}))
+        ,
+          5000
+        )
+        elem.bind('mousemove', (e)->
+          throttle(e)
+        )
+  ])
