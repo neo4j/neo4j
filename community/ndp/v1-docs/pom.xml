@@ -5,9 +5,9 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.neo4j</groupId>
-    <artifactId>neo4j-data-protocol-parent</artifactId>
+    <artifactId>parent</artifactId>
     <version>2.3-SNAPSHOT</version>
-    <relativePath>../</relativePath>
+    <relativePath>../../..</relativePath>
   </parent>
 
   <properties>
@@ -108,19 +108,16 @@
     <dependency>
       <groupId>org.asciidoctor</groupId>
       <artifactId>asciidoctorj</artifactId>
-      <version>${ascii.doctor.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jruby</groupId>
       <artifactId>jruby-complete</artifactId>
-      <version>1.7.20</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jsoup</groupId>
       <artifactId>jsoup</artifactId>
-      <version>${jsoup.version}</version>
       <scope>test</scope>
     </dependency>
 
