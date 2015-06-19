@@ -42,37 +42,33 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( Locks.ResourceType resourceType, long... resourceIds )
+    public void acquireShared( Locks.ResourceType resourceType, long resourceId )
     {
         PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
-        for ( long resourceId : resourceIds )
+        LockResource resource = localLocks.get( resourceId );
+        if( resource != null )
         {
-            LockResource resource = localLocks.get( resourceId );
-            if( resource != null )
-            {
-                resource.acquireReference();
-                continue;
-            }
-
+            resource.acquireReference();
+        }
+        else
+        {
             resource = new LockResource( resourceType, resourceId );
             manager.getReadLock( resource, lockTransaction );
-            localLocks.put(resourceId, resource);
+            localLocks.put( resourceId, resource );
         }
     }
 
     @Override
-    public void acquireExclusive( Locks.ResourceType resourceType, long... resourceIds )
+    public void acquireExclusive( Locks.ResourceType resourceType, long resourceId )
     {
         PrimitiveLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
-        for ( long resourceId : resourceIds )
+        LockResource resource = localLocks.get( resourceId );
+        if( resource != null )
         {
-            LockResource resource = localLocks.get( resourceId );
-            if( resource != null )
-            {
-                resource.acquireReference();
-                continue;
-            }
-
+            resource.acquireReference();
+        }
+        else
+        {
             resource = new LockResource( resourceType, resourceId );
             manager.getWriteLock( resource, lockTransaction );
             localLocks.put(resourceId, resource);
@@ -80,110 +76,91 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public boolean tryExclusiveLock( Locks.ResourceType resourceType, long... resourceIds )
+    public boolean tryExclusiveLock( Locks.ResourceType resourceType, long resourceId )
     {
         PrimitiveLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
-        for ( long resourceId : resourceIds )
+        LockResource resource = localLocks.get( resourceId );
+        if( resource != null )
         {
-            LockResource resource = localLocks.get( resourceId );
-            if( resource != null )
-            {
-                resource.acquireReference();
-                continue;
-            }
-
+            resource.acquireReference();
+            return true;
+        }
+        else
+        {
             resource = new LockResource( resourceType, resourceId );
-            if(manager.tryWriteLock( resource, lockTransaction ))
+            if ( manager.tryWriteLock( resource, lockTransaction ) )
             {
-                localLocks.put(resourceId, resource);
+                localLocks.put( resourceId, resource );
+                return true;
             }
             else
             {
                 return false;
             }
         }
-        return true;
     }
 
     @Override
-    public boolean trySharedLock( Locks.ResourceType resourceType, long... resourceIds )
+    public boolean trySharedLock( Locks.ResourceType resourceType, long resourceId )
     {
         PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
-        for ( long resourceId : resourceIds )
+        LockResource resource = localLocks.get( resourceId );
+        if( resource != null )
         {
-            LockResource resource = localLocks.get( resourceId );
-            if( resource != null )
-            {
-                resource.acquireReference();
-                continue;
-            }
-
+            resource.acquireReference();
+            return true;
+        }
+        else
+        {
             resource = new LockResource( resourceType, resourceId );
-            if(manager.tryReadLock( resource, lockTransaction ))
+            if ( manager.tryReadLock( resource, lockTransaction ) )
             {
-                localLocks.put(resourceId, resource);
+                localLocks.put( resourceId, resource );
+                return true;
             }
             else
             {
                 return false;
             }
         }
-        return true;
     }
 
     @Override
-    public void releaseShared( Locks.ResourceType resourceType, long... resourceIds )
+    public void releaseShared( Locks.ResourceType resourceType, long resourceId )
     {
         PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
-        for ( long resourceId : resourceIds )
+        LockResource resource = localLocks.get( resourceId );
+        if( resource.releaseReference() != 0)
         {
-            LockResource resource = localLocks.get( resourceId );
-            if( resource.releaseReference() != 0)
-            {
-                continue;
-            }
-            localLocks.remove( resourceId );
-
-            manager.releaseReadLock( new LockResource( resourceType, resourceId ), lockTransaction );
+            return;
         }
+
+        localLocks.remove( resourceId );
+
+        manager.releaseReadLock( new LockResource( resourceType, resourceId ), lockTransaction );
     }
 
     @Override
-    public void releaseExclusive( Locks.ResourceType resourceType, long... resourceIds )
+    public void releaseExclusive( Locks.ResourceType resourceType, long resourceId )
     {
         PrimitiveLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
-        for ( long resourceId : resourceIds )
+        LockResource resource = localLocks.get( resourceId );
+        if( resource.releaseReference() != 0)
         {
-            LockResource resource = localLocks.get( resourceId );
-            if( resource.releaseReference() != 0)
-            {
-                continue;
-            }
-            localLocks.remove( resourceId );
-
-            manager.releaseWriteLock( new LockResource( resourceType, resourceId ), lockTransaction );
+            return;
         }
-    }
+        localLocks.remove( resourceId );
 
-    @Override
-    public void releaseAllShared()
-    {
-        sharedLocks.visitEntries( typeReadReleaser );
-        sharedLocks.clear();
-    }
-
-    @Override
-    public void releaseAllExclusive()
-    {
-        exclusiveLocks.visitEntries( typeWriteReleaser );
-        exclusiveLocks.clear();
+        manager.releaseWriteLock( new LockResource( resourceType, resourceId ), lockTransaction );
     }
 
     @Override
     public void releaseAll()
     {
-        releaseAllExclusive();
-        releaseAllShared();
+        exclusiveLocks.visitEntries( typeWriteReleaser );
+        sharedLocks.visitEntries( typeReadReleaser );
+        exclusiveLocks.clear();
+        sharedLocks.clear();
     }
 
     @Override

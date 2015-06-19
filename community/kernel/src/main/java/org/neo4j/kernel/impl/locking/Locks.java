@@ -44,7 +44,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface Locks extends Lifecycle
 {
-    public abstract class Factory extends Service
+    abstract class Factory extends Service
     {
         public Factory( String key, String... altKeys )
         {
@@ -55,14 +55,14 @@ public interface Locks extends Lifecycle
     }
 
     /** For introspection and debugging. */
-    public interface Visitor
+    interface Visitor
     {
         /** Visit the description of a lock held by at least one client. */
         void visit( ResourceType resourceType, long resourceId, String description, long estimatedWaitTime );
     }
 
     /** Locks are split by resource types. It is up to the implementation to define the contract for these. */
-    public interface ResourceType
+    interface ResourceType
     {
         /** Must be unique among all existing resource types, should preferably be a sequence starting at 0. */
         int typeId();
@@ -71,38 +71,32 @@ public interface Locks extends Lifecycle
         WaitStrategy waitStrategy();
     }
 
-    public interface Client extends AutoCloseable
+    interface Client extends AutoCloseable
     {
         /**
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,
          * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
          */
-        void acquireShared(ResourceType resourceType, long ... resourceIds) throws AcquireLockTimeoutException;
+        void acquireShared( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException;
 
         /**
          * Can be grabbed when no other client holds locks on the relevant resources. No other clients can hold locks
          * while one client holds an exclusive lock. If the lock cannot be acquired,
          * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
          */
-        void acquireExclusive(ResourceType resourceType, long ... resourceIds) throws AcquireLockTimeoutException;
+        void acquireExclusive( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException;
 
         /** Try grabbing exclusive lock, not waiting and returning a boolean indicating if we got the lock. */
-        boolean tryExclusiveLock( ResourceType resourceType, long ... resourceIds );
+        boolean tryExclusiveLock( ResourceType resourceType, long resourceId );
 
         /** Try grabbing shared lock, not waiting and returning a boolean indicating if we got the lock. */
-        boolean trySharedLock( ResourceType resourceType, long ... resourceIds );
+        boolean trySharedLock( ResourceType resourceType, long resourceId );
 
         /** Release a set of shared locks */
-        void releaseShared( ResourceType resourceType, long... resourceIds );
+        void releaseShared( ResourceType resourceType, long resourceId );
 
         /** Release a set of exclusive locks */
-        void releaseExclusive( ResourceType resourceType, long... resourceIds );
-
-        /** Release all shared locks. */
-        void releaseAllShared();
-
-        /** Release all exclusive locks. */
-        void releaseAllExclusive();
+        void releaseExclusive( ResourceType resourceType, long resourceId );
 
         /** Release all locks. */
         void releaseAll();

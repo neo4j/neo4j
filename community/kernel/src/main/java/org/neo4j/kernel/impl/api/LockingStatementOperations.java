@@ -370,25 +370,25 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void acquireExclusive( KernelStatement state, Locks.ResourceType resourceType, long[] resourceId )
+    public void acquireExclusive( KernelStatement state, Locks.ResourceType resourceType, long resourceId )
     {
         state.locks().acquireExclusive( resourceType, resourceId );
     }
 
     @Override
-    public void acquireShared(KernelStatement state, Locks.ResourceType resourceType, long[] resourceId )
+    public void acquireShared(KernelStatement state, Locks.ResourceType resourceType, long resourceId )
     {
         state.locks().acquireShared( resourceType, resourceId );
     }
 
     @Override
-    public void releaseExclusive( KernelStatement state, Locks.ResourceType type, long[] resourceId )
+    public void releaseExclusive( KernelStatement state, Locks.ResourceType type, long resourceId )
     {
         state.locks().releaseExclusive( type, resourceId );
     }
 
     @Override
-    public void releaseShared( KernelStatement state, Locks.ResourceType type, long[] resourceId )
+    public void releaseShared( KernelStatement state, Locks.ResourceType type, long resourceId )
     {
         state.locks().releaseShared( type, resourceId );
     }

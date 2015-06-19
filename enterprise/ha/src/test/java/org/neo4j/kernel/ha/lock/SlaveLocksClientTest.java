@@ -95,22 +95,6 @@ public class SlaveLocksClientTest
     }
 
     @Test
-    public void shouldNotTakeSharedLockOnMasterIfWeAreAlreadyHoldingSaidLock_OverlappingBatch()
-    {
-        // Given the local locks do what they are supposed to do
-        when( local.trySharedLock( NODE, 1, 2 ) ).thenReturn( true );
-        when( local.trySharedLock( NODE, 2, 3 ) ).thenReturn( true );
-
-        // When taking locks twice
-        client.acquireShared( NODE, 1, 2 );
-        client.acquireShared( NODE, 2, 3 );
-
-        // Then only the relevant network roundtrip should be observed
-        verify( master ).acquireSharedLock( null, NODE, 1, 2 );
-        verify( master ).acquireSharedLock( null, NODE, 3 );
-    }
-
-    @Test
     public void shouldNotTakeExclusiveLockOnMasterIfWeAreAlreadyHoldingSaidLock()
     {
         // When taking a lock twice
@@ -119,22 +103,6 @@ public class SlaveLocksClientTest
 
         // Then only a single network roundtrip should be observed
         verify( master ).acquireExclusiveLock( null, NODE, 1 );
-    }
-
-    @Test
-    public void shouldNotTakeExclusiveLockOnMasterIfWeAreAlreadyHoldingSaidLock_OverlappingBatch()
-    {
-        // Given the local locks do what they are supposed to do
-        when( local.tryExclusiveLock( NODE, 1, 2 ) ).thenReturn( true );
-        when( local.tryExclusiveLock( NODE, 2, 3 ) ).thenReturn( true );
-
-        // When taking locks twice
-        client.acquireExclusive( NODE, 1, 2 );
-        client.acquireExclusive( NODE, 2, 3 );
-
-        // Then only the relevant network roundtrip should be observed
-        verify( master ).acquireExclusiveLock( null, NODE, 1, 2 );
-        verify( master ).acquireExclusiveLock( null, NODE, 3 );
     }
 
     @Test

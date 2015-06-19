@@ -24,9 +24,9 @@ import org.neo4j.kernel.impl.locking.Locks;
 
 public interface LockOperations
 {
-    void acquireExclusive( KernelStatement state, Locks.ResourceType resourceType, long[] resourceId );
-    void acquireShared( KernelStatement state, Locks.ResourceType resourceType, long[] resourceId );
+    void acquireExclusive( KernelStatement state, Locks.ResourceType resourceType, long resourceId );
+    void acquireShared( KernelStatement state, Locks.ResourceType resourceType, long resourceId );
 
-    void releaseExclusive( KernelStatement statement, Locks.ResourceType type, long[] id );
-    void releaseShared( KernelStatement statement, Locks.ResourceType type, long[] id );
+    void releaseExclusive( KernelStatement statement, Locks.ResourceType type, long id );
+    void releaseShared( KernelStatement statement, Locks.ResourceType type, long id );
 }

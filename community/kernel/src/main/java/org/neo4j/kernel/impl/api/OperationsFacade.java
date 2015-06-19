@@ -787,28 +787,28 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     // <Locking>
     @Override
-    public void acquireExclusive( Locks.ResourceType type, long... id )
+    public void acquireExclusive( Locks.ResourceType type, long id )
     {
         statement.assertOpen();
         locking().acquireExclusive( statement, type, id );
     }
 
     @Override
-    public void acquireShared( Locks.ResourceType type, long... id )
+    public void acquireShared( Locks.ResourceType type, long id )
     {
         statement.assertOpen();
         locking().acquireShared( statement, type, id );
     }
 
     @Override
-    public void releaseExclusive( Locks.ResourceType type, long... id )
+    public void releaseExclusive( Locks.ResourceType type, long id )
     {
         statement.assertOpen();
         locking().releaseExclusive( statement, type, id );
     }
 
     @Override
-    public void releaseShared( Locks.ResourceType type, long... id )
+    public void releaseShared( Locks.ResourceType type, long id )
     {
         statement.assertOpen();
         locking().releaseShared( statement, type, id );

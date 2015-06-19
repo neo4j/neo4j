@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import java.util.concurrent.Future;
-
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.concurrent.Future;
 
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertFalse;
@@ -105,58 +105,6 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
         clientA.releaseAll();
 
         // Then this should not block
-        assertNotWaiting( clientB, clientBLock );
-    }
-
-    @Test
-    public void shouldReleaseSharedLocks() throws Exception
-    {
-        // When
-        clientA.acquireExclusive( NODE, 1l );
-        clientA.acquireShared( NODE, 2l );
-
-        // Then shared locks should wait
-        Future<Object> clientBLock = acquireExclusive( clientB, NODE, 2l ).callAndAssertWaiting();
-
-        // And when
-        clientA.releaseAllShared();
-
-        // Then this should not block
-        assertNotWaiting( clientB, clientBLock );
-
-        // However, this should:
-        clientBLock = acquireExclusive( clientB, NODE, 1l ).callAndAssertWaiting();
-
-        // And when
-        clientA.releaseAll();
-
-        // Then no more blocking
-        assertNotWaiting( clientB, clientBLock );
-    }
-
-    @Test
-    public void shouldReleaseExclusiveLocks() throws Exception
-    {
-        // When
-        clientA.acquireShared( NODE, 1l );
-        clientA.acquireExclusive( NODE, 2l );
-
-        // Then shared locks should wait
-        Future<Object> clientBLock = acquireExclusive( clientB, NODE, 2l ).callAndAssertWaiting();
-
-        // And when
-        clientA.releaseAllExclusive();
-
-        // Then this should not block
-        assertNotWaiting( clientB, clientBLock );
-
-        // However, this should:
-        clientBLock = acquireExclusive( clientB, NODE, 1l ).callAndAssertWaiting();
-
-        // And when
-        clientA.releaseAll();
-
-        // Then no more blocking
         assertNotWaiting( clientB, clientBLock );
     }
 

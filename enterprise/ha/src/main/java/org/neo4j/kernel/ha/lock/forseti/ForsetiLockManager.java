@@ -105,6 +105,7 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
 
         /** For introspection and error messages */
         String describeWaitList();
+
     }
 
     /** Pointers to lock maps, one array per resource type. */
