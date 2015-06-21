@@ -714,6 +714,13 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     }
   }
 
+  override def indexUniqueSeek(nodeVar: String, descriptorVar: String, value: Expression) = {
+    val local = generator.declare(typeRef[Long], nodeVar)
+    Templates.handleExceptions(generator, fields.ro) { body =>
+      body.assign(local, Expression.invoke(readOperations, Methods.nodeGetUniqueFromIndexLookup, generator.load(descriptorVar), value ))
+    }
+  }
+
   override def coerceToBoolean(propertyExpression: Expression): Expression =
     Expression.invoke(Methods.coerceToPredicate, propertyExpression)
 
@@ -766,6 +773,7 @@ private object Methods {
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
   val nodeGetProperty = method[ReadOperations, Object]("nodeGetProperty")
   val nodesGetFromIndexLookup = method[ReadOperations, PrimitiveLongIterator]("nodesGetFromIndexLookup", typeRef[IndexDescriptor], typeRef[Object])
+  val nodeGetUniqueFromIndexLookup = method[ReadOperations, Long]("nodeGetUniqueFromIndexLookup", typeRef[IndexDescriptor], typeRef[Object])
   val relationshipGetProperty = method[ReadOperations, Object]("relationshipGetProperty")
   val nodesGetForLabel = method[ReadOperations, PrimitiveLongIterator]("nodesGetForLabel", typeRef[Int])
   val nodeHasLabel = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])
