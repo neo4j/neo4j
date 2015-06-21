@@ -21,6 +21,7 @@ package org.neo4j.graphdb;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -41,6 +42,7 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;

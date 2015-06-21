@@ -17,43 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store;
+package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.store.id.IdSequence;
+import java.util.Iterator;
 
-/**
- * {@link IdSequence} w/o any synchronization, purely a long incrementing.
- */
-public class BatchingIdSequence implements IdSequence
+import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+
+class StandaloneDynamicRecordAllocator implements DynamicRecordAllocator
 {
-    private final long startId;
-    private long nextId = 0;
+    private int next = 1;
 
-    public BatchingIdSequence()
+    @Override
+    public int getRecordDataSize()
     {
-        this( 0 );
-    }
-
-    public BatchingIdSequence( long startId )
-    {
-        this.startId = startId;
-        this.nextId = startId;
+        return 60;
     }
 
     @Override
-    public long nextId()
+    public DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst )
     {
-        long result = nextId++;
-        if ( result == IdGeneratorImpl.INTEGER_MINUS_ONE )
-        {
-            result = nextId++;
-        }
-        return result;
-    }
-
-    public void reset()
-    {
-        nextId = startId;
+        return recordsToUseFirst.hasNext() ? recordsToUseFirst.next() : new DynamicRecord( next++ );
     }
 }

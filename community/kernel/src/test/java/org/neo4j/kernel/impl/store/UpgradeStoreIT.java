@@ -65,6 +65,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
+import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
 
 @Ignore
 public class UpgradeStoreIT
@@ -380,7 +381,7 @@ public class UpgradeStoreIT
                 PageCache pageCache )
         {
             super( fileName, config, new NoLimitIdGeneratorFactory( fs ), pageCache, NullLogProvider.getInstance(),
-                    stringStore, LowLimit.RECORD_FORMATS.relationshipTypeToken(), LowLimit.STORE_VERSION );
+                    stringStore, select().relationshipTypeToken(), select().storeVersion() );
         }
 
         @Override

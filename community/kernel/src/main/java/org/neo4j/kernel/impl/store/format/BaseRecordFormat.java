@@ -22,22 +22,24 @@ package org.neo4j.kernel.impl.store.format;
 import java.util.function.Function;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.IntStoreHeader;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
 /**
  * Basic abstract implementation of a {@link RecordFormat} implementing most functionality except
- * {@link #read(AbstractBaseRecord, PageCursor, org.neo4j.kernel.impl.store.record.RecordLoad, int)} and
- * {@link #write(AbstractBaseRecord, PageCursor)}.
+ * {@link #read(AbstractBaseRecord, PageCursor, org.neo4j.kernel.impl.store.record.RecordLoad, int, PagedFile)} and
+ * {@link #write(AbstractBaseRecord, PageCursor, int, PagedFile)}.
  *
  * @param <RECORD> type of record.
  */
 public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD>
 {
-    public static final int IN_USE_BIT = 0x1;
+    public static final int IN_USE_BIT = 0b0000_0001;
     public static final Function<StoreHeader,Integer> INT_STORE_HEADER_READER =
             (header) -> ((IntStoreHeader)header).value();
 
@@ -90,5 +92,10 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
     public static long longFromIntAndMod( long base, long modifier )
     {
         return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
+    }
+
+    @Override
+    public void prepare( RECORD record, int recordSize, IdSequence idSequence )
+    {   // Do nothing by default
     }
 }

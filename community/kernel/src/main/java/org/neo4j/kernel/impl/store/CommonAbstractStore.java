@@ -261,12 +261,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
 
     protected long pageIdForRecord( long id )
     {
-        return id * getRecordSize() / storeFile.pageSize();
+        return RecordPageLocationCalculator.pageIdForRecord( id, storeFile.pageSize(), getRecordSize() );
     }
 
     protected int offsetForId( long id )
     {
-        return (int) (id * getRecordSize() % storeFile.pageSize());
+        return RecordPageLocationCalculator.offsetForId( id, storeFile.pageSize(), getRecordSize() );
     }
 
     @Override
@@ -940,11 +940,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     protected void readRecordWithRetry( PageCursor cursor, long id, RECORD record, RecordLoad mode, int offset )
             throws IOException
     {
+        // Mark the record with this id regardless of whether or not we load the contents of it.
+        // This is done in this method since there are multiple call sites and they all want the id
+        // on that record, so it's to ensure it isn't forgotten.
+        record.setId( id );
+
         do
         {
-            // Mark the record with this id regardless of whether or not we load the contents of it.
-            record.setId( id );
-
             // Mark this record as unused. This to simplify implementations of readRecord.
             // readRecord can behave differently depending on RecordLoad argument and so it may be that
             // contents of a record may be loaded even if that record is unused, where the contents
@@ -963,8 +965,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
 
     /**
      * Reads data from {@link PageCursor} into the record.
+     * @throws IOException on error reading.
      */
-    protected abstract void readRecord( PageCursor cursor, RECORD record, RecordLoad mode );
+    protected abstract void readRecord( PageCursor cursor, RECORD record, RecordLoad mode ) throws IOException;
 
     @Override
     public void updateRecord( RECORD record )
@@ -994,13 +997,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         }
     }
 
-    protected abstract void writeRecord( PageCursor cursor, RECORD record );
+    protected abstract void writeRecord( PageCursor cursor, RECORD record ) throws IOException;
 
     /**
      * Scan the given range of records both inclusive, and pass all the in-use ones to the given processor, one by one.
      *
      * The record passed to the NodeRecordScanner is reused instead of reallocated for every record, so it must be
      * cloned if you want to save it for later.
+     * @param visitor {@link Visitor} notified about all records.
+     * @throws IOException on error reading from store.
      */
     public void scanAllRecords( Visitor<RECORD,IOException> visitor ) throws IOException
     {

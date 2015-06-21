@@ -17,43 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store;
+package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.format.LimitedRecordGenerators;
+import org.neo4j.kernel.impl.store.format.RecordFormatTest;
+import org.neo4j.kernel.impl.store.format.RecordGenerators;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 
-/**
- * {@link IdSequence} w/o any synchronization, purely a long incrementing.
- */
-public class BatchingIdSequence implements IdSequence
+public class LowLimitRecordFormatTest extends RecordFormatTest
 {
-    private final long startId;
-    private long nextId = 0;
+    private static final RecordGenerators LOW_LIMITS = new LimitedRecordGenerators( random, 35, 36, 40, 16, NULL );
 
-    public BatchingIdSequence()
+    public LowLimitRecordFormatTest()
     {
-        this( 0 );
-    }
-
-    public BatchingIdSequence( long startId )
-    {
-        this.startId = startId;
-        this.nextId = startId;
-    }
-
-    @Override
-    public long nextId()
-    {
-        long result = nextId++;
-        if ( result == IdGeneratorImpl.INTEGER_MINUS_ONE )
-        {
-            result = nextId++;
-        }
-        return result;
-    }
-
-    public void reset()
-    {
-        nextId = startId;
+        super( LowLimit.RECORD_FORMATS, LOW_LIMITS );
     }
 }

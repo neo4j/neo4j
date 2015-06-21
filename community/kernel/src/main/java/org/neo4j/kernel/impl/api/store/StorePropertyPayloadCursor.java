@@ -53,7 +53,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 /**
  * Cursor that provides a view on property blocks of a particular property record.
  * This cursor is reusable and can be re-initialized with
- * {@link #init(PageCursor)} method and cleaned up using {@link #clear()} method.
+ * {@link #init(long[], int)} method and cleaned up using {@link #clear()} method.
  * <p/>
  * During initialization {@link #MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY} number of longs is read from
  * the given {@linkplain PageCursor}. This is done eagerly to avoid reading property blocks from different versions
@@ -66,7 +66,6 @@ class StorePropertyPayloadCursor
 {
     static final int MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY = PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE / 8;
 
-    private static final long PROPERTY_KEY_ID_BITMASK = 0xFFFFFFL;
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     private static final int INTERNAL_BYTE_ARRAY_SIZE = 4096;
     private static final int INITIAL_POSITION = -1;
@@ -130,7 +129,7 @@ class StorePropertyPayloadCursor
 
     int propertyKeyId()
     {
-        return (int) (currentHeader() & PROPERTY_KEY_ID_BITMASK);
+        return PropertyBlock.keyIndexId( currentHeader() );
     }
 
     boolean booleanValue()

@@ -17,43 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store;
+package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 
 /**
- * {@link IdSequence} w/o any synchronization, purely a long incrementing.
+ * Selects format to use for databases in this JVM, using a system property. By default uses the safest
+ * and established format. During development this may be switched in builds to experimental formats
+ * to gain more testing there.
  */
-public class BatchingIdSequence implements IdSequence
+public class InternalRecordFormatSelector
 {
-    private final long startId;
-    private long nextId = 0;
-
-    public BatchingIdSequence()
+    public static RecordFormats select()
     {
-        this( 0 );
-    }
-
-    public BatchingIdSequence( long startId )
-    {
-        this.startId = startId;
-        this.nextId = startId;
-    }
-
-    @Override
-    public long nextId()
-    {
-        long result = nextId++;
-        if ( result == IdGeneratorImpl.INTEGER_MINUS_ONE )
+        String formatsClassName = System.getProperty( RecordFormats.class.getName(), LowLimit.class.getName() );
+        try
         {
-            result = nextId++;
+            return Class.forName( formatsClassName ).asSubclass( RecordFormats.class ).newInstance();
         }
-        return result;
-    }
-
-    public void reset()
-    {
-        nextId = startId;
+        catch ( Exception e )
+        {
+            throw new Error( "Couldn't load specified record format class '" + formatsClassName + "'", e );
+        }
     }
 }

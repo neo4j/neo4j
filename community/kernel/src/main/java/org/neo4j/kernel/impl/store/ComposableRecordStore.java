@@ -70,15 +70,15 @@ public class ComposableRecordStore<RECORD extends AbstractBaseRecord, HEADER ext
     }
 
     @Override
-    protected void readRecord( PageCursor cursor, RECORD record, RecordLoad mode )
+    protected void readRecord( PageCursor cursor, RECORD record, RecordLoad mode ) throws IOException
     {
-        recordFormat.read( record, cursor, mode, recordSize );
+        recordFormat.read( record, cursor, mode, recordSize, storeFile );
     }
 
     @Override
-    protected void writeRecord( PageCursor cursor, RECORD record )
+    protected void writeRecord( PageCursor cursor, RECORD record ) throws IOException
     {
-        recordFormat.write( record, cursor );
+        recordFormat.write( record, cursor, recordSize, storeFile );
     }
 
     @Override

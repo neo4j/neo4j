@@ -33,7 +33,6 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.JumpingIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -49,6 +48,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class PropertyStoreTest
@@ -83,7 +83,7 @@ public class PropertyStoreTest
         final PropertyStore store = new PropertyStore( path, config, new JumpingIdGeneratorFactory( 1 ), pageCache,
                 NullLogProvider.getInstance(), stringPropertyStore,
                 mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
-                LowLimit.RECORD_FORMATS.property(), LowLimit.STORE_VERSION );
+                select().property(), select().storeVersion() );
         store.initialise( true );
 
         try

@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -59,6 +58,8 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
 
 public class WriteTransactionCommandOrderingTest
 {
@@ -200,7 +201,7 @@ public class WriteTransactionCommandOrderingTest
         public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
             super( null, new Config(), null, null, NullLogProvider.getInstance(), null, null, null,
-                    LowLimit.RECORD_FORMATS.property(), LowLimit.STORE_VERSION );
+                    select().property(), select().storeVersion() );
             this.currentRecording = currentRecording;
         }
 
@@ -228,7 +229,7 @@ public class WriteTransactionCommandOrderingTest
         public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
             super( null, new Config(), null, null, NullLogProvider.getInstance(), null,
-                    LowLimit.RECORD_FORMATS.node(), LowLimit.STORE_VERSION );
+                    select().node(), select().storeVersion() );
             this.currentRecording = currentRecording;
         }
 
@@ -264,7 +265,7 @@ public class WriteTransactionCommandOrderingTest
         public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
             super( null, new Config(), null, null, NullLogProvider.getInstance(),
-                    LowLimit.RECORD_FORMATS.relationship(), LowLimit.STORE_VERSION );
+                    select().relationship(), select().storeVersion() );
             this.currentRecording = currentRecording;
         }
 

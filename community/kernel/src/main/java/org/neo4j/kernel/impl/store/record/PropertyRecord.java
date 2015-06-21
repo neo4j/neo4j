@@ -160,6 +160,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
 
     public int numberOfProperties()
     {
+        ensureBlocksLoaded();
         return blockRecordsCursor;
     }
 
