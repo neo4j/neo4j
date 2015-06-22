@@ -68,6 +68,7 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
 -----
 Browser:
 o Displays security policies from the database server
+o Optionally disconnect from server after period of mouse and keyboard inactivity
 
 Consistency checker:
 o Fixes an issue where not all relationship references where consistency checked.

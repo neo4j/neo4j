@@ -109,8 +109,11 @@ angular.module('neo4jApp.controllers')
             if r.status is 404
               Frame.create({input:"#{Settings.initCmd}"})
             else
-              Frame.createOne({input:"#{Settings.cmdchar}server connect"})
+              $scope.$emit 'auth:disconnected'
         )
+
+        $scope.$on 'auth:disconnected', ->
+          Frame.createOne({input:"#{Settings.cmdchar}server connect"})
 
         $scope.$watch 'version', (val) ->
           return '' if not val

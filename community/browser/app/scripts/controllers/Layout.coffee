@@ -33,7 +33,8 @@ angular.module('neo4jApp.controllers')
     'Utils'
     'Settings'
     'UsageDataCollectionService'
-    ($scope, $timeout, $modal, Editor, Frame, GraphStyle, Utils, Settings, UsageDataCollectionService) ->
+    'ConnectionStatusService'
+    ($scope, $timeout, $modal, Editor, Frame, GraphStyle, Utils, Settings, UsageDataCollectionService, ConnectionStatusService) ->
       $scope.settings = Settings
       _codeMirror = null
       dialog = null
@@ -129,10 +130,13 @@ angular.module('neo4jApp.controllers')
         $scope.popupContent = dialog
         $scope.isPopupShown = !!dialog
 
+      $scope.globalMouse = (e) ->
+        ConnectionStatusService.restartSessionCountdown()
+
       $scope.globalKey = (e) ->
         resizeStream()
+        ConnectionStatusService.restartSessionCountdown()
         return if $scope.isPopupShown and e.keyCode != 191
-
         if e.keyCode is 27 # Esc
           if $scope.isPopupShown
             $scope.togglePopup()

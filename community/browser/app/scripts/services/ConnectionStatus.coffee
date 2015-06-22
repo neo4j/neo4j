@@ -65,8 +65,6 @@ angular.module('neo4jApp.services')
       if data then data.split(':') else ['','']
     @clearConnectionAuthData = ->
       @setConnectedUser ''
-      @setAuthorizationRequired true
-      @setConnected false
       @updatePersistentAuthData false
       AuthDataService.clearPolicies()
 
@@ -85,6 +83,8 @@ angular.module('neo4jApp.services')
       @is_connected = is_connected
       if old_connection != is_connected
         $rootScope.$emit 'auth:status_updated', is_connected
+      $rootScope.$emit 'auth:disconnected' unless is_connected
+
     @isConnected = ->
       return @is_connected
 
@@ -98,8 +98,7 @@ angular.module('neo4jApp.services')
         AuthDataService.persistCachedAuthData()
       if @getCredentialTimeout() isnt policies.credentialTimeout
         @updateCredentialTimeout policies.credentialTimeout
-        @clearSessionCountdown()
-        @startSessionCountdown()
+        @restartSessionCountdown()
       @waiting_policies = no
 
     @getStoreCredentials = ->
@@ -120,15 +119,21 @@ angular.module('neo4jApp.services')
         @clearSessionCountdown()
         return
       that = @
+      @session_start_time = new Date()
       ttl = (new Date()).getTime()/1000 + AuthDataService.getPolicies().credentialTimeout - @session_start_time.getTime()/1000
       @session_countdown = $timeout(->
         that.clearConnectionAuthData()
+        that.setConnected no
       ,
         ttl*1000
       )
 
     @clearSessionCountdown = ->
       if @session_countdown then $timeout.cancel @session_countdown
+
+    @restartSessionCountdown = ->
+      @clearSessionCountdown()
+      @startSessionCountdown()
 
     @getConnectionAge = ->
       Math.ceil(((new Date()).getTime() - @session_start_time.getTime())/1000)

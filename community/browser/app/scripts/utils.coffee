@@ -41,6 +41,17 @@ angular.module('neo4jApp.utils', [])
         result = func.apply(context, args) if callNow
         result
 
+    @throttle = (func, wait) ->
+      last_timestamp = null
+      limit = wait
+      ->
+        context = @
+        args = arguments
+        now = Date.now()
+        if !last_timestamp || now - last_timestamp >= limit
+          last_timestamp = now
+          func.apply(context, args)
+
     @parseId = (resource = "") ->
       id = resource.substr(resource.lastIndexOf("/")+1)
       return parseInt(id, 10)
@@ -68,6 +79,8 @@ angular.module('neo4jApp.utils', [])
       dst
 
     @parseTimeMillis = ( timeWithOrWithoutUnit ) =>
+      timeWithOrWithoutUnit += '' #Cast to string
+
       # Parses human-readable units like "12h", "2s" and returns milliseconds.
       # This maps to TimeUtil#parseTimeMillis in the main Neo4j code base, please ensure they are kept in sync
       unit = timeWithOrWithoutUnit.match /\D+/
@@ -79,7 +92,7 @@ angular.module('neo4jApp.utils', [])
           when "s"  then return value * 1000
           when "m"  then return value * 1000 * 60
           else return 0
-      else return value
+      else return value*1000
 
 
     @ua2text = (ua) ->
