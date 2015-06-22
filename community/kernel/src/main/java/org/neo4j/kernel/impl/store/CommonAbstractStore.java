@@ -122,6 +122,19 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
         catch ( Exception e )
         {
+            if ( storeFile != null )
+            {
+                try
+                {
+                    storeFile.close();
+                }
+                catch ( IOException failureToClose )
+                {
+                    // Not really a suppressed exception, but we still want to throw the real exception, e,
+                    // but perhaps also throw this in there or convenience.
+                    e.addSuppressed( failureToClose );
+                }
+            }
             releaseFileLockAndCloseFileChannel();
             throw launderedException( e );
         }
