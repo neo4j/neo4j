@@ -33,10 +33,51 @@ import org.neo4j.codegen.TypeReference;
 class ClassWriter implements ClassEmitter
 {
     private final StringBuilder target;
+    final Configuration configuration;
 
-    ClassWriter( StringBuilder target )
+    ClassWriter( StringBuilder target, Configuration configuration )
     {
         this.target = target;
+        this.configuration = configuration;
+    }
+
+    void declarePackage( TypeReference type )
+    {
+        append( "package " ).append( type.packageName() ).append( ";\n" );
+    }
+
+    void javadoc( String javadoc )
+    {
+        append( "/** " ).append( javadoc ).append( " */\n" );
+    }
+
+    void publicClass( TypeReference type )
+    {
+        append( "public class " ).append( type.simpleName() );
+    }
+
+    void extendClass( TypeReference base )
+    {
+        append( " extends " ).append( base.name() ).append( "\n" );
+    }
+
+    void implement( TypeReference[] interfaces )
+    {
+        String prefix = "    implements ";
+        for ( TypeReference iFace : interfaces )
+        {
+            append( prefix ).append( iFace.name() );
+            prefix = ", ";
+        }
+        if ( prefix.length() == 2 )
+        {
+            append( "\n" );
+        }
+    }
+
+    void begin()
+    {
+        append( "{\n" );
     }
 
     @Override

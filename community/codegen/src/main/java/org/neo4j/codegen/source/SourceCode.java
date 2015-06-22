@@ -28,9 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import javax.annotation.processing.Processor;
 import javax.tools.Diagnostic;
-import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
-import javax.tools.ToolProvider;
 
 import org.neo4j.codegen.CodeGenerationStrategy;
 import org.neo4j.codegen.CodeGenerationStrategyNotSupportedException;
@@ -44,7 +42,7 @@ import static org.neo4j.codegen.source.ClasspathHelper.fullClasspathStringFor;
 
 public enum SourceCode implements CodeGeneratorOption
 {
-    ;
+    SIMPLIFY_TRY_WITH_RESOURCE;
     public static final CodeGeneratorOption SOURCECODE = new CodeGenerationStrategy<Configuration>()
     {
         @Override
@@ -57,12 +55,7 @@ public enum SourceCode implements CodeGeneratorOption
         protected CodeGenerator createCodeGenerator( ClassLoader loader, Configuration configuration )
                 throws CodeGenerationStrategyNotSupportedException
         {
-            JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-            if ( compiler == null )
-            {
-                throw new CodeGenerationStrategyNotSupportedException( this, "no java source compiler available" );
-            }
-            return new SourceCodeGenerator( loader, configuration, compiler );
+            return new SourceCodeGenerator( loader, configuration, configuration.sourceCompilerFor( this ) );
         }
 
         @Override
@@ -85,6 +78,7 @@ public enum SourceCode implements CodeGeneratorOption
             return "PRINT_SOURCE";
         }
     };
+    static final CodeGeneratorOption USE_JDK_JAVA_COMPILER = JdkCompiler.FACTORY;
     public static final CodeGeneratorOption PRINT_WARNINGS = printWarningsTo( System.err );
 
     private static CodeGeneratorOption printWarningsTo( PrintStream err )

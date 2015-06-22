@@ -30,6 +30,8 @@ import java.util.Set;
 import javax.annotation.processing.Processor;
 import javax.tools.JavaCompiler;
 
+import org.neo4j.codegen.CodeGenerationStrategy;
+import org.neo4j.codegen.CodeGenerationStrategyNotSupportedException;
 import org.neo4j.codegen.TypeReference;
 
 class Configuration
@@ -39,6 +41,7 @@ class Configuration
     private List<String> options = new ArrayList<>();
     private List<SourceVisitor> sourceVisitors = new ArrayList<>();
     private List<WarningsHandler> warningsHandlers = new ArrayList<>();
+    SourceCompiler.Factory compiler = JdkCompiler.FACTORY;
 
     public Configuration withAnnotationProcessor( Processor processor )
     {
@@ -128,5 +131,16 @@ class Configuration
         }
         return new WarningsHandler.Multiplex(
                 warningsHandlers.toArray( new WarningsHandler[warningsHandlers.size()] ) );
+    }
+
+    public SourceCompiler sourceCompilerFor( CodeGenerationStrategy<?> strategy )
+            throws CodeGenerationStrategyNotSupportedException
+    {
+        return compiler.sourceCompilerFor( this, strategy );
+    }
+
+    public void useJdkJavaCompiler()
+    {
+        compiler = null;
     }
 }
