@@ -394,6 +394,12 @@ public abstract class GraphDatabaseSettings
             "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
     public static final Setting<Long> log_queries_threshold = setting("dbms.querylog.threshold", DURATION, "0s");
 
+    @Description( "Specifies number of operations that batch inserter will try to group into one batch before " +
+                  "flushing data into underlying storage.")
+    @Internal
+    public static final Setting<Integer> batch_inserter_batch_size = setting( "batch_inserter_batch_size", INTEGER,
+            "10000" );
+
     private static String[] availableCaches()
     {
         List<String> available = new ArrayList<>();

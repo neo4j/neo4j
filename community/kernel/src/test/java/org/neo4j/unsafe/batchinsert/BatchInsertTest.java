@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,6 +27,7 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -96,6 +98,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Integer.parseInt;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -142,7 +145,7 @@ public class BatchInsertTest
 
     private static Map<String,Object> properties = new HashMap<>();
 
-    private static enum RelTypes implements RelationshipType
+    private enum RelTypes implements RelationshipType
     {
         BATCH_TEST,
         REL_TYPE1,
@@ -1209,6 +1212,49 @@ public class BatchInsertTest
         assertEquals( "something", batchInserter.getNodeProperties( 1 ).get( "additional" ) );
 
         batchInserter.shutdown();
+    }
+
+    /**
+     * Test checks that during node property set we will cleanup not used property records
+     * During initial node creation properties will occupy 5 property records.
+     * Last property record will have only empty array for email.
+     * During first update email property will be migrated to dynamic property and last property record will become
+     * empty. That record should be deleted form property chain or otherwise on next node load user will get an
+     * property record not in use exception.
+     * @throws Exception
+     */
+    @Test
+    public void testCleanupEmptyPropertyRecords() throws Exception
+    {
+        BatchInserter inserter = newBatchInserter();
+
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("id", 1099511659993l);
+        properties.put("firstName", "Edward");
+        properties.put("lastName", "Shevchenko");
+        properties.put("gender", "male");
+        properties.put("birthday", new SimpleDateFormat("yyyy-MM-dd").parse( "1987-11-08" ).getTime());
+        properties.put("birthday_month", 11);
+        properties.put("birthday_day", 8);
+        properties.put("creationDate", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse( "2010-04-22T18:05:40.912+0000" ).getTime());
+        properties.put("locationIP", "46.151.255.205");
+        properties.put("browserUsed", "Firefox");
+        properties.put("email", new String[0]);
+        properties.put("languages", new String[0]);
+        long personNodeId = inserter.createNode(properties);
+
+        assertEquals( "Shevchenko", inserter.getNodeProperties( personNodeId ).get( "lastName" ) );
+        assertThat( (String[]) inserter.getNodeProperties( personNodeId ).get( "email" ), is( emptyArray() ) );
+
+        inserter.setNodeProperty( personNodeId, "email", new String[]{"Edward1099511659993@gmail.com"} );
+        assertThat( (String[]) inserter.getNodeProperties( personNodeId ).get( "email" ),
+                arrayContaining( "Edward1099511659993@gmail.com" ) );
+
+        inserter.setNodeProperty( personNodeId, "email",
+                new String[]{"Edward1099511659993@gmail.com", "backup@gmail.com"} );
+
+        assertThat( (String[]) inserter.getNodeProperties( personNodeId ).get( "email" ),
+                arrayContaining( "Edward1099511659993@gmail.com", "backup@gmail.com" ) );
     }
 
     @Test
