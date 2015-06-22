@@ -3,6 +3,10 @@
 o Code view of Cypher request frames. It displays info about the frame requests
   made to the REST API.
 
+2.2.3
+-----
+o Displays security policies from the database server
+
 2.2.2
 -----
 o Added :sysinfo as a shorthand for :play sysinfo

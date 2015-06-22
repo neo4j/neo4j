@@ -2,6 +2,12 @@
 ---------
 o Consistency Checker now has an additional check for node label id arrays that are not sorted
 
+2.2.3
+-----
+o Fixes an issue where not all relationship references where consistency checked.
+o Added additional consistency check for labels verifying that label ids stored in
+  node records are sorted.
+
 2.2.0
 -----
 o Made more configurable - can now enable/disable all parts of the process

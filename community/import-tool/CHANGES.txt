@@ -5,6 +5,10 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
   using --bad-tolerance=<max bad entries>. Skipping of bad relationships/nodes can be enabled/disabled
   individually with --skip-duplicate-nodes and --skip-bad-relationships.
 
+2.2.3
+-----
+o Prints summary in the end of how many entities where imported.
+
 2.2.2
 -----
 o Ability to skip duplicate nodes (nodes w/ duplicate input ids within the same id space).

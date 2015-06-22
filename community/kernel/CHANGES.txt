@@ -23,6 +23,15 @@ o Replaced use of logback for internal logging with neo4j-logging API
 o Allow GraphDatabaseFactory to accept a LogProvider for user logging, allowing
   programatic customization of user log output.
 
+2.2.3
+-----
+o Fixes an issue where a shutdown of a database that had a panic might mark the database as cleanly shut down
+  where it actually needed a recovery on next startup.
+o Setting for specifying query logging `dbms.querylog.filename` now specifies a file, not a directory.
+  This setting also now has no default, which means query logging is now disabled by default.
+o Transaction event handlers can now reach relationship start/end node and type in afterCommit
+  for created and deleted relationships without requiring a transaction.
+
 2.2.2
 -----
 o Parallelized relationship import stage in the batch importer for better scalability
