@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.runtime.internal.runner;
+package org.neo4j.ndp.runtime.spi;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -26,9 +26,6 @@ import org.hamcrest.TypeSafeMatcher;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.neo4j.stream.Record;
-import org.neo4j.stream.RecordStream;
 
 import static java.util.Arrays.asList;
 
@@ -81,17 +78,17 @@ public class StreamMatchers
                 final AtomicBoolean matched = new AtomicBoolean( true );
                 try
                 {
-                    item.visitAll( new RecordStream.Visitor()
+                    item.accept( new RecordStream.Visitor()
                     {
                         @Override
                         public void visit( Record record )
                         {
-                            if(!expected.hasNext() || !expected.next().matches( record ))
+                            if ( !expected.hasNext() || !expected.next().matches( record ) )
                             {
                                 matched.set( false );
                             }
                         }
-                    });
+                    } );
                 }
                 catch ( Exception e )
                 {

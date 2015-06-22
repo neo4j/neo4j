@@ -32,8 +32,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.StatementMetadata;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
-import org.neo4j.stream.Record;
-import org.neo4j.stream.RecordStream;
+import org.neo4j.ndp.runtime.spi.Record;
+import org.neo4j.ndp.runtime.spi.RecordStream;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -41,7 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.ndp.runtime.integration.SessionMatchers.failedWith;
 import static org.neo4j.ndp.runtime.integration.SessionMatchers.streamContaining;
 import static org.neo4j.ndp.runtime.integration.SessionMatchers.success;
-import static org.neo4j.runtime.internal.runner.StreamMatchers.eqRecord;
+import static org.neo4j.ndp.runtime.spi.StreamMatchers.eqRecord;
 
 public class SessionIT
 {

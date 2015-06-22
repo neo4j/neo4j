@@ -36,7 +36,7 @@ import org.neo4j.ndp.runtime.internal.Neo4jError;
 import org.neo4j.ndp.transport.socket.ChunkedInput;
 import org.neo4j.packstream.BufferedChannelOutput;
 import org.neo4j.packstream.PackStream;
-import org.neo4j.stream.ImmutableRecord;
+import org.neo4j.ndp.runtime.spi.ImmutableRecord;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.MapUtil.map;

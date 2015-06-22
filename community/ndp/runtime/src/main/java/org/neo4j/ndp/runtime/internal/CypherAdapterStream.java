@@ -19,17 +19,16 @@
  */
 package org.neo4j.ndp.runtime.internal;
 
-import java.util.Map;
-
 import org.neo4j.graphdb.Result;
-import org.neo4j.stream.Record;
-import org.neo4j.stream.RecordStream;
+import org.neo4j.ndp.runtime.spi.Record;
+import org.neo4j.ndp.runtime.spi.RecordStream;
 
 public class CypherAdapterStream implements RecordStream
 {
     private final Result delegate;
     private final String[] fieldNames;
     private CypherAdapterRecord currentRecord;
+    private boolean exhaustedResult = false;
 
     public CypherAdapterStream( Result delegate )
     {
@@ -41,7 +40,11 @@ public class CypherAdapterStream implements RecordStream
     @Override
     public void close()
     {
-        delegate.close();
+        // TODO Temp workaround for bug in Cypher, only close if we've not exhausted the result, fix the root cause
+        if(!exhaustedResult)
+        {
+            delegate.close();
+        }
     }
 
     @Override
@@ -51,12 +54,18 @@ public class CypherAdapterStream implements RecordStream
     }
 
     @Override
-    public void visitAll( Visitor visitor ) throws Exception
+    public void accept( final Visitor visitor ) throws Exception
     {
-        while ( delegate.hasNext() )
+        delegate.accept( new Result.ResultVisitor<Exception>()
         {
-            visitor.visit( currentRecord.reset( delegate.next() ) );
-        }
+            @Override
+            public boolean visit( Result.ResultRow row ) throws Exception
+            {
+                visitor.visit( currentRecord.reset( row ) );
+                return true;
+            }
+        });
+        exhaustedResult = true;
     }
 
     private static class CypherAdapterRecord implements Record
@@ -76,7 +85,7 @@ public class CypherAdapterStream implements RecordStream
             return fields;
         }
 
-        public CypherAdapterRecord reset( Map<String,Object> cypherRecord )
+        public CypherAdapterRecord reset( Result.ResultRow cypherRecord )
         {
             for ( int i = 0; i < fields.length; i++ )
             {

@@ -36,7 +36,8 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.StatementMetadata;
 import org.neo4j.ndp.runtime.integration.RecordingCallback;
-import org.neo4j.stream.RecordStream;
+import org.neo4j.ndp.runtime.spi.RecordStream;
+import org.neo4j.ndp.runtime.spi.StatementRunner;
 import org.neo4j.udc.UsageData;
 
 import static org.hamcrest.CoreMatchers.equalTo;

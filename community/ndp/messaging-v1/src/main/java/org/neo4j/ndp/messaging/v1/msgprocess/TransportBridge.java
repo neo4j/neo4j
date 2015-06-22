@@ -26,7 +26,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.ndp.messaging.v1.MessageHandler;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.StatementMetadata;
-import org.neo4j.stream.RecordStream;
+import org.neo4j.ndp.runtime.spi.RecordStream;
 
 /** Bridges the gap between incoming deserialized messages, the user environment and back. */
 public class TransportBridge extends MessageHandler.Adapter<RuntimeException>

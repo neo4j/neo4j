@@ -17,18 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.runtime.internal;
+package org.neo4j.ndp.runtime.spi;
 
-import java.util.Map;
-
-import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.stream.RecordStream;
-
-/**
- * A runtime handler can handle a textual input language, yielding results. Query engines are not expected to be
- * thread safe, each worker thread will have one query engine instance.
- */
-public interface StatementRunner
+public interface Record
 {
-    RecordStream run( SessionState ctx, String statement, Map<String,Object> params ) throws KernelException;
+    /* Implementation note: This should use Neo4jValue, or some such interface that denotes Neo4j-specific types */
+    Object[] fields();
 }

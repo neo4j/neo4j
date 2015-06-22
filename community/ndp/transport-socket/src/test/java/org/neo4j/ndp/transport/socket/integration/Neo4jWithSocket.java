@@ -24,15 +24,19 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.io.IOException;
+
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.ndp.runtime.Sessions;
 import org.neo4j.ndp.runtime.internal.StandardSessions;
+import org.neo4j.ndp.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.ndp.transport.socket.NettyServer;
 import org.neo4j.ndp.transport.socket.SocketProtocol;
 import org.neo4j.ndp.transport.socket.SocketProtocolV1;
@@ -99,5 +103,50 @@ public class Neo4jWithSocket implements TestRule
                 }
             }
         };
+    }
+
+    /** For manual testing, runs an NDP server */
+    public static void main(String ... args) throws IOException
+    {
+        final LifeSupport life = new LifeSupport();
+        final GraphDatabaseService gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabaseAPI api = ((GraphDatabaseAPI) gdb);
+        final LogService logging = api.getDependencyResolver().resolveDependency( LogService.class );
+        final UsageData usageData = api.getDependencyResolver().resolveDependency( UsageData.class );
+        final JobScheduler scheduler = api.getDependencyResolver().resolveDependency( JobScheduler.class );
+
+        final HostnamePort socketAddress = new HostnamePort( "localhost", 7687 );
+        final HostnamePort webSocketAddress = new HostnamePort( "localhost", 7688 );
+
+        final Sessions sessions = life.add( new ThreadedSessions(
+                life.add( new StandardSessions( api, usageData, logging ) ),
+                scheduler,
+                logging ) );
+
+        PrimitiveLongObjectMap<Function<Channel,SocketProtocol>> availableVersions = longObjectMap();
+        availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel,SocketProtocol>()
+        {
+            @Override
+            public SocketProtocol apply( Channel channel )
+            {
+                return new SocketProtocolV1( logging, sessions.newSession(), channel );
+            }
+        } );
+
+        life.add( new NettyServer( asList(
+                new SocketTransport( socketAddress, availableVersions ),
+                new WebSocketTransport( webSocketAddress, availableVersions ) ) ) );
+
+        life.start();
+
+        try
+        {
+            System.out.printf( "NDP Server running, press any key to exit." );
+            System.in.read();
+        }
+        finally
+        {
+            life.shutdown();
+        }
     }
 }

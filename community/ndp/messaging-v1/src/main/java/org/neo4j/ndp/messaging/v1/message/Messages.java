@@ -22,7 +22,7 @@ package org.neo4j.ndp.messaging.v1.message;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.stream.Record;
+import org.neo4j.ndp.runtime.spi.Record;
 
 public class Messages
 {

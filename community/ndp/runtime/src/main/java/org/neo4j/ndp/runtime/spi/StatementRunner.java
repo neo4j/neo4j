@@ -17,12 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.stream;
+package org.neo4j.ndp.runtime.spi;
 
-public class Records
+import java.util.Map;
+
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.ndp.runtime.internal.SessionState;
+
+/**
+ * A runtime handler can handle a textual input language, yielding results. Query engines are not expected to be
+ * thread safe, each worker thread will have one query engine instance.
+ */
+public interface StatementRunner
 {
-    public static Record record( final Object ... fields )
-    {
-        return new ImmutableRecord( fields );
-    }
+    RecordStream run( SessionState ctx, String statement, Map<String,Object> params ) throws KernelException;
 }

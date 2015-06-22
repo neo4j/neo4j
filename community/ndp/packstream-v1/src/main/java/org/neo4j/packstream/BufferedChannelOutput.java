@@ -60,6 +60,26 @@ public class BufferedChannelOutput implements PackOutput
     }
 
     @Override
+    public PackOutput writeBytes( ByteBuffer data ) throws IOException
+    {
+        while ( data.remaining() > 0 )
+        {
+            if ( buffer.remaining() == 0 )
+            {
+                flush();
+            }
+
+            int oldLimit = data.limit();
+            data.limit( data.position() + Math.min( buffer.remaining(), data.remaining() ) );
+
+            buffer.put( data );
+
+            data.limit( oldLimit );
+        }
+        return this;
+    }
+
+    @Override
     public PackOutput writeBytes( byte[] data, int offset, int length ) throws IOException
     {
         if( offset + length > data.length )
@@ -67,21 +87,7 @@ public class BufferedChannelOutput implements PackOutput
             throw new IOException( "Asked to write " + length + " bytes, but there is only " +
                                    ( data.length - offset ) + " bytes available in data provided." );
         }
-
-        int index = 0;
-        while ( index < length )
-        {
-            if ( buffer.remaining() == 0 )
-            {
-                flush();
-            }
-
-            int amountToWrite = Math.min( buffer.remaining(), length - index );
-
-            buffer.put( data, offset + index, amountToWrite );
-            index += amountToWrite;
-        }
-        return this;
+        return writeBytes( ByteBuffer.wrap( data, offset, length ) );
     }
 
     @Override

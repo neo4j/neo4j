@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.neo4j.packstream.PackOutput;
 
@@ -134,21 +135,34 @@ public class ChunkedOutput implements PackOutput
     }
 
     @Override
-    public PackOutput writeBytes( byte[] data, int offset, int length ) throws IOException
+    public PackOutput writeBytes( ByteBuffer data ) throws IOException
     {
-        int index = 0;
-        while ( index < length )
+        // TODO: If data is larger than our chunk size or so, we're very likely better off just passing this ByteBuffer on rather than doing the copy here
+        // TODO: *however* note that we need some way to find out when the data has been written (and thus the buffer can be re-used) if we take that approach
+        while ( data.remaining() > 0 )
         {
             // Ensure there is an open chunk, and that it has at least one byte of space left
-            ensure(1);
+            ensure( 1 );
 
-            // Write as much as we can into the current chunk
-            int amountToWrite = Math.min( buffer.writableBytes(), length - index );
+            int oldLimit = data.limit();
+            data.limit( data.position() + Math.min( buffer.writableBytes(), data.remaining() ) );
 
-            buffer.writeBytes( data, offset + index, amountToWrite );
-            index += amountToWrite;
+            buffer.writeBytes( data );
+
+            data.limit( oldLimit );
         }
         return this;
+    }
+
+    @Override
+    public PackOutput writeBytes( byte[] data, int offset, int length ) throws IOException
+    {
+        if( offset + length > data.length )
+        {
+            throw new IOException( "Asked to write " + length + " bytes, but there is only " +
+                                   ( data.length - offset ) + " bytes available in data provided." );
+        }
+        return writeBytes( ByteBuffer.wrap( data, offset, length ) );
     }
 
     private void ensure( int size ) throws IOException
