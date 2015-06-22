@@ -1,6 +1,8 @@
 2.2.3
 -----
 o Displays security policies from the database server
+o Optionally disconnect from server after period of mouse and keyboard inactivity
+  (feature only active in Enterprise Edition)
 
 2.2.2
 -----
