@@ -19,21 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions.CodeGenExpression
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
-case class If(predicate: CodeGenExpression, block: Instruction) extends Instruction {
-  override protected def children: Seq[Instruction] = Seq(block)
+case class CartesianProductInstruction(id: String, instruction: Instruction) extends Instruction {
 
-  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
-    generator.ifStatement(predicate.generateExpression(generator)) { inner =>
-      inner.incrementRows()
-      block.body(inner)
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = super.init(generator)
+
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    generator.trace(id) { body =>
+      body.incrementRows()
+      instruction.body(body)
     }
-  }
 
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
-    super.init(generator)
-    predicate.init(generator)
-  }
+  override def children = Seq(instruction)
+
+  override protected def operatorId = Set(id)
 }

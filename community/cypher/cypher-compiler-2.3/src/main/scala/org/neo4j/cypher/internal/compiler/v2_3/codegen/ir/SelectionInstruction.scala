@@ -21,13 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 
-case class TracingInstruction(id: String, instruction: Instruction) extends Instruction {
+case class SelectionInstruction(id: String, instruction: Instruction) extends Instruction {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = super.init(generator)
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
     generator.trace(id) { body =>
-      body.incrementRows()
       instruction.body(body)
     }
 

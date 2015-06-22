@@ -361,7 +361,7 @@ object LogicalPlanConverter {
         } else if (child.logicalPlan eq cartesianProduct.rhs.get) {
           val opName = context.registerOperator(cartesianProduct)
           val (m, instruction) = context.popParent().consume(context, this)
-          (m, TracingInstruction(opName, instruction))
+          (m, CartesianProductInstruction(opName, instruction))
         }
         else {
           throw new InternalException(s"Unexpected consume call by $child")
@@ -387,7 +387,7 @@ object LogicalPlanConverter {
           case (acc, predicate) => If(predicate, acc)
         }
 
-        (methodHandle, TracingInstruction(opName, instruction))
+        (methodHandle, SelectionInstruction(opName, instruction))
       }
     }
   }

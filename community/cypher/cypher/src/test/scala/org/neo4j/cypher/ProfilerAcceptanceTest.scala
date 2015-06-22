@@ -142,7 +142,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     //WHEN THEN
     assertRows(1)(result)("ProduceResults", "Projection", "NodeByIdSeek")
     assertDbHits(0)(result)("ProduceResults")
-    assertDbHits(2)(result)("Projection")
+    assertDbHits(1)(result)("Projection")
     assertDbHits(1)(result)("NodeByIdSeek")
   }
 
@@ -393,6 +393,54 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val res = eengine.execute("profile match n return n")
     intercept[ProfilerStatisticsNotReadyException](res.executionPlanDescription())
     res.close()
+  }
+
+  test("should handle cartesian products") {
+    createNode()
+    createNode()
+    createNode()
+    createNode()
+
+    val result = profileWithAllPlannersAndRuntimes("match n, m return n, m")
+    assertRows(16)(result)("CartesianProduct")
+  }
+
+  test("should properly handle filters") {
+    // given
+    val n = createLabeledNode(Map("name" -> "Seymour"), "Glass")
+    val o = createNode()
+    relate(n, o, "R1")
+    relate(o, createLabeledNode(Map("name" -> "Zoey"), "Glass"), "R2")
+    relate(o, createLabeledNode(Map("name" -> "Franny"), "Glass"), "R2")
+    relate(o, createNode(), "R2")
+    relate(o, createNode(), "R2")
+    graph.createIndex("Glass", "name")
+
+    // when
+    val result = profileWithAllPlannersAndRuntimes(
+      "match (n:Glass {name: 'Seymour'})-[:R1]->(o)-[:R2]->(p:Glass) USING INDEX n:Glass(name) return p.name")
+
+    // then
+    assertRows(2)(result)("Filter")
+  }
+
+  test("interpreted runtime projections") {
+    // given
+    val n = createLabeledNode(Map("name" -> "Seymour"), "Glass")
+    val o = createNode()
+    relate(n, o, "R1")
+    relate(o, createLabeledNode(Map("name" -> "Zoey"), "Glass"), "R2")
+    relate(o, createLabeledNode(Map("name" -> "Franny"), "Glass"), "R2")
+    relate(o, createNode(), "R2")
+    relate(o, createNode(), "R2")
+    graph.createIndex("Glass", "name")
+
+    // when
+    val result = innerExecute(
+      "profile cypher runtime=interpreted match (n:Glass {name: 'Seymour'})-[:R1]->(o)-[:R2]->(p:Glass) USING INDEX n:Glass(name) return p.name")
+
+    // then
+    assertDbHits(2)(result)("Projection")
   }
 
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
