@@ -28,16 +28,17 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.logging.FormattedLog;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QuerySession.MetadataKey;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.FormattedLog;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
-@Service.Implementation(KernelExtensionFactory.class)
+@Service.Implementation( KernelExtensionFactory.class )
 public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLoggerKernelExtension.Dependencies>
 {
     public interface Dependencies
@@ -47,6 +48,8 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         Config config();
 
         Monitors monitoring();
+
+        LogService logger();
     }
 
     public QueryLoggerKernelExtension()
@@ -62,10 +65,18 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
 
         if ( !queryLogEnabled || queryLogFile == null )
         {
+            if ( queryLogFile == null )
+            {
+                deps.logger().getInternalLog( getClass() ).warn( GraphDatabaseSettings.log_queries.name() +
+                        " is enabled but no " +
+                        GraphDatabaseSettings.log_queries_filename.name() +
+                        " has not been provided in configuration, hence query logging is suppressed" );
+            }
             return new LifecycleAdapter();
         }
 
-        return new LifecycleAdapter() {
+        return new LifecycleAdapter()
+        {
             OutputStream logOutputStream;
 
             @Override
@@ -143,7 +154,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 long time = clock.currentTimeMillis() - startTime;
                 if ( time >= thresholdMillis )
                 {
-                    log.info( "%d ms: %s - %s", time, session.toString(),
+                    log.info( "%d ms: %s - %s", time, session,
                             query == null ? "<unknown query>" : query );
                 }
             }

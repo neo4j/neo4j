@@ -22,8 +22,10 @@ package org.neo4j.kernel.impl.query;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+import org.junit.runner.RunWith;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -34,6 +36,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -42,52 +45,101 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+@RunWith( Enclosed.class )
 public class QueryLoggerIT
 {
-    @Rule
-    public TestRule ruleOrder()
+    public static class ConfiguredCorrectly
     {
-        return RuleChain.outerRule( fs ).around( db );
+        @Rule
+        public TestRule ruleOrder()
+        {
+            return RuleChain.outerRule( fs ).around( db );
+        }
+
+        private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+        private final DatabaseRule db = new ImpermanentDatabaseRule()
+        {
+            @Override
+            protected GraphDatabaseFactory newFactory()
+            {
+                return ((TestGraphDatabaseFactory) super.newFactory()).setFileSystem( fs.get() );
+            }
+
+            @Override
+            protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
+            {
+                return super.newBuilder( factory )
+                        .setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+                        .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() );
+            }
+        };
+
+        private final File logFilename = new File( "target/test-data/impermanent-db/queries.log" );
+
+        @Test
+        public void shouldLogQuerySlowerThanThreshold() throws Exception
+        {
+            String QUERY = "CREATE (n:Foo{bar:\"baz\"})";
+            db.getGraphDatabaseService().execute( QUERY );
+
+            db.shutdown();
+
+            List<String> logLines = new ArrayList<>();
+            try ( BufferedReader reader = new BufferedReader( fs.get().openAsReader( logFilename, "UTF-8" ) ) )
+            {
+                for ( String line; (line = reader.readLine()) != null; )
+                {
+                    logLines.add( line );
+                }
+            }
+
+            assertEquals( 1, logLines.size() );
+            assertThat( logLines.get( 0 ), Matchers.endsWith( String.format( " ms: %s - %s",
+                    QueryEngineProvider.embeddedSession(), QUERY ) ) );
+        }
     }
 
-    private final File logFile = new File( "target/test-data/impermanent-db/queries.log" ).getAbsoluteFile();
-    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final DatabaseRule db = new ImpermanentDatabaseRule()
+    public static class MissingLogQueryPathInConfiguration
     {
-        @Override
-        protected GraphDatabaseFactory newFactory()
+        @Rule
+        public TestRule ruleOrder()
         {
-            return ((TestGraphDatabaseFactory) super.newFactory()).setFileSystem( fs.get() );
+            return RuleChain.outerRule( fs ).around( db );
         }
 
-        @Override
-        protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
+        private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+        private final AssertableLogProvider inMemoryLog = new AssertableLogProvider();
+        private final DatabaseRule db = new ImpermanentDatabaseRule()
         {
-            return super.newBuilder( factory )
-                    .setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
-                    .setConfig( GraphDatabaseSettings.log_queries_filename, logFile.getAbsolutePath() );
-        }
-    };
-
-    @Test
-    public void shouldLogQuerySlowerThanThreshold() throws Exception
-    {
-        String QUERY = "CREATE (n:Foo{bar:\"baz\"})";
-        db.getGraphDatabaseService().execute( QUERY );
-
-        db.shutdown();
-
-        List<String> logLines = new ArrayList<>();
-        try ( BufferedReader reader = new BufferedReader( fs.get().openAsReader( logFile, "UTF-8" ) ) )
-        {
-            for ( String line; (line = reader.readLine()) != null; )
+            @Override
+            protected GraphDatabaseFactory newFactory()
             {
-                logLines.add( line );
+                return ((TestGraphDatabaseFactory) super.newFactory())
+                        .setFileSystem( fs.get() )
+                        .setInternalLogProvider( inMemoryLog );
             }
-        }
 
-        assertEquals( 1, logLines.size() );
-        assertThat( logLines.get( 0 ), Matchers.endsWith( String.format( " ms: %s - %s",
-                QueryEngineProvider.embeddedSession(), QUERY ) ) );
+            @Override
+            protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
+            {
+                return super.newBuilder( factory )
+                        .setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE );
+            }
+        };
+
+        @Test
+        public void shouldSuppressQueryLoggingIfTheGivenPathIsNull() throws Exception
+        {
+
+            String QUERY = "CREATE (n:Foo{bar:\"baz\"})";
+            db.getGraphDatabaseService().execute( QUERY );
+
+            db.shutdown();
+
+            inMemoryLog.assertContainsMessageContaining( GraphDatabaseSettings.log_queries.name() +
+                    " is enabled but no " +
+                    GraphDatabaseSettings.log_queries_filename.name() +
+                    " has not been provided in configuration, hence query logging is suppressed" );
+        }
     }
 }

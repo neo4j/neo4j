@@ -19,22 +19,17 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.NumericUtils;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.index.ArrayEncoder;
 
 import static java.lang.String.format;

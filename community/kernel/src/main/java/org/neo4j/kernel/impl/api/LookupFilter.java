@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.LongPredicate;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;

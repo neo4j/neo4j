@@ -253,6 +253,12 @@ public abstract class AbstractNeoServer implements NeoServer
         result.put( ServerInternalSettings.legacy_db_location.name(),
                 configurator.configuration().get( ServerInternalSettings.legacy_db_location ).getAbsolutePath() );
 
+        // make sure that the default in server for db_query_log_filename is "data/log/queries.log" instead of null
+        if ( dbConfig.get( GraphDatabaseSettings.log_queries_filename ) == null )
+        {
+            result.put( GraphDatabaseSettings.log_queries_filename.name(), "data/log/queries.log" );
+        }
+
         putIfAbsent( result, ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
         result.putAll( configurator.configuration().getParams() );
         return result;
