@@ -1,3 +1,10 @@
+2.2.3
+-----
+o ShortestPath no longer has the option to find only paths of the supplied exact depth,
+  this for keeping algorithm less complex and focusing on the most common use case.
+  Finding paths of an exact depth is still provided from GraphAlgoFactory, currently
+  backed by ExactDepthPathFinder.
+
 2.2.2
 -----
 o ShortestPath optimization where the traversal can abort earlier than before if detecting that

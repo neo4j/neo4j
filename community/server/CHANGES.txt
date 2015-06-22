@@ -1,3 +1,9 @@
+2.2.3
+-----
+o Improve force shutdown when stopping an unresponsive Neo4j server
+o Updated jersey-servlet dependency to version 1.19
+o Server configuration is now visible via JMX and in extension via the REST API
+
 2.2.1
 -----
 o Fixed issue with 4xx HTTP response codes not including proper ClientError status

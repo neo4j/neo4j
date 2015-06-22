@@ -1,7 +1,18 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
 
-2.2.3-SNAPSHOT
+2.2.3
 -----
+Browser:
+o Displays security policies from the database server
+
+Consistency checker:
+o Fixes an issue where not all relationship references where consistency checked.
+o Added additional consistency check for labels verifying that label ids stored in
+  node records are sorted.
+
+Csv:
+o Detects and uses BOM (byte-order mark) headers in text files
+
 Cypher:
 o Returns nice error message when using aggregation inside
   of expressions that loop over collections
@@ -9,8 +20,36 @@ o Fixes #4758 - OPTIONAL MATCH when either side is null
 o Fixes problem with projection of named paths
 o Identifiers in scope of ORDER BY are no longer lost in rewriting
 
+Graph algo:
+o ShortestPath no longer has the option to find only paths of the supplied exact depth,
+  this for keeping algorithm less complex and focusing on the most common use case.
+  Finding paths of an exact depth is still provided from GraphAlgoFactory, currently
+  backed by ExactDepthPathFinder.
+
 HA:
 o Transactions executed on slaves will now properly invalidate the master's cache on commit
+
+Import tool:
+o Prints summary in the end of how many entities where imported.
+
+Kernel:
+o Fixes an issue where a shutdown of a database that had a panic might mark the database as cleanly shut down
+  where it actually needed a recovery on next startup.
+o Setting for specifying query logging `dbms.querylog.filename` now specifies a file, not a directory.
+  This setting also now has no default, which means query logging is now disabled by default.
+o Transaction event handlers can now reach relationship start/end node and type in afterCommit
+  for created and deleted relationships without requiring a transaction.
+
+Lucene index:
+o Fixes legacy index tx state issue where deleted entities might be visible when querying,
+  where query included start/end node.
+o Fixes issue where a transaction changing more than 63 legacy indexes would succeed, but might
+  result in some updates written to wrong indexes. Now such transactions fail early with clear error.
+
+Server:
+o Improve force shutdown when stopping an unresponsive Neo4j server
+o Updated jersey-servlet dependency to version 1.19
+o Server configuration is now visible via JMX and in extension via the REST API
 
 2.2.2
 -----

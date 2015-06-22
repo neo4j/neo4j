@@ -1,3 +1,10 @@
+2.2.3
+-----
+o Fixes legacy index tx state issue where deleted entities might be visible when querying,
+  where query included start/end node.
+o Fixes issue where a transaction changing more than 63 legacy indexes would succeed, but might
+  result in some updates written to wrong indexes. Now such transactions fail early with clear error.
+
 2.2.2
 -----
 o Reduces memory usage during querying for legacy lucene indexes. Previously there would be a set
