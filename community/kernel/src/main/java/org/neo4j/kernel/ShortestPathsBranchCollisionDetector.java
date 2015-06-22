@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalBranch;
@@ -26,10 +27,16 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 public class ShortestPathsBranchCollisionDetector extends StandardBranchCollisionDetector
 {
     private int depth = -1;
-    
-    public ShortestPathsBranchCollisionDetector( Evaluator evaluator )
+
+    @Deprecated
+    public ShortestPathsBranchCollisionDetector( Evaluator evaluator)
     {
         super( evaluator );
+    }
+
+    public ShortestPathsBranchCollisionDetector( Evaluator evaluator, Predicate<Path> pathPredicate )
+    {
+        super( evaluator, pathPredicate );
     }
     
     @Override

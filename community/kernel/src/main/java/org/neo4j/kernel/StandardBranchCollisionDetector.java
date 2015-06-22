@@ -26,24 +26,36 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.traversal.BranchCollisionDetector;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
-import org.neo4j.graphdb.traversal.BranchCollisionDetector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 
 public class StandardBranchCollisionDetector implements BranchCollisionDetector
 {
-    private final Map<Node, Collection<TraversalBranch>[]> paths =
-            new HashMap<Node, Collection<TraversalBranch>[]>( 1000 );
+    private final Map<Node,Collection<TraversalBranch>[]> paths = new HashMap<>( 1000 );
     private final Evaluator evaluator;
-    private final Set<Path> returnedPaths = new HashSet<Path>();
+    private final Set<Path> returnedPaths = new HashSet<>();
+    private Predicate<Path> pathPredicate = Predicates.alwaysTrue();
 
+    @Deprecated
     public StandardBranchCollisionDetector( Evaluator evaluator )
     {
         this.evaluator = evaluator;
+    }
+
+    public StandardBranchCollisionDetector( Evaluator evaluator, Predicate<Path> pathPredicate )
+    {
+        this.evaluator = evaluator;
+        if ( pathPredicate != null )
+        {
+            this.pathPredicate = pathPredicate;
+        }
     }
 
     @SuppressWarnings( "unchecked" )
@@ -54,7 +66,7 @@ public class StandardBranchCollisionDetector implements BranchCollisionDetector
         int index = direction.ordinal();
         if ( pathsHere == null )
         {
-            pathsHere = new Collection[] { new ArrayList<TraversalBranch>(), new ArrayList<TraversalBranch>() };
+            pathsHere = new Collection[] {new ArrayList<>(), new ArrayList<>() };
             paths.put( branch.endNode(), pathsHere );
         }
         pathsHere[index].add( branch );
@@ -64,16 +76,19 @@ public class StandardBranchCollisionDetector implements BranchCollisionDetector
         Collection<TraversalBranch> otherCollections = pathsHere[index == 0 ? 1 : 0];
         if ( !otherCollections.isEmpty() )
         {
-            Collection<Path> foundPaths = new ArrayList<Path>();
+            Collection<Path> foundPaths = new ArrayList<>();
             for ( TraversalBranch otherBranch : otherCollections )
             {
                 TraversalBranch startPath = index == 0 ? branch : otherBranch;
                 TraversalBranch endPath = index == 0 ? otherBranch : branch;
                 BidirectionalTraversalBranchPath path = new BidirectionalTraversalBranchPath(
                         startPath, endPath );
-                if ( returnedPaths.add( path ) && includePath( path, startPath, endPath ) )
+                if ( isAcceptablePath( path ))
                 {
-                    foundPaths.add( path );
+                    if (returnedPaths.add( path ) && includePath( path, startPath, endPath ) )
+                    {
+                        foundPaths.add( path );
+                    }
                 }
             }
             
@@ -83,6 +98,11 @@ public class StandardBranchCollisionDetector implements BranchCollisionDetector
             }
         }
         return null;
+    }
+
+    private boolean isAcceptablePath( BidirectionalTraversalBranchPath path )
+    {
+        return pathPredicate.test( path );
     }
 
     protected boolean includePath( Path path, TraversalBranch startPath, TraversalBranch endPath )

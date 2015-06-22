@@ -39,7 +39,6 @@ import org.neo4j.graphdb.traversal.SideSelectorPolicy;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.graphdb.traversal.UniquenessFilter;
-import org.neo4j.helpers.collection.FilteringIterator;
 
 class BidirectionalTraverserIterator extends AbstractTraverserIterator
 {
@@ -48,14 +47,6 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
     private SideSelector selector;
     private final Map<Direction, Side> sides = new EnumMap<>( Direction.class );
     private final BidirectionalUniquenessFilter uniqueness;
-    private final Predicate<Path> uniquenessPredicate = new Predicate<Path>()
-    {
-        @Override
-        public boolean test( Path path )
-        {
-            return uniqueness.checkFull( path );
-        }
-    };
 
     private static class Side
     {
@@ -91,10 +82,19 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
                 new AsOneStartBranch( this, endNodes, end.initialState, start.uniqueness ), end.expander );
 
         this.selector = sideSelector.create( startSelector, endSelector, maxDepth );
-        this.collisionDetector = collisionPolicy.create( collisionEvaluator );
+        this.collisionDetector = collisionPolicy.create( collisionEvaluator,
+                new Predicate<Path>()
+                {
+                    @Override
+                    public boolean test( Path path )
+                    {
+                        return uniqueness.checkFull( path );
+                    }
+                } );
     }
 
-    private BidirectionalUniquenessFilter makeSureStartAndEndHasSameUniqueness( MonoDirectionalTraversalDescription start,
+    private BidirectionalUniquenessFilter makeSureStartAndEndHasSameUniqueness( MonoDirectionalTraversalDescription
+            start,
                                                                    MonoDirectionalTraversalDescription end )
     {
         if ( !start.uniqueness.equals( end.uniqueness ) )
@@ -165,7 +165,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
             Iterable<Path> pathCollisions = collisionDetector.evaluate( result, selector.currentSide() );
             if ( pathCollisions != null )
             {
-                foundPaths = uniquenessFiltered( pathCollisions.iterator() );
+                foundPaths = pathCollisions.iterator();
                 if ( foundPaths.hasNext() )
                 {
                     numberOfPathsReturned++;
@@ -174,11 +174,6 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
                 }
             }
         }
-    }
-
-    private Iterator<Path> uniquenessFiltered( Iterator<Path> paths )
-    {
-        return new FilteringIterator<>( paths, uniquenessPredicate );
     }
 
     private Side currentSideDescription()

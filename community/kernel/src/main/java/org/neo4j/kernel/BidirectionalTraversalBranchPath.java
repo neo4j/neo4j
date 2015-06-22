@@ -90,7 +90,7 @@ public class BidirectionalTraversalBranchPath implements Path
     private LinkedList<Relationship> gatherRelationships( TraversalBranch first, TraversalBranch then )
     {
         // TODO Don't loop through them all up front
-        LinkedList<Relationship> relationships = new LinkedList<Relationship>();
+        LinkedList<Relationship> relationships = new LinkedList<>();
         TraversalBranch branch = first;
         while ( branch.length() > 0 )
         {
@@ -98,16 +98,20 @@ public class BidirectionalTraversalBranchPath implements Path
             branch = branch.parent();
         }
         // We can might as well cache start node since we're right now there anyway
-        if ( cachedStartNode == null && first == start )
+        if ( cachedStartNode == null && first == start && branch.length() >= 0)
+        {
             cachedStartNode = branch.endNode();
+        }
         branch = then;
         while ( branch.length() > 0 )
         {
             relationships.add( branch.lastRelationship() );
             branch = branch.parent();
         }
-        if ( cachedStartNode == null && then == start )
+        if ( cachedStartNode == null && then == start && branch.length() >= 0 )
+        {
             cachedStartNode = branch.endNode();
+        }
         return relationships;
     }
     
@@ -126,15 +130,17 @@ public class BidirectionalTraversalBranchPath implements Path
     private Iterable<Node> gatherNodes( TraversalBranch first, TraversalBranch then )
     {
         // TODO Don't loop through them all up front
-        LinkedList<Node> nodes = new LinkedList<Node>();
+        LinkedList<Node> nodes = new LinkedList<>();
         TraversalBranch branch = first;
         while ( branch.length() > 0 )
         {
             nodes.addFirst( branch.endNode() );
             branch = branch.parent();
         }
-        if ( cachedStartNode == null && first == start )
+        if ( cachedStartNode == null && first == start && branch.length() >= 0)
+        {
             cachedStartNode = branch.endNode();
+        }
         nodes.addFirst( branch.endNode() );
         branch = then.parent();
         if ( branch != null )
@@ -149,8 +155,10 @@ public class BidirectionalTraversalBranchPath implements Path
                 nodes.add( branch.endNode() );
             }
         }
-        if ( cachedStartNode == null && then == start )
+        if ( cachedStartNode == null && then == start && branch.length() >= 0)
+        {
             cachedStartNode = branch.endNode();
+        }
         return nodes;
     }
     
@@ -164,7 +172,7 @@ public class BidirectionalTraversalBranchPath implements Path
     public Iterator<PropertyContainer> iterator()
     {
         // TODO Don't loop through them all up front
-        LinkedList<PropertyContainer> entities = new LinkedList<PropertyContainer>();
+        LinkedList<PropertyContainer> entities = new LinkedList<>();
         TraversalBranch branch = start;
         while ( branch.length() > 0 )
         {

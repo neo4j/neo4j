@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
+import org.neo4j.function.Predicate
 import pipes.{EntityProducer, QueryState}
 import org.neo4j.graphdb.{Node, Path}
 import org.neo4j.graphdb.traversal._
@@ -111,7 +112,10 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
       include
     }
 
+    override def create(evaluator: Evaluator, pathPredicate: Predicate[Path]) = new StepCollisionDetector
+
     def create(evaluator: Evaluator) = new StepCollisionDetector
+
   }
 
   def arguments: Seq[Argument] = Seq.empty // TODO: Remove this class. This is wrong. But not worth fixing plans for.

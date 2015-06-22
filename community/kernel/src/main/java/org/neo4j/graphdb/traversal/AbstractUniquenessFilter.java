@@ -30,6 +30,6 @@ abstract class AbstractUniquenessFilter implements BidirectionalUniquenessFilter
 
     public boolean checkFirst( TraversalBranch branch )
     {
-        return type == PrimitiveTypeFetcher.RELATIONSHIP ? true : check( branch );
+        return type == PrimitiveTypeFetcher.RELATIONSHIP || check( branch );
     }
 }

@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.traversal;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
@@ -201,13 +203,13 @@ public class TestBidirectionalTraversal extends TraversalTestBase
          * (a)-->(b)-->(c)-->(d)
          */
         createGraph( "a TO b", "b TO c", "c TO d" );
-        
+
         BranchCollisionPolicy collisionPolicy = new BranchCollisionPolicy()
         {
             @Override
             public BranchCollisionDetector create( Evaluator evaluator )
             {
-                return new StandardBranchCollisionDetector( null )
+                return new StandardBranchCollisionDetector( null, null )
                 {
                     @Override
                     protected boolean includePath( Path path, TraversalBranch startPath, TraversalBranch endPath )
@@ -218,13 +220,19 @@ public class TestBidirectionalTraversal extends TraversalTestBase
                     }
                 };
             }
+
+            @Override
+            public BranchCollisionDetector create( Evaluator evaluator, Predicate<Path> pathPredicate )
+            {
+                return create( evaluator );
+            }
         };
 
         count( bidirectionalTraversal()
                 // Just make up a number bigger than the path length (in this case 10) so that we can assert it in
                 // the collision policy later
                 .mirroredSides( traversal( NODE_PATH ).expand( PathExpanders.<Integer>forType( to ),
-                        new InitialBranchState.State<Integer>( 0, 10 ) ) )
+                        new InitialBranchState.State<>( 0, 10 ) ) )
                 .collisionPolicy( collisionPolicy )
                 .traverse( getNodeWithName( "a" ), getNodeWithName( "d" ) ) );
     }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
@@ -484,7 +485,8 @@ public class Traversal
     @Deprecated
     public static BranchCollisionDetector shortestPathsCollisionDetector( int maxDepth )
     {
-        return new ShortestPathsBranchCollisionDetector( Evaluators.toDepth( maxDepth ) );
+        return new ShortestPathsBranchCollisionDetector( Evaluators.toDepth( maxDepth ),
+                                                         Predicates.<Path>alwaysTrue() );
     }
 
     /**
