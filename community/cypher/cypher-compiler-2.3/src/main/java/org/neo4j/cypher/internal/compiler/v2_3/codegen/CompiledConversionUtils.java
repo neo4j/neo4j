@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException;
 import org.neo4j.cypher.internal.compiler.v2_3.IncomparableValuesException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.MathUtil;
 
 // Class with static methods used by compiled execution plans
 public abstract class CompiledConversionUtils
@@ -118,22 +119,30 @@ public abstract class CompiledConversionUtils
         //compare long values
         if ( lhs instanceof Number && rhs instanceof Number )
         {
-            if ( lhs instanceof Double || rhs instanceof Double ||
-                 lhs instanceof Float || rhs instanceof Float )
+            if ( (lhs instanceof Double || lhs instanceof Float)
+                 && (rhs instanceof Double || rhs instanceof Float) )
             {
                 double left = ((Number) lhs).doubleValue();
                 double right = ((Number) rhs).doubleValue();
                 return left == right;
             }
-            if ( lhs instanceof Long || rhs instanceof Long ||
-                 lhs instanceof Integer || rhs instanceof Integer ||
-                 lhs instanceof Short || rhs instanceof Short ||
-                 lhs instanceof Byte || rhs instanceof Byte )
+            else if ( (lhs instanceof Double || lhs instanceof Float) )
+            {
+                double left = ((Number) lhs).doubleValue();
+                long right = ((Number) rhs).longValue();
+                return MathUtil.numbersEqual( left, right );
+            }
+            else if ( (rhs instanceof Double || rhs instanceof Float) )
             {
                 long left = ((Number) lhs).longValue();
-                long right = ((Number) rhs).longValue();
-                return left == right;
+                double right = ((Number) rhs).doubleValue();
+                return MathUtil.numbersEqual( right, left );
             }
+
+            //evertyhing else is long from cyphers point-of-view
+            long left = ((Number) lhs).longValue();
+            long right = ((Number) rhs).longValue();
+            return left == right;
         }
 
         //for everything else call equals

@@ -72,9 +72,12 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     //when/then
     theMap(theKey) should equal(theObject)
   }
+
   val testEquality = Seq(
     (null, "foo") -> null,
     (false, false) -> true,
+    (9007199254740993L, 9007199254740992D) -> false,
+    (9007199254740992D, 9007199254740993L) -> false,
     (1, null) -> null,
     ("foo", "foo") -> true,
     ("foo", "bar") -> false,
