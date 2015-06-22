@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.properties;
 
+import org.neo4j.helpers.MathUtil;
+
 abstract class FloatingPointNumberProperty extends NumberProperty
 {
     FloatingPointNumberProperty( int propertyKeyId )
@@ -45,7 +47,7 @@ abstract class FloatingPointNumberProperty extends NumberProperty
             }
             else
             {
-                return numbersEqual( this.doubleValue(), that.longValue() );
+                return MathUtil.numbersEqual( this.doubleValue(), that.longValue() );
             }
         }
         return false;
@@ -62,7 +64,7 @@ abstract class FloatingPointNumberProperty extends NumberProperty
         else if ( other instanceof IntegralNumberProperty )
         {
             IntegralNumberProperty that = (IntegralNumberProperty) other;
-            return numbersEqual( this.doubleValue(), that.longValue() );
+            return MathUtil.numbersEqual( this.doubleValue(), that.longValue() );
         }
         else
         {
