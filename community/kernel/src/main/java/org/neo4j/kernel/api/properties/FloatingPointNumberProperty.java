@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.api.properties;
 
-abstract class FloatingPointNumberProperty extends DefinedProperty
+abstract class FloatingPointNumberProperty extends NumberProperty
 {
     FloatingPointNumberProperty( int propertyKeyId )
     {
         super( propertyKeyId );
     }
-
-    abstract double doubleValue();
 
     @Override
     final int valueHash()

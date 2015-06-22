@@ -30,7 +30,7 @@ final class FloatProperty extends FloatingPointNumberProperty
     }
 
     @Override
-    double doubleValue()
+    public double doubleValue()
     {
         return value;
     }

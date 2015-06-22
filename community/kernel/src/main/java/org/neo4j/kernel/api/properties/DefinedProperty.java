@@ -39,7 +39,7 @@ import org.neo4j.helpers.ObjectUtil;
  * the (unused) area. Added members after that will be appended after that. The total space of the object
  * will be aligned to whole 8 bytes.
  */
-public abstract class DefinedProperty extends Property
+public abstract class DefinedProperty extends Property implements Comparable<DefinedProperty>
 {
     @Override
     public boolean isDefined()
@@ -201,5 +201,65 @@ public abstract class DefinedProperty extends Property
             }
         }
         return true;
+    }
+
+    protected enum TypeClassification
+    {
+        STRING( 0 ),
+        NUMBER( 1 ),
+        OTHER( 2 );
+        public final int typeId;
+
+        TypeClassification( int id )
+        {
+            typeId = id;
+        }
+    }
+
+    protected TypeClassification typeClassification()
+    {
+        return TypeClassification.OTHER;
+    }
+
+    int compareByValue( DefinedProperty other )
+    {
+        int typeDiff = this.typeClassification().typeId - other.typeClassification().typeId;
+        if ( typeDiff == 0 )
+        {
+            return this.valueAsString().compareTo( other.valueAsString() );
+        }
+        else
+        {
+            return typeDiff;
+        }
+    }
+
+    @Override
+    public int compareTo( DefinedProperty other )
+    {
+        int diffPropertyKeyId = this.propertyKeyId() - other.propertyKeyId();
+        if ( diffPropertyKeyId == 0 )
+        {
+            return compareByValue( other );
+        }
+        else
+        {
+            return diffPropertyKeyId;
+        }
+    }
+
+    interface WithStringValue
+    {
+        String stringValue();
+    }
+
+    interface WithDoubleValue
+    {
+        double doubleValue();
+    }
+
+    interface WithLongValue
+    {
+        long longValue();
     }
 }

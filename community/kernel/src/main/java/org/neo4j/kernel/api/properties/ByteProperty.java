@@ -40,7 +40,7 @@ final class ByteProperty extends IntegralNumberProperty
     }
 
     @Override
-    long longValue()
+    public long longValue()
     {
         return value;
     }

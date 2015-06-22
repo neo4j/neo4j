@@ -40,7 +40,7 @@ final class IntProperty extends IntegralNumberProperty
     }
 
     @Override
-    long longValue()
+    public long longValue()
     {
         return value;
     }
