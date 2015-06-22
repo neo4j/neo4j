@@ -154,7 +154,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 long time = clock.currentTimeMillis() - startTime;
                 if ( time >= thresholdMillis )
                 {
-                    log.info( "%d ms: %s - %s", time, session,
+                    log.info( "%d ms: %s - %s", time, session.toString(),
                             query == null ? "<unknown query>" : query );
                 }
             }
