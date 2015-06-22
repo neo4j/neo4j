@@ -205,8 +205,8 @@ public abstract class DefinedProperty extends Property implements Comparable<Def
 
     protected enum TypeClassification
     {
-        STRING( 0 ),
-        NUMBER( 1 ),
+        NUMBER( 0 ),
+        STRING( 1 ),
         OTHER( 2 );
         public final int typeId;
 
@@ -248,17 +248,17 @@ public abstract class DefinedProperty extends Property implements Comparable<Def
         }
     }
 
-    interface WithStringValue
+    public interface WithStringValue
     {
         String stringValue();
     }
 
-    interface WithDoubleValue
+    public interface WithDoubleValue
     {
         double doubleValue();
     }
 
-    interface WithLongValue
+    public interface WithLongValue
     {
         long longValue();
     }

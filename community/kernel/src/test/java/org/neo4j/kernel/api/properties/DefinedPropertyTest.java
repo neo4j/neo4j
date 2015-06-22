@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.util.concurrent.Callable;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.api.properties.Property.doubleProperty;
@@ -133,26 +134,13 @@ public class DefinedPropertyTest
         assertThat( compare( p1, p2 ), lessThan( 0 ) );
     }
 
-    /*
-
-    1
-    10
-    ->"11"
-    111
-    "1"
-    "10"
-    "11"
-    "100"
-
-"11"
-     */
     @Test
     public void shouldSortStringAndIntPropertiesWithSamePropertyKeyIdByValue()
     {
         DefinedProperty p1 = stringProperty( 1, "10" );
         DefinedProperty p2 = intProperty( 1, 20 );
 
-        assertThat( compare( p1, p2 ), lessThan( 0 ) );
+        assertThat( compare( p1, p2 ), greaterThan( 0 ) );
     }
 
     @Test

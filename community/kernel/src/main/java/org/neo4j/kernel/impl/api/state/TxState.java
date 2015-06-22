@@ -1034,15 +1034,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
         else
         {
-            sortedUpdates = new TreeMap<>(new Comparator<DefinedProperty>(){
-                @Override
-                public int compare( DefinedProperty o1, DefinedProperty o2 )
-                {
-                    return (o1.propertyKeyId() == o2.propertyKeyId()) ?
-                           o1.valueAsString().compareTo( o2.valueAsString() ) :
-                           o1.propertyKeyId() - o2.propertyKeyId();
-                }
-            });
+            sortedUpdates = new TreeMap<>();
             sortedUpdates.putAll( updates );
             indexUpdates.put( descriptor.getLabelId(), sortedUpdates );
         }
