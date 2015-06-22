@@ -51,12 +51,6 @@ public interface ConsistencyReport
     {
     }
 
-    @Retention(RetentionPolicy.SOURCE)
-    @Target(ElementType.METHOD)
-    @interface IncrementalOnly
-    {
-    }
-
     public interface Reporter
     {
         void forSchema( DynamicRecord schema,
@@ -156,7 +150,6 @@ public interface ConsistencyReport
 
         /** The first property record reference has changed, but the previous first property record has not been updated. */
         @Documented
-        @IncrementalOnly
         void propertyNotUpdated();
 
         /** The property chain contains multiple properties that have the same property key id, which means that the entity has at least one duplicate property. */
@@ -233,7 +226,6 @@ public interface ConsistencyReport
 
         /** The first relationship record reference has changed, but the previous first relationship record has not been updated. */
         @Documented
-        @IncrementalOnly
         void relationshipNotUpdated();
 
         /** The label token record referenced from a node record is not in use. */
@@ -274,7 +266,6 @@ public interface ConsistencyReport
 
         /** The first relationship group record reference has changed, but the previous first relationship group record has not been updated. */
         @Documented
-        @IncrementalOnly
         void relationshipGroupNotUpdated();
 
         /** The first relationship group record has another node set as owner. */
@@ -359,22 +350,18 @@ public interface ConsistencyReport
 
         /** The previous source relationship reference has changed, but the previously referenced record has not been updated. */
         @Documented
-        @IncrementalOnly
         void sourcePrevNotUpdated();
 
         /** The next source relationship reference has changed, but the previously referenced record has not been updated. */
         @Documented
-        @IncrementalOnly
         void sourceNextNotUpdated();
 
         /** The previous target relationship reference has changed, but the previously referenced record has not been updated. */
         @Documented
-        @IncrementalOnly
         void targetPrevNotUpdated();
 
         /** The next target relationship reference has changed, but the previously referenced record has not been updated. */
         @Documented
-        @IncrementalOnly
         void targetNextNotUpdated();
 
         /**
@@ -382,7 +369,6 @@ public interface ConsistencyReport
          * but the source node was not updated.
          */
         @Documented
-        @IncrementalOnly
         void sourceNodeNotUpdated();
 
         /**
@@ -390,7 +376,6 @@ public interface ConsistencyReport
          * but the target node was not updated.
          */
         @Documented
-        @IncrementalOnly
         void targetNodeNotUpdated();
     }
 
@@ -450,22 +435,18 @@ public interface ConsistencyReport
 
         /** The previous reference has changed, but the referenced record has not been updated. */
         @Documented
-        @IncrementalOnly
         void prevNotUpdated();
 
         /** The next reference has changed, but the referenced record has not been updated. */
         @Documented
-        @IncrementalOnly
         void nextNotUpdated();
 
         /** The string property is not referenced anymore, but the corresponding block has not been deleted. */
         @Documented
-        @IncrementalOnly
         void stringUnreferencedButNotDeleted( PropertyBlock block );
 
         /** The array property is not referenced anymore, but the corresponding block as not been deleted. */
         @Documented
-        @IncrementalOnly
         void arrayUnreferencedButNotDeleted( PropertyBlock block );
 
         /**
@@ -473,7 +454,6 @@ public interface ConsistencyReport
          * contain this property in its property chain.
          */
         @Documented
-        @IncrementalOnly
         void ownerDoesNotReferenceBack();
 
         /**
@@ -481,7 +461,6 @@ public interface ConsistencyReport
          * contain this property in its property chain prior to the change. The property is referenced by another owner.
          */
         @Documented
-        @IncrementalOnly
         void changedForWrongOwner();
 
         /** The string record referred from this property is also referred from a another property. */
@@ -554,7 +533,6 @@ public interface ConsistencyReport
 
         /** The next relationship group reference has changed, but the previously referenced record has not been updated. */
         @Documented
-        @IncrementalOnly
         void nextNotUpdated();
 
         /** The next relationship group is not in use. */
@@ -645,7 +623,6 @@ public interface ConsistencyReport
 
         /** The next block reference was changed, but the previously referenced block was not updated. */
         @Documented
-        @IncrementalOnly
         void nextNotUpdated();
 
         /** The next block of this record is also referenced by another dynamic record. */
