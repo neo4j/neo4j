@@ -171,6 +171,7 @@ final class MuninnPagedFile implements PagedFile
         try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
         {
             flushAndForceInternal( flushEvent.flushEventOpportunity() );
+            syncDevice();
         }
     }
 
@@ -205,6 +206,11 @@ final class MuninnPagedFile implements PagedFile
         {
             pageCache.unpauseBackgroundFlushTask();
         }
+    }
+
+    private void syncDevice() throws IOException
+    {
+        pageCache.syncDevice();
     }
 
     @Override

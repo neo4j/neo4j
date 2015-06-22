@@ -451,7 +451,13 @@ public class MuninnPageCache implements PageCache
                 fileMapping.pagedFile.flushAndForceInternal( flushOpportunity );
                 fileMapping = fileMapping.next;
             }
+            syncDevice();
         }
+    }
+
+    void syncDevice() throws IOException
+    {
+        swapperFactory.syncDevice();
     }
 
     @Override
