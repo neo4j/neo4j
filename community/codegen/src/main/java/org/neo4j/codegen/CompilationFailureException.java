@@ -32,9 +32,9 @@ import static java.util.Collections.unmodifiableList;
 
 public class CompilationFailureException extends Exception
 {
-    private final List<Diagnostic<?>> diagnostics;
+    private final List<? extends Diagnostic<?>> diagnostics;
 
-    public CompilationFailureException( List<Diagnostic<?>> diagnostics )
+    public CompilationFailureException( List<? extends Diagnostic<?>> diagnostics )
     {
         super( String.format( "Compilation failed with %d reported issues.%s",
                 diagnostics.size(), source( diagnostics ) ) );
@@ -52,7 +52,7 @@ public class CompilationFailureException extends Exception
         return result.toString();
     }
 
-    private static String source( List<Diagnostic<?>> diagnostics )
+    private static String source( List<? extends Diagnostic<?>> diagnostics )
     {
         Set<JavaFileObject> sources = null;
         for ( Diagnostic<?> diagnostic : diagnostics )
