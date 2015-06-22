@@ -120,7 +120,7 @@ class CypherCompatibilityTest extends CypherFunSuite {
   }
 
   private val queryThatCannotRunWithCostPlanner = "MATCH (n:Movie) SET n.title = 'The Movie'"
-  private val querySupportedByCostButNotCompiledRuntime = "MATCH (n:Movie)--(b), (a:A)--(c:C)--(d:D) RETURN b, d"
+  private val querySupportedByCostButNotCompiledRuntime = "MATCH (n:Movie)--(b), (a:A)--(c:C)--(d:D) RETURN count(*)"
 
   test("should not fail if cypher allowed to choose planner or we specify RULE for update query") {
     runWithConfig("dbms.cypher.hints.error" -> "true") {

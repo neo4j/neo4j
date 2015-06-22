@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.compiler.v2_3.notification._
 class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("Warn for cartesian product") {
-    val result = executeWithAllPlanners("explain match (a)-->(b), (c)-->(d) return *")
+    val result = executeWithAllPlannersAndRuntimes("explain match (a)-->(b), (c)-->(d) return *")
 
     result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d"))))
   }
 
   test("Warn for cartesian product with runtime=compiled") {
-    val result = innerExecute("explain cypher runtime=compiled match (a)-->(b), (c)-->(d) return *")
+    val result = innerExecute("explain cypher runtime=compiled match (a)-->(b), (c)-->(d) return count(*)")
 
     result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(0, 1, 1), Set("c", "d")),
                                                   RuntimeUnsupportedNotification))
@@ -44,7 +44,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("Don't warn for cartesian product when not using explain") {
-    val result = executeWithAllPlanners("match (a)-->(b), (c)-->(d) return *")
+    val result = executeWithAllPlannersAndRuntimes("match (a)-->(b), (c)-->(d) return *")
 
     result.notifications shouldBe empty
   }
@@ -99,7 +99,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("warn when requesting runtime=compiled on an unsupported query") {
-    val result = innerExecute("EXPLAIN CYPHER runtime=compiled MATCH (a)-->(b), (c)-->(d) RETURN *")
+    val result = innerExecute("EXPLAIN CYPHER runtime=compiled MATCH (a)-->(b), (c)-->(d) RETURN count(*)")
     result.notifications should contain(RuntimeUnsupportedNotification)
   }
 

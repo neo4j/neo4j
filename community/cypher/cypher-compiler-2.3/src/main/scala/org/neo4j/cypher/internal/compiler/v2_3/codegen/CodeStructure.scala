@@ -80,10 +80,13 @@ trait MethodStructure[E] {
 
   // predicates
   def not(value: E): E
+  def equals(lhs: E, rhs: E): E
+  def or(lhs: E, rhs: E): E
 
   // null handling
   def markAsNull(varName: String, cypherType: CypherType): Unit
   def nullable(varName: String, cypherType: CypherType, onSuccess: E): E
+  def notNull(name: String, cypherType: CypherType): E
 
   // parameters
   def expectParameter(key: String): Unit

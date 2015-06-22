@@ -369,10 +369,18 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def constant(value: Object) = Expression.constant(value)
 
-  override def not(value: Expression): Expression = Expression.not(value)
+  override def not(value: Expression): Expression = Expression.invoke(Methods.not, value)
+
+  override def equals(lhs: Expression, rhs: Expression) = Expression.invoke(Methods.equals, lhs, rhs)
+
+  override def or(lhs: Expression, rhs: Expression): Expression = Expression.invoke(Methods.or, lhs, rhs)
 
   override def markAsNull(varName: String, cypherType: CypherType) =
     generator.assign(GeneratedQueryStructure.lowerType(cypherType), varName, GeneratedQueryStructure.nullValue(cypherType))
+
+  override def notNull(varName: String, cypherType: CypherType) =
+      Expression.not(Expression.eq(GeneratedQueryStructure.nullValue(cypherType), generator.load(varName)))
+
 
   override def nodeGetAllRelationships(iterVar: String, nodeVar: String, direction: Direction) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
@@ -623,7 +631,9 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   }
 
   override def declareProperty(propertyVar: String) = {
-    locals = locals + (propertyVar -> generator.declare(typeRef[Object], propertyVar))
+    val localVariable = generator.declare(typeRef[Object], propertyVar)
+    locals = locals + (propertyVar -> localVariable)
+    generator.assign(localVariable, Expression.constant(null))
   }
 
   override def hasLabel(nodeVar: String, labelVar: String, predVar: String) =  {
@@ -749,6 +759,9 @@ private object Methods {
   val propertyKeyGetForName = method[ReadOperations, Int]("propertyKeyGetForName", typeRef[String])
   val coerceToPredicate = method[CompiledConversionUtils, Boolean]("coerceToPredicate", typeRef[Object])
   val toCollection = method[CompiledConversionUtils, java.util.Collection[Object]]("toCollection", typeRef[Object])
+  val equals = method[CompiledConversionUtils, java.lang.Boolean]("equals", typeRef[Object], typeRef[Object])
+  val or = method[CompiledConversionUtils, java.lang.Boolean]("or", typeRef[Object], typeRef[Object])
+  val not = method[CompiledConversionUtils, java.lang.Boolean]("not", typeRef[Object])
   val relationshipTypeGetForName = method[ReadOperations, Int]("relationshipTypeGetForName", typeRef[String])
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
   val nodeGetProperty = method[ReadOperations, Object]("nodeGetProperty")

@@ -118,6 +118,11 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
       override def next() = Eagerly.immutableMapValues(iterator.next().asScala, materializeAsScala)
 
       override def hasNext = iterator.hasNext
+
+      override def javaIterator: ResourceIterator[util.Map[String, Any]] = new WrappingResourceIterator[util.Map[String, Any]] {
+        def hasNext = iterator.hasNext
+        def next() = iterator.next()
+      }
     }
 
   }

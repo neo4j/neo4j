@@ -35,7 +35,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     setUpDatabaseForTests()
 
     // When
-    val result = executeWithAllPlanners("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
+    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
 
     // Then
     result shouldBe empty
@@ -88,7 +88,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     graph.createIndex("L", "l")
     graph.createIndex("R", "r")
 
-    val result = executeWithAllPlanners("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
+    val result = executeWithAllPlannersAndRuntimes("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
     result.toList should have size 100
 
     val found = result.executionPlanDescription().find("NodeIndexSeek")

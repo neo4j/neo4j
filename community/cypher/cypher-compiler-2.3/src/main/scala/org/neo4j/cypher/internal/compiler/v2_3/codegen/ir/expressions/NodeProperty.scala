@@ -49,10 +49,20 @@ case class NodeProperty(token: Option[Int], propName: String, nodeIdVar: Variabl
   extends ElementProperty(token, propName, nodeIdVar.name, propKeyVar) {
 
   override def propertyByName[E](body: MethodStructure[E], localName: String) =
-    body.nodeGetPropertyForVar(nodeIdVar.name, propKeyVar, localName)
+    if (nodeIdVar.nullable)
+      body.ifStatement(body.notNull(nodeIdVar.name, nodeIdVar.cypherType)) {ifBody =>
+        ifBody.nodeGetPropertyForVar(nodeIdVar.name, propKeyVar, localName)
+      }
+    else
+      body.nodeGetPropertyForVar(nodeIdVar.name, propKeyVar, localName)
 
   override def propertyById[E](body: MethodStructure[E], localName: String) =
-    body.nodeGetPropertyById(nodeIdVar.name, token.get, localName)
+    if (nodeIdVar.nullable)
+      body.ifStatement(body.notNull(nodeIdVar.name, nodeIdVar.cypherType)) {ifBody =>
+        ifBody.nodeGetPropertyById(nodeIdVar.name, token.get, localName)
+      }
+    else
+      body.nodeGetPropertyById(nodeIdVar.name, token.get, localName)
 
   override def cypherType(implicit context: CodeGenContext) = CTAny
 }
@@ -61,10 +71,20 @@ case class RelProperty(token: Option[Int], propName: String, relIdVar: Variable,
   extends ElementProperty(token, propName, relIdVar.name, propKeyVar) {
 
   override def propertyByName[E](body: MethodStructure[E], localName: String) =
-    body.relationshipGetPropertyForVar(relIdVar.name, propKeyVar, localName)
+    if (relIdVar.nullable)
+      body.ifStatement(body.notNull(relIdVar.name, relIdVar.cypherType)) { ifBody =>
+        ifBody.relationshipGetPropertyForVar(relIdVar.name, propKeyVar, localName)
+      }
+    else
+      body.relationshipGetPropertyForVar(relIdVar.name, propKeyVar, localName)
 
   override def propertyById[E](body: MethodStructure[E], localName: String) =
-    body.relationshipGetPropertyById(relIdVar.name, token.get, localName)
+  if (relIdVar.nullable)
+    body.ifStatement(body.notNull(relIdVar.name, relIdVar.cypherType)) { ifBody =>
+      ifBody.relationshipGetPropertyById(relIdVar.name, token.get, localName)
+    }
+    else
+      body.relationshipGetPropertyById(relIdVar.name, token.get, localName)
 
   override def cypherType(implicit context: CodeGenContext) = CTAny
 }

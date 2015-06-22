@@ -144,6 +144,16 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
+    public void or( Expression lhs, Expression rhs )
+    {
+        result.append( "or(" );
+        lhs.accept( this );
+        result.append( ", " );
+        rhs.accept( this );
+        result.append( ")" );
+    }
+
+    @Override
     public void add( Expression lhs, Expression rhs )
     {
         result.append( "add(" );
