@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -54,7 +55,7 @@ public class NotificationDetailTest
     @Test
     public void shouldConstructCartesianProductDetails()
     {
-        Set<String> idents = new HashSet<>();
+        Set<String> idents = new TreeSet<>();
         idents.add( "n" );
         idents.add( "node2" );
         NotificationDetail detail = NotificationDetail.Factory.cartesianProduct( idents );
