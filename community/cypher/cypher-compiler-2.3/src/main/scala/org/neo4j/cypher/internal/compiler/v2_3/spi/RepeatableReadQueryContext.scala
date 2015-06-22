@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.spi
 
-import org.neo4j.graphdb.{PropertyContainer, Relationship, Direction, Node}
+import org.neo4j.graphdb.{Direction, Node, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 
@@ -52,7 +52,10 @@ final class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) exte
   }
 
   override def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] =
-    lockAll(inner.exactIndexSearch(index, value))
+    lockAllNodesAndFilter(inner.exactIndexSearch(index, value)) { node =>
+      val v = inner.nodeOps.getProperty(node.getId, index.getPropertyKeyId)
+      v == value
+    }
 
   override def getNodesByLabel(id: Int): Iterator[Node] = lockAll(inner.getNodesByLabel(id))
 
@@ -67,7 +70,6 @@ final class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) exte
     locker.releaseAllLocks()
   }
 
-
   override def getPropertiesForNode(node: Long): Iterator[Int] = {
     lockNode(node)
     inner.getPropertiesForNode(node)
@@ -77,7 +79,6 @@ final class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) exte
     lockRelationship(relId)
     inner.getPropertiesForRelationship(relId)
   }
-
 
   class RepeatableReadOperations[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
     override def getProperty(id: Long, propertyKeyId: Int) = {
@@ -113,11 +114,51 @@ final class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) exte
     locker.acquireLock(relationshipOps.getByInnerId(id))
   }
 
-  private def lockAll[T <: PropertyContainer](iter: Iterator[T]): Iterator[T] = iter.map {
-    item =>
-      locker.acquireLock(item)
-      item
+
+  private def lockAllNodesAndFilter(inner: Iterator[Node])(f: Node => Boolean): Iterator[Node] = new Iterator[Node] {
+    var nextNode: Option[Node] = null
+
+    private def fetchNext() =
+      if (inner.isEmpty) {
+        nextNode = None
+      }
+      else {
+        var found: Option[Node] = None
+        while (inner.hasNext && found.nonEmpty) {
+
+          val temp: Node = inner.next()
+          locker.acquireLock(temp)
+          if (!nodeOps.isDeleted(temp) && f(temp)) {
+            found = Some(temp)
+          }
+        }
+        if (found.isEmpty)
+          nextNode = None
+      }
+
+    override def hasNext = {
+      if (nextNode == null) fetchNext()
+      nextNode.nonEmpty
+    }
+
+    override def next() = {
+      if (nextNode == null) fetchNext()
+
+      nextNode match {
+        case None => Iterator.empty.next() // Throw
+        case Some(node) =>
+          fetchNext()
+          node
+      }
+    }
   }
+
+  private def lockAll[T <: PropertyContainer](iter: Iterator[T]): Iterator[T] =
+    iter.map {
+      item =>
+        locker.acquireLock(item)
+        item
+    }
 }
 
 
