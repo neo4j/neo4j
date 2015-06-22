@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -36,9 +35,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * <p>
  * A {@link BatchInserter} retrieved from the {@link #inserter(String)} or
  * {@link #inserter(String, Map)} methods is more performant while the
- * {@link GraphDatabaseService} retrievied from {@link #batchDatabase(String)}
- * or {@link #batchDatabase(String, Map)} methods is there for convenience, so
- * you can reuse existing code.
  */
 public final class BatchInserters
 {
