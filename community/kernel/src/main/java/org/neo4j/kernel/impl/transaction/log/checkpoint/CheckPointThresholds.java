@@ -26,11 +26,20 @@ public class CheckPointThresholds
         return new CheckPointThreshold()
         {
             @Override
-            public boolean isCheckPointingNeeded()
+            public void initialize( long transactionId )
             {
                 for ( CheckPointThreshold threshold : thresholds )
                 {
-                    if ( threshold.isCheckPointingNeeded() )
+                    threshold.initialize( transactionId );
+                }
+            }
+
+            @Override
+            public boolean isCheckPointingNeeded( long transactionId )
+            {
+                for ( CheckPointThreshold threshold : thresholds )
+                {
+                    if ( threshold.isCheckPointingNeeded( transactionId ) )
                     {
                         return true;
                     }

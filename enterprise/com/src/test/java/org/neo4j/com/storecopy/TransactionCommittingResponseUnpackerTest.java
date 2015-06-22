@@ -30,8 +30,6 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
-import org.neo4j.function.Consumers;
-import org.neo4j.function.LongConsumer;
 import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -289,14 +287,12 @@ public class TransactionCommittingResponseUnpackerTest
                 logVersionRepository, new PhysicalLogFile.Monitor.Adapter(), transactionMetadataCache ) );
         final KernelHealth health = mock( KernelHealth.class );
         final LogRotation logRotation = LogRotation.NO_ROTATION;
-        LongConsumer transactionCommittedConsumer = Consumers.LNOOP;
         final IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
                 any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );
         final TransactionRepresentationStoreApplier applier = mock(TransactionRepresentationStoreApplier.class);
         final TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
-                transactionCommittedConsumer, transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS,
-                health ) );
+                transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS, health ) );
         life.start();
 
 

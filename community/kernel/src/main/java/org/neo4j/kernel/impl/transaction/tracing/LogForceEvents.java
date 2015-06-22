@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.function;
+package org.neo4j.kernel.impl.transaction.tracing;
 
 /**
- * Represents an operation that accepts a single long input argument and returns no result.
- *
- * Unlike most other functional interfaces, Consumer is expected to operate via side-effects.
- *
+ * Common interface for starting events around log force.
  */
-public interface LongConsumer extends ThrowingLongConsumer<RuntimeException>
+public interface LogForceEvents
 {
     /**
-     * Performs this operation on the given argument.
-     *
-     * @param t the long input argument
+     * Begin the process of forcing the transaction log file.
      */
-    void accept( long t );
+    LogForceWaitEvent beginLogForceWait();
+
+    /**
+     * Begin a batched force of the transaction log file.
+     */
+    LogForceEvent beginLogForce();
 }

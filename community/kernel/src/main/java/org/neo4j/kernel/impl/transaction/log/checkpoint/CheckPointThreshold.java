@@ -27,7 +27,12 @@ public interface CheckPointThreshold
     CheckPointThreshold NONE = new CheckPointThreshold()
     {
         @Override
-        public boolean isCheckPointingNeeded()
+        public void initialize( long transactionId )
+        {
+        }
+
+        @Override
+        public boolean isCheckPointingNeeded( long lastCommittedTransactionId )
         {
             return false;
         }
@@ -35,16 +40,22 @@ public interface CheckPointThreshold
         @Override
         public void checkPointHappened( long transactionId )
         {
-
         }
     };
+    /**
+     * This method initialize the threshold by providing the initial transaction id
+     *
+     * @param transactionId the latest transaction committed id
+     */
+    void initialize( long transactionId );
 
     /**
      * This method can be used for querying the threshold about the necessity of a check point.
      *
+     * @param lastCommittedTransactionId the latest transaction committed id
      * @return true is a check point is needed, false otherwise.
      */
-    boolean isCheckPointingNeeded();
+    boolean isCheckPointingNeeded( long lastCommittedTransactionId );
 
     /**
      * This method notifies the threshold that a check point has happened. This must be called every time a check point

@@ -72,6 +72,19 @@ public class TimerTransactionTracer implements TransactionTracer, CheckPointTrac
     private static final LogCheckPointEvent LOG_CHECK_POINT_EVENT = new LogCheckPointEvent()
     {
         @Override
+        public LogForceWaitEvent beginLogForceWait()
+        {
+            return LogForceWaitEvent.NULL;
+        }
+
+        @Override
+        public LogForceEvent beginLogForce()
+        {
+            logForceBegin = System.nanoTime();
+            return LOG_FORCE_EVENT;
+        }
+
+        @Override
         public void close()
         {
             long elapsedNanos = System.nanoTime() - logCheckPointBegin;

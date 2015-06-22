@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.neo4j.function.Consumers;
 import org.neo4j.helpers.collection.CloseableVisitor;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -93,8 +92,8 @@ public class PhysicalLogicalTransactionStoreTest
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
                 transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
 
-        life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, Consumers.LNOOP, positionCache,
-                transactionIdStore, BYPASS, kernelHealth ) );
+        life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache, transactionIdStore, BYPASS,
+                kernelHealth ) );
 
         try
         {
@@ -139,11 +138,11 @@ public class PhysicalLogicalTransactionStoreTest
         final LogFileRecoverer recoverer = new LogFileRecoverer( new LogEntryReaderFactory().versionable(), visitor );
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
 
-        TransactionAppender appender = new BatchingTransactionAppender( logFile, NO_ROTATION,  Consumers.LNOOP,
-                positionCache, transactionIdStore, BYPASS, kernelHealth );
+        TransactionAppender appender = new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
+                transactionIdStore, BYPASS, kernelHealth );
         life.add( appender );
 
-        life.add(new Recovery(new Recovery.SPI()
+        life.add( new Recovery( new Recovery.SPI()
         {
             @Override
             public void forceEverything()
@@ -344,8 +343,8 @@ public class PhysicalLogicalTransactionStoreTest
                                            byte[] additionalHeader, int masterId, int authorId, long timeStarted,
                                            long latestCommittedTxWhenStarted, long timeCommitted ) throws IOException
     {
-        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
-                Consumers.LNOOP, positionCache, transactionIdStore, BYPASS, kernelHealth ) );
+        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
+                transactionIdStore, BYPASS, kernelHealth ) );
         PhysicalTransactionRepresentation transaction =
                 new PhysicalTransactionRepresentation( singleCreateNodeCommand() );
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,

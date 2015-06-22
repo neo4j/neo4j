@@ -36,12 +36,12 @@ public class TimeCheckPointThresholdTest
     {
         // given
         TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold( 100, clock );
+        timeCheckPointThreshold.initialize( 2 );
 
         clock.forward( 50, MILLISECONDS );
-        timeCheckPointThreshold.accept( 42 );
 
         // when
-        boolean checkPointingNeeded = timeCheckPointThreshold.isCheckPointingNeeded();
+        boolean checkPointingNeeded = timeCheckPointThreshold.isCheckPointingNeeded( 42 );
 
         // then
         assertFalse( checkPointingNeeded );
@@ -52,12 +52,12 @@ public class TimeCheckPointThresholdTest
     {
         // given
         TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold( 100, clock );
+        timeCheckPointThreshold.initialize( 2 );
 
         clock.forward( 100, MILLISECONDS );
-        timeCheckPointThreshold.accept( 42 );
 
         // when
-        boolean checkPointingNeeded = timeCheckPointThreshold.isCheckPointingNeeded();
+        boolean checkPointingNeeded = timeCheckPointThreshold.isCheckPointingNeeded( 42 );
 
         // then
         assertTrue( checkPointingNeeded );
@@ -68,11 +68,12 @@ public class TimeCheckPointThresholdTest
     {
         // given
         TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold( 100, clock );
+        timeCheckPointThreshold.initialize( 42 );
 
         clock.forward( 100, MILLISECONDS );
 
         // when
-        boolean checkPointingNeeded = timeCheckPointThreshold.isCheckPointingNeeded();
+        boolean checkPointingNeeded = timeCheckPointThreshold.isCheckPointingNeeded( 42 );
 
         // then
         assertFalse( checkPointingNeeded );
@@ -84,16 +85,16 @@ public class TimeCheckPointThresholdTest
     {
         // given
         TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold( 100, clock );
+        timeCheckPointThreshold.initialize( 2 );
 
         clock.forward( 100, MILLISECONDS );
 
-        timeCheckPointThreshold.accept( 42 );
         timeCheckPointThreshold.checkPointHappened( 42 );
 
         clock.forward( 100, MILLISECONDS );
 
         // when
-        boolean checkPointingNeeded = timeCheckPointThreshold.isCheckPointingNeeded();
+        boolean checkPointingNeeded = timeCheckPointThreshold.isCheckPointingNeeded( 42 );
 
         // then
         assertFalse( checkPointingNeeded );
@@ -105,17 +106,16 @@ public class TimeCheckPointThresholdTest
     {
         // given
         TimeCheckPointThreshold timeCheckPointThreshold = new TimeCheckPointThreshold( 100, clock );
+        timeCheckPointThreshold.initialize( 2 );
 
         clock.forward( 100, MILLISECONDS );
 
-        timeCheckPointThreshold.accept( 42 );
         timeCheckPointThreshold.checkPointHappened( 42 );
 
         clock.forward( 100, MILLISECONDS );
-        timeCheckPointThreshold.accept( 43 );
 
         // when
-        boolean checkPointingNeeded = timeCheckPointThreshold.isCheckPointingNeeded();
+        boolean checkPointingNeeded = timeCheckPointThreshold.isCheckPointingNeeded( 43 );
 
         // then
         assertTrue( checkPointingNeeded );

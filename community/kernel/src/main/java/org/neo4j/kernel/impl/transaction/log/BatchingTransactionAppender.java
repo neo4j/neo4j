@@ -26,14 +26,15 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.function.LongConsumer;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogForceEvents;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
@@ -81,7 +82,6 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogFile logFile;
     private final LogRotation logRotation;
-    private final LongConsumer transactionCommitConsumer;
     private final TransactionIdStore transactionIdStore;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
     private final KernelHealth kernelHealth;
@@ -92,13 +92,11 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     private IndexCommandDetector indexCommandDetector;
 
     public BatchingTransactionAppender( LogFile logFile, LogRotation logRotation,
-            LongConsumer transactionCommitConsumer, TransactionMetadataCache transactionMetadataCache,
-            TransactionIdStore transactionIdStore, IdOrderingQueue legacyIndexTransactionOrdering,
-            KernelHealth kernelHealth )
+            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
+            IdOrderingQueue legacyIndexTransactionOrdering, KernelHealth kernelHealth )
     {
         this.logFile = logFile;
         this.logRotation = logRotation;
-        this.transactionCommitConsumer = transactionCommitConsumer;
         this.transactionIdStore = transactionIdStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         this.kernelHealth = kernelHealth;
@@ -142,7 +140,6 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
             commit.publishAsCommitted();
             orderLegacyIndexChanges( commit );
             phase = 2;
-            transactionCommitConsumer.accept( transactionId );
             return transactionId;
         }
         finally
@@ -176,6 +173,29 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
             }
             return appendToLog( transaction, transactionId );
         }
+    }
+
+    @Override
+    public void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent ) throws IOException
+    {
+        try
+        {
+            // Synchronized with logFile to get absolute control over concurrent rotations happening
+            synchronized ( logFile )
+            {
+                synchronized ( channel )
+                {
+                    transactionLogWriter.checkPoint( logPosition );
+                }
+            }
+        }
+        catch ( Throwable t )
+        {
+            kernelHealth.panic( t );
+            throw t;
+        }
+
+        forceAfterAppend( logCheckPointEvent );
     }
 
     private static class TransactionCommitment implements Commitment
@@ -271,17 +291,16 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     /**
      * Called by the appender that just appended a transaction to the log.
      *
-     * @param logAppendEvent A trace event for the given log append operation.
+     * @param logForceEvents A trace event for the given log append operation.
      */
-    protected void forceAfterAppend( LogAppendEvent logAppendEvent ) throws IOException // 'protected' because of
-    // LogRotationDeadlockTest
+    protected void forceAfterAppend( LogForceEvents logForceEvents ) throws IOException
     {
         // There's a benign race here, where we add our link before we update our next pointer.
         // This is okay, however, because unparkAll() spins when it sees a null next pointer.
         ThreadLink threadLink = new ThreadLink( Thread.currentThread() );
         threadLink.next = threadLinkHead.getAndSet( threadLink );
 
-        try ( LogForceWaitEvent logForceWaitEvent = logAppendEvent.beginLogForceWait() )
+        try ( LogForceWaitEvent logForceWaitEvent = logForceEvents.beginLogForceWait() )
         {
             do
             {
@@ -289,7 +308,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                 {
                     try
                     {
-                        forceLog( logAppendEvent );
+                        forceLog( logForceEvents );
                     }
                     finally
                     {
@@ -312,15 +331,13 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         }
     }
 
-    private void forceLog( LogAppendEvent logAppendEvent ) throws IOException
+    private void forceLog( LogForceEvents logForceEvents ) throws IOException
     {
         ThreadLink links = threadLinkHead.getAndSet( ThreadLink.END );
-
-        try ( LogForceEvent logForceEvent = logAppendEvent.beginLogForce() )
+        try ( LogForceEvent logForceEvent = logForceEvents.beginLogForce() )
         {
             force();
         }
-
         unparkAll( links );
     }
 

@@ -33,7 +33,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 
-import org.neo4j.function.Consumers;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -147,8 +146,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     public void shouldForceLogChannel() throws Throwable
     {
         BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
-                Consumers.LNOOP, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering,
-                kernelHealth ) );
+                transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering, kernelHealth ) );
         life.start();
 
         appender.forceAfterAppend( logAppendEvent );
@@ -167,8 +165,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         // will be at capacity.
 
         final BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
-                Consumers.LNOOP, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering,
-                kernelHealth ) );
+                transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering, kernelHealth ) );
         life.start();
 
         Runnable runnable = createForceAfterAppendRunnable( appender );
@@ -198,8 +195,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         // will be at capacity.
 
         final BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
-                Consumers.LNOOP, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering,
-                kernelHealth ) );
+                transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering, kernelHealth ) );
         life.start();
 
         Runnable runnable = createForceAfterAppendRunnable( appender );

@@ -32,23 +32,24 @@ public class CountCommittedTransactionThresholdTest
     {
         // given
         CountCommittedTransactionThreshold threshold = new CountCommittedTransactionThreshold( 2 );
+        threshold.initialize( 2 );
 
         // when
-        boolean checkPointingNeeded = threshold.isCheckPointingNeeded();
+        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 2 );
 
         // then
         assertFalse( checkPointingNeeded );
-     }
+    }
 
     @Test
     public void checkPointIsNotNeededWhenTheNumberOfTransactionsIsUnderTheThreshold() throws Throwable
     {
         // given
         CountCommittedTransactionThreshold threshold = new CountCommittedTransactionThreshold( 2 );
+        threshold.initialize( 2 );
 
         // when
-        threshold.accept( 42 );
-        boolean checkPointingNeeded = threshold.isCheckPointingNeeded();
+        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 3 );
 
         // then
         assertFalse( checkPointingNeeded );
@@ -59,11 +60,10 @@ public class CountCommittedTransactionThresholdTest
     {
         // given
         CountCommittedTransactionThreshold threshold = new CountCommittedTransactionThreshold( 2 );
+        threshold.initialize( 2 );
 
         // when
-        threshold.accept( 42 );
-        threshold.accept( 43 );
-        boolean checkPointingNeeded = threshold.isCheckPointingNeeded();
+        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 4 );
 
         // then
         assertTrue( checkPointingNeeded );
@@ -74,12 +74,11 @@ public class CountCommittedTransactionThresholdTest
     {
         // given
         CountCommittedTransactionThreshold threshold = new CountCommittedTransactionThreshold( 2 );
+        threshold.initialize( 2 );
 
         // when
-        threshold.accept( 42 );
-        threshold.accept( 43 );
-        threshold.checkPointHappened( 43 );
-        boolean checkPointingNeeded = threshold.isCheckPointingNeeded();
+        threshold.checkPointHappened( 4 );
+        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 4 );
 
         // then
         assertFalse( checkPointingNeeded );
@@ -91,13 +90,11 @@ public class CountCommittedTransactionThresholdTest
     {
         // given
         CountCommittedTransactionThreshold threshold = new CountCommittedTransactionThreshold( 2 );
+        threshold.initialize( 2 );
 
         // when
-        threshold.accept( 42 );
-        threshold.accept( 43 );
-        threshold.checkPointHappened( 43 );
-        threshold.accept( 44 );
-        boolean checkPointingNeeded = threshold.isCheckPointingNeeded();
+        threshold.checkPointHappened( 4 );
+        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 5 );
 
         // then
         assertFalse( checkPointingNeeded );
@@ -108,14 +105,11 @@ public class CountCommittedTransactionThresholdTest
     {
         // given
         CountCommittedTransactionThreshold threshold = new CountCommittedTransactionThreshold( 2 );
+        threshold.initialize( 2 );
 
         // when
-        threshold.accept( 42 );
-        threshold.accept( 43 );
-        threshold.checkPointHappened( 43 );
-        threshold.accept( 44 );
-        threshold.accept( 45 );
-        boolean checkPointingNeeded = threshold.isCheckPointingNeeded();
+        threshold.checkPointHappened( 4 );
+        boolean checkPointingNeeded = threshold.isCheckPointingNeeded( 6 );
 
         // then
         assertTrue( checkPointingNeeded );

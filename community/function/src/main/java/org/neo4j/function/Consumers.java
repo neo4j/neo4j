@@ -33,15 +33,6 @@ public final class Consumers
         }
     };
 
-    public static final LongConsumer LNOOP = new LongConsumer()
-    {
-        @Override
-        public void accept( long t )
-        {
-
-        }
-    };
-
     /**
      * @param <T> The type to be consumed
      * @return a {@link Consumer} that does nothing.
@@ -50,21 +41,5 @@ public final class Consumers
     public static <T> Consumer<T> noop()
     {
         return (Consumer<T>) NOOP;
-    }
-
-
-    public static LongConsumer seq( final LongConsumer... consumers )
-    {
-        return new LongConsumer()
-        {
-            @Override
-            public void accept( long input )
-            {
-                for ( LongConsumer consumer : consumers )
-                {
-                    consumer.accept( input );
-                }
-            }
-        };
     }
 }

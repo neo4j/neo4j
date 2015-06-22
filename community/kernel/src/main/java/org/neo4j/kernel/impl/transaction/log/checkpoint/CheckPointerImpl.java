@@ -22,13 +22,9 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import java.io.IOException;
 
 import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
@@ -41,7 +37,7 @@ import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer.Prin
 
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 {
-    private final LogFile logFile;
+    private final TransactionAppender appender;
     private final TransactionIdStore transactionIdStore;
     private final CheckPointThreshold threshold;
     private final StoreFlusher storeFlusher;
@@ -50,14 +46,11 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final Log msgLog;
     private final CheckPointTracer tracer;
 
-    private WritableLogChannel channel;
-    private TransactionLogWriter transactionLogWriter;
-
-    public CheckPointerImpl( TransactionIdStore transactionIdStore,
-            CheckPointThreshold threshold, StoreFlusher storeFlusher, LogPruning logPruning, KernelHealth kernelHealth,
-            LogProvider logProvider, CheckPointTracer tracer, LogFile logFile )
+    public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
+            StoreFlusher storeFlusher, LogPruning logPruning, TransactionAppender appender, KernelHealth kernelHealth,
+            LogProvider logProvider, CheckPointTracer tracer )
     {
-        this.logFile = logFile;
+        this.appender = appender;
         this.transactionIdStore = transactionIdStore;
         this.threshold = threshold;
         this.storeFlusher = storeFlusher;
@@ -70,30 +63,28 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public void start() throws Throwable
     {
-        this.channel = logFile.getWriter();
-        this.transactionLogWriter =
-                new TransactionLogWriter( new LogEntryWriterV1( channel, NeoCommandHandler.EMPTY ) );
+        threshold.initialize( transactionIdStore.getLastCommittedTransactionId() );
     }
 
     @Override
     public void forceCheckPoint() throws IOException
     {
-        doCheckPoint();
+        doCheckPoint( LogCheckPointEvent.NULL );
     }
 
     @Override
     public void checkPointIfNeeded() throws IOException
     {
-        if ( threshold.isCheckPointingNeeded() )
+        if ( threshold.isCheckPointingNeeded( transactionIdStore.getLastCommittedTransactionId() ) )
         {
             try ( LogCheckPointEvent event = tracer.beginCheckPoint() )
             {
-                doCheckPoint();
+                doCheckPoint( event );
             }
         }
     }
 
-    private void doCheckPoint() throws IOException
+    private void doCheckPoint( LogCheckPointEvent logCheckPointEvent ) throws IOException
     {
         long[] lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
         long lastCommittedTransactionId = lastCommittedTransaction[0];
@@ -115,36 +106,19 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         msgLog.info( prefix( lastCommittedTransactionId ) + " Starting store flush..." );
         storeFlusher.forceEverything();
 
-        synchronized ( logFile )
-        {
-            synchronized ( channel )
-            {
-                /*
-                 * Check kernel health before going to write the next check point.  In case of a panic this check point
-                 * will be aborted, which is the safest alternative so that the next recovery will have a chance to
-                 * repair the damages.
-                 */
-                kernelHealth.assertHealthy( IOException.class );
-                try
-                {
-                    transactionLogWriter.checkPoint( logPosition );
-                    channel.emptyBufferIntoChannelAndClearIt();
-                    channel.force();
-                }
-                catch ( Throwable t )
-                {
-                    kernelHealth.panic( t );
-                    throw t;
-                }
-            }
-        }
-
+        /*
+         * Check kernel health before going to write the next check point.  In case of a panic this check point
+         * will be aborted, which is the safest alternative so that the next recovery will have a chance to
+         * repair the damages.
+         */
+        kernelHealth.assertHealthy( IOException.class );
+        appender.checkPoint( logPosition, logCheckPointEvent );
         threshold.checkPointHappened( lastCommittedTransactionId );
         msgLog.info( prefix( lastCommittedTransactionId ) + "Check pointing completed" );
 
         /*
-         * prune up to the version pointed from the latest check point,
-         * since it might be an earlier version than the current log version
+         * Prune up to the version pointed from the latest check point,
+         * since it might be an earlier version than the current log version.
          */
         logPruning.pruneLogs( logPosition.getLogVersion() );
     }

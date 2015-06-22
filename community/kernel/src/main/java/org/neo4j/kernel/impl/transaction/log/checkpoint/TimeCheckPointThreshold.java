@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.neo4j.function.LongConsumer;
 import org.neo4j.helpers.Clock;
 
-public class TimeCheckPointThreshold implements CheckPointThreshold, LongConsumer
+public class TimeCheckPointThreshold implements CheckPointThreshold
 {
-    private volatile boolean dirty = false;
+    private volatile long lastCheckPointedTransactionId;
     private volatile long nextCheckPointTime;
 
     private final long timeMillisThreshold;
@@ -39,21 +38,22 @@ public class TimeCheckPointThreshold implements CheckPointThreshold, LongConsume
     }
 
     @Override
-    public boolean isCheckPointingNeeded()
+    public void initialize( long transactionId )
     {
-        return dirty && clock.currentTimeMillis() >= nextCheckPointTime;
+        lastCheckPointedTransactionId = transactionId;
+    }
+
+    @Override
+    public boolean isCheckPointingNeeded( long lastCommittedTransactionId )
+    {
+        return lastCommittedTransactionId > lastCheckPointedTransactionId &&
+               clock.currentTimeMillis() >= nextCheckPointTime;
     }
 
     @Override
     public void checkPointHappened( long transactionId )
     {
         nextCheckPointTime = clock.currentTimeMillis() + timeMillisThreshold;
-        dirty = false;
-    }
-
-    @Override
-    public void accept( long transactionId )
-    {
-        dirty = true;
+        lastCheckPointedTransactionId = transactionId;
     }
 }

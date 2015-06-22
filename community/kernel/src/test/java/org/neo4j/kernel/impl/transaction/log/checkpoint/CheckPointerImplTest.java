@@ -24,24 +24,20 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
+import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyByte;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -52,11 +48,11 @@ public class CheckPointerImplTest
 {
     private static final NullLogProvider NULL_LOG_PROVIDER = NullLogProvider.getInstance();
 
-    private final LogFile logFile = mock( LogFile.class );
     private final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
     private final CheckPointThreshold threshold = mock( CheckPointThreshold.class );
     private final StoreFlusher flusher = mock( StoreFlusher.class );
     private final LogPruning logPruning = mock( LogPruning.class );
+    private final TransactionAppender appender = mock( TransactionAppender.class );
     private final KernelHealth health = mock( KernelHealth.class );
     private final CheckPointTracer tracer = mock( CheckPointTracer.class, RETURNS_MOCKS );
 
@@ -64,9 +60,9 @@ public class CheckPointerImplTest
     public void shouldNotFlushIfItIsNotNeeded() throws Throwable
     {
         // Given
-        CheckPointerImpl checkPointing = new CheckPointerImpl( txIdStore, threshold, flusher, logPruning, health,
-                NULL_LOG_PROVIDER, tracer, logFile );
-        when( threshold.isCheckPointingNeeded() ).thenReturn( false );
+        CheckPointerImpl checkPointing = new CheckPointerImpl( txIdStore, threshold, flusher, logPruning, appender, health,
+                NULL_LOG_PROVIDER, tracer );
+        when( threshold.isCheckPointingNeeded( anyLong() ) ).thenReturn( false );
 
         checkPointing.start();
 
@@ -76,19 +72,22 @@ public class CheckPointerImplTest
         // Then
         verifyZeroInteractions( flusher );
         verifyZeroInteractions( tracer );
+        verifyZeroInteractions( appender );
     }
 
     @Test
-    public void shouldFlushIfItIsTimeAndNoOneElseDidItBeforeUs() throws Throwable
+    public void shouldFlushIfItIsTime() throws Throwable
     {
         // Given
-        CheckPointerImpl checkPointing = new CheckPointerImpl( txIdStore, threshold, flusher, logPruning, health,
-                NULL_LOG_PROVIDER, tracer, logFile );
-        WritableLogChannel channel = spy( new InMemoryLogChannel() );
-        when( logFile.getWriter() ).thenReturn( channel );
-        when( logFile.currentLogVersion() ).thenReturn( 17l );
-        when( threshold.isCheckPointingNeeded() ).thenReturn( true, false );
-        when( txIdStore.getLastCommittedTransaction() ).thenReturn( new long[]{42l, 0l, 16l, 233l} );
+        CheckPointerImpl checkPointing = new CheckPointerImpl( txIdStore, threshold, flusher, logPruning, appender, health,
+                NULL_LOG_PROVIDER, tracer );
+        when( threshold.isCheckPointingNeeded( anyLong() ) ).thenReturn( true, false );
+        LogPosition logPosition = new LogPosition( 16l, 233l );
+        long initialTransactionId = 2l;
+        long transactionId = 42l;
+        long[] triggerCommittedTransaction = {transactionId, 0l, logPosition.getLogVersion(), logPosition.getByteOffset()};
+        when( txIdStore.getLastCommittedTransaction() ).thenReturn( triggerCommittedTransaction );
+        when( txIdStore.getLastCommittedTransactionId() ).thenReturn( initialTransactionId, transactionId, transactionId );
 
         checkPointing.start();
 
@@ -98,45 +97,12 @@ public class CheckPointerImplTest
         // Then
         verify( flusher, times( 1 ) ).forceEverything();
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( channel, atLeastOnce() ).put( anyByte() );
-        verify( channel, atLeastOnce() ).putLong( anyLong() );
-        verify( channel, times( 1 ) ).emptyBufferIntoChannelAndClearIt();
-        verify( channel, times( 1 ) ).force();
-        verify( threshold, times( 1 ) ).checkPointHappened( 42l );
-        verify( threshold, times( 1 ) ).isCheckPointingNeeded();
-        verify( logPruning, times( 1 ) ).pruneLogs( 16l );
+        verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        verify( threshold, times( 1 ) ).initialize( initialTransactionId );
+        verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
+        verify( threshold, times( 1 ) ).isCheckPointingNeeded( transactionId );
+        verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
         verify( tracer, times( 1 ) ).beginCheckPoint();
-        verifyNoMoreInteractions( flusher, health, channel, threshold, tracer );
-    }
-
-    @Test
-    public void shouldKernelPanicIfNotAbleToWriteACheckPoint() throws Throwable
-    {
-        // Given
-        CheckPointerImpl checkPointing = new CheckPointerImpl( txIdStore, threshold, flusher, logPruning, health,
-                NULL_LOG_PROVIDER, tracer, logFile );
-        WritableLogChannel channel = mock( WritableLogChannel.class, RETURNS_MOCKS );
-        when( logFile.getWriter() ).thenReturn( channel );
-        when( logFile.currentLogVersion() ).thenReturn( 17l );
-        when( threshold.isCheckPointingNeeded() ).thenReturn( true, false );
-        when( txIdStore.getLastCommittedTransaction() ).thenReturn( new long[]{42l, 0l, 16l, 233l} );
-        IOException ioex = new IOException( "boom!" );
-        doThrow( ioex ).when( channel ).force();
-
-        checkPointing.start();
-
-        // When
-        try
-        {
-            checkPointing.checkPointIfNeeded();
-            fail( "should have thrown " );
-        }
-        catch ( IOException ex )
-        {
-            assertEquals( ioex, ex );
-        }
-
-        // Then
-        verify( health, times( 1 ) ).panic( ioex );
+        verifyNoMoreInteractions( flusher, health, appender, threshold, tracer );
     }
 }

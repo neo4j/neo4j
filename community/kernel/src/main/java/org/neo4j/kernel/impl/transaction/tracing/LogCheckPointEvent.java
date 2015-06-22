@@ -19,15 +19,28 @@
  */
 package org.neo4j.kernel.impl.transaction.tracing;
 
-
-public interface LogCheckPointEvent extends AutoCloseable
+/**
+ * Represents the process of appending a check point to the transaction log.
+ */
+public interface LogCheckPointEvent extends LogForceEvents, AutoCloseable
 {
     LogCheckPointEvent NULL = new LogCheckPointEvent()
     {
         @Override
+        public LogForceWaitEvent beginLogForceWait()
+        {
+            return LogForceWaitEvent.NULL;
+        }
+
+        @Override
+        public LogForceEvent beginLogForce()
+        {
+            return LogForceEvent.NULL;
+        }
+
+        @Override
         public void close()
         {
-
         }
     };
 

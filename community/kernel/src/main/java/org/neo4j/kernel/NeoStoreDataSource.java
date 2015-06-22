@@ -31,8 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.function.Consumers;
-import org.neo4j.function.LongConsumer;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
@@ -799,6 +797,11 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         final LogRotation logRotation = new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ),
                 logFile, kernelHealth, logProvider );
 
+        final TransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
+                transactionMetadataCache, neoStore, legacyIndexTransactionOrdering, kernelHealth );
+        final LogicalTransactionStore logicalTransactionStore =
+                new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache );
+
         int txThreshold = config.get( GraphDatabaseSettings.check_point_interval_tx );
         final CountCommittedTransactionThreshold countCommittedTransactionThreshold =
                 new CountCommittedTransactionThreshold( txThreshold );
@@ -810,19 +813,10 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 CheckPointThresholds.or( countCommittedTransactionThreshold, timeCheckPointThreshold );
 
         final CheckPointerImpl checkPointer = new CheckPointerImpl( neoStore, threshold, storeFlusher, logPruning,
-                kernelHealth, logProvider, tracers.checkPointTracer, logFile );
+                appender, kernelHealth, logProvider, tracers.checkPointTracer );
 
         long recurringPeriod = Math.min( timeMillisThreshold, TimeUnit.SECONDS.toMillis( 10 ) );
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, scheduler, recurringPeriod );
-
-        LongConsumer transactionCommittedConsumer =
-                Consumers.seq( countCommittedTransactionThreshold, timeCheckPointThreshold );
-
-        final TransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
-                transactionCommittedConsumer, transactionMetadataCache, neoStore, legacyIndexTransactionOrdering,
-                kernelHealth );
-        final LogicalTransactionStore logicalTransactionStore =
-                new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache );
 
         life.add( logFile );
         life.add( appender );
