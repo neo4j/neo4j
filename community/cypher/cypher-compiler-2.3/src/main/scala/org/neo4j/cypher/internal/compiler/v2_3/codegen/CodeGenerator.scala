@@ -52,7 +52,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
         val idMap = LogicalPlanIdentificationBuilder(plan)
 
         var sources = Map.empty[String, String]
-        val sourceSink: SourceSink = if(getBoolean("org.neo4j.cypher.codegen.IncludeSourcesInPlanDescription")) Some(
+        val sourceSink: SourceSink = if(getBoolean("org.neo4j.cypher.internal.codegen.IncludeSourcesInPlanDescription")) Some(
           (className:String, sourceCode:String) => { sources = sources.updated(className, sourceCode) }) else None
 
         val query: GeneratedQuery = generateQuery(plan, semanticTable, idMap, sourceSink)
