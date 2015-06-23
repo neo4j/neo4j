@@ -81,7 +81,7 @@ abstract class IntegralNumberProperty extends NumberProperty implements DefinedP
         if ( other instanceof IntegralNumberProperty )
         {
             IntegralNumberProperty that = (IntegralNumberProperty) other;
-            return (int) (this.longValue() - that.longValue());
+            return Long.compare( this.longValue(), that.longValue() );
         }
         else
         {
