@@ -109,6 +109,8 @@ public class NetworkReceiver
 
     volatile boolean bindingDetected = false;
 
+    private volatile boolean paused;
+
     public NetworkReceiver( Monitor monitor, Configuration config, Logging logging )
     {
         this.monitor = monitor;
@@ -163,6 +165,11 @@ public class NetworkReceiver
     {
     }
 
+    public void setPaused( boolean paused )
+    {
+        this.paused = paused;
+    }
+
     private void listen( int minPort, int maxPort )
             throws URISyntaxException, ChannelException, UnknownHostException
     {
@@ -174,7 +181,7 @@ public class NetworkReceiver
                 InetAddress host;
                 String address = config.clusterServer().getHost();
                 InetSocketAddress localAddress;
-                if ( address == null || address.equals( INADDR_ANY ))
+                if ( address == null || address.equals( INADDR_ANY ) )
                 {
                     localAddress = new InetSocketAddress( checkPort );
                 }
@@ -209,6 +216,11 @@ public class NetworkReceiver
 
     public void receive( Message message )
     {
+        if ( paused )
+        {
+            return;
+        }
+
         for ( MessageProcessor processor : processors )
         {
             try
@@ -231,14 +243,21 @@ public class NetworkReceiver
     {
         String uri;
 
-        if (address.getAddress().getHostAddress().startsWith( "0" ))
-            uri =  CLUSTER_SCHEME + "://0.0.0.0:"+address.getPort(); // Socket.toString() already prepends a /
+        if ( address.getAddress().getHostAddress().startsWith( "0" ) )
+        {
+            uri = CLUSTER_SCHEME + "://0.0.0.0:" + address.getPort(); // Socket.toString() already prepends a /
+        }
         else
-            uri = CLUSTER_SCHEME + "://" + address.getAddress().getHostAddress()+":"+address.getPort(); // Socket.toString() already prepends a /
+        {
+            uri = CLUSTER_SCHEME + "://" + address.getAddress().getHostAddress() + ":" + address.getPort(); // Socket
+        }
+        // .toString() already prepends a /
 
         // Add name if given
-        if (config.name() != null)
-            uri += "/?name="+config.name();
+        if ( config.name() != null )
+        {
+            uri += "/?name=" + config.name();
+        }
 
         return URI.create( uri );
     }
@@ -299,7 +318,8 @@ public class NetworkReceiver
         public ChannelPipeline getPipeline() throws Exception
         {
             ChannelPipeline pipeline = Channels.pipeline();
-            pipeline.addLast( "frameDecoder",new ObjectDecoder( 1024 * 1000, NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
+            pipeline.addLast( "frameDecoder",
+                    new ObjectDecoder( 1024 * 1000, NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
             pipeline.addLast( "serverHandler", new MessageReceiver() );
             return pipeline;
         }
@@ -319,9 +339,9 @@ public class NetworkReceiver
         @Override
         public void messageReceived( ChannelHandlerContext ctx, MessageEvent event ) throws Exception
         {
-            if (!bindingDetected)
+            if ( !bindingDetected )
             {
-                InetSocketAddress local = ((InetSocketAddress)event.getChannel().getLocalAddress());
+                InetSocketAddress local = ((InetSocketAddress) event.getChannel().getLocalAddress());
                 bindingDetected = true;
                 listeningAt( getURI( local ) );
             }
@@ -332,7 +352,7 @@ public class NetworkReceiver
             InetSocketAddress remote = (InetSocketAddress) ctx.getChannel().getRemoteAddress();
             String remoteAddress = remote.getAddress().getHostAddress();
             URI fromHeader = URI.create( message.getHeader( Message.FROM ) );
-            fromHeader = URI.create(fromHeader.getScheme()+"://"+remoteAddress + ":" + fromHeader.getPort());
+            fromHeader = URI.create( fromHeader.getScheme() + "://" + remoteAddress + ":" + fromHeader.getPort() );
             message.setHeader( Message.FROM, fromHeader.toASCIIString() );
 
             msgLog.debug( "Received:" + message );
