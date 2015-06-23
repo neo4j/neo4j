@@ -117,6 +117,18 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     }
 
     @Override
+    public JobHandle schedule( Group group, final Runnable runnable, long initialDelay, TimeUnit timeUnit )
+    {
+        switch ( group.strategy() )
+        {
+        case POOLED:
+            return new PooledJobHandle( scheduledExecutor.schedule( runnable, initialDelay, timeUnit ) );
+        default:
+            throw new IllegalArgumentException( "Unsupported strategy to use for delayed jobs: " + group.strategy() );
+        }
+    }
+
+    @Override
     public void shutdown()
     {
         RuntimeException exception = null;

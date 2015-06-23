@@ -19,13 +19,13 @@
  */
 package recovery;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -37,13 +37,12 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
@@ -54,7 +53,7 @@ public class CountsStoreRecoveryTest
     {
         // given
         createNode( "A" );
-        rotateLog();
+        checkPoint();
         createNode( "B" );
         flushNeoStoreOnly();
 
@@ -97,10 +96,10 @@ public class CountsStoreRecoveryTest
     }
 
     @SuppressWarnings( "deprecated" )
-    private void rotateLog() throws IOException
+    private void checkPoint() throws IOException
     {
         ((GraphDatabaseAPI) db).getDependencyResolver()
-                               .resolveDependency( LogRotation.class ).rotateLogFile();
+                               .resolveDependency( CheckPointer.class ).forceCheckPoint();
     }
 
     private void crashAndRestart()

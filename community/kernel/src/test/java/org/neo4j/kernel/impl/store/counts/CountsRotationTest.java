@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -53,7 +53,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.impl.store.counts.FileVersion.INITIAL_MINOR_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
@@ -138,7 +137,7 @@ public class CountsRotationTest
             tx.success();
         }
         // and rotating the log (which implies flushing)
-        rotateLog( db );
+        checkPoint( db );
         // and creating another node after it
         try ( Transaction tx = db.beginTx() )
         {
@@ -176,9 +175,9 @@ public class CountsRotationTest
         db.shutdown();
     }
 
-    private void rotateLog( GraphDatabaseAPI db ) throws IOException
+    private void checkPoint( GraphDatabaseAPI db ) throws IOException
     {
-        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
     }
 
     private final Label A = DynamicLabel.label( "A" );

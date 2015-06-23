@@ -30,10 +30,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_1P_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
 {
@@ -83,8 +83,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     }
 
     private static final TransactionMetadataCache.TransactionMetadata METADATA_FOR_EMPTY_STORE =
-            new TransactionMetadataCache.TransactionMetadata( -1, -1, new LogPosition( 0, LOG_HEADER_SIZE ),
-                    TransactionIdStore.BASE_TX_CHECKSUM );
+            new TransactionMetadataCache.TransactionMetadata( -1, -1, LogPosition.start( 0 ), BASE_TX_CHECKSUM );
 
     @Override
     public TransactionMetadata getMetadataFor( long transactionId ) throws IOException

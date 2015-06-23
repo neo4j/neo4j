@@ -137,8 +137,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         writer.setChannel( channel );
     }
 
-    private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog )
-            throws IOException
+    private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog ) throws IOException
     {
         /*
          * The store is now flushed. If we fail now the recovery code will open the
@@ -213,9 +212,23 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
 
         ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
         LogHeader header = readLogHeader( buffer, rawChannel, true );
-        assert header.logVersion == version;
+        assert header != null && header.logVersion == version;
 
         return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
+    }
+
+
+    public static PhysicalLogVersionedStoreChannel tryOpenForVersion( PhysicalLogFiles logFiles,
+            FileSystemAbstraction fileSystem, long version )
+    {
+        try
+        {
+            return openForVersion( logFiles, fileSystem, version );
+        }
+        catch ( IOException ex )
+        {
+            return null;
+        }
     }
 
     @Override
@@ -245,7 +258,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
             }
 
             long lowTransactionId = previousLogLastTxId + 1;
-            LogPosition position = new LogPosition( logVersion, LOG_HEADER_SIZE );
+            LogPosition position = LogPosition.start( logVersion );
             if ( !visitor.visit( position, lowTransactionId, highTransactionId ) )
             {
                 break;

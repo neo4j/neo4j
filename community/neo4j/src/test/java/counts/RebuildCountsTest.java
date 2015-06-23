@@ -19,13 +19,13 @@
  */
 package counts;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -37,17 +37,16 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -171,7 +170,7 @@ public class RebuildCountsTest
     private void rotateLog() throws IOException
     {
         ((GraphDatabaseAPI) db).getDependencyResolver()
-                               .resolveDependency( LogRotation.class ).rotateLogFile();
+                               .resolveDependency( CheckPointer.class ).forceCheckPoint();
     }
 
     private FileSystemAbstraction crash()

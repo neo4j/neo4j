@@ -50,7 +50,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionCommitted( long transactionId, long checksum )
+    public void transactionCommitted( long transactionId, long checksum, long logVersion, long logByteOffset )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }
@@ -80,7 +80,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum )
+    public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long logVersion, long logByteOffset )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }

@@ -41,6 +41,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
@@ -59,6 +60,7 @@ import static java.lang.Math.max;
 
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 
 /**
@@ -272,11 +274,13 @@ public class StoreCopyClient
                 monitor.finishReceivingTransactions( endTxId );
             }
 
+            long currentLogVersion = logVersionRepository.getCurrentLogVersion();
+            writer.checkPoint( new LogPosition( currentLogVersion, LOG_HEADER_SIZE ) );
+
             // And since we write this manually we need to set the correct transaction id in the
             // header of the log that we just wrote.
-            writeLogHeader( fs,
-                    logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ),
-                    logVersionRepository.getCurrentLogVersion(), max( BASE_TX_ID, endTxId-1 ) );
+            File currentLogFile = logFiles.getLogFileForVersion( currentLogVersion );
+            writeLogHeader( fs, currentLogFile, currentLogVersion, max( BASE_TX_ID, endTxId - 1 ) );
         }
         finally
         {

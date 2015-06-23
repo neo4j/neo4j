@@ -21,6 +21,7 @@ package org.neo4j.kernel.monitoring.tracing;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.logging.Log;
 
@@ -85,7 +86,7 @@ import org.neo4j.logging.Log;
  * </p>
  * <p>
  *     The {@code default} and {@code null} implementation are always available, and 3rd party implementations can
- *     piggy-back on them and extend them. At least one 3rd party implimentation is known at this point; the
+ *     piggy-back on them and extend them. At least one 3rd party implementation is known at this point; the
  *     <a href="https://github.com/neo4j-contrib/neo4j-jfr">neo4j-jfr implementation</a>. It is recommended that
  *     those change the tracer or trace event interfaces, or add tracing to more subsystems, also make sure to keep
  *     the neo4j-jfr code base up to date.
@@ -95,6 +96,7 @@ public class Tracers
 {
     public final PageCacheTracer pageCacheTracer;
     public final TransactionTracer transactionTracer;
+    public final CheckPointTracer checkPointTracer;
 
     /**
      * Create a Tracers subsystem with the desired implementation, if it can be found and created.
@@ -110,6 +112,7 @@ public class Tracers
         {
             pageCacheTracer = PageCacheTracer.NULL;
             transactionTracer = TransactionTracer.NULL;
+            checkPointTracer = CheckPointTracer.NULL;
         }
         else
         {
@@ -140,6 +143,7 @@ public class Tracers
 
             pageCacheTracer = foundFactory.createPageCacheTracer();
             transactionTracer = foundFactory.createTransactionTracer();
+            checkPointTracer = foundFactory.createCheckPointTracer();
         }
     }
 }

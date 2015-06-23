@@ -165,6 +165,16 @@ public class NeoStoreUtil
         return getValue( Position.LAST_TRANSACTION_CHECKSUM );
     }
 
+    public long getLastCommittedTxLogVersion()
+    {
+        return getValue( Position.LAST_TRANSACTION_LOG_VERSION );
+    }
+
+    public long getLastCommittedTxLogByteOffset()
+    {
+        return getValue( Position.LAST_TRANSACTION_LOG_BYTE_OFFSET );
+    }
+
     @Override
     public String toString()
     {

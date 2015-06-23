@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup;
+package org.neo4j.backup.stresstests;
 
 import org.junit.Test;
 
 import java.io.File;
 import java.util.concurrent.Callable;
+
+import org.neo4j.backup.BackupServiceStressTestingBuilder;
 
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;

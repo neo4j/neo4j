@@ -288,7 +288,8 @@ public class StoreUpgraderTest
         NeoStore neoStore = new StoreFactory( fileSystem, dbDirectory, pageCache,
                 NullLogProvider.getInstance(), mock( Monitors.class ) ).newNeoStore( false );
 
-        assertThat( neoStore.getUpgradeTransaction(), equalTo( neoStore.getLastCommittedTransaction() ) );
+        assertThat( neoStore.getUpgradeTransaction()[0], equalTo( neoStore.getLastCommittedTransaction()[0] ) );
+        assertThat( neoStore.getUpgradeTransaction()[1], equalTo( neoStore.getLastCommittedTransaction()[1] ) );
         assertThat( neoStore.getUpgradeTime(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );
 
         long minuteAgo = System.currentTimeMillis() - MINUTES.toMillis( 1 );

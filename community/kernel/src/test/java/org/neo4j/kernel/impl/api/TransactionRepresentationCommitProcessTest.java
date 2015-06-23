@@ -85,7 +85,7 @@ public class TransactionRepresentationCommitProcessTest
             assertTrue( contains( e, rootCause.getMessage(), rootCause.getClass() ) );
         }
 
-        verify( transactionIdStore, times( 0 ) ).transactionCommitted( txId, 0 );
+        verify( transactionIdStore, times( 0 ) ).transactionCommitted( txId, 0, 0, 0 );
     }
 
     @Test

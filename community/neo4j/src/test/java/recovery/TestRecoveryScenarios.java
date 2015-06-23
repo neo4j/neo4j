@@ -45,8 +45,8 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -69,7 +69,7 @@ public class TestRecoveryScenarios
     {
         // GIVEN
         Node node = createNodeWithProperty( "key", "value", label );
-        rotateLog();
+        checkPoint();
         setProperty( node, "other-key", 1 );
         deleteNode( node );
         flush.flush( db );
@@ -97,7 +97,7 @@ public class TestRecoveryScenarios
         // GIVEN
         createIndex( label, "key" );
         Node node = createNodeWithProperty( "key", "value" );
-        rotateLog();
+        checkPoint();
         addLabel( node, label );
         InMemoryIndexProvider outdatedIndexProvider = indexProvider.snapshot();
         removeProperty( node, "key" );
@@ -133,7 +133,7 @@ public class TestRecoveryScenarios
             node.addLabel( label );
             tx.success();
         }
-        rotateLog();
+        checkPoint();
         InMemoryIndexProvider outdatedIndexProvider = indexProvider.snapshot();
         setProperty( node, "key", "value" );
         removeLabels( node, labels );
@@ -156,7 +156,7 @@ public class TestRecoveryScenarios
     {
         // GIVEN
         Node node = createNode( label );
-        rotateLog();
+        checkPoint();
         deleteNode( node );
 
         // WHEN
@@ -259,7 +259,7 @@ public class TestRecoveryScenarios
                     @Override
                     void flush( GraphDatabaseAPI db )
                     {
-                        db.getDependencyResolver().resolveDependency( LogRotationControl.class ).forceEverything();
+                        db.getDependencyResolver().resolveDependency( StoreFlusher.class ).forceEverything();
                     }
                 },
         FLUSH_PAGE_CACHE
@@ -306,9 +306,9 @@ public class TestRecoveryScenarios
         db.shutdown();
     }
 
-    private void rotateLog() throws IOException
+    private void checkPoint() throws IOException
     {
-        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
     }
 
     private void deleteNode( Node node )

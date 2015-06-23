@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -202,13 +203,13 @@ public class BackupServiceIT
         }
 
         final File oldLog = db.getDependencyResolver().resolveDependency( LogFile.class ).currentLogFile();
-        rotate( db );
+        rotateAndCheckPoint( db );
 
         for ( int i = 0; i < 1; i++ )
         {
             createAndIndexNode( db, i );
         }
-        rotate( db );
+        rotateAndCheckPoint( db );
 
         long lastCommittedTxBefore = db.getDependencyResolver().resolveDependency( NeoStore.class )
                 .getLastCommittedTransactionId();
@@ -335,7 +336,7 @@ public class BackupServiceIT
         BackupService backupService = backupService();
 
         createAndIndexNode( db, 1 );
-        rotate( db );
+        rotateAndCheckPoint( db );
 
         // A full backup
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
@@ -343,13 +344,13 @@ public class BackupServiceIT
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
-        rotate( db );
+        rotateAndCheckPoint( db );
         createAndIndexNode( db, 3 );
-        rotate( db );
+        rotateAndCheckPoint( db );
         createAndIndexNode( db, 4 );
-        rotate( db );
+        rotateAndCheckPoint( db );
         createAndIndexNode( db, 5 );
-        rotate( db );
+        rotateAndCheckPoint( db );
 
         // when
         try
@@ -384,11 +385,11 @@ public class BackupServiceIT
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
-        rotate( db );
+        rotateAndCheckPoint( db );
         createAndIndexNode( db, 3 );
-        rotate( db );
+        rotateAndCheckPoint( db );
         createAndIndexNode( db, 4 );
-        rotate( db );
+        rotateAndCheckPoint( db );
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
@@ -400,9 +401,10 @@ public class BackupServiceIT
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
     }
 
-    private void rotate( GraphDatabaseAPI db ) throws IOException
+    private void rotateAndCheckPoint( GraphDatabaseAPI db ) throws IOException
     {
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
     }
 
     @Test

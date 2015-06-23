@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
+import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -73,7 +73,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     private final Monitors monitors;
 
     private final TransactionCommitProcess transactionCommitProcess;
-    private final LogRotationControl logRotationControlSupplier;
+    private final StoreFlusher storeFlusher;
     private final LogicalTransactionStore txStore;
     private final TransactionIdStore transactionIdStore;
 
@@ -84,7 +84,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
                                  RelationshipTypeTokenHolder relationshipTypeTokenHolder,
                                  IdGeneratorFactory idGeneratorFactory, Locks locks,
                                  TransactionCommitProcess transactionCommitProcess,
-                                 LogRotationControl logRotationControlSupplier,
+                                 StoreFlusher storeFlusher,
                                  TransactionIdStore transactionIdStore,
                                  LogicalTransactionStore logicalTransactionStore,
                                  NeoStoreDataSource neoStoreDataSource,
@@ -102,7 +102,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
         this.idGeneratorFactory = idGeneratorFactory;
         this.locks = locks;
         this.transactionCommitProcess = transactionCommitProcess;
-        this.logRotationControlSupplier = logRotationControlSupplier;
+        this.storeFlusher = storeFlusher;
         this.neoStoreDataSource = neoStoreDataSource;
         this.jobScheduler = jobScheduler;
         this.storeDir = new File( graphDb.getStoreDir() );
@@ -185,8 +185,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
     {
         StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, neoStoreDataSource,
-                logRotationControlSupplier, fileSystem, storeDir,
-                monitors.newMonitor( StoreCopyServer.Monitor.class ) );
+                storeFlusher, fileSystem, storeDir, monitors.newMonitor( StoreCopyServer.Monitor.class ) );
         return streamer.flushStoresAndStreamStoreFiles( writer, false );
     }
 
@@ -205,7 +204,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public JobScheduler.JobHandle scheduleRecurringJob( JobScheduler.Group group, long interval, Runnable job )
     {
-        return jobScheduler.scheduleRecurring( group, job, interval, TimeUnit.MILLISECONDS);
+        return jobScheduler.scheduleRecurring( group, job, interval, TimeUnit.MILLISECONDS );
     }
 
     @Override

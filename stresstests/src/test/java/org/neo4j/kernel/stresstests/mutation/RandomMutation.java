@@ -17,18 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.stresstests.mutation;
 
-import java.io.IOException;
-
-import org.neo4j.io.fs.StoreChannel;
-
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-
-public class LogRecoveryCheck
+public interface RandomMutation
 {
-    public static boolean recoveryRequired(StoreChannel storeChannel) throws IOException
-    {
-        return storeChannel.size() > LOG_HEADER_SIZE;
-    }
+    void perform();
 }

@@ -35,7 +35,7 @@ public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,IOExce
     private final CloseableVisitor<CommittedTransactionRepresentation,IOException> visitor;
 
     public LogFileRecoverer( LogEntryReader<ReadableVersionableLogChannel> logEntryReader,
-                             CloseableVisitor<CommittedTransactionRepresentation,IOException> visitor )
+            CloseableVisitor<CommittedTransactionRepresentation,IOException> visitor )
     {
         this.logEntryReader = logEntryReader;
         this.visitor = visitor;
@@ -48,19 +48,21 @@ public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,IOExce
                 new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
 
         try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
-                new PhysicalTransactionCursor<>( recoveredDataChannel, logEntryReader ) )
+                      new PhysicalTransactionCursor<>( recoveredDataChannel, logEntryReader ) )
         {
-            long lastKnownGoodPosition = channel.position();
             while ( physicalTransactionCursor.next() && !visitor.visit( physicalTransactionCursor.get() ) )
             {
-                lastKnownGoodPosition = channel.position();
             }
 
             // Now that all ok transactions have been read, if needed truncate the position to cut
             // off any potentially broken transactions
-            if (channel.position() > lastKnownGoodPosition)
+            long lastKnownGoodPosition = physicalTransactionCursor.lastKnownGoodPosition();
+            if ( channel.position() > lastKnownGoodPosition )
+            {
                 channel.truncate( lastKnownGoodPosition );
+            }
         }
+
         visitor.close();
         return true;
     }

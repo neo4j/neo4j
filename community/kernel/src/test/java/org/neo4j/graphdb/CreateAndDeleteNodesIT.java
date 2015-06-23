@@ -30,7 +30,8 @@ public class CreateAndDeleteNodesIT
 
     public @Rule ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
-    enum RelTypes implements RelationshipType {
+    enum RelTypes implements RelationshipType
+    {
         ASD
     }
 

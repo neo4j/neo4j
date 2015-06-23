@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.transaction.log.LogRecoveryCheck;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -34,9 +35,9 @@ public class Recovery extends LifecycleAdapter
 {
     public interface Monitor
     {
-        void recoveryRequired( long recoveredLogVersion );
+        void recoveryRequired( LogPosition recoveryPosition );
 
-        void logRecovered();
+        void logRecovered( LogPosition endPosition );
 
         void recoveryCompleted();
     }
@@ -44,9 +45,12 @@ public class Recovery extends LifecycleAdapter
     public interface SPI
     {
         void forceEverything();
-        long getCurrentLogVersion();
-        Visitor<LogVersionedStoreChannel, IOException> getRecoverer();
-        LogVersionedStoreChannel getLogFile( long recoveryVersion ) throws IOException;
+
+        Visitor<LogVersionedStoreChannel,IOException> getRecoverer();
+
+        Iterator<LogVersionedStoreChannel> getLogFiles( long fromVersion ) throws IOException;
+
+        LogPosition getPositionToRecoverFrom() throws IOException;
     }
 
     private final SPI spi;
@@ -54,7 +58,7 @@ public class Recovery extends LifecycleAdapter
 
     private boolean recoveredLog = false;
 
-    public Recovery(SPI spi, Monitor monitor)
+    public Recovery( SPI spi, Monitor monitor )
     {
         this.spi = spi;
         this.monitor = monitor;
@@ -63,27 +67,35 @@ public class Recovery extends LifecycleAdapter
     @Override
     public void init() throws Throwable
     {
-        long recoveryVersion = spi.getCurrentLogVersion();
-        try ( LogVersionedStoreChannel toRecover = spi.getLogFile( recoveryVersion ))
+        LogPosition recoveryPosition = spi.getPositionToRecoverFrom();
+        if ( LogPosition.UNSPECIFIED.equals( recoveryPosition ) )
         {
-            if ( LogRecoveryCheck.recoveryRequired( toRecover ) )
-            {   // There's already data in here, which means recovery will need to be performed.
-                monitor.recoveryRequired( toRecover.getVersion() );
-                spi.getRecoverer().visit( toRecover );
-                recoveredLog = true;
-                monitor.logRecovered();
-
-                // intentionally keep it open since we're continuing using the underlying channel for the writer below
-                spi.forceEverything();
+            return;
+        }
+        Iterator<LogVersionedStoreChannel> logFiles = spi.getLogFiles( recoveryPosition.getLogVersion() );
+        monitor.recoveryRequired( recoveryPosition );
+        Visitor<LogVersionedStoreChannel,IOException> recoverer = spi.getRecoverer();
+        while ( logFiles.hasNext() )
+        {
+            try ( LogVersionedStoreChannel toRecover = logFiles.next() )
+            {
+                toRecover.position( recoveryPosition.getByteOffset() );
+                recoverer.visit( toRecover );
+                recoveryPosition = LogPosition.start( recoveryPosition.getLogVersion() + 1 );
             }
         }
+        recoveredLog = true;
+        monitor.logRecovered( recoveryPosition );
+        spi.forceEverything();
     }
 
     @Override
     public void start() throws Throwable
     {
         // This is here as by now all other services have reacted to the recovery process
-        if (recoveredLog)
+        if ( recoveredLog )
+        {
             monitor.recoveryCompleted();
+        }
     }
 }

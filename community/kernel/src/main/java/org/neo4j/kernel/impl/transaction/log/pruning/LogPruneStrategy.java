@@ -21,5 +21,5 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 
 public interface LogPruneStrategy
 {
-    void prune();
+    void prune( long upToLogVersion );
 }

@@ -1055,7 +1055,7 @@ public class TestNeoStore
         FileSystemAbstraction fileSystem = fs.get();
         File storeDir = new File("target/test-data/set-version").getAbsoluteFile();
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
-        assertEquals( 1, NeoStore.setRecord( fileSystem, new File( storeDir,
+        assertEquals( 0, NeoStore.setRecord( fileSystem, new File( storeDir,
                 NeoStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 10 ) );
         assertEquals( 10, NeoStore.setRecord( fileSystem, new File( storeDir,
                 NeoStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 12 ) );
@@ -1141,7 +1141,7 @@ public class TestNeoStore
         neoStore.setCreationTime( 3 );
         neoStore.setRandomNumber( 4 );
         neoStore.setCurrentLogVersion( 5 );
-        neoStore.setLastCommittedAndClosedTransactionId( 6, 0 );
+        neoStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 0 );
         neoStore.setStoreVersion( 7 );
         neoStore.setGraphNextProp( 8 );
         neoStore.setLatestConstraintIntroducingTx( 9 );

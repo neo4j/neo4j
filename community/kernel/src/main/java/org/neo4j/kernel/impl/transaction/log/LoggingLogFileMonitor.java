@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.File;
 
-import org.neo4j.kernel.Recovery;
+import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
 import org.neo4j.logging.Log;
@@ -41,13 +41,13 @@ public class LoggingLogFileMonitor implements PhysicalLogFile.Monitor, RecoveryV
     }
 
     @Override
-    public void recoveryRequired( long recoveredLogVersion )
+    public void recoveryRequired( LogPosition startPosition )
     {
-        log.info( "Recovery required for log with version " + recoveredLogVersion );
+        log.info( "Recovery required from position " + startPosition );
     }
 
     @Override
-    public void logRecovered()
+    public void logRecovered( LogPosition endPosition )
     {
     }
 

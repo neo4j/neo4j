@@ -316,7 +316,7 @@ public class TransactionCommittingResponseUnpackerTest
         catch ( Exception e )
         {
             // THEN apart from failing we don't want any committed/closed calls to TransactionIdStore
-            verify( transactionIdStore, times( 0 ) ).transactionCommitted( anyLong(), anyLong() );
+            verify( transactionIdStore, times( 0 ) ).transactionCommitted( anyLong(), anyLong(), anyLong(), anyLong() );
             verify( transactionIdStore, times( 0 ) ).transactionClosed( anyLong() );
         }
     }

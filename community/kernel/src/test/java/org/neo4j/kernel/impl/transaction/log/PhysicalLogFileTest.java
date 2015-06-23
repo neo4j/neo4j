@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogFile.LogFileVisitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
+import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
@@ -44,7 +44,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 public class PhysicalLogFileTest
@@ -54,7 +53,7 @@ public class PhysicalLogFileTest
     {
         // GIVEN
         String name = "log";
-        LogRotationControl logRotationControl = mock( LogRotationControl.class );
+        StoreFlusher storeFlusher = mock( StoreFlusher.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         life.add( new PhysicalLogFile( fs, logFiles, 1000,
@@ -77,7 +76,7 @@ public class PhysicalLogFileTest
     {
         // GIVEN
         String name = "log";
-        LogRotationControl logRotationControl = mock( LogRotationControl.class );
+        StoreFlusher logRotationControl = mock( StoreFlusher.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         Monitor monitor = mock( Monitor.class );
@@ -118,7 +117,7 @@ public class PhysicalLogFileTest
     {
         // GIVEN
         String name = "log";
-        LogRotationControl logRotationControl = mock( LogRotationControl.class );
+        StoreFlusher logRotationControl = mock( StoreFlusher.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
@@ -173,7 +172,7 @@ public class PhysicalLogFileTest
     {
         // GIVEN
         String name = "log";
-        LogRotationControl logRotationControl = mock( LogRotationControl.class );
+        StoreFlusher storeFlusher = mock( StoreFlusher.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50,
@@ -228,7 +227,7 @@ public class PhysicalLogFileTest
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
-    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0 );
+    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0, 0, 0 );
     private static final Visitor<ReadableVersionableLogChannel, IOException> NO_RECOVERY_EXPECTED =
             new Visitor<ReadableVersionableLogChannel, IOException>()
             {

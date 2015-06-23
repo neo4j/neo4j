@@ -184,12 +184,12 @@ public abstract class SubProcess<T, P> implements Serializable
         }
         return t.cast( Proxy.newProxyInstance( t.getClassLoader(), new Class[] { t }, live( handler ) ) );
     }
-    
+
     protected PrintStream errorStreamTarget()
     {
         return System.err;
     }
-    
+
     protected PrintStream inputStreamTarget()
     {
         return System.out;

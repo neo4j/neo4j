@@ -19,10 +19,10 @@
  */
 package org.neo4j.com.storecopy;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.junit.Test;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -55,7 +55,7 @@ public class ResponsePackerTest
         IOCursor<CommittedTransactionRepresentation> endlessCursor = new EndlessCursor( lastAppliedTransactionId+1 );
         when( transactionStore.getTransactions( anyLong() ) ).thenReturn( endlessCursor );
         final long targetTransactionId = 8L;
-        final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( targetTransactionId, 0 );
+        final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( targetTransactionId, 0, 0, 0 );
         ResponsePacker packer = new ResponsePacker( transactionStore, transactionIdStore,
                 Suppliers.singleton( new StoreId() ) );
 
@@ -85,7 +85,7 @@ public class ResponsePackerTest
 
                         // Move the target transaction id forward one step, effectively always keeping it out of reach
                         transactionIdStore.setLastCommittedAndClosedTransactionId(
-                                transactionIdStore.getLastCommittedTransactionId()+1, 0 );
+                                transactionIdStore.getLastCommittedTransactionId()+1, 0, 0, 0 );
                         return true;
                     }
                 };

@@ -19,17 +19,17 @@
  */
 package synchronization;
 
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-
 import org.apache.lucene.index.IndexWriter;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
@@ -69,7 +69,8 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
             this.disable();
         }
     };
-    private final BreakPoint done = new BreakPoint( TestConcurrentRotation.class, "rotateDone" )
+
+    private final BreakPoint done = new BreakPoint( TestConcurrentRotation.class, "checkPointDone" )
     {
         @Override
         protected void callback( DebugInterface debug ) throws KillSubProcess
@@ -83,7 +84,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
     {   // Activates breakpoint
     }
 
-    static void rotateDone()
+    static void checkPointDone()
     {   // Activate breakpoint
     }
 
@@ -174,7 +175,7 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
         {
             try
             {
-                rotateLogicalLog( graphdb );
+                checkPoint( graphdb );
                 setSuccess( graphdb, true );
             }
             catch ( Exception e )
@@ -184,13 +185,13 @@ public class TestConcurrentRotation extends AbstractSubProcessTestBase
             }
             finally
             {
-                rotateDone();
+                checkPointDone();
             }
         }
 
-        private void rotateLogicalLog( GraphDatabaseAPI graphdb ) throws IOException
+        private void checkPoint( GraphDatabaseAPI graphdb ) throws IOException
         {
-            graphdb.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+            graphdb.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
         }
 
         private void setSuccess( GraphDatabaseAPI graphdb, boolean success )

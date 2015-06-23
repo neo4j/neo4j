@@ -35,19 +35,15 @@ public class LogRotationImpl implements LogRotation
 {
     private final LogRotation.Monitor monitor;
     private final LogFile logFile;
-    private final LogRotationControl logRotationControl;
     private final KernelHealth kernelHealth;
     private final Log msgLog;
 
-    public LogRotationImpl( Monitor monitor, LogFile logFile,
-            LogRotationControl logRotationControl, KernelHealth kernelHealth, LogProvider logProvider )
+    public LogRotationImpl( Monitor monitor, LogFile logFile, KernelHealth kernelHealth, LogProvider logProvider )
     {
         this.monitor = monitor;
         this.logFile = logFile;
-        this.logRotationControl = logRotationControl;
         this.kernelHealth = kernelHealth;
-
-        msgLog = logProvider.getLog( getClass() );
+        this.msgLog = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -69,7 +65,6 @@ public class LogRotationImpl implements LogRotation
                         doRotate();
                     }
                 }
-
                 return rotated;
             }
         }
@@ -90,29 +85,13 @@ public class LogRotationImpl implements LogRotation
     {
         long currentVersion = logFile.currentLogVersion();
 
-        monitor.startedRotating( currentVersion );
-
-        /*
-         * Check kernel health before going into waiting for transactions to be closed, to avoid
-         * getting into a scenario where we would await a condition that would potentially never happen.
-         */
-        kernelHealth.assertHealthy( IOException.class );
-
-        /*
-         * First we flush the store. If we fail now or during the flush, on recovery we'll discover
-         * the current log file and replay it. Everything will be ok.
-         */
-        msgLog.info( PrintFormat.prefix( currentVersion ) + " Awaiting all transactions closed..." );
-        logRotationControl.awaitAllTransactionsClosed();
-        msgLog.info( PrintFormat.prefix( currentVersion ) + " Starting store flush..." );
-        logRotationControl.forceEverything();
-
         /*
          * In order to rotate the current log file safely we need to assert that the kernel is still
-         * at full health. In case of a panic this rotation will be aborted, which is the safest alternative
-         * so that the next recovery will have a chance to repair the damages.
+         * at full health. In case of a panic this rotation will be aborted, which is the safest alternative.
          */
         kernelHealth.assertHealthy( IOException.class );
+
+        monitor.startedRotating( currentVersion );
 
         msgLog.info( PrintFormat.prefix( currentVersion ) + " Preparing new log file..." );
         logFile.rotate();

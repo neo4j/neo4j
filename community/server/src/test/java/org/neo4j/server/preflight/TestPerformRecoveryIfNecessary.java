@@ -29,12 +29,15 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Properties;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -42,7 +45,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.kernel.impl.recovery.TestStoreRecoverer.createLogFileForNextVersionWithSomeDataInIt;
 
 public class TestPerformRecoveryIfNecessary {
 
@@ -64,7 +66,7 @@ public class TestPerformRecoveryIfNecessary {
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Config config = buildProperties();
         PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary( config, new HashMap<String, String>(), logProvider );
-        
+
         assertThat( "Recovery task runs successfully.", task.run(), is( true ) );
         assertThat( "No database should have been created.", new File( storeDirectory ).exists(), is( false ) );
         logProvider.assertNoLoggingOccurred();
@@ -77,14 +79,14 @@ public class TestPerformRecoveryIfNecessary {
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Config config = buildProperties();
         new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDirectory ).shutdown();
-        
+
         PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary( config, new HashMap<String, String>(), logProvider );
-        
+
         assertThat( "Recovery task should run successfully.", task.run(), is( true ) );
         assertThat( "Database should exist.", new File( storeDirectory ).exists(), is( true ) );
         logProvider.assertNoLoggingOccurred();
     }
-    
+
     @Test
     public void shouldPerformRecoveryIfNecessary() throws Exception
     {
@@ -94,7 +96,7 @@ public class TestPerformRecoveryIfNecessary {
         Config config = buildProperties();
         new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDirectory ).shutdown();
         // Make this look incorrectly shut down
-        createLogFileForNextVersionWithSomeDataInIt( new File( storeDirectory ), new DefaultFileSystemAbstraction() );
+        createSomeDataAndCrash( new File( storeDirectory ), new DefaultFileSystemAbstraction() );
 
         assertThat("Store should need recovery", recoverer.recoveryNeededAt(new File( storeDirectory )), is(true));
 
@@ -133,11 +135,35 @@ public class TestPerformRecoveryIfNecessary {
 
         String databasePropertiesFileName = homeDirectory + "/conf/neo4j.properties";
         databaseProperties.store( new FileWriter( databasePropertiesFileName ), null );
-        
-        Config serverProperties = new Config( MapUtil.stringMap( 
+
+        Config serverProperties = new Config( MapUtil.stringMap(
                 Configurator.DATABASE_LOCATION_PROPERTY_KEY, storeDirectory,
                 Configurator.DB_TUNING_PROPERTY_FILE_KEY, databasePropertiesFileName ) );
 
         return serverProperties;
     }
+
+    private void createSomeDataAndCrash( File store, FileSystemAbstraction fileSystem ) throws IOException
+    {
+        final GraphDatabaseService db =
+                new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( store );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
+
+        File crashed = new File( store.getParent(), "crashed" );
+        fileSystem.mkdirs( crashed );
+        fileSystem.copyRecursively( store, crashed );
+
+        db.shutdown();
+
+        fileSystem.deleteRecursively( store );
+        fileSystem.mkdirs( store );
+        fileSystem.copyRecursively( crashed, store );
+        fileSystem.deleteRecursively( crashed );
+    }
+
 }

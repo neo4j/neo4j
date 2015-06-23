@@ -45,6 +45,8 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
 
 /**
  * Factory for Store implementations. Can also be used to create empty stores.
@@ -372,7 +374,7 @@ public class StoreFactory
         neoStore.setUpgradeTime( storeId.getCreationTime() );
         neoStore.setUpgradeTransaction( BASE_TX_ID, BASE_TX_CHECKSUM );
         neoStore.setCurrentLogVersion( 0 );
-        neoStore.setLastCommittedAndClosedTransactionId( BASE_TX_ID, BASE_TX_CHECKSUM );
+        neoStore.setLastCommittedAndClosedTransactionId( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
         neoStore.setStoreVersion( NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
         neoStore.setGraphNextProp( -1 );
         neoStore.setLatestConstraintIntroducingTx( 0 );

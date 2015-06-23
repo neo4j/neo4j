@@ -23,8 +23,9 @@ package org.neo4j.kernel.impl.transaction.tracing;
  * Represents the process of turning the state of a committing transaction into a sequence of commands, and appending
  * them to the transaction log.
  */
-public interface LogAppendEvent extends AutoCloseable
+public interface LogAppendEvent extends LogForceEvents, AutoCloseable
 {
+
     LogAppendEvent NULL = new LogAppendEvent()
     {
         @Override
@@ -83,14 +84,4 @@ public interface LogAppendEvent extends AutoCloseable
      * Begin serializing and writing out the commands for this transaction.
      */
     SerializeTransactionEvent beginSerializeTransaction();
-
-    /**
-     * Begin the process of forcing the transaction log file.
-     */
-    LogForceWaitEvent beginLogForceWait();
-
-    /**
-     * Begin a batched force of the transaction log file.
-     */
-    LogForceEvent beginLogForce();
 }

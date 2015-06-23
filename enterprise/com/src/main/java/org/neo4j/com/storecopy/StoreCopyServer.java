@@ -30,7 +30,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationControl;
+import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 import static org.neo4j.com.RequestContext.anonymous;
@@ -109,18 +109,18 @@ public class StoreCopyServer
 
     private final TransactionIdStore transactionIdStore;
     private final NeoStoreDataSource dataSource;
-    private final LogRotationControl logRotationControl;
+    private final StoreFlusher storeFlusher;
     private final FileSystemAbstraction fileSystem;
     private final File storeDirectory;
     private final Monitor monitor;
 
     public StoreCopyServer( TransactionIdStore transactionIdStore,
-            NeoStoreDataSource dataSource, LogRotationControl logRotationControl, FileSystemAbstraction fileSystem,
+            NeoStoreDataSource dataSource, StoreFlusher storeFlusher, FileSystemAbstraction fileSystem,
             File storeDirectory, Monitor monitor )
     {
         this.transactionIdStore = transactionIdStore;
         this.dataSource = dataSource;
-        this.logRotationControl = logRotationControl;
+        this.storeFlusher = storeFlusher;
         this.fileSystem = fileSystem;
         this.storeDirectory = getMostCanonicalFile( storeDirectory );
         this.monitor = monitor;
@@ -140,7 +140,7 @@ public class StoreCopyServer
         {
             long lastAppliedTransaction = transactionIdStore.getLastClosedTransactionId();
             monitor.startFlushingEverything();
-            logRotationControl.forceEverything();
+            storeFlusher.forceEverything();
             monitor.finishFlushingEverything();
             ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
 

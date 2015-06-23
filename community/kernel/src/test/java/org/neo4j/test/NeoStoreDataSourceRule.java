@@ -92,7 +92,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
                 new StartupStatisticsProvider(), mock( NodeManager.class ), null, null,
                 CommunityEditionModule.createCommitProcessFactory(), mock( PageCache.class ),
-                mock( Monitors.class ), new Tracers( "null", NullLog.getInstance() ) );
+                new Monitors(), new Tracers( "null", NullLog.getInstance() ) );
 
         return theDs;
     }
