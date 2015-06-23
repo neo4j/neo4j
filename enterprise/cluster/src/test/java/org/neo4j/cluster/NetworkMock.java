@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
@@ -94,7 +96,8 @@ public class NetworkMock
         electionCredentialsProvider.listeningAt( serverUri );
         TestProtocolServer protocolServer = new TestProtocolServer( logService.getInternalLogProvider(), timeoutStrategy, protocolServerFactory, serverUri,
                 new InstanceId( serverId ), new InMemoryAcceptorInstanceStore(), electionCredentialsProvider );
-        protocolServer.addStateTransitionListener( new StateTransitionLogger( logService.getInternalLogProvider() ) );
+        protocolServer.addStateTransitionListener( new StateTransitionLogger( logService.getInternalLogProvider(),
+                new AtomicBroadcastSerializer( new ObjectStreamFactory(), new ObjectStreamFactory() ) ) );
         return protocolServer;
     }
 

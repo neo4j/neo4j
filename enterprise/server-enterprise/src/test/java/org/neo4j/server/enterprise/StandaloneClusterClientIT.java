@@ -37,14 +37,15 @@ import org.junit.rules.TestRule;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
+import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.cluster.ClusterListener.Adapter;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.enterprise.functional.DumpPortListenerOnNettyBindFailure;
@@ -66,7 +67,6 @@ import static org.junit.Assume.assumeFalse;
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
 import static org.neo4j.cluster.ClusterSettings.server_id;
-import static org.neo4j.cluster.client.ClusterClient.adapt;
 import static org.neo4j.helpers.Settings.osIsWindows;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -185,9 +185,11 @@ public class StandaloneClusterClientIT
             config.put( cluster_server.name(), ":" + (5000 + i) );
             config.put( server_id.name(), "" + i );
             config.put( initial_hosts.name(), ":5001" );
-            ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-            final ClusterClient client = new ClusterClient( new Monitors(), adapt( new Config( config ) ), NullLogService.getInstance(),
-                    new ServerIdElectionCredentialsProvider(), objectStreamFactory, objectStreamFactory );
+
+            ClusterClientModule clusterClientModule = new ClusterClientModule(null, new Dependencies(), new Monitors(),
+                    new Config(config),  NullLogService.getInstance(), new ServerIdElectionCredentialsProvider());
+
+            final ClusterClient client = clusterClientModule.clusterClient;
             final CountDownLatch latch = new CountDownLatch( 1 );
             client.addClusterListener( new ClusterListener.Adapter()
             {
@@ -198,8 +200,9 @@ public class StandaloneClusterClientIT
                     client.removeClusterListener( this );
                 }
             } );
-            clients[i - 1] = life.add( client );
-            assertTrue( "Didn't join the cluster", latch.await( 2, SECONDS ) );
+            life.add(clusterClientModule.life);
+            clients[i - 1] = client;
+            assertTrue( "Didn't join the cluster", latch.await( 20, SECONDS ) );
         }
     }
 

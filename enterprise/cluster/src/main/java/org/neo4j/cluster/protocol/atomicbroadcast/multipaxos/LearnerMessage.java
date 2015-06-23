@@ -22,6 +22,9 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 import java.io.Serializable;
 
 import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 
 /**
  * Learner state machine messages
@@ -50,6 +53,18 @@ public enum LearnerMessage
         @Override
         public String toString()
         {
+            if (value instanceof Payload )
+            {
+                try
+                {
+                    ObjectStreamFactory streamFactory = new ObjectStreamFactory();
+                    return new AtomicBroadcastSerializer( streamFactory, streamFactory ).receive( (Payload) value).toString();
+                }
+                catch ( Throwable e )
+                {
+                    return value.toString();
+                }
+            }
             return value.toString();
         }
 

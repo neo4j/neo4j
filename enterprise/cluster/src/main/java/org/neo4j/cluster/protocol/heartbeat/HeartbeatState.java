@@ -229,8 +229,8 @@ public enum HeartbeatState
                             context.getInternalLog( HeartbeatState.class )
                                     .debug( "Received suspicions as " + suspicions );
 
-                            URI from = new URI( message.getHeader( Message.FROM ) );
-                            InstanceId fromId = context.getIdForUri( from );
+                            InstanceId fromId = new InstanceId(Integer.parseInt(message.getHeader( Message.INSTANCE_ID )));
+
                             /*
                              * Remove ourselves from the suspicions received - we just received a message,
                              * it's not normal to be considered failed. Whatever it was, it was transient and now it has

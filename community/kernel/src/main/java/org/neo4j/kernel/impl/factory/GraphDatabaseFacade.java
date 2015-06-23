@@ -127,6 +127,10 @@ public class GraphDatabaseFacade
     public EditionModule editionModule;
     public DataSourceModule dataSourceModule;
 
+    protected GraphDatabaseFacade()
+    {
+    }
+
     /**
      * When {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory#newFacade(java.io.File, java.util.Map, org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)} has created the different
      * modules of a database, it calls this method so that the facade can get access to the created services.

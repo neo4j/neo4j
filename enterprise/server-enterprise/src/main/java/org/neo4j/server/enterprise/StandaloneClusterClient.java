@@ -28,7 +28,7 @@ import java.util.Map;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
+import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.config.Setting;
@@ -38,6 +38,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -45,7 +46,6 @@ import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 
-import static org.neo4j.cluster.client.ClusterClient.adapt;
 import static org.neo4j.helpers.Exceptions.peel;
 import static org.neo4j.helpers.collection.MapUtil.loadStrictly;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -68,12 +68,11 @@ import static org.neo4j.server.configuration.Configurator.NEO_SERVER_CONFIG_FILE
  */
 public class StandaloneClusterClient
 {
-    private final LifeSupport life = new LifeSupport();
+    private final LifeSupport life;
 
-    private StandaloneClusterClient( JobScheduler jobScheduler, ClusterClient clusterClient )
+    private StandaloneClusterClient( LifeSupport life )
     {
-        life.add( jobScheduler );
-        life.add( clusterClient );
+        this.life = life;
         addShutdownHook();
         life.start();
     }
@@ -110,10 +109,13 @@ public class StandaloneClusterClient
         {
             JobScheduler jobScheduler = new Neo4jJobScheduler();
             LogService logService = logService( new DefaultFileSystemAbstraction() );
-            ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-            new StandaloneClusterClient( jobScheduler, new ClusterClient( new Monitors(), adapt( new Config( config ) ),
-                    logService, new NotElectableElectionCredentialsProvider(), objectStreamFactory,
-                    objectStreamFactory ) );
+
+            LifeSupport life = new LifeSupport();
+            life.add(jobScheduler);
+            Dependencies dependencies = new Dependencies();
+            ClusterClientModule clusterClientModule = new ClusterClientModule( life, dependencies, new Monitors(), new Config( config ), logService, new NotElectableElectionCredentialsProvider() );
+
+            new StandaloneClusterClient( life );
         }
         catch ( LifecycleException e )
         {

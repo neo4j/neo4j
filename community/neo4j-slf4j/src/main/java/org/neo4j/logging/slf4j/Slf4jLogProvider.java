@@ -19,24 +19,38 @@
  */
 package org.neo4j.logging.slf4j;
 
+import org.slf4j.ILoggerFactory;
+import org.slf4j.LoggerFactory;
+
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.slf4j.LoggerFactory;
 
 /**
  * A {@link LogProvider} that forwards log events to SLF4J
  */
 public class Slf4jLogProvider implements LogProvider
 {
+    private ILoggerFactory loggerFactory;
+
+    public Slf4jLogProvider()
+    {
+        this( LoggerFactory.getILoggerFactory());
+    }
+
+    public Slf4jLogProvider( ILoggerFactory loggerFactory )
+    {
+        this.loggerFactory = loggerFactory;
+    }
+
     @Override
     public Log getLog( Class loggingClass )
     {
-        return new Slf4jLog( LoggerFactory.getLogger( loggingClass ) );
+        return new Slf4jLog( loggerFactory.getLogger( loggingClass.getName() ) );
     }
 
     @Override
     public Log getLog( String context )
     {
-        return new Slf4jLog( LoggerFactory.getLogger( context ) );
+        return new Slf4jLog( loggerFactory.getLogger( context ) );
     }
 }

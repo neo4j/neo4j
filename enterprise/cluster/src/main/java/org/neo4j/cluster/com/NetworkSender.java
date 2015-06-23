@@ -115,6 +115,8 @@ public class NetworkSender
     private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
 
+    private volatile boolean paused;
+
     public NetworkSender( Monitor monitor, Configuration config, NetworkReceiver receiver, LogProvider logProvider )
     {
         this.monitor = monitor;
@@ -215,16 +217,24 @@ public class NetworkSender
     @Override
     public boolean process( Message<? extends MessageType> message )
     {
-        if ( message.hasHeader( Message.TO ) )
+        if (!paused)
         {
-            send( message );
-        }
-        else
-        {
-            // Internal message
-            receiver.receive( message );
+            if ( message.hasHeader( Message.TO ) )
+            {
+                send( message );
+            }
+            else
+            {
+                // Internal message
+                receiver.receive( message );
+            }
         }
         return true;
+    }
+
+    public void setPaused(boolean paused)
+    {
+        this.paused = paused;
     }
 
 

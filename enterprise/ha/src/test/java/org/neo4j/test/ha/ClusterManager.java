@@ -47,16 +47,15 @@ import org.w3c.dom.Document;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.ExecutorLifecycleAdapter;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.client.Clusters;
 import org.neo4j.cluster.client.ClustersXMLSerializer;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
-import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -80,6 +79,7 @@ import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -932,26 +932,14 @@ public class ClusterManager
         public RepairKit fail( HighlyAvailableGraphDatabase db ) throws Throwable
         {
             assertMember( db );
-            ClusterClient clusterClient = db.getDependencyResolver().resolveDependency( ClusterClient.class );
-            LifeSupport clusterClientLife = (LifeSupport) accessible( clusterClient.getClass().getDeclaredField(
-                    "life" ) ).get( clusterClient );
 
-            NetworkReceiver receiver = instance( NetworkReceiver.class, clusterClientLife.getLifecycleInstances() );
-            receiver.stop();
+            NetworkReceiver networkReceiver = db.getDependencyResolver().resolveDependency( NetworkReceiver.class );
+            NetworkSender networkSender = db.getDependencyResolver().resolveDependency( NetworkSender.class );
 
-            ExecutorLifecycleAdapter statemachineExecutor =
-                    instance( ExecutorLifecycleAdapter.class, clusterClientLife.getLifecycleInstances() );
-            statemachineExecutor.stop();
+            networkReceiver.setPaused( true );
+            networkSender.setPaused( true );
 
-            NetworkSender sender = instance( NetworkSender.class, clusterClientLife.getLifecycleInstances() );
-            sender.stop();
-
-            List<Lifecycle> stoppedServices = new ArrayList<>();
-            stoppedServices.add( sender );
-            stoppedServices.add( statemachineExecutor );
-            stoppedServices.add( receiver );
-
-            return new StartNetworkAgainKit( db, stoppedServices );
+            return new StartNetworkAgainKit( db );
         }
 
         private void startMember( InstanceId serverId ) throws URISyntaxException, IOException
@@ -1013,12 +1001,10 @@ public class ClusterManager
                 Config config1 = new Config( config, GraphDatabaseFacadeFactory.Configuration.class,
                         GraphDatabaseSettings.class );
 
-                ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-                ClusterClient clusterClient = new ClusterClient( new Monitors(), ClusterClient.adapt( config1 ),
-                        NullLogService.getInstance(), new NotElectableElectionCredentialsProvider(), objectStreamFactory,
-                        objectStreamFactory );
+                LifeSupport clusterClientLife = new LifeSupport();
+                ClusterClientModule clusterClientModule = new ClusterClientModule( clusterClientLife, new Dependencies(  ), new Monitors(), config1, NullLogService.getInstance(), new NotElectableElectionCredentialsProvider() );
 
-                arbiters.add( new ClusterMembers( clusterClient, clusterClient, new ClusterMemberEvents()
+                arbiters.add( new ClusterMembers( clusterClientModule.clusterClient, clusterClientModule.clusterClient, new ClusterMemberEvents()
                 {
                     @Override
                     public void addClusterMemberListener( ClusterMemberListener listener )
@@ -1031,9 +1017,9 @@ public class ClusterManager
                     {
                         // noop
                     }
-                }, clusterClient.getServerId() ) );
+                }, clusterClientModule.clusterClient.getServerId() ) );
 
-                life.add( new FutureLifecycleAdapter<>( clusterClient ) );
+                life.add( new FutureLifecycleAdapter<>( clusterClientModule.life ) );
             }
         }
 
@@ -1138,21 +1124,18 @@ public class ClusterManager
     private class StartNetworkAgainKit implements RepairKit
     {
         private final HighlyAvailableGraphDatabase db;
-        private final Iterable<Lifecycle> stoppedServices;
 
-        StartNetworkAgainKit( HighlyAvailableGraphDatabase db, Iterable<Lifecycle> stoppedServices )
+        StartNetworkAgainKit( HighlyAvailableGraphDatabase db )
         {
             this.db = db;
-            this.stoppedServices = stoppedServices;
         }
 
         @Override
         public HighlyAvailableGraphDatabase repair() throws Throwable
         {
-            for ( Lifecycle stoppedService : stoppedServices )
-            {
-                stoppedService.start();
-            }
+            db.getDependencyResolver().resolveDependency( NetworkSender.class ).setPaused( false );
+            db.getDependencyResolver().resolveDependency( NetworkReceiver.class ).setPaused( false );
+
             return db;
         }
     }

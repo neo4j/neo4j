@@ -22,6 +22,9 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 import java.io.Serializable;
 
 import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 
 /**
  * Acceptor state machine messages
@@ -145,7 +148,20 @@ public enum AcceptorMessage
         @Override
         public String toString()
         {
-            return "AcceptState{" + "ballot=" + ballot + ", value=" + value + "}";
+            Object toStringValue = value;
+            if (toStringValue instanceof Payload )
+            {
+                try
+                {
+                    toStringValue = new AtomicBroadcastSerializer( new ObjectStreamFactory(), new ObjectStreamFactory() ).receive( (Payload) toStringValue);
+                }
+                catch ( Throwable e )
+                {
+                    e.printStackTrace();
+                }
+            }
+
+            return "AcceptState{" + "ballot=" + ballot + ", value=" + toStringValue + "}";
         }
     }
 }

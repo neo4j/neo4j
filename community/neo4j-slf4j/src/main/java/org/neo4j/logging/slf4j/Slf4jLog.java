@@ -69,7 +69,7 @@ public class Slf4jLog extends AbstractLog
             {
                 synchronized (lock)
                 {
-                    slf4jLogger.debug( format, arguments );
+                    slf4jLogger.debug( convertFormat(format), arguments );
                 }
             }
 
@@ -108,7 +108,7 @@ public class Slf4jLog extends AbstractLog
             {
                 synchronized (lock)
                 {
-                    slf4jLogger.info( format, arguments );
+                    slf4jLogger.info( convertFormat(format), arguments );
                 }
             }
 
@@ -147,7 +147,7 @@ public class Slf4jLog extends AbstractLog
             {
                 synchronized (lock)
                 {
-                    slf4jLogger.warn( format, arguments );
+                    slf4jLogger.warn( convertFormat(format), arguments );
                 }
             }
 
@@ -186,7 +186,7 @@ public class Slf4jLog extends AbstractLog
             {
                 synchronized (lock)
                 {
-                    slf4jLogger.error( format, arguments );
+                    slf4jLogger.error( convertFormat(format), arguments );
                 }
             }
 
@@ -238,5 +238,10 @@ public class Slf4jLog extends AbstractLog
         {
             consumer.accept( this );
         }
+    }
+
+    private String convertFormat(String format)
+    {
+        return format.replace( "%s", "{}" );
     }
 }

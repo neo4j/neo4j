@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.logging.NettyLoggerFactory;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;
@@ -239,11 +240,8 @@ public class EnterpriseEditionModule
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
 
 
-        final ClusterClient clusterClient =
-                dependencies.satisfyDependency( new ClusterClient( platformModule.monitors, ClusterClient.adapt(
-                        config ), logging,
-                        electionCredentialsProvider,
-                        objectStreamFactory, objectStreamFactory ) );
+        ClusterClientModule clusterClientModule = new ClusterClientModule(life, dependencies, monitors, config, logging, electionCredentialsProvider );
+        final ClusterClient clusterClient = clusterClientModule.clusterClient;
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging.getInternalLogProvider(),
                 new org.neo4j.function.Predicate<PaxosClusterMemberEvents

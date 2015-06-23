@@ -315,8 +315,8 @@ public enum ElectionState
                                     if ( currentElected != null )
                                     {
                                         // Someone had the role and doesn't anymore. Broadcast this
-                                        ClusterMessage.ConfigurationChangeState configurationChangeState = new
-                                                ClusterMessage.ConfigurationChangeState();
+                                        ClusterMessage.ConfigurationChangeState configurationChangeState =
+                                                new ClusterMessage.ConfigurationChangeState();
                                         configurationChangeState.unelected( data.getRole(), currentElected );
                                         outgoing.offer( Message.internal( ProposerMessage.propose,
                                                 configurationChangeState ) );
