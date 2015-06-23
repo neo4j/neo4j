@@ -47,6 +47,11 @@ case class RelationshipEndpoint(node: Expression, props: Map[String, Expression]
     nodeDeps ++ props.symboltableDependencies ++ labels.flatMap(_.symbolTableDependencies)
   }
 
+  def introducedIdentifier: Option[String] = node match {
+    case Identifier(name) => Some(name)
+    case e => None
+  }
+
   def asBare = copy(props = Map.empty, labels = Seq.empty)
 
   def bare = props.isEmpty && labels.isEmpty
@@ -62,8 +67,8 @@ extends UpdateAction
   def localEffects(symbols: SymbolTable) = props.values.foldLeft(Effects(WritesRelationships))(_ | _.effects(symbols))
 
   override def children =
-    props.map(_._2).toSeq ++ Seq(from.node, to.node) ++
-      from.props.map(_._2) ++ to.props.map(_._2) ++ to.labels.flatMap(_.children) ++ from.labels.flatMap(_.children)
+    props.values.toSeq ++ Seq(from.node, to.node) ++
+      from.props.values ++ to.props.values ++ to.labels.flatMap(_.children) ++ from.labels.flatMap(_.children)
 
   override def rewrite(f: (Expression) => Expression) = {
     val newFrom = from.rewrite(f)
@@ -90,6 +95,6 @@ extends UpdateAction
       val a = props.flatMap(_._2.symbolTableDependencies).toSet
       val b = from.symbolTableDependencies
       val c = to.symbolTableDependencies
-      a ++ b ++ c
+      a ++ b ++ c -- from.introducedIdentifier -- to.introducedIdentifier
     }
 }
