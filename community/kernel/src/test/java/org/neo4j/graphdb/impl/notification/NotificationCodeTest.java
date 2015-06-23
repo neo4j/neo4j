@@ -21,8 +21,8 @@ package org.neo4j.graphdb.impl.notification;
 
 import org.junit.Test;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
@@ -51,7 +51,7 @@ public class NotificationCodeTest
     @Test
     public void shouldConstructNotificationFor_CARTESIAN_PRODUCT()
     {
-        Set<String> idents = new HashSet<>();
+        Set<String> idents = new TreeSet<>();
         idents.add( "n" );
         idents.add( "node2" );
         NotificationDetail identifierDetail = NotificationDetail.Factory.cartesianProduct( idents );
