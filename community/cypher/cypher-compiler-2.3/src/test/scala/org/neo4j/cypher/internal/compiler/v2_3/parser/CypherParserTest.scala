@@ -300,47 +300,62 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("should translate LIKE to a regular expression") {
+    val regExp = LiteralRegularExpression(Literal("Pontus"), Literal("""\QPont\E.*"""))
+    val likePredicate = LiteralLikePattern(regExp, ParsedLikePattern(List(MatchText("Pont"), MatchMany)))
+
     expectQuery(
       "RETURN 'Pontus' LIKE 'Pont%' as result",
       Query.
         matches().
-        returns(ReturnItem(LiteralRegularExpression(Literal("Pontus"), Literal("""\QPont\E.*""")), "result"))
+        returns(ReturnItem(likePredicate, "result"))
     )
   }
 
   test("should translate NOT LIKE to a negated regular expression") {
+    val regExp = LiteralRegularExpression(Literal("Pontus"), Literal("""\QPont\E.*"""))
+    val likePredicate = LiteralLikePattern(regExp, ParsedLikePattern(List(MatchText("Pont"), MatchMany)))
+
     expectQuery(
       "RETURN 'Pontus' NOT LIKE 'Pont%' as result",
       Query.
         matches().
-        returns(ReturnItem(Not(LiteralRegularExpression(Literal("Pontus"), Literal("""\QPont\E.*"""))), "result"))
+        returns(ReturnItem(Not(likePredicate), "result"))
     )
   }
 
   test("should translate ILIKE to a regular expression") {
+    val regExp = LiteralRegularExpression(Literal("Pontus"), Literal("""(?i)\QPont\E.*"""))
+    val likePredicate = LiteralLikePattern(regExp, ParsedLikePattern(List(MatchText("Pont"), MatchMany)), caseInsensitive = true)
+
     expectQuery(
       "RETURN 'Pontus' ILIKE 'Pont%' as result",
       Query.
         matches().
-        returns(ReturnItem(LiteralRegularExpression(Literal("Pontus"), Literal("""(?i)\QPont\E.*""")), "result"))
+        returns(ReturnItem(likePredicate, "result"))
     )
   }
 
   test("should translate NOT ILIKE to a negated regular expression") {
+    val regExp = LiteralRegularExpression(Literal("Pontus"), Literal("""(?i)\QPont\E.*"""))
+    val likePredicate = LiteralLikePattern(regExp, ParsedLikePattern(List(MatchText("Pont"), MatchMany)), caseInsensitive = true)
+
     expectQuery(
       "RETURN 'Pontus' NOT ILIKE 'Pont%' as result",
       Query.
         matches().
-        returns(ReturnItem(Not(LiteralRegularExpression(Literal("Pontus"), Literal("""(?i)\QPont\E.*"""))), "result"))
+        returns(ReturnItem(Not(likePredicate), "result"))
     )
   }
 
   test("should handle LIKE when using escaped character") {
+    val regExp = LiteralRegularExpression(Literal("Pontus"), Literal("""\QPon%\E."""))
+    val likePredicate = LiteralLikePattern(regExp, ParsedLikePattern(List(MatchText("Pon%"), MatchSingle)))
+
     expectQuery(
       "RETURN 'Pontus' LIKE 'Pon\\\\%_' as result",
       Query.
         matches().
-        returns(ReturnItem(LiteralRegularExpression(Literal("Pontus"), Literal("""\QPon%\E.""")), "result"))
+        returns(ReturnItem(likePredicate, "result"))
         )
     }
 

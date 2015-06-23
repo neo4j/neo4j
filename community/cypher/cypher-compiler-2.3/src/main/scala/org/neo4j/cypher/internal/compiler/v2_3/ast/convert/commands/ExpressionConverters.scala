@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression 
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{Predicate => CommandPredicate, expressions => commandexpressions, values => commandvalues}
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{LikePatternParser, convertLikePatternToRegex}
+import org.neo4j.cypher.internal.compiler.v2_3.parser.{LikePatternParser, ParsedLikePattern, convertLikePatternToRegex}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -221,17 +221,23 @@ object ExpressionConverters {
         nullLiteral
 
       case commandexpressions.Literal(v) =>
-        val literal = StringLiteral(translateToRegex(v.asInstanceOf[String]))(e.position)
-        commands.LiteralRegularExpression(e.lhs.asCommandExpression, literal.asCommandLiteral)
+        val pattern = LikePatternParser(v.asInstanceOf[String])
+        val literal = StringLiteral(patternToRegex(pattern))(e.position)
+        commands.LiteralLikePattern(
+          commands.LiteralRegularExpression(e.lhs.asCommandExpression, literal.asCommandLiteral),
+          pattern,
+          e.caseInsensitive
+        )
 
       case command =>
-        commands.RegularExpression(e.lhs.asCommandExpression, command)(translateToRegex)
+        commands.RegularExpression(e.lhs.asCommandExpression, command)(stringToRegex)
     }
 
-    private def translateToRegex(s: String) = {
-      val likePattern = LikePatternParser(s)
+    private def stringToRegex(s: String): String =
+      patternToRegex(LikePatternParser(s))
+
+    private def patternToRegex(likePattern: ParsedLikePattern): String =
       convertLikePatternToRegex(likePattern, e.caseInsensitive)
-    }
   }
 
   implicit class NotLikeConverter(val e: ast.NotLike) extends AnyVal {

@@ -34,7 +34,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     assertRejects(PartiallySolvedQuery())
   }
 
-  test("should_accept_a_query_with_index_hints") {
+  test("should_accept_a_query_with_equality_index_hints") {
     //GIVEN
     val identifier = "id"
     val label = "label"
@@ -45,7 +45,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     check(identifier, label, property, predicate, valueExpression)
   }
 
-  test("should_accept_a_query_with_index_hints2") {
+  test("should_accept_a_query_with_equality_index_hints2") {
     //GIVEN
     val identifier = "id"
     val label = "label"
