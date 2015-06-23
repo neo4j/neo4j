@@ -45,6 +45,53 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
+  test("should not use index seek for empty prefix search using like with %") {
+    (new given {
+      indexOn("Person", "name")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (a:Person) WHERE a.name LIKE '%' RETURN a").innerPlan should equal(
+      Selection(Seq(Like(Property(Identifier("a") _, PropertyKeyName("name") _) _,
+                         LikePattern(StringLiteral("%") _)) _),
+                NodeByLabelScan("a", LazyLabel("Person"), Set.empty)(solved)
+      )(solved))
+  }
+
+  test("should use index prefix search for multiple LIKEs with AND, and choose the longer prefix") {
+    (new given {
+      indexOn("Person", "name")
+      indexOn("Person", "lastname")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (a:Person) WHERE a.name LIKE 'short%' AND a.lastname LIKE 'longer%' RETURN a")
+      .innerPlan should equal(
+      Selection(Seq(Like(Property(Identifier("a") _, PropertyKeyName("name") _) _,
+                         LikePattern(StringLiteral("short%") _)) _),
+                NodeIndexSeek(
+                  "a",
+                  LabelToken("Person", LabelId(0)),
+                  PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1)),
+                  RangeQueryExpression(StringSeekRange(LowerBounded(InclusiveBound("longer"))) _),
+                  Set.empty)(solved)
+      )(solved))
+  }
+
+  test("should use index prefix search for multiple LIKEs with AND NOT") {
+    (new given {
+      indexOn("Person", "name")
+      indexOn("Person", "lastname")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (a:Person) WHERE a.name LIKE 'longer%' AND NOT a.lastname LIKE 'short%' RETURN a")
+      .innerPlan should equal(
+      Selection(Seq(Not(Like(Property(Identifier("a") _, PropertyKeyName("lastname") _) _,
+                             LikePattern(StringLiteral("short%") _)) _) _),
+                NodeIndexSeek(
+                  "a",
+                  LabelToken("Person", LabelId(0)),
+                  PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
+                  RangeQueryExpression(StringSeekRange(LowerBounded(InclusiveBound("longer"))) _),
+                  Set.empty)(solved)
+      )(solved))
+  }
+
   test("should use index seek for complex prefix search using like with %") {
     (new given {
       indexOn("Person", "name")

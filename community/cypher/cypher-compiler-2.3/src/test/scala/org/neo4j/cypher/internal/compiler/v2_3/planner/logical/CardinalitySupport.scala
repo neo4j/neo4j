@@ -32,6 +32,6 @@ object CardinalitySupport {
       case _ => false
     }
 
-    private def tolerance(a: Cardinality) = Math.max(0.1, a.amount * 0.1) // 10% off is acceptable
+    private def tolerance(a: Cardinality) = Math.max(5e-3, a.amount * 5e-3) // .5% off is acceptable
   }
 }
