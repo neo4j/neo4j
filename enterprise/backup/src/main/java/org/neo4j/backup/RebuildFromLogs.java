@@ -29,12 +29,12 @@ import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -86,12 +86,13 @@ class RebuildFromLogs
         this.dataSource = resolver.resolveDependency( DataSourceManager.class ).getDataSource();
         this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class )
                                     .withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS );
+        KernelHealth kernelHealth = resolver.resolveDependency( KernelHealth.class );
         PropertyLoader propertyLoader = new PropertyLoader( stores.getRawNeoStore() );
-        this.indexUpdatesValidator = new IndexUpdatesValidator( stores.getRawNeoStore(), propertyLoader,
+        this.indexUpdatesValidator = new IndexUpdatesValidator( stores.getRawNeoStore(), kernelHealth, propertyLoader,
                 resolver.resolveDependency( IndexingService.class ) );
     }
 
-    RebuildFromLogs applyTransactionsFrom( ProgressListener progress, File sourceDir ) throws IOException
+    RebuildFromLogs applyTransactionsFrom( File sourceDir ) throws IOException
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( sourceDir, FS );
         int startVersion = 0;
@@ -188,9 +189,8 @@ class RebuildFromLogs
                 {
                     progress = ProgressMonitorFactory.textual( System.err );
                 }
-                ProgressListener listener = progress.singlePart(
-                        format( "Rebuilding store from %s transactions ", txCount ), txCount );
-                RebuildFromLogs rebuilder = new RebuildFromLogs( graphdb ).applyTransactionsFrom( listener, source );
+                progress.singlePart( format( "Rebuilding store from %s transactions ", txCount ), txCount );
+                RebuildFromLogs rebuilder = new RebuildFromLogs( graphdb ).applyTransactionsFrom( source );
                 // if we didn't run the full checker for each transaction, run it afterwards
                 if ( !full )
                 {

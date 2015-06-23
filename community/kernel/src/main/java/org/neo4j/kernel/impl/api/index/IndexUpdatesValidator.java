@@ -28,6 +28,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -55,9 +56,12 @@ public class IndexUpdatesValidator
     private final PropertyStore propertyStore;
     private final PropertyLoader propertyLoader;
     private final IndexingService indexing;
+    private final KernelHealth kernelHealth;
 
-    public IndexUpdatesValidator( NeoStore neoStore, PropertyLoader propertyLoader, IndexingService indexing )
+    public IndexUpdatesValidator( NeoStore neoStore, KernelHealth kernelHealth, PropertyLoader propertyLoader,
+            IndexingService indexing )
     {
+        this.kernelHealth = kernelHealth;
         this.nodeStore = neoStore.getNodeStore();
         this.propertyStore = neoStore.getPropertyStore();
         this.propertyLoader = propertyLoader;
@@ -68,7 +72,15 @@ public class IndexUpdatesValidator
             throws IOException
     {
         NodePropertyCommandsExtractor extractor = new NodePropertyCommandsExtractor();
-        transaction.accept( extractor );
+        try
+        {
+            transaction.accept( extractor );
+        }
+        catch ( IOException cause )
+        {
+            kernelHealth.panic( cause );
+            throw cause;
+        }
 
         if ( extractor.noCommandsExtracted() )
         {

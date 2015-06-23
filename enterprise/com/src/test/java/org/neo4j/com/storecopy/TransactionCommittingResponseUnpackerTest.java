@@ -101,8 +101,8 @@ public class TransactionCommittingResponseUnpackerTest
         final TransactionAppender appender = mockedTransactionAppender();
         final LogFile logFile = mock( LogFile.class );
         final LogRotation logRotation = mock( LogRotation.class );
-        final TransactionRepresentationStoreApplier applier = mock(TransactionRepresentationStoreApplier.class);
-        final IndexUpdatesValidator indexUpdatesValidator = setUpIndexUpdatesValidatorMocking(  );
+        final TransactionRepresentationStoreApplier applier = mock( TransactionRepresentationStoreApplier.class );
+        final IndexUpdatesValidator indexUpdatesValidator = setUpIndexUpdatesValidatorMocking();
 
           /*
            * The tx handler is called on every transaction applied after setting its id to committing
@@ -111,12 +111,12 @@ public class TransactionCommittingResponseUnpackerTest
            */
         StoppingTxHandler stoppingTxHandler = new StoppingTxHandler();
 
-        TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( txIdStore, logFile,
-                mock(KernelHealth.class), logRotation,
-                indexUpdatesValidator, applier, appender, mock(TransactionObligationFulfiller.class) );
+        TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( txIdStore, logFile, logRotation,
+                indexUpdatesValidator, applier, appender, mock( TransactionObligationFulfiller.class ) );
 
         int maxBatchSize = 10;
-        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(deps, maxBatchSize );
+        TransactionCommittingResponseUnpacker unpacker =
+                new TransactionCommittingResponseUnpacker( deps,  maxBatchSize );
         stoppingTxHandler.setUnpacker( unpacker );
 
         // When
@@ -159,7 +159,7 @@ public class TransactionCommittingResponseUnpackerTest
         final LogFile logFile = mock( LogFile.class );
         final LogRotation logRotation = mock(LogRotation.class);
 
-        TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( txIdStore, logFile, null,
+        TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( txIdStore, logFile,
                 logRotation, indexUpdatesValidator, applier, appender, mock(TransactionObligationFulfiller.class) );
 
         int maxBatchSize = 3;
@@ -182,21 +182,20 @@ public class TransactionCommittingResponseUnpackerTest
         // GIVEN
         final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         final TransactionAppender appender = mock( TransactionAppender.class );
-        final TransactionRepresentationStoreApplier applier = mock(TransactionRepresentationStoreApplier.class);
-        final TransactionObligationFulfiller obligationFulfiller = mock( TransactionObligationFulfiller.class );
+        final TransactionRepresentationStoreApplier applier = mock( TransactionRepresentationStoreApplier.class );
+        final TransactionObligationFulfiller fulfiller = mock( TransactionObligationFulfiller.class );
 
-        TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( txIdStore, mock(LogFile.class),
-                mock(KernelHealth.class), mock(LogRotation.class),
-                mock(IndexUpdatesValidator.class), applier, appender, obligationFulfiller );
+        TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( txIdStore, mock( LogFile.class ),
+                mock( LogRotation.class ), mock( IndexUpdatesValidator.class ), applier, appender, fulfiller );
 
-        final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(deps);
+        final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( deps );
         unpacker.start();
 
         // WHEN
         unpacker.unpackResponse( new DummyObligationResponse( 4 ), NO_OP_TX_HANDLER );
 
         // THEN
-        verify( obligationFulfiller, times( 1 ) ).fulfill( 4l );
+        verify( fulfiller, times( 1 ) ).fulfill( 4l );
     }
 
     @Test
@@ -205,15 +204,13 @@ public class TransactionCommittingResponseUnpackerTest
         // GIVEN
         final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         final TransactionAppender appender = mock( TransactionAppender.class );
-        final TransactionRepresentationStoreApplier applier = mock(TransactionRepresentationStoreApplier.class);
+        final TransactionRepresentationStoreApplier applier = mock( TransactionRepresentationStoreApplier.class );
         final TransactionObligationFulfiller obligationFulfiller = mock( TransactionObligationFulfiller.class );
         final LogFile logFile = mock( LogFile.class );
-        final KernelHealth kernelHealth = mock( KernelHealth.class );
         final LogRotation logRotation = mock( LogRotation.class );
 
-        TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( txIdStore,
-                logFile, kernelHealth, logRotation
-                , mock(IndexUpdatesValidator.class), applier, appender, obligationFulfiller );
+        TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( txIdStore, logFile, logRotation,
+                mock( IndexUpdatesValidator.class ), applier, appender, obligationFulfiller );
 
         final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( deps );
         unpacker.start();
@@ -230,7 +227,6 @@ public class TransactionCommittingResponseUnpackerTest
         catch ( IOException e )
         {
             assertThat( e.getMessage(), containsString( failure.getMessage() ) );
-            verify( kernelHealth ).panic( failure );
         }
     }
 
@@ -238,7 +234,6 @@ public class TransactionCommittingResponseUnpackerTest
     public void shouldNotApplyTransactionIfIndexUpdatesValidationFails() throws Throwable
     {
         // Given
-        final KernelHealth kernelHealth = mock( KernelHealth.class );
         final TransactionAppender appender = mockedTransactionAppender();
         final TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
         final IndexUpdatesValidator validator = mock( IndexUpdatesValidator.class );
@@ -246,9 +241,9 @@ public class TransactionCommittingResponseUnpackerTest
         when( validator.validate( any( TransactionRepresentation.class ), eq( TransactionApplicationMode.EXTERNAL ) ) )
                 .thenThrow( error );
 
-        TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( mock(TransactionIdStore.class),
-            mock(LogFile.class), kernelHealth, mock(LogRotation.class), validator, storeApplier, appender,
-                mock( TransactionObligationFulfiller.class ) );
+        TransactionCommittingResponseUnpacker.Dependencies deps =
+                buildDependencies( mock( TransactionIdStore.class ), mock( LogFile.class ), mock( LogRotation.class ),
+                        validator, storeApplier, appender, mock( TransactionObligationFulfiller.class ) );
 
         TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( deps );
         unpacker.start();
@@ -268,7 +263,6 @@ public class TransactionCommittingResponseUnpackerTest
 
         // Then
         verifyZeroInteractions( storeApplier );
-        verify( kernelHealth ).panic( error );
     }
 
     @Test
@@ -290,16 +284,15 @@ public class TransactionCommittingResponseUnpackerTest
         final IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
                 any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );
-        final TransactionRepresentationStoreApplier applier = mock(TransactionRepresentationStoreApplier.class);
+        final TransactionRepresentationStoreApplier applier = mock( TransactionRepresentationStoreApplier.class );
         final TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
                 transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS, health ) );
         life.start();
 
 
         TransactionCommittingResponseUnpacker.Dependencies deps =
-                buildDependencies( transactionIdStore, logFile, health, logRotation,
-                        indexUpdatesValidator,
-                        applier, appender, mock( TransactionObligationFulfiller.class ) );
+                buildDependencies( transactionIdStore, logFile, logRotation, indexUpdatesValidator, applier, appender,
+                        mock( TransactionObligationFulfiller.class ) );
 
         TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( deps );
         unpacker.start();
@@ -322,9 +315,8 @@ public class TransactionCommittingResponseUnpackerTest
     }
 
     private TransactionCommittingResponseUnpacker.Dependencies buildDependencies(
-            final TransactionIdStore transactionIdStore, final LogFile logFile, final KernelHealth health,
-            final LogRotation logRotation, final IndexUpdatesValidator indexUpdatesValidator,
-            final TransactionRepresentationStoreApplier storeApplier,
+            final TransactionIdStore transactionIdStore, final LogFile logFile,  final LogRotation logRotation,
+            final IndexUpdatesValidator indexUpdatesValidator, final TransactionRepresentationStoreApplier storeApplier,
             final TransactionAppender appender, final TransactionObligationFulfiller obligationFulfiller )
     {
         return new TransactionCommittingResponseUnpacker.Dependencies()
@@ -370,12 +362,6 @@ public class TransactionCommittingResponseUnpackerTest
                 public LogRotation logRotation()
                 {
                     return logRotation;
-                }
-
-                @Override
-                public KernelHealth kernelHealth()
-                {
-                    return health;
                 }
             };
     }

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -108,9 +107,9 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
             storeApplier.apply( transaction, indexUpdates, locks, transactionId, mode );
         }
         // TODO catch different types of exceptions here, some which are OK
-        catch ( Throwable e )
+        catch ( Throwable cause )
         {
-            throw exception( CouldNotCommit, e,
+            throw new TransactionFailureException( CouldNotCommit, cause,
                     "Could not apply the transaction to the store after written to log" );
         }
         finally
@@ -119,9 +118,4 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         }
     }
 
-    private TransactionFailureException exception( Status status, Throwable cause, String message )
-    {
-        kernelHealth.panic( cause );
-        return new TransactionFailureException( status, cause, message );
-    }
 }

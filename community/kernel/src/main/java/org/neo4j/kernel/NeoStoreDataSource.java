@@ -529,7 +529,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         {
             // Something unexpected happened during startup
             msgLog.warn( "Exception occurred while starting the datasource. Attempting to close things down.",
-                    e, true);
+                    e, true );
             try
             { // Close the neostore, so that locks are released properly
                 neoStoreModule.neoStore().close();
@@ -660,7 +660,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         final IntegrityValidator integrityValidator = new IntegrityValidator( neoStore, indexingService );
 
         final IndexUpdatesValidator indexUpdatesValidator = dependencies.satisfyDependency(
-                new IndexUpdatesValidator( neoStore, new PropertyLoader( neoStore ), indexingService ) );
+                new IndexUpdatesValidator( neoStore, kernelHealth, new PropertyLoader( neoStore ), indexingService ) );
 
         // TODO Move to constructor
         final LabelScanStore labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
@@ -746,11 +746,12 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 fileSystemAbstraction );
 
         IdOrderingQueue legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
+        LegacyIndexApplierLookup.Direct legacyIndexProviderLookup =
+                new LegacyIndexApplierLookup.Direct( this.legacyIndexProviderLookup );
         final TransactionRepresentationStoreApplier storeApplier = dependencies.satisfyDependency(
-                new TransactionRepresentationStoreApplier(
-                        indexingService, alwaysCreateNewWriter( labelScanStore ), neoStore,
-                        cacheAccess, lockService, new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ),
-                        indexConfigStore, legacyIndexTransactionOrdering ) );
+                new TransactionRepresentationStoreApplier( indexingService, alwaysCreateNewWriter( labelScanStore ),
+                        neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore, kernelHealth,
+                        legacyIndexTransactionOrdering ) );
 
         final PhysicalLogFile logFile = new PhysicalLogFile( fileSystemAbstraction, logFiles,
                 config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), neoStore,
@@ -904,12 +905,11 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         final RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup = new RecoveryLegacyIndexApplierLookup(
                 new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ), 1000 );
         final TransactionRepresentationStoreApplier storeRecoverer =
-                new TransactionRepresentationStoreApplier(
-                        indexingService, labelScanWriters, neoStore, cacheAccess, lockService,
-                        legacyIndexApplierLookup, indexConfigStore, IdOrderingQueue.BYPASS );
+                new TransactionRepresentationStoreApplier( indexingService, labelScanWriters, neoStore, cacheAccess,
+                        lockService, legacyIndexApplierLookup, indexConfigStore, kernelHealth, IdOrderingQueue.BYPASS );
 
-        RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeRecoverer, indexUpdatesValidator,
-                recoveryVisitorMonitor );
+        RecoveryVisitor recoveryVisitor =
+                new RecoveryVisitor( neoStore, storeRecoverer, indexUpdatesValidator, recoveryVisitorMonitor );
 
         LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
         final Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer =
