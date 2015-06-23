@@ -28,23 +28,21 @@ import org.neo4j.helpers.TickingClock;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
+
 public class AvailabilityGuardTest
 {
-    private final AvailabilityGuard.AvailabilityRequirement REQUIREMENT = new AvailabilityGuard.AvailabilityRequirement()
-    {
-        @Override
-        public String description()
-        {
-            return "Thing";
-        }
-    };
+    private static final AvailabilityGuard.AvailabilityRequirement REQUIREMENT_1 = availabilityRequirement( "Requirement 1" );
+    private static final AvailabilityGuard.AvailabilityRequirement REQUIREMENT_2 = availabilityRequirement( "Requirement 2" );
 
     @Test
     public void givenAccessGuardWith2ConditionsWhenAwaitThenTimeoutAndReturnFalse() throws Exception
     {
         // Given
         TickingClock clock = new TickingClock( 0, 100 );
-        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 2 );
+        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock );
+        availabilityGuard.require( REQUIREMENT_1 );
+        availabilityGuard.require( REQUIREMENT_2 );
 
         // When
         boolean result = availabilityGuard.isAvailable( 1000 );
@@ -58,7 +56,9 @@ public class AvailabilityGuardTest
     {
         // Given
         TickingClock clock = new TickingClock( 0, 100 );
-        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 2 );
+        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock );
+        availabilityGuard.require( REQUIREMENT_1 );
+        availabilityGuard.require( REQUIREMENT_2 );
 
         // When
         long start = clock.currentTimeMillis();
@@ -76,11 +76,13 @@ public class AvailabilityGuardTest
     {
         // Given
         TickingClock clock = new TickingClock( 0, 100 );
-        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 2 );
+        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock );
+        availabilityGuard.require( REQUIREMENT_1 );
+        availabilityGuard.require( REQUIREMENT_2 );
 
         // When
         long start = clock.currentTimeMillis();
-        availabilityGuard.grant(REQUIREMENT);
+        availabilityGuard.fulfill( REQUIREMENT_1 );
         boolean result = availabilityGuard.isAvailable( 1000 );
         long end = clock.currentTimeMillis();
 
@@ -92,15 +94,17 @@ public class AvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenGrantTwiceAndAwaitThenTrue() throws Exception
+    public void givenAccessGuardWith2ConditionsWhenGrantEachAndAwaitThenTrue() throws Exception
     {
         // Given
         TickingClock clock = new TickingClock( 0, 100 );
-        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 2 );
+        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock );
+        availabilityGuard.require( REQUIREMENT_1 );
+        availabilityGuard.require( REQUIREMENT_2 );
 
         // When
-        availabilityGuard.grant(REQUIREMENT);
-        availabilityGuard.grant(REQUIREMENT);
+        availabilityGuard.fulfill( REQUIREMENT_1 );
+        availabilityGuard.fulfill( REQUIREMENT_2 );
 
         long start = clock.currentTimeMillis();
         boolean result = availabilityGuard.isAvailable( 1000 );
@@ -119,12 +123,14 @@ public class AvailabilityGuardTest
     {
         // Given
         TickingClock clock = new TickingClock( 0, 100 );
-        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 2 );
+        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock );
+        availabilityGuard.require( REQUIREMENT_1 );
+        availabilityGuard.require( REQUIREMENT_2 );
 
         // When
-        availabilityGuard.grant(REQUIREMENT);
-        availabilityGuard.grant(REQUIREMENT);
-        availabilityGuard.deny(REQUIREMENT);
+        availabilityGuard.fulfill( REQUIREMENT_1 );
+        availabilityGuard.fulfill( REQUIREMENT_1 );
+        availabilityGuard.require( REQUIREMENT_2 );
 
         long start = clock.currentTimeMillis();
         boolean result = availabilityGuard.isAvailable( 1000 );
@@ -142,7 +148,9 @@ public class AvailabilityGuardTest
     {
         // Given
         TickingClock clock = new TickingClock( 0, 100 );
-        final AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 2 );
+        final AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock );
+        availabilityGuard.require( REQUIREMENT_1 );
+        availabilityGuard.require( REQUIREMENT_2 );
 
         // When
         clock.at( 500, new Runnable()
@@ -150,10 +158,10 @@ public class AvailabilityGuardTest
             @Override
             public void run()
             {
-                availabilityGuard.grant(REQUIREMENT);
+                availabilityGuard.fulfill( REQUIREMENT_1 );
             }
         } );
-        availabilityGuard.grant(REQUIREMENT);
+        availabilityGuard.fulfill( REQUIREMENT_2 );
 
         long start = clock.currentTimeMillis();
         boolean result = availabilityGuard.isAvailable( 1000 );
@@ -170,7 +178,9 @@ public class AvailabilityGuardTest
     {
         // Given
         TickingClock clock = new TickingClock( 0, 100 );
-        final AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 1 );
+        final AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock );
+        availabilityGuard.require( REQUIREMENT_1 );
+
         final AtomicBoolean notified = new AtomicBoolean();
         AvailabilityGuard.AvailabilityListener availabilityListener = new AvailabilityGuard.AvailabilityListener()
         {
@@ -189,7 +199,7 @@ public class AvailabilityGuardTest
         availabilityGuard.addListener( availabilityListener );
 
         // When
-        availabilityGuard.grant(REQUIREMENT);
+        availabilityGuard.fulfill( REQUIREMENT_1 );
 
         // Then
         assertThat( notified.get(), equalTo( true ) );
@@ -200,7 +210,9 @@ public class AvailabilityGuardTest
     {
         // Given
         TickingClock clock = new TickingClock( 0, 100 );
-        final AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 1 );
+        final AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock );
+        availabilityGuard.require( REQUIREMENT_1 );
+
         final AtomicBoolean notified = new AtomicBoolean();
         AvailabilityGuard.AvailabilityListener availabilityListener = new AvailabilityGuard.AvailabilityListener()
         {
@@ -219,8 +231,8 @@ public class AvailabilityGuardTest
         availabilityGuard.addListener( availabilityListener );
 
         // When
-        availabilityGuard.grant(REQUIREMENT);
-        availabilityGuard.deny(REQUIREMENT);
+        availabilityGuard.fulfill( REQUIREMENT_1 );
+        availabilityGuard.require( REQUIREMENT_1 );
 
         // Then
         assertThat( notified.get(), equalTo( true ) );
@@ -231,7 +243,8 @@ public class AvailabilityGuardTest
     {
         // Given
         TickingClock clock = new TickingClock( 0, 100 );
-        final AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 1 );
+        final AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock );
+        availabilityGuard.require( REQUIREMENT_1 );
 
         // When
         availabilityGuard.shutdown();
@@ -249,13 +262,13 @@ public class AvailabilityGuardTest
     {
         // Given
         TickingClock clock = new TickingClock( 0, 100 );
-        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock, 0 );
+        AvailabilityGuard availabilityGuard = new AvailabilityGuard( clock );
 
         // When
-        availabilityGuard.deny(REQUIREMENT);
-        availabilityGuard.deny(REQUIREMENT);
+        availabilityGuard.require( REQUIREMENT_1 );
+        availabilityGuard.require( REQUIREMENT_2 );
 
         // Then
-        assertThat( availabilityGuard.describeWhoIsBlocking(), equalTo( "2 reasons for blocking: Thing, Thing." ) );
+        assertThat( availabilityGuard.describeWhoIsBlocking(), equalTo( "2 reasons for blocking: Requirement 1, Requirement 2." ) );
     }
 }

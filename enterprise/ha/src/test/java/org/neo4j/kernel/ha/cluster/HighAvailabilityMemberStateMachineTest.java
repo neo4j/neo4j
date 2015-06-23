@@ -50,6 +50,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
 
@@ -240,7 +241,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
-        verify(guard, times(2)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
+        verify(guard, times(2)).require( any( AvailabilityRequirement.class ) );
     }
 
     @Test
@@ -298,7 +299,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
-        verify(guard, times(2)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
+        verify(guard, times(2)).require( any( AvailabilityRequirement.class ) );
     }
 
     @Test
@@ -355,7 +356,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
-        verify(guard, times(1)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
+        verify(guard, times(1)).require( any( AvailabilityRequirement.class ) );
     }
 
     @Test
@@ -412,7 +413,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
-        verify(guard, times(1)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
+        verify(guard, times(1)).require( any( AvailabilityRequirement.class ) );
     }
 
     @Test

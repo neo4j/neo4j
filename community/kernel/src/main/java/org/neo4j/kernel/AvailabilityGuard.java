@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.Function;
@@ -33,15 +34,22 @@ import static org.neo4j.helpers.Listeners.notifyListeners;
 import static org.neo4j.helpers.collection.Iterables.join;
 
 /**
- * The availability guard is what ensures that the database will only take calls when it is in an ok state. It allows
- * query handling to easily determine if it is ok to call the database by calling {@link #isAvailable(long)}.
- * <p>
- * The implementation uses an atomic integer that is initialized to the nr of conditions that must be met for the
- * database to be available. Each such condition will then call grant/deny accordingly,
- * and if the integer becomes 0 access is granted.
+ * The availability guard ensures that the database will only take calls when it is in an ok state.
+ * It tracks a set of requirements (added via {@link #require(Object, String)}) that must all be marked
+ * as fulfilled (using {@link #fulfill(Object)}) before the database is considered available again.
+ * Consumers determine if it is ok to call the database using {@link #isAvailable()},
+ * or await availability using {@link #isAvailable(long)}.
  */
 public class AvailabilityGuard
 {
+    public class UnavailableException extends Exception
+    {
+        public UnavailableException( String message )
+        {
+            super( message );
+        }
+    }
+
     public interface AvailabilityListener
     {
         void available();
@@ -68,227 +76,260 @@ public class AvailabilityGuard
             {
                 return descriptionWhenBlocking;
             }
+
+            @Override
+            public boolean equals( Object o )
+            {
+                if ( this == o )
+                {
+                    return true;
+                }
+                if ( o == null || getClass() != o.getClass() )
+                {
+                    return false;
+                }
+
+                AvailabilityRequirement that = (AvailabilityRequirement) o;
+
+                return descriptionWhenBlocking == null ?
+                        that.description() == null :
+                        descriptionWhenBlocking.equals( that.description() );
+            }
+
+            @Override
+            public int hashCode()
+            {
+                return descriptionWhenBlocking != null ? descriptionWhenBlocking.hashCode() : 0;
+            }
         };
     }
 
+    private final AtomicInteger requirementCount = new AtomicInteger( 0 );
+    private final Set<AvailabilityRequirement> blockingRequirements = new CopyOnWriteArraySet<>();
+    private final AtomicBoolean isShutdown = new AtomicBoolean( false );
     private Iterable<AvailabilityListener> listeners = Listeners.newListeners();
-
-    private final AtomicInteger available;
-    private final List<AvailabilityRequirement> blockingComponents = new CopyOnWriteArrayList<>();
     private final Clock clock;
 
     public AvailabilityGuard( Clock clock )
     {
-        this(clock, 0);
-    }
-
-    public AvailabilityGuard( Clock clock, int conditionCount )
-    {
         this.clock = clock;
-        available = new AtomicInteger( conditionCount );
     }
 
-    public void deny( AvailabilityRequirement requirementNotMet )
+    /**
+     * Indicate a requirement that must be fulfilled before the database is considered available.
+     *
+     * @param requirement the requirement object
+     */
+    public void require( AvailabilityRequirement requirement )
     {
-        int val;
-        do
+        if ( !blockingRequirements.add( requirement ) )
         {
-            val = available.get();
+            return;
+        }
 
-            if ( val == -1 )
-            {
-                return;
-            }
-
-        } while ( !available.compareAndSet( val, val + 1 ) );
-
-        blockingComponents.add( requirementNotMet );
-
-        if ( val == 0 )
+        synchronized ( requirementCount )
         {
-            notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
+            if ( requirementCount.getAndIncrement() == 0 && !isShutdown.get() )
             {
-                @Override
-                public void notify( AvailabilityListener listener )
+                notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
                 {
-                    listener.unavailable();
-                }
-            } );
+                    @Override
+                    public void notify( AvailabilityListener listener )
+                    {
+                        listener.unavailable();
+                    }
+                } );
+            }
         }
     }
 
-    public void grant( AvailabilityRequirement requirementNowMet )
+    /**
+     * Indicate that a requirement has been fulfilled.
+     *
+     * @param requirement the requirement object
+     */
+    public void fulfill( Object requirement )
     {
-        int val;
-        do
+        if ( !blockingRequirements.remove( requirement ) )
         {
-            val = available.get();
+            return;
+        }
 
-            if ( val == -1 )
-            {
-                return;
-            }
-
-        } while ( !available.compareAndSet( val, val - 1 ) );
-
-        assert available.get() >= 0;
-        blockingComponents.remove( requirementNowMet );
-
-        if ( val == 1 )
+        synchronized ( requirementCount )
         {
-            notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
+            if ( requirementCount.getAndDecrement() == 1 && !isShutdown.get() )
             {
-                @Override
-                public void notify( AvailabilityListener listener )
+                notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
                 {
-                    listener.available();
-                }
-            } );
+                    @Override
+                    public void notify( AvailabilityListener listener )
+                    {
+                        listener.available();
+                    }
+                } );
+            }
         }
     }
 
+    /**
+     * Shutdown the guard. After this method is invoked, the database will always be considered unavailable.
+     */
     public void shutdown()
     {
-        int val = available.getAndSet( -1 );
-        if ( val == 0 )
+        synchronized ( requirementCount )
         {
-            notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
+            if ( isShutdown.getAndSet( true ) )
             {
-                @Override
-                public void notify( AvailabilityListener listener )
+                return;
+            }
+
+            if ( requirementCount.get() == 0 )
+            {
+                notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
                 {
-                    listener.unavailable();
-                }
-            } );
+                    @Override
+                    public void notify( AvailabilityListener listener )
+                    {
+                        listener.unavailable();
+                    }
+                } );
+            }
         }
     }
 
     private static enum Availability
     {
-        AVAILABLE( true, true ),
-        TEMPORARILY_UNAVAILABLE( false, true ),
-        UNAVAILABLE( false, false );
-
-        private final boolean available;
-        private final boolean temporarily;
-
-        private Availability( boolean available, boolean temporarily )
-        {
-            this.available = available;
-            this.temporarily = temporarily;
-        }
+        AVAILABLE,
+        UNAVAILABLE,
+        SHUTDOWN
     }
 
     /**
-     * Determines if the database is available for transactions to use.
+     * Check if the database is available for transactions to use.
      *
-     * @param millis to wait if not yet available.
-     * @return true if it is available, otherwise false. Returns false immediately if shutdown.
+     * @return true if there are no requirements waiting to be fulfilled and the guard has not been shutdown
+     */
+    public boolean isAvailable()
+    {
+        return availability() == Availability.AVAILABLE;
+    }
+
+    /**
+     * Check if the database is available for transactions to use.
+     *
+     * @param millis to wait for availability
+     * @return true if there are no requirements waiting to be fulfilled and the guard has not been shutdown
      */
     public boolean isAvailable( long millis )
     {
-        return availability( millis ).available;
+        return availability( millis ) == Availability.AVAILABLE;
+    }
+
+    /**
+     * Await the database becoming available.
+     *
+     * @param millis to wait for availability
+     * @throws UnavailableException thrown when the timeout has been exceeded or the guard has been shutdown
+     */
+    public void await( long millis ) throws UnavailableException
+    {
+        Availability availability = availability( millis );
+        if ( availability == Availability.AVAILABLE )
+        {
+            return;
+        }
+
+        String description = (availability == Availability.UNAVAILABLE)
+                ? "Timeout waiting for database to become available and allow new transactions. Waited " +
+                Format.duration( millis ) + ". " + describeWhoIsBlocking()
+                : "Database not available because it's shutting down";
+        throw new UnavailableException( description );
+    }
+
+    private Availability availability()
+    {
+        if ( isShutdown.get() )
+        {
+            return Availability.SHUTDOWN;
+        }
+
+        int count = requirementCount.get();
+        if ( count == 0 )
+        {
+            return Availability.AVAILABLE;
+        }
+
+        assert (count > 0);
+
+        return Availability.UNAVAILABLE;
     }
 
     private Availability availability( long millis )
     {
-        int val = available.get();
-        if ( val == 0 )
+        Availability availability = availability();
+        if ( availability != Availability.UNAVAILABLE )
         {
-            return Availability.AVAILABLE;
+            return availability;
         }
-        else if ( val == -1 )
+
+        long timeout = clock.currentTimeMillis() + millis;
+        do
         {
-            return Availability.UNAVAILABLE;
-        }
-        else
-        {
-            long start = clock.currentTimeMillis();
-
-            while ( clock.currentTimeMillis() < start + millis )
-            {
-                val = available.get();
-                if ( val == 0 )
-                {
-                    return Availability.AVAILABLE;
-                }
-                else if ( val == -1 )
-                {
-                    return Availability.UNAVAILABLE;
-                }
-
-                try
-                {
-                    Thread.sleep( 10 );
-                }
-                catch ( InterruptedException e )
-                {
-                    Thread.interrupted();
-                    break;
-                }
-                Thread.yield();
-            }
-
-            return Availability.TEMPORARILY_UNAVAILABLE;
-        }
-    }
-
-    public <EXCEPTION extends Throwable> void checkAvailability( long millis, Class<EXCEPTION> cls )
-            throws EXCEPTION
-    {
-        Availability availability = availability( millis );
-        if ( !availability.available )
-        {
-            EXCEPTION exception;
             try
             {
-                String description = availability.temporarily
-                        ? "Timeout waiting for database to become available and allow new transactions. Waited " +
-                                Format.duration( millis ) + ". " + describeWhoIsBlocking()
-                        : "Database not available because it's shutting down";
-                exception = cls.getConstructor( String.class ).newInstance( description );
+                Thread.sleep( 10 );
             }
-            catch ( NoSuchMethodException e )
+            catch ( InterruptedException e )
             {
-                throw new Error( "Bad exception class given to this method, it doesn't have a (String) constructor", e );
+                Thread.interrupted();
+                break;
             }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e );
-            }
-            throw exception;
-        }
+            availability = availability();
+        } while ( availability == Availability.UNAVAILABLE && clock.currentTimeMillis() < timeout );
+
+        return availability;
     }
 
+    /**
+     * Add a listener for changes to availability.
+     *
+     * @param listener the listener to receive callbacks when availability changes
+     */
     public void addListener( AvailabilityListener listener )
     {
         listeners = Listeners.addListener( listener, listeners );
     }
 
+    /**
+     * Remove a listener for changes to availability.
+     *
+     * @param listener the listener to remove
+     */
     public void removeListener( AvailabilityListener listener )
     {
         listeners = Listeners.removeListener( listener, listeners );
     }
 
-    /** Provide a textual description of what components, if any, are blocking access. */
+    /**
+     * @return a textual description of what components, if any, are blocking access
+     */
     public String describeWhoIsBlocking()
     {
-        if(blockingComponents.size() > 0 || available.get() > 0)
+        if ( blockingRequirements.size() > 0 || requirementCount.get() > 0 )
         {
-            String causes = join( ", ", Iterables.map( DESCRIPTION, blockingComponents ) );
-            return available.get() + " reasons for blocking: " + causes + ".";
+            String causes = join( ", ", Iterables.map( DESCRIPTION, blockingRequirements ) );
+            return requirementCount.get() + " reasons for blocking: " + causes + ".";
         }
         return "No blocking components";
     }
 
-    public static final Function<AvailabilityRequirement,String> DESCRIPTION = new Function<AvailabilityRequirement,
-            String>()
-    {
-
-        @Override
-        public String apply( AvailabilityRequirement availabilityRequirement )
-        {
-            return availabilityRequirement.description();
-        }
-    };
+    public static final Function<AvailabilityRequirement, String> DESCRIPTION =
+            new Function<AvailabilityRequirement, String>()
+            {
+                @Override
+                public String apply( AvailabilityRequirement availabilityRequirement )
+                {
+                    return availabilityRequirement.description();
+                }
+            };
 }

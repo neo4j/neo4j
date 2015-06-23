@@ -28,15 +28,17 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
+import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
 
 /**
  * This class handles whether the database as a whole is available to use at all.
  * As it runs as the last service in the lifecycle list, the stop() is called first
  * on stop, shutdown or restart, and thus blocks access to everything else for outsiders.
  */
-public class DatabaseAvailability
-        implements Lifecycle, AvailabilityGuard.AvailabilityRequirement
+public class DatabaseAvailability implements Lifecycle
 {
+    private static final AvailabilityRequirement AVAILABILITY_REQUIREMENT = availabilityRequirement( "Database available" );
     private final AvailabilityGuard availabilityGuard;
     private final TransactionCounters transactionMonitor;
     private final long awaitActiveTransactionDeadlineMillis;
@@ -54,7 +56,7 @@ public class DatabaseAvailability
         this.awaitActiveTransactionDeadlineMillis = awaitActiveTransactionDeadlineMillis;
 
         // On initial setup, deny availability
-        availabilityGuard.deny( this );
+        availabilityGuard.require( AVAILABILITY_REQUIREMENT );
     }
 
     @Override
@@ -67,7 +69,7 @@ public class DatabaseAvailability
     public void start()
             throws Throwable
     {
-        availabilityGuard.grant( this );
+        availabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
     }
 
     @Override
@@ -76,7 +78,7 @@ public class DatabaseAvailability
     {
         // Database is no longer available for use
         // Deny beginning new transactions
-        availabilityGuard.deny( this );
+        availabilityGuard.require( AVAILABILITY_REQUIREMENT );
 
         // Await transactions stopped
         awaitTransactionsClosedWithinTimeout();
@@ -96,11 +98,5 @@ public class DatabaseAvailability
             throws Throwable
     {
         // TODO: Starting database. Make sure none can access it through lock or CAS
-    }
-
-    @Override
-    public String description()
-    {
-        return "Database is stopped";
     }
 }

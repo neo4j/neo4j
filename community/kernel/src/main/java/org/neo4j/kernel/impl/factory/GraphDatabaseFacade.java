@@ -288,7 +288,7 @@ public class GraphDatabaseFacade
     @Override
      public Transaction beginTx()
      {
-         availabilityGuard.checkAvailability( transactionStartTimeout, TransactionFailureException.class );
+         checkAvailability();
 
          TopLevelTransaction topLevelTransaction =
                  threadToTransactionBridge.getTopLevelTransactionBoundToThisThread( false );
@@ -316,19 +316,32 @@ public class GraphDatabaseFacade
          return execute( query, Collections.<String,Object>emptyMap() );
      }
 
-     @Override
-     public Result execute( String query, Map<String, Object> parameters ) throws QueryExecutionException
-     {
-         availabilityGuard.checkAvailability( transactionStartTimeout, TransactionFailureException.class );
-         try
-         {
-             return queryExecutor.get().executeQuery( query, parameters, QueryEngineProvider.embeddedSession() );
-         }
-         catch ( QueryExecutionKernelException e )
-         {
-             throw e.asUserException();
-         }
-     }
+    @Override
+    public Result execute( String query, Map<String, Object> parameters ) throws QueryExecutionException
+    {
+        checkAvailability();
+
+        try
+        {
+            return queryExecutor.get().executeQuery( query, parameters, QueryEngineProvider.embeddedSession() );
+        }
+        catch ( QueryExecutionKernelException e )
+        {
+            throw e.asUserException();
+        }
+    }
+
+    private void checkAvailability()
+    {
+        try
+        {
+            availabilityGuard.await( transactionStartTimeout );
+        }
+        catch ( AvailabilityGuard.UnavailableException e )
+        {
+            throw new TransactionFailureException( e.getMessage() );
+        }
+    }
 
     @Override
     public Iterable<Node> getAllNodes()
