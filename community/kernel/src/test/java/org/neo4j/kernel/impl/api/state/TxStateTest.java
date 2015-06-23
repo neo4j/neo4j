@@ -189,35 +189,70 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesWhenThereAreNewNodes() throws Exception
+    public void shouldComputeIndexUpdatesForScanWhenThereAreNewNodes() throws Exception
     {
         // GIVEN
-        int labelId = 2;
-        int propertyKeyId1 = 3;
-        int propertyKeyId2 = 4;
-        long[] nodeIds = {42L, 43L, 44L};
-        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKeyId1 );
-        for ( long nodeId : nodeIds )
-        {
-            state.nodeDoCreate( nodeId );
-            state.nodeDoAddLabel( labelId, nodeId );
-            Property propertyBefore = noNodeProperty( nodeId, propertyKeyId1 );
-            String value = "value" + nodeId;
-            DefinedProperty propertyAfter = stringProperty( propertyKeyId1, value );
-            if ( nodeId == 44L )
-            {
-                propertyBefore = noNodeProperty( nodeId, propertyKeyId2 );
-                propertyAfter = stringProperty( propertyKeyId2, value );
-            }
-            state.nodeDoReplaceProperty( nodeId, propertyBefore, propertyAfter );
-            state.indexDoUpdateProperty( rule, nodeId, null, propertyAfter );
-        }
+        long[] nodeIds1 = {42L, 43L};
+        long[] nodeIds2 = {44L};
+        addToIndex( 2, 3, nodeIds1 );
+        addToIndex( 2, 4, nodeIds2 );
 
         // WHEN
-        ReadableDiffSets<Long> diffSets = state.indexUpdates( rule, null );
+        ReadableDiffSets<Long> diffSets = state.indexUpdates( new IndexDescriptor( 2, 3 ), null );
 
         // THEN
-        assertEquals( asSet( nodeIds[0], nodeIds[1] ), diffSets.getAdded() );
+        assertEquals( asSet( nodeIds1[0], nodeIds1[1] ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForSeekWhenThereAreNewNodes() throws Exception
+    {
+        // GIVEN
+        long[] nodeIds1 = {42L, 43L};
+        long[] nodeIds2 = {44L};
+        addToIndex( 2, 3, nodeIds1 );
+        addToIndex( 2, 4, nodeIds2 );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdates( new IndexDescriptor( 2, 3 ), "value" + nodeIds1[1] );
+
+        // THEN
+        assertEquals( asSet( nodeIds1[1] ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForSeekWhenThereAreNewNodesInRangeQueryTransaction() throws Exception
+    {
+        // GIVEN
+        long[] nodeIds1 = {42L, 43L};
+        long[] nodeIds2 = {44L};
+        addToIndex( 2, 3, nodeIds1 );
+        addToIndex( 2, 4, nodeIds2 );
+        state.indexUpdatesForPrefix( new IndexDescriptor( 2, 3 ), "value" );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdates( new IndexDescriptor( 2, 3 ), "value" + nodeIds1[1] );
+
+        // THEN
+        assertEquals( asSet( nodeIds1[1] ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForSeekWhenThereAreNewNodesInRangeQueryTransaction2() throws Exception
+    {
+        // GIVEN
+        long[] nodeIds1 = {42L, 43L};
+        long[] nodeIds2 = {44L};
+        addToIndex( 2, 3, new long[]{nodeIds1[0]} );
+        addToIndex( 2, 4, nodeIds2 );
+        state.indexUpdatesForPrefix( new IndexDescriptor( 2, 3 ), "value" );
+        addToIndex( 2, 3, new long[]{nodeIds1[1]} );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdates( new IndexDescriptor( 2, 3 ), "value" + nodeIds1[1] );
+
+        // THEN
+        assertEquals( asSet( nodeIds1[1] ), diffSets.getAdded() );
     }
 
     @Test
@@ -715,5 +750,19 @@ public class TxStateTest
     public void before() throws Exception
     {
         state = new TxState();
+    }
+
+    private void addToIndex(int labelId, int propertyKeyId, long[] nodeIds)
+    {
+        for ( long nodeId : nodeIds )
+        {
+            state.nodeDoCreate( nodeId );
+            state.nodeDoAddLabel( labelId, nodeId );
+            Property propertyBefore = noNodeProperty( nodeId, propertyKeyId );
+            String value = "value" + nodeId;
+            DefinedProperty propertyAfter = stringProperty( propertyKeyId, value );
+            state.nodeDoReplaceProperty( nodeId, propertyBefore, propertyAfter );
+            state.indexDoUpdateProperty( new IndexDescriptor(labelId, propertyKeyId), nodeId, null, propertyAfter );
+        }
     }
 }

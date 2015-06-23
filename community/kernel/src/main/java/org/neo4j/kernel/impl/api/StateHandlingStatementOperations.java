@@ -591,8 +591,8 @@ public class StateHandlingStatementOperations implements
     {
         PrimitiveLongResourceIterator committed = storeLayer.nodeGetUniqueFromIndexLookup( state, index, value );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
-        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, value, exactMatches );
-        return single( resourceIterator( changeFilteredMatches, committed ), NO_SUCH_NODE );
+        PrimitiveLongIterator changesFiltered = filterIndexStateChanges( state, index, value, exactMatches );
+        return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
     }
 
     @Override
@@ -601,20 +601,17 @@ public class StateHandlingStatementOperations implements
     {
         PrimitiveLongResourceIterator committed = storeLayer.nodesGetFromIndexLookup( state, index, value );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
-        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, value, exactMatches );
-        return resourceIterator( changeFilteredMatches, committed );
+        PrimitiveLongIterator changesFiltered = filterIndexStateChanges( state, index, value, exactMatches );
+        return resourceIterator( changesFiltered, committed );
     }
 
     @Override
     public PrimitiveLongIterator nodesGetFromIndexByPrefixSearch( KernelStatement state, IndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
-        if ( state.hasTxStateWithChanges() )
-        {
-            throw new UnsupportedOperationException( "not yet implemented" );
-        }
-        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexByPrefixSearch( state, index, prefix );
-        return committed;
+        PrimitiveLongResourceIterator committed = storeLayer.nodesGetFromIndexByPrefixSearch( state, index, prefix );
+        PrimitiveLongIterator changesFiltered = filterIndexStateChangesForPrefix( state, index, prefix, committed );
+        return resourceIterator( changesFiltered, committed );
     }
 
     @Override
@@ -622,8 +619,8 @@ public class StateHandlingStatementOperations implements
             IndexNotFoundKernelException
     {
         PrimitiveLongResourceIterator committed = storeLayer.nodesGetFromIndexScan( state, index );
-        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, null, committed );
-        return resourceIterator( changeFilteredMatches, committed );
+        PrimitiveLongIterator changesFiltered = filterIndexStateChanges( state, index, null, committed );
+        return resourceIterator( changesFiltered, committed );
     }
 
     private PrimitiveLongIterator filterExactIndexMatches( final KernelStatement state, IndexDescriptor index,
@@ -642,6 +639,20 @@ public class StateHandlingStatementOperations implements
 
             // Apply to actual index lookup
             return nodes.augmentWithRemovals( labelPropertyChanges.augment( nodeIds ) );
+        }
+        return nodeIds;
+    }
+
+    private PrimitiveLongIterator filterIndexStateChangesForPrefix( KernelStatement state, IndexDescriptor index,
+            String prefix, PrimitiveLongIterator nodeIds )
+    {
+        if ( state.hasTxStateWithChanges() )
+        {
+            ReadableDiffSets<Long> labelPropertyChangesForPrefix = state.txState().indexUpdatesForPrefix( index, prefix );
+            ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
+
+            // Apply to actual index lookup
+            return nodes.augmentWithRemovals( labelPropertyChangesForPrefix.augment( nodeIds ) );
         }
         return nodeIds;
     }

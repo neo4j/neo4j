@@ -104,7 +104,7 @@ public class StateHandlingStatementOperationsTest
         // given
         UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
         TransactionState txState = mock( TransactionState.class );
-        when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( DiffSets.<Long>emptyDiffSets() );
+        when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( new DiffSets() );
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
             .thenAnswer( asAnswer( asList( constraint ) ) );
@@ -258,6 +258,66 @@ public class StateHandlingStatementOperationsTest
 
         // When
         PrimitiveLongIterator results = context.nodesGetFromIndexScan( statement, index );
+
+        // Then
+        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+    }
+
+    @Test
+    public void shouldConsiderTransactionStateWhenSearchingAnIndex() throws Exception
+    {
+        // Given
+        TransactionState txState = mock( TransactionState.class );
+        KernelStatement statement = mock( KernelStatement.class );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
+        IndexDescriptor index = new IndexDescriptor( 1, 2 );
+        when( txState.indexUpdates( index, "value" ) ).thenReturn(
+                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
+        );
+        when( txState.addedAndRemovedNodes() ).thenReturn(
+                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+        );
+
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        when( storeReadLayer.nodesGetFromIndexLookup( statement, index, "value" ) ).thenReturn(
+                IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
+        );
+
+        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
+
+        // When
+        PrimitiveLongIterator results = context.nodesGetFromIndexLookup( statement, index, "value" );
+
+        // Then
+        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+    }
+
+    @Test
+    public void shouldConsiderTransactionStateWhenPerformingPrefixSearchOnAnIndex() throws Exception
+    {
+        // Given
+        TransactionState txState = mock( TransactionState.class );
+        KernelStatement statement = mock( KernelStatement.class );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
+        IndexDescriptor index = new IndexDescriptor( 1, 2 );
+        when( txState.indexUpdatesForPrefix( index, "prefix" ) ).thenReturn(
+                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
+        );
+        when( txState.addedAndRemovedNodes() ).thenReturn(
+                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+        );
+
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        when( storeReadLayer.nodesGetFromIndexByPrefixSearch( statement, index, "prefix" ) ).thenReturn(
+                IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
+        );
+
+        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
+
+        // When
+        PrimitiveLongIterator results = context.nodesGetFromIndexByPrefixSearch( statement, index, "prefix" );
 
         // Then
         assertEquals( asSet( 42L, 43L ), asSet( results ) );

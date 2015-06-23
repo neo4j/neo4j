@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
@@ -500,6 +501,99 @@ public class IndexingAcceptanceTest
             found.addAll( ops.nodesGetFromIndexByPrefixSearch( descriptor, "Karl" ) );
         }
 
+        // THEN
+        assertThat( found, equalTo( expected ) );
+    }
+
+    @Test
+    public void shouldIncludeNodesCreatedInSameTxInIndexPrefixSearch()
+            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+    {
+        // GIVEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        IndexDefinition index = createIndex( db, LABEL1, "name" );
+        createNodes( db, LABEL1, "name", "Mattias", "Mats" );
+        PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl", "Karlsson" );
+        // WHEN
+        PrimitiveLongSet found = Primitive.longSet();
+        try ( Transaction tx = db.beginTx() )
+        {
+            expected.add( createNode( db, map( "name", "Karlchen" ), LABEL1 ).getId() );
+            createNode( db, map( "name", "Carla" ), LABEL1 );
+            Statement statement = getStatement( (GraphDatabaseAPI) db );
+            ReadOperations readOperations = statement.readOperations();
+            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+            found.addAll( readOperations.nodesGetFromIndexByPrefixSearch( descriptor, "Karl" ) );
+        }
+        // THEN
+        assertThat( found, equalTo( expected ) );
+    }
+
+    @Test
+    public void shouldNotIncludeNodesDeletedInSameTxInIndexPrefixSearch()
+            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+    {
+        // GIVEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        IndexDefinition index = createIndex( db, LABEL1, "name" );
+        createNodes( db, LABEL1, "name", "Mattias" );
+        PrimitiveLongSet toDelete = createNodes( db, LABEL1, "name", "Karlsson", "Mats" );
+        PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl" );
+        // WHEN
+        PrimitiveLongSet found = Primitive.longSet();
+        try ( Transaction tx = db.beginTx() )
+        {
+            PrimitiveLongIterator deleting = toDelete.iterator();
+            while ( deleting.hasNext() )
+            {
+                long id = deleting.next();
+                db.getNodeById( id ).delete();
+                expected.remove( id );
+            }
+            Statement statement = getStatement( (GraphDatabaseAPI) db );
+            ReadOperations readOperations = statement.readOperations();
+            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+            found.addAll( readOperations.nodesGetFromIndexByPrefixSearch( descriptor, "Karl" ) );
+        }
+        // THEN
+        assertThat( found, equalTo( expected ) );
+    }
+
+    @Test
+    public void shouldConsiderNodesChangedInSameTxInIndexPrefixSearch()
+            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+    {
+        // GIVEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        IndexDefinition index = createIndex( db, LABEL1, "name" );
+        createNodes( db, LABEL1, "name", "Mattias" );
+        PrimitiveLongSet toChangeToMatch = createNodes( db, LABEL1, "name", "Mats" );
+        PrimitiveLongSet toChangeToNotMatch = createNodes( db, LABEL1, "name", "Karlsson" );
+        PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl" );
+        String prefix = "Karl";
+        // WHEN
+        PrimitiveLongSet found = Primitive.longSet();
+        try ( Transaction tx = db.beginTx() )
+        {
+            PrimitiveLongIterator toMatching = toChangeToMatch.iterator();
+            while ( toMatching.hasNext() )
+            {
+                long id = toMatching.next();
+                db.getNodeById( id ).setProperty( "name", prefix + "X" + id );
+                expected.add( id );
+            }
+            PrimitiveLongIterator toNotMatching = toChangeToNotMatch.iterator();
+            while ( toNotMatching.hasNext() )
+            {
+                long id = toNotMatching.next();
+                db.getNodeById( id ).setProperty( "name", "X" + id );
+                expected.remove( id );
+            }
+            Statement statement = getStatement( (GraphDatabaseAPI) db );
+            ReadOperations readOperations = statement.readOperations();
+            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+            found.addAll( readOperations.nodesGetFromIndexByPrefixSearch( descriptor, prefix ) );
+        }
         // THEN
         assertThat( found, equalTo( expected ) );
     }

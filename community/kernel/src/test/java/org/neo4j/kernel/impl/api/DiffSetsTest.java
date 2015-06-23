@@ -152,7 +152,7 @@ public class DiffSetsTest
     public void testReturnSourceFromApplyWithEmptyDiffSets() throws Exception
     {
         // GIVEN
-        DiffSets<Long> diffSets = DiffSets.emptyDiffSets();
+        DiffSets<Long> diffSets = new DiffSets();
 
         // WHEN
         Iterator<Long> result = diffSets.apply( asList( 18l ).iterator() );

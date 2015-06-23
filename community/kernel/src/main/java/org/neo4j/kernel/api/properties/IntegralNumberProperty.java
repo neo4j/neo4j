@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.api.properties;
 
-abstract class IntegralNumberProperty extends DefinedProperty
+abstract class IntegralNumberProperty extends NumberProperty implements DefinedProperty.WithLongValue
 {
     IntegralNumberProperty( int propertyKeyId )
     {
         super( propertyKeyId );
     }
 
-    abstract long longValue();
+    public double doubleValue()
+    {
+        return (double) longValue();
+    }
 
     @Override
     final int valueHash()
@@ -69,6 +72,20 @@ abstract class IntegralNumberProperty extends DefinedProperty
         else
         {
             return false;
+        }
+    }
+
+    @Override
+    int compareByValue( DefinedProperty other )
+    {
+        if ( other instanceof IntegralNumberProperty )
+        {
+            IntegralNumberProperty that = (IntegralNumberProperty) other;
+            return (int) (this.longValue() - that.longValue());
+        }
+        else
+        {
+            return super.compareByValue( other );
         }
     }
 }

@@ -136,4 +136,6 @@ public interface ReadableTxState
     Long indexCreatedForConstraint( UniquenessConstraint constraint );
 
     ReadableDiffSets<Long> indexUpdates( IndexDescriptor index, Object value );
+
+    ReadableDiffSets<Long> indexUpdatesForPrefix( IndexDescriptor index, String prefix );
 }

@@ -19,29 +19,29 @@
  */
 package org.neo4j.kernel.api.properties;
 
-/**
- * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
- * we don't extend a class that has fields.
- */
-final class ShortProperty extends IntegralNumberProperty
+public abstract class NumberProperty extends DefinedProperty implements DefinedProperty.WithDoubleValue
 {
-    private final short value;
-
-    ShortProperty( int propertyKeyId, short value )
+    public NumberProperty( int propertyKeyId )
     {
         super(propertyKeyId);
-        this.value = value;
+    }
+
+    protected TypeClassification typeClassification()
+    {
+        return TypeClassification.NUMBER;
     }
 
     @Override
-    public Short value()
+    int compareByValue( DefinedProperty other )
     {
-        return value;
-    }
-
-    @Override
-    public long longValue()
-    {
-        return value;
+        if ( other instanceof WithDoubleValue )
+        {
+            WithDoubleValue that = (WithDoubleValue) other;
+            return (int) (this.doubleValue() - that.doubleValue());
+        }
+        else
+        {
+            return super.compareByValue( other );
+        }
     }
 }

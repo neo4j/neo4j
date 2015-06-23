@@ -42,12 +42,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
  */
 public class DiffSets<T> extends SuperDiffSets<T,PrimitiveLongIterator> implements ReadableDiffSets<T>
 {
-    @SuppressWarnings("unchecked")
-    public static <T> DiffSets<T> emptyDiffSets()
-    {
-        return EMPTY;
-    }
-
     public DiffSets()
     {
         this( null, null );
@@ -97,50 +91,4 @@ public class DiffSets<T> extends SuperDiffSets<T,PrimitiveLongIterator> implemen
                 asSet( Iterables.filter( filter, added( false ) ) ),
                 asSet( Iterables.filter( filter, removed( false ) ) ) );
     }
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private static final DiffSets EMPTY = new DiffSets( Collections.emptySet(), Collections.emptySet() )
-    {
-        @Override
-        public Iterator apply( Iterator source )
-        {
-            return source;
-        }
-
-        @Override
-        public PrimitiveLongIterator augment( PrimitiveLongIterator source )
-        {
-            return source;
-        }
-
-        @Override
-        public PrimitiveIntIterator augment( PrimitiveIntIterator source )
-        {
-            return source;
-        }
-
-        @Override
-        public PrimitiveLongIterator augmentWithRemovals( PrimitiveLongIterator source )
-        {
-            return source;
-        }
-
-        @Override
-        public PrimitiveLongIterator augmentWithAdditions( PrimitiveLongIterator source )
-        {
-            return source;
-        }
-
-        @Override
-        public DiffSets filterAdded( Predicate addedFilter )
-        {
-            return this;
-        }
-
-        @Override
-        public DiffSets filter( Predicate filter )
-        {
-            return this;
-        }
-    };
 }

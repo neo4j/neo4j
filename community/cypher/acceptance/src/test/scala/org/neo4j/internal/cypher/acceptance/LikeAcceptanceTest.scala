@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.{Node, ResourceIterator}
 
 class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
@@ -370,5 +370,34 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     val result = executeWithAllPlanners("MATCH (a) WHERE a.name NOT ILIKE '%b%' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> eNode)))
+  }
+
+  // *** TESTS OF TRANSACTION STATE HANDLING
+
+  test("Should handle prefix search with existing transaction state") {
+    graph.createIndex("User", "name")
+    graph.inTx {
+      createLabeledNode(Map("name" -> "Stefan"), "User")
+      createLabeledNode(Map("name" -> "Stephan"), "User")
+      createLabeledNode(Map("name" -> "Stefanie"), "User")
+      createLabeledNode(Map("name" -> "Craig"), "User")
+    }
+    graph.inTx {
+      drain(graph.execute("MATCH (u:User {name: 'Craig'}) SET u.name = 'Steven'"))
+      drain(graph.execute("MATCH (u:User {name: 'Stephan'}) DELETE u"))
+      drain(graph.execute("MATCH (u:User {name: 'Stefanie'}) SET u.name = 'steffi'"))
+
+      val result = executeWithAllPlanners("MATCH (u:User) WHERE u.name LIKE 'Ste%' RETURN u.name as name").columnAs("name").toList.toSet
+
+      result should equal(Set[String]("Stefan", "Steven"))
+    }
+  }
+
+  private def drain(iter: ResourceIterator[_]): Unit = {
+    try {
+      while (iter.hasNext) iter.next()
+    } finally {
+      iter.close()
+    }
   }
 }

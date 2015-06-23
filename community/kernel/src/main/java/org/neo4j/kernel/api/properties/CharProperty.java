@@ -23,7 +23,7 @@ package org.neo4j.kernel.api.properties;
  * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
  * we don't extend a class that has fields.
  */
-final class CharProperty extends DefinedProperty
+final class CharProperty extends DefinedProperty implements DefinedProperty.WithStringValue
 {
     final char value;
 
@@ -76,6 +76,31 @@ final class CharProperty extends DefinedProperty
         else
         {
             return false;
+        }
+    }
+
+    protected TypeClassification typeClassification()
+    {
+        return TypeClassification.STRING;
+    }
+
+    @Override
+    public String stringValue()
+    {
+        return Character.toString( value );
+    }
+
+    @Override
+    int compareByValue( DefinedProperty other )
+    {
+        if ( other instanceof WithStringValue )
+        {
+            WithStringValue that = (WithStringValue) other;
+            return this.stringValue().compareTo( that.stringValue() );
+        }
+        else
+        {
+            return super.compareByValue( other );
         }
     }
 }
