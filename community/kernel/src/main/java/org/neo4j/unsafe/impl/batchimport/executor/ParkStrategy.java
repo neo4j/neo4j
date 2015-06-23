@@ -32,7 +32,7 @@ public interface ParkStrategy
 
     void unpark( Thread thread );
 
-    public static class Park implements ParkStrategy
+    class Park implements ParkStrategy
     {
         private final long nanos;
 

@@ -1139,7 +1139,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     {
         while ( !neoStoreModule.neoStore().closedTransactionIdIsOnParWithOpenedTransactionId() )
         {
-            LockSupport.parkNanos( 1_000_000 ); // 1 ms
+            LockSupport.parkNanos( 10_000_000 ); // 10 ms
         }
     }
 
