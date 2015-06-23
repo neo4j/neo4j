@@ -19,11 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.Protocol.addLengthFieldPipes;
-import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
-import static org.neo4j.helpers.NamedThreadFactory.named;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -45,6 +40,7 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Triplet;
@@ -54,6 +50,11 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.helpers.NamedThreadFactory.named;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
@@ -85,7 +86,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private ResourceReleaser resourcePoolReleaser;
     private ComExceptionHandler comExceptionHandler;
 
-    private final RequestMonitor requestMonitor;
+    private RequestMonitor requestMonitor;
 
     private int chunkSize;
 
@@ -127,7 +128,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             {
                 ChannelFuture channelFuture = bootstrap.connect( address );
                 channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );
-                Triplet<Channel, ChannelBuffer, ByteBuffer> channel = null;
+                Triplet<Channel, ChannelBuffer, ByteBuffer> channel;
                 if ( channelFuture.isSuccess() )
                 {
                     channel = Triplet.of( channelFuture.getChannel(),
@@ -158,7 +159,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                 Channel channel = resource.first();
                 if ( channel.isConnected() )
                 {
-                    msgLog.debug( "Closing channel: " + channel + ". Channel pool size is now " + channelPool.currentSize() );
+                    msgLog.debug(
+                            "Closing channel: " + channel + ". Channel pool size is now " + channelPool.currentSize() );
                     channel.close();
                 }
             }
@@ -175,7 +177,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             @Override
             public void release()
             {
-                channelPool.release();
+                if (channelPool != null)
+                    channelPool.release();
             }
         };
     }
@@ -184,12 +187,17 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     @Override
     public void stop()
     {
-        channelPool.close( true );
-        bootstrap.releaseExternalResources();
-        bossExecutor.shutdownNow();
-        workerExecutor.shutdownNow();
-        comExceptionHandler = ComExceptionHandler.NO_OP;
-        msgLog.logMessage( toString() + " shutdown", true );
+        if ( channelPool != null )
+        {
+            channelPool.close( true );
+            bootstrap.releaseExternalResources();
+            comExceptionHandler = ComExceptionHandler.NO_OP;
+            msgLog.logMessage( toString() + " shutdown", true );
+            bootstrap = null;
+            channelPool = null;
+            resourcePoolReleaser = null;
+            requestMonitor = null;
+        }
     }
 
     protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,
@@ -270,7 +278,11 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             {
                 releaseChannel();
             }
-            requestMonitor.endRequest( failure );
+
+            if ( requestMonitor != null )
+            {
+                requestMonitor.endRequest( failure );
+            }
         }
     }
 
@@ -313,7 +325,10 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     private void releaseChannel()
     {
-        channelPool.release();
+        if (channelPool != null)
+        {
+            channelPool.release();
+        }
     }
 
     private void closeChannel( Triplet<Channel, ChannelBuffer, ByteBuffer> channel )

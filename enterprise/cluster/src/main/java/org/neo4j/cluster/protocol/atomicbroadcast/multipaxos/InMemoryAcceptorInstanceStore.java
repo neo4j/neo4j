@@ -21,6 +21,8 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * In memory version of an acceptor instance store.
@@ -29,18 +31,21 @@ public class InMemoryAcceptorInstanceStore
         implements AcceptorInstanceStore
 {
     private final Map<InstanceId, AcceptorInstance> instances;
+    private final BlockingQueue<InstanceId> currentInstances;
 
     private long lastDeliveredInstanceId;
 
     public InMemoryAcceptorInstanceStore()
     {
-        this(new HashMap<InstanceId, AcceptorInstance>(), -1);
+        this( new HashMap<InstanceId, AcceptorInstance>(), new ArrayBlockingQueue<InstanceId>( 1000 ), -1 );
     }
 
-    private InMemoryAcceptorInstanceStore(Map<InstanceId, AcceptorInstance> instances, long lastDeliveredInstanceId)
+    private InMemoryAcceptorInstanceStore( Map<InstanceId, AcceptorInstance> instances,
+            BlockingQueue<InstanceId> currentInstances, long lastDeliveredInstanceId )
     {
         this.instances = instances;
         this.lastDeliveredInstanceId = lastDeliveredInstanceId;
+        this.currentInstances = currentInstances;
     }
 
     @Override
@@ -51,6 +56,11 @@ public class InMemoryAcceptorInstanceStore
         {
             instance = new AcceptorInstance();
             instances.put( instanceId, instance );
+            if ( !currentInstances.offer( instanceId ) )
+            {
+                instances.remove( currentInstances.poll() );
+                currentInstances.offer( instanceId );
+            }
         }
 
         return instance;
@@ -71,11 +81,6 @@ public class InMemoryAcceptorInstanceStore
     @Override
     public void lastDelivered( InstanceId instanceId )
     {
-        for ( long i = lastDeliveredInstanceId; i <= instanceId.getId(); i++ )
-        {
-            instances.remove( new InstanceId(i) );
-        }
-
         lastDeliveredInstanceId = instanceId.getId();
     }
 
@@ -87,7 +92,10 @@ public class InMemoryAcceptorInstanceStore
 
     public InMemoryAcceptorInstanceStore snapshot()
     {
-        return new InMemoryAcceptorInstanceStore( new HashMap<>(instances), lastDeliveredInstanceId );
+        return new InMemoryAcceptorInstanceStore( new HashMap<>( instances ),
+                new ArrayBlockingQueue<>( currentInstances.size() + currentInstances.remainingCapacity(), false,
+                        currentInstances ),
+                lastDeliveredInstanceId );
     }
 
     @Override

@@ -41,8 +41,8 @@ public enum HeartbeatState
             {
                 @Override
                 public HeartbeatState handle( HeartbeatContext context,
-                                              Message<HeartbeatMessage> message,
-                                              MessageHolder outgoing
+                        Message<HeartbeatMessage> message,
+                        MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -70,7 +70,7 @@ public enum HeartbeatState
                                         timeout( HeartbeatMessage.timed_out, message, instanceId ) );
 
                                 // Send first heartbeat immediately
-                                outgoing.offer( timeout( HeartbeatMessage.sendHeartbeat, message, instanceId) );
+                                outgoing.offer( timeout( HeartbeatMessage.sendHeartbeat, message, instanceId ) );
                             }
 
                             return heartbeat;
@@ -85,8 +85,8 @@ public enum HeartbeatState
             {
                 @Override
                 public HeartbeatState handle( HeartbeatContext context,
-                                              Message<HeartbeatMessage> message,
-                                              MessageHolder outgoing
+                        Message<HeartbeatMessage> message,
+                        MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -96,7 +96,7 @@ public enum HeartbeatState
                         {
                             HeartbeatMessage.IAmAliveState state = message.getPayload();
 
-                            if (context.isMe( state.getServer() ) )
+                            if ( context.isMe( state.getServer() ) )
                             {
                                 break;
                             }
@@ -118,7 +118,8 @@ public enum HeartbeatState
                                         URI aliveServerUri =
                                                 context.getUriForId( aliveServer );
                                         outgoing.offer( Message.to( HeartbeatMessage.suspicions, aliveServerUri,
-                                                new HeartbeatMessage.SuspicionsState( context.getSuspicionsFor( context.getMyId() ) ) ) );
+                                                new HeartbeatMessage.SuspicionsState(
+                                                        context.getSuspicionsFor( context.getMyId() ) ) ) );
                                     }
                                 }
                             }
@@ -187,7 +188,7 @@ public enum HeartbeatState
                         {
                             InstanceId to = message.getPayload();
 
-                            if (!context.isMe( to ) )
+                            if ( !context.isMe( to ) )
                             {
                                 // Check if this node is no longer a part of the cluster
                                 if ( context.getMembers().containsKey( to ) )
@@ -229,8 +230,9 @@ public enum HeartbeatState
                             context.getLogger( HeartbeatState.class )
                                     .debug( "Received suspicions as " + suspicions );
 
-                            URI from = new URI( message.getHeader( Message.FROM ) );
-                            InstanceId fromId = context.getIdForUri( from );
+                            InstanceId fromId = new InstanceId(
+                                    Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) );
+
                             /*
                              * Remove ourselves from the suspicions received - we just received a message,
                              * it's not normal to be considered failed. Whatever it was, it was transient and now it has

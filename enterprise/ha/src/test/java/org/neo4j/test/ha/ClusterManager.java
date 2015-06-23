@@ -52,7 +52,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.ExecutorLifecycleAdapter;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.Clusters;
@@ -479,25 +478,19 @@ public class ClusterManager
         public RepairKit fail( HighlyAvailableGraphDatabase db ) throws Throwable
         {
             assertMember( db );
+
             ClusterClient clusterClient = db.getDependencyResolver().resolveDependency( ClusterClient.class );
             LifeSupport clusterClientLife = (LifeSupport) accessible( clusterClient.getClass().getDeclaredField(
                     "life" ) ).get( clusterClient );
 
-            NetworkReceiver receiver = instance( NetworkReceiver.class, clusterClientLife.getLifecycleInstances() );
-            receiver.stop();
+            NetworkReceiver networkReceiver = instance( NetworkReceiver.class, clusterClientLife.getLifecycleInstances() );
 
-            ExecutorLifecycleAdapter statemachineExecutor = instance(ExecutorLifecycleAdapter.class, clusterClientLife.getLifecycleInstances());
-            statemachineExecutor.stop();
+            NetworkSender networkSender = instance( NetworkSender.class, clusterClientLife.getLifecycleInstances() );
 
-            NetworkSender sender = instance( NetworkSender.class, clusterClientLife.getLifecycleInstances() );
-            sender.stop();
+            networkReceiver.setPaused( true );
+            networkSender.setPaused( true );
 
-            List<Lifecycle> stoppedServices = new ArrayList<>();
-            stoppedServices.add( sender );
-            stoppedServices.add(statemachineExecutor);
-            stoppedServices.add( receiver );
-
-            return new StartNetworkAgainKit( db, stoppedServices );
+            return new StartNetworkAgainKit( db, networkReceiver, networkSender );
         }
 
         private void startMember( InstanceId serverId ) throws URISyntaxException, IOException
@@ -1069,21 +1062,24 @@ public class ClusterManager
     private class StartNetworkAgainKit implements RepairKit
     {
         private final HighlyAvailableGraphDatabase db;
-        private final Iterable<Lifecycle> stoppedServices;
+        private final NetworkReceiver networkReceiver;
+        private final NetworkSender networkSender;
 
-        StartNetworkAgainKit( HighlyAvailableGraphDatabase db, Iterable<Lifecycle> stoppedServices )
+        StartNetworkAgainKit( HighlyAvailableGraphDatabase db,
+                NetworkReceiver networkReceiver,
+                NetworkSender networkSender )
         {
             this.db = db;
-            this.stoppedServices = stoppedServices;
+            this.networkReceiver = networkReceiver;
+            this.networkSender = networkSender;
         }
 
         @Override
         public HighlyAvailableGraphDatabase repair() throws Throwable
         {
-            for ( Lifecycle stoppedService : stoppedServices )
-            {
-                stoppedService.start();
-            }
+            networkSender.setPaused( false );
+            networkReceiver.setPaused( false );
+
             return db;
         }
     }

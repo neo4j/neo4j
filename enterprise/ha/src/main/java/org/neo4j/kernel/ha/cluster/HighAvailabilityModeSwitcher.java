@@ -374,8 +374,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 }
                 catch ( MismatchingStoreIdException | NoSuchLogVersionException e )
                 {
-                    // Try again immediately
-                    run();
+                    msgLog.error( "Unable to start up as slave", e );
+
+                    clusterMemberAvailability.memberIsUnavailable( SLAVE );
+
+                    modeSwitcherExecutor.schedule( this, 5, TimeUnit.SECONDS );
                 }
                 catch ( Throwable t )
                 {

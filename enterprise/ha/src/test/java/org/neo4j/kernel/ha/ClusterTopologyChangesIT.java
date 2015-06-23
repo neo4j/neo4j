@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
-import java.util.Date;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -36,19 +34,19 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.AbstractClusterTest;
-import org.neo4j.test.RepeatRule;
-import org.neo4j.test.RepeatRule.Repeat;
+import org.neo4j.test.ha.ClusterManager.RepairKit;
 
-import static org.junit.Assert.*;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.test.ReflectionUtil.getPrivateField;
-import static org.neo4j.test.ha.ClusterManager.RepairKit;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
@@ -61,6 +59,12 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
         cluster.await( allSeesAllAsAvailable() );
     }
 
+    @After
+    public void cleanup()
+    {
+        cluster = null;
+    }
+    
     @Test
     public void masterRejoinsAfterFailureAndReelection() throws Throwable
     {
@@ -69,10 +73,11 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
 
         // When
         RepairKit kit = cluster.fail( initialMaster );
+
         cluster.await( masterAvailable( initialMaster ) );
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
 
-        repairUsing( kit );
+        kit.repair();
 
         // Then
         cluster.await( masterAvailable() );
@@ -110,11 +115,11 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
 
         // fail slave1 and await master to spot the failure
         RepairKit slave1RepairKit = cluster.fail( slave1 );
-        slave1Left.await();
+        slave1Left.await(60, SECONDS);
 
         // fail slave2 and await master to spot the failure
         RepairKit slave2RepairKit = cluster.fail( slave2 );
-        slave2Left.await();
+        slave2Left.await(60, SECONDS);
 
         // master loses quorum and goes to PENDING, cluster is unavailable
         cluster.await( not( masterAvailable() ) );
@@ -125,7 +130,8 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
         slave2RepairKit.repair();
 
         // whole cluster looks fine, but slaves have stale value of the epoch if they rejoin the cluster in SLAVE state
-        cluster.await( allSeesAllAsAvailable() );
+        cluster.await( masterAvailable(  ));
+        cluster.await( masterSeesSlavesAsAvailable( 2 ) );
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
 
         final HighlyAvailableGraphDatabase newSlave1 = cluster.getAnySlave();
@@ -134,8 +140,7 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
         // now adding another failing listener and wait for the failure due to stale epoch
         final CountDownLatch slave1Unavailable = new CountDownLatch( 1 );
         final CountDownLatch slave2Unavailable = new CountDownLatch( 1 );
-        ClusterMemberEvents clusterEvents = ((GraphDatabaseAPI) newMaster).getDependencyResolver().resolveDependency(
-                ClusterMemberEvents.class );
+        ClusterMemberEvents clusterEvents = newMaster.getDependencyResolver().resolveDependency( ClusterMemberEvents.class );
         clusterEvents.addClusterMemberListener( new ClusterMemberListener.Adapter()
         {
             @Override
@@ -154,8 +159,8 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
 
         // attempt to perform transactions on both slaves throws, election is triggered
         attemptTransactions( newSlave1, newSlave2 );
-        slave1Unavailable.await( 60, TimeUnit.SECONDS ); // set a timeout in case the instance does not have stale epoch
-        slave2Unavailable.await( 60, TimeUnit.SECONDS );
+        slave1Unavailable.await( 60, SECONDS ); // set a timeout in case the instance does not have stale epoch
+        slave2Unavailable.await( 60, SECONDS );
 
         // THEN: done with election, cluster feels good and able to serve transactions
         cluster.await( allSeesAllAsAvailable() );

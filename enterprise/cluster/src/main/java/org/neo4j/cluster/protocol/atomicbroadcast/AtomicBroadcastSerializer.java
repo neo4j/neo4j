@@ -33,6 +33,11 @@ public class AtomicBroadcastSerializer
     private ObjectInputStreamFactory objectInputStreamFactory;
     private ObjectOutputStreamFactory objectOutputStreamFactory;
 
+    public AtomicBroadcastSerializer()
+    {
+        this(new ObjectStreamFactory(), new ObjectStreamFactory());
+    }
+
     public AtomicBroadcastSerializer( ObjectInputStreamFactory objectInputStreamFactory,
                                       ObjectOutputStreamFactory objectOutputStreamFactory )
     {
