@@ -2880,6 +2880,20 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
+  test("mandatory property constraint creation") {
+    expectQuery(
+      "CREATE CONSTRAINT ON (id:Label) ASSERT id.property IS NOT NULL",
+      CreateMandatoryPropertyConstraint("id", "Label", "id", "property")
+    )
+  }
+
+  test("mandatory property constraint deletion") {
+    expectQuery(
+      "DROP CONSTRAINT ON (id:Label) ASSERT id.property IS NOT NULL",
+      DropMandatoryPropertyConstraint("id", "Label", "id", "property")
+    )
+  }
+
   test("named path with variable length path and named relationships collection") {
     expectQuery(
       "match p = (a)-[r*]->(b) return p",

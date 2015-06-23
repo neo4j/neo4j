@@ -54,7 +54,7 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, rewriterSequencer: (String
       case q: IndexOperation =>
         buildIndexQuery(q)
 
-      case q: UniqueConstraintOperation =>
+      case q: PropertyConstraintOperation =>
         buildConstraintQuery(q)
 
       case q: Union =>
@@ -70,7 +70,7 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, rewriterSequencer: (String
 
   private def buildIndexQuery(op: IndexOperation): PipeInfo = PipeInfo(new IndexOperationPipe(op), updating = true, plannerUsed = RulePlannerName)
 
-  private def buildConstraintQuery(op: UniqueConstraintOperation): PipeInfo = {
+  private def buildConstraintQuery(op: PropertyConstraintOperation): PipeInfo = {
     val label = KeyToken.Unresolved(op.label, TokenType.Label)
     val propertyKey = KeyToken.Unresolved(op.propertyKey, TokenType.PropertyKey)
 

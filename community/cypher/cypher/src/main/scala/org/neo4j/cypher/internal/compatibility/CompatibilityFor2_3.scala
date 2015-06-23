@@ -245,8 +245,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       labelsRemoved = i.labelsRemoved,
       indexesAdded = i.indexesAdded,
       indexesRemoved = i.indexesRemoved,
-      constraintsAdded = i.constraintsAdded,
-      constraintsRemoved = i.constraintsRemoved)
+      constraintsAdded = i.uniqueConstraintsAdded,
+      constraintsRemoved = i.uniqueConstraintsRemoved)
   }
 
   def dumpToString(writer: PrintWriter) = exceptionHandlerFor2_3.runSafely{inner.dumpToString(writer)}

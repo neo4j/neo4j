@@ -60,6 +60,9 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   when( inner.createUniqueConstraint(anyInt(), anyInt()) )
     .thenReturn(IdempotentResult(mock[UniquenessConstraint]))
 
+  when( inner.createMandatoryConstraint(anyInt(), anyInt()) )
+    .thenReturn(IdempotentResult(mock[UniquenessConstraint]))
+
   when( inner.addIndexRule(anyInt(), anyInt()) )
     .thenReturn(IdempotentResult(mock[IndexDescriptor]))
 
@@ -145,12 +148,24 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   test("create_unique_constraint") {
     context.createUniqueConstraint(0, 1)
 
-    context.getStatistics should equal(InternalQueryStatistics(constraintsAdded = 1))
+    context.getStatistics should equal(InternalQueryStatistics(uniqueConstraintsAdded = 1))
   }
 
   test("constraint_dropped") {
     context.dropUniqueConstraint(0, 42)
 
-    context.getStatistics should equal(InternalQueryStatistics(constraintsRemoved = 1))
+    context.getStatistics should equal(InternalQueryStatistics(uniqueConstraintsRemoved = 1))
+  }
+
+  test("create mandatory constraint") {
+    context.createMandatoryConstraint(0, 1)
+
+    context.getStatistics should equal(InternalQueryStatistics(mandatoryConstraintsAdded = 1))
+  }
+
+  test("drop mandatory constraint") {
+    context.dropMandatoryConstraint(0, 42)
+
+    context.getStatistics should equal(InternalQueryStatistics(mandatoryConstraintsRemoved = 1))
   }
 }
