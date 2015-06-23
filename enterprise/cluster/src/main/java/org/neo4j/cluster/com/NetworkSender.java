@@ -76,7 +76,7 @@ public class NetworkSender
         implements MessageSender, Lifecycle
 {
     public interface Monitor
-        extends NamedThreadFactory.Monitor
+            extends NamedThreadFactory.Monitor
     {
         void queuedMessage( Message message );
 
@@ -114,6 +114,8 @@ public class NetworkSender
 
     private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
+
+    private volatile boolean paused;
 
     public NetworkSender( Monitor monitor, Configuration config, NetworkReceiver receiver, Logging logging )
     {
@@ -215,6 +217,11 @@ public class NetworkSender
     @Override
     public boolean process( Message<? extends MessageType> message )
     {
+        if ( paused )
+        {
+            return true;
+        }
+
         if ( message.hasHeader( Message.TO ) )
         {
             send( message );
@@ -225,6 +232,11 @@ public class NetworkSender
             receiver.receive( message );
         }
         return true;
+    }
+
+    public void setPaused( boolean paused )
+    {
+        this.paused = paused;
     }
 
 
@@ -302,7 +314,7 @@ public class NetworkSender
                 }
                 catch ( Exception e )
                 {
-                    if( Exceptions.contains(e, ClosedChannelException.class ))
+                    if ( Exceptions.contains( e, ClosedChannelException.class ) )
                     {
                         msgLog.warn( "Could not send message, because the connection has been closed." );
                     }
@@ -450,7 +462,7 @@ public class NetworkSender
             if ( !(cause instanceof ConnectException || cause instanceof RejectedExecutionException) )
             {
                 // If we keep getting the same exception, only output the first one
-                if (lastException != null && !lastException.getClass().equals( cause.getClass() ))
+                if ( lastException != null && !lastException.getClass().equals( cause.getClass() ) )
                 {
                     msgLog.error( "Receive exception:", cause );
                     lastException = cause;
@@ -461,9 +473,9 @@ public class NetworkSender
         @Override
         public void writeComplete( ChannelHandlerContext ctx, WriteCompletionEvent e ) throws Exception
         {
-            if (lastException != null)
+            if ( lastException != null )
             {
-                msgLog.error( "Recovered from:", lastException);
+                msgLog.error( "Recovered from:", lastException );
                 lastException = null;
             }
             super.writeComplete( ctx, e );

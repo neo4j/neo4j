@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,7 +32,6 @@ import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
@@ -44,12 +44,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
@@ -65,7 +63,6 @@ import static org.junit.Assert.assertNotNull;
 
 import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
 import static org.neo4j.helpers.Predicates.not;
-import static org.neo4j.test.ReflectionUtil.getPrivateField;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
@@ -91,6 +88,12 @@ public class ClusterTopologyChangesIT
                 .startCluster();
     }
 
+    @After
+    public void cleanup()
+    {
+        cluster = null;
+    }
+    
     @Test
     public void masterRejoinsAfterFailureAndReelection() throws Throwable
     {
@@ -98,13 +101,18 @@ public class ClusterTopologyChangesIT
         HighlyAvailableGraphDatabase initialMaster = cluster.getMaster();
 
         // When
+        cluster.info( "Fail master" );
         RepairKit kit = cluster.fail( initialMaster );
+
+        cluster.info( "Wait for 2 to become master and 3 slave" );
         cluster.await( masterAvailable( initialMaster ) );
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
 
-        repairUsing( kit );
+        cluster.info( "Repair 1" );
+        kit.repair();
 
         // Then
+        cluster.info( "Wait for cluster recovery" );
         cluster.await( masterAvailable() );
         cluster.await( allSeesAllAsAvailable() );
         assertEquals( 3, cluster.size() );
@@ -140,11 +148,11 @@ public class ClusterTopologyChangesIT
 
         // fail slave1 and await master to spot the failure
         RepairKit slave1RepairKit = cluster.fail( slave1 );
-        slave1Left.await();
+        slave1Left.await(60, SECONDS);
 
         // fail slave2 and await master to spot the failure
         RepairKit slave2RepairKit = cluster.fail( slave2 );
-        slave2Left.await();
+        slave2Left.await(60, SECONDS);
 
         // master loses quorum and goes to PENDING, cluster is unavailable
         cluster.await( not( masterAvailable() ) );
@@ -155,7 +163,8 @@ public class ClusterTopologyChangesIT
         slave2RepairKit.repair();
 
         // whole cluster looks fine, but slaves have stale value of the epoch if they rejoin the cluster in SLAVE state
-        cluster.await( allSeesAllAsAvailable() );
+        cluster.await( masterAvailable(  ));
+        cluster.await( masterSeesSlavesAsAvailable( 2 ) );
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
 
         final HighlyAvailableGraphDatabase newSlave1 = cluster.getAnySlave();
@@ -164,8 +173,7 @@ public class ClusterTopologyChangesIT
         // now adding another failing listener and wait for the failure due to stale epoch
         final CountDownLatch slave1Unavailable = new CountDownLatch( 1 );
         final CountDownLatch slave2Unavailable = new CountDownLatch( 1 );
-        ClusterMemberEvents clusterEvents = ((GraphDatabaseAPI) newMaster).getDependencyResolver().resolveDependency(
-                ClusterMemberEvents.class );
+        ClusterMemberEvents clusterEvents = newMaster.getDependencyResolver().resolveDependency( ClusterMemberEvents.class );
         clusterEvents.addClusterMemberListener( new ClusterMemberListener.Adapter()
         {
             @Override
@@ -188,8 +196,10 @@ public class ClusterTopologyChangesIT
         slave2Unavailable.await( 60, TimeUnit.SECONDS );
 
         // THEN: done with election, cluster feels good and able to serve transactions
+        cluster.info( "Waiting for cluster to stabilize" );
         cluster.await( allSeesAllAsAvailable() );
 
+        cluster.info( "Assert ok" );
         assertNotNull( createNodeOn( newMaster ) );
         assertNotNull( createNodeOn( newSlave1 ) );
         assertNotNull( createNodeOn( newSlave2 ) );
@@ -230,27 +240,6 @@ public class ClusterTopologyChangesIT
         // Then
         latch.await( 2, SECONDS );
         assertEquals( new InstanceId( 2 ), coordinatorIdWhenReJoined.get() );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private static void repairUsing( RepairKit kit ) throws Throwable
-    {
-        Iterable<Lifecycle> stoppedServices = getPrivateField( kit, "stoppedServices", Iterable.class );
-        for ( Lifecycle service : stoppedServices )
-        {
-            if ( !(service instanceof NetworkReceiver) )
-            {
-                service.start();
-            }
-        }
-        Thread.sleep( 2000 );
-        for ( Lifecycle service : stoppedServices )
-        {
-            if ( service instanceof NetworkReceiver )
-            {
-                service.start();
-            }
-        }
     }
 
     private static long nodeCountOn( HighlyAvailableGraphDatabase db )

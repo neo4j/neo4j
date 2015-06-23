@@ -349,6 +349,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     ClusterClient clusterClient = dependencyResolver.resolveDependency( ClusterClient.class );
                     try
                     {
+                        // TODO I doubt this actually works. Shuts down with no recovery or restart
                         clusterClient.leave();
                         clusterClient.stop();
                         haCommunicationLife.shutdown();
@@ -359,7 +360,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     }
 
                     modeSwitcherExecutor.schedule( this, 5, TimeUnit.SECONDS );
-                    throw e;
                 }
                 catch ( MismatchingStoreIdException e )
                 {

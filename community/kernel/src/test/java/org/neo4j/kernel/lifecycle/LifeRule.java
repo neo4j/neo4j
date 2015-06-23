@@ -23,8 +23,9 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class LifeRule extends LifeSupport implements TestRule
+public class LifeRule implements TestRule
 {
+    private LifeSupport life = new LifeSupport();
     private final boolean autoStart;
 
     public LifeRule()
@@ -52,12 +53,13 @@ public class LifeRule extends LifeSupport implements TestRule
                         start();
                     }
                     base.evaluate();
+                    life.shutdown();
                 }
                 catch ( Throwable failure )
                 {
                     try
                     {
-                        shutdown();
+                        life.shutdown();
                     }
                     catch ( Throwable suppressed )
                     {
@@ -65,8 +67,37 @@ public class LifeRule extends LifeSupport implements TestRule
                     }
                     throw failure;
                 }
-                shutdown();
+                finally
+                {
+                    life = new LifeSupport();
+                }
             }
         };
+    }
+
+    public <T> T add( T instance )
+    {
+        return life.add( instance );
+    }
+
+
+    public void init()
+    {
+        life.init();
+    }
+
+    public void start()
+    {
+        life.start();
+    }
+
+    public void stop()
+    {
+        life.stop();
+    }
+
+    public void shutdown()
+    {
+        life.shutdown();
     }
 }

@@ -19,14 +19,14 @@
  */
 package org.neo4j.com;
 
+import java.io.IOException;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import java.io.IOException;
 
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
@@ -38,6 +38,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.yield;
+
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,6 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+
 import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
 import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
 

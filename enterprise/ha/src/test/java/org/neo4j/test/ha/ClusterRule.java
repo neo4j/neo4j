@@ -19,15 +19,15 @@
  */
 package org.neo4j.test.ha;
 
-import org.junit.rules.ExternalResource;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.rules.ExternalResource;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -38,7 +38,9 @@ import org.neo4j.test.ha.ClusterManager.Builder;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
@@ -62,7 +64,8 @@ public class ClusterRule extends ExternalResource
         this.testClass = testClass;
         config.putAll(stringMap(
                 default_timeout.name(), "1s",
-                tx_push_factor.name(), "0"));
+                tx_push_factor.name(), "0",
+                pagecache_memory.name(), "8m"));
     }
 
     public ClusterRule config(Setting<?> setting, String value)

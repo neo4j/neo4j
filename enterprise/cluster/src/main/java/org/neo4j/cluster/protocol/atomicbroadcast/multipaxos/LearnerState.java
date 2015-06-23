@@ -21,6 +21,7 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
@@ -38,8 +39,8 @@ public enum LearnerState
             {
                 @Override
                 public LearnerState handle( LearnerContext context,
-                                            Message<LearnerMessage> message,
-                                            MessageHolder outgoing
+                        Message<LearnerMessage> message,
+                        MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -59,8 +60,8 @@ public enum LearnerState
             {
                 @Override
                 public LearnerState handle( LearnerContext context,
-                                            Message<LearnerMessage> message,
-                                            MessageHolder outgoing
+                        Message<LearnerMessage> message,
+                        MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -95,14 +96,15 @@ public enum LearnerState
                                 {
                                     AtomicBroadcastSerializer atomicBroadcastSerializer = context.newSerializer();
 
-                                    description = atomicBroadcastSerializer.receive( (Payload) instance.value_2 ).toString();
+                                    description = atomicBroadcastSerializer.receive(
+                                            (Payload) instance.value_2 ).toString();
                                 }
                                 else
                                 {
                                     description = instance.value_2.toString();
                                 }
                                 logger.debug(
-                                        "Learned and closed instance "+instance.id +
+                                        "Learned and closed instance " + instance.id +
                                                 " from conversation " +
                                                 instance.conversationIdHeader +
                                                 " and the content was " +
@@ -114,7 +116,9 @@ public enum LearnerState
                             {
                                 instance.delivered();
                                 outgoing.offer( Message.internal( AtomicBroadcastMessage.broadcastResponse,
-                                        learnState.getValue() ) );
+                                        learnState.getValue() )
+                                        .setHeader( InstanceId.INSTANCE, instance.id.toString() )
+                                        .setHeader( Message.CONVERSATION_ID, instance.conversationIdHeader ) );
                                 context.setLastDeliveredInstanceId( instanceId.getId() );
 
                                 long checkInstanceId = instanceId.getId() + 1;
@@ -159,7 +163,8 @@ public enum LearnerState
 
                         case learnTimedout:
                         {
-                            // Timed out waiting for learned values - send explicit request to everyone that is not failed
+                            // Timed out waiting for learned values - send explicit request to everyone that is not
+                            // failed
                             if ( !context.hasDeliveredAllKnownInstances() )
                             {
                                 for ( long instanceId = context.getLastDeliveredInstanceId() + 1;
@@ -210,7 +215,7 @@ public enum LearnerState
                                 outgoing.offer( message.copyHeadersTo( Message.respond( LearnerMessage.learnFailed,
                                         message,
                                         new LearnerMessage.LearnFailedState() ), org.neo4j.cluster.protocol
-                                  .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
+                                        .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                             }
                             break;
                         }
@@ -252,7 +257,8 @@ public enum LearnerState
 
                                 context.setLastKnownLearnedInstanceInCluster(
                                         catchUpTo,
-                                        context.getIdForUri( new URI( message.getHeader( Message.FROM ) ) ) );
+                                        new org.neo4j.cluster.InstanceId(
+                                                Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) ) );
                             }
                             break;
                         }
@@ -271,12 +277,14 @@ public enum LearnerState
                         throws URISyntaxException
                 {
                     org.neo4j.cluster.InstanceId lastKnownAliveInstance = context.getLastKnownAliveUpToDateInstance();
-                    if ( lastKnownAliveInstance == null )
+                    if ( lastKnownAliveInstance != null )
                     {
-                        lastKnownAliveInstance =
-                                context.getIdForUri( new URI( message.getHeader( Message.FROM ) ) );
+                        return context.getUriForId( lastKnownAliveInstance );
                     }
-                    return context.getUriForId( lastKnownAliveInstance );
+                    else
+                    {
+                        return new URI( message.getHeader( Message.FROM ) );
+                    }
                 }
             }
 }
