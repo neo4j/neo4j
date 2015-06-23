@@ -19,23 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure, Variable}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
-case class Relationship(relId: Variable) extends CodeGenExpression {
-  assert(relId.cypherType == symbols.CTRelationship)
+case class NodeExpression(nodeIdVar: Variable) extends CodeGenExpression {
+  assert(nodeIdVar.cypherType == symbols.CTNode)
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) ={
-    if (relId.nullable)
-      structure.nullable(relId.name, relId.cypherType, structure.materializeRelationship(relId.name))
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+    if (nodeIdVar.nullable)
+      structure.nullable(nodeIdVar.name, nodeIdVar.cypherType, structure.node(nodeIdVar.name))
     else
-      structure.materializeRelationship(relId.name)
+      structure.node(nodeIdVar.name)
   }
 
-  override def nullable(implicit context: CodeGenContext) = relId.nullable
+  override def nullable(implicit context: CodeGenContext) = nodeIdVar.nullable
 
-  override def cypherType(implicit context: CodeGenContext) = CTRelationship
+  override def cypherType(implicit context: CodeGenContext) = CTNode
 }

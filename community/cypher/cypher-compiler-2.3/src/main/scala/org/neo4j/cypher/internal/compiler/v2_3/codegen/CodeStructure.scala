@@ -131,7 +131,9 @@ trait MethodStructure[E] {
 
   // results
   def materializeNode(nodeIdVar: String): E
+  def node(nodeIdVar: String): E
   def materializeRelationship(relIdVar: String): E
+  def relationship(relIdVar: String): E
   def visitRow(): Unit
   def setInRow(column: String, value: E): Unit
 }

@@ -333,6 +333,9 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def materializeNode(nodeIdVar: String) = Expression.invoke(db, Methods.getNodeById, generator.load(nodeIdVar))
 
+  override def node(nodeIdVar: String) = Templates.newInstance(typeRef[CompiledNode], generator.load(nodeIdVar))
+
+
   override def nullable(varName: String, cypherType: CypherType, onSuccess: Expression) = {
     Expression.ternary(
       Expression.eq(GeneratedQueryStructure.nullValue(cypherType), generator.load(varName)),
@@ -341,6 +344,8 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   }
 
   override def materializeRelationship(relIdVar: String) = Expression.invoke(db, Methods.getRelationshipById, generator.load(relIdVar))
+
+  override def relationship(relIdVar: String) = Templates.newInstance(typeRef[CompiledRelationship], generator.load(relIdVar))
 
   override def trace[V](planStepId: String)(block: MethodStructure[Expression]=>V) = if(!tracing) block(this)
   else {

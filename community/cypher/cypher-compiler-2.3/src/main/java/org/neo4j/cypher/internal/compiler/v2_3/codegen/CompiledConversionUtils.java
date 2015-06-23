@@ -106,10 +106,10 @@ public abstract class CompiledConversionUtils
             return null;
         }
 
-        if ( (lhs instanceof Node && !(rhs instanceof Node)) ||
-             (rhs instanceof Node && !(lhs instanceof Node)) ||
-             (lhs instanceof Relationship && !(rhs instanceof Relationship)) ||
-             (rhs instanceof Relationship && !(lhs instanceof Relationship)) )
+        if ( (lhs instanceof CompiledNode && !(rhs instanceof CompiledNode)) ||
+             (rhs instanceof CompiledNode && !(lhs instanceof CompiledNode)) ||
+             (lhs instanceof CompiledRelationship && !(rhs instanceof CompiledRelationship)) ||
+             (rhs instanceof CompiledRelationship && !(lhs instanceof CompiledRelationship)) )
         {
 
             throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
