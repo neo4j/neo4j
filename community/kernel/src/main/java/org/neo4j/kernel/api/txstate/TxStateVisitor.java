@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -59,9 +60,13 @@ public interface TxStateVisitor
 
     void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex );
 
-    void visitAddedConstraint( UniquenessConstraint element );
+    void visitAddedUniquePropertyConstraint( UniquenessConstraint element );
 
-    void visitRemovedConstraint( UniquenessConstraint element );
+    void visitRemovedUniquePropertyConstraint( UniquenessConstraint element );
+
+    void visitAddedMandatoryPropertyConstraint( MandatoryPropertyConstraint element );
+
+    void visitRemovedMandatoryPropertyConstraint( MandatoryPropertyConstraint element );
 
     void visitCreatedLabelToken( String name, int id );
 
@@ -135,12 +140,22 @@ public interface TxStateVisitor
         }
 
         @Override
-        public void visitAddedConstraint( UniquenessConstraint element )
+        public void visitAddedUniquePropertyConstraint( UniquenessConstraint element )
         {   // Ignore
         }
 
         @Override
-        public void visitRemovedConstraint( UniquenessConstraint element )
+        public void visitRemovedUniquePropertyConstraint( UniquenessConstraint element )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitAddedMandatoryPropertyConstraint( MandatoryPropertyConstraint element )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitRemovedMandatoryPropertyConstraint( MandatoryPropertyConstraint element )
         {   // Ignore
         }
 

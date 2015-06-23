@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -132,24 +134,46 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public UniquenessConstraint uniquenessConstraintCreate( KernelStatement state, int labelId, int propertyKey )
+    public UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, int labelId, int propertyKey )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
     {
-        Iterator<UniquenessConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
+        Iterator<PropertyConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
                 state, labelId, propertyKey );
-        if ( constraints.hasNext() )
+        while ( constraints.hasNext() )
         {
-            throw new AlreadyConstrainedException( constraints.next(), OperationContext.CONSTRAINT_CREATION );
+            PropertyConstraint constraint = constraints.next();
+            if ( constraint instanceof UniquenessConstraint )
+            {
+                throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION );
+            }
         }
 
         // It is not allowed to create uniqueness constraints on indexed label/property pairs
         checkIndexExistence( state, OperationContext.CONSTRAINT_CREATION, labelId, propertyKey );
 
-        return schemaWriteDelegate.uniquenessConstraintCreate( state, labelId, propertyKey );
+        return schemaWriteDelegate.uniquePropertyConstraintCreate( state, labelId, propertyKey );
     }
 
     @Override
-    public void constraintDrop( KernelStatement state, UniquenessConstraint constraint ) throws DropConstraintFailureException
+    public MandatoryPropertyConstraint mandatoryPropertyConstraintCreate( KernelStatement state, int labelId,
+            int propertyKey ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    {
+        Iterator<PropertyConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
+                state, labelId, propertyKey );
+        while ( constraints.hasNext() )
+        {
+            PropertyConstraint constraint = constraints.next();
+            if ( constraint instanceof MandatoryPropertyConstraint )
+            {
+                throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION );
+            }
+        }
+
+        return schemaWriteDelegate.mandatoryPropertyConstraintCreate( state, labelId, propertyKey );
+    }
+
+    @Override
+    public void constraintDrop( KernelStatement state, PropertyConstraint constraint ) throws DropConstraintFailureException
     {
         try
         {
@@ -219,12 +243,12 @@ public class DataIntegrityValidatingStatementOperations implements
         throw new NoSuchIndexException( descriptor );
     }
 
-    private void assertConstraintExists( UniquenessConstraint constraint, Iterator<UniquenessConstraint> constraints )
+    private void assertConstraintExists( PropertyConstraint constraint, Iterator<PropertyConstraint> constraints )
             throws NoSuchConstraintException
     {
-        for ( UniquenessConstraint existing : loop( constraints ) )
+        for ( PropertyConstraint existing : loop( constraints ) )
         {
-            if ( existing.equals( constraint.label(), constraint.propertyKeyId() ) )
+            if ( existing.equals( constraint.type(), constraint.label(), constraint.propertyKeyId() ) )
             {
                 return;
             }

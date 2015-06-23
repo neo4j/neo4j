@@ -132,8 +132,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     assert(stats.uniqueConstraintsRemoved === 0)
   }
 
-  //TODO unignore when implemented spi
-  ignore("correct statistics for mandatory constraint added ") {
+  test("correct statistics for mandatory constraint added") {
     val result = execute("create constraint on (n:Person) assert n.name is not null")
     val stats  = result.queryStatistics()
 
@@ -141,8 +140,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     assert(stats.mandatoryConstraintsRemoved === 0)
   }
 
-  //TODO unignore when implemented spi
-  ignore("correct statistics for mandatory constraint added twice") {
+  test("correct statistics for mandatory constraint added twice") {
     execute("create constraint on (n:Person) assert n.name is not null")
     val result = execute("create constraint on (n:Person) assert n.name is not null")
     val stats  = result.queryStatistics()
@@ -151,25 +149,12 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     assert(stats.mandatoryConstraintsRemoved === 0)
   }
 
-    //TODO unignore when implemented spi
-    ignore("correct statistics for mandatory constraint dropped") {
-      execute("create constraint on (n:Person) assert n.name is not null")
-      val result = execute("drop constraint on (n:Person) assert n.name is not null")
-      val stats  = result.queryStatistics()
+  test("correct statistics for mandatory constraint dropped") {
+    execute("create constraint on (n:Person) assert n.name is not null")
+    val result = execute("drop constraint on (n:Person) assert n.name is not null")
+    val stats  = result.queryStatistics()
 
-      assert(stats.mandatoryConstraintsAdded === 0)
-      assert(stats.mandatoryConstraintsRemoved === 1)
-    }
-
-    //TODO unignore when implemented spi
-    ignore("correct statistics for mandatory constraint dropped twice") {
-      execute("create constraint on (n:Person) assert n.name is not null")
-      execute("drop constraint on (n:Person) assert n.name is not null")
-      val result = execute("drop constraint on (n:Person) assert n.name is not null")
-      val stats  = result.queryStatistics()
-
-      assert(stats.mandatoryConstraintsAdded === 0)
-      assert(stats.mandatoryConstraintsRemoved === 0)
-    }
-
+    assert(stats.mandatoryConstraintsAdded === 0)
+    assert(stats.mandatoryConstraintsRemoved === 1)
+  }
 }

@@ -43,6 +43,12 @@ public class PropertyUniqueConstraintCreator extends BaseConstraintCreator
     }
 
     @Override
+    public ConstraintCreator assertPropertyExists( String propertyKey )
+    {
+        throw new UnsupportedOperationException( "You are already creating a unique constraint." );
+    }
+
+    @Override
     public final ConstraintDefinition create()
     {
         assertInUnterminatedTransaction();

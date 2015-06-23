@@ -29,15 +29,14 @@ import java.util.Map;
 import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.NestingIterable;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.store.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 
 import static java.util.Collections.unmodifiableCollection;
-
 import static org.neo4j.helpers.collection.Iterables.filter;
 
 /**
@@ -54,7 +53,7 @@ public class SchemaCache
     private final Map<Integer, Map<Long,SchemaRule>> rulesByLabelMap = new HashMap<>();
     private final Map<Long, SchemaRule> rulesByIdMap = new HashMap<>();
 
-    private final Collection<UniquenessConstraint> constraints = new HashSet<>();
+    private final Collection<PropertyConstraint> constraints = new HashSet<>();
     private final Map<Integer, Map<Integer, CommittedIndexDescriptor>> indexDescriptors = new HashMap<>();
 
     public SchemaCache( Iterable<SchemaRule> initialRules )
@@ -100,29 +99,29 @@ public class SchemaCache
             Collections.<SchemaRule>emptyList();
     }
 
-    public Iterator<UniquenessConstraint> constraints()
+    public Iterator<PropertyConstraint> constraints()
     {
         return constraints.iterator();
     }
 
-    public Iterator<UniquenessConstraint> constraintsForLabel( final int label )
+    public Iterator<PropertyConstraint> constraintsForLabel( final int label )
     {
-        return filter( new Predicate<UniquenessConstraint>()
+        return filter( new Predicate<PropertyConstraint>()
         {
             @Override
-            public boolean test( UniquenessConstraint item )
+            public boolean test( PropertyConstraint item )
             {
                 return item.label() == label;
             }
         }, constraints.iterator() );
     }
 
-    public Iterator<UniquenessConstraint> constraintsForLabelAndProperty( final int label, final int property )
+    public Iterator<PropertyConstraint> constraintsForLabelAndProperty( final int label, final int property )
     {
-        return filter( new Predicate<UniquenessConstraint>()
+        return filter( new Predicate<PropertyConstraint>()
         {
             @Override
-            public boolean test( UniquenessConstraint item )
+            public boolean test( PropertyConstraint item )
             {
                 return item.label() == label && item.propertyKeyId() == property;
             }
@@ -136,9 +135,9 @@ public class SchemaCache
 
         // Note: If you start adding more unmarshalling of other types of things here,
         // make this into a more generic thing rather than adding more branch statement.
-        if( rule instanceof UniquenessConstraintRule )
+        if( rule instanceof PropertyConstraintRule )
         {
-            constraints.add( ruleToConstraint( (UniquenessConstraintRule) rule ) );
+            constraints.add( ((PropertyConstraintRule) rule).toConstraint() );
         }
         else if( rule instanceof IndexRule )
         {
@@ -212,9 +211,9 @@ public class SchemaCache
             rulesByLabelMap.remove( labelId );
         }
 
-        if( rule instanceof UniquenessConstraintRule )
+        if( rule instanceof PropertyConstraintRule )
         {
-            constraints.remove( ruleToConstraint( (UniquenessConstraintRule)rule ) );
+            constraints.remove( ((PropertyConstraintRule) rule).toConstraint() );
         }
         else if( rule instanceof IndexRule )
         {
@@ -243,11 +242,6 @@ public class SchemaCache
         throw new IndexNotFoundKernelException(
             "Couldn't resolve index id for " + index + " at this point. Schema rule not committed yet?"
         );
-    }
-
-    private UniquenessConstraint ruleToConstraint( UniquenessConstraintRule constraintRule )
-    {
-        return new UniquenessConstraint( constraintRule.getLabel(), constraintRule.getPropertyKey() );
     }
 
     public IndexDescriptor indexDescriptor( int labelId, int propertyKey )

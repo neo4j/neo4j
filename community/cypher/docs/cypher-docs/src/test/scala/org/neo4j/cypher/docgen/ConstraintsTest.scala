@@ -21,7 +21,7 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.neo4j.cypher.CypherExecutionException
-import org.neo4j.kernel.api.constraints.UniquenessConstraint
+import org.neo4j.kernel.api.constraints.PropertyConstraint
 
 import scala.collection.JavaConverters._
 
@@ -103,7 +103,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     assert(getConstraintIterator(labelName, propName).size === 1)
   }
 
-  private def getConstraintIterator(labelName: String, propName: String): Iterator[UniquenessConstraint] = {
+  private def getConstraintIterator(labelName: String, propName: String): Iterator[PropertyConstraint] = {
     val statement = db.statement
 
     val prop = statement.readOperations().propertyKeyGetForName(propName)

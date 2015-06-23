@@ -40,6 +40,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -55,6 +56,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.StoreLocker;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
@@ -85,7 +87,7 @@ import org.neo4j.kernel.impl.coreapi.schema.BaseConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
-import org.neo4j.kernel.impl.coreapi.schema.PropertyUniqueConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.PropertyConstraintDefinition;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
@@ -104,7 +106,7 @@ import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -138,7 +140,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
 import static java.lang.Boolean.parseBoolean;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -418,7 +419,7 @@ public class BatchInserterImpl implements BatchInserter
                     otherPropertyKeyId = ((IndexRule) rule).getPropertyKey();
                     break;
                 case UNIQUENESS_CONSTRAINT:
-                    otherPropertyKeyId = ((UniquenessConstraintRule) rule).getPropertyKey();
+                    otherPropertyKeyId = ((UniquePropertyConstraintRule) rule).getPropertyKey();
                     break;
                 default:
                     throw new IllegalStateException( "Case not handled.");
@@ -589,7 +590,7 @@ public class BatchInserterImpl implements BatchInserter
         return new BaseConstraintCreator( new BatchSchemaActions(), label );
     }
 
-    private void createConstraintRule( UniquenessConstraint constraint )
+    private void createConstraintRule( PropertyConstraint constraint )
     {
         // TODO: Do not create duplicate index
 
@@ -602,7 +603,8 @@ public class BatchInserterImpl implements BatchInserter
                 indexRuleId, constraint.label(), constraint.propertyKeyId(),
                 this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
                 constraintRuleId );
-        UniquenessConstraintRule constraintRule = UniquenessConstraintRule.uniquenessConstraintRule(
+        UniquePropertyConstraintRule
+                constraintRule = UniquePropertyConstraintRule.uniquenessConstraintRule(
                 constraintRuleId, constraint.label(), constraint.propertyKeyId(), indexRuleId );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( constraintRule ) )
@@ -1148,7 +1150,7 @@ public class BatchInserterImpl implements BatchInserter
             checkSchemaCreationConstraints( labelId, propertyKeyId );
 
             createConstraintRule( new UniquenessConstraint( labelId, propertyKeyId ) );
-            return new PropertyUniqueConstraintDefinition( this, label, propertyKey );
+            return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.UNIQUENESS );
         }
 
         @Override

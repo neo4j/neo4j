@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -747,7 +747,8 @@ public class NeoTransactionStoreApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
-        final UniquenessConstraintRule rule = UniquenessConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
+        final UniquePropertyConstraintRule
+                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
@@ -770,7 +771,8 @@ public class NeoTransactionStoreApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
-        final UniquenessConstraintRule rule = UniquenessConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
+        final UniquePropertyConstraintRule
+                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
@@ -794,7 +796,8 @@ public class NeoTransactionStoreApplierTest
         final NeoCommandHandler applier = newApplier( false );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
-        final UniquenessConstraintRule rule = UniquenessConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
+        final UniquePropertyConstraintRule
+                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
@@ -816,7 +819,8 @@ public class NeoTransactionStoreApplierTest
         final NeoCommandHandler applier = newApplier( true );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
-        final UniquenessConstraintRule rule = UniquenessConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
+        final UniquePropertyConstraintRule
+                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
@@ -841,7 +845,8 @@ public class NeoTransactionStoreApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setInUse( false );
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
-        final UniquenessConstraintRule rule = UniquenessConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
+        final UniquePropertyConstraintRule
+                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
@@ -864,7 +869,8 @@ public class NeoTransactionStoreApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setInUse( false );
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
-        final UniquenessConstraintRule rule = UniquenessConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
+        final UniquePropertyConstraintRule
+                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 

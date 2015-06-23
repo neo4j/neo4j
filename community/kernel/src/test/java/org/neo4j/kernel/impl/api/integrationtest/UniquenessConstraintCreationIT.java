@@ -36,7 +36,6 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class UniquenessConstraintCreationIT extends KernelIntegrationTest
@@ -76,7 +75,7 @@ public class UniquenessConstraintCreationIT extends KernelIntegrationTest
         try
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquenessConstraintCreate( foo, name );
+            statement.uniquePropertyConstraintCreate( foo, name );
 
             fail( "expected exception" );
         }

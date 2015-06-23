@@ -328,7 +328,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquenessConstraintCreate( labelId, propertyKeyId );
+            statement.uniquePropertyConstraintCreate( labelId, propertyKeyId );
             commit();
         }
     }

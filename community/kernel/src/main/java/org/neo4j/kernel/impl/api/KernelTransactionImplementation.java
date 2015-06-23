@@ -31,6 +31,7 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -55,9 +56,10 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.store.MandatoryPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -834,7 +836,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         @Override
-        public void visitAddedConstraint( UniquenessConstraint element )
+        public void visitAddedUniquePropertyConstraint( UniquenessConstraint element )
         {
             clearState = true;
             long constraintId = schemaStorage.newRuleId();
@@ -842,18 +844,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     element.label(),
                     element.propertyKeyId(),
                     SchemaStorage.IndexRuleKind.CONSTRAINT );
-            recordState.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(
+            recordState.createSchemaRule( UniquePropertyConstraintRule.uniquenessConstraintRule(
                     constraintId, element.label(), element.propertyKeyId(), indexRule.getId() ) );
             recordState.setConstraintIndexOwner( indexRule, constraintId );
         }
 
         @Override
-        public void visitRemovedConstraint( UniquenessConstraint element )
+        public void visitRemovedUniquePropertyConstraint( UniquenessConstraint element )
         {
             try
             {
                 clearState = true;
-                UniquenessConstraintRule rule = schemaStorage
+                UniquePropertyConstraintRule rule = schemaStorage
                         .uniquenessConstraint( element.label(), element.propertyKeyId() );
                 recordState.dropSchemaRule( rule );
             }
@@ -866,6 +868,32 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             // Remove the index for the constraint as well
             visitRemovedIndex( new IndexDescriptor( element.label(), element.propertyKeyId() ), true );
+        }
+
+        @Override
+        public void visitAddedMandatoryPropertyConstraint( MandatoryPropertyConstraint element )
+        {
+            clearState = true;
+            recordState.createSchemaRule( MandatoryPropertyConstraintRule.mandatoryPropertyConstraintRule(
+                    schemaStorage.newRuleId(), element.label(), element.propertyKeyId() ) );
+        }
+
+        @Override
+        public void visitRemovedMandatoryPropertyConstraint( MandatoryPropertyConstraint element )
+        {
+            try
+            {
+                clearState = true;
+                recordState.dropSchemaRule(
+                        schemaStorage.mandatoryPropertyConstraint( element.label(), element.propertyKeyId() ) );
+            }
+            catch ( SchemaRuleNotFoundException e )
+            {
+                throw new ThisShouldNotHappenError(
+                        "Tobias Lindaaker",
+                        "Constraint to be removed should exist, since its existence should " +
+                        "have been validated earlier and the schema should have been locked." );
+            }
         }
 
         @Override

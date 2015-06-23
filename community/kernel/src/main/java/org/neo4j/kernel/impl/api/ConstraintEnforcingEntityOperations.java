@@ -23,7 +23,10 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.FilteringIterator;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
@@ -67,10 +70,10 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId )
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
-        Iterator<UniquenessConstraint> constraints = schemaReadOperations.constraintsGetForLabel( state, labelId );
+        Iterator<PropertyConstraint> constraints = uniquePropertyConstraints( schemaReadOperations.constraintsGetForLabel( state, labelId ) );
         while ( constraints.hasNext() )
         {
-            UniquenessConstraint constraint = constraints.next();
+            PropertyConstraint constraint = constraints.next();
             int propertyKeyId = constraint.propertyKeyId();
             Property property = entityReadOperations.nodeGetProperty( state, nodeId, propertyKeyId );
             if ( property.isDefined() )
@@ -90,8 +93,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
         {
             int labelId = labelIds.next();
             int propertyKeyId = property.propertyKeyId();
-            Iterator<UniquenessConstraint> constraintIterator =
-                    schemaReadOperations.constraintsGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
+            Iterator<PropertyConstraint> constraintIterator =
+                    uniquePropertyConstraints( schemaReadOperations.constraintsGetForLabelAndPropertyKey( state, labelId, propertyKeyId ) );
             if ( constraintIterator.hasNext() )
             {
                 validateNoExistingNodeWithLabelAndProperty( state, labelId, property, nodeId );
@@ -135,6 +138,17 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
             default:
                 throw new IndexBrokenKernelException( schemaReadOperations.indexGetFailure( state, indexDescriptor ) );
         }
+    }
+    private Iterator<PropertyConstraint> uniquePropertyConstraints( Iterator<PropertyConstraint> propertyConstraintIterator)
+    {
+        return new FilteringIterator<>( propertyConstraintIterator, new Predicate<PropertyConstraint>()
+        {
+            @Override
+            public boolean test( PropertyConstraint constraint )
+            {
+                return constraint instanceof UniquenessConstraint;
+            }
+        } );
     }
 
     // Simply delegate the rest of the invocations

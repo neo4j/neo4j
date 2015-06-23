@@ -21,7 +21,7 @@ package org.neo4j.kernel.api;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -63,22 +63,22 @@ interface SchemaRead
 
     /**
      * Get all constraints applicable to label and propertyKey. There are only {@link
-     * org.neo4j.kernel.api.constraints.UniquenessConstraint}
+     * PropertyConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId );
+    Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId );
 
     /**
-     * Get all constraints applicable to label. There are only {@link UniquenessConstraint}
+     * Get all constraints applicable to label. There are only {@link PropertyConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetForLabel( int labelId );
+    Iterator<PropertyConstraint> constraintsGetForLabel( int labelId );
 
     /**
-     * Get all constraints. There are only {@link UniquenessConstraint}
+     * Get all constraints. There are only {@link PropertyConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetAll();
+    Iterator<PropertyConstraint> constraintsGetAll();
 
     /**
      * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.

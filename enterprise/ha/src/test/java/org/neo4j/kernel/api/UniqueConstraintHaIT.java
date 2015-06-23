@@ -32,7 +32,7 @@ import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.schema.PropertyUniqueConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.PropertyConstraintDefinition;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
@@ -216,9 +216,9 @@ public class UniqueConstraintHaIT
         // Then
         try( Transaction ignored = slave.beginTx() )
         {
-            assertThat(single( slave.schema().getConstraints() ), instanceOf(PropertyUniqueConstraintDefinition.class));
-            PropertyUniqueConstraintDefinition constraint =
-                    (PropertyUniqueConstraintDefinition)single(slave.schema().getConstraints());
+            assertThat(single( slave.schema().getConstraints() ), instanceOf(PropertyConstraintDefinition.class));
+            PropertyConstraintDefinition constraint =
+                    (PropertyConstraintDefinition)single(slave.schema().getConstraints());
             assertThat(single(constraint.getPropertyKeys()), equalTo("name"));
             assertThat(constraint.getLabel(), equalTo(label("User")));
         }

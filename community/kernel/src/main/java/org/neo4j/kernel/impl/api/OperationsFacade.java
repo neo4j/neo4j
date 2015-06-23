@@ -32,6 +32,8 @@ import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
@@ -518,21 +520,21 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    public Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
     {
         statement.assertOpen();
         return schemaRead().constraintsGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabel( int labelId )
+    public Iterator<PropertyConstraint> constraintsGetForLabel( int labelId )
     {
         statement.assertOpen();
         return schemaRead().constraintsGetForLabel( statement, labelId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetAll()
+    public Iterator<PropertyConstraint> constraintsGetAll()
     {
         statement.assertOpen();
         return schemaRead().constraintsGetAll( statement );
@@ -772,15 +774,23 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public UniquenessConstraint uniquenessConstraintCreate( int labelId, int propertyKeyId )
+    public UniquenessConstraint uniquePropertyConstraintCreate( int labelId, int propertyKeyId )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException
     {
         statement.assertOpen();
-        return schemaWrite().uniquenessConstraintCreate( statement, labelId, propertyKeyId );
+        return schemaWrite().uniquePropertyConstraintCreate( statement, labelId, propertyKeyId );
     }
 
     @Override
-    public void constraintDrop( UniquenessConstraint constraint ) throws DropConstraintFailureException
+    public MandatoryPropertyConstraint mandatoryPropertyConstraintCreate( int labelId, int propertyKeyId )
+            throws CreateConstraintFailureException, AlreadyConstrainedException
+    {
+        statement.assertOpen();
+        return schemaWrite().mandatoryPropertyConstraintCreate( statement, labelId, propertyKeyId );
+    }
+
+    @Override
+    public void constraintDrop( PropertyConstraint constraint ) throws DropConstraintFailureException
     {
         statement.assertOpen();
         schemaWrite().constraintDrop( statement, constraint );

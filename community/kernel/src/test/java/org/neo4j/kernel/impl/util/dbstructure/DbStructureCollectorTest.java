@@ -25,9 +25,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.Pair.of;
 import static org.neo4j.helpers.collection.Iterables.toList;
 

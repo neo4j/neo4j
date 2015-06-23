@@ -18,38 +18,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel.api.constraints;
+package org.neo4j.kernel.impl.store;
 
-import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 
-public class UniquenessConstraint extends PropertyConstraint
+public abstract class PropertyConstraintRule extends AbstractSchemaRule
 {
-    public UniquenessConstraint( int labelId, int propertyKeyId )
+    PropertyConstraintRule( long id, int label, Kind kind )
     {
-        super( labelId, propertyKeyId );
+        super( id, label, kind );
     }
 
-    @Override
-    public void added( ChangeVisitor visitor )
-    {
-        visitor.visitAddedUniquePropertyConstraint( this );
-    }
+    public abstract PropertyConstraint toConstraint();
 
-    @Override
-    public void removed( ChangeVisitor visitor )
-    {
-        visitor.visitRemovedUniquePropertyConstraint( this );
-    }
-
-    @Override
-    String constraintString()
-    {
-        return "UNIQUE";
-    }
-
-    @Override
-    public ConstraintType type()
-    {
-        return ConstraintType.UNIQUENESS;
-    }
+    public abstract boolean containsPropertyKeyId( int propertyKeyId );
 }

@@ -22,9 +22,9 @@ package org.neo4j.kernel.api.constraints;
 
 import org.neo4j.graphdb.schema.ConstraintType;
 
-public class UniquenessConstraint extends PropertyConstraint
+public class MandatoryPropertyConstraint extends PropertyConstraint
 {
-    public UniquenessConstraint( int labelId, int propertyKeyId )
+    public MandatoryPropertyConstraint( int labelId, int propertyKeyId )
     {
         super( labelId, propertyKeyId );
     }
@@ -32,24 +32,24 @@ public class UniquenessConstraint extends PropertyConstraint
     @Override
     public void added( ChangeVisitor visitor )
     {
-        visitor.visitAddedUniquePropertyConstraint( this );
+        visitor.visitAddedMandatoryPropertyConstraint( this );
     }
 
     @Override
     public void removed( ChangeVisitor visitor )
     {
-        visitor.visitRemovedUniquePropertyConstraint( this );
+        visitor.visitRemovedMandatoryPropertyConstraint( this );
     }
 
     @Override
     String constraintString()
     {
-        return "UNIQUE";
+        return "NOT NULL";
     }
 
     @Override
     public ConstraintType type()
     {
-        return ConstraintType.UNIQUENESS;
+        return ConstraintType.MANDATORY;
     }
 }

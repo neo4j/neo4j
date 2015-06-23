@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.FakePipe
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.graphdb.Direction
-import org.neo4j.kernel.api.constraints.UniquenessConstraint
+import org.neo4j.kernel.api.constraints.{UniquenessConstraint, PropertyConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class StartPointChoosingBuilderTest extends BuilderTest {

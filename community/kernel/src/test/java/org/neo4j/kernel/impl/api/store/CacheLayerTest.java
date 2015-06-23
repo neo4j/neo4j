@@ -23,13 +23,13 @@ import org.junit.Test;
 
 import java.util.Set;
 
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class CacheLayerTest
@@ -42,7 +42,7 @@ public class CacheLayerTest
     public void shouldLoadAllConstraintsFromCache() throws Exception
     {
         // Given
-        Set<UniquenessConstraint> constraints = asSet( new UniquenessConstraint( 0, 1 ) );
+        Set<PropertyConstraint> constraints = asSet( (PropertyConstraint)new UniquenessConstraint( 0, 1 ) );
         when(schemaCache.constraints()).thenReturn( constraints.iterator() );
 
         // When & Then
@@ -54,7 +54,7 @@ public class CacheLayerTest
     {
         // Given
         int labelId =  0;
-        Set<UniquenessConstraint> constraints = asSet( new UniquenessConstraint( labelId, 1 ) );
+        Set<PropertyConstraint> constraints = asSet( (PropertyConstraint)new UniquenessConstraint( labelId, 1 ) );
         when(schemaCache.constraintsForLabel(labelId)).thenReturn( constraints.iterator() );
 
         // When & Then
@@ -66,7 +66,7 @@ public class CacheLayerTest
     {
         // Given
         int labelId = 0, propertyId = 1;
-        Set<UniquenessConstraint> constraints = asSet( new UniquenessConstraint( labelId, propertyId ) );
+        Set<PropertyConstraint> constraints = asSet( (PropertyConstraint)new UniquenessConstraint( labelId, propertyId ) );
         when(schemaCache.constraintsForLabelAndProperty(labelId, propertyId)).thenReturn( constraints.iterator() );
 
         // When & Then

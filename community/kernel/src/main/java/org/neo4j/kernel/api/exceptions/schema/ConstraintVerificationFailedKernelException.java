@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.index.IndexEntryConflictException;
  */
 public class ConstraintVerificationFailedKernelException extends KernelException
 {
-    private final UniquenessConstraint constraint;
+    private final PropertyConstraint constraint;
 
     public static final class Evidence
     {
@@ -71,14 +71,14 @@ public class ConstraintVerificationFailedKernelException extends KernelException
 
     private final Set<Evidence> evidence;
 
-    public ConstraintVerificationFailedKernelException( UniquenessConstraint constraint, Set<Evidence> evidence )
+    public ConstraintVerificationFailedKernelException( PropertyConstraint constraint, Set<Evidence> evidence )
     {
         super( Status.Schema.ConstraintVerificationFailure, "Existing data does not satisfy %s.", constraint );
         this.constraint = constraint;
         this.evidence = evidence;
     }
 
-    public ConstraintVerificationFailedKernelException( UniquenessConstraint constraint, Throwable failure )
+    public ConstraintVerificationFailedKernelException( PropertyConstraint constraint, Throwable failure )
     {
         super( Status.Schema.ConstraintVerificationFailure, failure, "Failed to verify constraint %s: %s", constraint,
                 failure.getMessage() );

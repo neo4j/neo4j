@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.lang.String.format;
@@ -33,17 +33,22 @@ public class AlreadyConstrainedException extends SchemaKernelException
     private static final String INDEX_CONTEXT_FORMAT = "Label '%s' and property '%s' have a unique constraint defined on them, so an index is " +
                                                        "already created that matches this.";
 
-    private final UniquenessConstraint constraint;
+    private final PropertyConstraint constraint;
     private final OperationContext context;
 
-    public AlreadyConstrainedException( UniquenessConstraint constraint, OperationContext context )
+    public AlreadyConstrainedException( PropertyConstraint constraint, OperationContext context )
     {
         super( Status.Schema.ConstraintAlreadyExists, constructUserMessage( context, null, constraint ) );
         this.constraint = constraint;
         this.context = context;
     }
 
-    private static String constructUserMessage( OperationContext context, TokenNameLookup tokenNameLookup, UniquenessConstraint constraint )
+    public PropertyConstraint constraint()
+    {
+        return constraint;
+    }
+
+    private static String constructUserMessage( OperationContext context, TokenNameLookup tokenNameLookup, PropertyConstraint constraint )
     {
         switch ( context )
         {

@@ -24,7 +24,7 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -122,12 +122,12 @@ public interface StoreReadLayer
 
     Iterator<DefinedProperty> graphGetAllProperties();
 
-    Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey(
+    Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey(
             int labelId, int propertyKeyId );
 
-    Iterator<UniquenessConstraint> constraintsGetForLabel( int labelId );
+    Iterator<PropertyConstraint> constraintsGetForLabel( int labelId );
 
-    Iterator<UniquenessConstraint> constraintsGetAll();
+    Iterator<PropertyConstraint> constraintsGetAll();
 
     PrimitiveLongResourceIterator nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index,
             Object value )

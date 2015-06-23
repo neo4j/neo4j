@@ -43,6 +43,12 @@ public class BaseConstraintCreator implements ConstraintCreator
     }
 
     @Override
+    public ConstraintCreator assertPropertyExists( String propertyKey )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public ConstraintDefinition create()
     {
         assertInUnterminatedTransaction();

@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Collections;
-import java.util.Iterator;
-
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import java.util.Collections;
+import java.util.Iterator;
+
 import org.neo4j.function.Function;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -43,7 +44,6 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.function.Functions.constant;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
@@ -197,22 +197,22 @@ public class LockingStatementOperationsTest
     {
         // given
         UniquenessConstraint constraint = new UniquenessConstraint( 0, 0 );
-        when( schemaWriteOps.uniquenessConstraintCreate( state, 123, 456 ) ).thenReturn( constraint );
+        when( schemaWriteOps.uniquePropertyConstraintCreate( state, 123, 456 ) ).thenReturn( constraint );
 
         // when
-        UniquenessConstraint result = lockingOps.uniquenessConstraintCreate( state, 123, 456 );
+        PropertyConstraint result = lockingOps.uniquePropertyConstraintCreate( state, 123, 456 );
 
         // then
         assertSame( constraint, result );
         order.verify( locks ).acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
-        order.verify( schemaWriteOps ).uniquenessConstraintCreate( state, 123, 456 );
+        order.verify( schemaWriteOps ).uniquePropertyConstraintCreate( state, 123, 456 );
     }
 
     @Test
     public void shouldAcquireSchemaWriteLockBeforeDroppingConstraint() throws Exception
     {
         // given
-        UniquenessConstraint constraint = new UniquenessConstraint( 1, 2 );
+        PropertyConstraint constraint = new UniquenessConstraint( 1, 2 );
 
         // when
         lockingOps.constraintDrop( state, constraint );
@@ -226,11 +226,11 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty() throws Exception
     {
         // given
-        Iterator<UniquenessConstraint> constraints = Collections.emptyIterator();
+        Iterator<PropertyConstraint> constraints = Collections.emptyIterator();
         when( schemaReadOps.constraintsGetForLabelAndPropertyKey( state, 123, 456 ) ).thenReturn( constraints );
 
         // when
-        Iterator<UniquenessConstraint> result = lockingOps.constraintsGetForLabelAndPropertyKey( state, 123, 456 );
+        Iterator<PropertyConstraint> result = lockingOps.constraintsGetForLabelAndPropertyKey( state, 123, 456 );
 
         // then
         assertSame( constraints, result );
@@ -242,11 +242,11 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel() throws Exception
     {
         // given
-        Iterator<UniquenessConstraint> constraints = Collections.emptyIterator();
+        Iterator<PropertyConstraint> constraints = Collections.emptyIterator();
         when( schemaReadOps.constraintsGetForLabel( state, 123 ) ).thenReturn( constraints );
 
         // when
-        Iterator<UniquenessConstraint> result = lockingOps.constraintsGetForLabel( state, 123 );
+        Iterator<PropertyConstraint> result = lockingOps.constraintsGetForLabel( state, 123 );
 
         // then
         assertSame( constraints, result );
@@ -258,11 +258,11 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingAllConstraints() throws Exception
     {
         // given
-        Iterator<UniquenessConstraint> constraints = Collections.emptyIterator();
+        Iterator<PropertyConstraint> constraints = Collections.emptyIterator();
         when( schemaReadOps.constraintsGetAll( state ) ).thenReturn( constraints );
 
         // when
-        Iterator<UniquenessConstraint> result = lockingOps.constraintsGetAll( state );
+        Iterator<PropertyConstraint> result = lockingOps.constraintsGetAll( state );
 
         // then
         assertSame( constraints, result );

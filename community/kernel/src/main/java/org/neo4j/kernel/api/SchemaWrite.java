@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -40,10 +42,13 @@ interface SchemaWrite
     /** Drops a {@link IndexDescriptor} from the database */
     void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
 
-    UniquenessConstraint uniquenessConstraintCreate( int labelId, int propertyKeyId )
+    UniquenessConstraint uniquePropertyConstraintCreate( int labelId, int propertyKeyId )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException;
 
-    void constraintDrop( UniquenessConstraint constraint ) throws DropConstraintFailureException;
+    MandatoryPropertyConstraint mandatoryPropertyConstraintCreate( int labelId, int propertyKeyId )
+            throws CreateConstraintFailureException, AlreadyConstrainedException;
+
+    void constraintDrop( PropertyConstraint constraint ) throws DropConstraintFailureException;
 
     /**
      * This should not be used, it is exposed to allow an external job to clean up constraint indexes.

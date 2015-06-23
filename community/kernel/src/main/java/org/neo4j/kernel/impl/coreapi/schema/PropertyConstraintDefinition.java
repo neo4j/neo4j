@@ -25,17 +25,20 @@ import org.neo4j.graphdb.schema.ConstraintType;
 
 import static java.util.Collections.singletonList;
 
-public class PropertyUniqueConstraintDefinition implements ConstraintDefinition
+public class PropertyConstraintDefinition implements ConstraintDefinition
 {
     private final InternalSchemaActions actions;
     private final Label label;
     private final String propertyKey;
+    private final ConstraintType type;
 
-    public PropertyUniqueConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey )
+    public PropertyConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey,
+            ConstraintType type )
     {
         this.actions = actions;
         this.label = label;
         this.propertyKey = propertyKey;
+        this.type = type;
     }
 
     @Override
@@ -63,7 +66,7 @@ public class PropertyUniqueConstraintDefinition implements ConstraintDefinition
     public ConstraintType getConstraintType()
     {
         assertInUnterminatedTransaction();
-        return ConstraintType.UNIQUENESS;
+        return type;
     }
 
     @Override
@@ -85,8 +88,12 @@ public class PropertyUniqueConstraintDefinition implements ConstraintDefinition
             return false;
         }
 
-        PropertyUniqueConstraintDefinition that = (PropertyUniqueConstraintDefinition) o;
+        PropertyConstraintDefinition that = (PropertyConstraintDefinition) o;
 
+        if ( type != that.type )
+        {
+            return false;
+        }
         if ( !actions.equals( that.actions ) )
         {
             return false;
@@ -106,7 +113,7 @@ public class PropertyUniqueConstraintDefinition implements ConstraintDefinition
     @Override
     public int hashCode()
     {
-        int result = actions.hashCode();
+        int result = type.hashCode();
         result = 31 * result + label.name().hashCode();
         result = 31 * result + propertyKey.hashCode();
 
@@ -117,10 +124,23 @@ public class PropertyUniqueConstraintDefinition implements ConstraintDefinition
     public String toString()
     {
         // using label name as a good identifier name
-        return String.format( "%s.%s IS UNIQUE", label.name().toLowerCase(), propertyKey );
+        return String.format( "%s.%s IS %s", label.name().toLowerCase(), propertyKey, constraintString() );
     }
 
-    private final void assertInUnterminatedTransaction()
+    private String constraintString()
+    {
+        switch ( type )
+        {
+        case UNIQUENESS:
+            return "UNIQUE";
+        case MANDATORY:
+            return "NOT NULL";
+        default:
+            throw new UnsupportedOperationException( "Unknown ConstraintType: " + type );
+        }
+    }
+
+    private void assertInUnterminatedTransaction()
     {
         actions.assertInUnterminatedTransaction();
     }

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.operations;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -78,22 +78,22 @@ public interface SchemaReadOperations
     String indexGetFailure( Statement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * Get all constraints applicable to label and propertyKey. There are only {@link UniquenessConstraint}
+     * Get all constraints applicable to label and propertyKey. There are only {@link PropertyConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKeyId );
+    Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKeyId );
 
     /**
-     * Get all constraints applicable to label. There are only {@link UniquenessConstraint}
+     * Get all constraints applicable to label. There are only {@link PropertyConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, int labelId );
+    Iterator<PropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId );
 
     /**
-     * Get all constraints. There are only {@link UniquenessConstraint}
+     * Get all constraints. There are only {@link PropertyConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetAll( KernelStatement state );
+    Iterator<PropertyConstraint> constraintsGetAll( KernelStatement state );
 
     /**
      * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.

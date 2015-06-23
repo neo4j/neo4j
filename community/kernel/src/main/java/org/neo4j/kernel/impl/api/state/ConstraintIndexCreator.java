@@ -23,6 +23,7 @@ import org.neo4j.function.Supplier;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -60,7 +61,7 @@ public class ConstraintIndexCreator
                    CreateConstraintFailureException, DropIndexFailureException
     {
         IndexDescriptor descriptor = createConstraintIndex( labelId, propertyKeyId );
-        UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
+        PropertyConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
 
         boolean success = false;
         try
@@ -109,7 +110,7 @@ public class ConstraintIndexCreator
         }
     }
 
-    private void awaitIndexPopulation( UniquenessConstraint constraint, long indexId )
+    private void awaitIndexPopulation( PropertyConstraint constraint, long indexId )
             throws InterruptedException, ConstraintVerificationFailedKernelException
     {
         try

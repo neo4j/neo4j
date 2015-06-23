@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 
@@ -63,8 +63,8 @@ public class SchemaRuleContent
                     return indexRulesEquals( (IndexRule) this.schemaRule, (IndexRule) that.schemaRule );
                 case UNIQUENESS_CONSTRAINT:
                     return this.schemaRule.getKind() == that.schemaRule.getKind() && uniquenessConstraintEquals(
-                            (UniquenessConstraintRule) this.schemaRule,
-                            (UniquenessConstraintRule) that.schemaRule );
+                            (UniquePropertyConstraintRule) this.schemaRule,
+                            (UniquePropertyConstraintRule) that.schemaRule );
                 default:
                     throw new IllegalArgumentException( "Invalid SchemaRule kind: " + schemaRule.getKind() );
             }
@@ -77,7 +77,7 @@ public class SchemaRuleContent
         return lhs.getPropertyKey() == rhs.getPropertyKey();
     }
 
-    private static boolean uniquenessConstraintEquals( UniquenessConstraintRule lhs, UniquenessConstraintRule rhs )
+    private static boolean uniquenessConstraintEquals( UniquePropertyConstraintRule lhs, UniquePropertyConstraintRule rhs )
     {
         return lhs.getPropertyKey() == rhs.getPropertyKey();
     }

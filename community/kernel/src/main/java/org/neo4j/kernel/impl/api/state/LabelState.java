@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
@@ -45,14 +45,14 @@ public abstract class LabelState
 
     public abstract ReadableDiffSets<IndexDescriptor> constraintIndexChanges();
 
-    public abstract ReadableDiffSets<UniquenessConstraint> constraintsChanges();
+    public abstract ReadableDiffSets<PropertyConstraint> constraintsChanges();
 
     public static class Mutable extends LabelState
     {
         private DiffSets<Long> nodeDiffSets;
         private DiffSets<IndexDescriptor> indexChanges;
         private DiffSets<IndexDescriptor> constraintIndexChanges;
-        private DiffSets<UniquenessConstraint> constraintsChanges;
+        private DiffSets<PropertyConstraint> constraintsChanges;
         private final int labelId;
 
         private Mutable( int labelId )
@@ -111,12 +111,12 @@ public abstract class LabelState
         }
 
         @Override
-        public ReadableDiffSets<UniquenessConstraint> constraintsChanges()
+        public ReadableDiffSets<PropertyConstraint> constraintsChanges()
         {
             return ReadableDiffSets.Empty.ifNull( constraintsChanges );
         }
 
-        public DiffSets<UniquenessConstraint> getOrCreateConstraintsChanges()
+        public DiffSets<PropertyConstraint> getOrCreateConstraintsChanges()
         {
             if ( constraintsChanges == null )
             {
@@ -162,7 +162,7 @@ public abstract class LabelState
         }
 
         @Override
-        public ReadableDiffSets<UniquenessConstraint> constraintsChanges()
+        public ReadableDiffSets<PropertyConstraint> constraintsChanges()
         {
             return ReadableDiffSets.Empty.instance();
         }

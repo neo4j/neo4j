@@ -195,7 +195,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     private IndexDescriptor createUniquenessConstraint() throws Exception
     {
         SchemaWriteOperations schemaStatement = schemaWriteOperationsInNewTransaction();
-        schemaStatement.uniquenessConstraintCreate( labelId, propertyKeyId );
+        schemaStatement.uniquePropertyConstraintCreate( labelId, propertyKeyId );
         IndexDescriptor result = schemaStatement.uniqueIndexGetForLabelAndPropertyKey( labelId, propertyKeyId );
         commit();
         return result;

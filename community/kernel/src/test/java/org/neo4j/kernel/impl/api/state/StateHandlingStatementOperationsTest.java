@@ -19,18 +19,19 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Set;
-
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Set;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.LabelCursor;
 import org.neo4j.kernel.api.cursor.PropertyCursor;
@@ -47,7 +48,6 @@ import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -57,7 +57,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
@@ -107,7 +106,7 @@ public class StateHandlingStatementOperationsTest
     public void shouldNotAddConstraintAlreadyExistsInTheStore() throws Exception
     {
         // given
-        UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
+        PropertyConstraint constraint = new UniquenessConstraint( 10, 66 );
         TransactionState txState = mock( TransactionState.class );
         when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( new DiffSets() );
         KernelStatement state = mockedState( txState );
@@ -116,7 +115,7 @@ public class StateHandlingStatementOperationsTest
         StateHandlingStatementOperations context = newTxStateOps( inner );
 
         // when
-        context.uniquenessConstraintCreate( state, 10, 66 );
+        context.uniquePropertyConstraintCreate( state, 10, 66 );
 
         // then
         verify( txState ).constraintIndexDoUnRemove( any( IndexDescriptor.class ) );
@@ -126,16 +125,16 @@ public class StateHandlingStatementOperationsTest
     public void shouldGetConstraintsByLabelAndProperty() throws Exception
     {
         // given
-        UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
+        PropertyConstraint constraint = new UniquenessConstraint( 10, 66 );
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
                 .thenAnswer( asAnswer( Collections.emptyList() ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
-        context.uniquenessConstraintCreate( state, 10, 66 );
+        context.uniquePropertyConstraintCreate( state, 10, 66 );
 
         // when
-        Set<UniquenessConstraint> result = asSet(
+        Set<PropertyConstraint> result = asSet(
                 asIterable( context.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) ) );
 
         // then
@@ -146,8 +145,8 @@ public class StateHandlingStatementOperationsTest
     public void shouldGetConstraintsByLabel() throws Exception
     {
         // given
-        UniquenessConstraint constraint1 = new UniquenessConstraint( 11, 66 );
-        UniquenessConstraint constraint2 = new UniquenessConstraint( 11, 99 );
+        PropertyConstraint constraint2 = new UniquenessConstraint( 11, 99 );
+        PropertyConstraint constraint1 = new UniquenessConstraint( 11, 66 );
 
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
@@ -160,11 +159,11 @@ public class StateHandlingStatementOperationsTest
         when( inner.constraintsGetForLabel( 11 ) )
                 .thenAnswer( asAnswer( asIterable( constraint1 ) ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
-        context.uniquenessConstraintCreate( state, 10, 66 );
-        context.uniquenessConstraintCreate( state, 11, 99 );
+        context.uniquePropertyConstraintCreate( state, 10, 66 );
+        context.uniquePropertyConstraintCreate( state, 11, 99 );
 
         // when
-        Set<UniquenessConstraint> result = asSet( asIterable( context.constraintsGetForLabel( state, 11 ) ) );
+        Set<PropertyConstraint> result = asSet( asIterable( context.constraintsGetForLabel( state, 11 ) ) );
 
         // then
         assertEquals( asSet( constraint1, constraint2 ), result );
@@ -174,8 +173,8 @@ public class StateHandlingStatementOperationsTest
     public void shouldGetAllConstraints() throws Exception
     {
         // given
-        UniquenessConstraint constraint1 = new UniquenessConstraint( 10, 66 );
-        UniquenessConstraint constraint2 = new UniquenessConstraint( 11, 99 );
+        PropertyConstraint constraint1 = new UniquenessConstraint( 10, 66 );
+        PropertyConstraint constraint2 = new UniquenessConstraint( 11, 99 );
 
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
@@ -185,10 +184,10 @@ public class StateHandlingStatementOperationsTest
                 .thenAnswer( asAnswer( Collections.emptyList() ) );
         when( inner.constraintsGetAll() ).thenAnswer( asAnswer( asIterable( constraint2 ) ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
-        context.uniquenessConstraintCreate( state, 10, 66 );
+        context.uniquePropertyConstraintCreate( state, 10, 66 );
 
         // when
-        Set<UniquenessConstraint> result = asSet( asIterable( context.constraintsGetAll( state ) ) );
+        Set<PropertyConstraint> result = asSet( asIterable( context.constraintsGetAll( state ) ) );
 
         // then
         assertEquals( asSet( constraint1, constraint2 ), result );
