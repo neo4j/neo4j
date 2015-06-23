@@ -46,7 +46,7 @@ public final class BatchInserters
      * @deprecated use {@link #inserter(File)} instead
      */
     @Deprecated
-    public static BatchInserter inserter( String storeDir ) throws IOException
+    public static BatchInserter inserter( String storeDir )
     {
         return inserter( storeDir, stringMap() );
     }
@@ -71,7 +71,7 @@ public final class BatchInserters
      * @deprecated use {@link #inserter(File, Map)} instead
      */
     @Deprecated
-    public static BatchInserter inserter( String storeDir, Map<String,String> config ) throws IOException
+    public static BatchInserter inserter( String storeDir, Map<String,String> config )
     {
         return inserter( storeDir, new DefaultFileSystemAbstraction(), config );
     }
@@ -92,7 +92,7 @@ public final class BatchInserters
      * @deprecated use {@link #inserter(File)} instead
      */
     @Deprecated
-    public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem ) throws IOException
+    public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem )
     {
         return inserter( storeDir, fileSystem, stringMap() );
     }
@@ -115,9 +115,16 @@ public final class BatchInserters
      */
     @Deprecated
     public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,
-            Map<String,String> config ) throws IOException
+            Map<String,String> config )
     {
-        return inserter( new File( storeDir ), fileSystem, config );
+        try
+        {
+            return inserter( new File( storeDir ), fileSystem, config );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     /**
@@ -141,9 +148,16 @@ public final class BatchInserters
      */
     @Deprecated
     public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,
-            Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
+            Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        return inserter( new File( storeDir ), fileSystem, config, kernelExtensions );
+        try
+        {
+            return inserter( new File( storeDir ), fileSystem, config, kernelExtensions );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public static BatchInserter inserter( File storeDir,
@@ -152,11 +166,7 @@ public final class BatchInserters
         return new BatchInserterImpl( storeDir, new DefaultFileSystemAbstraction(), config, kernelExtensions );
     }
 
-    /**
-     * @deprecated use {@link #inserter(File, Map, Iterable)} instead
-     */
-    @Deprecated
-    public static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem,
+    private static BatchInserter inserter( File storeDir, FileSystemAbstraction fileSystem,
                                           Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
         return new BatchInserterImpl( storeDir, fileSystem, config, kernelExtensions );
