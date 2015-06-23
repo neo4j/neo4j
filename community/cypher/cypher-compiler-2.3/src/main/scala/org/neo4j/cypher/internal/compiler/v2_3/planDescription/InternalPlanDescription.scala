@@ -156,8 +156,9 @@ final case class PlanDescriptionImpl(id: Id,
 
   def toSeq: Seq[InternalPlanDescription] = this +: children.toSeq
 
+  val NL = System.lineSeparator()
+
   override def toString = {
-    val NL = System.lineSeparator()
     s"${renderAsTreeTable(this)}$NL${renderSummary(this)}$renderSources"
   }
 
@@ -167,9 +168,9 @@ final case class PlanDescriptionImpl(id: Id,
 
   private def renderSources = {
     arguments.flatMap {
-      case SourceCode(className, sourceCode) => Some(s"=== Compiled: $className ===\n$sourceCode")
+      case SourceCode(className, sourceCode) => Some(s"=== Compiled: $className ===$NL$sourceCode")
       case _ => None
-    }.mkString("\n","\n","")
+    }.mkString(NL,NL,"")
   }
 }
 
