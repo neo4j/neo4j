@@ -134,27 +134,14 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def exactIndexSearch(index: IndexDescriptor, value: Any) =
     JavaConversionSupport.mapToScala(statement.readOperations().nodesGetFromIndexLookup(index, value))(nodeOps.getById)
 
-  override def rangeIndexSearch(index: IndexDescriptor, value: Any) = {
-    // TODO: Push this down into kernel
-    value match {
-      case StringSeekRange(range) =>
-        range match {
-          case LowerBounded(lower) =>
-            val allNodesInIndex = JavaConversionSupport
-              .mapToScala(statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
-            val readOps = statement.readOperations()
-            val propertyKeyId = index.getPropertyKeyId
-            val bound = lower.endPoint
-            allNodesInIndex.filter { (node: Node) =>
-              val nodeId = node.getId
-              readOps.nodeGetProperty(nodeId, propertyKeyId).value() match {
-                case s: String => s.startsWith(bound)
-                case _ => false
-              }
-            }
-        }
-      case _ => Iterator.empty
-    }
+  def rangeIndexSearch(index: IndexDescriptor, value: Any) = value match {
+    case StringSeekRange(LowerBounded(lower)) =>
+      val indexedNodes = statement.readOperations().nodesGetFromIndexByPrefixSearch(index, lower.endPoint)
+      JavaConversionSupport.mapToScala(indexedNodes)(nodeOps.getById)
+    case StringSeekRange(Between(lower, upper)) =>
+      Iterator.empty // not yet supported
+    case _ =>
+      Iterator.empty
   }
 
   def indexScan(index: IndexDescriptor) =
