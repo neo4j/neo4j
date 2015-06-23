@@ -1,6 +1,9 @@
-2.2.3
+2.2.4
 -----
 o Identifiers are properly exposed in nested foreach clauses
+
+2.2.3
+-----
 o Returns nice error message when using aggregation inside
   of expressions that loop over collections
 o Fixes #4758 - OPTIONAL MATCH when either side is null
