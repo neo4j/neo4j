@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 2.3-M03
 -------
 
@@ -26,9 +27,12 @@ o Added new warning mechanism. The first supported warning is generated for quer
   unintended cartesian product
 o Cypher may now use full index scans to solve queries containing has(n.prop) if appropriate
 
-2.2.3
+2.2.4
 -----
 o Identifiers are properly exposed in nested foreach clauses
+
+2.2.3
+-----
 o Returns nice error message when using aggregation inside
   of expressions that loop over collections
 o Fixes #4758 - OPTIONAL MATCH when either side is null
