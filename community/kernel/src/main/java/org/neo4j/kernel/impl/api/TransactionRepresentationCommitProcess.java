@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotCommit;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotWriteToLog;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.ValidationFailed;
 
 public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
@@ -88,9 +89,9 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         {
             transactionId = appender.append( transaction, logAppendEvent );
         }
-        catch ( Throwable e )
+        catch ( Throwable cause )
         {
-            throw exception( Status.Transaction.CouldNotWriteToLog, e,
+            throw new TransactionFailureException( CouldNotWriteToLog, cause,
                     "Could not append transaction representation to log" );
         }
         commitEvent.setTransactionId( transactionId );

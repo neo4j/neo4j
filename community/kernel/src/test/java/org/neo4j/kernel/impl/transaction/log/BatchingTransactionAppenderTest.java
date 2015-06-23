@@ -60,6 +60,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -241,7 +242,45 @@ public class BatchingTransactionAppenderTest
         catch ( IOException e )
         {
             // THEN
-            assertTrue( contains( e, failureMessage, IOException.class ) );
+            assertSame( failure, e );
+            verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
+            verify( transactionIdStore, times( 1 ) ).transactionClosed( txId );
+            verify( kernelHealth ).panic( failure );
+        }
+    }
+
+    @Test
+    public void shouldNotCallTransactionCommittedOnFailedForceLogToDisk() throws Exception
+    {
+        // GIVEN
+        long txId = 3;
+        String failureMessage = "Forces a failure";
+        WritableLogChannel channel = spy( new InMemoryLogChannel() );
+        IOException failure = new IOException( failureMessage );
+        doThrow( failure ).when( channel ).force();
+        LogFile logFile = mock( LogFile.class );
+        when( logFile.getWriter() ).thenReturn( channel );
+        TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 10 );
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
+        Mockito.reset( kernelHealth );
+        TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
+                metadataCache, transactionIdStore, BYPASS, kernelHealth ) );
+
+        life.start();
+
+        // WHEN
+        TransactionRepresentation transaction = mock( TransactionRepresentation.class );
+        when( transaction.additionalHeader() ).thenReturn( new byte[0] );
+        try
+        {
+            appender.append( transaction, logAppendEvent );
+            fail( "Expected append to fail. Something is wrong with the test itself" );
+        }
+        catch ( IOException e )
+        {
+            // THEN
+            assertSame( failure, e );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
             verify( transactionIdStore, times( 1 ) ).transactionClosed( txId );
             verify( kernelHealth ).panic( failure );
