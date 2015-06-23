@@ -25,10 +25,12 @@ import org.mockito.Matchers;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -48,12 +50,16 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
+import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.kernel.impl.util.function.Optionals.some;
 
 public class TransactionRepresentationStoreApplierTest
@@ -68,6 +74,7 @@ public class TransactionRepresentationStoreApplierTest
             mock( LegacyIndexApplierLookup.class );
     private final IndexConfigStore indexConfigStore = mock( IndexConfigStore.class );
     private final IdOrderingQueue queue = mock( IdOrderingQueue.class );
+    private final KernelHealth kernelHealth = mock( KernelHealth.class );
     private final int transactionId = 12;
 
     {
@@ -79,18 +86,18 @@ public class TransactionRepresentationStoreApplierTest
     @Test
     public void transactionRepresentationShouldAcceptApplierVisitor() throws IOException
     {
-        TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier( indexService,
-                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup,
-                indexConfigStore, queue );
+        TransactionRepresentationStoreApplier applier =
+                new TransactionRepresentationStoreApplier( indexService, labelScanStore, neoStore, cacheAccess,
+                        lockService, legacyIndexProviderLookup, indexConfigStore, kernelHealth, queue );
 
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
 
         try ( LockGroup locks = new LockGroup() )
         {
-            applier.apply( transaction, ValidatedIndexUpdates.NONE, locks, transactionId, TransactionApplicationMode.INTERNAL );
+            applier.apply( transaction, ValidatedIndexUpdates.NONE, locks, transactionId, INTERNAL );
         }
 
-        verify( transaction, times( 1 ) ).accept( Matchers.<Visitor<Command, IOException>>any() );
+        verify( transaction, times( 1 ) ).accept( Matchers.<Visitor<Command,IOException>>any() );
     }
 
     @Test
@@ -99,22 +106,80 @@ public class TransactionRepresentationStoreApplierTest
         // GIVEN
         NodeStore nodeStore = mock( NodeStore.class );
         when( neoStore.getNodeStore() ).thenReturn( nodeStore );
-        TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier( indexService,
-                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore, queue );
+        TransactionRepresentationStoreApplier applier =
+                new TransactionRepresentationStoreApplier( indexService, labelScanStore, neoStore, cacheAccess,
+                        lockService, legacyIndexProviderLookup, indexConfigStore, kernelHealth, queue );
         long nodeId = 5L;
         TransactionRepresentation transaction = createNodeTransaction( nodeId );
 
         // WHEN
         try ( LockGroup locks = new LockGroup() )
         {
-            applier.apply( transaction, ValidatedIndexUpdates.NONE, locks, transactionId, TransactionApplicationMode.EXTERNAL );
+            applier.apply( transaction, ValidatedIndexUpdates.NONE, locks, transactionId, TransactionApplicationMode
+                    .EXTERNAL );
         }
         verify( nodeStore, times( 1 ) ).setHighestPossibleIdInUse( nodeId );
     }
 
+    @Test
+    public void shouldNotifyIdQueueWhenAppliedToLegacyIndexes() throws Exception
+    {
+        // GIVEN
+        IdOrderingQueue queue = mock( IdOrderingQueue.class );
+        TransactionRepresentationStoreApplier applier =
+                new TransactionRepresentationStoreApplier( indexService, labelScanStore, neoStore, cacheAccess,
+                        lockService, legacyIndexProviderLookup, indexConfigStore, kernelHealth, queue );
+        TransactionRepresentation transaction = new PhysicalTransactionRepresentation( indexTransaction() );
+
+        // WHEN
+        try ( LockGroup locks = new LockGroup() )
+        {
+            applier.apply( transaction, ValidatedIndexUpdates.NONE, locks, transactionId, INTERNAL );
+        }
+
+        // THEN
+        verify( queue ).removeChecked( transactionId );
+    }
+
+    @Test
+    public void shouldPanicOnIOExceptions() throws Exception
+    {
+        // GIVEN
+        IdOrderingQueue queue = mock( IdOrderingQueue.class );
+        TransactionRepresentationStoreApplier applier =
+                new TransactionRepresentationStoreApplier( indexService, labelScanStore, neoStore, cacheAccess,
+                        lockService, legacyIndexProviderLookup, indexConfigStore, kernelHealth, queue );
+        TransactionRepresentation transaction = mock( TransactionRepresentation.class );
+        IOException ioex = new IOException();
+        //noinspection unchecked
+        doThrow( ioex ).when( transaction ).accept( any( Visitor.class ) );
+
+        // WHEN
+        try ( LockGroup locks = new LockGroup() )
+        {
+            applier.apply( transaction, ValidatedIndexUpdates.NONE, locks, transactionId, INTERNAL );
+            fail( "should have thrown" );
+        }
+        catch ( IOException ex )
+        {
+            // THEN
+            assertSame( ioex, ex );
+            verify( kernelHealth, times( 1 ) ).panic( ioex );
+        }
+    }
+
+    private Collection<Command> indexTransaction()
+    {
+        IndexDefineCommand definitions = new IndexDefineCommand();
+        definitions.init(
+                MapUtil.<String,Integer>genericMap( "one", 1 ),
+                MapUtil.<String,Integer>genericMap( "two", 2 ) );
+        return Collections.<Command>singletonList( definitions );
+    }
+
     private TransactionRepresentation createNodeTransaction( long nodeId )
     {
-        return new PhysicalTransactionRepresentation( Arrays.asList( createNodeCommand( nodeId ) ) );
+        return new PhysicalTransactionRepresentation( Collections.singletonList( createNodeCommand( nodeId ) ) );
     }
 
     private Command createNodeCommand( long nodeId )
@@ -124,34 +189,5 @@ public class TransactionRepresentationStoreApplierTest
         after.setInUse( true );
         command.init( new NodeRecord( nodeId ), after );
         return command;
-    }
-
-    @Test
-    public void shouldNotifyIdQueueWhenAppliedToLegacyIndexes() throws Exception
-    {
-        // GIVEN
-        IdOrderingQueue queue = mock( IdOrderingQueue.class );
-        TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier( indexService,
-                labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore,
-                queue );
-        TransactionRepresentation transaction = new PhysicalTransactionRepresentation( indexTransaction() );
-
-        // WHEN
-        try ( LockGroup locks = new LockGroup() )
-        {
-            applier.apply( transaction, ValidatedIndexUpdates.NONE, locks, transactionId, TransactionApplicationMode.INTERNAL );
-        }
-
-        // THEN
-        verify( queue ).removeChecked( transactionId );
-    }
-
-    private Collection<Command> indexTransaction()
-    {
-        IndexDefineCommand definitions = new IndexDefineCommand();
-        definitions.init(
-                MapUtil.<String,Integer>genericMap( "one", 1 ),
-                MapUtil.<String,Integer>genericMap( "two", 2 ) );
-        return Arrays.<Command>asList( definitions );
     }
 }

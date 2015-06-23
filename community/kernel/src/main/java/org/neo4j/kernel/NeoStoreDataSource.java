@@ -744,8 +744,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         final IntegrityValidator integrityValidator = new IntegrityValidator( neoStore, indexingService );
 
         final IndexUpdatesValidator indexUpdatesValidator = dependencies.satisfyDependency(
-                new OnlineIndexUpdatesValidator( neoStore, new PropertyLoader( neoStore ), indexingService,
-                        IndexUpdateMode.ONLINE ) );
+                new OnlineIndexUpdatesValidator( neoStore, kernelHealth, new PropertyLoader( neoStore ),
+                        indexingService, IndexUpdateMode.ONLINE ) );
 
         // TODO Move to constructor
         final LabelScanStore labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
@@ -846,7 +846,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                 new TransactionRepresentationStoreApplier(
                         indexingService, alwaysCreateNewWriter( labelScanStore ), neoStore,
                         cacheAccess, lockService, legacyIndexApplierLookup,
-                        indexConfigStore, legacyIndexTransactionOrdering ) );
+                        indexConfigStore, kernelHealth, legacyIndexTransactionOrdering ) );
 
         final LogFile logFile = life.add( new PhysicalLogFile( fileSystemAbstraction, logFiles,
                 config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), neoStore,
@@ -961,12 +961,11 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                 legacyIndexApplierLookup, 1000 );
         final RecoveryIndexingUpdatesValidator indexUpdatesValidator = new RecoveryIndexingUpdatesValidator( indexingService );
         final TransactionRepresentationStoreApplier storeRecoverer =
-                new TransactionRepresentationStoreApplier(
-                        indexingService, labelScanWriters, neoStore, cacheAccess, lockService,
-                        legacyIndexApplierLookup, indexConfigStore, IdOrderingQueue.BYPASS );
+                new TransactionRepresentationStoreApplier( indexingService, labelScanWriters, neoStore, cacheAccess,
+                        lockService, legacyIndexApplierLookup, indexConfigStore, kernelHealth, IdOrderingQueue.BYPASS );
 
-        RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeRecoverer, indexUpdatesValidator,
-                recoveryVisitorMonitor );
+        RecoveryVisitor recoveryVisitor =
+                new RecoveryVisitor( neoStore, storeRecoverer, indexUpdatesValidator, recoveryVisitorMonitor );
 
         LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         final Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer =
@@ -1042,7 +1041,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
             PersistenceCache persistenceCache, SchemaIndexProviderMap schemaIndexProviderMap )
     {
         final TransactionCommitProcess transactionCommitProcess =
-                commitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore, storeApplier,
+                commitProcessFactory.create( logicalTransactionStore, neoStore, storeApplier,
                         new NeoStoreInjectedTransactionValidator( integrityValidator ), indexUpdatesValidator, config );
 
         /*

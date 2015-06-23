@@ -1458,8 +1458,11 @@ public class NeoStoreTransactionTest
 
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws IOException
     {
-        return commitProcess( indexing, new OnlineIndexUpdatesValidator( neoStore, new PropertyLoader( neoStore ),
-                indexing, IndexUpdateMode.ONLINE ) );
+
+        KernelHealth kernelHealth = mock( KernelHealth.class );
+        OnlineIndexUpdatesValidator indexUpdatesValidator = new OnlineIndexUpdatesValidator( neoStore, kernelHealth,
+                new PropertyLoader( neoStore ), indexing, IndexUpdateMode.ONLINE );
+        return commitProcess( indexing, indexUpdatesValidator);
     }
 
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing,
@@ -1475,14 +1478,12 @@ public class NeoStoreTransactionTest
         Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
         when( labelScanStore.instance() ).thenReturn( mock( LabelScanWriter.class ) );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier(
-                indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null, null );
+                indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null, null, null );
 
         // Call this just to make sure the counters have been initialized.
         // This is only a problem in a mocked environment like this.
         neoStore.nextCommittingTransactionId();
-
-        return new TransactionRepresentationCommitProcess( txStoreMock, mock( KernelHealth.class ),
-                neoStore, applier, indexUpdatesValidator );
+        return new TransactionRepresentationCommitProcess( txStoreMock, neoStore, applier, indexUpdatesValidator );
     }
 
     @After

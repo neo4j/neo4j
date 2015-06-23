@@ -28,7 +28,6 @@ import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
@@ -115,7 +114,6 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     private LogFile logFile;
     private LogRotation logRotation;
     private volatile boolean stopped;
-    private KernelHealth kernelHealth;
     private final Function<DependencyResolver,BatchingTransactionRepresentationStoreApplier> applierFunction;
 
     public TransactionCommittingResponseUnpacker( DependencyResolver resolver, int maxBatchSize )
@@ -219,12 +217,6 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
                     }
                 }
             }
-            catch ( Throwable e )
-            {
-                // Kernel panic is done on this level, i.e. append and apply doesn't do that themselves.
-                kernelHealth.panic( e );
-                throw e;
-            }
             finally
             {
                 transactionQueue.clear();
@@ -247,7 +239,6 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.obligationFulfiller = resolveTransactionObligationFulfiller( resolver );
         this.logFile = resolver.resolveDependency( LogFile.class );
         this.logRotation = resolver.resolveDependency( LogRotation.class );
-        this.kernelHealth = resolver.resolveDependency( KernelHealth.class );
         this.stopped = false;
     }
 

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.RecoveryLabelScanWriterProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -43,12 +44,13 @@ public class BatchingTransactionRepresentationStoreApplier extends TransactionRe
     public BatchingTransactionRepresentationStoreApplier( IndexingService indexingService,
             LabelScanStore labelScanStore, NeoStore neoStore, CacheAccessBackDoor cacheAccess,
             LockService lockService, LegacyIndexApplierLookup legacyIndexProviderLookup,
-            IndexConfigStore indexConfigStore, IdOrderingQueue legacyIndexTransactionOrdering )
+            IndexConfigStore indexConfigStore, KernelHealth kernelHealth,
+            IdOrderingQueue legacyIndexTransactionOrdering )
     {
         this( indexingService, new RecoveryLabelScanWriterProvider( labelScanStore, 1000 ),
                 neoStore, cacheAccess, lockService,
                 new RecoveryLegacyIndexApplierLookup( legacyIndexProviderLookup, 1000 ),
-                indexConfigStore, legacyIndexTransactionOrdering );
+                indexConfigStore, kernelHealth, legacyIndexTransactionOrdering );
     }
 
     private BatchingTransactionRepresentationStoreApplier(
@@ -59,18 +61,27 @@ public class BatchingTransactionRepresentationStoreApplier extends TransactionRe
             LockService lockService,
             RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup,
             IndexConfigStore indexConfigStore,
+            KernelHealth kernelHealth,
             IdOrderingQueue legacyIndexTransactionOrdering )
     {
         super( indexingService, labelScanWriterProvider, neoStore, cacheAccess, lockService, legacyIndexApplierLookup,
-                indexConfigStore, legacyIndexTransactionOrdering );
+                indexConfigStore, kernelHealth, legacyIndexTransactionOrdering );
         this.labelScanWriterProvider = labelScanWriterProvider;
         this.legacyIndexApplierLookup = legacyIndexApplierLookup;
     }
 
     public void closeBatch() throws IOException
     {
-        labelScanWriterProvider.close();
-        legacyIndexApplierLookup.close();
-        indexingService.flushAll();
+        try
+        {
+            labelScanWriterProvider.close();
+            legacyIndexApplierLookup.close();
+            indexingService.flushAll();
+        }
+        catch ( Throwable ex )
+        {
+            health.panic( ex );
+            throw ex;
+        }
     }
 }

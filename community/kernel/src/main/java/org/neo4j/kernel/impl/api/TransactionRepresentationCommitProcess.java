@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
@@ -38,18 +37,16 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.ValidationFaile
 public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
 {
     private final LogicalTransactionStore logicalTransactionStore;
-    private final KernelHealth kernelHealth;
     private final TransactionIdStore transactionIdStore;
     private final TransactionRepresentationStoreApplier storeApplier;
     private final IndexUpdatesValidator indexUpdatesValidator;
 
     public TransactionRepresentationCommitProcess( LogicalTransactionStore logicalTransactionStore,
-            KernelHealth kernelHealth, TransactionIdStore transactionIdStore,
-            TransactionRepresentationStoreApplier storeApplier, IndexUpdatesValidator indexUpdatesValidator )
+            TransactionIdStore transactionIdStore, TransactionRepresentationStoreApplier storeApplier,
+            IndexUpdatesValidator indexUpdatesValidator )
     {
         this.logicalTransactionStore = logicalTransactionStore;
         this.transactionIdStore = transactionIdStore;
-        this.kernelHealth = kernelHealth;
         this.storeApplier = storeApplier;
         this.indexUpdatesValidator = indexUpdatesValidator;
     }
@@ -89,7 +86,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         }
         catch ( Throwable e )
         {
-            throw exception( Status.Transaction.CouldNotWriteToLog, e,
+            throw new TransactionFailureException( Status.Transaction.CouldNotWriteToLog, e,
                     "Could not append transaction representation to log" );
         }
         commitEvent.setTransactionId( transactionId );
@@ -106,20 +103,14 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
             storeApplier.apply( transaction, indexUpdates, locks, transactionId, mode );
         }
         // TODO catch different types of exceptions here, some which are OK
-        catch ( Throwable e )
+        catch ( Throwable cause )
         {
-            throw exception( CouldNotCommit, e,
+            throw new TransactionFailureException( CouldNotCommit, cause,
                     "Could not apply the transaction to the store after written to log" );
         }
         finally
         {
             transactionIdStore.transactionClosed( transactionId );
         }
-    }
-
-    private TransactionFailureException exception( Status status, Throwable cause, String message )
-    {
-        kernelHealth.panic( cause );
-        return new TransactionFailureException( status, cause, message );
     }
 }

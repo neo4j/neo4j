@@ -240,18 +240,7 @@ public class OnlineIndexUpdatesValidatorTest
     {
         when( neoStore.getNodeStore() ).thenReturn( nodeStore );
         when( neoStore.getPropertyStore() ).thenReturn( propertyStore );
-        return new OnlineIndexUpdatesValidator( neoStore, propertyLoader, indexingService, ONLINE );
-    }
-
-    private static Command nodeAddRandomLabelsCommand( long nodeId )
-    {
-        NodeRecord before = new NodeRecord( nodeId, true, false, NO_NEXT_RELATIONSHIP.intValue(),
-                NO_NEXT_PROPERTY.intValue(), NO_LABELS_FIELD.intValue() );
-        NodeRecord after = new NodeRecord( nodeId, true, false, NO_NEXT_RELATIONSHIP.intValue(),
-                NO_NEXT_PROPERTY.intValue(), ThreadLocalRandom.current().nextLong( 100 ) );
-        NodeCommand command = new NodeCommand();
-        command.init( before, after );
-        return command;
+        return new OnlineIndexUpdatesValidator( neoStore, null, propertyLoader, indexingService, ONLINE );
     }
 
     private static NodePropertyCommands createNodeWithLabelAndPropertyCommands( long nodeId, int label, int property )

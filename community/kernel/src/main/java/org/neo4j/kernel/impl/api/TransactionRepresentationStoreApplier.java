@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Provider;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -54,14 +55,16 @@ public class TransactionRepresentationStoreApplier
     private final Provider<LabelScanWriter> labelScanWriters;
     private final IndexConfigStore indexConfigStore;
     private final LegacyIndexApplierLookup legacyIndexProviderLookup;
+    protected final KernelHealth health;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
 
     private final WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanStoreSync;
 
     public TransactionRepresentationStoreApplier(
             IndexingService indexingService, Provider<LabelScanWriter> labelScanWriters, NeoStore neoStore,
-            CacheAccessBackDoor cacheAccess, LockService lockService, LegacyIndexApplierLookup legacyIndexProviderLookup,
-            IndexConfigStore indexConfigStore, IdOrderingQueue legacyIndexTransactionOrdering )
+            CacheAccessBackDoor cacheAccess, LockService lockService, LegacyIndexApplierLookup
+            legacyIndexProviderLookup,
+            IndexConfigStore indexConfigStore, KernelHealth health, IdOrderingQueue legacyIndexTransactionOrdering )
     {
         this.indexingService = indexingService;
         this.labelScanWriters = labelScanWriters;
@@ -70,13 +73,13 @@ public class TransactionRepresentationStoreApplier
         this.lockService = lockService;
         this.legacyIndexProviderLookup = legacyIndexProviderLookup;
         this.indexConfigStore = indexConfigStore;
+        this.health = health;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         labelScanStoreSync = new WorkSync<>( labelScanWriters );
     }
 
     public void apply( TransactionRepresentation representation, ValidatedIndexUpdates indexUpdates, LockGroup locks,
-                       long transactionId, TransactionApplicationMode mode )
-            throws IOException
+            long transactionId, TransactionApplicationMode mode ) throws IOException
     {
         // Graph store application. The order of the decorated store appliers is irrelevant
         NeoCommandHandler storeApplier = new NeoStoreTransactionApplier(
@@ -107,12 +110,17 @@ public class TransactionRepresentationStoreApplier
         {
             representation.accept( applier );
         }
+        catch ( Throwable cause )
+        {
+            health.panic( cause );
+            throw cause;
+        }
     }
 
     private NeoCommandHandler getCountsStoreApplier( long transactionId, TransactionApplicationMode mode )
     {
-        Optional<NeoCommandHandler> handlerOption = neoStore.getCounts().apply( transactionId )
-                                                            .map( CountsStoreApplier.FACTORY );
+        Optional<NeoCommandHandler> handlerOption =
+                neoStore.getCounts().apply( transactionId ).map( CountsStoreApplier.FACTORY );
         if ( mode == TransactionApplicationMode.RECOVERY )
         {
             handlerOption = handlerOption.or( NeoCommandHandler.EMPTY );
@@ -124,7 +132,6 @@ public class TransactionRepresentationStoreApplier
             IdOrderingQueue legacyIndexTransactionOrdering )
     {
         return new TransactionRepresentationStoreApplier( indexingService, labelScanWriters, neoStore, cacheAccess,
-                                                          lockService, legacyIndexProviderLookup, indexConfigStore,
-                                                          legacyIndexTransactionOrdering );
+                lockService, legacyIndexProviderLookup, indexConfigStore, health, legacyIndexTransactionOrdering );
     }
 }

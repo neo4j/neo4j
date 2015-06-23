@@ -21,13 +21,15 @@ package org.neo4j.com.storecopy;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
+
+import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.BATCHED;
 
 class DefaultIndexUpdatesValidatorCreator implements
         Function<DependencyResolver,IndexUpdatesValidator>
@@ -36,8 +38,9 @@ class DefaultIndexUpdatesValidatorCreator implements
     public IndexUpdatesValidator apply( DependencyResolver resolver )
     {
         NeoStore neoStore = resolver.resolveDependency( NeoStoreProvider.class ).evaluate();
-        return new OnlineIndexUpdatesValidator( neoStore, new PropertyLoader( neoStore ),
-                resolver.resolveDependency( IndexingService.class ),
-                IndexUpdateMode.BATCHED );
+        KernelHealth kernelHealth = resolver.resolveDependency( KernelHealth.class );
+        IndexingService indexing = resolver.resolveDependency( IndexingService.class );
+        PropertyLoader propertyLoader = new PropertyLoader( neoStore );
+        return new OnlineIndexUpdatesValidator( neoStore, kernelHealth, propertyLoader, indexing, BATCHED );
     }
 }

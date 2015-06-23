@@ -252,7 +252,7 @@ public class TransactionCommittingResponseUnpackerTest
     }
 
     @Test
-    public void shouldIssueKernelPanicInCaseOfFailureToAppend() throws Throwable
+    public void shouldThrowInCaseOfFailureToAppend() throws Throwable
     {
         // GIVEN
         DependencyResolver dependencyResolver = mock( DependencyResolver.class );
@@ -294,12 +294,11 @@ public class TransactionCommittingResponseUnpackerTest
         catch ( IOException e )
         {
             assertThat( e.getMessage(), containsString( failure.getMessage() ) );
-            verify( kernelHealth ).panic( failure );
         }
     }
 
     @Test
-    public void shouldIssueKernelPanicInCaseOfFailureToApply() throws Throwable
+    public void shouldThrowInCaseOfFailureToApply() throws Throwable
     {
         // GIVEN
         DependencyResolver dependencyResolver = mock( DependencyResolver.class );
@@ -363,7 +362,6 @@ public class TransactionCommittingResponseUnpackerTest
         catch ( UnderlyingStorageException e )
         {
             assertThat( e.getMessage(), containsString( failure.getMessage() ) );
-            verify( kernelHealth ).panic( failure );
         }
     }
 
@@ -420,7 +418,6 @@ public class TransactionCommittingResponseUnpackerTest
 
         // Then
         verifyZeroInteractions( storeApplier );
-        verify( kernelHealth ).panic( error );
     }
 
     private Function<DependencyResolver,IndexUpdatesValidator> customValidator( final IndexUpdatesValidator validator )
@@ -450,6 +447,7 @@ public class TransactionCommittingResponseUnpackerTest
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 10 );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1_000, transactionIdStore,
                 logVersionRepository, new PhysicalLogFile.Monitor.Adapter(), transactionMetadataCache ) );
+
         KernelHealth health = mock( KernelHealth.class );
         LogRotation logRotation = LogRotation.NO_ROTATION;
         LogicalTransactionStore logicalTransactionStore = life.add( new PhysicalLogicalTransactionStore( logFile,

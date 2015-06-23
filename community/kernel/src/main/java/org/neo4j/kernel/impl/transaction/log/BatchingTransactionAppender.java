@@ -308,6 +308,11 @@ class BatchingTransactionAppender implements TransactionAppender
         {
             force();
         }
+        catch ( final Throwable panic )
+        {
+            kernelHealth.panic( panic );
+            throw panic;
+        }
 
         unparkAll( links );
     }
