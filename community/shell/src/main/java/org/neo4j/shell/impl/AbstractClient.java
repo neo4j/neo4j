@@ -159,6 +159,9 @@ public abstract class AbstractClient implements ShellClient
                 getServer().leave( id );
                 end();
                 break;
+            case EXCEPTION_CAUGHT:
+                endMultiLine();
+                break;
             }
             prompt = response.getPrompt();
             success = true;
