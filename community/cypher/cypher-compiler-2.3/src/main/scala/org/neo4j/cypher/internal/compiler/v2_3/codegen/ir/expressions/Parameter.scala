@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
-case class Parameter(key: String) extends CodeGenExpression {
+case class Parameter(key: String, variableName: String) extends CodeGenExpression {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
-    generator.expectParameter(key)
+    generator.expectParameter(key, variableName)
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E =
-    structure.parameter(key)
+    structure.load(variableName)
 
   override def nullable(implicit context: CodeGenContext) = true
 

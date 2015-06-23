@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen
 
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, IncomparableValuesException}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.{Relationship, Node}
 
 class CompiledConversionUtilsTest extends CypherFunSuite {
 
@@ -108,9 +110,34 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
       }
   }
 
-  test("not tests"){
-    CompiledConversionUtils.not(null) shouldBe null
-    CompiledConversionUtils.not(false) shouldBe true
-    CompiledConversionUtils.not(true) shouldBe false
+  val testNot= Seq(
+    (null, null),
+    (false, true),
+    (true, false)
+  )
+
+  testNot.foreach {
+    case (v, expected) =>
+      test(s"$v != $expected)") {
+        CompiledConversionUtils.not(v) should equal(expected)
+      }
+  }
+
+  val node = mock[Node]
+  when(node.getId).thenReturn(11L)
+  val rel = mock[Relationship]
+  when(rel.getId).thenReturn(13L)
+
+  val testLoadParameter = Seq(
+    (null, null),
+    (node, new CompiledNode(11L)),
+    (rel, new CompiledRelationship(13L))
+  )
+
+  testLoadParameter.foreach {
+    case (v, expected) =>
+      test(s"loadParameter($v) == $expected)") {
+        CompiledConversionUtils.loadParameter(v) should equal(expected)
+      }
   }
 }

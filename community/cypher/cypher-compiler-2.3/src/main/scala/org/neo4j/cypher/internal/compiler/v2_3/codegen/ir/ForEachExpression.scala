@@ -25,7 +25,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols
 
 case class ForEachExpression(varName: String, expression: CodeGenExpression, body: Instruction) extends Instruction {
 
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = body.init(generator)
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    expression.init(generator)
+    body.init(generator)
+  }
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
 

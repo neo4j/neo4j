@@ -56,7 +56,7 @@ object ExpressionConverter {
     case exp@ast.Property(node@ast.Identifier(name), propKey) if context.semanticTable.isRelationship(node) =>
       createExpression(exp).asPredicate
 
-    case ast.Not(e) => Not(createPredicate(e)).asPredicate
+    case ast.Not(e) => Not(createExpression(e)).asPredicate
 
     case ast.Equals(lhs, rhs) => Equals(createExpression(lhs), createExpression(rhs)).asPredicate
 
@@ -102,7 +102,7 @@ object ExpressionConverter {
         val token = propKey.id(context.semanticTable).map(_.id)
         RelProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
-      case ast.Parameter(name) => expressions.Parameter(name)
+      case ast.Parameter(name) => expressions.Parameter(name, context.namer.newVarName())
 
       case lit: ast.IntegerLiteral => Literal(lit.value)
 

@@ -187,4 +187,20 @@ public abstract class CompiledConversionUtils
 
         throw new CypherTypeException( "Don't know how to treat that as a boolean: " + predicate.toString(), null );
     }
+
+    public static Object loadParameter( Object value )
+    {
+        if ( value instanceof Node )
+        {
+            return new CompiledNode( ((Node) value).getId() );
+        }
+        else if ( value instanceof Relationship )
+        {
+            return new CompiledRelationship( ((Relationship) value).getId() );
+        }
+        else
+        {
+            return value;
+        }
+    }
 }

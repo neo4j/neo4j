@@ -20,13 +20,31 @@
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols
+import org.neo4j.cypher.internal.compiler.v2_3.{IncomparableValuesException, symbols}
 
-case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression with BinaryOperator {
+case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
   override def cypherType(implicit context: CodeGenContext) = symbols.CTBoolean
 
-  override protected def generator[E](structure: MethodStructure[E]) = structure.equals
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    lhs.init(generator)
+    rhs.init(generator)
+  }
+
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+    if (nullable) structure.ternaryEquals(lhs.generateExpression(structure), rhs.generateExpression(structure))
+    else (lhs, rhs) match {
+      case (NodeExpression(v1), NodeExpression(v2)) => structure.eq(structure.load(v1.name), structure.load(v2.name))
+      case (RelationshipExpression(v1), RelationshipExpression(v2)) => structure.eq(structure.load(v1.name), structure.load(v2.name))
+      case (NodeExpression(_), RelationshipExpression(_)) => throw new
+          IncomparableValuesException(symbols.CTNode.toString, symbols.CTRelationship.toString)
+      case (RelationshipExpression(_), NodeExpression(_)) => throw new
+          IncomparableValuesException(symbols.CTNode.toString, symbols.CTRelationship.toString)
+      case _ => structure.ternaryEquals(lhs.generateExpression(structure), rhs.generateExpression(structure))
+    }
+  }
+
+
 }

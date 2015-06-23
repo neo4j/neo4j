@@ -81,7 +81,8 @@ trait MethodStructure[E] {
 
   // predicates
   def not(value: E): E
-  def equals(lhs: E, rhs: E): E
+  def ternaryEquals(lhs: E, rhs: E): E
+  def eq(lhs: E, rhs: E): E
   def or(lhs: E, rhs: E): E
 
   // null handling
@@ -90,8 +91,7 @@ trait MethodStructure[E] {
   def notNull(name: String, cypherType: CypherType): E
 
   // parameters
-  def expectParameter(key: String): Unit
-  def parameter(key: String): E
+  def expectParameter(key: String, variableName: String): Unit
 
   // tracing
   def trace[V](planStepId: String)(block: MethodStructure[E] => V): V

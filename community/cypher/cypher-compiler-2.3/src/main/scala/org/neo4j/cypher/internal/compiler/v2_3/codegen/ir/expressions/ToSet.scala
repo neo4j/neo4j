@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case class ToSet(expression: CodeGenExpression) extends CodeGenExpression {
 
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = expression.init(generator)
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
     structure.toSet(expression.generateExpression(structure))

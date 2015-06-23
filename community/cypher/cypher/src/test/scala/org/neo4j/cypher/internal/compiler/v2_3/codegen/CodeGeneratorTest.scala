@@ -678,6 +678,35 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toSet should equal(Set(Map("a" -> Map("FOO" -> 1))))
   }
 
+  test("string equality") {
+    val equals = Equals(StringLiteral("a string")(pos), StringLiteral("a string")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> equals))(solved))
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> true)))
+  }
+
+  test("number equality, double and long") {
+    val equals = Equals(SignedDecimalIntegerLiteral("9007199254740993")(pos), DecimalDoubleLiteral("9007199254740992")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> equals))(solved))
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> false)))
+  }
+
+  test("number equality, one from parameter") {
+    val equals = Equals(SignedDecimalIntegerLiteral("9007199254740993")(pos), Parameter("BAR")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> equals))(solved))
+    val compiled = compileAndExecute(plan, Map("BAR" -> Double.box(9007199254740992D)))
+
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> false)))
+  }
+
   test("close transaction after successfully exhausting result") {
     // given
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
