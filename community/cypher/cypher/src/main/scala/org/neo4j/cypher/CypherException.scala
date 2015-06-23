@@ -121,6 +121,11 @@ class MergeConstraintConflictException(message: String, cause: Throwable) extend
   def this(message: String) = this(message, null)
 }
 
+class ConstraintValidationException(message: String, cause: Throwable) extends CypherException(message, cause) {
+  val status = Status.Statement.ConstraintViolation
+  def this(message: String) = this(message, null)
+}
+
 class ArithmeticException(message: String, cause: Throwable) extends CypherException(message, cause) {
   val status = Status.Statement.ArithmeticError
 }

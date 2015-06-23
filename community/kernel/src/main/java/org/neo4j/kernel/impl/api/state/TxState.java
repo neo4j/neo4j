@@ -41,6 +41,8 @@ import org.neo4j.kernel.api.cursor.LabelCursor;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.PropertyCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.MandatoryPropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -219,7 +221,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void accept( final TxStateVisitor visitor )
+    public void accept( final TxStateVisitor visitor ) throws ConstraintValidationKernelException
     {
         // Created nodes
         if ( nodes != null )
@@ -437,13 +439,16 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         {
             @Override
             public void visitLabelChanges( long nodeId, Set<Integer> added, Set<Integer> removed )
+                    throws ConstraintValidationKernelException
             {
                 visitor.visitNodeLabelChanges( nodeId, added, removed );
             }
 
             @Override
             public void visitPropertyChanges( long entityId, Iterator<DefinedProperty> added,
-                    Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+
+                                              Iterator<DefinedProperty> changed, Iterator<Integer> removed)
+                    throws ConstraintValidationKernelException
             {
                 visitor.visitNodePropertyChanges( entityId, added, changed, removed );
             }

@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -119,7 +119,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
             long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
             if ( existing != NO_SUCH_NODE && existing != modifiedNode )
             {
-                throw new UniqueConstraintViolationKernelException( labelId, propertyKeyId, value, existing );
+                throw new UniquePropertyConstraintViolationKernelException( labelId, propertyKeyId, value, existing );
             }
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException e )
@@ -139,6 +139,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
                 throw new IndexBrokenKernelException( schemaReadOperations.indexGetFailure( state, indexDescriptor ) );
         }
     }
+
     private Iterator<PropertyConstraint> uniquePropertyConstraints( Iterator<PropertyConstraint> propertyConstraintIterator)
     {
         return new FilteringIterator<>( propertyConstraintIterator, new Predicate<PropertyConstraint>()

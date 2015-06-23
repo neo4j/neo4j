@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.cursor.LabelCursor;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.PropertyCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -49,7 +50,7 @@ import org.neo4j.kernel.impl.util.diffsets.ReadableRelationshipDiffSets;
  */
 public interface ReadableTxState
 {
-    void accept( TxStateVisitor visitor );
+    void accept( TxStateVisitor visitor ) throws ConstraintValidationKernelException;
 
     boolean hasChanges();
 
@@ -152,7 +153,7 @@ public interface ReadableTxState
     Long indexCreatedForConstraint( UniquenessConstraint constraint );
 
     ReadableDiffSets<Long> indexUpdates( IndexDescriptor index, Object value );
-    
+
     ReadableDiffSets<Long> indexUpdatesForPrefix( IndexDescriptor index, String prefix );
 
     NodeState getNodeState( long id );

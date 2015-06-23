@@ -23,14 +23,15 @@ import org.neo4j.kernel.api.TokenNameLookup;
 
 import static java.lang.String.format;
 
-public class UniqueConstraintViolationKernelException extends ConstraintViolationKernelException
+public class UniquePropertyConstraintViolationKernelException extends ConstraintViolationKernelException
 {
     private final int labelId;
     private final int propertyKeyId;
     private final Object value;
     private final long existingNodeId;
 
-    public UniqueConstraintViolationKernelException( int labelId, int propertyKeyId, Object value, long existingNodeId )
+    public UniquePropertyConstraintViolationKernelException( int labelId, int propertyKeyId, Object value,
+            long existingNodeId )
     {
         super( "Node %d already exists with label %d and property %d=%s", existingNodeId, labelId, propertyKeyId, value );
         this.labelId = labelId;

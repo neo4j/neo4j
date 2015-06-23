@@ -753,7 +753,8 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChangesForPrefix = state.txState().indexUpdatesForPrefix( index, prefix );
+            ReadableDiffSets<Long> labelPropertyChangesForPrefix = state.txState().indexUpdatesForPrefix( index,
+                    prefix );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
@@ -902,6 +903,43 @@ public class StateHandlingStatementOperations implements
 
             return Property.noNodeProperty( nodeId, propertyKeyId );
         }
+    }
+
+    public static Iterator<DefinedProperty> nodeGetAllProperties(
+            StoreReadLayer storeLayer, StoreStatement statement, ReadableTxState txState,
+            long nodeId) throws EntityNotFoundException
+    {
+        if ( txState.nodeIsDeletedInThisTx( nodeId ) )
+        {
+            throw new IllegalStateException( "node has been deleted" );
+        }
+
+        if ( txState.nodeIsAddedInThisTx( nodeId ) )
+        {
+            return txState.addedAndChangedNodeProperties( nodeId );
+        }
+        else
+        {
+            return txState.augmentNodeProperties( nodeId,
+                    storeLayer.nodeGetAllProperties( statement, nodeId ) );
+        }
+    }
+
+    public static Property nodeGetProperty(
+            StoreReadLayer storeLayer, StoreStatement statement, ReadableTxState txState,
+            long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    {
+        Iterator<DefinedProperty> properties = nodeGetAllProperties( storeLayer, statement, txState, nodeId );
+
+        while ( properties.hasNext() )
+        {
+            Property property = properties.next();
+            if ( property.propertyKeyId() == propertyKeyId )
+            {
+                return property;
+            }
+        }
+        return Property.noNodeProperty( nodeId, propertyKeyId );
     }
 
     @Override

@@ -35,6 +35,8 @@ import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.cursor.LabelCursor;
 import org.neo4j.kernel.api.cursor.PropertyCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.MandatoryPropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.UpdateTriState;
 import org.neo4j.kernel.impl.api.cursor.TxIteratorRelationshipCursor;
@@ -59,7 +61,8 @@ public interface NodeState extends PropertyContainerState
 {
     interface Visitor extends PropertyContainerState.Visitor
     {
-        void visitLabelChanges( long nodeId, Set<Integer> added, Set<Integer> removed );
+        void visitLabelChanges( long nodeId, Set<Integer> added, Set<Integer> removed )
+                throws ConstraintValidationKernelException;
 
         void visitRelationshipChanges(
                 long nodeId, RelationshipChangesForNode added, RelationshipChangesForNode removed );
@@ -84,7 +87,7 @@ public interface NodeState extends PropertyContainerState
 
     int augmentDegree( Direction direction, int degree, int typeId );
 
-    void accept( NodeState.Visitor visitor );
+    void accept( NodeState.Visitor visitor ) throws ConstraintValidationKernelException;
 
     PrimitiveIntIterator relationshipTypes();
 
@@ -275,7 +278,7 @@ public interface NodeState extends PropertyContainerState
         }
 
         @Override
-        public void accept( NodeState.Visitor visitor )
+        public void accept( NodeState.Visitor visitor ) throws ConstraintValidationKernelException
         {
             super.accept( visitor );
             if ( labelDiffSets != null )

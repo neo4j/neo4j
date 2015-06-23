@@ -30,13 +30,17 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -71,6 +75,7 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.collection.ArrayCollection;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
@@ -367,13 +372,27 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void prepareRecordChangesFromTransactionState()
+    private void prepareRecordChangesFromTransactionState() throws ConstraintValidationKernelException
     {
         if ( hasTxStateWithChanges() )
         {
-            txState().accept( txStateToRecordStateVisitor );
+            txState().accept( txStateVisitor() );
             txStateToRecordStateVisitor.done();
         }
+    }
+
+    private TxStateVisitor txStateVisitor()
+    {
+        TxStateVisitor visitor = txStateToRecordStateVisitor;
+        for ( PropertyConstraint constraint : loop( storeLayer.constraintsGetAll() ) )
+        {
+            if ( constraint instanceof MandatoryPropertyConstraint )
+            {
+                visitor = new MandatoryPropertyEnforcer( visitor, storeLayer, txState );
+                break;
+            }
+        }
+        return visitor;
     }
 
     private void assertTransactionOpen()
@@ -511,6 +530,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             success = true;
         }
+        catch ( ConstraintValidationKernelException e )
+        {
+            throw new ConstraintViolationTransactionFailureException(
+                    e.getUserMessage( new KeyReadTokenNameLookup( operations.keyReadOperations() ) ), e );
+        }
         finally
         {
             if ( !success )
@@ -541,20 +565,28 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             // Free any acquired id's
             if ( txState != null )
             {
-                txState.accept( new TxStateVisitor.Adapter()
+                try
                 {
-                    @Override
-                    public void visitCreatedNode( long id )
+                    txState.accept( new TxStateVisitor.Adapter()
                     {
-                        storeLayer.releaseNode( id );
-                    }
+                        @Override
+                        public void visitCreatedNode( long id )
+                        {
+                            storeLayer.releaseNode( id );
+                        }
 
-                    @Override
-                    public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-                    {
-                        storeLayer.releaseRelationship( id );
-                    }
-                } );
+                        @Override
+                        public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+                        {
+                            storeLayer.releaseRelationship( id );
+                        }
+                    } );
+                }
+                catch ( ConstraintValidationKernelException e )
+                {
+                    throw new IllegalStateException(
+                            "Releasing locks during rollback should perform no constraints checking.", e );
+                }
             }
         }
         finally

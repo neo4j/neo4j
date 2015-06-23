@@ -25,6 +25,9 @@ import java.util.Set;
 
 import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.MandatoryPropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode;
@@ -43,7 +46,7 @@ public interface TxStateVisitor
     void visitDeletedRelationship( long id );
 
     void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
-                                   Iterator<Integer> removed );
+                                   Iterator<Integer> removed ) throws ConstraintValidationKernelException;
 
     void visitNodeRelationshipChanges( long id, RelationshipChangesForNode added,
                                        RelationshipChangesForNode removed );
@@ -54,7 +57,8 @@ public interface TxStateVisitor
     void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
                                     Iterator<Integer> removed );
 
-    void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed );
+    void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
+            throws ConstraintValidationKernelException;
 
     void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex );
 
@@ -80,109 +84,205 @@ public interface TxStateVisitor
 
     class Adapter implements TxStateVisitor
     {
+        private final TxStateVisitor next;
+
+        public Adapter( TxStateVisitor next )
+        {
+            this.next = next;
+        }
+
+        public Adapter()
+        {
+            this( null );
+        }
+
         @Override
         public void visitCreatedNode( long id )
-        {   // Ignore
+        {
+            if ( next != null )
+            {
+                next.visitCreatedNode( id );
+            }
         }
 
         @Override
         public void visitDeletedNode( long id )
-        {   // Ignore
+        {
+            if ( next != null )
+            {
+                next.visitDeletedNode( id );
+            }
         }
 
         @Override
         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-        {   // Ignore
+        {
+            if ( next != null )
+            {
+                next.visitCreatedRelationship( id, type, startNode, endNode );
+            }
         }
 
         @Override
         public void visitDeletedRelationship( long id )
-        {   // Ignore
+        {
+            if ( next != null )
+            {
+                next.visitDeletedRelationship( id );
+            }
         }
 
         @Override
-        public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
-                Iterator<DefinedProperty> changed, Iterator<Integer> removed )
-        {   // Ignore
+        public void visitNodePropertyChanges( long id,
+                Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+                Iterator<Integer> removed ) throws ConstraintValidationKernelException
+        {
+            if ( next != null )
+            {
+                next.visitNodePropertyChanges( id, added, changed, removed );
+            }
         }
 
         @Override
         public void visitNodeRelationshipChanges( long id, RelationshipChangesForNode added,
                 RelationshipChangesForNode removed )
-        {   // Ignore
+        {
+            if ( next != null )
+            {
+                next.visitNodeRelationshipChanges( id, added, removed );
+            }
         }
 
         @Override
-        public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added,
-                Iterator<DefinedProperty> changed, Iterator<Integer> removed )
-        {   // Ignore
-        }
-
-        @Override
-        public void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+        public void visitRelPropertyChanges( long id,
+                Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
                 Iterator<Integer> removed )
-        {   // Ignore
+        {
+            if ( next != null )
+            {
+                next.visitRelPropertyChanges( id, added, changed, removed );
+            }
+        }
+
+        @Override
+        public void visitGraphPropertyChanges( Iterator<DefinedProperty> added,
+                Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+        {
+            if ( next != null )
+            {
+                next.visitGraphPropertyChanges( added, changed, removed );
+            }
         }
 
         @Override
         public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
-        {   // Ignore
+                throws ConstraintValidationKernelException
+        {
+            if ( next != null )
+            {
+                next.visitNodeLabelChanges( id, added, removed );
+            }
         }
 
         @Override
         public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
-        {   // Ignore
+        {
+            if ( next != null )
+            {
+                next.visitAddedIndex( element, isConstraintIndex );
+            }
         }
 
         @Override
         public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
-        {   // Ignore
+        {
+            if ( next != null )
+            {
+                next.visitRemovedIndex( element, isConstraintIndex );
+            }
         }
 
         @Override
         public void visitAddedUniquePropertyConstraint( UniquenessConstraint element )
-        {   // Ignore
+        {
+            if ( next != null )
+            {
+                next.visitAddedUniquePropertyConstraint( element );
+            }
         }
 
         @Override
         public void visitRemovedUniquePropertyConstraint( UniquenessConstraint element )
-        {   // Ignore
+        {
+            if ( next != null )
+            {
+                next.visitRemovedUniquePropertyConstraint( element );
+            }
         }
 
         @Override
-        public void visitAddedMandatoryPropertyConstraint( MandatoryPropertyConstraint element )
-        {   // Ignore
+        public void visitAddedMandatoryPropertyConstraint(
+                MandatoryPropertyConstraint element )
+        {
+            if ( next != null )
+            {
+                next.visitAddedMandatoryPropertyConstraint( element );
+            }
         }
 
         @Override
-        public void visitRemovedMandatoryPropertyConstraint( MandatoryPropertyConstraint element )
-        {   // Ignore
+        public void visitRemovedMandatoryPropertyConstraint(
+                MandatoryPropertyConstraint element )
+        {
+            if ( next != null )
+            {
+                next.visitRemovedMandatoryPropertyConstraint( element );
+            }
         }
 
         @Override
         public void visitCreatedLabelToken( String name, int id )
-        {   // Ignore
+        {
+            if ( next != null )
+            {
+                next.visitCreatedLabelToken( name, id );
+            }
         }
 
         @Override
         public void visitCreatedPropertyKeyToken( String name, int id )
-        {   // Ignore
+        {
+            if ( next != null )
+            {
+                next.visitCreatedPropertyKeyToken( name, id );
+            }
         }
 
         @Override
         public void visitCreatedRelationshipTypeToken( String name, int id )
-        {   // Ignore
+        {
+            if ( next != null )
+            {
+                next.visitCreatedRelationshipTypeToken( name, id );
+            }
         }
 
         @Override
-        public void visitCreatedNodeLegacyIndex( String name, Map<String, String> config )
-        {   // Ignore
-
+        public void visitCreatedNodeLegacyIndex( String name, Map<String,String> config )
+        {
+            if ( next != null )
+            {
+                next.visitCreatedNodeLegacyIndex( name, config );
+            }
         }
 
         @Override
-        public void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config )
-        {   // Ignore
+        public void visitCreatedRelationshipLegacyIndex( String name, Map<String,String> config )
+        {
+            if ( next != null )
+            {
+                next.visitCreatedRelationshipLegacyIndex( name, config );
+            }
         }
     }
 }

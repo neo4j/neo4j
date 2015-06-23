@@ -29,6 +29,7 @@ import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.cursor.PropertyCursor;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.cursor.TxPropertyCursor;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
@@ -55,15 +56,16 @@ public interface PropertyContainerState
 
     Iterator<DefinedProperty> augmentProperties( Iterator<DefinedProperty> iterator );
 
-    void accept( Visitor visitor );
+    void accept( Visitor visitor ) throws ConstraintValidationKernelException;
 
     PropertyCursor augmentPropertyCursor( Supplier<TxPropertyCursor> propertyCursor, PropertyCursor cursor );
 
     interface Visitor
     {
         void visitPropertyChanges( long entityId, Iterator<DefinedProperty> added,
-                Iterator<DefinedProperty> changed,
-                Iterator<Integer> removed );
+
+                                   Iterator<DefinedProperty> changed,
+                                   Iterator<Integer> removed ) throws ConstraintValidationKernelException;
     }
 
     class Mutable implements PropertyContainerState
@@ -255,7 +257,7 @@ public interface PropertyContainerState
         }
 
         @Override
-        public void accept( Visitor visitor )
+        public void accept( Visitor visitor ) throws ConstraintValidationKernelException
         {
             if ( addedProperties != null || removedProperties != null || changedProperties != null )
             {
