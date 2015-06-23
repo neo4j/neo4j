@@ -353,7 +353,10 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         try
         {
-            session.acquireExclusive( type, resourceIds );
+            for ( long resourceId : resourceIds )
+            {
+                session.acquireExclusive( type, resourceId );
+            }
             return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
         }
         catch ( DeadlockDetectedException e )
@@ -386,7 +389,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         try
         {
-            session.acquireShared( type, resourceIds );
+            for ( long resourceId : resourceIds )
+            {
+                session.acquireShared( type, resourceId );
+            }
+
             return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
         }
         catch ( DeadlockDetectedException e )

@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
@@ -174,7 +173,7 @@ public class MasterImplTest
                     latch.await();
                     return null;
                 }
-            } ).when( client ).acquireExclusive( any( ResourceType.class ), Matchers.<long[]>anyVararg() );
+            } ).when( client ).acquireExclusive( any( ResourceType.class ), anyLong() );
             when( spi.acquireClient() ).thenReturn( client );
             Config config = config( 20 );
             final MasterImpl master = new MasterImpl( spi, mock( Monitor.class ), config, 20 );
