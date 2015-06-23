@@ -76,8 +76,14 @@ public interface PageSwapper
     void close() throws IOException;
 
     /**
-     * Synchronise all writes done by this PageSwapper, with the underlying
-     * storage device.
+     * Forces all writes done by this PageSwapper to the underlying storage device, such that the writes are durable
+     * when this call returns.
+     *
+     * This method has no effect if the {@link PageSwapperFactory#syncDevice()} method forces the writes for all
+     * non-closed PageSwappers created through the given <code>PageSwapperFactory</code>.
+     * The {@link PageCache#flushAndForce()} method will first call <code>force</code> on the PageSwappers for all
+     * mapped files, then call <code>syncDevice</code> on the PageSwapperFactory. This way, the writes are always made
+     * durable regardless of which method that does the forcing.
      */
     void force() throws IOException;
 

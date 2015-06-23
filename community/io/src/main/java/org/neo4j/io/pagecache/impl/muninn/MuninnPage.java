@@ -32,8 +32,6 @@ import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static java.lang.String.format;
-import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allowUnalignedMemoryAccess;
-import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.storeByteOrderIsNative;
 
 final class MuninnPage extends StampedLock implements Page
 {
@@ -51,6 +49,7 @@ final class MuninnPage extends StampedLock implements Page
 
     // Optimistically incremented; occasionally truncated to a max of 4.
     // accessed through unsafe
+    @SuppressWarnings( "unused" )
     private volatile byte usageStamp;
 
     // Next pointer in the freelist of available pages. This is either a
@@ -152,10 +151,10 @@ final class MuninnPage extends StampedLock implements Page
     public long getLong( int offset )
     {
         checkBounds( offset + 8 );
-        if ( allowUnalignedMemoryAccess )
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             long x = UnsafeUtil.getLong( pointer + offset );
-            return storeByteOrderIsNative ? x : Long.reverseBytes( x );
+            return UnsafeUtil.storeByteOrderIsNative ? x : Long.reverseBytes( x );
         }
         return getLongBigEndian( offset );
     }
@@ -177,10 +176,10 @@ final class MuninnPage extends StampedLock implements Page
     public void putLong( long value, int offset )
     {
         checkBounds( offset + 8 );
-        if ( allowUnalignedMemoryAccess )
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             long p = pointer + offset;
-            UnsafeUtil.putLong( p, storeByteOrderIsNative ? value : Long.reverseBytes( value ) );
+            UnsafeUtil.putLong( p, UnsafeUtil.storeByteOrderIsNative ? value : Long.reverseBytes( value ) );
         }
         else
         {
@@ -204,10 +203,10 @@ final class MuninnPage extends StampedLock implements Page
     public int getInt( int offset )
     {
         checkBounds( offset + 4 );
-        if ( allowUnalignedMemoryAccess )
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             int x = UnsafeUtil.getInt( pointer + offset );
-            return storeByteOrderIsNative ? x : Integer.reverseBytes( x );
+            return UnsafeUtil.storeByteOrderIsNative ? x : Integer.reverseBytes( x );
         }
         return getIntBigEndian( offset );
     }
@@ -225,10 +224,10 @@ final class MuninnPage extends StampedLock implements Page
     public void putInt( int value, int offset )
     {
         checkBounds( offset + 4 );
-        if ( allowUnalignedMemoryAccess )
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             long p = pointer + offset;
-            UnsafeUtil.putInt( p, storeByteOrderIsNative ? value : Integer.reverseBytes( value ) );
+            UnsafeUtil.putInt( p, UnsafeUtil.storeByteOrderIsNative ? value : Integer.reverseBytes( value ) );
         }
         else
         {
@@ -248,10 +247,10 @@ final class MuninnPage extends StampedLock implements Page
     public short getShort( int offset )
     {
         checkBounds( offset + 2 );
-        if ( allowUnalignedMemoryAccess )
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             short x = UnsafeUtil.getShort( pointer + offset );
-            return storeByteOrderIsNative ? x : Short.reverseBytes( x );
+            return UnsafeUtil.storeByteOrderIsNative ? x : Short.reverseBytes( x );
         }
         return getShortBigEndian( offset );
     }
@@ -267,10 +266,10 @@ final class MuninnPage extends StampedLock implements Page
     public void putShort( short value, int offset )
     {
         checkBounds( offset + 2 );
-        if ( allowUnalignedMemoryAccess )
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             long p = pointer + offset;
-            UnsafeUtil.putShort( p, storeByteOrderIsNative ? value : Short.reverseBytes( value ) );
+            UnsafeUtil.putShort( p, UnsafeUtil.storeByteOrderIsNative ? value : Short.reverseBytes( value ) );
         }
         else
         {
@@ -301,10 +300,9 @@ final class MuninnPage extends StampedLock implements Page
     {
         checkBounds( offset + data.length );
         long address = pointer + offset;
-        int length = data.length;
-        for ( int i = 0; i < length; i++ )
+        for ( byte b : data )
         {
-            UnsafeUtil.putByte( address, data[i] );
+            UnsafeUtil.putByte( address, b );
             address++;
         }
     }

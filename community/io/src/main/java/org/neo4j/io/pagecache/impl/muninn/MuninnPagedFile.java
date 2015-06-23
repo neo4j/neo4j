@@ -58,8 +58,9 @@ final class MuninnPagedFile implements PagedFile
     final PageSwapper swapper;
     private final CursorPool cursorPool;
 
-    // Accessed via Unsafe
+    @SuppressWarnings( "unused" ) // Accessed via Unsafe
     private volatile int referenceCounter;
+    @SuppressWarnings( "unused" ) // Accessed via Unsafe
     private volatile long lastPageId;
 
     MuninnPagedFile(
@@ -170,6 +171,7 @@ final class MuninnPagedFile implements PagedFile
         try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
         {
             flushAndForceInternal( flushEvent.flushEventOpportunity() );
+            syncDevice();
         }
     }
 
@@ -197,7 +199,8 @@ final class MuninnPagedFile implements PagedFile
                     }
                 }
             }
-            force();
+
+            swapper.force();
         }
         finally
         {
@@ -205,10 +208,9 @@ final class MuninnPagedFile implements PagedFile
         }
     }
 
-    @Override
-    public void force() throws IOException
+    private void syncDevice() throws IOException
     {
-        swapper.force();
+        pageCache.syncDevice();
     }
 
     @Override

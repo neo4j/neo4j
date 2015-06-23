@@ -3822,4 +3822,102 @@ public abstract class PageCacheTest<T extends PageCache>
     {
         return 1 << (32 - Integer.numberOfLeadingZeros( i ) );
     }
+
+    private PageSwapperFactory factoryCountingSyncDevice(
+            final AtomicInteger syncDeviceCounter,
+            final Queue<Integer> expectedCountsInForce )
+    {
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory()
+        {
+            @Override
+            public void syncDevice()
+            {
+                super.syncDevice();
+                syncDeviceCounter.getAndIncrement();
+            }
+
+            @Override
+            public PageSwapper createPageSwapper( File file, int filePageSize, PageEvictionCallback onEviction )
+                    throws IOException
+            {
+                return new DelegatingPageSwapper( super.createPageSwapper( file, filePageSize, onEviction ) )
+                {
+                    @Override
+                    public void force() throws IOException
+                    {
+                        super.force();
+                        assertThat( syncDeviceCounter.get(), is( expectedCountsInForce.poll() ) );
+                    }
+                };
+            }
+        };
+        factory.setFileSystemAbstraction( fs );
+        return factory;
+    }
+
+    private <T> Queue<T> queue( T... items )
+    {
+        Queue<T> queue = new ConcurrentLinkedQueue<>();
+        for ( T item : items )
+        {
+            queue.offer( item );
+        }
+        return queue;
+    }
+
+    @Test
+    public void mustSyncDeviceWhenFlushAndForcingPagedFile() throws Exception
+    {
+        AtomicInteger syncDeviceCounter = new AtomicInteger();
+        AtomicInteger expectedCountInForce = new AtomicInteger();
+        Queue<Integer> expectedCountsInForce = queue(
+                0,      // at `p1.flushAndForce` no `syncDevice` has happened before the force
+                1, 2 ); // closing+forcing the files one by one, we get 2 more `syncDevice`
+        PageSwapperFactory factory = factoryCountingSyncDevice( syncDeviceCounter, expectedCountsInForce );
+        try ( PageCache cache = createPageCache( factory, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+              PagedFile p1 = cache.map( new File( "a" ), filePageSize );
+              PagedFile p2 = cache.map( new File( "b" ), filePageSize ) )
+        {
+            try ( PageCursor cursor = p1.io( 0, PF_EXCLUSIVE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+            try ( PageCursor cursor = p2.io( 0, PF_EXCLUSIVE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+
+            p1.flushAndForce();
+            expectedCountInForce.set( 1 );
+            assertThat( syncDeviceCounter.get(), is( 1 ) );
+        }
+    }
+
+    @Test
+    public void mustSyncDeviceWhenFlushAndForcingPageCache() throws Exception
+    {
+        AtomicInteger syncDeviceCounter = new AtomicInteger();
+        AtomicInteger expectedCountInForce = new AtomicInteger();
+        Queue<Integer> expectedCountsInForce = queue(
+                0, 0,   // `cache.flushAndForce` forces the individual files, no `syncDevice` yet
+                1, 2 ); // after test, files are closed+forced one by one
+        PageSwapperFactory factory = factoryCountingSyncDevice( syncDeviceCounter, expectedCountsInForce );
+        try ( PageCache cache = createPageCache( factory, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+              PagedFile p1 = cache.map( new File( "a" ), filePageSize );
+              PagedFile p2 = cache.map( new File( "b" ), filePageSize ) )
+        {
+            try ( PageCursor cursor = p1.io( 0, PF_EXCLUSIVE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+            try ( PageCursor cursor = p2.io( 0, PF_EXCLUSIVE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+
+            cache.flushAndForce();
+            expectedCountInForce.set( 1 );
+            assertThat( syncDeviceCounter.get(), is( 1 ) );
+        }
+    }
 }

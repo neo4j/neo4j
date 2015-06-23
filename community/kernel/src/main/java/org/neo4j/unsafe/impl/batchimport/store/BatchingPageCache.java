@@ -280,11 +280,6 @@ public class BatchingPageCache implements PageCache
         }
 
         @Override
-        public void force() throws IOException
-        {   // no-op
-        }
-
-        @Override
         public long getLastPageId() throws IOException
         {
             return max( cursors[PF_SHARED_LOCK].highestKnownPageId(), cursors[PF_EXCLUSIVE_LOCK].highestKnownPageId );

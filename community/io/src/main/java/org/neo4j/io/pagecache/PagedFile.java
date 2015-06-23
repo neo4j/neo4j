@@ -147,11 +147,6 @@ public interface PagedFile extends AutoCloseable
     void flushAndForce() throws IOException;
 
     /**
-     * Force all changes to this file handle down to disk. Does not flush dirty pages.
-     */
-    void force() throws IOException;
-
-    /**
      * Get the file-page-id of the last page in the file.
      *
      * This will return -1 if the file is completely empty.

@@ -234,12 +234,6 @@ public class PageCacheRule extends ExternalResource
         }
 
         @Override
-        public void force() throws IOException
-        {
-            pagedFile.force();
-        }
-
-        @Override
         public long getLastPageId() throws IOException
         {
             return pagedFile.getLastPageId();
