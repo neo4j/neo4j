@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen;
+package org.neo4j.cypher.internal.codegen;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -106,10 +106,10 @@ public abstract class CompiledConversionUtils
             return null;
         }
 
-        if ( (lhs instanceof CompiledNode && !(rhs instanceof CompiledNode)) ||
-             (rhs instanceof CompiledNode && !(lhs instanceof CompiledNode)) ||
-             (lhs instanceof CompiledRelationship && !(rhs instanceof CompiledRelationship)) ||
-             (rhs instanceof CompiledRelationship && !(lhs instanceof CompiledRelationship)) )
+        if ( (lhs instanceof NodeIdWrapper && !(rhs instanceof NodeIdWrapper)) ||
+             (rhs instanceof NodeIdWrapper && !(lhs instanceof NodeIdWrapper)) ||
+             (lhs instanceof RelationshipIdWrapper && !(rhs instanceof RelationshipIdWrapper)) ||
+             (rhs instanceof RelationshipIdWrapper && !(lhs instanceof RelationshipIdWrapper)) )
         {
 
             throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
@@ -192,11 +192,11 @@ public abstract class CompiledConversionUtils
     {
         if ( value instanceof Node )
         {
-            return new CompiledNode( ((Node) value).getId() );
+            return new NodeIdWrapper( ((Node) value).getId() );
         }
         else if ( value instanceof Relationship )
         {
-            return new CompiledRelationship( ((Relationship) value).getId() );
+            return new RelationshipIdWrapper( ((Relationship) value).getId() );
         }
         else
         {

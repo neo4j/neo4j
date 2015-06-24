@@ -31,7 +31,8 @@ import org.neo4j.codegen._
 import org.neo4j.codegen.source.SourceVisitor
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.CompiledConversionUtils.CompositeKey
+import org.neo4j.cypher.internal.codegen.{NodeIdWrapper, RelationshipIdWrapper, CompiledExpandUtils, CompiledMathHelper, CompiledConversionUtils}
+import CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.compiler.v2_3.codegen._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{GeneratedQuery, GeneratedQueryExecution, SuccessfulCloseable}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers._
@@ -333,7 +334,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def materializeNode(nodeIdVar: String) = Expression.invoke(db, Methods.getNodeById, generator.load(nodeIdVar))
 
-  override def node(nodeIdVar: String) = Templates.newInstance(typeRef[CompiledNode], generator.load(nodeIdVar))
+  override def node(nodeIdVar: String) = Templates.newInstance(typeRef[NodeIdWrapper], generator.load(nodeIdVar))
 
 
   override def nullable(varName: String, cypherType: CypherType, onSuccess: Expression) = {
@@ -345,7 +346,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def materializeRelationship(relIdVar: String) = Expression.invoke(db, Methods.getRelationshipById, generator.load(relIdVar))
 
-  override def relationship(relIdVar: String) = Templates.newInstance(typeRef[CompiledRelationship], generator.load(relIdVar))
+  override def relationship(relIdVar: String) = Templates.newInstance(typeRef[RelationshipIdWrapper], generator.load(relIdVar))
 
   override def trace[V](planStepId: String)(block: MethodStructure[Expression]=>V) = if(!tracing) block(this)
   else {
@@ -793,8 +794,8 @@ private object Methods {
   val nodeHasLabel = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])
   val nextLong = method[PrimitiveLongIterator, Long]("next")
   val getNodeById = method[GraphDatabaseService, Node]("getNodeById")
-  val nodeId = method[CompiledNode, Long]("id")
-  val relId = method[CompiledRelationship, Long]("id")
+  val nodeId = method[NodeIdWrapper, Long]("id")
+  val relId = method[RelationshipIdWrapper, Long]("id")
   val getRelationshipById = method[GraphDatabaseService, Relationship]("getRelationshipById")
   val set = method[ResultRowImpl, Unit]("set", typeRef[String], typeRef[Object])
   val visit = method[ResultVisitor[_], Boolean]("visit", typeRef[ResultRow])

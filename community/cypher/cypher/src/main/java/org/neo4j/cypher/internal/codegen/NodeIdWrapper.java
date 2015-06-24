@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen;
+package org.neo4j.cypher.internal.codegen;
 
-public final class CompiledNode
+public final class NodeIdWrapper
 {
     private final long id;
 
-    public CompiledNode( long id )
+    public NodeIdWrapper( long id )
     {
         this.id = id;
     }
@@ -41,7 +41,7 @@ public final class CompiledNode
         if ( o == null || getClass() != o.getClass() )
         { return false; }
 
-        CompiledNode that = (CompiledNode) o;
+        NodeIdWrapper that = (NodeIdWrapper) o;
 
         return id == that.id;
 

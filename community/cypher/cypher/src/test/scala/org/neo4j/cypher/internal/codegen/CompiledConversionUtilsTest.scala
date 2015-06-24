@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen
+package org.neo4j.cypher.internal.codegen
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, IncomparableValuesException}
+import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Relationship, Node}
+import org.neo4j.graphdb.{Node, Relationship}
 
 class CompiledConversionUtilsTest extends CypherFunSuite {
 
@@ -130,8 +130,8 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
 
   val testLoadParameter = Seq(
     (null, null),
-    (node, new CompiledNode(11L)),
-    (rel, new CompiledRelationship(13L))
+    (node, new NodeIdWrapper(11L)),
+    (rel, new RelationshipIdWrapper(13L))
   )
 
   testLoadParameter.foreach {

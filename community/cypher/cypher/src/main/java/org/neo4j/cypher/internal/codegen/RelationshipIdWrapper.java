@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen;
+package org.neo4j.cypher.internal.codegen;
 
-public final class CompiledRelationship
+public final class RelationshipIdWrapper
 {
     private final long id;
 
-    public CompiledRelationship( long id )
+    public RelationshipIdWrapper( long id )
     {
         this.id = id;
     }
@@ -41,7 +41,7 @@ public final class CompiledRelationship
         if ( o == null || getClass() != o.getClass() )
         { return false; }
 
-        CompiledRelationship that = (CompiledRelationship) o;
+        RelationshipIdWrapper that = (RelationshipIdWrapper) o;
 
         return id == that.id;
 
