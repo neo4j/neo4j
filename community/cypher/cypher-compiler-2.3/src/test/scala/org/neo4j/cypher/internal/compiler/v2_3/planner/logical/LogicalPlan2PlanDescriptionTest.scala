@@ -65,7 +65,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren, Seq(Index("Label", "Prop"), EstimatedRows(23)), Set("x"))
 
       , NodeIndexUniqueSeek(IdName("x"), LabelToken("Lebal", LabelId(0)), PropertyKeyToken("Porp", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty)(95) ->
-        PlanDescriptionImpl(id, "NodeIndexUniqueSeek", NoChildren, Seq(Index("Lebal", "Porp"), EstimatedRows(95)), Set("x"))
+        PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren, Seq(Index("Lebal", "Porp"), EstimatedRows(95)), Set("x"))
 
       , Expand(lhsLP, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(95) ->
         PlanDescriptionImpl(id, "Expand(All)", SingleChild(lhsPD), Seq(ExpandExpression("a", "r1", Seq.empty, "b", Direction.OUTGOING), EstimatedRows(95)), Set("a", "r1", "b"))

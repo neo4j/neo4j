@@ -56,6 +56,7 @@ trait MethodStructure[E] {
   def updateProbeTableCount(tableVar: String, tableType: CountingJoinTableType, keyVar: Seq[String]): Unit
   def allocateProbeTable(tableVar: String, tableType: JoinTableType): Unit
   def method(resultType: JoinTableType, resultVar: String, methodName: String)(block: MethodStructure[E]=>Unit): Unit
+  def coerceToBoolean(propertyExpression: E): E
 
   // expressions
   def decreaseCounterAndCheckForZero(name: String): E
@@ -116,11 +117,11 @@ trait MethodStructure[E] {
   def relationshipGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
   def relationshipGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
   def lookupPropertyKey(propName: String, propVar: String)
-  def coerceToBoolean(propertyExpression: E): E
+  def indexSeek(iterVar: String, descriptorVar: String, value: E): Unit
+  def indexUniqueSeek(name: String, descriptorVar: String, value: E)
 
   def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
 
-  def indexSeek(iterVar: String, descriptorVar: String, value: E): Unit
 
   // code structure
   def whileLoop(test: E)(block: MethodStructure[E] => Unit): Unit

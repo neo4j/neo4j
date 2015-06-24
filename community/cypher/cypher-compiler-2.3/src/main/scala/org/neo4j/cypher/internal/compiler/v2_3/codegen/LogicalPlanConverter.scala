@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, RangeQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{QueryExpression, ManyQueryExpression, RangeQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
@@ -38,6 +38,7 @@ object LogicalPlanConverter {
       case p: AllNodesScan => p.asCodeGenPlan
       case p: NodeByLabelScan => p.asCodeGenPlan
       case p: NodeIndexSeek => p.asCodeGenPlan
+      case p: NodeIndexUniqueSeek => p.asCodeGenPlan
       case p: Expand => p.asCodeGenPlan
       case p: OptionalExpand => p.asCodeGenPlan
       case p: NodeHashJoin => p.asCodeGenPlan
@@ -112,40 +113,36 @@ object LogicalPlanConverter {
     }
   }
 
-  private implicit class NodeIndexSeekCodeGen(indexSeek: NodeIndexSeek) {
-    def asCodeGenPlan = new CodeGenPlan with LeafCodeGenPlan {
+  abstract class IndexSeek(idName: String, valueExpr: QueryExpression[Expression], indexSeek: LogicalPlan) {
+    def indexSeek(opName: String, descriptorVar: String, expression: CodeGenExpression,
+                  nodeVar: Variable, actions: Instruction): Instruction
 
+    def asCodeGenPlan = new CodeGenPlan with LeafCodeGenPlan {
       override val logicalPlan: LogicalPlan = indexSeek
 
       override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
         val nodeVar = Variable(context.namer.newVarName(), symbols.CTNode)
-        context.addVariable(indexSeek.idName.name, nodeVar)
+        context.addVariable(idName, nodeVar)
 
         val (methodHandle, actions) = context.popParent().consume(context, this)
         val opName = context.registerOperator(logicalPlan)
-        val indexSeekInstruction = indexSeek.valueExpr match {
+        val indexSeekInstruction = valueExpr match {
           //single expression, do a index lookup for that value
           case SingleQueryExpression(e) =>
             val expression = ExpressionConverter.createExpression(e)(context)
-            WhileLoop(nodeVar,
-              IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKey.name,
-                context.namer.newVarName(), expression), actions)
+            indexSeek(opName, context.namer.newVarName(), expression, nodeVar, actions)
           //collection, create set and for each element of the set do an index lookup
           case ManyQueryExpression(e: ast.Collection) =>
             val expression = ToSet(ExpressionConverter.createExpression(e)(context))
             val expressionVar = context.namer.newVarName()
             ForEachExpression(expressionVar, expression,
-              WhileLoop(nodeVar,
-                IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKey.name,
-                  context.namer.newVarName(), LoadVariable(expressionVar)), actions))
+              indexSeek(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar, actions))
           //Unknown, try to cast to collection and then same as above
           case ManyQueryExpression(e) =>
             val expression = ToSet(CastToCollection(ExpressionConverter.createExpression(e)(context)))
             val expressionVar = context.namer.newVarName()
             ForEachExpression(expressionVar, expression,
-              WhileLoop(nodeVar,
-                IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKey.name,
-                  context.namer.newVarName(), LoadVariable(expressionVar)), actions))
+              indexSeek(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar, actions))
 
           case e: RangeQueryExpression[_] =>
             throw new CantCompileQueryException(s"To be done")
@@ -157,6 +154,24 @@ object LogicalPlanConverter {
       }
     }
   }
+
+  private implicit class NodeIndexSeekCodeGen(indexSeek: NodeIndexSeek)
+    extends IndexSeek(indexSeek.idName.name, indexSeek.valueExpr, indexSeek) {
+
+    def indexSeek(opName: String, descriptorVar: String, expression: CodeGenExpression,
+                  nodeVar: Variable, actions: Instruction) =
+      WhileLoop(nodeVar, IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKey.name,
+          descriptorVar, expression), actions)
+  }
+
+  private implicit class NodeIndexUniqueSeekCodeGen(indexSeek: NodeIndexUniqueSeek)
+    extends IndexSeek(indexSeek.idName.name, indexSeek.valueExpr, indexSeek) {
+
+    def indexSeek(opName: String, descriptorVar: String, expression: CodeGenExpression,
+                  nodeVar: Variable, actions: Instruction) =
+      IndexUniqueSeek(opName, indexSeek.label.name, indexSeek.propertyKey.name,
+        descriptorVar, expression, nodeVar, actions)
+    }
 
   private implicit class NodeHashJoinCodeGen(nodeHashJoin: NodeHashJoin) {
     def asCodeGenPlan = new CodeGenPlan {
