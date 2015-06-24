@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.preflight;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
 
@@ -58,23 +60,33 @@ import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class TestPerformUpgradeIfNecessary
 {
-    private final File HOME_DIRECTORY =
-            TargetDirectory.forTest( TestPerformUpgradeIfNecessary.class ).cleanDirectory( "home" );
-    private final File STORE_DIRECTORY = new File( new File( HOME_DIRECTORY, "data" ), "graph.db" );
-    private final File CONF_DIRECTORY = new File( HOME_DIRECTORY, "conf" );
-    private final File NEO4J_PROPERTIES = new File( CONF_DIRECTORY, "neo4j.properties" );
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    private File homeDir;
+    private File storeDir;
+    private File confDir;
+    private File neo4jProperties;
+
+    @Before
+    public void setup()
+    {
+        homeDir = testDir.directory( "home" );
+        storeDir = new File( new File( homeDir, "data" ), "graph.db" );
+        confDir = new File( homeDir, "conf" );
+        neo4jProperties = new File( confDir, "neo4j.properties" );
+    }
 
     @Test
     public void shouldExitImmediatelyIfStoreIsAlreadyAtLatestVersion() throws IOException
     {
         Config serverConfig = buildProperties( false );
         GraphDatabaseBuilder builder =
-                new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( STORE_DIRECTORY.getPath() );
+                new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
         builder.newGraphDatabase().shutdown();
 
         Monitor monitor = mock( Monitor.class );
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,
-        		loadNeo4jProperties(), NullLogProvider.getInstance(), monitor );
+                loadNeo4jProperties(), NullLogProvider.getInstance(), monitor );
 
         boolean exit = upgrader.run();
 
@@ -87,11 +99,11 @@ public class TestPerformUpgradeIfNecessary
     public void shouldGiveHelpfulMessageIfAutoUpgradeParameterNotSet() throws IOException
     {
         Config serverProperties = buildProperties( false );
-        prepareSampleLegacyDatabase( STORE_DIRECTORY );
+        prepareSampleLegacyDatabase( storeDir );
 
         Monitor monitor = mock( Monitor.class );
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverProperties,
-        		loadNeo4jProperties(), NullLogProvider.getInstance(), monitor );
+                loadNeo4jProperties(), NullLogProvider.getInstance(), monitor );
 
         boolean exit = upgrader.run();
 
@@ -107,7 +119,7 @@ public class TestPerformUpgradeIfNecessary
     {
         Monitor monitor = mock( Monitor.class );
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( buildProperties( true ),
-        		loadNeo4jProperties(), NullLogProvider.getInstance(), monitor );
+                loadNeo4jProperties(), NullLogProvider.getInstance(), monitor );
 
         boolean exit = upgrader.run();
 
@@ -121,23 +133,24 @@ public class TestPerformUpgradeIfNecessary
     {
         // Given
         Config serverConfig = buildProperties( true );
-        prepareSampleLegacyDatabase( STORE_DIRECTORY );
+        prepareSampleLegacyDatabase( storeDir );
 
         Monitor monitor = mock( Monitor.class );
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         AssertableLogProvider assertableLogProvider = new AssertableLogProvider();
-        LogProvider logProvider = new DuplicatingLogProvider( FormattedLogProvider.toOutputStream( outputStream ), assertableLogProvider );
+        LogProvider logProvider = new DuplicatingLogProvider( FormattedLogProvider.toOutputStream( outputStream ),
+                assertableLogProvider );
 
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,
-        		loadNeo4jProperties(), logProvider, monitor );
+                loadNeo4jProperties(), logProvider, monitor );
 
         // When
         boolean success = upgrader.run();
 
         // Then
-        if( !success )
+        if ( !success )
         {
-            System.out.write(outputStream.toByteArray());
+            System.out.write( outputStream.toByteArray() );
             fail();
         }
 
@@ -149,29 +162,29 @@ public class TestPerformUpgradeIfNecessary
         assertableLogProvider.assertContainsMessageContaining( "Migration completed" );
     }
 
-    private Config buildProperties(boolean allowStoreUpgrade) throws IOException
+    private Config buildProperties( boolean allowStoreUpgrade ) throws IOException
     {
-        FileUtils.deleteRecursively( HOME_DIRECTORY );
-        assertTrue( CONF_DIRECTORY.mkdirs() );
+        FileUtils.deleteRecursively( homeDir );
+        assertTrue( confDir.mkdirs() );
 
         Properties databaseProperties = new Properties();
-        if (allowStoreUpgrade)
+        if ( allowStoreUpgrade )
         {
             databaseProperties.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
         }
 
-        databaseProperties.store( new FileWriter( NEO4J_PROPERTIES.getAbsolutePath() ), null );
+        databaseProperties.store( new FileWriter( neo4jProperties.getAbsolutePath() ), null );
 
-        Config serverProperties = new Config ( MapUtil.stringMap(
-                Configurator.DATABASE_LOCATION_PROPERTY_KEY, STORE_DIRECTORY.getPath(),
-                Configurator.DB_TUNING_PROPERTY_FILE_KEY, NEO4J_PROPERTIES.getAbsolutePath() ) );
+        Config serverProperties = new Config( MapUtil.stringMap(
+                Configurator.DATABASE_LOCATION_PROPERTY_KEY, storeDir.getPath(),
+                Configurator.DB_TUNING_PROPERTY_FILE_KEY, neo4jProperties.getAbsolutePath() ) );
 
         return serverProperties;
     }
 
     private Map<String,String> loadNeo4jProperties() throws IOException
     {
-        return MapUtil.load( new File( NEO4J_PROPERTIES.getAbsolutePath() ) );
+        return MapUtil.load( new File( neo4jProperties.getAbsolutePath() ) );
     }
 
     private void prepareSampleLegacyDatabase( File workingDirectory ) throws IOException

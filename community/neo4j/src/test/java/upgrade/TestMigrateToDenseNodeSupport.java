@@ -21,6 +21,7 @@ package upgrade;
 
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -57,7 +58,7 @@ public class TestMigrateToDenseNodeSupport
 {
     private static final Label referenceNode = label( "ReferenceNode" );
 
-    private static enum Types implements RelationshipType
+    private enum Types implements RelationshipType
     {
         DENSE,
         SPARSE,
@@ -65,10 +66,10 @@ public class TestMigrateToDenseNodeSupport
         FOURTH
     }
 
-    private static enum Properties
+    private enum Properties
     {
-        BYTE( (byte)10 ),
-        SHORT( (short)345 ),
+        BYTE( (byte) 10 ),
+        SHORT( (short) 345 ),
         INT( 123456 ),
         LONG( 12345678901L ),
         CHAR( 'N' ),
@@ -76,26 +77,26 @@ public class TestMigrateToDenseNodeSupport
         DOUBLE( 123.456789D ),
         SHORT_STRING( "short" ),
         LONG_STRING( "super-duper long string that will have to spill over into a dynamic record !#¤%&/()=," ),
-        INT_ARRAY( new int[] {12345, 67890, 123456789, 1, 2, 3, 4, 5} )
-        {
-            @Override
-            public void assertValueEquals( Object otherValue )
-            {
-                assertArrayEquals( (int[]) value, (int[]) otherValue );
-            }
-        },
-        STRING_ARRAY( new String[] { "First", "Second", "Third", "Fourth" } )
-        {
-            @Override
-            public void assertValueEquals( Object otherValue )
-            {
-                assertArrayEquals( (Object[]) value, (Object[]) otherValue );
-            }
-        };
+        INT_ARRAY( new int[]{12345, 67890, 123456789, 1, 2, 3, 4, 5} )
+                {
+                    @Override
+                    public void assertValueEquals( Object otherValue )
+                    {
+                        assertArrayEquals( (int[]) value, (int[]) otherValue );
+                    }
+                },
+        STRING_ARRAY( new String[]{"First", "Second", "Third", "Fourth"} )
+                {
+                    @Override
+                    public void assertValueEquals( Object otherValue )
+                    {
+                        assertArrayEquals( (Object[]) value, (Object[]) otherValue );
+                    }
+                };
 
         protected final Object value;
 
-        private Properties( Object value )
+        Properties( Object value )
         {
             this.value = value;
         }
@@ -111,12 +112,14 @@ public class TestMigrateToDenseNodeSupport
         }
     }
 
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
     private File dir;
 
     @Before
     public void before() throws Exception
     {
-        dir = AbstractNeo4jTestCase.unzip( getClass(), "0.A.1-db.zip" );
+        dir = AbstractNeo4jTestCase.unzip( testDir.graphDbDir(), getClass(), "0.A.1-db.zip" );
     }
 
     @Test

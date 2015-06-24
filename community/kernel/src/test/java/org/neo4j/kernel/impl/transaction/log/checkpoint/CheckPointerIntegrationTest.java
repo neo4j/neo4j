@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.lang.System.getProperty;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
@@ -54,7 +55,7 @@ import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_
 
 public class CheckPointerIntegrationTest
 {
-    private static final File storeDir = new File( "/tmp/graph.db" );
+    private static final File storeDir = new File( getProperty( "java.io.tmpdir" ), "graph.db" );
 
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();

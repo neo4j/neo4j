@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase( false )
@@ -77,8 +76,8 @@ public abstract class AbstractNeo4jTestCase
         public Statement apply( Statement base, Description description )
         {
             tearDownDb();
-            setupGraphDatabase(description.getTestClass().getName(),
-                             description.getTestClass().getAnnotation( RequiresPersistentGraphDatabase.class ).value());
+            setupGraphDatabase( description.getTestClass().getName(),
+                    description.getTestClass().getAnnotation( RequiresPersistentGraphDatabase.class ).value() );
             return base;
         }
     };
@@ -118,8 +117,9 @@ public abstract class AbstractNeo4jTestCase
         }
 
         threadLocalGraphDb.set( (GraphDatabaseAPI) (requiresPersistentGraphDatabase ?
-                new TestGraphDatabaseFactory().newEmbeddedDatabase( getStorePath( "neo-test" ) ) :
-                new TestGraphDatabaseFactory().newImpermanentDatabase()) );
+                                                    new TestGraphDatabaseFactory().newEmbeddedDatabase( getStorePath(
+                                                            "neo-test" ) ) :
+                                                    new TestGraphDatabaseFactory().newImpermanentDatabase()) );
     }
 
     public GraphDatabaseAPI getGraphDbAPI()
@@ -147,7 +147,7 @@ public abstract class AbstractNeo4jTestCase
     {
         if ( restartGraphDbBetweenTests() && graphDb == null )
         {
-            setupGraphDatabase( currentTestClassName.get(), requiresPersistentGraphDatabase.get());
+            setupGraphDatabase( currentTestClassName.get(), requiresPersistentGraphDatabase.get() );
             graphDb = threadLocalGraphDb.get();
         }
         tx = graphDb.beginTx();
@@ -302,7 +302,7 @@ public abstract class AbstractNeo4jTestCase
         {
             Field storeField = PropertyStore.class.getDeclaredField( fieldName );
             storeField.setAccessible( true );
-            return ( (AbstractDynamicStore) storeField.get( propertyStore() ) ).getNumberOfIdsInUse();
+            return ((AbstractDynamicStore) storeField.get( propertyStore() )).getNumberOfIdsInUse();
         }
         catch ( Exception e )
         {
@@ -316,9 +316,8 @@ public abstract class AbstractNeo4jTestCase
         return neoStore.getPropertyStore();
     }
 
-    public static File unzip( Class<?> testClass, String resource ) throws IOException
+    public static File unzip( File targetDir, Class<?> testClass, String resource ) throws IOException
     {
-        File dir = TargetDirectory.forTest( testClass ).makeGraphDbDir();
         try ( InputStream source = testClass.getResourceAsStream( resource ) )
         {
             if ( source == null )
@@ -332,12 +331,13 @@ public abstract class AbstractNeo4jTestCase
             {
                 if ( entry.isDirectory() )
                 {
-                    new File( dir, entry.getName() ).mkdirs();
+                    new File( targetDir, entry.getName() ).mkdirs();
                 }
                 else
                 {
                     try ( OutputStream file =
-                                  new BufferedOutputStream( new FileOutputStream( new File( dir, entry.getName() ) ) ) )
+                                  new BufferedOutputStream(
+                                          new FileOutputStream( new File( targetDir, entry.getName() ) ) ) )
                     {
                         long toCopy = entry.getSize();
                         while ( toCopy > 0 )
@@ -351,6 +351,6 @@ public abstract class AbstractNeo4jTestCase
                 zipStream.closeEntry();
             }
         }
-        return dir;
+        return targetDir;
     }
 }

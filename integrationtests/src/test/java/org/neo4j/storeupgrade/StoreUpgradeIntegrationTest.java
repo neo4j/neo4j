@@ -19,6 +19,7 @@
  */
 package org.neo4j.storeupgrade;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
@@ -60,6 +61,7 @@ import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -75,17 +77,17 @@ import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
-@RunWith(Enclosed.class)
+@RunWith( Enclosed.class )
 public class StoreUpgradeIntegrationTest
 {
-    @RunWith(Parameterized.class)
+    @RunWith( Parameterized.class )
     public static class StoreUpgradeTest
     {
-        @Parameterized.Parameter(0)
+        @Parameterized.Parameter( 0 )
         public Store store;
 
         // NOTE: the zip files must contain the database files and NOT the graph.db folder itself!!!
-        @Parameterized.Parameters(name = "{0}")
+        @Parameterized.Parameters( name = "{0}" )
         public static Collection<Store[]> stores()
         {
             return Arrays.asList(
@@ -108,7 +110,8 @@ public class StoreUpgradeIntegrationTest
                             180 /* node count */,
                             35 /* last txId */,
                             selectivities( 1.0, 1.0, 1.0, 1.0 ),
-                            indexCounts( counts( 0, 1, 1, 1 ), counts( 0, 38, 38, 38 ), counts(0, 1, 1, 1), counts( 0, 133, 133, 133 ) )
+                            indexCounts( counts( 0, 1, 1, 1 ), counts( 0, 38, 38, 38 ),
+                                    counts( 0, 1, 1, 1 ), counts( 0, 133, 133, 133 ) )
                     )},
 
                     // 2.1
@@ -122,7 +125,7 @@ public class StoreUpgradeIntegrationTest
                             174 /* node count */,
                             30 /* last txId */,
                             selectivities( 1.0, 1.0, 1.0 ),
-                            indexCounts( counts( 0, 38, 38, 38 ), counts(0, 1, 1, 1), counts( 0, 133, 133, 133 ) )
+                            indexCounts( counts( 0, 38, 38, 38 ), counts( 0, 1, 1, 1 ), counts( 0, 133, 133, 133 ) )
                     )},
 
                     // 2.2
@@ -136,18 +139,21 @@ public class StoreUpgradeIntegrationTest
                             174 /* node count */,
                             30 /* last txId */,
                             selectivities( 1.0, 1.0, 1.0 ),
-                            indexCounts( counts( 0, 38, 38, 38 ), counts(0, 1, 1, 1), counts( 0, 133, 133, 133 ) )
+                            indexCounts( counts( 0, 38, 38, 38 ), counts( 0, 1, 1, 1 ), counts( 0, 133, 133, 133 ) )
                     )}
             );
         }
 
+        @Rule
+        public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
         @Test
         public void embeddedDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
         {
-            File dir = store.prepareDirectory();
+            File dir = store.prepareDirectory( testDir.graphDbDir() );
 
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir.getAbsolutePath() );
+            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             GraphDatabaseService db = builder.newGraphDatabase();
@@ -167,7 +173,7 @@ public class StoreUpgradeIntegrationTest
         @Test
         public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
         {
-            File dir = store.prepareDirectory();
+            File dir = store.prepareDirectory( testDir.graphDbDir() );
 
             File configFile = new File( dir, "neo4j.properties" );
             Properties props = new Properties();
@@ -207,9 +213,9 @@ public class StoreUpgradeIntegrationTest
         public void migratingOlderDataAndThanStartAClusterUsingTheNewerDataShouldWork() throws Throwable
         {
             // migrate the store using a single instance
-            File dir = store.prepareDirectory();
+            File dir = store.prepareDirectory( testDir.graphDbDir() );
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir.getAbsolutePath() );
+            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             GraphDatabaseService db = builder.newGraphDatabase();
@@ -256,26 +262,32 @@ public class StoreUpgradeIntegrationTest
 
     public static class StoreUpgradeFailingTest
     {
+        @Rule
+        public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
         @Test
         public void migratingFromANotCleanlyShutdownStoreShouldNotStartAndFail() throws Throwable
         {
             // migrate the store using a single instance
-            File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeIntegrationTest.class, "0.A.3-to-be-recovered.zip" );
+            File dir = AbstractNeo4jTestCase.unzip( testDir.graphDbDir(), getClass(), "0.A.3-to-be-recovered.zip" );
             new File( dir, "messages.log" ).delete(); // clear the log
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder(dir.getAbsolutePath());
-            builder.setConfig(GraphDatabaseSettings.allow_store_upgrade, "true");
-            builder.setConfig(GraphDatabaseSettings.pagecache_memory, "8m");
-            try {
+            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
+            builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+            builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
+            try
+            {
                 GraphDatabaseService db = builder.newGraphDatabase();
                 db.shutdown();
-                fail("It should have failed.");
-            } catch (RuntimeException ex) {
+                fail( "It should have failed." );
+            }
+            catch ( RuntimeException ex )
+            {
                 final UpgradingStoreVersionNotFoundException expected =
                         new UpgradingStoreVersionNotFoundException( "neostore.nodestore.db" );
                 final Throwable cause = ex.getCause().getCause().getCause();
-                assertEquals(expected.getClass(), cause.getClass());
-                assertEquals(expected.getMessage(), cause.getMessage());
+                assertEquals( expected.getClass(), cause.getClass() );
+                assertEquals( expected.getMessage(), cause.getMessage() );
             }
         }
     }
@@ -289,7 +301,7 @@ public class StoreUpgradeIntegrationTest
         final long[][] indexCounts;
 
         private Store( String resourceName, long expectedNodeCount, long lastTxId,
-                       double[] indexSelectivity, long[][] indexCounts )
+                double[] indexSelectivity, long[][] indexCounts )
         {
             this.resourceName = resourceName;
             this.expectedNodeCount = expectedNodeCount;
@@ -298,11 +310,11 @@ public class StoreUpgradeIntegrationTest
             this.indexCounts = indexCounts;
         }
 
-        public File prepareDirectory() throws IOException
+        public File prepareDirectory( File targetDir ) throws IOException
         {
-            File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeIntegrationTest.class, resourceName );
-            new File( dir, "messages.log" ).delete(); // clear the log
-            return dir;
+            AbstractNeo4jTestCase.unzip( targetDir, StoreUpgradeIntegrationTest.class, resourceName );
+            new File( targetDir, "messages.log" ).delete(); // clear the log
+            return targetDir;
         }
 
         @Override
@@ -328,10 +340,10 @@ public class StoreUpgradeIntegrationTest
     private static void checkIndexCounts( Store store, GraphDatabaseAPI db ) throws KernelException
     {
         CountsTracker counts = db.getDependencyResolver()
-                                 .resolveDependency( NeoStoreDataSource.class )
-                                 .getNeoStore().getCounts();
+                .resolveDependency( NeoStoreDataSource.class )
+                .getNeoStore().getCounts();
         ThreadToStatementContextBridge bridge = db.getDependencyResolver()
-                                                  .resolveDependency( ThreadToStatementContextBridge.class );
+                .resolveDependency( ThreadToStatementContextBridge.class );
 
         Iterator<IndexDescriptor> indexes = getAllIndexes( db );
         DoubleLongRegister register = Registers.newDoubleLongRegister();
@@ -362,7 +374,7 @@ public class StoreUpgradeIntegrationTest
         try ( Transaction ignored = db.beginTx() )
         {
             ThreadToStatementContextBridge bridge = db.getDependencyResolver()
-                                                      .resolveDependency( ThreadToStatementContextBridge.class );
+                    .resolveDependency( ThreadToStatementContextBridge.class );
             Statement statement = bridge.get();
             return concat(
                     statement.readOperations().indexesGetAll(),
@@ -375,10 +387,10 @@ public class StoreUpgradeIntegrationTest
     {
         try ( Transaction ignored = db.beginTx() )
         {
-            HashMap<Label, Long> counts = new HashMap<>();
+            HashMap<Label,Long> counts = new HashMap<>();
             for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
             {
-                for (Label label : node.getLabels() )
+                for ( Label label : node.getLabels() )
                 {
                     Long count = counts.get( label );
                     if ( count != null )
@@ -396,11 +408,12 @@ public class StoreUpgradeIntegrationTest
                     .resolveDependency( ThreadToStatementContextBridge.class );
             Statement statement = bridge.get();
 
-            for ( Map.Entry<Label, Long> entry : counts.entrySet() )
+            for ( Map.Entry<Label,Long> entry : counts.entrySet() )
             {
                 assertEquals(
-                    entry.getValue().longValue(),
-                    statement.readOperations().countsForNode( statement.readOperations().labelGetForName( entry.getKey().name() ) )
+                        entry.getValue().longValue(),
+                        statement.readOperations().countsForNode(
+                                statement.readOperations().labelGetForName( entry.getKey().name() ) )
                 );
             }
         }
@@ -468,8 +481,8 @@ public class StoreUpgradeIntegrationTest
     }
 
     private static IndexDescriptor awaitOnline( GraphDatabaseAPI db,
-                                                ThreadToStatementContextBridge bridge,
-                                                IndexDescriptor index ) throws KernelException
+            ThreadToStatementContextBridge bridge,
+            IndexDescriptor index ) throws KernelException
     {
         long start = System.currentTimeMillis();
         long end = start + 20_000;

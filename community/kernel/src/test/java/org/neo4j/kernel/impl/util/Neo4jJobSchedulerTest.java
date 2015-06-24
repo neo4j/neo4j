@@ -164,21 +164,21 @@ public class Neo4jJobSchedulerTest
         final AtomicLong runTime = new AtomicLong();
         final CountDownLatch latch = new CountDownLatch( 1 );
 
-        long time = System.currentTimeMillis();
+        long time = System.nanoTime();
 
         scheduler.schedule( new JobScheduler.Group( "group", POOLED ), new Runnable()
         {
             @Override
             public void run()
             {
-                runTime.set( System.currentTimeMillis() );
+                runTime.set( System.nanoTime() );
                 latch.countDown();
             }
         }, 100, TimeUnit.MILLISECONDS );
 
         latch.await();
 
-        assertTrue( time + 100 <= runTime.get() );
+        assertTrue( time + TimeUnit.MILLISECONDS.toNanos( 100 ) <= runTime.get() );
     }
 
     private List<String> threadNames()

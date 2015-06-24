@@ -21,6 +21,7 @@ package upgrade;
 
 import org.hamcrest.Matchers;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -55,21 +56,21 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSam
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateAllFiles;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class StoreUpgradeOnStartupTest
 {
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-
     private final String version;
-    private final File workingDirectory;
+    private File workingDirectory;
 
     public StoreUpgradeOnStartupTest( String version )
     {
         this.version = version;
-        workingDirectory = TargetDirectory.forTest( getClass() ).cleanDirectory( version );
     }
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> versions()
     {
         return Arrays.asList(
@@ -83,6 +84,7 @@ public class StoreUpgradeOnStartupTest
     @Before
     public void setup() throws IOException
     {
+        workingDirectory = testDir.directory( version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDirectory );
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
     }
@@ -146,7 +148,7 @@ public class StoreUpgradeOnStartupTest
     private GraphDatabaseService createGraphDatabaseService()
     {
         return new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( workingDirectory.getPath() )
+                .newEmbeddedDatabaseBuilder( workingDirectory )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
                 .newGraphDatabase();
     }
