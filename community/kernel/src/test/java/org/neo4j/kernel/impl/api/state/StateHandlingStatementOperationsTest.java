@@ -241,14 +241,14 @@ public class StateHandlingStatementOperationsTest
         );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.nodesGetFromIndexLookup( statement, index, "value" ) ).thenReturn(
+        when( storeReadLayer.nodesGetFromIndexSeek( statement, index, "value" ) ).thenReturn(
                 IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
         );
 
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
         // When
-        PrimitiveLongIterator results = context.nodesGetFromIndexLookup( statement, index, "value" );
+        PrimitiveLongIterator results = context.nodesGetFromIndexSeek( statement, index, "value" );
 
         // Then
         assertEquals( asSet( 42L, 43L ), asSet( results ) );
@@ -271,14 +271,14 @@ public class StateHandlingStatementOperationsTest
         );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.nodesGetFromIndexByPrefixSearch( statement, index, "prefix" ) ).thenReturn(
+        when( storeReadLayer.nodesGetFromIndexSeekByPrefix( statement, index, "prefix" ) ).thenReturn(
                 IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
         );
 
         StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
 
         // When
-        PrimitiveLongIterator results = context.nodesGetFromIndexByPrefixSearch( statement, index, "prefix" );
+        PrimitiveLongIterator results = context.nodesGetFromIndexSeekByPrefix( statement, index, "prefix" );
 
         // Then
         assertEquals( asSet( 42L, 43L ), asSet( results ) );

@@ -37,7 +37,7 @@ import org.neo4j.test.DoubleLatch;
 
 import static org.junit.Assert.*;
 
-public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
+public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 {
     private int labelId, propertyKeyId;
 
@@ -78,7 +78,7 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
 
         // when looking for it
         DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-        long foundId = statement.nodeGetUniqueFromIndexLookup( index, value );
+        long foundId = statement.nodeGetUniqueFromIndexSeek( index, value );
         commit();
 
         // then
@@ -95,7 +95,7 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
 
         // when looking for it
         DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-        long foundId = statement.nodeGetUniqueFromIndexLookup( index, value );
+        long foundId = statement.nodeGetUniqueFromIndexSeek( index, value );
         commit();
 
         // then
@@ -103,7 +103,7 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
     }
 
     @Test(timeout = 1000)
-    public void shouldBlockUniqueNodeLookupFromCompetingTransaction() throws Exception
+    public void shouldBlockUniqueIndexSeekFromCompetingTransaction() throws Exception
     {
         // This is the interleaving that we are trying to verify works correctly:
         // ----------------------------------------------------------------------
@@ -145,7 +145,7 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
                 {
                     try ( Statement statement = statementContextSupplier.get() )
                     {
-                        statement.readOperations().nodeGetUniqueFromIndexLookup( index, value );
+                        statement.readOperations().nodeGetUniqueFromIndexSeek( index, value );
                     }
                     tx.success();
                 }

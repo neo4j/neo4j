@@ -54,7 +54,7 @@ public interface EntityReadOperations
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
+    PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
 
     /**
@@ -62,7 +62,7 @@ public interface EntityReadOperations
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexByPrefixSearch( KernelStatement state, IndexDescriptor index, String prefix )
+    PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, IndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException;
 
     /**
@@ -79,7 +79,7 @@ public interface EntityReadOperations
      * @throws IndexNotFoundKernelException if no such index found.
      * @throws IndexBrokenKernelException   if we found an index that was corrupt or otherwise in a failed state.
      */
-    long nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
+    long nodeGetUniqueFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     /**

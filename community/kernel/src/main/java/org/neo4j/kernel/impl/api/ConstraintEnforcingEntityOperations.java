@@ -113,7 +113,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
             state.locks().acquireExclusive( INDEX_ENTRY,
                     indexEntryResourceId( labelId, propertyKeyId, property.valueAsString() ) );
 
-            long existing = entityReadOperations.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value );
+            long existing = entityReadOperations.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value );
             if ( existing != NO_SUCH_NODE && existing != modifiedNode )
             {
                 throw new UniqueConstraintViolationKernelException( labelId, propertyKeyId, value, existing );
@@ -207,17 +207,17 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
+    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
-        return entityReadOperations.nodesGetFromIndexLookup( state, index, value );
+        return entityReadOperations.nodesGetFromIndexSeek( state, index, value );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexByPrefixSearch( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, IndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
-        return entityReadOperations.nodesGetFromIndexByPrefixSearch( state, index, prefix );
+        return entityReadOperations.nodesGetFromIndexSeekByPrefix( state, index, prefix );
     }
 
     @Override
@@ -228,7 +228,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public long nodeGetUniqueFromIndexLookup(
+    public long nodeGetUniqueFromIndexSeek(
             KernelStatement state,
             IndexDescriptor index,
             Object value )
@@ -251,13 +251,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
 
         locks.acquireShared( INDEX_ENTRY, indexEntryId );
 
-        long nodeId = entityReadOperations.nodeGetUniqueFromIndexLookup( state, index, value );
+        long nodeId = entityReadOperations.nodeGetUniqueFromIndexSeek( state, index, value );
         if ( NO_SUCH_NODE == nodeId )
         {
             locks.releaseShared( INDEX_ENTRY, indexEntryId );
             locks.acquireExclusive( INDEX_ENTRY, indexEntryId );
 
-            nodeId = entityReadOperations.nodeGetUniqueFromIndexLookup( state, index, value );
+            nodeId = entityReadOperations.nodeGetUniqueFromIndexSeek( state, index, value );
             if ( NO_SUCH_NODE != nodeId ) // we found it under the exclusive lock
             {
                 // downgrade to a shared lock

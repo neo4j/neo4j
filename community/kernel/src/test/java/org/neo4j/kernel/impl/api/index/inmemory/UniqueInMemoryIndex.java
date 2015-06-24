@@ -102,7 +102,7 @@ class UniqueInMemoryIndex extends InMemoryIndex implements UniquePropertyIndexUp
     @Override
     public Long currentlyIndexedNode( Object value ) throws IOException
     {
-        PrimitiveLongIterator nodes = lookup( value );
+        PrimitiveLongIterator nodes = indexSeek( value );
         return nodes.hasNext() ? nodes.next() : null;
     }
 

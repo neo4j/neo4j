@@ -46,7 +46,7 @@ public class DiskLayerIndexTest extends DiskLayerTest
         try ( Transaction ignored = db.beginTx() )
         {
             // WHEN
-            Set<Long> foundNodes = asUniqueSet( disk.nodesGetFromIndexLookup( state, 1l, name ) );
+            Set<Long> foundNodes = asUniqueSet( disk.nodesGetFromIndexSeek( state, 1l, name ) );
 
             // THEN
             assertEquals( asSet( mrTaylor.getId() ), foundNodes );

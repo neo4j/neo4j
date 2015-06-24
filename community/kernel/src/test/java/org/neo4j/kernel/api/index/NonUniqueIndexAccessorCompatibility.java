@@ -49,7 +49,7 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
         // we cannot have them go around and throw exceptions, because that could potentially break
         // recovery.
         // Conflicting data can happen because of faulty data coercion. These faults are resolved by
-        // the exact-match filtering we do on index lookups in StateHandlingStatementOperations.
+        // the exact-match filtering we do on index seeks in StateHandlingStatementOperations.
 
         updateAndCommit( asList(
                 NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
@@ -71,7 +71,7 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     }
 
     @Test
-    public void testIndexPrefixSearchWithDuplicates() throws Exception
+    public void testIndexSeekByPrefixWithDuplicates() throws Exception
     {
         updateAndCommit( asList(
                 NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
@@ -80,7 +80,7 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
                 NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "apa", new long[]{1000} ),
                 NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "apa", new long[]{1000} ) ) );
 
-        assertThat( getAllNodesFromPrefixSearch( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
-        assertThat( getAllNodesFromPrefixSearch( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromIndexSeekByPrefix( "a" ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromIndexSeekByPrefix( "apa" ), equalTo( asList( 3L, 4L, 5L ) ) );
     }
 }

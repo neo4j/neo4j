@@ -129,16 +129,17 @@ public interface StoreReadLayer
 
     Iterator<UniquenessConstraint> constraintsGetAll();
 
-    PrimitiveLongResourceIterator nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index,
+    PrimitiveLongResourceIterator nodeGetUniqueFromIndexSeek( KernelStatement state, IndexDescriptor index,
             Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId );
 
-    PrimitiveLongResourceIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
+    PrimitiveLongResourceIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
 
-    PrimitiveLongResourceIterator nodesGetFromIndexByPrefixSearch( KernelStatement state, IndexDescriptor index, String prefix )
+    PrimitiveLongResourceIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, IndexDescriptor index,
+            String prefix )
             throws IndexNotFoundKernelException;
 
     PrimitiveLongResourceIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index )

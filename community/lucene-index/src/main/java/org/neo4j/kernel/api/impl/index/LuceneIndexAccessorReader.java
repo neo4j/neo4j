@@ -88,13 +88,13 @@ class LuceneIndexAccessorReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator lookup( Object value )
+    public PrimitiveLongIterator indexSeek( Object value )
     {
         return query( documentLogic.newValueQuery( value ) );
     }
 
     @Override
-    public PrimitiveLongIterator lookupByPrefixSearch( String prefix )
+    public PrimitiveLongIterator indexSeekByPrefix( String prefix )
     {
         return query( documentLogic.newPrefixQuery( prefix ) );
     }

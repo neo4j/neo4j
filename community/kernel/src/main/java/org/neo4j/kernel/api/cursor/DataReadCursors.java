@@ -39,7 +39,7 @@ public interface DataReadCursors
 
     NodeCursor nodeCursorGetForLabel( int labelId );
 
-    NodeCursor nodeCursorGetFromIndexLookup( IndexDescriptor index, Object value )
+    NodeCursor nodeCursorGetFromIndexSeek( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
 
     NodeCursor nodeCursorGetFromIndexByPrefixSearch( IndexDescriptor index, String prefix )
@@ -48,7 +48,7 @@ public interface DataReadCursors
     NodeCursor nodeCursorGetFromIndexScan( IndexDescriptor index )
             throws IndexNotFoundKernelException;
 
-    NodeCursor nodeCursorGetUniqueFromIndexLookup( IndexDescriptor index, Object value )
+    NodeCursor nodeCursorGetUniqueFromIndexSeek( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
 }

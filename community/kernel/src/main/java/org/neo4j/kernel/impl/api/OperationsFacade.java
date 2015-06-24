@@ -164,19 +164,19 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexLookup( IndexDescriptor index, Object value )
+    public PrimitiveLongIterator nodesGetFromIndexSeek( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
-        return dataRead().nodesGetFromIndexLookup( statement, index, value );
+        return dataRead().nodesGetFromIndexSeek( statement, index, value );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexByPrefixSearch( IndexDescriptor index, String prefix )
+    public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( IndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
-        return dataRead().nodesGetFromIndexByPrefixSearch( statement, index, prefix );
+        return dataRead().nodesGetFromIndexSeekByPrefix( statement, index, prefix );
     }
 
     @Override
@@ -188,11 +188,11 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public long nodeGetUniqueFromIndexLookup( IndexDescriptor index, Object value )
+    public long nodeGetUniqueFromIndexSeek( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         statement.assertOpen();
-        return dataRead().nodeGetUniqueFromIndexLookup( statement, index, value );
+        return dataRead().nodeGetUniqueFromIndexSeek( statement, index, value );
     }
 
     @Override
@@ -376,7 +376,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexLookup(  IndexDescriptor index,
+    public NodeCursor nodeCursorGetFromIndexSeek(  IndexDescriptor index,
             Object value ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
@@ -399,7 +399,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public NodeCursor nodeCursorGetUniqueFromIndexLookup( IndexDescriptor index,
+    public NodeCursor nodeCursorGetUniqueFromIndexSeek( IndexDescriptor index,
             Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         statement.assertOpen();

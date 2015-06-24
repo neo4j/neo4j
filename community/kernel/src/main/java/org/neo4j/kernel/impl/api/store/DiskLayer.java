@@ -493,14 +493,14 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongResourceIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index,
             Object value ) throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesGetFromIndexByPrefixSearch( KernelStatement state,
+    public PrimitiveLongResourceIterator nodesGetFromIndexSeekByPrefix( KernelStatement state,
             IndexDescriptor index,
             String prefix )
             throws IndexNotFoundKernelException
@@ -700,7 +700,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongResourceIterator nodeGetUniqueFromIndexSeek( KernelStatement state, IndexDescriptor index,
             Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         throw new UnsupportedOperationException();
@@ -859,7 +859,7 @@ public class DiskLayer implements StoreReadLayer
         return propertyLoader.graphLoadProperties( new IteratingPropertyReceiver() );
     }
 
-    public PrimitiveLongResourceIterator nodeGetUniqueFromIndexLookup( KernelStatement state,
+    public PrimitiveLongResourceIterator nodeGetUniqueFromIndexSeek( KernelStatement state,
             long indexId, Object value )
             throws IndexNotFoundKernelException
     {
@@ -869,21 +869,22 @@ public class DiskLayer implements StoreReadLayer
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
         IndexReader reader = state.getFreshIndexReader( indexId );
-        return resourceIterator( reader.lookup( value ), reader );
+        return resourceIterator( reader.indexSeek( value ), reader );
     }
 
-    public PrimitiveLongResourceIterator nodesGetFromIndexLookup( KernelStatement state, long index, Object value )
+    public PrimitiveLongResourceIterator nodesGetFromIndexSeek( KernelStatement state, long index, Object value )
             throws IndexNotFoundKernelException
     {
         IndexReader reader = state.getIndexReader( index );
-        return resourceIterator( reader.lookup( value ), reader );
+        return resourceIterator( reader.indexSeek( value ), reader );
     }
 
-    public PrimitiveLongResourceIterator nodesGetFromIndexByPrefixSearch( KernelStatement state, long index, String prefix )
+    public PrimitiveLongResourceIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, long index,
+            String prefix )
             throws IndexNotFoundKernelException
     {
         IndexReader reader = state.getIndexReader( index );
-        return resourceIterator( reader.lookupByPrefixSearch( prefix ), reader );
+        return resourceIterator( reader.indexSeekByPrefix( prefix ), reader );
     }
 
     public PrimitiveLongResourceIterator nodesGetFromIndexScan( KernelStatement state, long index )
