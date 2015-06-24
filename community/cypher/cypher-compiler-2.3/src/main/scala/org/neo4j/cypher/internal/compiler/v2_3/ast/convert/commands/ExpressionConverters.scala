@@ -25,9 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConve
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression, ProjectedPath}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedRelType
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{Predicate => CommandPredicate, StringSeekRange, expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{Predicate => CommandPredicate, expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{LikePatternParser, convertLikePatternToRegex}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AsStringRangeSeekable, StringRangeSeekable, LowerBounded}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -108,7 +107,7 @@ object ExpressionConverters {
 
   implicit class StringSeekRangeConverter(val original: ast.StringSeekRange) extends AnyVal {
     def asCommandStringSeekRange = {
-      commands.StringSeekRange(original.range)
+      commands.expressions.StringSeekRange(original.range)
     }
   }
 

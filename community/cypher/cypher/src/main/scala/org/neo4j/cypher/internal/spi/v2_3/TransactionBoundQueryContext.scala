@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compiler.v2_3.commands.StringSeekRange
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringSeekRange
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LowerBounded
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{Between, LowerBounded}
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.graphdb.DynamicRelationshipType._
@@ -32,7 +32,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
-import org.neo4j.kernel.api.properties._
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
