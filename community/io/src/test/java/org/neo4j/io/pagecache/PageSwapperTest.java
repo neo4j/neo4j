@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.file.NoSuchFileException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -97,7 +98,7 @@ public abstract class PageSwapperTest
 
         ByteBufferPage page = createPage();
         PageSwapperFactory swapperFactory = swapperFactory();
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, false );
 
         Thread.currentThread().interrupt();
 
@@ -112,7 +113,7 @@ public abstract class PageSwapperTest
         ensureFileExists( file );
 
         PageSwapperFactory swapperFactory = swapperFactory();
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, false );
 
         Thread.currentThread().interrupt();
         swapper.force();
@@ -125,7 +126,7 @@ public abstract class PageSwapperTest
         File file = new File( "a" );
         ensureFileExists( file );
         PageSwapperFactory swapperFactory = swapperFactory();
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, false );
 
         ByteBufferPage page = createPage();
         page.putLong( X, 0 );
@@ -159,7 +160,7 @@ public abstract class PageSwapperTest
         ensureFileExists( file );
 
         PageSwapperFactory swapperFactory = swapperFactory();
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, false );
 
         Thread.currentThread().interrupt();
 
@@ -185,7 +186,7 @@ public abstract class PageSwapperTest
         ensureFileExists( file );
 
         PageSwapperFactory swapperFactory = swapperFactory();
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, false );
 
         for ( int i = 0; i < 10; i++ )
         {
@@ -207,7 +208,7 @@ public abstract class PageSwapperTest
 
         ByteBufferPage page = createPage();
         PageSwapperFactory swapperFactory = swapperFactory();
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, false );
         swapper.write( 0, page );
         swapper.close();
 
@@ -230,7 +231,7 @@ public abstract class PageSwapperTest
 
         ByteBufferPage page = createPage();
         PageSwapperFactory swapperFactory = swapperFactory();
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, false );
         swapper.close();
 
         try
@@ -251,7 +252,7 @@ public abstract class PageSwapperTest
         ensureFileExists( file );
 
         PageSwapperFactory swapperFactory = swapperFactory();
-        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK );
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, false );
         swapper.close();
 
         try
@@ -273,9 +274,9 @@ public abstract class PageSwapperTest
         ensureFileExists( fileB );
         PageSwapperFactory factory = swapperFactory();
         PageSwapper swapperA =
-                factory.createPageSwapper( fileA, cachePageSize(), NO_CALLBACK);
+                factory.createPageSwapper( fileA, cachePageSize(), NO_CALLBACK, false );
         PageSwapper swapperB =
-                factory.createPageSwapper( fileB, cachePageSize(), NO_CALLBACK );
+                factory.createPageSwapper( fileB, cachePageSize(), NO_CALLBACK, false );
 
         ByteBufferPage page = createPage();
         page.putLong( X, 0 );
@@ -307,7 +308,7 @@ public abstract class PageSwapperTest
         File file = new File( "file" );
         ensureFileExists( file );
         PageSwapperFactory factory = swapperFactory();
-        PageSwapper swapper = factory.createPageSwapper( file, cachePageSize(), callback );
+        PageSwapper swapper = factory.createPageSwapper( file, cachePageSize(), callback, false );
         Page page = createPage();
         swapper.evicted( 42, page );
         assertThat( callbackFilePageId.get(), is( 42L ) );
@@ -329,10 +330,36 @@ public abstract class PageSwapperTest
         File file = new File( "file" );
         ensureFileExists( file );
         PageSwapperFactory factory = swapperFactory();
-        PageSwapper swapper = factory.createPageSwapper( file, cachePageSize(), callback );
+        PageSwapper swapper = factory.createPageSwapper( file, cachePageSize(), callback, false );
         Page page = createPage();
         swapper.close();
         swapper.evicted( 42, page );
         assertFalse( gotCallback.get() );
     }
+
+    @Test(expected = NoSuchFileException.class)
+    public void mustThrowExceptionIfFileDoesNotExist() throws Exception
+    {
+        PageSwapperFactory factory = swapperFactory();
+        factory.createPageSwapper( new File( "does not exist" ), cachePageSize(), NO_CALLBACK, false );
+    }
+
+    @Test
+    public void mustCreateNonExistingFileWithCreateFlag() throws Exception
+    {
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper pageSwapper =
+                factory.createPageSwapper( new File( "does not exist" ), cachePageSize(), NO_CALLBACK, true );
+
+        // After creating the file, we must also be able to read and write
+        ByteBufferPage page = createPage();
+        page.putLong( X, 0 );
+        pageSwapper.write( 0, page );
+
+        clear( page );
+        pageSwapper.read( 0, page );
+
+        assertThat( page.getLong( 0 ), is( X ) );
+    }
+    // TODO truncated files must be empty
 }

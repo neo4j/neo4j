@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.OpenOption;
 
 /**
  * A page caching mechanism that allows caching multiple files and accessing their data
@@ -38,8 +39,19 @@ public interface PageCache extends AutoCloseable
      * Note that this currently asks for the pageSize to use, which is an artifact or records being
      * of varying size in the stores. This should be consolidated to use a standard page size for the
      * whole cache, with records aligning on those page boundaries.
+     *
+     * @param file The file to map.
+     * @param pageSize The file page size to use for this mapping. If the file is already mapped with a different page
+     * size, an exception will be thrown.
+     * @param openOptions The set of open options to use for mapping this file. The
+     * {@link java.nio.file.StandardOpenOption#READ} and {@link java.nio.file.StandardOpenOption#WRITE} options always
+     * implicitly specified. The only supported option is {@link java.nio.file.StandardOpenOption#CREATE}, and
+     * all other options are either silently ignored, or will cause an exception to be thrown.
+     * @throws java.nio.file.NoSuchFileException if the given file does not exist, and the
+     * {@link java.nio.file.StandardOpenOption#CREATE} option was not specified.
+     * @throws IOException if the file could otherwise not be mapped.
      */
-    PagedFile map( File file, int pageSize ) throws IOException;
+    PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException;
 
     /** Flush all dirty pages */
     void flushAndForce() throws IOException;

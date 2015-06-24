@@ -21,6 +21,7 @@ package org.neo4j.com.storecopy;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -58,9 +59,9 @@ public class ExternallyManagedPageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( File file, int pageSize ) throws IOException
+    public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
     {
-        return delegate.map( file, pageSize );
+        return delegate.map( file, pageSize, openOptions );
     }
 
     @Override

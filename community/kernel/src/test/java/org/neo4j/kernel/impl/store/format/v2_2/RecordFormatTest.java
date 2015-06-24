@@ -26,6 +26,7 @@ import org.junit.Rule;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -65,8 +66,11 @@ public abstract class RecordFormatTest<FORMAT extends StoreFormat<RECORD, CURSOR
     {
         int pageSize = 1024;
         pageCursor = new StubPageCursor( 0l, pageSize );
-        pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        pagedFile = pageCache.map( new File("store"), 1024 );
+        EphemeralFileSystemAbstraction fs = fsRule.get();
+        pageCache = pageCacheRule.getPageCache( fs );
+        File store = new File( "store" );
+        fs.create( store ).close();
+        pagedFile = pageCache.map( store, 1024 );
         storeToolkit = new StoreToolkit( format.recordSize( null ), pageSize, 0, null, null );
     }
 

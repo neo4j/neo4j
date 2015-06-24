@@ -69,7 +69,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         channel.close();
 
         PageSwapperFactory factory = swapperFactory();
-        PageSwapper swapper = factory.createPageSwapper( file, 4, null );
+        PageSwapper swapper = factory.createPageSwapper( file, 4, null, false );
         ByteBuffer target = ByteBuffer.allocateDirect( 4 );
         ByteBufferPage page = new ByteBufferPage( target );
         swapper.read( 0, page );
@@ -91,7 +91,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         channel.close();
 
         PageSwapperFactory factory = swapperFactory();
-        PageSwapper swapper = factory.createPageSwapper( file, 4, null );
+        PageSwapper swapper = factory.createPageSwapper( file, 4, null, false );
         ByteBuffer target = ByteBuffer.allocateDirect( 4 );
         ByteBufferPage page = new ByteBufferPage( target );
         swapper.read( 1, page );
@@ -108,7 +108,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         ByteBufferPage page = new ByteBufferPage( wrap( expected ) );
 
         PageSwapperFactory factory = swapperFactory();
-        PageSwapper swapper = factory.createPageSwapper( file, 4, null );
+        PageSwapper swapper = factory.createPageSwapper( file, 4, null, false );
         swapper.write( 0, page );
 
         InputStream stream = fs.openAsInputStream( file );
@@ -145,7 +145,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         ByteBufferPage page = new ByteBufferPage( wrap( change ) );
 
         PageSwapperFactory factory = swapperFactory();
-        PageSwapper swapper = factory.createPageSwapper( file, 4, null );
+        PageSwapper swapper = factory.createPageSwapper( file, 4, null, false );
         swapper.write( 1, page );
 
         InputStream stream = fs.openAsInputStream( file );

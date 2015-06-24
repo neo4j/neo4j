@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -131,8 +132,12 @@ public class BatchingPageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( final File file, int pageSize ) throws IOException
+    public PagedFile map( final File file, int pageSize, OpenOption... openOptions ) throws IOException
     {
+        if ( openOptions.length != 0 )
+        {
+            throw new UnsupportedOperationException( "BatchingPageCache does not support any OpenOptions" );
+        }
         StoreChannel channel = fs.open( file, "rw" );
         // This is a hack necessary to make sure that we write to disk immediately the changes to the
         // counts store since we circumvent the page cache to read the counts

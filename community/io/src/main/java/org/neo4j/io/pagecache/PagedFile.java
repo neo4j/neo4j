@@ -63,7 +63,7 @@ public interface PagedFile extends AutoCloseable
     /**
      * Do not update page access statistics.
      */
-    int PF_TRANSIENT = 1 << 5;
+    int PF_TRANSIENT = 1 << 5; // TBD
 
     /**
      * Initiate an IO interaction with the contents of the paged file.
