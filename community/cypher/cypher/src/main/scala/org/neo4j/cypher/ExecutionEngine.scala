@@ -25,6 +25,7 @@ import java.util.{Map => JavaMap}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.using
 import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.v2_3.{LRUCache => LRUCachev2_3, _}
+import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
 import org.neo4j.cypher.internal.tracing.{TimingCompilationTracer, CompilationTracer}
 import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
@@ -136,8 +137,9 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
     preParsedQueries.getOrElseUpdate(queryText, compiler.preParseQuery(queryText))
 
   @throws(classOf[SyntaxException])
-  protected def planQuery(queryText: String): (PreparedPlanExecution, TransactionInfo) =
-    using(compilationTracer.compileQuery(queryText)) { phaseTracer: CompilationPhaseTracer =>
+  protected def planQuery(queryText: String): (PreparedPlanExecution, TransactionInfo) = {
+    val phaseTracer = compilationTracer.compileQuery(queryText)
+    try {
       log.debug(queryText)
 
       val preParsedQuery = preParseQuery(queryText)
@@ -166,7 +168,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
               parsedQuery.plan(kernelStatement, phaseTracer)
             })
           }.flatMap { case (candidatePlan, params) =>
-            if(!touched && candidatePlan.isStale(lastTxId, kernelStatement)) {
+            if (!touched && candidatePlan.isStale(lastTxId, kernelStatement)) {
               cacheAccessor.remove(cache)(cacheKey)
               None
             } else {
@@ -181,7 +183,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
             throw t
         }
 
-        if(touched) {
+        if (touched) {
           kernelStatement.close()
           tx.success()
           tx.close()
@@ -196,9 +198,10 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
 
         n += 1
       }
+    } finally phaseTracer.close()
 
-      throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
-    }
+    throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
+  }
 
   private val txBridge = graph.asInstanceOf[GraphDatabaseAPI]
     .getDependencyResolver
