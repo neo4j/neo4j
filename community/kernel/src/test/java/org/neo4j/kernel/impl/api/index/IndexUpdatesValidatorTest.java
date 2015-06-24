@@ -291,7 +291,7 @@ public class IndexUpdatesValidatorTest
     {
         when( neoStore.getNodeStore() ).thenReturn( nodeStore );
         when( neoStore.getPropertyStore() ).thenReturn( propertyStore );
-        return new IndexUpdatesValidator( neoStore, propertyLoader, indexingService );
+        return new IndexUpdatesValidator( neoStore, null, propertyLoader, indexingService );
     }
 
     private static Command nodeAddRandomLabelsCommand( long nodeId )

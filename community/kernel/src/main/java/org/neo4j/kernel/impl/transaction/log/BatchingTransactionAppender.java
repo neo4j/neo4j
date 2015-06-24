@@ -189,10 +189,10 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                 }
             }
         }
-        catch ( Throwable t )
+        catch ( Throwable cause )
         {
-            kernelHealth.panic( t );
-            throw t;
+            kernelHealth.panic( cause );
+            throw cause;
         }
 
         forceAfterAppend( logCheckPointEvent );
@@ -226,11 +226,10 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
 
     /**
      * @return A TransactionCommitment instance with metadata about the committed transaction, such as whether or not
-     * this transaction
-     * contains any legacy index changes.
+     * this transaction contains any legacy index changes.
      */
-    private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId ) throws
-            IOException
+    private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId )
+            throws IOException
     {
         // Reset command writer so that we, after we've written the transaction, can ask it whether or
         // not any legacy index command was written. If so then there's additional ordering to care about below.
@@ -338,7 +337,15 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         {
             force();
         }
-        unparkAll( links );
+        catch ( final Throwable panic )
+        {
+            kernelHealth.panic( panic );
+            throw panic;
+        }
+        finally
+        {
+            unparkAll( links );
+        }
     }
 
     private void unparkAll( ThreadLink links )

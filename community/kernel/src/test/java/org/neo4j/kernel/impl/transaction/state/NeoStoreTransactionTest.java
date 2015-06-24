@@ -1449,13 +1449,7 @@ public class NeoStoreTransactionTest
         return commitProcess( mockIndexing );
     }
 
-    private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing) throws IOException
-    {
-        return commitProcess(indexing, INTERNAL);
-    }
-
-    private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing,
-            TransactionApplicationMode mode ) throws IOException
+    private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws IOException
     {
         TransactionAppender appenderMock = mock( TransactionAppender.class );
         when( appenderMock.append(
@@ -1465,7 +1459,7 @@ public class NeoStoreTransactionTest
         Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
         when( labelScanStore.instance() ).thenReturn( mock( LabelScanWriter.class ) );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier(
-                indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null, null );
+                indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null, null, null );
 
         // Call this just to make sure the counters have been initialized.
         // This is only a problem in a mocked environment like this.
@@ -1474,7 +1468,7 @@ public class NeoStoreTransactionTest
         PropertyLoader propertyLoader = new PropertyLoader( neoStore );
 
         return new TransactionRepresentationCommitProcess( appenderMock, mock( KernelHealth.class ),
-                neoStore, applier, new IndexUpdatesValidator( neoStore, propertyLoader, indexing ) );
+                neoStore, applier, new IndexUpdatesValidator( neoStore, null, propertyLoader, indexing ) );
     }
 
     @After

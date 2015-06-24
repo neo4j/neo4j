@@ -19,6 +19,11 @@
  */
 package org.neo4j.backup;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,15 +32,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
@@ -43,7 +42,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 @RunWith(Parameterized.class)
@@ -74,7 +72,7 @@ public class RebuildFromLogsTest
         GraphDatabaseAPI rebuilt = db( rebuildPath );
         try
         {
-            new RebuildFromLogs( rebuilt ).applyTransactionsFrom( ProgressListener.NONE, prototypePath );
+            new RebuildFromLogs( rebuilt ).applyTransactionsFrom( prototypePath );
         }
         finally
         {

@@ -30,8 +30,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
  */
 public interface TransactionRepresentation
 {
-    public static final int NO_LOCK_SESSION = -1;
-
     /**
      * Accepts a visitor into the commands making up this transaction.
      * @param visitor {@link Visitor} which will see the commands.

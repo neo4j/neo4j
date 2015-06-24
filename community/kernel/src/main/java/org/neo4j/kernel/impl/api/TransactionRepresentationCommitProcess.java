@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -33,6 +32,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotCommit;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotWriteToLog;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.ValidationFailed;
 
 public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
@@ -88,9 +88,9 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         {
             transactionId = appender.append( transaction, logAppendEvent );
         }
-        catch ( Throwable e )
+        catch ( Throwable cause )
         {
-            throw exception( Status.Transaction.CouldNotWriteToLog, e,
+            throw new TransactionFailureException( CouldNotWriteToLog, cause,
                     "Could not append transaction representation to log" );
         }
         commitEvent.setTransactionId( transactionId );
@@ -107,9 +107,9 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
             storeApplier.apply( transaction, indexUpdates, locks, transactionId, mode );
         }
         // TODO catch different types of exceptions here, some which are OK
-        catch ( Throwable e )
+        catch ( Throwable cause )
         {
-            throw exception( CouldNotCommit, e,
+            throw new TransactionFailureException( CouldNotCommit, cause,
                     "Could not apply the transaction to the store after written to log" );
         }
         finally
@@ -118,9 +118,4 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         }
     }
 
-    private TransactionFailureException exception( Status status, Throwable cause, String message )
-    {
-        kernelHealth.panic( cause );
-        return new TransactionFailureException( status, cause, message );
-    }
 }

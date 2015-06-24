@@ -27,7 +27,6 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -68,8 +67,6 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         LogFile logFile();
 
         LogRotation logRotation();
-
-        KernelHealth kernelHealth();
 
         // Components that change during role switches
 
@@ -130,7 +127,6 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     private LogFile logFile;
     private LogRotation logRotation;
     private volatile boolean stopped = false;
-    private KernelHealth kernelHealth;
 
     public TransactionCommittingResponseUnpacker( Dependencies dependencies )
     {
@@ -204,12 +200,6 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
                     transactionQueue.accept( batchApplier );
                 }
             }
-            catch ( IOException e )
-            {
-                // Kernel panic is done on this level, i.e. append and apply doesn't do that themselves.
-                kernelHealth.panic( e );
-                throw e;
-            }
             finally
             {
                 transactionQueue.clear();
@@ -232,7 +222,6 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.obligationFulfiller = resolveTransactionObligationFulfiller( dependencies.transactionObligationFulfiller() );
         this.logFile = dependencies.logFile();
         this.logRotation = dependencies.logRotation();
-        this.kernelHealth = dependencies.kernelHealth();
         this.stopped = false;
     }
 
