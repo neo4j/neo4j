@@ -48,37 +48,15 @@ case class GraphStatisticsSnapshot(map: Map[StatisticsKey, Double] = Map.empty) 
     snapshot.freeze
   }
 
+  //A plan has diverged if there is a relative change in any of the
+  //statistics that is bigger than the threshold
   def diverges(snapshot: GraphStatisticsSnapshot, minThreshold: Double): Boolean = {
     assert(map.keySet == snapshot.map.keySet)
-    def vectorLength(map: Map[StatisticsKey, Double]): Double =
-      Math.sqrt(map.values.map(Math.pow(_, 2)).kahanSum)
-
-    val dotProduct: Double = (map.toSeq ++ snapshot.map.toSeq)
-      .groupBy(_._1)
-      .values
-      .map(_.map(_._2).product)
-      .kahanSum
-
-    // the dot product between _any_ vector with a "zero vector" is always 0, so
-    // if the dot product is 0 we call it diverged unless both vectors are equal
-    if (dotProduct == 0) {
-      return map != snapshot.map
-    }
-    // otherwise we compute the angular difference between the two vectors, and compare to the given threshold
-    val cosine = dotProduct / (vectorLength(map) * vectorLength(snapshot.map)) // range: [0, pi/2]
-    val divergence = Math.acos(cosine) * 2 / Math.PI // range: [0, 1]
-    divergence >= minThreshold
-  }
-
-  implicit class RichDoubleIterable(xs: Iterable[Double]) {
-    def kahanSum: Double = {
-      val (sum, carry) = xs.foldLeft((0.0, 0.0)){ case ((sum, carry), x) => {
-        val x2 = x - carry
-        val newSum = sum + x2
-        (newSum, (newSum - sum) - x2)
-      }}
-      sum
-    }
+    val v1 = map.values
+    val v2 = snapshot.map.values
+    //find the maximum relative difference (|e1 - e2| / max(e1, e2))
+    val relativeDiff = v1.zip(v2).map(e => Math.abs(e._1 - e._2) / Math.max(e._1, e._2)).max
+    relativeDiff >= minThreshold
   }
 }
 

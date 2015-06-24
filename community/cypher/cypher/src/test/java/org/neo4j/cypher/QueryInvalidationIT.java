@@ -35,6 +35,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.RepeatRule;
 
 import static java.util.Collections.singletonMap;
 
@@ -47,11 +48,11 @@ public class QueryInvalidationIT
     public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
 
     @Test
-    public void shouldRePlanAfterDataChanges() throws Exception
+    public void shouldRePlanAfterDataChangesFromAnEmptyDatabase() throws Exception
     {
         // GIVEN
         Random random = ThreadLocalRandom.current();
-        int USERS = 1000, CONNECTIONS = 10000;
+        int USERS = 10, CONNECTIONS = 100;
         TestMonitor monitor = new TestMonitor();
         db.resolveDependency( Monitors.class ).addMonitorListener( monitor );
         // - setup schema -
@@ -62,24 +63,7 @@ public class QueryInvalidationIT
         long replanTime = System.currentTimeMillis() + 1_100;
 
         // - create data -
-        for ( long userId = 0; userId < USERS; userId++ )
-        {
-            db.execute( "CREATE (newUser:User {userId: {userId}})", singletonMap( "userId", (Object) userId ) );
-        }
-        Map<String, Object> params = new HashMap<>();
-        for ( int i = 0; i < CONNECTIONS; i++ )
-        {
-            long user1 = random.nextInt( USERS );
-            long user2;
-            do
-            {
-                user2 = random.nextInt( USERS );
-            } while ( user1 == user2 );
-            params.put( "user1", user1 );
-            params.put( "user2", user2 );
-            db.execute( "MATCH (user1:User { userId: {user1} }), (user2:User { userId: {user2} }) " +
-                        "CREATE UNIQUE user1 -[:FRIEND]- user2", params );
-        }
+        createData( 0, USERS, CONNECTIONS, random );
 
         // - after the query TTL has expired -
         while ( System.currentTimeMillis() < replanTime )
@@ -94,6 +78,62 @@ public class QueryInvalidationIT
 
         // THEN
         assertEquals( "Query should have been replanned.", 1, monitor.discards );
+    }
+
+    @Test
+    public void shouldRePlanAfterDataChangesFromAPopulatedDatabase() throws Exception
+    {
+        // GIVEN
+        Random random = ThreadLocalRandom.current();
+        int USERS = 10, CONNECTIONS = 100;
+        TestMonitor monitor = new TestMonitor();
+        db.resolveDependency( Monitors.class ).addMonitorListener( monitor );
+        // - setup schema -
+        db.execute( "CREATE INDEX ON :User(userId)" );
+        //create some data
+        createData( 0, USERS, CONNECTIONS, random );
+        distantFriend( random, USERS );
+
+        long replanTime = System.currentTimeMillis() + 1_100;
+
+        //create more date
+        createData( USERS, USERS, CONNECTIONS, random );
+
+        // - after the query TTL has expired -
+        while ( System.currentTimeMillis() < replanTime )
+        {
+            Thread.sleep( 100 );
+        }
+
+        // WHEN
+        monitor.reset();
+        // - execute the query again -
+        distantFriend( random, USERS );
+
+        // THEN
+        assertEquals( "Query should have been replanned.", 1, monitor.discards );
+    }
+
+    private void createData(long startingUserId, int numUsers, int numConnections, Random random)
+    {
+        for ( long userId = startingUserId; userId < numUsers + startingUserId; userId++ )
+        {
+            db.execute( "CREATE (newUser:User {userId: {userId}})", singletonMap( "userId", (Object) userId ) );
+        }
+        Map<String, Object> params = new HashMap<>();
+        for ( int i = 0; i < numConnections; i++ )
+        {
+            long user1 = startingUserId + random.nextInt( numUsers );
+            long user2;
+            do
+            {
+                user2 = startingUserId + random.nextInt( numUsers );
+            } while ( user1 == user2 );
+            params.put( "user1", user1 );
+            params.put( "user2", user2 );
+            db.execute( "MATCH (user1:User { userId: {user1} }), (user2:User { userId: {user2} }) " +
+                        "CREATE UNIQUE user1 -[:FRIEND]- user2", params );
+        }
     }
 
     private Pair<Long, ExecutionPlanDescription> distantFriend( Random random, int USERS )
