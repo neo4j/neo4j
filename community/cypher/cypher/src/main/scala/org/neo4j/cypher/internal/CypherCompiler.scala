@@ -35,7 +35,7 @@ object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
   val DEFAULT_QUERY_PLAN_TTL: Long = 1000 // 1 second
   val CLOCK = Clock.SYSTEM_CLOCK
-  val STATISTICS_DIVERGENCE_THRESHOLD = 0.5
+  val DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD = 0.1
 }
 
 case class PreParsedQuery(statement: String, rawStatement: String, version: CypherVersion, executionMode: ExecutionMode, planner: PlannerName)
@@ -60,14 +60,15 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   private val queryCacheSize: Int = getQueryCacheSize
   private val queryPlanTTL: Long = getMinimumTimeBeforeReplanning
+  private val statisticsDivergenceThreshold = getStatisticsDivergenceThreshold
   private val compatibilityFor1_9 = CompatibilityFor1_9(graph, queryCacheSize, kernelMonitors)
   private val compatibilityFor2_0 = CompatibilityFor2_0(graph, queryCacheSize, kernelMonitors)
   private val compatibilityFor2_1 = CompatibilityFor2_1(graph, queryCacheSize, kernelMonitors, kernelAPI)
-  private val compatibilityFor2_2Rule = CompatibilityFor2_2Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
-  private val compatibilityFor2_2Cost = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, Some(CostPlannerName))
-  private val compatibilityFor2_2IDP = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, Some(IDPPlannerName))
-  private val compatibilityFor2_2DP = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, Some(DPPlannerName))
-  private val compatibilityFor2_2 = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, Some(ConservativePlannerName))
+  private val compatibilityFor2_2Rule = CompatibilityFor2_2Rule(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
+  private val compatibilityFor2_2Cost = CompatibilityFor2_2Cost(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, Some(CostPlannerName))
+  private val compatibilityFor2_2IDP = CompatibilityFor2_2Cost(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, Some(IDPPlannerName))
+  private val compatibilityFor2_2DP = CompatibilityFor2_2Cost(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, Some(DPPlannerName))
+  private val compatibilityFor2_2 = CompatibilityFor2_2Cost(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, Some(ConservativePlannerName))
 
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = {
@@ -165,6 +166,12 @@ class CypherCompiler(graph: GraphDatabaseService,
     optGraphAs[InternalAbstractGraphDatabase]
       .andThen(_.getConfig.get(GraphDatabaseSettings.query_cache_size).intValue())
       .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_QUERY_CACHE_SIZE)
+
+
+  private def getStatisticsDivergenceThreshold : Double =
+    optGraphAs[InternalAbstractGraphDatabase]
+      .andThen(_.getConfig.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue())
+      .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD)
 
 
   private def getMinimumTimeBeforeReplanning: Long = {
