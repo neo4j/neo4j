@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodSt
 case class Subtraction(lhs: CodeGenExpression, rhs: CodeGenExpression)
   extends CodeGenExpression with BinaryOperator with NumericalOpType {
 
-  override protected def generator[E](structure: MethodStructure[E]) = structure.sub
+  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = structure.sub
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 }

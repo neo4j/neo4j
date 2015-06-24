@@ -84,6 +84,7 @@ trait MethodStructure[E] {
   def ternaryEquals(lhs: E, rhs: E): E
   def eq(lhs: E, rhs: E): E
   def or(lhs: E, rhs: E): E
+  def ternaryOr(lhs: E, rhs: E): E
 
   // null handling
   def markAsNull(varName: String, cypherType: CypherType): Unit

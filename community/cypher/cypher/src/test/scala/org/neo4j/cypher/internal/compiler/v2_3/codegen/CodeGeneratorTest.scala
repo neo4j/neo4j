@@ -707,6 +707,48 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toSet should equal(Set(Map("result" -> false)))
   }
 
+  test("or between two literal booleans") {
+    val or = Or(True()(pos), False()(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> or))(solved))
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> true)))
+  }
+
+  test("or one from parameter") {
+    val or = Or(False()(pos), Parameter("FOO")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> or))(solved))
+    val compiled = compileAndExecute(plan, Map("FOO" -> Boolean.box(false)))
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> false)))
+  }
+
+  test("or two from parameter, one null") {
+    val or = Or(Parameter("FOO")(pos), Parameter("BAR")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> or))(solved))
+    val compiled = compileAndExecute(plan, Map("FOO" -> Boolean.box(true), "BAR" -> null))
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> true)))
+  }
+
+  test("or two from parameter, both null") {
+    val or = Or(Parameter("FOO")(pos), Parameter("BAR")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> or))(solved))
+    val compiled = compileAndExecute(plan, Map("FOO" -> null, "BAR" -> null))
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> null)))
+  }
+
+
+
   test("close transaction after successfully exhausting result") {
     // given
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))

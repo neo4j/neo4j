@@ -381,7 +381,9 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def eq(lhs: Expression, rhs: Expression) = Expression.eq(lhs, rhs)
 
-  override def or(lhs: Expression, rhs: Expression): Expression = Expression.invoke(Methods.or, lhs, rhs)
+  override def or(lhs: Expression, rhs: Expression) = Expression.or(lhs, rhs)
+
+  override def ternaryOr(lhs: Expression, rhs: Expression) = Expression.invoke(Methods.or, lhs, rhs)
 
   override def markAsNull(varName: String, cypherType: CypherType) =
     generator.assign(GeneratedQueryStructure.lowerType(cypherType), varName, GeneratedQueryStructure.nullValue(cypherType))
