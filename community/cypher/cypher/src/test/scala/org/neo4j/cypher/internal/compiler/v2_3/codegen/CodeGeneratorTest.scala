@@ -747,7 +747,35 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toSet should equal(Set(Map("result" -> null)))
   }
 
+  test("not on a literal") {
+    val not = Not(False()(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> not))(solved))
+    val compiled = compileAndExecute(plan)
 
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> true)))
+  }
+
+  test("not on a parameter") {
+    val not = Not(Parameter("FOO")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> not))(solved))
+    val compiled = compileAndExecute(plan, Map("FOO" -> Boolean.box(false)))
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> true)))
+  }
+
+  test("not on a null parameter") {
+    val not = Not(Parameter("FOO")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> not))(solved))
+    val compiled = compileAndExecute(plan, Map("FOO" -> null))
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> null)))
+  }
 
   test("close transaction after successfully exhausting result") {
     // given

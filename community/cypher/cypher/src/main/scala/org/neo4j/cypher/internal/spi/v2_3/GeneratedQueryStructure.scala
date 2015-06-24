@@ -375,7 +375,9 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def constant(value: Object) = Expression.constant(value)
 
-  override def not(value: Expression): Expression = Expression.invoke(Methods.not, value)
+  override def not(value: Expression): Expression = Expression.not(value)
+
+  override def ternaryNot(value: Expression): Expression = Expression.invoke(Methods.not, value)
 
   override def ternaryEquals(lhs: Expression, rhs: Expression) = Expression.invoke(Methods.ternaryEquals, lhs, rhs)
 

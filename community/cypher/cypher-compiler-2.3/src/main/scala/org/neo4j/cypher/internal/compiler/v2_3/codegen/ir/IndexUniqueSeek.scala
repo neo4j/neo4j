@@ -27,6 +27,7 @@ case class IndexUniqueSeek(opName: String, labelName: String, propName: String, 
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     super.init(generator)
+    expression.init(generator)
     val labelVar = context.namer.newVarName()
     val propKeyVar = context.namer.newVarName()
     generator.lookupLabelId(labelVar, labelName)
@@ -37,7 +38,7 @@ case class IndexUniqueSeek(opName: String, labelName: String, propName: String, 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.trace(opName) { body =>
       body.incrementDbHits()
-      body.indexUniqueSeek(node.name, descriptorVar, expression.generateExpression(body))//todo
+      body.indexUniqueSeek(node.name, descriptorVar, expression.generateExpression(body))
       body.ifStatement(body.notNull(node.name, node.cypherType)) { ifBody =>
         ifBody.incrementRows()
         inner.body(ifBody)

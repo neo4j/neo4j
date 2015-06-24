@@ -80,6 +80,7 @@ trait MethodStructure[E] {
   def mod(lhs: E, rhs: E): E
 
   // predicates
+  def ternaryNot(value: E): E
   def not(value: E): E
   def ternaryEquals(lhs: E, rhs: E): E
   def eq(lhs: E, rhs: E): E
