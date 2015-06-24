@@ -119,4 +119,4 @@ RETURN p
 
 //profile
 
-Our execution plan is down to a single row and uses the <<query-plan-node-index-seek, Node Index Seek>> operator which does a schema index lookup (see <<query-schema-index>>) to find the appropriate node.
+Our execution plan is down to a single row and uses the <<query-plan-node-index-seek, Node Index Seek>> operator which does a schema index seek (see <<query-schema-index>>) to find the appropriate node.
