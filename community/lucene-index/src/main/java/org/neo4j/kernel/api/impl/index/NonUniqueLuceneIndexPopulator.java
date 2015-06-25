@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,7 +58,7 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     @Override
     public void add( long nodeId, Object propertyValue ) throws IOException, IndexCapacityExceededException
     {
-        Fieldable encodedValue = documentStructure.encodeAsFieldable( propertyValue );
+        IndexableField encodedValue = documentStructure.encodeAsFieldable( propertyValue );
         sampler.include( encodedValue.stringValue() );
         writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
     }
@@ -87,18 +87,18 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
                 {
                     case ADDED:
                         // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        Fieldable encodedValue = documentStructure.encodeAsFieldable( update.getValueAfter() );
+                        IndexableField encodedValue = documentStructure.encodeAsFieldable( update.getValueAfter() );
                         sampler.include( encodedValue.stringValue() );
                         break;
                     case CHANGED:
                         // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        Fieldable encodedValueBefore = documentStructure.encodeAsFieldable( update.getValueBefore() );
+                        IndexableField encodedValueBefore = documentStructure.encodeAsFieldable( update.getValueBefore() );
                         sampler.exclude( encodedValueBefore.stringValue() );
-                        Fieldable encodedValueAfter = documentStructure.encodeAsFieldable( update.getValueAfter() );
+                        IndexableField encodedValueAfter = documentStructure.encodeAsFieldable( update.getValueAfter() );
                         sampler.include( encodedValueAfter.stringValue() );
                         break;
                     case REMOVED:
-                        Fieldable removedValue = documentStructure.encodeAsFieldable( update.getValueBefore() );
+                        IndexableField removedValue = documentStructure.encodeAsFieldable( update.getValueBefore() );
                         sampler.exclude( removedValue.stringValue() );
                         break;
                     default:
@@ -144,7 +144,7 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
             case ADDED:
             case CHANGED:
                 // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                Fieldable encodedValue = documentStructure.encodeAsFieldable( update.getValueAfter() );
+                IndexableField encodedValue = documentStructure.encodeAsFieldable( update.getValueAfter() );
                 writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
                                        documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
                 break;

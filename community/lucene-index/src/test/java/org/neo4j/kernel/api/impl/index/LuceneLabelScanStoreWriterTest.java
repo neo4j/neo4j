@@ -207,9 +207,9 @@ public class LuceneLabelScanStoreWriterTest
         @Override
         public IndexSearcher acquireSearcher()
         {
-            return new IndexSearcher( mock( IndexReader.class ) )
+            return new IndexSearcher( new IndexReaderStub( false ) )
             {
-                private final Map<Integer, Document> docIds = new HashMap<>();
+                private final Map<Integer,Document> docIds = new HashMap<>();
 
                 @Override
                 public TopDocs search( Query query, int n )

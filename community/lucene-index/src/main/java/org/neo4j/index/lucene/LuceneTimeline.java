@@ -27,6 +27,8 @@ import java.util.Map;
 
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSortField;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.Index;
@@ -43,7 +45,7 @@ public class LuceneTimeline<T extends PropertyContainer> implements TimelineInde
         assertIsLuceneIndex( db, index );
         this.index = index;
     }
-    
+
     private void assertIsLuceneIndex( GraphDatabaseService db, Index<T> index )
     {
         Map<String, String> config = db.index().getConfiguration( index );
@@ -58,7 +60,7 @@ public class LuceneTimeline<T extends PropertyContainer> implements TimelineInde
         IndexHits<T> hits = index.query( sort( everythingQuery().top( 1 ), reversed ) );
         return hits.getSingle();
     }
-    
+
     private QueryContext everythingQuery()
     {
         return new QueryContext( newLongRange( FIELD, 0L, MAX_VALUE, true, true ) );
@@ -70,12 +72,12 @@ public class LuceneTimeline<T extends PropertyContainer> implements TimelineInde
         long end = endTimestampOrNull != null ? endTimestampOrNull : MAX_VALUE;
         return new QueryContext( newLongRange( FIELD, start, end, true, true ) );
     }
-    
+
     private QueryContext sort( QueryContext query, boolean reversed )
     {
-        return query.sort( new Sort( new SortField( FIELD, SortField.LONG, reversed ) ) );
+        return query.sort( new Sort( new SortedNumericSortField( FIELD, SortField.Type.LONG, reversed ) ) );
     }
-    
+
     @Override
     public T getLast()
     {
@@ -99,13 +101,13 @@ public class LuceneTimeline<T extends PropertyContainer> implements TimelineInde
     {
         index.add( entity, FIELD, numeric( timestamp ) );
     }
-    
+
     @Override
     public IndexHits<T> getBetween( Long startTimestampOrNull, Long endTimestampOrNull )
     {
         return getBetween( startTimestampOrNull, endTimestampOrNull, false );
     }
-    
+
     @Override
     public IndexHits<T> getBetween( Long startTimestampOrNull, Long endTimestampOrNull, boolean reversed )
     {

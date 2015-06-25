@@ -19,14 +19,13 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.io.IOException;
-
-import org.apache.lucene.index.IndexWriter;
-
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
+
+import java.io.IOException;
 
 import org.neo4j.index.lucene.ValueContext;
 
@@ -59,10 +58,6 @@ public abstract class LuceneUtil
             if ( object instanceof IndexWriter )
             {
                 ((IndexWriter) object).close();
-            }
-            else if ( object instanceof IndexSearcher )
-            {
-                ((IndexSearcher) object).close();
             }
             else if ( object instanceof IndexReader )
             {

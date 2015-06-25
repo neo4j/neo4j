@@ -19,27 +19,28 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.io.Reader;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.AnalyzerWrapper;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.util.CharArraySet;
+
 import java.util.Arrays;
 import java.util.HashSet;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.util.Version;
-
-public final class MyStandardAnalyzer extends Analyzer
+public final class MyStandardAnalyzer extends AnalyzerWrapper
 {
     private final Analyzer actual;
-    
+
     public MyStandardAnalyzer()
     {
-        actual = new StandardAnalyzer( Version.LUCENE_31, new HashSet<String>( Arrays.asList( "just", "some", "words" ) ) );
+        super( GLOBAL_REUSE_STRATEGY );
+        CharArraySet stopWords = CharArraySet.copy( new HashSet<String>( Arrays.asList( "just", "some", "words" ) ) );
+        actual = new StandardAnalyzer( stopWords );
     }
 
     @Override
-    public TokenStream tokenStream( String fieldName, Reader reader )
+    protected Analyzer getWrappedAnalyzer( String fieldName )
     {
-        return actual.tokenStream( fieldName, reader );
+        return actual;
     }
 }

@@ -19,13 +19,16 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -43,6 +46,7 @@ import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.register.Register.DoubleLong;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
+
 
 class LuceneIndexAccessorReader implements IndexReader
 {
@@ -66,24 +70,29 @@ class LuceneIndexAccessorReader implements IndexReader
     public long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
         NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( bufferSizeLimit );
-        try ( TermEnum terms = luceneIndexReader().terms() )
-        {
-            while ( terms.next() )
-            {
-                Term term = terms.term();
 
-                if ( !NODE_ID_KEY.equals( term.field() ))
-                {
-                    String value = term.text();
-                    int frequency = terms.docFreq();
-                    sampler.include( value, frequency );
-                }
-                checkCancellation();
-            }
-        }
-        catch ( IOException e )
+        for ( LeafReaderContext readerContext : luceneIndexReader().leaves() )
         {
-            throw new RuntimeException( e );
+            try
+            {
+                Terms terms = readerContext.reader().terms( NODE_ID_KEY );
+                if ( terms != null )
+                {
+                    TermsEnum termsEnum = terms.iterator();
+                    int frequency = termsEnum.docFreq();
+                    BytesRef termsRef;
+                    while ( (termsRef = termsEnum.next()) != null )
+                    {
+                        sampler.include( termsRef.utf8ToString(), frequency );
+                        checkCancellation();
+                    }
+                }
+
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
 
         return sampler.result( result );
@@ -144,35 +153,37 @@ class LuceneIndexAccessorReader implements IndexReader
     public Set<Class> valueTypesInIndex()
     {
         Set<Class> types = new HashSet<>();
-        try ( TermEnum terms = luceneIndexReader().terms() )
+        for ( LeafReaderContext readerContext : luceneIndexReader().leaves() )
         {
-            while ( terms.next() )
+            try
             {
-                String field = terms.term().field();
-                if ( !NODE_ID_KEY.equals( field ) )
+                Fields fields = readerContext.reader().fields();
+                for ( String field : fields )
                 {
-                    switch ( ValueEncoding.fromKey( field ) )
+                    if ( !NODE_ID_KEY.equals( field ) )
                     {
-                    case Number:
-                        types.add( Number.class );
-                        break;
-                    case String:
-                        types.add( String.class );
-                        break;
-                    case Array:
-                        types.add( Array.class );
-                        break;
-                    case Bool:
-                        types.add( Boolean.class );
-                        break;
+                        switch ( ValueEncoding.fromKey( field ) )
+                        {
+                        case Number:
+                            types.add( Number.class );
+                            break;
+                        case String:
+                            types.add( String.class );
+                            break;
+                        case Array:
+                            types.add( Array.class );
+                            break;
+                        case Bool:
+                            types.add( Boolean.class );
+                            break;
+                        }
                     }
                 }
             }
-
-        }
-        catch ( IOException ex )
-        {
-            throw new RuntimeException( ex );
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
         return types;
     }

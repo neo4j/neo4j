@@ -21,6 +21,7 @@ package org.apache.lucene.index;
 
 import java.io.File;
 
+import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
@@ -35,16 +36,17 @@ public class RebuildCompoundFile
         }
         String path = args[0];
         File baseDirectory = new File( path );
-        Directory directory = FSDirectory.open( baseDirectory );
-        CompoundFileWriter writer = new CompoundFileWriter( directory, "_drr.cfs" );
-        for ( String pathname : directory.listAll() )
-        {
-            if ( pathname.endsWith( "gen" ) || pathname.endsWith( "cfs" ) || pathname.endsWith( "12" ) )
-            {
-                continue;
-            }
-            writer.addFile( pathname );
-        }
-        writer.close();
+        Directory directory = FSDirectory.open( baseDirectory.toPath() );
+        //TODO: fix later
+//        CompoundFileWriter writer = new CompoundFileWriter( directory, "_drr.cfs" );
+//        for ( String pathname : directory.listAll() )
+//        {
+//            if ( pathname.endsWith( "gen" ) || pathname.endsWith( "cfs" ) || pathname.endsWith( "12" ) )
+//            {
+//                continue;
+//            }
+//            writer.addFile( pathname );
+//        }
+//        writer.close();
     }
 }

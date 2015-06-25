@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
-import org.apache.lucene.util.Version;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,7 +33,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import static java.util.Arrays.asList;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.TestCase.assertFalse;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -56,11 +55,11 @@ public class LuceneSnapshotterTest
         snapshotPolicy = mock(SnapshotDeletionPolicy.class);
         luceneSnapshot = mock(IndexCommit.class);
 
-        IndexWriterConfig config = new IndexWriterConfig( Version.LUCENE_36, null );
+        IndexWriterConfig config = new IndexWriterConfig( null );
 
         when( writer.getIndexDeletionPolicy() ).thenReturn( snapshotPolicy );
 
-        when(snapshotPolicy.snapshot( anyString() )).thenReturn( luceneSnapshot );
+        when(snapshotPolicy.snapshot()).thenReturn( luceneSnapshot );
     }
 
     @Test
@@ -80,7 +79,7 @@ public class LuceneSnapshotterTest
         assertFalse( snapshot.hasNext() );
         snapshot.close();
 
-        verify( snapshotPolicy ).release( anyString() );
+        verify( snapshotPolicy ).release( any(IndexCommit.class) );
     }
 
     @Test
@@ -98,7 +97,7 @@ public class LuceneSnapshotterTest
         assertFalse( snapshot.hasNext() );
         snapshot.close();
 
-        verify( snapshotPolicy ).snapshot( anyString() );
+        verify( snapshotPolicy ).snapshot();
         verifyNoMoreInteractions( snapshotPolicy );
     }
 

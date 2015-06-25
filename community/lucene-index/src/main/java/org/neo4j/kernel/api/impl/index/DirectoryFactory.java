@@ -30,10 +30,10 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.RAMDirectory;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -57,7 +57,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         public Directory open( File dir ) throws IOException
         {
             dir.mkdirs();
-            return FSDirectory.open( dir );
+            return FSDirectory.open( dir.toPath() );
         }
 
         @Override
@@ -72,7 +72,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
             // do nothing
         }
     };
-    
+
     final class InMemoryDirectoryFactory implements DirectoryFactory
     {
         private final Map<File, RAMDirectory> directories = new HashMap<File, RAMDirectory>( );
@@ -106,7 +106,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
                 for ( String fileName : ramDir.listAll() )
                 {
                     zip.putNextEntry( new ZipEntry( new File( entry.getKey(), fileName ).getAbsolutePath() ) );
-                    copy( ramDir.openInput( fileName ), zip, scratchPad );
+                    copy( ramDir.openInput( fileName, IOContext.DEFAULT ), zip, scratchPad );
                     zip.closeEntry();
                 }
             }
@@ -122,7 +122,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
             }
         }
     }
-    
+
     final class Single implements DirectoryFactory
     {
         private final Directory directory;
@@ -173,23 +173,9 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         }
 
         @Override
-        public boolean fileExists( String s ) throws IOException
+        public void renameFile( String source, String dest ) throws IOException
         {
-            return delegate.fileExists( s );
-        }
-
-        @Deprecated
-        @Override
-        public long fileModified( String s ) throws IOException
-        {
-            return delegate.fileModified( s );
-        }
-
-        @Override
-        @Deprecated
-        public void touchFile( String s ) throws IOException
-        {
-            delegate.touchFile( s );
+            delegate.renameFile( source, dest );
         }
 
         @Override
@@ -205,16 +191,9 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         }
 
         @Override
-        public IndexOutput createOutput( String s ) throws IOException
+        public IndexOutput createOutput( String name, IOContext context ) throws IOException
         {
-            return delegate.createOutput( s );
-        }
-
-        @Override
-        @Deprecated
-        public void sync( String name ) throws IOException
-        {
-            delegate.sync( name );
+            return delegate.createOutput( name, context );
         }
 
         @Override
@@ -224,15 +203,9 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         }
 
         @Override
-        public IndexInput openInput( String s ) throws IOException
+        public IndexInput openInput( String name, IOContext context ) throws IOException
         {
-            return delegate.openInput( s );
-        }
-
-        @Override
-        public IndexInput openInput( String name, int bufferSize ) throws IOException
-        {
-            return delegate.openInput( name, bufferSize );
+            return delegate.openInput( name, context );
         }
 
         @Override
@@ -242,44 +215,9 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         }
 
         @Override
-        public void clearLock( String name ) throws IOException
-        {
-            delegate.clearLock( name );
-        }
-        @Override
-        public void setLockFactory( LockFactory lockFactory ) throws IOException
-        {
-            delegate.setLockFactory( lockFactory );
-        }
-
-        @Override
-        public LockFactory getLockFactory()
-        {
-            return delegate.getLockFactory();
-        }
-
-        @Override
-        public String getLockID()
-        {
-            return delegate.getLockID();
-        }
-
-        @Override
         public String toString()
         {
             return delegate.toString();
-        }
-
-        @Override
-        public void copy( Directory to, String src, String dest ) throws IOException
-        {
-            delegate.copy( to, src, dest );
-        }
-
-        @Deprecated
-        public static void copy( Directory src, Directory dest, boolean closeDirSrc ) throws IOException
-        {
-            Directory.copy( src, dest, closeDirSrc );
         }
     }
 }

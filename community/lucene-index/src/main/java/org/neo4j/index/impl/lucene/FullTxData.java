@@ -20,9 +20,10 @@
 package org.neo4j.index.impl.lucene;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -53,8 +54,6 @@ import org.neo4j.index.impl.lucene.EntityId.IdData;
 import org.neo4j.index.lucene.QueryContext;
 
 import static java.util.Collections.emptyList;
-
-import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
 import static org.neo4j.index.impl.lucene.LuceneIndex.KEY_DOC_ID;
 
 class FullTxData extends TxData
@@ -112,7 +111,7 @@ class FullTxData extends TxData
             if ( document == null )
             {
                 document = IndexType.newDocument( entityId );
-                document.add( new Field( TX_STATE_KEY, TX_STATE_VALUE ) );
+                document.add( new StoredField( TX_STATE_KEY, TX_STATE_VALUE ) );
                 cachedDocuments.put( id, document );
                 add = true;
             }
@@ -120,13 +119,13 @@ class FullTxData extends TxData
             if ( key == null && value == null )
             {
                 // Set a special "always hit" flag
-                document.add( new Field( ORPHANS_KEY, ORPHANS_VALUE, Store.NO, Index.NOT_ANALYZED ) );
+                document.add( new StringField( ORPHANS_KEY, ORPHANS_VALUE, Store.NO ) );
                 addOrphan( null );
             }
             else if ( value == null )
             {
                 // Set a special "always hit" flag
-                document.add( new Field( ORPHANS_KEY, key, Store.NO, Index.NOT_ANALYZED ) );
+                document.add( new StringField( ORPHANS_KEY, key, Store.NO ) );
                 addOrphan( key );
             }
             else
@@ -171,7 +170,7 @@ class FullTxData extends TxData
             try
             {
                 this.directory = new RAMDirectory();
-                IndexWriterConfig writerConfig = new IndexWriterConfig( LUCENE_VERSION, index.type.analyzer );
+                IndexWriterConfig writerConfig = new IndexWriterConfig( index.type.analyzer );
                 this.writer = new IndexWriter( directory, writerConfig );
             }
             catch ( IOException e )
@@ -337,26 +336,17 @@ class FullTxData extends TxData
         Set<Term> terms = new HashSet<Term>();
         try
         {
-            query.extractTerms( terms );
+            searcher.createNormalizedWeight( query, false ).extractTerms( terms );
         }
-        catch ( UnsupportedOperationException e )
+        catch ( IOException ioe )
         {
-            // In case of wildcard/range queries try to rewrite the query
-            // i.e. get the terms from the reader.
-            try
-            {
-                query.rewrite( reader ).extractTerms( terms );
-            }
-            catch ( IOException ioe )
-            {
-                throw new UnsupportedOperationException( ioe );
-            }
-            catch ( UnsupportedOperationException ue )
-            {
-                // TODO This is for "*" queries and such. Lucene doesn't seem
-                // to be able/willing to rewrite such queries.
-                // Just ignore the orphans then... OK?
-            }
+            throw new UnsupportedOperationException( ioe );
+        }
+        catch ( UnsupportedOperationException ue )
+        {
+            // TODO This is for "*" queries and such. Lucene doesn't seem
+            // to be able/willing to rewrite such queries.
+            // Just ignore the orphans then... OK?
         }
         return terms.isEmpty() ? null : terms.iterator().next().field();
     }
@@ -383,7 +373,9 @@ class FullTxData extends TxData
 
         try
         {
-            IndexReader newReader = this.reader == null ? IndexReader.open( this.writer, true ) : this.reader.reopen();
+            IndexReader newReader = this.reader == null ?
+                                    DirectoryReader.open( this.writer, true ) :
+                                    DirectoryReader.openIfChanged( (DirectoryReader) this.reader );
             if ( newReader == this.reader )
             {
                 return this.searcher;
@@ -405,6 +397,30 @@ class FullTxData extends TxData
             }
         }
         return this.searcher;
+    }
+
+    private static void safeClose( Object object )
+    {
+        if ( object == null )
+        {
+            return;
+        }
+
+        try
+        {
+            if ( object instanceof IndexWriter )
+            {
+                ( ( IndexWriter ) object ).close();
+            }
+            else if ( object instanceof IndexReader )
+            {
+                ( ( IndexReader ) object ).close();
+            }
+        }
+        catch ( IOException e )
+        {
+            // Ok
+        }
     }
 
     @Override

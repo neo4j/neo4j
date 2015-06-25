@@ -42,7 +42,7 @@ public class LuceneSnapshotter
 
         try
         {
-            return new LuceneSnapshotIterator( indexDir, deletionPolicy.snapshot( ID ), deletionPolicy );
+            return new LuceneSnapshotIterator( indexDir, deletionPolicy.snapshot(), deletionPolicy );
         }
         catch(IllegalStateException e)
         {
@@ -59,12 +59,14 @@ public class LuceneSnapshotter
         private final File indexDirectory;
         private final SnapshotDeletionPolicy deletionPolicy;
         private final Iterator<String> fileNames;
+        private final IndexCommit snapshotPoint;
 
         LuceneSnapshotIterator( File indexDirectory, IndexCommit snapshotPoint, SnapshotDeletionPolicy deletionPolicy )
                 throws IOException
         {
             this.indexDirectory = indexDirectory;
             this.deletionPolicy = deletionPolicy;
+            this.snapshotPoint = snapshotPoint;
             this.fileNames = snapshotPoint.getFileNames().iterator();
         }
 
@@ -83,7 +85,7 @@ public class LuceneSnapshotter
         {
             try
             {
-                deletionPolicy.release( ID );
+                deletionPolicy.release( snapshotPoint );
             }
             catch ( IOException e )
             {

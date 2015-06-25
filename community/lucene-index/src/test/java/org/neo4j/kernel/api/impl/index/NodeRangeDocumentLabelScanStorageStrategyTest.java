@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -269,23 +269,23 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                 description.appendValue( document );
             }
 
-            private Map<String, Fieldable> fields( Document doc )
+            private Map<String,IndexableField> fields( Document doc )
             {
-                Map<String, Fieldable> these = new HashMap<>();
-                for ( Fieldable field : doc.getFields() )
+                Map<String, IndexableField> these = new HashMap<>();
+                for ( IndexableField field : doc.getFields() )
                 {
                     these.put( field.name(), field );
                 }
                 return these;
             }
 
-            boolean equal( Map<String, Fieldable> these, Map<String, Fieldable> those )
+            boolean equal( Map<String, IndexableField> these, Map<String, IndexableField> those )
             {
                 if ( !these.keySet().equals( those.keySet() ) )
                 {
                     return false;
                 }
-                for ( Map.Entry<String, Fieldable> entry : these.entrySet() )
+                for ( Map.Entry<String, IndexableField> entry : these.entrySet() )
                 {
                     if ( !equal( entry.getValue(), those.get( entry.getKey() ) ) )
                     {
@@ -295,11 +295,11 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                 return true;
             }
 
-            boolean equal( Fieldable lhs, Fieldable rhs )
+            boolean equal( IndexableField lhs, IndexableField rhs )
             {
-                if ( lhs.isBinary() && rhs.isBinary() )
+                if ( lhs.binaryValue() != null && rhs.binaryValue() != null )
                 {
-                    return Arrays.equals( lhs.getBinaryValue(), rhs.getBinaryValue() );
+                    return Arrays.equals( lhs.binaryValue().bytes, rhs.binaryValue().bytes );
                 }
                 return lhs.stringValue().equals( rhs.stringValue() );
             }
