@@ -81,7 +81,7 @@ public class MarshlandPool<T> implements Pool<T>
     public T acquire()
     {
         // Try and get it from the thread local
-        LocalSlot<T> localSlot = puddle.get();;
+        LocalSlot<T> localSlot = puddle.get();
 
         T object = localSlot.object;
         if(object != null)

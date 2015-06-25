@@ -120,11 +120,12 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
     @SuppressWarnings( "unchecked" )
     public ForsetiLockManager( ResourceType... resourceTypes )
     {
-        this.lockMaps = new ConcurrentMap[findMaxResourceId( resourceTypes )];
-        this.resourceTypes = new ResourceType[findMaxResourceId( resourceTypes )];
+        int maxResourceId = findMaxResourceId( resourceTypes );
+        this.lockMaps = new ConcurrentMap[maxResourceId];
+        this.resourceTypes = new ResourceType[maxResourceId];
 
         /* Wait strategies per resource type */
-        WaitStrategy<AcquireLockTimeoutException>[] waitStrategies = new WaitStrategy[findMaxResourceId( resourceTypes )];
+        WaitStrategy<AcquireLockTimeoutException>[] waitStrategies = new WaitStrategy[maxResourceId];
 
         for ( ResourceType type : resourceTypes )
         {

@@ -117,9 +117,6 @@ public interface MasterClient extends Master
     @Override
     public Response<Long> commit( RequestContext context, final TransactionRepresentation channel );
 
-    @Override
-    public Response<Void> endLockSession( RequestContext context, final boolean success );
-
     public void rollbackOngoingTransactions( RequestContext context );
 
     @Override

@@ -84,7 +84,7 @@ public class HaSettings
     public static final Setting<TxPushStrategy> tx_push_strategy = setting( "ha.tx_push_strategy", options(
             TxPushStrategy.class ), "fixed" );
 
-    public static enum TxPushStrategy
+    public enum TxPushStrategy
     {
         @Description("Round robin")
         round_robin,

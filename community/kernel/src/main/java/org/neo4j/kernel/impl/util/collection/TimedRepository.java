@@ -117,6 +117,16 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         }
     }
 
+    public void remove( KEY key )
+    {
+        Entry entry = repo.get( key );
+        if (entry == null)
+        {
+            return;
+        }
+        end0(key, entry.value);
+    }
+
     /**
      * End the life of a stored entry. If the entry is currently in use, it will be thrown out as soon as the other client
      * is done with it.
@@ -166,7 +176,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
     public VALUE acquire( KEY key ) throws NoSuchEntryException, ConcurrentAccessException
     {
         Entry entry = repo.get( key );
-        if(entry == null)
+        if ( entry == null )
         {
             throw new NoSuchEntryException( String.format("Cannot access '%s', no such entry exists.", key) );
         }
@@ -180,7 +190,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
     public void release( KEY key )
     {
         Entry entry = repo.get( key );
-        if(!entry.release())
+        if(entry != null && !entry.release())
         {
             // This happens when another client has asked that this entry be ended while we were using it, leaving us
             // a note to not release the object back to the public, and to end its life when we are done with it.

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import org.jboss.netty.channel.Channel;
-
 import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
@@ -53,7 +51,7 @@ public class SlaveServer extends Server<Slave, Void>
     }
 
     @Override
-    protected void finishOffChannel( Channel channel, RequestContext context )
+    protected void cleanConversation( RequestContext context )
     {
     }
 }

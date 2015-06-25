@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -44,7 +43,6 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -52,7 +50,6 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 
 public class DefaultMasterImplSPI implements MasterImpl.SPI
@@ -65,9 +62,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final IdGeneratorFactory idGeneratorFactory;
-    private final Locks locks;
     private final NeoStoreDataSource neoStoreDataSource;
-    private final JobScheduler jobScheduler;
     private final File storeDir;
     private final ResponsePacker responsePacker;
     private final Monitors monitors;
@@ -82,13 +77,12 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
                                  Monitors monitors,
                                  LabelTokenHolder labels, PropertyKeyTokenHolder propertyKeyTokenHolder,
                                  RelationshipTypeTokenHolder relationshipTypeTokenHolder,
-                                 IdGeneratorFactory idGeneratorFactory, Locks locks,
+                                 IdGeneratorFactory idGeneratorFactory,
                                  TransactionCommitProcess transactionCommitProcess,
                                  StoreFlusher storeFlusher,
                                  TransactionIdStore transactionIdStore,
                                  LogicalTransactionStore logicalTransactionStore,
-                                 NeoStoreDataSource neoStoreDataSource,
-                                 JobScheduler jobScheduler)
+                                 NeoStoreDataSource neoStoreDataSource)
     {
         this.graphDb = graphDb;
 
@@ -100,11 +94,9 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.idGeneratorFactory = idGeneratorFactory;
-        this.locks = locks;
         this.transactionCommitProcess = transactionCommitProcess;
         this.storeFlusher = storeFlusher;
         this.neoStoreDataSource = neoStoreDataSource;
-        this.jobScheduler = jobScheduler;
         this.storeDir = new File( graphDb.getStoreDir() );
         this.txStore = logicalTransactionStore;
         this.txChecksumLookup = new TransactionChecksumLookup( transactionIdStore, txStore );
@@ -136,12 +128,6 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     public int getOrCreateProperty( String name )
     {
         return propertyKeyTokenHolder.getOrCreateId( name );
-    }
-
-    @Override
-    public Locks.Client acquireClient()
-    {
-        return locks.newClient();
     }
 
     @Override
@@ -199,12 +185,6 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     public <T> Response<T> packTransactionObligationResponse( RequestContext context, T response )
     {
         return responsePacker.packTransactionObligationResponse( context, response );
-    }
-
-    @Override
-    public JobScheduler.JobHandle scheduleRecurringJob( JobScheduler.Group group, long interval, Runnable job )
-    {
-        return jobScheduler.scheduleRecurring( group, job, interval, TimeUnit.MILLISECONDS );
     }
 
     @Override
