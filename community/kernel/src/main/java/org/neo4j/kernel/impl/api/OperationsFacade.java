@@ -75,8 +75,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     final KernelStatement statement;
     private final StatementOperationParts operations;
 
-    OperationsFacade( KernelStatement statement,
-                      StatementOperationParts operations )
+    OperationsFacade( KernelStatement statement, StatementOperationParts operations )
     {
         this.statement = statement;
         this.operations = operations;
@@ -135,71 +134,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     final CountsOperations counting()
     {
         return operations.counting();
-    }
-
-    // <DataReadCursors>
-
-    @Override
-    public NodeCursor nodeCursor( long nodeId )
-    {
-        return statement.acquireNodeCursor().init(
-                statement.getStoreStatement().acquireSingleNodeCursor( nodeId ) );
-    }
-
-    @Override
-    public RelationshipCursor relationshipCursor( long relId )
-    {
-        return statement.acquireRelationshipCursor().init(
-                statement.getStoreStatement().acquireSingleRelationshipCursor( relId ) );
-    }
-
-    @Override
-    public RelationshipCursor relationshipCursorGetAll(  )
-    {
-        return statement.acquireRelationshipCursor().init( dataRead().relationshipCursorGetAll( statement ) );
-    }
-
-    @Override
-    public NodeCursor nodeCursorGetForLabel( int labelId )
-    {
-        return statement.acquireNodeCursor().init( statement.getStoreStatement().acquireIteratorNodeCursor().init(
-                nodesGetForLabel( labelId ) ));
-    }
-
-    @Override
-    public NodeCursor nodeCursorGetFromIndexLookup(  IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException
-    {
-        return statement.acquireNodeCursor().init( statement.getStoreStatement().acquireIteratorNodeCursor().init( nodesGetFromIndexLookup(
-                index, value )));
-    }
-
-    @Override
-    public NodeCursor nodeCursorGetFromIndexByPrefixSearch( IndexDescriptor index, String prefix )
-            throws IndexNotFoundKernelException
-    {
-        return statement.acquireNodeCursor().init( statement.getStoreStatement().acquireIteratorNodeCursor().init( nodesGetFromIndexByPrefixSearch( index, prefix ) ) );
-    }
-
-    @Override
-    public NodeCursor nodeGetFromIndexScan( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        return statement.acquireNodeCursor().init( statement.getStoreStatement().acquireIteratorNodeCursor().init( nodesGetFromIndexScan(
-                index )));
-    }
-
-    @Override
-    public NodeCursor nodeCursorGetUniqueFromIndexLookup( IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
-    {
-        return statement.acquireNodeCursor().init( statement.getStoreStatement().acquireIteratorNodeCursor().init( PrimitiveLongCollections.singleton(
-                        nodeGetUniqueFromIndexLookup( index, value ) )));
-    }
-
-    @Override
-    public NodeCursor nodeCursorGetAll( )
-    {
-        return statement.acquireNodeCursor().init(operations.entityReadOperations().nodeCursorGetAll( statement ));
     }
 
     // <DataRead>
@@ -377,7 +311,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public PrimitiveIntIterator relationshipGetAllPropertiesKeys( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        return dataRead().relationshipGetPropertyKeys(statement, nodeId);
+        return dataRead().relationshipGetPropertyKeys( statement, nodeId );
     }
 
     @Override
@@ -405,6 +339,75 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     // </DataRead>
 
+    // <DataReadCursors>
+    @Override
+    public NodeCursor nodeCursor( long nodeId )
+    {
+        statement.assertOpen();
+        return dataRead().nodeCursor(statement, nodeId);
+    }
+
+    @Override
+    public RelationshipCursor relationshipCursor( long relId )
+    {
+        statement.assertOpen();
+        return dataRead().relationshipCursor(statement, relId);
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetAll( )
+    {
+        statement.assertOpen();
+        return dataRead().nodeCursorGetAll(statement);
+    }
+
+    @Override
+    public RelationshipCursor relationshipCursorGetAll(  )
+    {
+        statement.assertOpen();
+        return dataRead().relationshipCursorGetAll( statement );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetForLabel( int labelId )
+    {
+        statement.assertOpen();
+        return dataRead().nodeCursorGetForLabel( statement, labelId );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexLookup(  IndexDescriptor index,
+            Object value ) throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return dataRead().nodeCursorGetFromIndexLookup( statement, index, value );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexScan( IndexDescriptor index ) throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return dataRead().nodeCursorGetFromIndexScan( statement, index );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexByPrefixSearch( IndexDescriptor index,
+            String prefix ) throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return dataRead().nodeCursorGetFromIndexByPrefixScan( statement, index, prefix );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetUniqueFromIndexLookup( IndexDescriptor index,
+            Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        statement.assertOpen();
+        return dataRead().nodeCursorGetUniqueFromIndexLookup( statement, index, value );
+    }
+
+    // </DataReadCursors>
+
     // <SchemaRead>
     @Override
     public IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
@@ -415,7 +418,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         if ( descriptor == null )
         {
             throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
-                                                   propertyKeyId + " not found" );
+                    propertyKeyId + " not found" );
         }
         return descriptor;
     }
@@ -627,7 +630,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     @Override
     public void propertyKeyCreateForName( String propertyKeyName,
-                                          int id ) throws
+            int id ) throws
             IllegalTokenNameException
     {
         statement.assertOpen();
@@ -636,7 +639,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     @Override
     public void relationshipTypeCreateForName( String relationshipTypeName,
-                                               int id ) throws
+            int id ) throws
             IllegalTokenNameException
     {
         statement.assertOpen();
@@ -832,14 +835,16 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public LegacyIndexHits nodeLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException
+    public LegacyIndexHits nodeLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject )
+            throws LegacyIndexNotFoundKernelException
     {
         statement.assertOpen();
         return legacyIndexRead().nodeLegacyIndexQuery( statement, indexName, key, queryOrQueryObject );
     }
 
     @Override
-    public LegacyIndexHits nodeLegacyIndexQuery( String indexName, Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException
+    public LegacyIndexHits nodeLegacyIndexQuery( String indexName, Object queryOrQueryObject )
+            throws LegacyIndexNotFoundKernelException
     {
         statement.assertOpen();
         return legacyIndexRead().nodeLegacyIndexQuery( statement, indexName, queryOrQueryObject );
@@ -918,7 +923,8 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public void nodeRemoveFromLegacyIndex( String indexName, long node, String key ) throws LegacyIndexNotFoundKernelException
+    public void nodeRemoveFromLegacyIndex( String indexName, long node, String key )
+            throws LegacyIndexNotFoundKernelException
     {
         statement.assertOpen();
         legacyIndexWrite().nodeRemoveFromLegacyIndex( statement, indexName, node, key );

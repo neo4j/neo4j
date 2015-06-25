@@ -36,11 +36,11 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
             StoreStatement storeStatement,
             InstanceCache<StoreSingleNodeCursor> instanceCache )
     {
-        super(nodeRecord, nodeStore, storeStatement);
+        super( nodeRecord, nodeStore, storeStatement );
         this.instanceCache = instanceCache;
     }
 
-    public StoreSingleNodeCursor init(long nodeId)
+    public StoreSingleNodeCursor init( long nodeId )
     {
         this.nodeId = nodeId;
         return this;
@@ -49,10 +49,11 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
     @Override
     public boolean next()
     {
-        if (nodeId != -1)
+        if ( nodeId != -1 )
         {
             try
             {
+                nodeRecord.setId( nodeId );
                 NodeRecord record = nodeStore.loadRecord( nodeId, this.nodeRecord );
                 return record != null && record.inUse();
             }
@@ -68,6 +69,6 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
     @Override
     public void close()
     {
-        instanceCache.release( this );
+        instanceCache.accept( this );
     }
 }

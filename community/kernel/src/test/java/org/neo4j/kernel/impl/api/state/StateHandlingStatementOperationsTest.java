@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -31,12 +32,14 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.cursor.LabelCursor;
+import org.neo4j.kernel.api.cursor.PropertyCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
@@ -49,8 +52,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.same;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -60,6 +61,8 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asRelationshipCursor;
 
 public class StateHandlingStatementOperationsTest
 {
@@ -74,10 +77,13 @@ public class StateHandlingStatementOperationsTest
     public void shouldNeverDelegateWrites() throws Exception
     {
         KernelStatement state = mockedState();
-        StoreStatement storeStatement = mock(StoreStatement.class);
-        when (state.getStoreStatement()).thenReturn( storeStatement );
-        when( inner.nodeGetAllProperties( same( storeStatement), anyLong() ) )
-                .thenReturn( IteratorUtil.<DefinedProperty>emptyIterator() );
+
+        when( state.txState() ).thenReturn( new TxState() );
+        StoreStatement storeStatement = mock( StoreStatement.class );
+        when( state.getStoreStatement() ).thenReturn( storeStatement );
+        when( storeStatement.acquireSingleNodeCursor( anyLong() ) ).
+                thenReturn( asNodeCursor( 0, PropertyCursor.EMPTY, LabelCursor.EMPTY ) );
+
         StateHandlingStatementOperations ctx = newTxStateOps( inner );
 
         // When
@@ -93,9 +99,8 @@ public class StateHandlingStatementOperationsTest
         // ctx.getOrCreateLabelId("0");
         // ctx.getOrCreatePropertyKeyId("0");
 
-        verify( inner, times( 1 ) ).nodeGetAllProperties( storeStatement, 0 );
-        verify( inner, times( 2 ) ).nodeHasLabel( storeStatement, 0, 0 );
-        verifyNoMoreInteractions( inner );
+        verify( storeStatement, times( 3 ) ).acquireSingleNodeCursor( 0 );
+        verifyNoMoreInteractions( storeStatement );
     }
 
     @Test
@@ -107,7 +112,7 @@ public class StateHandlingStatementOperationsTest
         when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( new DiffSets() );
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
-            .thenAnswer( asAnswer( asList( constraint ) ) );
+                .thenAnswer( asAnswer( asList( constraint ) ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
 
         // when
@@ -125,7 +130,7 @@ public class StateHandlingStatementOperationsTest
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
-            .thenAnswer( asAnswer( Collections.emptyList() ) );
+                .thenAnswer( asAnswer( Collections.emptyList() ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquenessConstraintCreate( state, 10, 66 );
 
@@ -147,13 +152,13 @@ public class StateHandlingStatementOperationsTest
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
-            .thenAnswer( asAnswer( Collections.emptyList() ) );
+                .thenAnswer( asAnswer( Collections.emptyList() ) );
         when( inner.constraintsGetForLabelAndPropertyKey( 11, 99 ) )
-            .thenAnswer( asAnswer( Collections.emptyList() ) );
+                .thenAnswer( asAnswer( Collections.emptyList() ) );
         when( inner.constraintsGetForLabel( 10 ) )
-            .thenAnswer( asAnswer( Collections.emptyList() ) );
+                .thenAnswer( asAnswer( Collections.emptyList() ) );
         when( inner.constraintsGetForLabel( 11 ) )
-            .thenAnswer( asAnswer( asIterable( constraint1 ) ) );
+                .thenAnswer( asAnswer( asIterable( constraint1 ) ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquenessConstraintCreate( state, 10, 66 );
         context.uniquenessConstraintCreate( state, 11, 99 );
@@ -175,9 +180,9 @@ public class StateHandlingStatementOperationsTest
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
-            .thenAnswer( asAnswer( Collections.emptyList() ) );
+                .thenAnswer( asAnswer( Collections.emptyList() ) );
         when( inner.constraintsGetForLabelAndPropertyKey( 11, 99 ) )
-            .thenAnswer( asAnswer( Collections.emptyList() ) );
+                .thenAnswer( asAnswer( Collections.emptyList() ) );
         when( inner.constraintsGetAll() ).thenAnswer( asAnswer( asIterable( constraint2 ) ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquenessConstraintCreate( state, 10, 66 );
@@ -187,50 +192,6 @@ public class StateHandlingStatementOperationsTest
 
         // then
         assertEquals( asSet( constraint1, constraint2 ), result );
-    }
-
-    @Test
-    public void shouldAskTxStateIfNodeExistsDuringNodeDeletion() throws EntityNotFoundException
-    {
-        // Given
-        long nodeId = 42;
-        TransactionState txState = mock( TransactionState.class );
-        KernelStatement statement = mock( KernelStatement.class );
-        when( statement.hasTxStateWithChanges() ).thenReturn( true );
-        when( statement.txState() ).thenReturn( txState );
-        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.nodeExists( nodeId ) ).thenReturn( true );
-        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
-
-        // When
-        context.nodeDelete( statement, nodeId );
-
-        // Then
-        verify( txState ).nodeIsAddedInThisTx( nodeId );
-        verify( txState ).nodeIsDeletedInThisTx( nodeId );
-        verify( storeReadLayer ).nodeExists( nodeId );
-    }
-
-    @Test
-    public void shouldAskTxStateIfRelExistsDuringRelDeletion() throws EntityNotFoundException
-    {
-        // Given
-        long relationshipId = 42;
-        TransactionState txState = mock( TransactionState.class );
-        KernelStatement statement = mock( KernelStatement.class );
-        when( statement.hasTxStateWithChanges() ).thenReturn( true );
-        when( statement.txState() ).thenReturn( txState );
-        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.relationshipExists( relationshipId ) ).thenReturn( true );
-        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
-
-        // When
-        context.relationshipDelete( statement, relationshipId );
-
-        // Then
-        verify( txState, atLeastOnce() ).relationshipIsAddedInThisTx( relationshipId );
-        verify( txState ).relationshipIsDeletedInThisTx( relationshipId );
-        verify( storeReadLayer ).relationshipExists( relationshipId );
     }
 
     @Test
@@ -323,33 +284,56 @@ public class StateHandlingStatementOperationsTest
         assertEquals( asSet( 42L, 43L ), asSet( results ) );
     }
 
-    @Test( expected = EntityNotFoundException.class )
+    @Test(expected = EntityNotFoundException.class)
     public void nodeDeletionShouldThrowExceptionWhenNodeWasAlreadyDeletedInSameTx() throws EntityNotFoundException
     {
         // Given
         long nodeId = 42;
-        TransactionState txState = mock( TransactionState.class );
-        when( txState.nodeIsDeletedInThisTx( nodeId ) ).thenReturn( true );
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
-        when( statement.txState() ).thenReturn( txState );
+        when( statement.txState() ).thenReturn( new TxState() );
+        StoreStatement storeStatement = mock( StoreStatement.class );
+        when( statement.getStoreStatement() ).thenReturn( storeStatement );
+        when( storeStatement.acquireSingleNodeCursor( nodeId ) ).thenReturn( asNodeCursor( nodeId, PropertyCursor.EMPTY,
+                LabelCursor.EMPTY ) );
+
         StateHandlingStatementOperations context = newTxStateOps( mock( StoreReadLayer.class ) );
+
+        context.nodeDelete( statement, nodeId );
 
         // When
         context.nodeDelete( statement, nodeId );
     }
 
-    @Test( expected = EntityNotFoundException.class )
-    public void relDeletionShouldThrowExceptionWhenRelWasAlreadyDeletedInSameTx() throws EntityNotFoundException
+    @Test(expected = EntityNotFoundException.class)
+    public void relDeletionShouldThrowExceptionWhenRelWasAlreadyDeletedInSameTx() throws EntityNotFoundException,
+            Exception
     {
         // Given
-        long relationshipId = 42;
-        TransactionState txState = mock( TransactionState.class );
-        when( txState.relationshipIsDeletedInThisTx( relationshipId ) ).thenReturn( true );
+        final long relationshipId = 42;
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
-        when( statement.txState() ).thenReturn( txState );
-        StateHandlingStatementOperations context = newTxStateOps( mock( StoreReadLayer.class ) );
+        when( statement.txState() ).thenReturn( new TxState() );
+        StoreStatement storeStatement = mock( StoreStatement.class );
+        when( statement.getStoreStatement() ).thenReturn( storeStatement );
+        when( storeStatement.acquireSingleRelationshipCursor( relationshipId ) ).
+                thenReturn( asRelationshipCursor( relationshipId, 0, 0, 1, PropertyCursor.EMPTY ) );
+
+        StoreReadLayer store = mock( StoreReadLayer.class );
+
+        Mockito.doAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
+            {
+                ((RelationshipVisitor) invocationOnMock.getArguments()[1]).visit( relationshipId, 0, 0, 1 );
+                return null;
+            }
+        } ).when( store ).relationshipVisit( anyLong(), any( RelationshipVisitor.class ) );
+
+        StateHandlingStatementOperations context = newTxStateOps( store );
+
+        context.relationshipDelete( statement, relationshipId );
 
         // When
         context.relationshipDelete( statement, relationshipId );

@@ -19,11 +19,21 @@
  */
 package org.neo4j.kernel.impl.util;
 
-public abstract class InstanceCache<T>
+import org.neo4j.function.Consumer;
+import org.neo4j.function.Supplier;
+
+/**
+ * Caches single instances. This is meant to be used within a single thread, where
+ * the usage pattern is such that it is likely that at any given time only one T is needed, but at times
+ * more than one T is used. This cache will for the majority of cases cache that single instance.
+ *
+ * @param <T>
+ */
+public abstract class InstanceCache<T> implements Supplier<T>, Consumer<T>
 {
     private T instance;
 
-    public T acquire()
+    public T get()
     {
         if ( instance == null )
         {
@@ -41,7 +51,7 @@ public abstract class InstanceCache<T>
 
     }
 
-    public void release(T instance)
+    public void accept( T instance )
     {
         this.instance = instance;
     }

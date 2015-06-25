@@ -22,11 +22,15 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.Iterator;
 
 import org.neo4j.function.Predicate;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.CombiningIterator;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.api.cursor.PropertyCursor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.api.cursor.TxPropertyCursor;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
@@ -39,7 +43,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
  * <li>{@linkplain #changedProperties() changed property values}.</li>
  * </ul>
  */
-interface PropertyContainerState
+public interface PropertyContainerState
 {
     Iterator<DefinedProperty> addedProperties();
 
@@ -53,16 +57,19 @@ interface PropertyContainerState
 
     void accept( Visitor visitor );
 
+    PropertyCursor augmentPropertyCursor( Supplier<TxPropertyCursor> propertyCursor, PropertyCursor cursor );
+
     interface Visitor
     {
         void visitPropertyChanges( long entityId, Iterator<DefinedProperty> added,
-                                   Iterator<DefinedProperty> changed,
-                                   Iterator<Integer> removed );
+                Iterator<DefinedProperty> changed,
+                Iterator<Integer> removed );
     }
 
     class Mutable implements PropertyContainerState
     {
         private final long id;
+        private final EntityType entityType;
         private static final ResourceIterator<DefinedProperty> NO_PROPERTIES = emptyIterator();
 
         private VersionedHashMap<Integer, DefinedProperty> addedProperties;
@@ -75,14 +82,15 @@ interface PropertyContainerState
             public boolean test( DefinedProperty item )
             {
                 return (removedProperties == null || !removedProperties.containsKey( item.propertyKeyId() ))
-                       && (addedProperties == null || !addedProperties.containsKey( item.propertyKeyId() ))
-                       && (changedProperties == null || !changedProperties.containsKey( item.propertyKeyId() ));
+                        && (addedProperties == null || !addedProperties.containsKey( item.propertyKeyId() ))
+                        && (changedProperties == null || !changedProperties.containsKey( item.propertyKeyId() ));
             }
         };
 
-        Mutable( long id )
+        Mutable( long id, EntityType entityType )
         {
             this.id = id;
+            this.entityType = entityType;
         }
 
         public long getId()
@@ -92,9 +100,18 @@ interface PropertyContainerState
 
         public void clear()
         {
-            if ( changedProperties != null ) changedProperties.clear();
-            if ( addedProperties != null ) addedProperties.clear();
-            if ( removedProperties != null ) removedProperties.clear();
+            if ( changedProperties != null )
+            {
+                changedProperties.clear();
+            }
+            if ( addedProperties != null )
+            {
+                addedProperties.clear();
+            }
+            if ( removedProperties != null )
+            {
+                removedProperties.clear();
+            }
         }
 
         public void changeProperty( DefinedProperty property )
@@ -175,7 +192,7 @@ interface PropertyContainerState
         public Iterator<Integer> removedProperties()
         {
             return removedProperties != null ? removedProperties.keySet().iterator()
-                                             : IteratorUtil.<Integer>emptyIterator();
+                    : IteratorUtil.<Integer>emptyIterator();
         }
 
         @Override
@@ -199,6 +216,20 @@ interface PropertyContainerState
                 }
             }
             return out != null ? out : NO_PROPERTIES;
+        }
+
+        @Override
+        public PropertyCursor augmentPropertyCursor( Supplier<TxPropertyCursor> propertyCursorCache,
+                PropertyCursor cursor )
+        {
+            if ( removedProperties != null || addedProperties != null || changedProperties != null )
+            {
+                return propertyCursorCache.get().init( cursor, addedProperties, changedProperties, removedProperties );
+            }
+            else
+            {
+                return cursor;
+            }
         }
 
         @Override

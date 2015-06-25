@@ -73,6 +73,6 @@ public class StoreIteratorRelationshipCursor extends StoreAbstractRelationshipCu
         }
         iterator = null;
 
-        instanceCache.release( this );
+        instanceCache.accept( this );
     }
 }

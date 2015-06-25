@@ -431,8 +431,26 @@ public class KernelIT extends KernelIntegrationTest
 
         // Then
         int labelId = statement.readOperations().labelGetForName( label.name() );
-        Set<Integer> labels = asSet( statement.readOperations().nodeGetLabels( node.getId() ) );
-        boolean labelIsSet = statement.readOperations().nodeHasLabel( node.getId(), labelId );
+        try
+        {
+            statement.readOperations().nodeGetLabels( node.getId() );
+            fail();
+        }
+        catch ( IllegalStateException e )
+        {
+            // Ok
+        }
+
+        try
+        {
+            statement.readOperations().nodeHasLabel( node.getId(), labelId );
+            fail();
+        }
+        catch ( IllegalStateException e )
+        {
+            // Ok
+        }
+
         Set<Long> nodes = asSet( statement.readOperations().nodesGetForLabel( labelId ) );
 
         statement.close();
@@ -441,8 +459,6 @@ public class KernelIT extends KernelIntegrationTest
         tx.close();
 
         assertEquals( emptySetOf( Long.class ), nodes );
-        assertEquals( emptySetOf( Integer.class ), labels );
-        assertFalse( "Label should not be set on node here", labelIsSet );
     }
 
     @Test

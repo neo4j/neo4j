@@ -54,34 +54,26 @@ public abstract class StoreAbstractNodeCursor implements NodeCursor
     @Override
     public LabelCursor labels()
     {
-        StoreLabelCursor labelCursor = storeStatement.acquireLabelCursor();
-        final long[] labels = parseLabelsField( nodeRecord ).get( nodeStore );
-
-        labelCursor.init( labels );
-        return labelCursor;
+        return storeStatement.acquireLabelCursor( parseLabelsField( nodeRecord ).get( nodeStore ) );
     }
 
     @Override
     public PropertyCursor properties()
     {
-        StorePropertyCursor cursor = storeStatement.acquirePropertyCursor();
-        cursor.init( nodeRecord.getNextProp() );
-        return cursor;
+        return storeStatement.acquirePropertyCursor( nodeRecord.getNextProp() );
     }
 
     @Override
     public RelationshipCursor relationships( Direction direction )
     {
-        StoreNodeRelationshipCursor cursor = storeStatement.acquireNodeRelationshipCursor();
-        cursor.init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(), direction, null );
-        return cursor;
+        return storeStatement.acquireNodeRelationshipCursor( nodeRecord.isDense(), nodeRecord.getNextRel(),
+                nodeRecord.getId(), direction, null );
     }
 
     @Override
     public RelationshipCursor relationships( Direction direction, int... relTypes )
     {
-        StoreNodeRelationshipCursor cursor = storeStatement.acquireNodeRelationshipCursor();
-        cursor.init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(), direction, relTypes );
-        return cursor;
+        return storeStatement.acquireNodeRelationshipCursor( nodeRecord.isDense(), nodeRecord.getNextRel(),
+                nodeRecord.getId(), direction, relTypes );
     }
 }

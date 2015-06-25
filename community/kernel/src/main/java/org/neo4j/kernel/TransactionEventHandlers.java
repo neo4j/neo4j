@@ -34,7 +34,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.txstate.ReadableTxState;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -49,7 +48,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 @Deprecated
 public class TransactionEventHandlers
-    implements Lifecycle, TransactionHook<TransactionEventHandlers.TransactionHandlerState>
+        implements Lifecycle, TransactionHook<TransactionEventHandlers.TransactionHandlerState>
 {
     protected final Collection<TransactionEventHandler> transactionEventHandlers = new CopyOnWriteArraySet<>();
 
@@ -67,25 +66,25 @@ public class TransactionEventHandlers
 
     @Override
     public void init()
-        throws Throwable
+            throws Throwable
     {
     }
 
     @Override
     public void start()
-        throws Throwable
+            throws Throwable
     {
     }
 
     @Override
     public void stop()
-        throws Throwable
+            throws Throwable
     {
     }
 
     @Override
     public void shutdown()
-        throws Throwable
+            throws Throwable
     {
     }
 
@@ -120,14 +119,13 @@ public class TransactionEventHandlers
     public TransactionHandlerState beforeCommit( ReadableTxState state, KernelTransaction transaction,
             StoreReadLayer storeReadLayer )
     {
-        if(transactionEventHandlers.isEmpty())
+        if ( transactionEventHandlers.isEmpty() )
         {
             return null;
         }
 
         TransactionData txData = state == null ? EMPTY_DATA :
-                new TxStateTransactionDataSnapshot( state, nodeActions, relationshipActions, storeReadLayer,
-                        ((KernelStatement)transaction.acquireStatement()).getStoreStatement() );
+                new TxStateTransactionDataSnapshot( state, nodeActions, relationshipActions, storeReadLayer );
 
         TransactionHandlerState handlerStates = new TransactionHandlerState( txData );
         for ( TransactionEventHandler<?> handler : this.transactionEventHandlers )
@@ -146,10 +144,12 @@ public class TransactionEventHandlers
     }
 
     @Override
-    @SuppressWarnings( "unchecked" )
-    public void afterCommit( ReadableTxState state, KernelTransaction transaction, TransactionHandlerState handlerState )
+    @SuppressWarnings("unchecked")
+    public void afterCommit( ReadableTxState state,
+            KernelTransaction transaction,
+            TransactionHandlerState handlerState )
     {
-        if(transactionEventHandlers.isEmpty())
+        if ( transactionEventHandlers.isEmpty() )
         {
             return;
         }
@@ -161,15 +161,17 @@ public class TransactionEventHandlers
     }
 
     @Override
-    @SuppressWarnings( "unchecked" )
-    public void afterRollback( ReadableTxState state, KernelTransaction transaction, TransactionHandlerState handlerState )
+    @SuppressWarnings("unchecked")
+    public void afterRollback( ReadableTxState state,
+            KernelTransaction transaction,
+            TransactionHandlerState handlerState )
     {
-        if(transactionEventHandlers.isEmpty())
+        if ( transactionEventHandlers.isEmpty() )
         {
             return;
         }
 
-        if(handlerState == null)
+        if ( handlerState == null )
         {
             // For legacy reasons, we don't call transaction handlers on implicit rollback.
             return;

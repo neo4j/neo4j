@@ -157,7 +157,22 @@ public interface EntityReadOperations
     <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement, long relId,
             RelationshipVisitor<EXCEPTION> visitor ) throws EntityNotFoundException, EXCEPTION;
 
-    NodeCursor nodeCursorGetAll( KernelStatement state );
+    NodeCursor nodeCursor( KernelStatement statement, long nodeId );
 
-    RelationshipCursor relationshipCursorGetAll( KernelStatement state );
+    RelationshipCursor relationshipCursor( KernelStatement statement, long relId );
+
+    NodeCursor nodeCursorGetAll( KernelStatement statement );
+
+    RelationshipCursor relationshipCursorGetAll( KernelStatement statement );
+
+    NodeCursor nodeCursorGetForLabel( KernelStatement statement, int labelId );
+
+    NodeCursor nodeCursorGetFromIndexLookup( KernelStatement statement, IndexDescriptor index, Object value ) throws IndexNotFoundKernelException;
+
+    NodeCursor nodeCursorGetFromIndexScan( KernelStatement statement, IndexDescriptor index ) throws IndexNotFoundKernelException;
+
+    NodeCursor nodeCursorGetFromIndexByPrefixScan( KernelStatement statement, IndexDescriptor index, String prefix ) throws IndexNotFoundKernelException;
+
+    NodeCursor nodeCursorGetUniqueFromIndexLookup( KernelStatement statement, IndexDescriptor index, Object value ) throws IndexBrokenKernelException, IndexNotFoundKernelException;
+
 }

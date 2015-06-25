@@ -71,17 +71,18 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     public TxStateTransactionDataSnapshot(
             ReadableTxState state,
             NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions relationshipActions,
-            StoreReadLayer storeReadLayer,
-            StoreStatement storeStatement )
+            StoreReadLayer storeReadLayer)
     {
         this.state = state;
         this.nodeActions = nodeActions;
         this.relationshipActions = relationshipActions;
-        this.storeStatement = storeStatement;
+        this.storeStatement = storeReadLayer.acquireStatement();
 
         // Load changes that require store access eagerly, because we won't have access to the after-state
         // after the tx has been committed.
         takeSnapshot( state, storeReadLayer );
+
+        storeStatement.close();
     }
 
     @Override
@@ -162,8 +163,8 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             for ( Long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
-                Iterator<DefinedProperty> props = storeReadLayer.nodeGetAllProperties( storeStatement, nodeId);
-                while(props.hasNext())
+                Iterator<DefinedProperty> props = storeReadLayer.nodeGetAllProperties( storeStatement, nodeId );
+                while ( props.hasNext() )
                 {
                     DefinedProperty prop = props.next();
                     removedNodeProperties.add( new NodePropertyEntryView( nodeId,
@@ -171,7 +172,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 }
 
                 PrimitiveIntIterator labels = storeReadLayer.nodeGetLabels( storeStatement, nodeId );
-                while(labels.hasNext())
+                while ( labels.hasNext() )
                 {
                     removedLabels.add( new LabelEntryView( nodeId, storeReadLayer.labelGetName( labels.next() ) ) );
                 }
@@ -191,7 +192,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             for ( NodeState nodeState : state.modifiedNodes() )
             {
                 Iterator<DefinedProperty> added = nodeState.addedAndChangedProperties();
-                while ( added.hasNext()  )
+                while ( added.hasNext() )
                 {
                     DefinedProperty property = added.next();
                     assignedNodeProperties.add( new NodePropertyEntryView( nodeState.getId(),
@@ -199,7 +200,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                             committedValue( storeReadLayer, nodeState, property.propertyKeyId() ) ) );
                 }
                 Iterator<Integer> removed = nodeState.removedProperties();
-                while ( removed.hasNext()  )
+                while ( removed.hasNext() )
                 {
                     Integer property = removed.next();
                     removedNodeProperties.add( new NodePropertyEntryView( nodeState.getId(),
@@ -220,7 +221,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             {
                 Relationship relationship = relationship( relState.getId() );
                 Iterator<DefinedProperty> added = relState.addedAndChangedProperties();
-                while ( added.hasNext()  )
+                while ( added.hasNext() )
                 {
                     DefinedProperty property = added.next();
                     assignedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
@@ -228,7 +229,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                             committedValue( storeReadLayer, relState, property.propertyKeyId() ) ) );
                 }
                 Iterator<Integer> removed = relState.removedProperties();
-                while ( removed.hasNext()  )
+                while ( removed.hasNext() )
                 {
                     Integer property = removed.next();
                     removedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
@@ -326,6 +327,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             return new NodeProxy( nodeActions, nodeId );
         }
+
         @Override
         public String key()
         {
@@ -341,7 +343,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         @Override
         public Object value()
         {
-            if(newValue == null)
+            if ( newValue == null )
             {
                 throw new IllegalStateException( "This property has been removed, it has no value anymore." );
             }
@@ -397,7 +399,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         @Override
         public Object value()
         {
-            if(newValue == null)
+            if ( newValue == null )
             {
                 throw new IllegalStateException( "This property has been removed, it has no value anymore." );
             }

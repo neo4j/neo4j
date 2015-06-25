@@ -21,9 +21,13 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Iterator;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.api.cursor.PropertyCursor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.cursor.TxPropertyCursor;
 
 /**
  * Represents the transactional changes to a relationship.
@@ -44,7 +48,7 @@ public interface RelationshipState extends PropertyContainerState
 
         private Mutable( long id )
         {
-            super( id );
+            super( id, EntityType.NODE );
         }
 
         public void setMetaData( long startNode, long endNode, int type )
@@ -130,6 +134,13 @@ public interface RelationshipState extends PropertyContainerState
             public Iterator<DefinedProperty> augmentProperties( Iterator<DefinedProperty> iterator )
             {
                 return iterator;
+            }
+
+            @Override
+            public PropertyCursor augmentPropertyCursor( Supplier<TxPropertyCursor> propertyCursor,
+                    PropertyCursor cursor )
+            {
+                return cursor;
             }
 
             @Override

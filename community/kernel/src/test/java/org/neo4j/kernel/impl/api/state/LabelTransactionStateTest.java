@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +29,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.cursor.LabelCursor;
+import org.neo4j.kernel.api.cursor.PropertyCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -51,10 +52,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
-import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveIntIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 
 public class LabelTransactionStateTest
 {
@@ -226,7 +228,8 @@ public class LabelTransactionStateTest
     public void should_return_true_when_adding_new_label() throws Exception
     {
         // GIVEN
-        when( store.nodeHasLabel( storeStatement, 1337, 12 ) ).thenReturn( false );
+        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, PropertyCursor.EMPTY,
+                LabelCursor.EMPTY ) );
 
         // WHEN and THEN
         assertTrue( "Label should have been added", txContext.nodeAddLabel( state, 1337, 12 ) );
@@ -236,6 +239,9 @@ public class LabelTransactionStateTest
     public void should_return_false_when_adding_existing_label() throws Exception
     {
         // GIVEN
+        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, PropertyCursor.EMPTY,
+                asLabelCursor( 12 ) ) );
+
         when( store.nodeHasLabel( storeStatement, 1337, 12 ) ).thenReturn( true );
 
         // WHEN and THEN
@@ -246,7 +252,8 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_existing_label() throws Exception
     {
         // GIVEN
-        when( store.nodeHasLabel( storeStatement, 1337, 12 ) ).thenReturn( true );
+        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, PropertyCursor.EMPTY,
+                asLabelCursor( 12 ) ) );
 
         // WHEN and THEN
         assertTrue( "Label should have been removed", txContext.nodeRemoveLabel( state, 1337, 12 ) );
@@ -256,7 +263,8 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_non_existant_label() throws Exception
     {
         // GIVEN
-        when( store.nodeHasLabel( storeStatement, 1337, 12 ) ).thenReturn( false );
+        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, PropertyCursor.EMPTY,
+                LabelCursor.EMPTY ) );
 
         // WHEN and THEN
         assertFalse( "Label should have been removed", txContext.nodeRemoveLabel( state, 1337, 12 ) );
@@ -317,12 +325,11 @@ public class LabelTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( store.nodeGetLabels( storeStatement, nodeLabels.nodeId ) )
-                    .then( answerAsPrimitiveIntIteratorFrom( Arrays.<Integer>asList( nodeLabels.labelIds ) ) );
+            when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) ).thenReturn( StubCursors.asNodeCursor(
+                    nodeLabels.nodeId, PropertyCursor.EMPTY, asLabelCursor( nodeLabels.labelIds ) ) );
+
             for ( int label : nodeLabels.labelIds )
             {
-                when( store.nodeHasLabel( storeStatement, nodeLabels.nodeId, label ) ).thenReturn( true );
-
                 Collection<Long> nodes = allLabels.get( label );
                 if ( nodes == null )
                 {

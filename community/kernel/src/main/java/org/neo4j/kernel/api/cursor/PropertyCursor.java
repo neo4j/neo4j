@@ -20,8 +20,9 @@
 package org.neo4j.kernel.api.cursor;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Function;
+import org.neo4j.function.ToIntFunction;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.store.PropertyType;
 
 /**
  * Cursor for iterating over the properties of a node or relationship.
@@ -29,6 +30,52 @@ import org.neo4j.kernel.impl.store.PropertyType;
 public interface PropertyCursor
         extends Cursor
 {
+    Function<PropertyCursor, DefinedProperty> GET_PROPERTY = new Function<PropertyCursor, DefinedProperty>()
+    {
+        @Override
+        public DefinedProperty apply( PropertyCursor propertyCursor )
+        {
+            return propertyCursor.getProperty();
+        }
+    };
+
+    ToIntFunction<PropertyCursor> GET_KEY_INDEX_ID = new ToIntFunction<PropertyCursor>()
+    {
+        @Override
+        public int apply( PropertyCursor value )
+        {
+            return value.getProperty().propertyKeyId();
+        }
+    };
+
+    PropertyCursor EMPTY = new PropertyCursor()
+    {
+        @Override
+        public boolean seek( int keyId )
+        {
+            return false;
+        }
+
+        @Override
+        public DefinedProperty getProperty()
+        {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public boolean next()
+        {
+            return false;
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+    };
+
+
     /**
      * Move the cursor to a particular property.
      *
@@ -37,11 +84,5 @@ public interface PropertyCursor
      */
     boolean seek( int keyId );
 
-    PropertyType getType();
-
-    int getKeyIndexId();
-
     DefinedProperty getProperty();
-
-    Object getValue();
 }

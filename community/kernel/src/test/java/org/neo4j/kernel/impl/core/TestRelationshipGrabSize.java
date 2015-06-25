@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.Collection;
+import java.util.HashSet;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Collection;
-import java.util.HashSet;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -35,10 +35,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.lang.String.valueOf;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-
-import static java.lang.String.valueOf;
 
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -154,13 +154,13 @@ public class TestRelationshipGrabSize
         {
             relCount++;
         }
-        assertEquals( relCount, GRAB_SIZE + 1 );
+        assertEquals( GRAB_SIZE + 1, relCount );
         relCount = 0;
-        for (Relationship rel : node1.getRelationships())
+        for ( Relationship rel : node1.getRelationships() )
         {
             relCount++;
         }
-        assertEquals( relCount, GRAB_SIZE + 1 );
+        assertEquals( GRAB_SIZE + 1, relCount );
         assertEquals( "bar", node1.getProperty( "foo" ) );
         finishTx( true );
     }

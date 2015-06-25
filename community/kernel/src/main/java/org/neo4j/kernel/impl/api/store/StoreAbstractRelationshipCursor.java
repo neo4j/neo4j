@@ -70,8 +70,6 @@ public abstract class StoreAbstractRelationshipCursor implements RelationshipCur
     @Override
     public PropertyCursor properties()
     {
-        StorePropertyCursor cursor = storeStatement.acquirePropertyCursor();
-        cursor.init( relationshipRecord.getNextProp() );
-        return cursor;
+        return storeStatement.acquirePropertyCursor( relationshipRecord.getNextProp() );
     }
 }
