@@ -1,10 +1,9 @@
-<<<<<<< HEAD
 2.3-M03
 -------
 
 Cypher:
 o Unfulfillable index hints (e.g. on non-existing indices) will now produce a warning or throw an error as configured
-o String prefix searches using LIKE are now solved using a index scans
+o String prefix searches using LIKE are now solved using index seeks
 o Now supports dynamic property lookup (f.e. using n['property'])
 
 2.3-M02
