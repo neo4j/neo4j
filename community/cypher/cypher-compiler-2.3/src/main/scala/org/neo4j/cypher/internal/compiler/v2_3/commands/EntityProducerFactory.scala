@@ -141,7 +141,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         (throw new InternalException("Something went wrong trying to build your query."))
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        indexQuery(expression, m, state, state.query.exactIndexSearch(index, _), labelName, propertyName)
+        indexQuery(expression, m, state, state.query.indexSeek(index, _), labelName, propertyName)
       }
 
     case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, UniqueIndex, valueExp)) =>
@@ -155,7 +155,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         (throw new InternalException("Something went wrong trying to build your query."))
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        indexQuery(expression, m, state, state.query.exactUniqueIndexSearch(index, _), labelName, propertyName)
+        indexQuery(expression, m, state, state.query.uniqueIndexSeek(index, _), labelName, propertyName)
       }
   }
 

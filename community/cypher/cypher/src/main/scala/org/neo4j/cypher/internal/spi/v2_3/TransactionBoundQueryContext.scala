@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringSeekRange
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{Between, LowerBounded}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{InclusiveBound, LowerBounded}
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.graphdb.DynamicRelationshipType._
@@ -130,23 +131,21 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     case Some(typeIds) => new BeansAPIRelationshipIterator(statement.readOperations().nodeGetRelationships(node.getId, dir, typeIds: _* ), relationshipActions)
   }
 
-  def exactIndexSearch(index: IndexDescriptor, value: Any) =
+  def indexSeek(index: IndexDescriptor, value: Any) =
     JavaConversionSupport.mapToScala(statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
 
-  def rangeIndexSearch(index: IndexDescriptor, value: Any) = value match {
-    case StringSeekRange(LowerBounded(lower)) =>
-      val indexedNodes = statement.readOperations().nodesGetFromIndexSeekByPrefix(index, lower.endPoint)
+  def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
+    case StringSeekRange(LowerBounded(InclusiveBound(prefix))) =>
+      val indexedNodes = statement.readOperations().nodesGetFromIndexSeekByPrefix(index, prefix)
       JavaConversionSupport.mapToScala(indexedNodes)(nodeOps.getById)
-    case StringSeekRange(Between(lower, upper)) =>
-      Iterator.empty // not yet supported
-    case _ =>
-      Iterator.empty
+    case range =>
+      throw new InternalException(s"Unsupported index seek by range: $range")
   }
 
   def indexScan(index: IndexDescriptor) =
     mapToScala(statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
-  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = {
+  def uniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     val nodeId: Long = statement.readOperations().nodeGetUniqueFromIndexSeek(index, value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }

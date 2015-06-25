@@ -75,7 +75,7 @@ object CardinalityCostModel extends CostModel {
     case _: FindShortestPaths |
          _: LegacyIndexSeek |
          _: NodeByIdSeek |
-         _: NodeIndexUniqueSeek |
+         _: NodeUniqueIndexSeek |
          _: NodeIndexSeek |
          _: NodeIndexScan
     => SLOW_STORE

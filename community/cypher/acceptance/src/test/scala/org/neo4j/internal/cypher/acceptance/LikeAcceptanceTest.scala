@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{UniqueIndexSeekByRange, IndexSeekByRange, IndexSeek}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{Node, ResourceIterator}
 
@@ -57,7 +58,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     val result = executeWithCostPlannerOnly(query)
 
-    result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
+    result.executionPlanDescription().toString should include(IndexSeekByRange.name)
     result.toList should equal(List(Map("l" -> london)))
   }
 
@@ -79,7 +80,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     val result = executeWithCostPlannerOnly(query)
 
-    result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
+    result.executionPlanDescription().toString should include(IndexSeekByRange.name)
     result.toList should equal(List(Map("l" -> london)))
   }
 
@@ -97,7 +98,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'w%' AND a.prop LIKE 'www%' RETURN a")
 
-    result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
+    result.executionPlanDescription().toString should include(IndexSeekByRange.name)
     result.executionPlanDescription().toString should include("prop LIKE www%")
     result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
   }
@@ -116,7 +117,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'www%' RETURN a")
 
-    result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
+    result.executionPlanDescription().toString should include(IndexSeekByRange.name)
     result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
   }
 
@@ -136,7 +137,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'ww_' RETURN a")
 
     result.executionPlanDescription().toString should include("Filter")
-    result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
+    result.executionPlanDescription().toString should include(IndexSeekByRange.name)
     result.toList should equal(List(Map("a" -> a2)))
   }
 
@@ -155,7 +156,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'ww%w%' RETURN a")
 
-    result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
+    result.executionPlanDescription().toString should include(IndexSeekByRange.name)
     result.executionPlanDescription().toString should include("Filter")
     result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
   }
@@ -176,7 +177,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'www%' RETURN a")
 
-    result.executionPlanDescription().toString should include("NodeUniqueIndexRangeSeek")
+    result.executionPlanDescription().toString should include(UniqueIndexSeekByRange.name)
     result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
   }
 
@@ -191,7 +192,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'www%' RETURN a")
 
-    result.executionPlanDescription().toString should not include("NodeIndexRangeSeek")
+    result.executionPlanDescription().toString should not include(IndexSeekByRange.name)
     result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
   }
 
@@ -208,7 +209,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'ww_%' RETURN a")
 
-    result.executionPlanDescription().toString should not include("NodeIndexRangeSeek")
+    result.executionPlanDescription().toString should not include(IndexSeekByRange.name)
     result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
   }
 

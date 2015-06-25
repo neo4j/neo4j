@@ -22,6 +22,7 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{UniqueIndexSeekByRange, IndexSeekByRange}
 import org.scalatest.Ignore
 
 class QueryPlanTest extends DocumentingTestBase with SoftReset {
@@ -186,7 +187,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
                           |The following query will return all location nodes which have a name property starting with the text 'Lon'.
                         """.stripMargin,
                  queryText = "MATCH (l:Location) WHERE l.name LIKE 'Lon%' RETURN l",
-                 assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeIndexRangeSeek"))
+                 assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString(IndexSeekByRange.name))
     )
   }
 
@@ -201,7 +202,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
                           |The following query will return all location nodes which have a name property starting with the text 'Engineer'.
                         """.stripMargin,
                  queryText = "MATCH (t:Team) WHERE t.name LIKE 'Engineer%' RETURN t",
-                 assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeUniqueIndexRangeSeek"))
+                 assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString(UniqueIndexSeekByRange.name))
     )
   }
 

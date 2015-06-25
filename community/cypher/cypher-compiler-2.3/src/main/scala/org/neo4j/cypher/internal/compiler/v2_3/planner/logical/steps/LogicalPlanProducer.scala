@@ -221,7 +221,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toSeq)
     )
-    NodeIndexUniqueSeek(idName, label, propertyKey, valueExpr, argumentIds)(solved)
+    NodeUniqueIndexSeek(idName, label, propertyKey, valueExpr, argumentIds)(solved)
   }
 
   def planOptionalExpand(left: LogicalPlan,

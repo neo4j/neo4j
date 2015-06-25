@@ -58,7 +58,7 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     val queryContext: QueryContext = mock[QueryContext]
     when(planContext.getIndexRule(label, prop)).thenReturn(Some(index))
     val indexResult = Iterator(null)
-    when(queryContext.exactIndexSearch(index, value)).thenReturn(indexResult)
+    when(queryContext.indexSeek(index, value)).thenReturn(indexResult)
     val state = QueryStateHelper.emptyWith(query = queryContext)
 
     //WHEN
@@ -91,12 +91,12 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     val producer = factory.nodeByIndexHint(planContext -> SchemaIndex("x", labelName, propertyKey, AnyIndex, Some(SingleQueryExpression(Literal(Seq(1,2,3))))))
     val queryContext: QueryContext = mock[QueryContext]
     val state = QueryStateHelper.emptyWith(query = queryContext)
-    when(queryContext.exactIndexSearch(index, Array(1,2,3))).thenReturn(Iterator.empty)
+    when(queryContext.indexSeek(index, Array(1,2,3))).thenReturn(Iterator.empty)
 
     //WHEN
     producer.apply(context, state)
 
     //THEN
-    verify(queryContext, times(1)).exactIndexSearch(index, Array(1,2,3))
+    verify(queryContext, times(1)).indexSeek(index, Array(1,2,3))
   }
 }

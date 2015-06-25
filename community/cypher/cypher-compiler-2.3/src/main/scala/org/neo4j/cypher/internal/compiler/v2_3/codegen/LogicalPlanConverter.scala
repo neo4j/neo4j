@@ -38,7 +38,7 @@ object LogicalPlanConverter {
       case p: AllNodesScan => p.asCodeGenPlan
       case p: NodeByLabelScan => p.asCodeGenPlan
       case p: NodeIndexSeek => p.asCodeGenPlan
-      case p: NodeIndexUniqueSeek => p.asCodeGenPlan
+      case p: NodeUniqueIndexSeek => p.asCodeGenPlan
       case p: Expand => p.asCodeGenPlan
       case p: OptionalExpand => p.asCodeGenPlan
       case p: NodeHashJoin => p.asCodeGenPlan
@@ -164,7 +164,7 @@ object LogicalPlanConverter {
           descriptorVar, expression), actions)
   }
 
-  private implicit class NodeIndexUniqueSeekCodeGen(indexSeek: NodeIndexUniqueSeek)
+  private implicit class NodeIndexUniqueSeekCodeGen(indexSeek: NodeUniqueIndexSeek)
     extends IndexSeek(indexSeek.idName.name, indexSeek.valueExpr, indexSeek) {
 
     def indexSeek(opName: String, descriptorVar: String, expression: CodeGenExpression,

@@ -79,9 +79,9 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.dropIndexRule(labelId, propertyKeyId))
 
-  def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = manyDbHits(inner.exactIndexSearch(index, value))
+  def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node] = manyDbHits(inner.indexSeek(index, value))
 
-  def rangeIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = manyDbHits(inner.rangeIndexSearch(index, value))
+  def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[Node] = manyDbHits(inner.indexSeekByRange(index, value))
 
   def indexScan(index: IndexDescriptor): Iterator[Node] = manyDbHits(inner.indexScan(index))
 
@@ -101,7 +101,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 
-  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = singleDbHit(inner.exactUniqueIndexSearch(index, value))
+  def uniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = singleDbHit(inner.uniqueIndexSeek(index, value))
 
   override def commitAndRestartTx() {
     inner.commitAndRestartTx()
