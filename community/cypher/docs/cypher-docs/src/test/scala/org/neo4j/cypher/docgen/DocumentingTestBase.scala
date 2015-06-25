@@ -444,7 +444,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     setupConstraintQueries.foreach(engine.execute)
 
     db.inTx {
-      db.schema().awaitIndexesOnline(1, TimeUnit.SECONDS)
+      db.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
 
       nodeIndex = db.index().forNodes("nodes")
       relIndex = db.index().forRelationships("rels")
