@@ -48,7 +48,7 @@ public interface RelationshipState extends PropertyContainerState
 
         private Mutable( long id )
         {
-            super( id, EntityType.NODE );
+            super( id, EntityType.RELATIONSHIP );
         }
 
         public void setMetaData( long startNode, long endNode, int type )
@@ -66,10 +66,7 @@ public interface RelationshipState extends PropertyContainerState
                 visitor.visit( getId(), type, startNode, endNode );
                 return true;
             }
-            else
-            {
-                return false;
-            }
+            return false;
         }
     }
 

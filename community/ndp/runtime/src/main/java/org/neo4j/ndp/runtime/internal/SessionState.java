@@ -19,8 +19,6 @@
  */
 package org.neo4j.ndp.runtime.internal;
 
-import org.neo4j.kernel.api.Statement;
-
 /**
  * Exposes the ability to manipulate the state of a running session in various ways. This is the interface Tank
  * uses to manipulate the session.

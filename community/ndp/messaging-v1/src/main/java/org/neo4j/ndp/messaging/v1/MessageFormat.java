@@ -20,9 +20,6 @@
 package org.neo4j.ndp.messaging.v1;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
-
 import org.neo4j.ndp.messaging.v1.message.Message;
 
 public interface MessageFormat

@@ -19,14 +19,11 @@
  */
 package org.neo4j.packstream;
 
-import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
-import java.nio.BufferOverflowException;
-import java.nio.BufferUnderflowException;
 
 public class BufferedChannelOutputTest
 {

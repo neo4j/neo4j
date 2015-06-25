@@ -22,7 +22,6 @@ package org.neo4j.ndp.transport.socket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
