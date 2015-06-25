@@ -33,7 +33,6 @@ class Worker implements Runnable
         void done();
     }
 
-
     private final GraphDatabaseService db;
     private final RandomMutation randomMutation;
     private final Monitor monitor;
@@ -59,6 +58,7 @@ class Worker implements Runnable
                     randomMutation.perform();
                 }
                 tx.success();
+                monitor.transactionCompleted();
             }
             catch ( DeadlockDetectedException ignore )
             {
@@ -69,7 +69,6 @@ class Worker implements Runnable
                 // ignore and go on
                 e.printStackTrace();
             }
-            monitor.transactionCompleted();
         }
         while ( !monitor.stop() );
 

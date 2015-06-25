@@ -19,42 +19,64 @@
  */
 package org.neo4j.kernel.stresstests;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.stresstests.workload.Workload;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TransactionThroughputChecker implements Workload.TransactionThroughput
 {
-    private final List<Long> reports = new ArrayList<>();
+    private final List<Double> reports = new ArrayList<>();
 
     @Override
     public void report( long transactions, long timeSlotMillis, long timeElapsedMillis )
     {
-        reports.add( transactions / timeElapsedMillis );
+        reports.add( ((double) transactions / (double) timeSlotMillis) );
     }
 
-    public void assertUniformThroughput()
+    public void assertUniformThroughput( PrintStream out )
     {
+        // dropping the first report which is
+
+
         if ( reports.isEmpty() )
         {
+            out.println( "no reports" );
             return;
         }
 
-        long sum = 0;
-        for ( long report : reports )
+        out.println( "Throughput reports (tx/ms):" );
+        double sum = 0;
+        for ( double report : reports )
         {
+            out.println( "\t" + report );
             sum += report;
         }
+        out.println();
 
-        double average = ((double) sum / (double) reports.size());
-        double tolerance = sum * 0.1d;
+        double average = sum / (double) reports.size();
+        out.println( "Average throughput (tx/ms): " + average );
+        double tolerance = average * 0.20d;
+        out.println( "Start check uniform throughput with tolerance: " + tolerance );
 
-        for ( long report : reports )
+        boolean success = true;
+        for ( double report : reports )
         {
-            assertEquals( average, (double) report, tolerance );
+            if ( doubleIsDifferent( average, report, tolerance ) )
+            {
+                System.err.println( "Found a time slot when throughput differs too much wrt the average:" );
+                System.err.println( "\tAverage="+average+", current="+report+", tolerance="+tolerance );
+                success = false;
+            }
         }
+        assertTrue( success );
+    }
+
+    private boolean doubleIsDifferent( double expected, double actual, double tolerance )
+    {
+        return Double.compare( expected, actual ) != 0 && Math.abs( expected - actual ) > tolerance;
     }
 }

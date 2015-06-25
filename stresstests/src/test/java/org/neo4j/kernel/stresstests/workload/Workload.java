@@ -46,31 +46,41 @@ public class Workload implements Resource
 
     public interface TransactionThroughput
     {
+        TransactionThroughput NONE = new TransactionThroughput()
+        {
+            @Override
+            public void report( long transactions, long timeSlotMillis, long timeElapsedMillis )
+            {
+                // ignore
+            }
+        };
+
         void report( long transactions, long timeSlotMillis, long timeElapsedMillis );
     }
 
-    public void run( long runningTimeMinutes, TransactionThroughput throughput ) throws InterruptedException
+    public void run( long runningTimeMillis, TransactionThroughput throughput )
+            throws InterruptedException
     {
         for ( int i = 0; i < threads; i++ )
         {
             executor.submit( worker );
         }
 
-        long finishLine = TimeUnit.MINUTES.toMillis( runningTimeMinutes ) + System.currentTimeMillis();
-        long lastReport = TimeUnit.SECONDS.toMillis( 10 ) + System.currentTimeMillis();
-        long now;
+        long now = System.currentTimeMillis();
+        long finishLine = runningTimeMillis + now;
+        long lastReport = TimeUnit.SECONDS.toMillis( 10 ) + now;
         long previousTransactionCount = 0;
         do
         {
             Thread.sleep( 1000 );
             now = System.currentTimeMillis();
-            if ( lastReport < now )
+            if ( lastReport <= now )
             {
                 long currentTransactionCount = sync.transactions();
                 long diff = currentTransactionCount - previousTransactionCount;
                 throughput.report( diff, 1000, finishLine - now );
                 previousTransactionCount = currentTransactionCount;
-                lastReport = now;
+                lastReport = TimeUnit.SECONDS.toMillis( 10 ) + now;
             }
         }
         while ( now < finishLine );

@@ -22,10 +22,12 @@ package org.neo4j.kernel.stresstests;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.stresstests.tracers.TimerTransactionTracer;
@@ -45,11 +47,11 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
  */
 public class CheckPointingLogRotationStressTesting
 {
-    private static final String DEFAULT_DURATION_IN_MINUTES = "30";
+    private static final String DEFAULT_DURATION_IN_MINUTES = "5";
     private static final String DEFAULT_STORE_DIR = new File( getProperty( "java.io.tmpdir" ), "store" ).getPath();
     private static final String DEFAULT_NODE_COUNT = "100000";
-    private static final String DEFAULT_WORKER_THREADS = "32";
-    private static final String DEFAULT_PAGE_CACHE_MEMORY = "4g";
+    private static final String DEFAULT_WORKER_THREADS = "16";
+    private static final String DEFAULT_PAGE_CACHE_MEMORY = "2g";
     private static final String DEFAULT_PAGE_SIZE = "8k";
 
     @Test
@@ -63,32 +65,43 @@ public class CheckPointingLogRotationStressTesting
         String pageCacheMemory = fromEnv( "CHECK_POINT_LOG_ROTATION_PAGE_CACHE_MEMORY", DEFAULT_PAGE_CACHE_MEMORY );
         String pageSize = fromEnv( "CHECK_POINT_LOG_ROTATION_PAGE_SIZE", DEFAULT_PAGE_SIZE );
 
-        System.out.println( "1/5  Building initial store..." );
+        if ( storeDir.exists() )
+        {
+            FileUtils.deleteRecursively( storeDir );
+        }
+
+        System.out.println( "1/6\tBuilding initial store..." );
         new ParallelBatchImporter( storeDir, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.defaultVisible() )
                 .doImport( new NodeCountInputs( nodeCount ) );
 
-        System.out.println( "2/5  Starting database..." );
+        System.out.println( "2/6\tStarting database..." );
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, pageCacheMemory )
                 .setConfig( GraphDatabaseSettings.mapped_memory_page_size, pageSize )
                 .setConfig( GraphDatabaseFacadeFactory.Configuration.tracer, "timer" )
                 .newGraphDatabase();
 
-        System.out.println( "3/5  Starting workload..." );
+        System.out.println("3/6\tWarm up db...");
+        try ( Workload workload = new Workload( db, defaultRandomMutation( nodeCount, db ), threads ) )
+        {
+            workload.run( TimeUnit.SECONDS.toMillis( 10 ), Workload.TransactionThroughput.NONE );
+        }
+
+        System.out.println( "4/6\tStarting workload..." );
         TransactionThroughputChecker throughput = new TransactionThroughputChecker();
         try ( Workload workload = new Workload( db, defaultRandomMutation( nodeCount, db ), threads ) )
         {
-            workload.run( durationInMinutes, throughput );
+            workload.run( TimeUnit.MINUTES.toMillis( durationInMinutes ), throughput );
         }
 
-        System.out.println( "4/5  Shutting down..." );
+        System.out.println( "5/6\tShutting down..." );
         db.shutdown();
 
         try
         {
-            System.out.println( "5/5  Asserts and printing recorded timings..." );
+            System.out.println( "6/6\tPrinting stats and recorded timings..." );
             TimerTransactionTracer.printStats( System.out );
-            throughput.assertUniformThroughput();
+            throughput.assertUniformThroughput( System.out );
         }
         finally
         {
