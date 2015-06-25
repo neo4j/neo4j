@@ -20,6 +20,9 @@
 package org.neo4j.ext;
 
 import io.netty.channel.Channel;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.SelfSignedCertificate;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.Function;
@@ -51,6 +54,7 @@ import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
 import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.gapNetworkIO;
 
 /**
  * Wraps NDP and exposes it as a Kernel Extension.
@@ -107,10 +111,14 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
 
         if ( config.get( Settings.ndp_enabled ) )
         {
+            final JobScheduler scheduler = dependencies.scheduler();
+
             final Sessions sessions = life.add( new ThreadedSessions(
                     life.add( new StandardSessions( api, dependencies.usageData(), logging ) ),
-                    dependencies.scheduler(),
-                    logging ) );
+                    scheduler, logging ) );
+
+            SelfSignedCertificate ssc = new SelfSignedCertificate();
+            SslContext sslCtx = SslContextBuilder.forServer( ssc.certificate(), ssc.privateKey() ).build();
 
             PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> availableVersions = longObjectMap();
             availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel, SocketProtocol>()
@@ -123,9 +131,9 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
             } );
 
             // Start services
-            life.add( new NettyServer( asList(
-                    new SocketTransport( socketAddress, availableVersions ),
-                    new WebSocketTransport( webSocketAddress, availableVersions ) ) ) );
+            life.add( new NettyServer( scheduler.threadFactory( gapNetworkIO ), asList(
+                    new SocketTransport( socketAddress, sslCtx, logging.getInternalLogProvider(), availableVersions ),
+                    new WebSocketTransport( webSocketAddress, sslCtx, logging.getInternalLogProvider(), availableVersions ) ) ) );
             log.info( "NDP Server extension loaded." );
         }
 

@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -36,26 +37,14 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Group.NO_METADATA;
 
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
-    private final String id;
-
     private ExecutorService globalPool;
     private ScheduledThreadPoolExecutor scheduledExecutor;
-
-    public Neo4jJobScheduler()
-    {
-        this.id = getClass().getSimpleName();
-    }
-
-    public Neo4jJobScheduler( String id )
-    {
-        this.id = id;
-    }
 
     @Override
     public void init()
     {
-        this.globalPool = newCachedThreadPool( daemon( "neo4j.pooled/" + id + trackTest() ) );
-        this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2, daemon( "neo4j.scheduled/" + id + trackTest() ) );
+        this.globalPool = newCachedThreadPool( daemon( "neo4j.Pooled" + trackTest() ) );
+        this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2, daemon( "neo4j.Scheduled" + trackTest() ) );
     }
 
     @Override
@@ -67,6 +56,19 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
             public void execute( Runnable command )
             {
                 schedule( group, command );
+            }
+        };
+    }
+
+    @Override
+    public ThreadFactory threadFactory( final Group group )
+    {
+        return new ThreadFactory()
+        {
+            @Override
+            public Thread newThread( Runnable r )
+            {
+                return createNewThread( group, r, NO_METADATA );
             }
         };
     }
@@ -88,8 +90,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         case POOLED:
             return new PooledJobHandle( this.globalPool.submit( job ) );
         case NEW_THREAD:
-            Thread thread = new Thread( null, job, group.threadName( metadata ) );
-            thread.setDaemon( true );
+            Thread thread = createNewThread( group, job, metadata );
             thread.start();
             return new SingleThreadHandle( thread );
         default:
@@ -170,6 +171,17 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         {
             throw new RuntimeException( "Unable to shut down job scheduler properly.", exception);
         }
+    }
+
+    /**
+     * Used to spin up new threads for groups or access-patterns that don't use the pooled thread options.
+     * The returned thread is not started, to allow users to modify it before setting it in motion.
+     */
+    private Thread createNewThread( Group group, Runnable job, Map<String,String> metadata )
+    {
+        Thread thread = new Thread( null, job, group.threadName( metadata ) );
+        thread.setDaemon( true );
+        return thread;
     }
 
     private static class PooledJobHandle implements JobHandle

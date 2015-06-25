@@ -19,10 +19,17 @@ Neo4j uses _sticky sessions_, which means that, in a database cluster, each sess
 To begin a new session, the client connects using either a regular socket or a WebSocket.
 Once connected, both transport layers can be treated identically.
 
+If Neo4j has been configured to enable encryption, +TLS+, the connections need to be made using a secure socket or a secure WebSocket.
+
 A regular socket connection should be made to the host and port Neo4j has been configured to use for its regular socket listener.
 The default port for regular socket connections is *7687*.
 Similar configuration exists for the WebSocket listener.
 The default port for WebSocket connections is *7688*.
+
+IMPORTANT: If TLS is enabled, and no certificate has been specified, Neo4j will automatically generate a self-signed
+ TLS certificate. It is vital that your database driver not simply accept any certificate without validating it. If
+ you do not verify the certificate it is very simple to bypass the encryption. You should either ensure you have a
+ valid signed certificate installed with Neo4j or that your implements +trust on first use+.
 
 [[ndp-handshake]]
 === Handshake

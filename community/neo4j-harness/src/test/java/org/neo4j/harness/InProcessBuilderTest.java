@@ -48,6 +48,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
@@ -99,9 +100,9 @@ public class InProcessBuilderTest
         // When
         try ( ServerControls server = newInProcessBuilder( testDir.directory() )
                 .withConfig( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, "true")
-                .withConfig( Configurator.WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY, testDir.file( "cert" ).getAbsolutePath() )
+                .withConfig( ServerSettings.tls_certificate_file.name(), testDir.file( "cert" ).getAbsolutePath() )
                 .withConfig( Configurator.WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY, testDir.file( "keystore" ).getAbsolutePath() )
-                .withConfig( Configurator.WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY, testDir.file( "key" ).getAbsolutePath() )
+                .withConfig( ServerSettings.tls_key_file.name(), testDir.file( "key" ).getAbsolutePath() )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
                 .newServer() )
         {

@@ -28,11 +28,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
-import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 
 /**
  * Handles incoming chunks of data for a given client channel. This initially will negotiate a protocol version to use,
@@ -43,11 +43,14 @@ import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 public class SocketTransportHandler extends ChannelInboundHandlerAdapter
 {
     private final ProtocolChooser protocolChooser;
+    private final Log log;
+
     private SocketProtocol protocol;
 
-    public SocketTransportHandler( ProtocolChooser protocolChooser )
+    public SocketTransportHandler( ProtocolChooser protocolChooser, LogProvider logging )
     {
         this.protocolChooser = protocolChooser;
+        this.log = logging.getLog( getClass() );
     }
 
     @Override
@@ -81,6 +84,13 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
     public void handlerRemoved( ChannelHandlerContext ctx ) throws Exception
     {
         close();
+    }
+
+    @Override
+    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
+    {
+        close();
+        log.error( "Fatal error occurred when handling a client connection: " + cause.getMessage(), cause );
     }
 
     private void close()

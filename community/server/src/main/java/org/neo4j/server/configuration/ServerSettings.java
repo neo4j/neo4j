@@ -28,7 +28,9 @@ import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.kernel.configuration.Migrator;
 
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
@@ -51,6 +53,8 @@ import static org.neo4j.helpers.Settings.setting;
 @Description("Settings used by the server configuration")
 public interface ServerSettings
 {
+    @Migrator
+    ConfigurationMigrator migrator = new ServerConfigurationMigrator();
 
     @Description( "Maximum request header size" )
     Setting<Integer> maximum_request_header_size =
@@ -135,17 +139,26 @@ public interface ServerSettings
     @Description( "HTTPS port for the REST API." )
     Setting<Integer> webserver_https_port = setting( "org.neo4j.server.webserver.https.port", INTEGER, "7473", port );
 
-    @Description( "Path to the keystore used to store SSL certificates and keys while the server is running." )
-    Setting<File> webserver_keystore_path = setting(
-            "org.neo4j.server.webserver.https.keystore.location", PATH, "neo4j-home/ssl/keystore" );
+    @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
+    Setting<File> tls_certificate_file = setting(
+            "dbms.security.tls_certificate_file", PATH, "neo4j-home/ssl/snakeoil.cert" );
 
-    @Description( "Path to the SSL certificate used for HTTPS connections." )
+    @Description( "Path to the X.509 private key to be used by Neo4j for TLS connections" )
+    Setting<File> tls_key_file = setting(
+            "dbms.security.tls_key_file", PATH, "neo4j-home/ssl/snakeoil.key" );
+
+    @Deprecated
+    @Description( "Path to the SSL certificate used for HTTPS connections. This is deprecated, please use " +
+                  "'dbms.security.tls_certificate_file' instead." )
     Setting<File> webserver_https_cert_path = setting(
             "org.neo4j.server.webserver.https.cert.location", PATH, "neo4j-home/ssl/snakeoil.cert" );
 
-    @Description( "Path to the SSL key used for HTTPS connections." )
+    @Deprecated
+    @Description( "Path to the SSL key used for HTTPS connections. This is deprecated, please use " +
+                  "'dbms.security.tls_key_file'" )
     Setting<File> webserver_https_key_path = setting(
             "org.neo4j.server.webserver.https.key.location", PATH, "neo4j-home/ssl/snakeoil.key" );
+
 
     @Description( "Enable HTTP request logging." )
     Setting<Boolean> http_logging_enabled = setting( "org.neo4j.server.http.log.enabled", BOOLEAN, FALSE );
@@ -165,7 +178,11 @@ public interface ServerSettings
 
     @Internal
     @Description("Enable Neo4j Data Protocol")
-    Setting<Boolean> ndp_enabled = setting( "xx.ndp.enabled", BOOLEAN, "false" );
+    Setting<Boolean> ndp_enabled = setting( "xx.ndp.enabled", BOOLEAN, FALSE );
+
+    @Internal
+    @Description("Enable TLS for the Neo4j Data Protocol")
+    Setting<Boolean> ndp_tls_enabled = setting( "xx.ndp.tls.enabled", BOOLEAN, FALSE );
 
     @Internal
     @Description("Host and port for the Neo4j Data Protocol")

@@ -24,10 +24,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.impl.util.HexPrinter;
 
 public class SocketConnection implements Connection
 {
@@ -35,10 +33,21 @@ public class SocketConnection implements Connection
     private InputStream in;
     private OutputStream out;
 
-    @Override
-    public Connection connect( HostnamePort address ) throws IOException
+    public SocketConnection()
     {
-        socket = new Socket();
+        this(new Socket());
+    }
+
+    public SocketConnection( Socket socket )
+    {
+        this.socket = socket;
+    }
+
+    @Override
+    public Connection connect( HostnamePort address ) throws Exception
+    {
+        socket.setSoTimeout( 30 * 1000 );
+
         socket.connect( new InetSocketAddress( address.getHost(), address.getPort() ) );
         in = socket.getInputStream();
         out = socket.getOutputStream();
@@ -55,19 +64,12 @@ public class SocketConnection implements Connection
     @Override
     public byte[] recv( int length ) throws IOException, InterruptedException
     {
-        long timeout = System.currentTimeMillis() + 1000 * 30;
         byte[] bytes = new byte[length];
         int left = length, read;
-
-        waitUntilAvailable( bytes, timeout, left );
 
         while ( (read = in.read( bytes, length - left, left )) != -1 && left > 0 )
         {
             left -= read;
-            if ( left > 0 )
-            {
-                waitUntilAvailable( bytes, timeout, left );
-            }
         }
         return bytes;
     }
@@ -78,20 +80,6 @@ public class SocketConnection implements Connection
         for ( int i = 0; i < length; i++ )
         {
             in.read();
-        }
-    }
-
-    private void waitUntilAvailable( byte[] recieved, long timeout, int left ) throws IOException
-    {
-        while ( in.available() == 0 )
-        {
-            if ( System.currentTimeMillis() > timeout )
-            {
-                throw new IOException( "Waited 30 seconds for " + left + " bytes, " +
-                                       "recieved " + (recieved.length - left) + ":\n" +
-                                       HexPrinter.hex(
-                                               ByteBuffer.wrap( recieved ), 0, recieved.length - left ) );
-            }
         }
     }
 

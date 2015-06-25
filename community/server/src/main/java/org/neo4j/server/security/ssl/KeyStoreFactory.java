@@ -20,7 +20,6 @@
 package org.neo4j.server.security.ssl;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -34,80 +33,40 @@ import javax.crypto.NoSuchPaddingException;
 
 public class KeyStoreFactory
 {
-    private SslCertificateFactory sslCertificateFactory;
+    private Certificates certFactory;
 
     public KeyStoreFactory()
     {
-        this.sslCertificateFactory = new SslCertificateFactory();
+        this.certFactory = new Certificates();
     }
 
-    public KeyStoreInformation createKeyStore( File keyStorePath, File privateKeyPath, File certificatePath )
+    public KeyStoreInformation createKeyStore( File privateKeyPath, File certificatePath )
+            throws Exception
     {
-        try
-        {
+        char[] keyStorePassword = getRandomChars( 50 );
+        char[] keyPassword = getRandomChars( 50 );
 
-            char[] keyStorePassword = getRandomChars( 50 );
-            char[] keyPassword = getRandomChars( 50 );
+        KeyStore ks = createKeyStore( keyStorePassword, keyPassword,
+                privateKeyPath, certificatePath );
 
-            createKeyStore( keyStorePath, keyStorePassword, keyPassword,
-                    privateKeyPath, certificatePath );
-
-            return new KeyStoreInformation( keyStorePath.getAbsolutePath(),
-                    keyStorePassword, keyPassword );
-
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException(
-                    "Unable to setup keystore for SSL certificate, see nested exception.", e );
-        }
+        return new KeyStoreInformation( ks, keyStorePassword, keyPassword );
     }
 
-    private void createKeyStore( File keyStorePath, char[] keyStorePassword,
-                                 char[] keyPassword, File privateKeyFile, File certFile )
+    private KeyStore createKeyStore( char[] keyStorePassword, char[] keyPassword, File privateKeyFile, File certFile )
             throws KeyStoreException, NoSuchAlgorithmException,
             CertificateException, IOException, InvalidKeyException,
             InvalidKeySpecException, NoSuchPaddingException,
             InvalidAlgorithmParameterException
     {
-        FileOutputStream fis = null;
-        try
-        {
+        KeyStore keyStore = KeyStore.getInstance( "JKS" );
 
-            if ( keyStorePath.exists() )
-            {
-                keyStorePath.delete();
-            }
+        // Initialize the keystore
+        keyStore.load( null, keyStorePassword );
 
-            ensureFolderExists( keyStorePath.getParentFile() );
+        // Stuff our key into it
+        keyStore.setKeyEntry( "key", certFactory.loadPrivateKey( privateKeyFile ), keyPassword, certFactory.loadCertificates( certFile ) );
 
-            KeyStore keyStore = KeyStore.getInstance( "JKS" );
-            keyStore.load( null, keyStorePassword );
-
-            keyStore.setKeyEntry(
-                    "key",
-                    sslCertificateFactory.loadPrivateKey( privateKeyFile ),
-                    keyPassword,
-                    sslCertificateFactory.loadCertificates( certFile ) );
-
-            fis = new FileOutputStream( keyStorePath.getAbsolutePath() );
-            keyStore.store( fis, keyStorePassword );
-
-        }
-        finally
-        {
-            if ( fis != null )
-            {
-                try
-                {
-                    fis.close();
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
-        }
+        return keyStore;
     }
 
     private char[] getRandomChars( int length )
@@ -119,13 +78,5 @@ public class KeyStoreFactory
             chars[i] = (char) rand.nextInt();
         }
         return chars;
-    }
-
-    private void ensureFolderExists( File path )
-    {
-        if ( !path.exists() )
-        {
-            path.mkdirs();
-        }
     }
 }

@@ -355,7 +355,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 Bouncy Castle License
-  Legion of the Bouncy Castle Java Cryptography APIs
+  Bouncy Castle Provider
 ------------------------------------------------------------------------------
 
 Please note: our license is an adaptation of the MIT X11 License and should be

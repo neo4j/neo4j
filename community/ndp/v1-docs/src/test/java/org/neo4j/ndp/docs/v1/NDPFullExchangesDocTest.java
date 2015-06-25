@@ -30,8 +30,8 @@ import java.util.Collection;
 
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.ndp.transport.socket.client.Connection;
-import org.neo4j.ndp.transport.socket.client.SocketConnection;
-import org.neo4j.ndp.transport.socket.client.WebSocketConnection;
+import org.neo4j.ndp.transport.socket.client.SecureSocketConnection;
+import org.neo4j.ndp.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.ndp.transport.socket.integration.Neo4jWithSocket;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -72,8 +72,8 @@ public class NDPFullExchangesDocTest
                 "code[data-lang=\"ndp_exchange\"]",
                 exchange_example ) )
         {
-            mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SocketConnection(), socketAddress} );
-            mappings.add( new Object[]{"WebSocket - "+ex.name(), ex, new WebSocketConnection(), wsAddress} );
+            mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SecureSocketConnection(), socketAddress} );
+            mappings.add( new Object[]{"WebSocket - "+ex.name(), ex, new SecureWebSocketConnection(), wsAddress} );
         }
 
         for ( DocExchangeExample ex : docs().read(
@@ -81,8 +81,8 @@ public class NDPFullExchangesDocTest
                 "code[data-lang=\"ndp_exchange\"]",
                 exchange_example ) )
         {
-            mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SocketConnection(), socketAddress} );
-            mappings.add( new Object[]{"WebSocket - "+ex.name(), ex, new WebSocketConnection(), wsAddress} );
+            mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SecureSocketConnection(), socketAddress} );
+            mappings.add( new Object[]{"WebSocket - "+ex.name(), ex, new SecureWebSocketConnection(), wsAddress} );
         }
 
         return mappings;

@@ -24,17 +24,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.ConnectException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.util.Arrays;
-
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.ndp.transport.socket.client.SecureSocketConnection;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 
 public class Neo4jDataProtocolIT extends ExclusiveServerTestBase
@@ -56,6 +52,7 @@ public class Neo4jDataProtocolIT extends ExclusiveServerTestBase
         // When I run Neo4j with NDP enabled
         server = server()
                 .withProperty( ServerSettings.ndp_enabled.name(), "true" )
+                .withProperty( ServerSettings.ndp_tls_enabled.name(), "true" )
                 .usingDatabaseDir( tmpDir.getRoot().getAbsolutePath() )
                 .build();
         server.start();
@@ -67,10 +64,10 @@ public class Neo4jDataProtocolIT extends ExclusiveServerTestBase
     @Test
     public void shouldBeAbleToSpecifyHostAndPort() throws Throwable
     {
-        // When I run Neo4j with the ndp extension on the class path
-        // When I run Neo4j with NDP enabled
+        // When I run Neo4j with NDP enabled, and a non-standard port configured
         server = server()
                 .withProperty( ServerSettings.ndp_enabled.name(), "true" )
+                .withProperty( ServerSettings.ndp_tls_enabled.name(), "true" )
                 .withProperty( ServerSettings.ndp_socket_address.name(), "localhost:8776" )
                 .usingDatabaseDir( tmpDir.getRoot().getAbsolutePath() )
                 .build();
@@ -80,52 +77,11 @@ public class Neo4jDataProtocolIT extends ExclusiveServerTestBase
         assertEventuallyServerResponds( "localhost", 8776 );
     }
 
-    private void assertEventuallyServerResponds( String host, int port ) throws IOException, InterruptedException
+    private void assertEventuallyServerResponds( String host, int port ) throws Exception
     {
-        long timeout = System.currentTimeMillis() + 1000 * 30;
-        for (; ; )
-        {
-            if ( serverResponds( host, port ) )
-            {
-                return;
-            }
-            else
-            {
-                Thread.sleep( 100 );
-            }
-
-            // Make sure process still is alive
-            if ( System.currentTimeMillis() > timeout )
-            {
-                throw new RuntimeException( "Waited for 30 seconds for server to respond to HTTP calls, " +
-                                            "but no response, timing out to avoid blocking forever." );
-            }
-        }
-    }
-
-    private boolean serverResponds( String host, int port ) throws IOException, InterruptedException
-    {
-        try
-        {
-            try ( Socket socket = new Socket() )
-            {
-                // Ok, we can connect - can we perform the version handshake?
-                socket.connect( new InetSocketAddress( host, port ) );
-                OutputStream out = socket.getOutputStream();
-                InputStream in = socket.getInputStream();
-
-                // Hard-coded handshake, a general "test client" would be useful further on.
-                out.write( new byte[]{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} );
-
-                byte[] accepted = new byte[4];
-                in.read( accepted );
-
-                return Arrays.equals( accepted, new byte[]{0, 0, 0, 1} );
-            }
-        }
-        catch ( ConnectException e )
-        {
-            return false;
-        }
+        SecureSocketConnection conn = new SecureSocketConnection();
+        conn.connect( new HostnamePort( host, port ) );
+        conn.send( new byte[]{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} );
+        assertThat( conn.recv( 4 ), equalTo( new byte[]{0, 0, 0, 1} ));
     }
 }

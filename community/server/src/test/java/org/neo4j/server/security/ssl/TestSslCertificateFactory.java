@@ -19,31 +19,44 @@
  */
 package org.neo4j.server.security.ssl;
 
+import io.netty.handler.ssl.util.SelfSignedCertificate;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.server.security.ssl.SslCertificateFactory;
+import org.neo4j.io.fs.FileUtils;
 
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 public class TestSslCertificateFactory
 {
-    private File cPath;
-    private File pkPath;
+    @Rule
+    public TemporaryFolder tmpDir = new TemporaryFolder();
 
     @Test
     public void shouldCreateASelfSignedCertificate() throws Exception
     {
-        SslCertificateFactory sslFactory = new SslCertificateFactory();
+        // Given
+        Certificates sslFactory = new Certificates();
+        File cPath = tmpDir.newFile( "certificate" );
+        File pkPath = tmpDir.newFile( "key" );
+
+        // When
         sslFactory.createSelfSignedCertificate( cPath, pkPath, "myhost" );
 
+        // Then
         // Attempt to load certificate
         Certificate[] certificates = sslFactory.loadCertificates( cPath );
         assertThat( certificates.length, is( greaterThan( 0 ) ) );
@@ -52,18 +65,92 @@ public class TestSslCertificateFactory
         PrivateKey pk = sslFactory.loadPrivateKey( pkPath );
         assertThat( pk, notNullValue() );
     }
-    
-    @Before
-    public void createFiles() throws Exception
+
+    @Test
+    public void shouldLoadPEMCertificates() throws Throwable
     {
-        cPath = File.createTempFile( "cert", "test" );
-        pkPath = File.createTempFile( "privatekey", "test" );
+        // Given
+        SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
+        Certificates certs = new Certificates();
+
+        File pemCertificate = cert.certificate();
+
+        // When
+        Certificate[] certificates = certs.loadCertificates( pemCertificate );
+
+        // Then
+        assertThat(certificates.length, equalTo(1));
     }
 
-    @After
-    public void deleteFiles() throws Exception
+    @Test
+    public void shouldLoadPEMPrivateKey() throws Throwable
     {
-        pkPath.delete();
-        cPath.delete();
+        // Given
+        SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
+        Certificates certs = new Certificates();
+
+        File privateKey = cert.privateKey();
+
+        // When
+        PrivateKey pk = certs.loadPrivateKey( privateKey );
+
+        // Then
+        assertNotNull( pk );
+    }
+
+    /**
+     * For backwards-compatibility reasons, we support both PEM-encoded certificates *and* raw binary files containing
+     * the certificate data.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void shouldLoadBinaryCertificates() throws Throwable
+    {
+        // Given
+        SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
+        Certificates certs = new Certificates();
+
+        File cPath = tmpDir.newFile( "certificate" );
+        byte[] raw = certs.loadCertificates(cert.certificate())[0].getEncoded();
+
+        try(FileChannel ch = FileChannel.open( cPath.toPath(), WRITE ))
+        {
+            FileUtils.writeAll( ch, ByteBuffer.wrap( raw ) );
+        }
+
+        // When
+        Certificate[] certificates = certs.loadCertificates( cPath );
+
+        // Then
+        assertThat( certificates.length, equalTo( 1 ) );
+    }
+
+    /**
+     * For backwards-compatibility reasons, we support both PEM-encoded private keys *and* raw binary files containing
+     * the private key data
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void shouldLoadBinaryPrivateKey() throws Throwable
+    {
+        // Given
+        SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
+        Certificates certs = new Certificates();
+
+        File keyFile = tmpDir.newFile( "certificate" );
+        byte[] raw = certs.loadPrivateKey( cert.privateKey() ).getEncoded();
+
+        try(FileChannel ch = FileChannel.open( keyFile.toPath(), WRITE ))
+        {
+            FileUtils.writeAll( ch, ByteBuffer.wrap( raw ) );
+        }
+
+        // When
+        PrivateKey pk = certs.loadPrivateKey( keyFile );
+
+        // Then
+        assertNotNull( pk );
     }
 }

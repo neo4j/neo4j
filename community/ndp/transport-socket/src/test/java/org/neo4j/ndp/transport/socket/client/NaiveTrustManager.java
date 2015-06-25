@@ -17,33 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.ssl;
+package org.neo4j.ndp.transport.socket.client;
 
-import java.security.KeyStore;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.X509TrustManager;
 
-public class KeyStoreInformation {
-
-    private final char[] keyStorePassword;
-    private final char[] keyPassword;
-    private final KeyStore keyStore;
-
-    public KeyStoreInformation(KeyStore keyStore, char[] keyStorePassword, char[] keyPassword)
+/** Trust self-signed certificates */
+public class NaiveTrustManager implements X509TrustManager
+{
+    @Override
+    public void checkClientTrusted( X509Certificate[] x509Certificates, String s ) throws CertificateException
     {
-        this.keyStore = keyStore;
-        this.keyStorePassword = keyStorePassword;
-        this.keyPassword = keyPassword;
-    }
-    
-    public char[] getKeyStorePassword() {
-        return keyStorePassword;
+
     }
 
-    public char[] getKeyPassword() {
-        return keyPassword;
-    }
-
-    public KeyStore getKeyStore()
+    @Override
+    public void checkServerTrusted( X509Certificate[] x509Certificates, String s ) throws CertificateException
     {
-        return keyStore;
+
+    }
+
+    @Override
+    public X509Certificate[] getAcceptedIssuers()
+    {
+        return null;
     }
 }

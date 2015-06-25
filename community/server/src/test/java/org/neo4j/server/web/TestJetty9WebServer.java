@@ -19,68 +19,64 @@
  */
 package org.neo4j.server.web;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.Mute;
+import org.neo4j.test.server.ExclusiveServerTestBase;
+import org.neo4j.test.server.HTTP;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Mute.muteAll;
 
-public class TestJetty9WebServer
+public class TestJetty9WebServer extends ExclusiveServerTestBase
 {
+    private Jetty9WebServer webServer;
+    private CommunityNeoServer server;
+
     @Test
     public void shouldBeAbleToUsePortZero() throws IOException
     {
-        Jetty9WebServer webServer = new Jetty9WebServer( NullLogProvider.getInstance(), new Config() );
+        // Given
+        webServer = new Jetty9WebServer( NullLogProvider.getInstance(), new Config() );
 
         webServer.setPort( 0 );
 
+        // When
         webServer.start();
 
-        webServer.stop();
+        // Then no exception
     }
 
     @Test
     public void shouldBeAbleToRestart() throws Throwable
     {
-        Jetty9WebServer server = new Jetty9WebServer( NullLogProvider.getInstance(), new Config() );
-        try
-        {
-            server.setAddress( "127.0.0.1" );
-            server.setPort( 7878 );
+        // given
+        webServer = new Jetty9WebServer( NullLogProvider.getInstance(), new Config() );
+        webServer.setAddress( "127.0.0.1" );
+        webServer.setPort( 7878 );
 
-            server.start();
-            server.stop();
-            server.start();
-        }
-        finally
-        {
-            try
-            {
-                server.stop();
-            }
-            catch ( Throwable t )
-            {
+        // when
+        webServer.start();
+        webServer.stop();
+        webServer.start();
 
-            }
-        }
+        // then no exception
     }
 
     @Test
@@ -88,12 +84,9 @@ public class TestJetty9WebServer
     {
         @SuppressWarnings("deprecation")
         ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( new File( "path" ), stringMap(),
-                GraphDatabaseDependencies.newDependencies() )
-        {
-        };
+                GraphDatabaseDependencies.newDependencies() );
 
         ServerConfigurator config = new ServerConfigurator( db );
-        config.configuration().setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, "7476" );
         config.configuration().setProperty( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, "1000s" );
         WrappingNeoServerBootstrapper testBootstrapper = new WrappingNeoServerBootstrapper( db, config );
 
@@ -102,8 +95,6 @@ public class TestJetty9WebServer
         testBootstrapper.stop();
 
         // Then it should not have crashed
-        // TODO: This is a really poor test, but does not feel worth re-visiting right now since we're removing the
-        // guard in subsequent releases.
     }
 
     @Test
@@ -121,29 +112,19 @@ public class TestJetty9WebServer
     @Test
     public void shouldDisallowDirectoryListings() throws Exception
     {
-        @SuppressWarnings("deprecation")
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( new File( "path" ), stringMap(),
-                GraphDatabaseDependencies.newDependencies() )
-        {
-        };
+        // Given
+        server = CommunityServerBuilder.server().build();
+        server.start();
 
-        ServerConfigurator config = new ServerConfigurator( db );
-        config.configuration().setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, "7477" );
-        WrappingNeoServerBootstrapper testBootstrapper = new WrappingNeoServerBootstrapper( db, config );
+        // When
+        HTTP.Response okResource = HTTP.GET( server.baseUri().resolve( "/browser/content/help/create.html" ).toString() );
+        HTTP.Response illegalResource = HTTP.GET( server.baseUri().resolve( "/browser/content/help/" ).toString() );
 
-        testBootstrapper.start();
-
-        try ( CloseableHttpClient httpClient = HttpClientBuilder.create().build() )
-        {
-            // Depends on specific resources exposed by the browser module; if this test starts to fail,
-            // check whether the structure of the browser module has changed and adjust accordingly.
-            assertEquals( 200, httpClient.execute( new HttpGet(
-                    "http://localhost:7477/browser/content/help/create.html" ) ).getStatusLine().getStatusCode() );
-            assertEquals( 403, httpClient.execute( new HttpGet(
-                    "http://localhost:7477/browser/content/help/" ) ).getStatusLine().getStatusCode() );
-        }
-
-        testBootstrapper.stop();
+        // Then
+        // Depends on specific resources exposed by the browser module; if this test starts to fail,
+        // check whether the structure of the browser module has changed and adjust accordingly.
+        assertEquals( 200, okResource.status() );
+        assertEquals( 403, illegalResource.status() );
     }
 
     @Rule
@@ -151,4 +132,19 @@ public class TestJetty9WebServer
 
     @Rule
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+
+    @After
+    public void cleanup()
+    {
+        if( webServer != null )
+        {
+            webServer.stop();
+        }
+
+        if( server != null )
+        {
+            server.stop();
+        }
+    }
+
 }

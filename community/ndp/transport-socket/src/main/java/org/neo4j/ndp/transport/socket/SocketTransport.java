@@ -27,12 +27,13 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.ssl.SslContext;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.BiConsumer;
-import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Implements a transport for the Neo4j Messaging Protocol that uses good old regular sockets.
@@ -40,11 +41,16 @@ import org.neo4j.helpers.HostnamePort;
 public class SocketTransport implements BiConsumer<EventLoopGroup, EventLoopGroup>
 {
     private final HostnamePort address;
+    private final SslContext sslCtx;
+    private LogProvider logging;
     private final PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> protocolVersions;
 
-    public SocketTransport( HostnamePort address, PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> protocolVersions)
+    public SocketTransport( HostnamePort address, SslContext sslCtx, LogProvider logging,
+            PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> protocolVersions)
     {
         this.address = address;
+        this.sslCtx = sslCtx;
+        this.logging = logging;
         this.protocolVersions = protocolVersions;
     }
 
@@ -65,8 +71,15 @@ public class SocketTransport implements BiConsumer<EventLoopGroup, EventLoopGrou
                     @Override
                     public void initChannel( SocketChannel ch ) throws Exception
                     {
+                        ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
+
+                        if( sslCtx != null )
+                        {
+                            ch.pipeline().addLast( sslCtx.newHandler( ch.alloc() ) );
+                        }
+
                         ch.pipeline().addLast( new SocketTransportHandler(
-                                new SocketTransportHandler.ProtocolChooser( protocolVersions ) ) );
+                                new SocketTransportHandler.ProtocolChooser( protocolVersions ), logging ) );
                     }
                 } );
 

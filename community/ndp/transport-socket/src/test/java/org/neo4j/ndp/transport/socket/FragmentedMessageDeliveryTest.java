@@ -140,6 +140,10 @@ public class FragmentedMessageDeliveryTest
                                       "\n" +
                                       "Unfragmented data: " + HexPrinter.hex( unfragmented ) + "\n", e );
         }
+        finally
+        {
+            protocol.close(); // To avoid buffer leak errors
+        }
     }
 
     private String describeFragments( ByteBuf[] fragments )

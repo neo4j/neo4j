@@ -36,12 +36,9 @@ import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
 import org.neo4j.ndp.transport.socket.client.Connection;
-import org.neo4j.ndp.transport.socket.client.SocketConnection;
-import org.neo4j.ndp.transport.socket.client.WebSocketConnection;
 import org.neo4j.packstream.BufferedChannelOutput;
 import org.neo4j.packstream.PackStream;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.ndp.messaging.v1.message.Messages.run;
 import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.msgFailure;
@@ -67,29 +64,7 @@ public class TransportErrorIT
     @Parameterized.Parameters
     public static Collection<Object[]> transports()
     {
-        return asList(
-                new Object[]{
-                        new Factory<Connection>()
-                        {
-                            @Override
-                            public Connection newInstance()
-                            {
-                                return new SocketConnection();
-                            }
-                        },
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        new Factory<Connection>()
-                        {
-                            @Override
-                            public Connection newInstance()
-                            {
-                                return new WebSocketConnection();
-                            }
-                        },
-                        new HostnamePort( "localhost:7688" )
-                } );
+        return TransportSessionIT.transports();
     }
 
     @Test

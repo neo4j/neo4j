@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.configuration;
 
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.MapConfiguration;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,14 +29,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.MapConfiguration;
-
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.logging.Logger;
 import org.neo4j.server.web.ServerInternalSettings;
+
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
@@ -94,14 +95,14 @@ public interface Configurator
     String WEBSERVER_HTTPS_PORT_PROPERTY_KEY = ServerSettings.webserver_https_port.name();
     int DEFAULT_WEBSERVER_HTTPS_PORT = Integer.valueOf( ServerSettings.webserver_https_port.getDefaultValue() );
 
-    String WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY = ServerSettings.webserver_keystore_path.name();
-    String DEFAULT_WEBSERVER_KEYSTORE_PATH = ServerSettings.webserver_keystore_path.getDefaultValue();
+    String WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.https.keystore.location";
+    String DEFAULT_WEBSERVER_KEYSTORE_PATH = "";
 
-    String WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY = ServerSettings.webserver_https_cert_path.name();
-    String DEFAULT_WEBSERVER_HTTPS_CERT_PATH = ServerSettings.webserver_https_cert_path.getDefaultValue();
+    String WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY = ServerSettings.tls_certificate_file.name();
+    String DEFAULT_WEBSERVER_HTTPS_CERT_PATH = ServerSettings.tls_certificate_file.getDefaultValue();
 
-    String WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY = ServerSettings.webserver_https_key_path.name();
-    String DEFAULT_WEBSERVER_HTTPS_KEY_PATH = ServerSettings.webserver_https_key_path.getDefaultValue();
+    String WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY = ServerSettings.tls_key_file.name();
+    String DEFAULT_WEBSERVER_HTTPS_KEY_PATH = ServerSettings.tls_key_file.getDefaultValue();
 
     String HTTP_LOGGING = ServerSettings.http_logging_enabled.name();
     boolean DEFAULT_HTTP_LOGGING = Boolean.valueOf( ServerSettings.http_logging_enabled.getDefaultValue() );

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.util;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -80,9 +81,9 @@ public interface JobScheduler extends Lifecycle
         {
             if ( metadata.containsKey( THREAD_ID ) )
             {
-                return "neo4j." + name() + "/" + metadata.get( THREAD_ID );
+                return "neo4j." + name() + "-" + metadata.get( THREAD_ID );
             }
-            return "neo4j." + name() + "/" + threadCounter.incrementAndGet();
+            return "neo4j." + name() + "-" + threadCounter.incrementAndGet();
         }
 
     }
@@ -136,6 +137,11 @@ public interface JobScheduler extends Lifecycle
          * Checkpoint and store flush
          */
         public static final Group checkPoint = new Group( "CheckPoint", POOLED );
+
+        /**
+         * Network IO threads for the GAP protocol.
+         */
+        public static final Group gapNetworkIO = new Group( "GAPNetworkIO", NEW_THREAD );
     }
 
     interface JobHandle
@@ -145,6 +151,20 @@ public interface JobScheduler extends Lifecycle
 
     /** Expose a group scheduler as an {@link Executor} */
     Executor executor( Group group );
+
+    /**
+     * Expose a group scheduler as a {@link java.util.concurrent.ThreadFactory}.
+     * This is a lower-level alternative than {@link #executor(Group)}, where you are in control of when to spin
+     * up new threads for your jobs.
+     *
+     * The lifecycle of the threads you get out of here are not managed by the JobScheduler, you own the lifecycle and
+     * must start the thread before it can be used.
+     *
+     * This mechanism is strongly preferred over manually creating threads, as it allows a central place for record
+     * keeping of thread creation, central place for customizing the threads based on their groups, and lays a
+     * foundation for controlling things like thread affinity and priorities in a coordinated manner in the future.
+     */
+    ThreadFactory threadFactory( Group group );
 
     /** Schedule a new job in the specified group. */
     JobHandle schedule( Group group, Runnable job );

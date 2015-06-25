@@ -138,7 +138,7 @@ public class Neo4jJobSchedulerTest
         // Then
         try
         {
-            String threadName = "neo4j.MyGroup/MyTestThread";
+            String threadName = "neo4j.MyGroup-MyTestThread";
             for ( String name : threadNames() )
             {
                 if ( name.equals( threadName ) )

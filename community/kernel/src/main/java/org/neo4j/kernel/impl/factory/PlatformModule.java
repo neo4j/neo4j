@@ -249,7 +249,7 @@ public class PlatformModule
 
     protected Neo4jJobScheduler createJobScheduler()
     {
-        return new Neo4jJobScheduler( config.get( GraphDatabaseFacadeFactory.Configuration.editionName ) );
+        return new Neo4jJobScheduler();
     }
 
     protected PageCache createPageCache( FileSystemAbstraction fileSystem,
