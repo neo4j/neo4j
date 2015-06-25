@@ -304,11 +304,16 @@ public class MuninnPageCache implements PageCache
                     cachePageSize + ")" );
         }
         boolean createIfNotExists = false;
+        boolean truncateExisting = false;
         for ( OpenOption option : openOptions )
         {
             if ( option.equals( StandardOpenOption.CREATE ) )
             {
                 createIfNotExists = true;
+            }
+            else if ( option.equals( StandardOpenOption.TRUNCATE_EXISTING ) )
+            {
+                truncateExisting = true;
             }
             else if ( !ignoredOpenOptions.contains( option ) )
             {
@@ -333,6 +338,10 @@ public class MuninnPageCache implements PageCache
                             " bytes.";
                     throw new IllegalArgumentException( msg );
                 }
+                if ( truncateExisting )
+                {
+                    throw new UnsupportedOperationException( "Cannot truncate a file that is already mapped" );
+                }
                 pagedFile.incrementRefCount();
                 return pagedFile;
             }
@@ -347,7 +356,8 @@ public class MuninnPageCache implements PageCache
                 swapperFactory,
                 cursorPool,
                 tracer,
-                createIfNotExists );
+                createIfNotExists,
+                truncateExisting );
         pagedFile.incrementRefCount();
         current = new FileMapping( file, pagedFile );
         current.next = mappedFiles;

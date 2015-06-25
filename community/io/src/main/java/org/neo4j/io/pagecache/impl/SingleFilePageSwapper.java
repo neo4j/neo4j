@@ -104,7 +104,7 @@ public class SingleFilePageSwapper implements PageSwapper
     // Guarded by synchronized(this). See tryReopen() and close().
     private boolean closed;
 
-    // Accessed through unsafe
+    @SuppressWarnings( "unused" ) // Accessed through unsafe
     private volatile long fileSize;
 
     public SingleFilePageSwapper(
@@ -139,6 +139,11 @@ public class SingleFilePageSwapper implements PageSwapper
     private long getCurrentFileSize()
     {
         return UnsafeUtil.getLongVolatile( this, fileSizeOffset );
+    }
+
+    private void setCurrentFileSize( long size )
+    {
+        UnsafeUtil.putLongVolatile( this, fileSizeOffset, size );
     }
 
     private StoreChannel channel( long filePageId )
@@ -405,6 +410,31 @@ public class SingleFilePageSwapper implements PageSwapper
         long div = channelSize / filePageSize;
         long mod = channelSize % filePageSize;
         return mod == 0? div - 1 : div;
+    }
+
+    @Override
+    public void truncate() throws IOException
+    {
+        setCurrentFileSize( 0 );
+        int tokenFilePageId = 0;
+        try
+        {
+            channel( tokenFilePageId ).truncate( 0 );
+        }
+        catch ( ClosedChannelException e )
+        {
+            // AsynchronousCloseException is a subclass of
+            // ClosedChannelException, and ClosedByInterruptException is in
+            // turn a subclass of AsynchronousCloseException.
+            tryReopen( tokenFilePageId, e );
+            boolean interrupted = Thread.interrupted();
+            // Recurse because this is hopefully a very rare occurrence.
+            truncate();
+            if ( interrupted )
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     @Override

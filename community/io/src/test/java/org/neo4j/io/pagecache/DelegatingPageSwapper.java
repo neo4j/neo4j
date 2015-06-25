@@ -70,4 +70,9 @@ public class DelegatingPageSwapper implements PageSwapper
     {
         return delegate.getLastPageId();
     }
+
+    public void truncate() throws IOException
+    {
+        delegate.truncate();
+    }
 }

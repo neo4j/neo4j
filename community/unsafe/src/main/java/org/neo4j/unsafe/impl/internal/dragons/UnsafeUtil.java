@@ -400,6 +400,11 @@ public final class UnsafeUtil
         unsafe.putLong( obj, offset, value );
     }
 
+    public static void putLongVolatile( Object obj, long offset, long value )
+    {
+        unsafe.putLongVolatile( obj, offset, value );
+    }
+
     public static long getLongVolatile( Object obj, long offset )
     {
         return unsafe.getLongVolatile( obj, offset );

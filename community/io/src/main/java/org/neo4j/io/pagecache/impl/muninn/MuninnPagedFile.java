@@ -70,7 +70,8 @@ final class MuninnPagedFile implements PagedFile
             PageSwapperFactory swapperFactory,
             CursorPool cursorPool,
             PageCacheTracer tracer,
-            boolean createIfNotExists ) throws IOException
+            boolean createIfNotExists,
+            boolean truncateExisting ) throws IOException
     {
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
@@ -91,6 +92,10 @@ final class MuninnPagedFile implements PagedFile
         // the translationTable field and releases the resize lock.
         PageEvictionCallback onEviction = new MuninnPageEvictionCallback( this );
         swapper = swapperFactory.createPageSwapper( file, filePageSize, onEviction, createIfNotExists );
+        if ( truncateExisting )
+        {
+            swapper.truncate();
+        }
         long lastPageId = swapper.getLastPageId();
 
         int initialChunks = 1 + computeChunkId( lastPageId );

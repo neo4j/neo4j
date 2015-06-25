@@ -3948,7 +3948,6 @@ public abstract class PageCacheTest<T extends PageCache>
     public void mustThrowOnUnsupportedOpenOptions() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-        verifyMappingWithOpenOptionThrows( StandardOpenOption.TRUNCATE_EXISTING );
         verifyMappingWithOpenOptionThrows( StandardOpenOption.CREATE_NEW );
         verifyMappingWithOpenOptionThrows( StandardOpenOption.DELETE_ON_CLOSE );
         verifyMappingWithOpenOptionThrows( StandardOpenOption.SYNC );
@@ -3967,12 +3966,42 @@ public abstract class PageCacheTest<T extends PageCache>
     {
         try
         {
-            pageCache.map( file, filePageSize, option );
+            pageCache.map( file, filePageSize, option ).close();
             fail( "Expected PageCache.map() to throw when given the OpenOption " + option );
         }
         catch ( IllegalArgumentException | UnsupportedOperationException e )
         {
             // good
+        }
+    }
+
+    @Test
+    public void mappingFileWithTruncateOptionMustTruncateFile() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor cursor = pf.io( 10, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertThat( pf.getLastPageId(), is( -1L ) );
+            assertTrue( cursor.next() );
+            cursor.putInt( 0xcafebabe );
+        }
+        try ( PagedFile pf = pageCache.map( file, filePageSize, StandardOpenOption.TRUNCATE_EXISTING );
+              PageCursor cursor = pf.io( 0, PF_SHARED_LOCK ) )
+        {
+            assertThat( pf.getLastPageId(), is( -1L ) );
+            assertFalse( cursor.next() );
+        }
+    }
+
+    @Test( expected = UnsupportedOperationException.class )
+    public void mappingAlreadyMappedFileWithTruncateOptionMustThrow() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile first = pageCache.map( file, filePageSize );
+              PagedFile second = pageCache.map( file, filePageSize, StandardOpenOption.TRUNCATE_EXISTING ) )
+        {
+            fail( "the second map call should have thrown" );
         }
     }
 }

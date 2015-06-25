@@ -70,7 +70,8 @@ public abstract class PageSwapperTest
         return new ByteBufferPage( ByteBuffer.allocateDirect( cachePageSize ) );
     }
 
-    protected ByteBufferPage createPage() {
+    protected ByteBufferPage createPage()
+    {
         return createPage( cachePageSize() );
     }
 
@@ -267,7 +268,8 @@ public abstract class PageSwapperTest
     }
 
     @Test
-    public void mustNotOverwriteDataInOtherFiles() throws Exception {
+    public void mustNotOverwriteDataInOtherFiles() throws Exception
+    {
         File fileA = new File( "a" );
         File fileB = new File( "b" );
         ensureFileExists( fileA );
@@ -337,7 +339,7 @@ public abstract class PageSwapperTest
         assertFalse( gotCallback.get() );
     }
 
-    @Test(expected = NoSuchFileException.class)
+    @Test( expected = NoSuchFileException.class )
     public void mustThrowExceptionIfFileDoesNotExist() throws Exception
     {
         PageSwapperFactory factory = swapperFactory();
@@ -361,5 +363,45 @@ public abstract class PageSwapperTest
 
         assertThat( page.getLong( 0 ), is( X ) );
     }
-    // TODO truncated files must be empty
+
+    @Test
+    public void truncatedFilesMustBeEmpty() throws Exception
+    {
+        File file = new File( "file" );
+        ensureFileExists( file );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, false );
+
+        assertThat( swapper.getLastPageId(), is( -1L ) );
+
+        ByteBufferPage page = createPage();
+        page.putInt( 0xcafebabe, 0 );
+        swapper.write( 10, page );
+        clear( page );
+        swapper.read( 10, page );
+        assertThat( page.getInt( 0 ), is( 0xcafebabe ) );
+        assertThat( swapper.getLastPageId(), is( 10L ) );
+
+        swapper.close();
+        swapper = factory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, false );
+        clear( page );
+        swapper.read( 10, page );
+        assertThat( page.getInt( 0 ), is( 0xcafebabe ) );
+        assertThat( swapper.getLastPageId(), is( 10L ) );
+
+        swapper.truncate();
+        clear( page );
+        swapper.read( 10, page );
+        assertThat( page.getInt( 0 ), is( 0 ) );
+        assertThat( swapper.getLastPageId(), is( -1L ) );
+
+        swapper.close();
+        swapper = factory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, false );
+        clear( page );
+        swapper.read( 10, page );
+        assertThat( page.getInt( 0 ), is( 0 ) );
+        assertThat( swapper.getLastPageId(), is( -1L ) );
+
+        swapper.close();
+    }
 }
