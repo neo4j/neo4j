@@ -64,7 +64,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
   }
 
   test("should produce the correct plan description for unique range seek based on query expression") {
-    val queryExpression: QueryExpression[Expression] = RangeQueryExpression(commands.StringSeekRange(LowerBounded(InclusiveBound("prefix")))(InputPosition.NONE))
+    val queryExpression: QueryExpression[Expression] = RangeQueryExpression(commands.expressions.StringSeekRange(LowerBounded(InclusiveBound("prefix")))(InputPosition.NONE))
     val pipe = NodeIndexSeekPipe("a", label, propertyKey, queryExpression, UniqueIndexRangeSeek)()
 
     pipe.planDescriptionWithoutCardinality.toString should equal("""+---------------------------+-------------+---------------------------------------+
@@ -80,7 +80,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
   }
 
   test("should produce the correct plan description for nonunique range seek based on query expression") {
-    val queryExpression: QueryExpression[Expression] = RangeQueryExpression(commands.StringSeekRange(LowerBounded(InclusiveBound("prefix")))(InputPosition.NONE))
+    val queryExpression: QueryExpression[Expression] = RangeQueryExpression(commands.expressions.StringSeekRange(LowerBounded(InclusiveBound("prefix")))(InputPosition.NONE))
     val pipe = NodeIndexSeekPipe("a", label, propertyKey, queryExpression, NonUniqueIndexRangeSeek)()
 
     pipe.planDescriptionWithoutCardinality.toString should equal("""+---------------------+-------------+---------------------------------------+

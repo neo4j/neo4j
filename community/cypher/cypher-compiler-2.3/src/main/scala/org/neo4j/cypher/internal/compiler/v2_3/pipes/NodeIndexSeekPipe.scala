@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{QueryExpression, RangeQueryExpression, StringSeekRange, indexQuery}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{StringSeekRange, Expression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{QueryExpression, RangeQueryExpression, indexQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabel, ReadsNodeProperty, ReadsNodes}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Index, RangeIndex}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}

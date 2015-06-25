@@ -37,7 +37,7 @@ public abstract class NumberProperty extends DefinedProperty implements DefinedP
         if ( other instanceof WithDoubleValue )
         {
             WithDoubleValue that = (WithDoubleValue) other;
-            return (int) (this.doubleValue() - that.doubleValue());
+            return Double.compare( this.doubleValue(), that.doubleValue() );
         }
         else
         {

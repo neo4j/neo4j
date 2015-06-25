@@ -77,7 +77,7 @@ trait QueryContext extends TokenContext {
 
   def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node]
 
-  def rangeIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = Iterator.empty
+  def rangeIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node]
 
   def indexScan(index: IndexDescriptor): Iterator[Node]
 

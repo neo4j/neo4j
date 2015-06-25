@@ -175,6 +175,13 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public NodeCursor nodeCursorGetFromIndexByPrefixSearch( IndexDescriptor index, String prefix )
+            throws IndexNotFoundKernelException
+    {
+        return statement.acquireNodeCursor().init( statement.getStoreStatement().acquireIteratorNodeCursor().init( nodesGetFromIndexByPrefixSearch( index, prefix ) ) );
+    }
+
+    @Override
     public NodeCursor nodeGetFromIndexScan( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         return statement.acquireNodeCursor().init( statement.getStoreStatement().acquireIteratorNodeCursor().init( nodesGetFromIndexScan(

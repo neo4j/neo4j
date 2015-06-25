@@ -135,6 +135,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'ww_' RETURN a")
 
+    result.executionPlanDescription().toString should include("Filter")
     result.executionPlanDescription().toString should include("NodeIndexRangeSeek")
     result.toList should equal(List(Map("a" -> a2)))
   }

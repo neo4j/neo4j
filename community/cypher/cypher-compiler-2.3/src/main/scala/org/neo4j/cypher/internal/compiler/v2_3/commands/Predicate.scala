@@ -252,19 +252,6 @@ case class PropertyExists(identifier: Expression, propertyKey: KeyToken) extends
   override def localEffects(symbols: SymbolTable) = Effects.propertyRead(identifier, symbols)(propertyKey.name)
 }
 
-case class StringSeekRange(range: SeekRange[String])(implicit converter: String => String = identity) extends Expression {
-
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = throw new InternalException("This should never be called")
-
-  override def rewrite(f: (Expression) => Expression): Expression = f(this)
-
-  override def arguments: Seq[Expression] = Seq.empty
-
-  override protected def calculateType(symbols: SymbolTable): CypherType = CTCollection(CTNode)
-
-  override def symbolTableDependencies: Set[String] = Set.empty
-}
-
 case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)(implicit converter: String => String = identity) extends Predicate {
   lazy val pattern = converter(regexExpr.v.asInstanceOf[String]).r.pattern
 
