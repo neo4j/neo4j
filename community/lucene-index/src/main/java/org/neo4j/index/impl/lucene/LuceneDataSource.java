@@ -20,19 +20,22 @@
 package org.neo4j.index.impl.lucene;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.KeywordAnalyzer;
-import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
@@ -43,7 +46,6 @@ import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -57,6 +59,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -65,7 +68,6 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
 
 /**
  * An DataSource optimized for the {@link LuceneIndexImplementation}.
@@ -82,7 +84,7 @@ public class LuceneDataSource extends LifecycleAdapter
         public static final Setting<Boolean> ephemeral = GraphDatabaseFacadeFactory.Configuration.ephemeral;
     }
 
-    public static final Version LUCENE_VERSION = Version.LUCENE_36;
+    public static final Version LUCENE_VERSION = Version.LUCENE_5_2_1;
 
     /**
      * Default {@link Analyzer} for fulltext parsing.
@@ -90,9 +92,11 @@ public class LuceneDataSource extends LifecycleAdapter
     public static final Analyzer LOWER_CASE_WHITESPACE_ANALYZER = new Analyzer()
     {
         @Override
-        public TokenStream tokenStream( String fieldName, Reader reader )
+        protected TokenStreamComponents createComponents( String fieldName )
         {
-            return new LowerCaseFilter( LUCENE_VERSION, new WhitespaceTokenizer( LUCENE_VERSION, reader ) );
+            Tokenizer source = new WhitespaceTokenizer();
+            TokenStream filter = new LowerCaseFilter( source );
+            return new TokenStreamComponents( source, filter );
         }
 
         @Override
@@ -101,20 +105,7 @@ public class LuceneDataSource extends LifecycleAdapter
             return "LOWER_CASE_WHITESPACE_ANALYZER";
         }
     };
-    public static final Analyzer WHITESPACE_ANALYZER = new Analyzer()
-    {
-        @Override
-        public TokenStream tokenStream( String fieldName, Reader reader )
-        {
-            return new WhitespaceTokenizer( LUCENE_VERSION, reader );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "WHITESPACE_ANALYZER";
-        }
-    };
+    public static final Analyzer WHITESPACE_ANALYZER = new WhitespaceAnalyzer();
     public static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
     private IndexClockCache indexSearchers;
     private File baseStorePath;
@@ -223,7 +214,8 @@ public class LuceneDataSource extends LifecycleAdapter
      * If nothing has changed underneath (since the searcher was last created
      * or refreshed) {@code searcher} is returned. But if something has changed a
      * refreshed searcher is returned. It makes use if the
-     * {@link IndexReader#openIfChanged(IndexReader, IndexWriter, boolean)} which faster than opening an index from
+     * {@link DirectoryReader#openIfChanged(DirectoryReader, IndexWriter, boolean)} which faster than opening an index
+     * from
      * scratch.
      *
      * @param searcher the {@link IndexSearcher} to refresh.
@@ -235,9 +227,10 @@ public class LuceneDataSource extends LifecycleAdapter
     {
         try
         {
-            IndexReader reader = searcher.getSearcher().getIndexReader();
+            // TODO: this cast should always succeed, maybe check nonetheless?
+            DirectoryReader reader = (DirectoryReader) searcher.getSearcher().getIndexReader();
             IndexWriter writer = searcher.getWriter();
-            IndexReader reopened = IndexReader.openIfChanged( reader, writer, true );
+            IndexReader reopened = DirectoryReader.openIfChanged( reader, writer, true );
             if ( reopened != null )
             {
                 IndexSearcher newSearcher = newIndexSearcher( searcher.getIdentifier(), reopened );
@@ -266,12 +259,12 @@ public class LuceneDataSource extends LifecycleAdapter
 
     static Directory getDirectory( File storeDir, IndexIdentifier identifier ) throws IOException
     {
-        return FSDirectory.open( getFileDirectory( storeDir, identifier ) );
+        return FSDirectory.open( getFileDirectory( storeDir, identifier ).toPath() );
     }
 
     static TopFieldCollector scoringCollector( Sort sorting, int n ) throws IOException
     {
-        return TopFieldCollector.create( sorting, n, false, true, false, true );
+        return TopFieldCollector.create( sorting, n, false, true, false );
     }
 
     IndexReference getIndexSearcher( IndexIdentifier identifier )
@@ -316,7 +309,7 @@ public class LuceneDataSource extends LifecycleAdapter
             if ( searcher == null )
             {
                 IndexWriter writer = newIndexWriter( identifier );
-                IndexReader reader = IndexReader.open( writer, true );
+                IndexReader reader = DirectoryReader.open( writer, true );
                 IndexSearcher indexSearcher = newIndexSearcher( identifier, reader );
                 searcher = new IndexReference( identifier, indexSearcher, writer );
                 indexSearchers.put( identifier, searcher );
@@ -407,7 +400,7 @@ public class LuceneDataSource extends LifecycleAdapter
             // baseStorePath, identifier );
             directoryExists( dir );
             IndexType type = getType( identifier, false );
-            IndexWriterConfig writerConfig = new IndexWriterConfig( LUCENE_VERSION, type.analyzer );
+            IndexWriterConfig writerConfig = new IndexWriterConfig( type.analyzer );
             writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
             Similarity similarity = type.getSimilarity();
             if ( similarity != null )
@@ -459,8 +452,8 @@ public class LuceneDataSource extends LifecycleAdapter
 
     static boolean documentIsEmpty( Document document )
     {
-        List<Fieldable> fields = document.getFields();
-        for ( Fieldable field : fields )
+        List<IndexableField> fields = document.getFields();
+        for ( IndexableField field : fields )
         {
             if ( !(LuceneIndex.KEY_DOC_ID.equals( field.name() ) || LuceneIndex.KEY_END_NODE_ID.equals( field.name() ) || LuceneIndex.KEY_START_NODE_ID
                     .equals( field.name() )) )
@@ -490,7 +483,7 @@ public class LuceneDataSource extends LifecycleAdapter
     public ResourceIterator<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
     { // Never include logical logs since they are of little importance
         final Collection<File> files = new ArrayList<>();
-        final Collection<SnapshotDeletionPolicy> snapshots = new ArrayList<>();
+        final Collection<Pair<SnapshotDeletionPolicy,IndexCommit>> snapshots = new ArrayList<>();
         makeSureAllIndexesAreInstantiated();
         for ( IndexReference writer : getAllIndexes() )
         {
@@ -501,7 +494,7 @@ public class LuceneDataSource extends LifecycleAdapter
             try
             {
                 // Throws IllegalStateException if no commits yet
-                commit = deletionPolicy.snapshot( SNAPSHOT_ID );
+                commit = deletionPolicy.snapshot();
             }
             catch ( IllegalStateException e )
             {
@@ -513,14 +506,14 @@ public class LuceneDataSource extends LifecycleAdapter
                  * For the time being we just do a commit and try again.
                  */
                 writer.getWriter().commit();
-                commit = deletionPolicy.snapshot( SNAPSHOT_ID );
+                commit = deletionPolicy.snapshot();
             }
 
             for ( String fileName : commit.getFileNames() )
             {
                 files.add( new File( indexDirectory, fileName ) );
             }
-            snapshots.add( deletionPolicy );
+            snapshots.add( Pair.of( deletionPolicy, commit ) );
         }
         return new PrefetchingResourceIterator<File>()
         {
@@ -535,11 +528,11 @@ public class LuceneDataSource extends LifecycleAdapter
             @Override
             public void close()
             {
-                for ( SnapshotDeletionPolicy deletionPolicy : snapshots )
+                for ( Pair<SnapshotDeletionPolicy,IndexCommit> policyAndCommit : snapshots )
                 {
                     try
                     {
-                        deletionPolicy.release( SNAPSHOT_ID );
+                        policyAndCommit.first().release( policyAndCommit.other() );
                     }
                     catch ( IOException e )
                     {
@@ -585,7 +578,7 @@ public class LuceneDataSource extends LifecycleAdapter
             @Override
             Directory getDirectory( File baseStorePath, IndexIdentifier identifier ) throws IOException
             {
-                return FSDirectory.open( getFileDirectory( baseStorePath, identifier ) );
+                return FSDirectory.open( getFileDirectory( baseStorePath, identifier ).toPath() );
             }
 
             @Override

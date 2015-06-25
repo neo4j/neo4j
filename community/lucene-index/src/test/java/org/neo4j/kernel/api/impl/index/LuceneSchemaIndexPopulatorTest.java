@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
@@ -283,7 +284,7 @@ public class LuceneSchemaIndexPopulatorTest
     {
         index.close( true );
         assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId ) );
-        reader = IndexReader.open( directory );
+        reader = DirectoryReader.open( directory );
         searcher = new IndexSearcher( reader );
     }
 

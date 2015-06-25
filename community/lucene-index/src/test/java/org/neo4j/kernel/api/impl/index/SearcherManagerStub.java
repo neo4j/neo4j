@@ -44,6 +44,12 @@ public class SearcherManagerStub extends ReferenceManager<IndexSearcher>
     }
 
     @Override
+    protected int getRefCount( IndexSearcher reference )
+    {
+        return 1;
+    }
+
+    @Override
     public boolean tryIncRef( IndexSearcher reference )
     {
         return true;

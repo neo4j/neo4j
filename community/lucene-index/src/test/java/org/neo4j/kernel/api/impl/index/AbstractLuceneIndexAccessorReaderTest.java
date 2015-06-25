@@ -19,17 +19,23 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.Closeable;
-
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.junit.Test;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Arrays;
+
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -42,8 +48,24 @@ public abstract class AbstractLuceneIndexAccessorReaderTest<R extends LuceneInde
     protected final Closeable closeable = mock( Closeable.class );
     protected final LuceneDocumentStructure documentLogic = mock( LuceneDocumentStructure.class );
     protected final IndexSearcher searcher = mock( IndexSearcher.class );
-    protected final IndexReader reader = mock( IndexReader.class );
-    protected final TermEnum terms = mock( TermEnum.class );
+    protected final Fields fields = mock( Fields.class );
+    protected final Terms terms = mock( Terms.class );
+    protected final TermsEnum termsEnum = mock( TermsEnum.class );
+    protected final IndexReader reader = new IndexReaderStub( fields );
+
+    {
+        try
+        {
+            when( fields.terms( anyString() ) ).thenReturn( terms );
+            when( terms.iterator() ).thenReturn( termsEnum );
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace();
+        }
+    }
+
+
     protected R accessor;
 
 
@@ -65,7 +87,7 @@ public abstract class AbstractLuceneIndexAccessorReaderTest<R extends LuceneInde
     public void shouldUseCorrectLuceneQueryForRangeSeekByNumberQuery() throws Exception
     {
         // Given
-        when( documentLogic.newInclusiveNumericRangeSeekQuery( 12, null ) ).thenReturn( mock( TermRangeQuery.class ) );
+        when( documentLogic.newInclusiveNumericRangeSeekQuery( 12, null ) ).thenCallRealMethod();
 
         // When
         accessor.rangeSeekByNumberInclusive( 12, null );

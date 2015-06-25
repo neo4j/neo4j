@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
@@ -74,14 +73,14 @@ public final class IndexWriterFactories
 
     private static IndexWriterConfig standardConfig()
     {
-        IndexWriterConfig writerConfig = new IndexWriterConfig( Version.LUCENE_36, LuceneDataSource.KEYWORD_ANALYZER );
+        IndexWriterConfig writerConfig = new IndexWriterConfig( LuceneDataSource.KEYWORD_ANALYZER );
 
         writerConfig.setMaxBufferedDocs( 100000 ); // TODO figure out depending on environment?
         writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
-        writerConfig.setTermIndexInterval( 14 );
+        writerConfig.setUseCompoundFile( true );
 
+        // TODO: TieredMergePolicy & possibly SortingMergePolicy
         LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();
-        mergePolicy.setUseCompoundFile( true );
         mergePolicy.setNoCFSRatio( 1.0 );
         mergePolicy.setMinMergeMB( 0.1 );
         mergePolicy.setMergeFactor( 2 );

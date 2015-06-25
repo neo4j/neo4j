@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -116,7 +116,7 @@ public class LuceneLabelScanWriter implements LabelScanWriter
         if ( docs != null && docs.totalHits != 0 )
         {
             Document document = searcher.doc( docs.scoreDocs[0].doc );
-            for ( Fieldable field : document.getFields() )
+            for ( IndexableField field : document.getFields() )
             {
                 if ( !format.isRangeField( field ) )
                 {
@@ -164,7 +164,7 @@ public class LuceneLabelScanWriter implements LabelScanWriter
 
     private boolean isEmpty( Document document )
     {
-        for ( Fieldable fieldable : document.getFields() )
+        for ( IndexableField fieldable : document.getFields() )
         {
             if ( !format.isRangeField( fieldable ) )
             {

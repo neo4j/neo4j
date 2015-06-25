@@ -22,6 +22,7 @@ package org.neo4j.index.impl.lucene;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.StringField;
 
 import java.util.Collection;
 
@@ -105,10 +106,8 @@ public interface EntityId
         @Override
         public void enhance( Document document )
         {
-            document.add( new Field( LuceneIndex.KEY_START_NODE_ID, "" + startNode, Store.YES,
-                    org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
-            document.add( new Field( LuceneIndex.KEY_END_NODE_ID, "" + endNode, Store.YES,
-                    org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
+            document.add( new StringField( LuceneIndex.KEY_START_NODE_ID, "" + startNode, Store.YES ) );
+            document.add( new StringField( LuceneIndex.KEY_END_NODE_ID, "" + endNode, Store.YES ) );
         }
     }
 

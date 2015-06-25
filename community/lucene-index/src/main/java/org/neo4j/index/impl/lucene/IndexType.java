@@ -21,21 +21,31 @@ package org.neo4j.index.impl.lucene;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -60,7 +70,8 @@ public abstract class IndexType
         @Override
         public void addToDocument( Document document, String key, Object value )
         {
-            document.add( instantiateField( key, value, Index.NOT_ANALYZED ) );
+            document.add( instantiateField( key, value, StringField.TYPE_STORED ) );
+            document.add( instantiateSortField( key, value ) );
         }
 
         @Override
@@ -85,6 +96,8 @@ public abstract class IndexType
                     addToDocument( document, key, existingValue );
                 }
             }
+
+            restoreNumericFields( document );
         }
 
         @Override
@@ -128,8 +141,9 @@ public abstract class IndexType
         {
             // TODO We should honor ValueContext instead of doing value.toString() here.
             // if changing it, also change #get to honor ValueContext.
-            document.add( new Field( exactKey( key ), value.toString(), Store.YES, Index.NOT_ANALYZED ) );
-            document.add( instantiateField( key, value, Index.ANALYZED ) );
+            document.add( new StringField( exactKey( key ), value.toString(), Store.YES ) );
+            document.add( instantiateField( key, value, TextField.TYPE_STORED ) );
+            document.add( instantiateSortField( key, value ) );
         }
 
         @Override
@@ -155,6 +169,8 @@ public abstract class IndexType
                     addToDocument( document, key, existingValue );
                 }
             }
+
+            restoreNumericFields( document );
         }
 
         @Override
@@ -162,7 +178,7 @@ public abstract class IndexType
         {
             return "FULLTEXT";
         }
-    };
+    }
 
     final Analyzer analyzer;
     private final boolean toLowerCase;
@@ -200,7 +216,7 @@ public abstract class IndexType
                 if ( analyzer == null )
                 {
                     analyzer = TRUE.equals( toLowerCase ) ? LuceneDataSource.LOWER_CASE_WHITESPACE_ANALYZER :
-                            LuceneDataSource.WHITESPACE_ANALYZER;
+                               LuceneDataSource.WHITESPACE_ANALYZER;
                 }
                 result = new CustomType( analyzer, toLowerCase, similarity );
             }
@@ -269,7 +285,7 @@ public abstract class IndexType
             return (Query) value;
         }
 
-        QueryParser parser = new QueryParser( Version.LUCENE_30, keyOrNull, analyzer );
+        QueryParser parser = new QueryParser( keyOrNull, analyzer );
         parser.setAllowLeadingWildcard( true );
         parser.setLowercaseExpandedTerms( toLowerCase );
         if ( contextOrNull != null && contextOrNull.getDefaultOperator() != null )
@@ -288,36 +304,60 @@ public abstract class IndexType
 
     abstract void addToDocument( Document document, String key, Object value );
 
-    public static Fieldable instantiateField( String key, Object value, Index analyzed )
+    public static IndexableField instantiateField( String key, Object value, FieldType fieldType )
     {
-        Fieldable field;
+        IndexableField field;
         if ( value instanceof Number )
         {
             Number number = (Number) value;
-            NumericField numberField = new NumericField( key, Store.YES, true );
             if ( value instanceof Long )
             {
-                numberField.setLongValue( number.longValue() );
+                field = new LongField( key, number.longValue(), Store.YES );
             }
             else if ( value instanceof Float )
             {
-                numberField.setFloatValue( number.floatValue() );
+                field = new FloatField( key, number.floatValue(), Store.YES );
             }
             else if ( value instanceof Double )
             {
-                numberField.setDoubleValue( number.doubleValue() );
+                field = new DoubleField( key, number.doubleValue(), Store.YES );
             }
             else
             {
-                numberField.setIntValue( number.intValue() );
+                field = new IntField( key, number.intValue(), Store.YES );
             }
-            field = numberField;
         }
         else
         {
-            field = new Field( key, value.toString(), Store.YES, analyzed );
+            field = new Field( key, value.toString(), fieldType );
         }
-        field.setOmitNorms( true );
+        // TODO: ensure  omitNorms on fieldType?
+        return field;
+    }
+
+    public static IndexableField instantiateSortField( String key, Object value )
+    {
+        IndexableField field;
+        if ( value instanceof Number )
+        {
+            Number number = (Number) value;
+            if ( value instanceof Float )
+            {
+                field = new SortedNumericDocValuesField( key, NumericUtils.floatToSortableInt( number.floatValue() ) );
+            }
+            else if ( value instanceof Double )
+            {
+                field = new SortedNumericDocValuesField( key, NumericUtils.doubleToSortableLong( number.doubleValue() ) );
+            }
+            else
+            {
+                field = new SortedNumericDocValuesField( key, number.longValue() );
+            }
+        }
+        else
+        {
+            field = new SortedSetDocValuesField( key, new BytesRef( value.toString() ) );
+        }
         return field;
     }
 
@@ -338,7 +378,7 @@ public abstract class IndexType
     private void clearDocument( Document document )
     {
         Set<String> names = new HashSet<String>();
-        for ( Fieldable field : document.getFields() )
+        for ( IndexableField field : document.getFields() )
         {
             names.add( field.name() );
         }
@@ -349,11 +389,28 @@ public abstract class IndexType
         }
     }
 
+    // Re-add numeric field since their index info is lost after reading the fields from the index store
+    protected void restoreNumericFields( Document document )
+    {
+        List<IndexableField> numericFields = new ArrayList<>();
+        for ( IndexableField field : document.getFields() )
+        {
+            if ( field.numericValue() != null )
+            {
+                numericFields.add( field );
+            }
+        }
+        for ( IndexableField field : numericFields )
+        {
+            document.removeField( field.name() );
+            addToDocument( document, field.name(), field.numericValue() );
+        }
+    }
+
     public static Document newBaseDocument( long entityId )
     {
         Document doc = new Document();
-        doc.add( new Field( LuceneIndex.KEY_DOC_ID, "" + entityId, Store.YES,
-                Index.NOT_ANALYZED ) );
+        doc.add( new StringField( LuceneIndex.KEY_DOC_ID, "" + entityId, Store.YES ) );
         return doc;
     }
 

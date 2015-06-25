@@ -21,9 +21,10 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.NumericField;
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -38,19 +39,19 @@ public enum BitmapDocumentFormat
     _32( BitmapFormat._32 )
     {
         @Override
-        protected NumericField setFieldValue( NumericField field, long bitmap )
+        protected Field createLabelField( String label, long bitmap )
         {
             assert (bitmap & 0xFFFFFFFF00000000L) == 0 :
                 "Tried to store a bitmap as int, but which had values outside int limits";
-            return field.setIntValue( (int) bitmap );
+            return new IntField( label, (int) bitmap, Field.Store.YES );
         }
     },
     _64( BitmapFormat._64 )
     {
         @Override
-        protected NumericField setFieldValue( NumericField field, long bitmap )
+        protected Field createLabelField( String label, long bitmap )
         {
-            return field.setLongValue( bitmap );
+            return new LongField( label, bitmap, Field.Store.YES );
         }
     };
 
@@ -78,14 +79,14 @@ public enum BitmapDocumentFormat
         return Long.parseLong( doc.get( RANGE ) );
     }
 
-    public long rangeOf( Fieldable field )
+    public long rangeOf( IndexableField field )
     {
         return Long.parseLong( field.stringValue() );
     }
 
     public long mapOf( Document doc, long labelId )
     {
-        return bitmap( doc.getFieldable( label( labelId ) ) );
+        return bitmap( doc.getField( label( labelId ) ) );
     }
 
     public Query labelQuery( long labelId )
@@ -98,27 +99,17 @@ public enum BitmapDocumentFormat
         return new TermQuery( new Term( RANGE, Long.toString( range) ) );
     }
 
-    public Fieldable rangeField( long range )
+    public IndexableField rangeField( long range )
     {
-        // TODO: figure out what flags to set on the field
-        Field field = new Field( RANGE, Long.toString( range ), Field.Store.YES, Field.Index.NOT_ANALYZED );
-        field.setOmitNorms( true );
-        field.setIndexOptions( FieldInfo.IndexOptions.DOCS_ONLY );
-        return field;
+        return new StringField( RANGE, Long.toString( range ), Field.Store.YES );
     }
 
-    public Fieldable labelField( long key, long bitmap )
+    public IndexableField labelField( long key, long bitmap )
     {
-        // Label Fields are DOCUMENT ONLY (not indexed)
-        // TODO: figure out what flags to set on the field
-        NumericField field = new NumericField( label( key ), Field.Store.YES, false );
-        field = setFieldValue( field, bitmap );
-        field.setOmitNorms( true );
-        field.setIndexOptions( FieldInfo.IndexOptions.DOCS_ONLY );
-        return field;
+        return createLabelField( label( key ), bitmap );
     }
 
-    protected abstract NumericField setFieldValue( NumericField field, long bitmap );
+    protected abstract Field createLabelField( String label, long bitmap );
 
     public void addLabelField( Document document, long label, Bitmap bitmap )
     {
@@ -126,16 +117,12 @@ public enum BitmapDocumentFormat
         document.add( labelSearchField( label ) );
     }
 
-    public Fieldable labelSearchField( long label )
+    public IndexableField labelSearchField( long label )
     {
-        // Label Search Fields are INDEX ONLY (not stored in the document)
-        Field field = new Field( LABEL, Long.toString( label ), Field.Store.NO, Field.Index.NOT_ANALYZED );
-        field.setOmitNorms( true );
-        field.setIndexOptions( FieldInfo.IndexOptions.DOCS_ONLY );
-        return field;
+        return new StringField( LABEL, Long.toString( label ), Field.Store.NO );
     }
 
-    public Fieldable labelField( long key, Bitmap value )
+    public IndexableField labelField( long key, Bitmap value )
     {
         return labelField( key, value.bitmap() );
     }
@@ -145,7 +132,7 @@ public enum BitmapDocumentFormat
         return Long.toString( key );
     }
 
-    public long labelId( Fieldable field )
+    public long labelId( IndexableField field )
     {
         return Long.parseLong( field.name() );
     }
@@ -160,27 +147,28 @@ public enum BitmapDocumentFormat
         return new Term( RANGE, document.get( RANGE ) );
     }
 
-    public boolean isRangeField( Fieldable field )
+    public boolean isRangeField( IndexableField field )
     {
         String fieldName = field.name();
         return RANGE.equals( fieldName ) || LABEL.equals( fieldName );
     }
 
-    public Bitmap readBitmap( Fieldable field )
+    public Bitmap readBitmap( IndexableField field )
     {
         return new Bitmap( bitmap( field ) );
     }
 
-    private long bitmap( Fieldable field )
+    private long bitmap( IndexableField field )
     {
         if ( field == null )
         {
             return 0;
         }
-        if ( field instanceof NumericField )
+        Number numericValue = field.numericValue();
+        if ( numericValue == null )
         {
-            return ((NumericField) field).getNumericValue().longValue();
+            throw new IllegalArgumentException( field + " is not a numeric field" );
         }
-        throw new IllegalArgumentException( field + " is not a numeric field" );
+        return numericValue.longValue();
     }
 }

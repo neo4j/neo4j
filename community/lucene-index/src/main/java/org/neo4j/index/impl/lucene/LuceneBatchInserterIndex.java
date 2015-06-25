@@ -20,9 +20,9 @@
 package org.neo4j.index.impl.lucene;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SearcherManager;
@@ -55,7 +55,6 @@ import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
 import static org.neo4j.index.impl.lucene.LuceneDataSource.getDirectory;
 
 class LuceneBatchInserterIndex implements BatchInserterIndex
@@ -220,7 +219,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             if ( docs.totalHits > 0 )
             {
                 Document document = searcher.doc( docs.scoreDocs[0].doc );
-                for ( Fieldable field : document.getFields() )
+                for ( IndexableField field : document.getFields() )
                 {
                     String key = field.name();
                     Object value = field.stringValue();
@@ -248,7 +247,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             Collection<EntityId> ids = cache.get( valueAsString );
             if ( ids != null )
             {
-                ids.remove( entityId );
+                ids.remove( new IdData(entityId) );
             }
         }
     }
@@ -257,7 +256,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     {
         try
         {
-            IndexWriterConfig writerConfig = new IndexWriterConfig( LUCENE_VERSION, type.analyzer );
+            IndexWriterConfig writerConfig = new IndexWriterConfig( type.analyzer );
             writerConfig.setRAMBufferSizeMB( determineGoodBufferSize( writerConfig.getRAMBufferSizeMB() ) );
             Directory luceneDir = getDirectory( directory, identifier );
             return IndexWriterFactories.batchInsert( writerConfig ).create( luceneDir );
@@ -325,7 +324,15 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
 
     private IndexHits<Long> query( Query query, final String key, final Object value )
     {
-        IndexSearcher searcher = searcherManager.acquire();
+        IndexSearcher searcher;
+        try
+        {
+            searcher = searcherManager.acquire();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
         try
         {
             Hits hits = new Hits( searcher, query, null );

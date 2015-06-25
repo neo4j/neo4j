@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
@@ -117,7 +117,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
         else
         {
             currentBatch.put( propertyValue, nodeId );
-            Fieldable encodedValue = documentStructure.encodeAsFieldable( propertyValue );
+            IndexableField encodedValue = documentStructure.encodeAsFieldable( propertyValue );
             writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
             if ( currentBatch.size() >= batchSize )
             {

@@ -513,17 +513,17 @@ public class IndexingAcceptanceTest
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
         IndexDefinition index = createIndex( db, LABEL1, "name" );
         createNodes( db, LABEL1, "name", "Mattias", "Mats" );
-        PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl", "Karlsson" );
+        PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Carl", "Carlsson" );
         // WHEN
         PrimitiveLongSet found = Primitive.longSet();
         try ( Transaction tx = db.beginTx() )
         {
-            expected.add( createNode( db, map( "name", "Karlchen" ), LABEL1 ).getId() );
-            createNode( db, map( "name", "Carla" ), LABEL1 );
+            expected.add( createNode( db, map( "name", "Carlchen" ), LABEL1 ).getId() );
+            createNode( db, map( "name", "Karla" ), LABEL1 );
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
             IndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            found.addAll( readOperations.nodesGetFromIndexRangeSeekByPrefix( descriptor, "Karl" ) );
+            found.addAll( readOperations.nodesGetFromIndexRangeSeekByPrefix( descriptor, "Carl" ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );

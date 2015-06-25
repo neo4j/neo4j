@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.store.Directory;
@@ -73,7 +73,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     // we need this wrapping in order to test the index accessor since the ReferenceManager is not mock friendly
     public interface LuceneReferenceManager<G> extends Closeable
     {
-        G acquire();
+        G acquire() throws IOException;
 
         boolean maybeRefresh() throws IOException;
 
@@ -90,7 +90,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
             }
 
             @Override
-            public G acquire()
+            public G acquire() throws IOException
             {
                 return delegate.acquire();
             }
@@ -202,18 +202,25 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     @Override
     public IndexReader newReader()
     {
-        final IndexSearcher searcher = searcherManager.acquire();
-        final TaskControl token = taskCoordinator.newInstance();
-        final Closeable closeable = new Closeable()
+        try
         {
-            @Override
-            public void close() throws IOException
+            final IndexSearcher searcher = searcherManager.acquire();
+            final TaskControl token = taskCoordinator.newInstance();
+            final Closeable closeable = new Closeable()
             {
-                searcherManager.release( searcher );
-                token.close();
-            }
-        };
-        return makeNewReader( searcher, closeable, token );
+                @Override
+                public void close() throws IOException
+                {
+                    searcherManager.release( searcher );
+                    token.close();
+                }
+            };
+            return makeNewReader( searcher, closeable, token );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     protected IndexReader makeNewReader( IndexSearcher searcher, Closeable closeable, CancellationRequest cancellation )
@@ -236,20 +243,20 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 
     private void addRecovered( long nodeId, Object value ) throws IOException, IndexCapacityExceededException
     {
-        Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
+        IndexableField encodedValue = documentStructure.encodeAsFieldable( value );
         writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
                 documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
     }
 
     protected void add( long nodeId, Object value ) throws IOException, IndexCapacityExceededException
     {
-        Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
+        IndexableField encodedValue = documentStructure.encodeAsFieldable( value );
         writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
     }
 
     protected void change( long nodeId, Object value ) throws IOException, IndexCapacityExceededException
     {
-        Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
+        IndexableField encodedValue = documentStructure.encodeAsFieldable( value );
         writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
                 documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
     }

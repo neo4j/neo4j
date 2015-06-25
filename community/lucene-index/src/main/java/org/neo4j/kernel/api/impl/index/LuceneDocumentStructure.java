@@ -20,20 +20,23 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 import org.neo4j.kernel.api.index.ArrayEncoder;
 
 import static java.lang.String.format;
-import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
 
@@ -65,17 +68,16 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Fieldable encodeField( Object value )
+            IndexableField encodeField( Object value )
             {
-                String encodedString = NumericUtils.doubleToPrefixCoded( ((Number)value).doubleValue() );
-                return field( key(), encodedString );
+                return new DoubleField( key(), ((Number) value).doubleValue(), NO );
             }
 
             @Override
-            TermQuery encodeQuery( Object value )
+            NumericRangeQuery<Double> encodeQuery( Object value )
             {
-                String encodedString = NumericUtils.doubleToPrefixCoded( ((Number)value).doubleValue() );
-                return new TermQuery( new Term( key(), encodedString ) );
+                final Double doubleValue = ((Number) value).doubleValue();
+                return NumericRangeQuery.newDoubleRange( key(), doubleValue, doubleValue, true, true );
             }
         },
         Array
@@ -93,7 +95,7 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Fieldable encodeField( Object value )
+            IndexableField encodeField( Object value )
             {
                 return field( key(), ArrayEncoder.encode( value ) );
             }
@@ -119,7 +121,7 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Fieldable encodeField( Object value )
+            IndexableField encodeField( Object value )
             {
                 return field( key(), value.toString() );
             }
@@ -146,7 +148,7 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Fieldable encodeField( Object value )
+            IndexableField encodeField( Object value )
             {
                 return field( key(), value.toString() );
             }
@@ -161,8 +163,8 @@ public class LuceneDocumentStructure
         abstract String key();
 
         abstract boolean canEncode( Object value );
-        abstract Fieldable encodeField( Object value );
-        abstract TermQuery encodeQuery( Object value );
+        abstract IndexableField encodeField( Object value );
+        abstract Query encodeQuery( Object value );
 
         public static ValueEncoding fromKey( String key )
         {
@@ -181,14 +183,14 @@ public class LuceneDocumentStructure
         }
     }
 
-    public Document newDocumentRepresentingProperty( long nodeId, Fieldable encodedValue )
+    public Document newDocumentRepresentingProperty( long nodeId, IndexableField encodedValue )
     {
         Document document = newDocument( nodeId );
         document.add( encodedValue );
         return document;
     }
 
-    public Fieldable encodeAsFieldable( Object value )
+    public IndexableField encodeAsFieldable( Object value )
     {
         for ( ValueEncoding encoding : ValueEncoding.values() )
         {
@@ -208,10 +210,7 @@ public class LuceneDocumentStructure
 
     private static Field field( String fieldIdentifier, String value, Field.Store store )
     {
-        Field result = new Field( fieldIdentifier, value, store, NOT_ANALYZED );
-        result.setOmitNorms( true );
-        result.setIndexOptions( IndexOptions.DOCS_ONLY );
-        return result;
+        return new StringField( fieldIdentifier, value, store );
     }
 
     public MatchAllDocsQuery newScanQuery()
@@ -219,7 +218,7 @@ public class LuceneDocumentStructure
         return new MatchAllDocsQuery();
     }
 
-    public TermQuery newSeekQuery( Object value )
+    public Query newSeekQuery( Object value )
     {
         for ( ValueEncoding encoding : ValueEncoding.values() )
         {
@@ -235,45 +234,20 @@ public class LuceneDocumentStructure
      * Range queries are always inclusive, in order to do exclusive range queries the result must be filtered after the
      * fact. The reason we can't do inclusive range queries is that longs are coerced to doubles in the index.
      */
-    public TermRangeQuery newInclusiveNumericRangeSeekQuery( Number lower, Number upper )
-    {
-        String chosenLower = (lower == null) ? null : NumericUtils.doubleToPrefixCoded( lower.doubleValue() );
-        String chosenUpper = (upper == null) ? null : NumericUtils.doubleToPrefixCoded( upper.doubleValue() );
-
-        return new TermRangeQuery(
-                ValueEncoding.Number.key(),
-                chosenLower, chosenUpper,
-                true, true
-        );
+    public NumericRangeQuery<Double> newInclusiveNumericRangeSeekQuery( Number lower, Number upper ) {
+        Double min = lower != null ? lower.doubleValue() : null;
+        Double max = upper != null ? upper.doubleValue() : null;
+        return NumericRangeQuery.newDoubleRange( ValueEncoding.Number.key(), min, max, true, true );
     }
 
     public TermRangeQuery newRangeSeekByStringQuery( String lower, boolean includeLower,
                                                      String upper, boolean upperInclusive )
     {
-        String chosenLower, chosenUpper;
-        boolean includeChosenLower, includeChosenUpper;
+        BytesRef chosenLower = lower != null ? new BytesRef( lower ) : null;
+        boolean includeChosenLower = lower == null || includeLower;
 
-        if ( lower == null )
-        {
-            chosenLower = null;
-            includeChosenLower = true;
-        }
-        else
-        {
-            chosenLower = lower;
-            includeChosenLower = includeLower;
-        }
-
-        if ( upper == null )
-        {
-            chosenUpper = null;
-            includeChosenUpper = true;
-        }
-        else
-        {
-            chosenUpper = upper;
-            includeChosenUpper = upperInclusive;
-        }
+        BytesRef chosenUpper = upper != null ? new BytesRef( upper ) : null;
+        boolean includeChosenUpper = upper == null || upperInclusive;
 
         return new TermRangeQuery(
                 ValueEncoding.String.key(),

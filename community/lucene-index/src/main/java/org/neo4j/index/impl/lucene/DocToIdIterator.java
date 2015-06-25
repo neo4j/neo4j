@@ -54,7 +54,7 @@ public class DocToIdIterator extends AbstractLegacyIndexHits
         {
             Document doc = source.next();
             long id = idFromDoc( doc );
-            boolean documentIsFromStore = doc.getFieldable( FullTxData.TX_STATE_KEY ) == null;
+            boolean documentIsFromStore = doc.getField( FullTxData.TX_STATE_KEY ) == null;
             boolean idWillBeReturnedByTransactionStateInstead =
                     documentIsFromStore && idsModifiedInTransactionState.contains( id );
             if ( removedInTransactionState.contains( idCostume.setId( id ) ) ||

@@ -28,7 +28,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.Weight;
 
 import java.io.IOException;
 import java.util.ConcurrentModificationException;
@@ -47,8 +46,10 @@ import java.util.Vector;
  * is thrown when accessing hit <code>n</code> &ge; current_{@link #length()}
  * (but <code>n</code> &lt; {@link #length()}_at_start).
  *
- * see {@link org.apache.lucene.search.Searcher#search(org.apache.lucene.search.Query , int)}, {@link org.apache.lucene.search.Searcher#search(org.apache.lucene.search.Query , org.apache.lucene.search.Filter , int)}
- * and {@link org.apache.lucene.search.Searcher#search(org.apache.lucene.search.Query , org.apache.lucene.search.Filter , int, org.apache.lucene.search.Sort)}:<br>
+ * see {@link org.apache.lucene.search.IndexSearcher#search(org.apache.lucene.search.Query , int)}, {@link org.apache
+ * .lucene.search.IndexSearcher#search(org.apache.lucene.search.Query , org.apache.lucene.search.Filter , int)}
+ * and {@link org.apache.lucene.search.IndexSearcher#search(org.apache.lucene.search.Query , org.apache.lucene.search
+ * .Filter , int, org.apache.lucene.search.Sort)}:<br>
  * <pre>
  *   TopDocs topDocs = searcher.search(query, numHits);
  *   ScoreDoc[] hits = topDocs.scoreDocs;
@@ -66,7 +67,7 @@ import java.util.Vector;
 public final class Hits {
   private static int MAX_CACHED_DOCS = 200;    // max to cache
 
-  private final Weight weight;
+  private final Query query;
   private final IndexSearcher searcher;
   private Filter filter = null;
   private Sort sort = null;
@@ -87,7 +88,7 @@ public final class Hits {
   public Hits(IndexSearcher s, Query q, Filter f) throws IOException
   {
     score = false;
-    weight = q.weight(s);
+    query = q;
     searcher = s;
     filter = f;
     nDeletions = countDeletions(s);
@@ -97,7 +98,7 @@ public final class Hits {
 
   public Hits(IndexSearcher s, Query q, Filter f, Sort o, boolean score) throws IOException {
     this.score = score;
-    weight = q.weight(s);
+    query = q;
     searcher = s;
     filter = f;
     sort = o;
@@ -110,7 +111,7 @@ public final class Hits {
   private int countDeletions(IndexSearcher s) {
     int cnt = -1;
     if ( s != null ) {
-      cnt = s.maxDoc() - s.getIndexReader().numDocs();
+      cnt = s.getIndexReader().maxDoc() - s.getIndexReader().numDocs();
     }
     return cnt;
   }
@@ -129,19 +130,19 @@ public final class Hits {
     TopDocs topDocs = null;
     if ( sort == null )
     {
-        topDocs = searcher.search( weight, filter, n );
+        topDocs = searcher.search( query, filter, n );
     }
     else
     {
         if ( this.score )
         {
             TopFieldCollector collector = LuceneDataSource.scoringCollector( sort, n );
-            searcher.search( weight, null, collector );
+            searcher.search( query, null, collector );
             topDocs = collector.topDocs();
         }
         else
         {
-            topDocs = searcher.search( weight, filter, n, sort );
+            topDocs = searcher.search( query, filter, n, sort );
         }
     }
 

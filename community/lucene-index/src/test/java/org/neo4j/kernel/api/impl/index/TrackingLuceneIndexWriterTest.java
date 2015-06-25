@@ -122,7 +122,7 @@ public class TrackingLuceneIndexWriterTest
         File luceneDir = new File( "lucene" );
         fs.get().mkdir( luceneDir );
         Directory directory = new DirectoryFactory.InMemoryDirectoryFactory().open( luceneDir );
-        IndexWriterConfig config = new IndexWriterConfig( Version.LUCENE_36, null );
+        IndexWriterConfig config = new IndexWriterConfig( null );
         TrackingLuceneIndexWriter indexWriter = new TrackingLuceneIndexWriter( directory, config );
         TrackingLuceneIndexWriter indexWriterSpy = spy( indexWriter );
         when( indexWriterSpy.maxDocLimit() ).thenReturn( maxDocLimit );

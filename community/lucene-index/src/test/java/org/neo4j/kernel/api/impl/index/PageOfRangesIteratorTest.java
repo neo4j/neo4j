@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -125,10 +125,10 @@ public class PageOfRangesIteratorTest
         return new TopDocs( docs.length, docs, 0.0f );
     }
 
-    static Document document( Fieldable... fields )
+    static Document document( IndexableField... fields )
     {
         Document document = new Document();
-        for ( Fieldable field : fields )
+        for ( IndexableField field : fields )
         {
             document.add( field );
         }

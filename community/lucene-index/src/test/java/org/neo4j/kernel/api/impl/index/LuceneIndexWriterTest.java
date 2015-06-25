@@ -104,7 +104,7 @@ public class LuceneIndexWriterTest
 
     private LuceneIndexWriter newWriter() throws IOException
     {
-        return new LuceneIndexWriter( directory, new IndexWriterConfig( Version.LUCENE_36, KEYWORD_ANALYZER ) );
+        return new LuceneIndexWriter( directory, new IndexWriterConfig( KEYWORD_ANALYZER ) );
     }
 
     private Document newDocument()

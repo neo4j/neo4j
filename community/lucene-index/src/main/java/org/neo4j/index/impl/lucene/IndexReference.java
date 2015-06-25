@@ -56,7 +56,7 @@ class IndexReference
     {
         return this.searcher;
     }
-    
+
     public IndexWriter getWriter()
     {
         return writer;
@@ -71,16 +71,15 @@ class IndexReference
     {
         this.refCount.incrementAndGet();
     }
-    
+
     public synchronized void dispose( boolean writerAlso ) throws IOException
     {
         if ( !searcherIsClosed )
         {
-            searcher.close();
             searcher.getIndexReader().close();
             searcherIsClosed = true;
         }
-        
+
         if ( writerAlso && !writerIsClosed )
         {
             writer.close();

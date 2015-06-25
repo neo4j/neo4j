@@ -23,7 +23,6 @@ import java.io.File;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.IndexInput;
 
 public class RebuildSegmentInfo
 {
@@ -36,7 +35,7 @@ public class RebuildSegmentInfo
         }
         String path = args[0];
         File file = new File( path );
-        Directory directory = FSDirectory.open( file );
+        Directory directory = FSDirectory.open( file.toPath() );
 
         SegmentInfos infos = new SegmentInfos();
         int counter = 0;
@@ -58,13 +57,17 @@ public class RebuildSegmentInfo
 
             segmentName = fileName.substring( 0, fileName.lastIndexOf( '.' ) );
 
-            Directory fileReader = new CompoundFileReader( directory, fileName );
-            IndexInput indexStream = fileReader.openInput( segmentName + ".cfs" );
-
-            SegmentInfo segmentInfo = new SegmentInfo( directory, SegmentInfos.CURRENT_FORMAT, indexStream );
-            System.out.println( "Name was: \"" + segmentInfo.name + "\"" );
-            System.out.println( "Doc count was: " + segmentInfo.docCount );
-            infos.add( segmentInfo );
+            // TODO: fix later
+//            Directory fileReader = new Lucene50CompoundReader( directory, fileName );
+//            IndexInput indexStream = fileReader.openInput( segmentName + ".cfs" );
+//            Lucene50CompoundFormat compoundFormat = new Lucene50CompoundFormat();
+//            compoundFormat.getCompoundReader(  )
+//            SegmentInfos segmentInfos = SegmentInfos.readCommit( directory, segmentName );
+//            compoundFormat.getCompoundReader( directory )
+//            SegmentInfo segmentInfo = new SegmentInfo( directory, SegmentInfos.VERSION_51, indexStream );
+//            System.out.println( "Name was: \"" + segmentInfo.name + "\"" );
+//            System.out.println( "Doc count was: " + segmentInfo.docCount );
+//            infos.add( segmentInfo );
 
             // indexStream.close();
             // fileReader.close();

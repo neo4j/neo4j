@@ -19,12 +19,13 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.QueryParser.Operator;
+import org.apache.lucene.queryparser.classic.QueryParser.Operator;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
@@ -1135,7 +1136,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     public void testSimilarity()
     {
         Index<Node> index = nodeIndex( MapUtil.stringMap( IndexManager.PROVIDER, "lucene",
-                "type", "fulltext", "similarity", DefaultSimilarity.class.getName() ) );
+                "type", "fulltext", "similarity",  DefaultSimilarity.class.getName() ) );
         Node node = graphDb.createNode();
         index.add( node, "key", "value" );
         restartTx();
@@ -1827,13 +1828,13 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         // WHEN
         try
         {
-            // StandardAnalyzer is invalid since it has no public no-arg constructor
-            nodeIndex( stringMap( "analyzer", StandardAnalyzer.class.getName() ) );
+            // PerFieldAnalyzerWrapper is invalid since it has no public no-arg constructor
+            nodeIndex( stringMap( "analyzer", PerFieldAnalyzerWrapper.class.getName() ) );
             fail( "Should have failed" );
         }
         catch ( RuntimeException e )
         {
-            assertThat( e.getMessage(), CoreMatchers.containsString( StandardAnalyzer.class.getName() ) );
+            assertThat( e.getMessage(), CoreMatchers.containsString( PerFieldAnalyzerWrapper.class.getName() ) );
         }
 
         // THEN - assert that there's no index config about this index left behind

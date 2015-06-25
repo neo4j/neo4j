@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.direct.BoundedIterable;
@@ -80,14 +80,14 @@ public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReade
 
     private LuceneNodeLabelRange parse( int id, Document document )
     {
-        List<Fieldable> fields = document.getFields();
+        List<IndexableField> fields = document.getFields();
 
         long[] labelIds = new long[fields.size() - 1];
         Bitmap[] bitmaps = new Bitmap[fields.size() - 1];
 
         int i = 0;
         long rangeId = -1;
-        for ( Fieldable field : fields )
+        for ( IndexableField field : fields )
         {
             if ( format.isRangeField( field ) )
             {
