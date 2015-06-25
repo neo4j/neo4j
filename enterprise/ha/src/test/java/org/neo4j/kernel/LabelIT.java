@@ -37,14 +37,14 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 public class LabelIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule(getClass());
+    public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
     protected ClusterManager.ManagedCluster cluster;
 
     @Before
     public void setup() throws Exception
     {
-        cluster = clusterRule.startCluster( );
+        cluster = clusterRule.startCluster();
     }
 
     @Test

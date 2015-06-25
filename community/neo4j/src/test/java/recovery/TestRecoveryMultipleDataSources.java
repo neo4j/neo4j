@@ -19,6 +19,7 @@
  */
 package recovery;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -30,6 +31,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -37,12 +39,11 @@ import static java.lang.Runtime.getRuntime;
 import static java.lang.System.exit;
 import static java.lang.System.getProperty;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.io.fs.FileUtils.deleteRecursively;
-import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestRecoveryMultipleDataSources
 {
-    private static final String dir = forTest( TestRecoveryMultipleDataSources.class ).makeGraphDbDir().getAbsolutePath();
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     /**
      * Tests an issue where loading all relationship types and property indexes after
@@ -57,17 +58,18 @@ public class TestRecoveryMultipleDataSources
     public void recoverNeoAndIndexHavingAllRelationshipTypesAfterRecovery() throws Exception
     {
         // Given (create transactions and kill process, leaving it needing for recovery)
-        deleteRecursively( new File( dir ) );
-        assertEquals( 0, getRuntime().exec( new String[] { "java", "-Djava.awt.headless=true", "-cp", getProperty( "java.class.path" ),
-                getClass().getName() } ).waitFor() );
+        File storeDir = testDirectory.graphDbDir();
+        assertEquals( 0, getRuntime().exec( new String[]{"java", "-Djava.awt.headless=true", "-cp",
+                getProperty( "java.class.path" ), getClass().getName(), storeDir.getAbsolutePath()} ).waitFor() );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
         // Then
-        try(Transaction ignored = db.beginTx())
+        try ( Transaction ignored = db.beginTx() )
         {
-            assertEquals( MyRelTypes.TEST.name(), GlobalGraphOperations.at( db ).getAllRelationshipTypes().iterator().next().name() );
+            assertEquals( MyRelTypes.TEST.name(),
+                    GlobalGraphOperations.at( db ).getAllRelationshipTypes().iterator().next().name() );
         }
         finally
         {
@@ -77,7 +79,13 @@ public class TestRecoveryMultipleDataSources
 
     public static void main( String[] args ) throws IOException
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( dir );
+        if ( args.length != 1 )
+        {
+            exit( 1 );
+        }
+
+        File storeDir = new File( args[0] );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         Transaction tx = db.beginTx();
         db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
         tx.success();
@@ -86,7 +94,7 @@ public class TestRecoveryMultipleDataSources
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
 
         tx = db.beginTx();
-        db.index().forNodes( "index" ).add( db.createNode(), dir, db.createNode() );
+        db.index().forNodes( "index" ).add( db.createNode(), storeDir.getAbsolutePath(), db.createNode() );
         tx.success();
         tx.close();
         exit( 0 );

@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -48,6 +49,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class TestMatchingOfCircularPattern
@@ -65,7 +67,8 @@ public class TestMatchingOfCircularPattern
         public VisibleMessagesByFollowedUsers( Node startNode )
         {
             this.startNode = startNode;
-            if ( !STATIC_PATTERN ) start.setAssociation( startNode );
+            if ( !STATIC_PATTERN )
+            { start.setAssociation( startNode ); }
             PatternNode user = new PatternNode();
             start.createRelationshipTo( user, withName( "FOLLOWS" ) );
             user.createRelationshipTo( message, withName( "CREATED" ) );
@@ -77,7 +80,7 @@ public class TestMatchingOfCircularPattern
         {
             Iterable<PatternMatch> matches = PatternMatcher.getMatcher().match(
                     start, startNode );
-            return new IteratorWrapper<Node, PatternMatch>( matches.iterator() )
+            return new IteratorWrapper<Node,PatternMatch>( matches.iterator() )
             {
                 @Override
                 protected Node underlyingObjectToObject( PatternMatch match )
@@ -140,15 +143,15 @@ public class TestMatchingOfCircularPattern
     @Test
     public void messageNodesAreOnlyReturnedOnce()
     {
-        Map<Node, Integer> counts = new HashMap<Node, Integer>();
+        Map<Node,Integer> counts = new HashMap<Node,Integer>();
         for ( Node message : new VisibleMessagesByFollowedUsers( user ) )
         {
             Integer seen = counts.get( message );
-            counts.put( message, seen == null ? 1 : ( seen + 1 ) );
+            counts.put( message, seen == null ? 1 : (seen + 1) );
             count++;
         }
         StringBuilder duplicates = null;
-        for ( Map.Entry<Node, Integer> seen : counts.entrySet() )
+        for ( Map.Entry<Node,Integer> seen : counts.entrySet() )
         {
             if ( seen.getValue() > 1 )
             {
@@ -270,9 +273,7 @@ public class TestMatchingOfCircularPattern
     @BeforeClass
     public static void setUpDb()
     {
-        String storeDir = TargetDirectory.forTest(
-                TestMatchingOfCircularPattern.class ).makeGraphDbDir().getAbsolutePath();
-        graphdb = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        graphdb = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
         try ( Transaction tx = graphdb.beginTx() )
         {
             setupGraph();
@@ -286,4 +287,8 @@ public class TestMatchingOfCircularPattern
         graphdb.shutdown();
         graphdb = null;
     }
+
+    @ClassRule
+    public static TargetDirectory.TestDirectory testDirectory =
+            TargetDirectory.testDirForTest( TestMatchingOfCircularPattern.class );
 }

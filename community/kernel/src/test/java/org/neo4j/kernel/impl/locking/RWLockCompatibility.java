@@ -19,18 +19,20 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
-import org.junit.Ignore;
-import org.junit.Test;
 import org.neo4j.kernel.DeadlockDetectedException;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
 /**
@@ -193,7 +195,8 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         }
         catch ( Exception e )
         {
-            File file = new LockWorkFailureDump( getClass() ).dumpState( locks, new LockWorker[] { t1, t2, t3, t4 } );
+            LockWorkFailureDump dumper = new LockWorkFailureDump( testDir.directory( getClass().getSimpleName() ) );
+            File file = dumper.dumpState( locks, t1, t2, t3, t4 );
             throw new RuntimeException( "Failed, forensics information dumped to " + file.getAbsolutePath(), e );
         }
     }
@@ -268,7 +271,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
                     }
                     catch ( DeadlockDetectedException e )
                     {
-                        
+
                     }
                     finally
                     {
@@ -321,7 +324,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         {
             sleepALittle();
         }
-        
+
         for ( StressThread stressThread : stressThreads )
         {
             if ( stressThread.error != null )

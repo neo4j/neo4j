@@ -412,8 +412,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     @Override
     public Statement apply( final Statement base, Description description )
     {
-        final TargetDirectory.TestDirectory directory = TargetDirectory.forTest( description.getTestClass() )
-                                                                       .testDirectory();
+        final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( description.getTestClass() );
         return super.apply( directory.apply( new Statement()
         {
             @Override

@@ -50,11 +50,13 @@ public class TestOsSpecificLocks
 
     @Rule
     public TestName name = new TestName();
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Before
     public void doBefore()
     {
-        path = TargetDirectory.forTest( getClass() ).cleanDirectory( name.getMethodName() );
+        path = testDirectory.directory( name.getMethodName() );
     }
 
     @Test
@@ -68,7 +70,7 @@ public class TestOsSpecificLocks
         // Lock this sucker!
         FileLock lock = fs.tryLock( fileName, channel );
         assertTrue( new File( path, "lock" ).exists() );
-        
+
         try
         {
             fs.tryLock( fileName, channel );

@@ -126,8 +126,7 @@ public class TestMigrateToDenseNodeSupport
     @Ignore( "Used for creating the dataset, using the previous store version" )
     public void createDb()
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(
-                TargetDirectory.forTest( getClass() ).makeGraphDbDir().getPath() );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() );
         try
         {
             try ( Transaction tx = db.beginTx() )

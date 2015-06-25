@@ -20,6 +20,8 @@
 package org.neo4j.ha;
 
 import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -49,7 +51,15 @@ import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 public class TestBranchedData
 {
-    private final File dir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    private File dir;
+
+    @Before
+    public void setup()
+    {
+        dir = testDirectory.graphDbDir();
+    }
 
     @Test
     public void migrationOfBranchedDataDirectories() throws Exception
@@ -63,7 +73,7 @@ public class TestBranchedData
         }
 
         new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( dir.getAbsolutePath() )
+                newEmbeddedDatabaseBuilder( dir )
                 .setConfig( ClusterSettings.server_id, "1" )
                 .setConfig( ClusterSettings.initial_hosts, ":5001" )
                 .newGraphDatabase().shutdown();
@@ -76,7 +86,7 @@ public class TestBranchedData
                     BranchedDataPolicy.getBranchedDataDirectory( dir, timestamp ).exists() );
         }
     }
-    
+
     @Test
     public void shouldCopyStoreFromMasterIfBranched() throws Throwable
     {
@@ -87,7 +97,7 @@ public class TestBranchedData
         cluster.await( allSeesAllAsAvailable() );
         createNode( cluster.getMaster(), "A" );
         cluster.sync();
-        
+
         // WHEN
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
         String storeDir = slave.getStoreDir();
@@ -102,7 +112,7 @@ public class TestBranchedData
         cluster.await( allSeesAllAsAvailable() );
         slave.beginTx().close();
     }
-    
+
     private final LifeSupport life = new LifeSupport();
 
     @After

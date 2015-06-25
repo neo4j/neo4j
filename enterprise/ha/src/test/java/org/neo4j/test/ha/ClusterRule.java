@@ -19,15 +19,15 @@
  */
 package org.neo4j.test.ha;
 
+import org.junit.rules.ExternalResource;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.rules.ExternalResource;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.config.Setting;
@@ -38,7 +38,6 @@ import org.neo4j.test.ha.ClusterManager.Builder;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -48,39 +47,37 @@ import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 public class ClusterRule extends ExternalResource
 {
-    private final Class<?> testClass;
-
     private ClusterManager clusterManager;
     private File storeDirectory;
-    private Description description;
 
     private ClusterManager.Provider provider = clusterOfSize( 3 );
-    private final Map<String, String> config = new HashMap<>();
+    private final Map<String,String> config = new HashMap<>();
     private HighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
     private List<Predicate<ManagedCluster>> availabilityChecks = asList( allSeesAllAsAvailable() );
+    private TargetDirectory.TestDirectory testDirectory;
 
     public ClusterRule( Class<?> testClass )
     {
-        this.testClass = testClass;
-        config.putAll(stringMap(
+        this.testDirectory = TargetDirectory.testDirForTest( testClass );
+        config.putAll( stringMap(
                 default_timeout.name(), "1s",
                 tx_push_factor.name(), "0",
-                pagecache_memory.name(), "8m"));
+                pagecache_memory.name(), "8m" ) );
     }
 
-    public ClusterRule config(Setting<?> setting, String value)
+    public ClusterRule config( Setting<?> setting, String value )
     {
-        config.put(setting.name(), value);
+        config.put( setting.name(), value );
         return this;
     }
 
-    public ClusterRule provider(ClusterManager.Provider provider)
+    public ClusterRule provider( ClusterManager.Provider provider )
     {
         this.provider = provider;
         return this;
     }
 
-    public ClusterRule factory(HighlyAvailableGraphDatabaseFactory factory)
+    public ClusterRule factory( HighlyAvailableGraphDatabaseFactory factory )
     {
         this.factory = factory;
         return this;
@@ -113,18 +110,19 @@ public class ClusterRule extends ExternalResource
     }
 
     @Override
-    public Statement apply( Statement base, Description description )
+    public Statement apply( final Statement base, final Description description )
     {
-        this.description = description;
-        return super.apply( base, description );
+        return testDirectory.apply( new Statement()
+        {
+            @Override
+            public void evaluate() throws Throwable
+            {
+                ClusterRule.this.storeDirectory = testDirectory.directory( description.getMethodName() );
+                ClusterRule.super.apply( base, description );
+            }
+        }, description );
     }
 
-
-    @Override
-    protected void before() throws Throwable
-    {
-        this.storeDirectory = TargetDirectory.forTest( testClass ).cleanDirectory( description.getMethodName() );
-    }
 
     @Override
     protected void after()

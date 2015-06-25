@@ -19,26 +19,16 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.Transaction;
@@ -49,6 +39,14 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
+
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
 public class TxPushStrategyConfigIT
 {
@@ -138,7 +136,8 @@ public class TxPushStrategyConfigIT
 
     private final LifeSupport life = new LifeSupport();
     private ManagedCluster cluster;
-    private TargetDirectory dir;
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Rule
     public TestName name = new TestName();
@@ -153,12 +152,6 @@ public class TxPushStrategyConfigIT
     private static int FOURTH_SLAVE = 5;
     private InstanceId[] machineIds;
 
-    @Before
-    public void before() throws Exception
-    {
-        dir = TargetDirectory.forTest( getClass() );
-    }
-
     @After
     public void after() throws Exception
     {
@@ -167,8 +160,8 @@ public class TxPushStrategyConfigIT
 
     private void startCluster( int memberCount, final int pushFactor, final String pushStrategy )
     {
-        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( memberCount ), dir.cleanDirectory(
-                name.getMethodName() ), stringMap() )
+        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( memberCount ),
+                testDirectory.directory( name.getMethodName() ), stringMap() )
         {
             @Override
             protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )

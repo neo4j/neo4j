@@ -31,11 +31,6 @@ import java.util.zip.ZipInputStream;
 
 public class Unzip
 {
-    public static File unzip( Class<?> testClass, String resource ) throws IOException
-    {
-        return unzip( testClass, resource, TargetDirectory.forTest( testClass ).makeGraphDbDir() );
-    }
-
     public static File unzip( Class<?> testClass, String resource, File targetDirectory ) throws IOException
     {
         InputStream source = testClass.getResourceAsStream( resource );

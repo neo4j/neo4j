@@ -20,6 +20,7 @@
 package org.neo4j.ha;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -56,8 +57,7 @@ public class QuorumWritesIT
     @Test
     public void testMasterStopsWritesWhenMajorityIsUnavailable() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).cleanDirectory(
-                "testMasterStopsWritesWhenMajorityIsUnavailable" );
+        File root = testDirectory.directory( "testMasterStopsWritesWhenMajorityIsUnavailable" );
         ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root,
                 MapUtil.stringMap( HaSettings.tx_push_factor.name(), "2", HaSettings.state_switch_timeout.name(), "5s"
                 ) );
@@ -145,9 +145,7 @@ public class QuorumWritesIT
     @Test
     public void testInstanceCanBeReplacedToReestablishQuorum() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).cleanDirectory(
-                "testInstanceCanBeReplacedToReestablishQuorum"
-        );
+        File root = testDirectory.directory( "testInstanceCanBeReplacedToReestablishQuorum" );
         ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root,
                 MapUtil.stringMap( HaSettings.tx_push_factor.name(), "2", HaSettings.state_switch_timeout.name(), "5s" ) );
         clusterManager.start();
@@ -228,6 +226,9 @@ public class QuorumWritesIT
         clusterManager.stop();
         replacement.shutdown();
     }
+
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     private void waitOnHeartbeatFail( HighlyAvailableGraphDatabase master, final CountDownLatch latch )
     {

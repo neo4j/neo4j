@@ -19,6 +19,12 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.AccessibleObject;
@@ -28,12 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -58,12 +58,10 @@ import static java.lang.String.format;
 import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
-
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
 import static org.neo4j.cluster.ClusterSettings.server_id;
@@ -169,13 +167,17 @@ public class StandaloneClusterClientIT
 
     @Rule
     public TestRule dumpPorts = new DumpPortListenerOnNettyBindFailure();
-    private final File directory = TargetDirectory.forTest( getClass() ).cleanDirectory( "temp" );
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    private File directory;
     private LifeSupport life;
     private ClusterClient[] clients;
 
     @Before
     public void before() throws Exception
     {
+        directory = testDirectory.directory( "temp" );
         life = new LifeSupport();
         life.start(); // So that the clients get started as they are added
         clients = new ClusterClient[2];
@@ -214,7 +216,6 @@ public class StandaloneClusterClientIT
 
     private File configFile( Map<String, String> config ) throws IOException
     {
-        File directory = TargetDirectory.forTest( getClass() ).cleanDirectory( "temp" );
         File dbConfigFile = new File( directory, "config-file" );
         store( config, dbConfigFile );
         File serverConfigFile = new File( directory, "server-file" );

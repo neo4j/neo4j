@@ -118,8 +118,9 @@ public class StoreUpgraderTest
     @Before
     public void prepareDb() throws IOException
     {
-        dbDirectory = new File( directory.directory(), version );
-        prepareSampleLegacyDatabase( version, fileSystem, dbDirectory );
+        dbDirectory = directory.directory( "db_" + version );
+        File prepareDirectory = directory.directory("prepare_" + version);
+        prepareSampleLegacyDatabase( version, fileSystem, dbDirectory, prepareDirectory );
     }
 
     @Test
@@ -377,7 +378,7 @@ public class StoreUpgraderTest
     }
 
     @Rule
-    public final TestDirectory directory = TargetDirectory.forTest( getClass() ).testDirectory();
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
     private File dbDirectory;

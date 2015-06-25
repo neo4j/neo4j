@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -58,6 +59,9 @@ public class UpgradableDatabaseTest
     @RunWith(Parameterized.class)
     public static class SupportedVersions
     {
+        @Rule
+        public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
         @Parameterized.Parameter( 0 )
         public String version;
         private File workingDirectory;
@@ -79,7 +83,8 @@ public class UpgradableDatabaseTest
         @Before
         public void setup() throws IOException
         {
-            workingDirectory = MigrationTestUtils.findFormatStoreDirectoryForVersion( version );
+            workingDirectory = testDirectory.graphDbDir();
+            MigrationTestUtils.findFormatStoreDirectoryForVersion( version, workingDirectory );
         }
 
         @Test
@@ -163,6 +168,9 @@ public class UpgradableDatabaseTest
     @RunWith( Parameterized.class )
     public static class UnsupportedVersions
     {
+        @Rule
+        public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
         @Parameterized.Parameter( 0 )
         public String version;
         private File workingDirectory;
@@ -183,8 +191,9 @@ public class UpgradableDatabaseTest
         @Before
         public void setup() throws IOException
         {
+            workingDirectory = testDirectory.graphDbDir();
             // doesn't matter which version we pick we are changing it to the wrong one...
-            workingDirectory = MigrationTestUtils.findFormatStoreDirectoryForVersion( Legacy21Store.LEGACY_VERSION );
+            MigrationTestUtils.findFormatStoreDirectoryForVersion( Legacy21Store.LEGACY_VERSION, workingDirectory );
             changeVersionNumber( fileSystem, new File( workingDirectory, neostoreFilename ), version );
         }
 

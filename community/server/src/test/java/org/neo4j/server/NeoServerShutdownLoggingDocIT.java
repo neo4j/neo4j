@@ -19,11 +19,11 @@
  */
 package org.neo4j.server;
 
-import java.io.IOException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.helpers.ServerHelper;
@@ -38,7 +38,7 @@ public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
     public void setupServer() throws IOException
     {
         logProvider = new AssertableLogProvider();
-        server = ServerHelper.createPersistentServer( folder.cleanDirectory( name.getMethodName() ), logProvider );
+        server = ServerHelper.createPersistentServer( folder.directory( name.getMethodName() ), logProvider );
         ServerHelper.cleanTheDatabase( server );
     }
 

@@ -22,6 +22,7 @@ package org.neo4j.ha;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -47,9 +48,11 @@ import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 
 public class BackupHaIT
 {
-    public static final File PATH = TargetDirectory.forTest( BackupHaIT.class ).cleanDirectory( "db" );
-    public static final File BACKUP_PATH = TargetDirectory.forTest( BackupHaIT.class ).cleanDirectory( "backup" +
-            "-db" );
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    private File path;
+    private File backupPath;
 
     private DbRepresentation representation;
     private ClusterManager clusterManager;
@@ -58,8 +61,10 @@ public class BackupHaIT
     @Before
     public void setup() throws Throwable
     {
-        FileUtils.deleteDirectory( PATH );
-        FileUtils.deleteDirectory( BACKUP_PATH );
+        path = testDirectory.directory( "db" );
+        backupPath = testDirectory.directory( "backup-db" );
+        FileUtils.deleteDirectory( path );
+        FileUtils.deleteDirectory( backupPath );
 
         startCluster();
 
@@ -71,7 +76,7 @@ public class BackupHaIT
     {
         clusterManager = new ClusterManager( ClusterManager.fromXml( getClass().getResource( "/threeinstances.xml" )
                 .toURI() ),
-                PATH, MapUtil.stringMap( OnlineBackupSettings.online_backup_enabled.name(),
+                path, MapUtil.stringMap( OnlineBackupSettings.online_backup_enabled.name(),
                 Settings.TRUE ) )
         {
             @Override
@@ -102,7 +107,7 @@ public class BackupHaIT
     public void makeSureBackupCanBePerformedFromWronglyNamedCluster() throws Throwable
     {
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( "localhost:4445", BACKUP_PATH.getPath(), "non.existent" ) ) );
+                backupArguments( "localhost:4445", backupPath.getPath(), "non.existent" ) ) );
     }
 
     @Test
@@ -110,7 +115,7 @@ public class BackupHaIT
     {
         // Run backup
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupArguments( "localhost:4445",
-                BACKUP_PATH.getPath(), null ) ) );
+                backupPath.getPath(), null ) ) );
 
         // Add some new data
         DbRepresentation changedData = createSomeData( cluster.getMaster() );
@@ -136,7 +141,7 @@ public class BackupHaIT
         {
             // Run backup
             assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupArguments( "localhost:" + port,
-                    BACKUP_PATH.getPath(), null ) ) );
+                    backupPath.getPath(), null ) ) );
 
             // Add some new data
             DbRepresentation changedData = createSomeData( cluster.getMaster() );
@@ -157,28 +162,28 @@ public class BackupHaIT
 
     private void copyBackup() throws IOException
     {
-        FileUtils.copyDirectory( BACKUP_PATH, new File( PATH, "neo4j.ha/server1" ) );
-        FileUtils.copyDirectory( BACKUP_PATH, new File(PATH, "neo4j.ha/server2") );
-        FileUtils.copyDirectory( BACKUP_PATH, new File( PATH, "neo4j.ha/server3" ) );
+        FileUtils.copyDirectory( backupPath, new File( path, "neo4j.ha/server1" ) );
+        FileUtils.copyDirectory( backupPath, new File( path, "neo4j.ha/server2") );
+        FileUtils.copyDirectory( backupPath, new File( path, "neo4j.ha/server3" ) );
     }
 
     private void cleanData() throws IOException
     {
-        FileUtils.cleanDirectory( new File( PATH, "neo4j.ha/server1" ) );
-        FileUtils.cleanDirectory( new File(PATH, "neo4j.ha/server2"));
-        FileUtils.cleanDirectory( new File( PATH, "neo4j.ha/server3" ) );
+        FileUtils.cleanDirectory( new File( path, "neo4j.ha/server1" ) );
+        FileUtils.cleanDirectory( new File( path, "neo4j.ha/server2"));
+        FileUtils.cleanDirectory( new File( path, "neo4j.ha/server3" ) );
     }
 
     private void testBackupFromCluster( String askForCluster ) throws Throwable
     {
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( "localhost:4445", BACKUP_PATH.getPath(), askForCluster ) ) );
-        assertEquals( representation, DbRepresentation.of( BACKUP_PATH ) );
+                backupArguments( "localhost:4445", backupPath.getPath(), askForCluster ) ) );
+        assertEquals( representation, DbRepresentation.of( backupPath ) );
         ManagedCluster cluster = clusterManager.getCluster( askForCluster == null ? "neo4j.ha" : askForCluster );
         DbRepresentation newRepresentation = createSomeData( cluster.getAnySlave() );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( "localhost:4445", BACKUP_PATH.getPath(), askForCluster ) ) );
-        assertEquals( newRepresentation, DbRepresentation.of( BACKUP_PATH ) );
+                backupArguments( "localhost:4445", backupPath.getPath(), askForCluster ) ) );
+        assertEquals( newRepresentation, DbRepresentation.of( backupPath ) );
     }
 
     private String[] backupArguments( String from, String to, String clusterName )

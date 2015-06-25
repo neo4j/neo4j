@@ -117,81 +117,70 @@ public class MigrationTestUtils
     }
 
     public static void prepareSampleLegacyDatabase( String version, EphemeralFileSystemAbstraction workingFs,
-            File workingDirectory ) throws IOException
+            File workingDirectory, File realDirForPreparingDatabase ) throws IOException
     {
-        File resourceDirectory = findFormatStoreDirectoryForVersion( version );
+        File resourceDirectory = findFormatStoreDirectoryForVersion( version, realDirForPreparingDatabase );
         workingFs.copyRecursivelyFromOtherFs( resourceDirectory, new DefaultFileSystemAbstraction(), workingDirectory );
     }
 
     public static void prepareSampleLegacyDatabase( String version, FileSystemAbstraction workingFs,
-                                                    File workingDirectory ) throws IOException
+            File workingDirectory, File prepareDirectory ) throws IOException
     {
-        File resourceDirectory = findFormatStoreDirectoryForVersion( version );
+        if ( !prepareDirectory.exists() )
+        {
+            throw new IllegalArgumentException( "bad prepare directory" );
+        }
+        File resourceDirectory = findFormatStoreDirectoryForVersion( version, prepareDirectory );
         workingFs.deleteRecursively( workingDirectory );
         workingFs.mkdirs( workingDirectory );
         workingFs.copyRecursively( resourceDirectory, workingDirectory );
     }
 
-    public static File findFormatStoreDirectoryForVersion( String version ) throws IOException
+    public static File findFormatStoreDirectoryForVersion( String version, File targetDir ) throws IOException
     {
         switch ( version )
         {
-            case Legacy22Store.LEGACY_VERSION:
-                return find22FormatStoreDirectory();
-            case Legacy21Store.LEGACY_VERSION:
-                return find21FormatStoreDirectory();
-            case Legacy20Store.LEGACY_VERSION:
-                return find20FormatStoreDirectory();
-            case Legacy19Store.LEGACY_VERSION:
-                return find19FormatStoreDirectory();
-            default:
-                throw new IllegalArgumentException( "Unknown version" );
+        case Legacy22Store.LEGACY_VERSION:
+            return find22FormatStoreDirectory( targetDir );
+        case Legacy21Store.LEGACY_VERSION:
+            return find21FormatStoreDirectory( targetDir );
+        case Legacy20Store.LEGACY_VERSION:
+            return find20FormatStoreDirectory( targetDir );
+        case Legacy19Store.LEGACY_VERSION:
+            return find19FormatStoreDirectory( targetDir );
+        default:
+            throw new IllegalArgumentException( "Unknown version" );
         }
     }
 
-    public static File find22FormatStoreDirectory() throws IOException
+    public static File find22FormatStoreDirectory( File targetDir ) throws IOException
     {
-        return Unzip.unzip( Legacy22Store.class, "upgradeTest22Db.zip" );
+        return Unzip.unzip( Legacy22Store.class, "upgradeTest22Db.zip", targetDir );
     }
 
-    public static File find21FormatStoreDirectory() throws IOException
+    public static File find21FormatStoreDirectory( File targetDir ) throws IOException
     {
-        return Unzip.unzip( Legacy21Store.class, "upgradeTest21Db.zip" );
+        return Unzip.unzip( Legacy21Store.class, "upgradeTest21Db.zip", targetDir );
     }
 
-    public static File find21FormatStoreDirectoryWithDuplicateProperties( File directory ) throws IOException
+    public static File find21FormatStoreDirectoryWithDuplicateProperties( File targetDir ) throws IOException
     {
-        return Unzip.unzip( Legacy21Store.class, "with-duplicate-properties.zip", directory );
+        return Unzip.unzip( Legacy21Store.class, "with-duplicate-properties.zip", targetDir );
     }
 
-    public static File find20FormatStoreDirectory() throws IOException
+    public static File find20FormatStoreDirectory( File targetDir ) throws IOException
     {
-        return Unzip.unzip( Legacy20Store.class, "exampledb.zip" );
+        return Unzip.unzip( Legacy20Store.class, "exampledb.zip", targetDir );
     }
 
-    public static File find20FormatStoreDirectory( File unzipTarget ) throws IOException
+    public static File find19FormatStoreDirectory( File targetDir ) throws IOException
     {
-        return Unzip.unzip( Legacy20Store.class, "exampledb.zip", unzipTarget );
+        return Unzip.unzip( Legacy19Store.class, "propkeydupdb.zip", targetDir );
     }
 
-    public static File find19FormatStoreDirectory() throws IOException
+    public static File find19FormatHugeStoreDirectory( File targetDir ) throws IOException
     {
-        return Unzip.unzip( Legacy19Store.class, "propkeydupdb.zip" );
-    }
-
-    public static File find19FormatStoreDirectory( File unzipTarget ) throws IOException
-    {
-        return Unzip.unzip( Legacy19Store.class, "propkeydupdb.zip", unzipTarget );
-    }
-
-    public static File find19FormatHugeStoreDirectory() throws IOException
-    {
-        return Unzip.unzip( Legacy19Store.class, "upgradeTest19Db.zip" );
-    }
-
-    public static File find19FormatHugeStoreDirectory( File unzipTarget ) throws IOException
-    {
-        return Unzip.unzip( Legacy19Store.class, "upgradeTest19Db.zip", unzipTarget );
+        return Unzip.unzip( Legacy19Store.class, "upgradeTest19Db.zip", targetDir );
     }
 
     public static boolean allStoreFilesHaveVersion( FileSystemAbstraction fileSystem, File workingDirectory,

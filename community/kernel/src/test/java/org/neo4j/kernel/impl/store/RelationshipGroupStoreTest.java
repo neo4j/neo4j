@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -54,7 +54,6 @@ import org.neo4j.test.TargetDirectory;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -64,6 +63,8 @@ public class RelationshipGroupStoreTest
 {
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule( false );
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
     private File directory;
     private int defaultThreshold;
     private FileSystemAbstraction fs;
@@ -72,7 +73,7 @@ public class RelationshipGroupStoreTest
     @Before
     public void before() throws Exception
     {
-        directory = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+        directory = testDir.graphDbDir();
         fs = new DefaultFileSystemAbstraction();
         defaultThreshold = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
     }

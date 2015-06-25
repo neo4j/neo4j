@@ -70,11 +70,11 @@ public class HTTPLoggingPreparednessRuleTest
     public void shouldPassWhenEnabledWithGoodConfigSpecified() throws Exception
     {
         // given
-        File logDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "logDir" );
-        File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "confDir" );
-        Config config = new Config( MapUtil.stringMap(
-                http_logging_enabled.name(), "true",
-                http_log_config_file.name(), createConfigFile( createLogbackConfigXml( logDir ), confDir ).getAbsolutePath() ) );
+        File logDir = testDirectory.directory( "logDir" );
+        File confDir = testDirectory.directory( "confDir" );
+        Config config = new Config( MapUtil.stringMap( http_logging_enabled.name(), "true",
+                http_log_config_file.name(), createConfigFile(
+                        createLogbackConfigXml( logDir ), confDir ).getAbsolutePath() ) );
 
         // when
         config.get( http_log_config_file );
@@ -86,7 +86,7 @@ public class HTTPLoggingPreparednessRuleTest
     public void shouldFailWhenEnabledWithUnwritableLogDirSpecifiedInConfig() throws Exception
     {
         // given
-        File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "confDir" );
+        File confDir = testDirectory.directory( "confDir" );
         File unwritableDirectory = createUnwritableDirectory();
         Config config = new Config( MapUtil.stringMap(
                 http_logging_enabled.name(), "true",
@@ -99,6 +99,9 @@ public class HTTPLoggingPreparednessRuleTest
         config.get( http_log_config_file );
 
     }
+
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     public static File createUnwritableDirectory()
     {

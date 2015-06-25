@@ -32,8 +32,8 @@ import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class ExclusiveServerTestBase
 {
-    public TargetDirectory folder = TargetDirectory.forTest( getClass() );
-
+    @Rule
+    public TargetDirectory.TestDirectory folder = TargetDirectory.testDirForTest( getClass() );
     @Rule
     public SuppressOutput suppressOutput = suppressAll();
     @Rule

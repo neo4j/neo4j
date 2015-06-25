@@ -21,15 +21,12 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 
-import static org.neo4j.test.TargetDirectory.forTest;
-
 public class LuceneSchemaIndexProviderTest extends IndexProviderCompatibilityTestSuite
 {
     @Override
     protected LuceneSchemaIndexProvider createIndexProvider()
     {
-        return new LuceneSchemaIndexProvider( new DirectoryFactory.InMemoryDirectoryFactory(),
-                forTest( getClass() ).makeGraphDbDir()
-        );
+        DirectoryFactory.InMemoryDirectoryFactory factory = new DirectoryFactory.InMemoryDirectoryFactory();
+        return new LuceneSchemaIndexProvider( factory, graphDbDir );
     }
 }

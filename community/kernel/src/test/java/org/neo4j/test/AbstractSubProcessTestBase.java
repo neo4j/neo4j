@@ -21,6 +21,7 @@ package org.neo4j.test;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,7 +43,8 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class AbstractSubProcessTestBase
 {
-    protected final TargetDirectory target;
+    @Rule
+    public final TargetDirectory.TestDirectory target = TargetDirectory.testDirForTest( getClass() );
     protected final Pair<Instance, BreakPoint[]>[] instances;
 
     public AbstractSubProcessTestBase()
@@ -54,7 +56,6 @@ public class AbstractSubProcessTestBase
     protected AbstractSubProcessTestBase( int instances )
     {
         this.instances = new Pair[instances];
-        this.target = TargetDirectory.forTest( getClass() );
     }
 
     protected final void runInThread( Task task )
@@ -194,7 +195,7 @@ public class AbstractSubProcessTestBase
     protected static File getStoreDir( AbstractSubProcessTestBase test, int instance )
             throws IOException
     {
-        return test.target.cleanDirectory( "graphdb." + instance );
+        return test.target.directory( "graphdb." + instance );
     }
 
     protected static Bootstrapper killAwareBootstrapper( AbstractSubProcessTestBase test, int instance,

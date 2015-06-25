@@ -84,8 +84,9 @@ public class StoreUpgradeOnStartupTest
     @Before
     public void setup() throws IOException
     {
-        workingDirectory = testDir.directory( version );
-        prepareSampleLegacyDatabase( version, fileSystem, workingDirectory );
+        workingDirectory = testDir.directory( "working_" + version );
+        File prepareDirectory = testDir.directory( "prepare_" + version );
+        prepareSampleLegacyDatabase( version, fileSystem, workingDirectory, prepareDirectory );
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
     }
 

@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.index;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Future;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -49,7 +49,7 @@ import static org.junit.Assert.assertTrue;
 public class IndexOperationsIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule(getClass());
+    public ClusterRule clusterRule = new ClusterRule( getClass() );
 
     protected ClusterManager.ManagedCluster cluster;
 
@@ -117,7 +117,7 @@ public class IndexOperationsIT
 
         // THEN
         // -- the index instances should still be viable to use
-        for ( Map.Entry<HighlyAvailableGraphDatabase, IndexManager> entry : indexManagers.entrySet() )
+        for ( Map.Entry<HighlyAvailableGraphDatabase,IndexManager> entry : indexManagers.entrySet() )
         {
             HighlyAvailableGraphDatabase db = entry.getKey();
             try ( Transaction transaction = db.beginTx() )
@@ -128,7 +128,7 @@ public class IndexOperationsIT
             }
         }
 
-        for ( Map.Entry<HighlyAvailableGraphDatabase, Index<Node>> entry : indexes.entrySet() )
+        for ( Map.Entry<HighlyAvailableGraphDatabase,Index<Node>> entry : indexes.entrySet() )
         {
             HighlyAvailableGraphDatabase db = entry.getKey();
             try ( Transaction transaction = db.beginTx() )
@@ -181,16 +181,16 @@ public class IndexOperationsIT
     private long createNode( HighlyAvailableGraphDatabase author, String key, Object value, boolean index )
     {
 
-        try (Transaction tx = author.beginTx())
+        try ( Transaction tx = author.beginTx() )
         {
             Node node = author.createNode();
             node.setProperty( key, value );
             if ( index )
-                author.index().forNodes( key ).add( node, key, value );
+            { author.index().forNodes( key ).add( node, key, value ); }
             tx.success();
             return node.getId();
         }
-        catch( Exception e)
+        catch ( Exception e )
         {
             e.printStackTrace( System.err );
             throw e;
@@ -199,7 +199,7 @@ public class IndexOperationsIT
 
     private void assertNodeAndIndexingExists( HighlyAvailableGraphDatabase db, long nodeId, String key, Object value )
     {
-        try (Transaction transaction = db.beginTx())
+        try ( Transaction transaction = db.beginTx() )
         {
             Node node = db.getNodeById( nodeId );
             assertEquals( value, node.getProperty( key ) );
@@ -208,7 +208,7 @@ public class IndexOperationsIT
         }
     }
 
-    private static class PutIfAbsent implements WorkerCommand<HighlyAvailableGraphDatabase, Node>
+    private static class PutIfAbsent implements WorkerCommand<HighlyAvailableGraphDatabase,Node>
     {
         private final long node;
         private final String key;

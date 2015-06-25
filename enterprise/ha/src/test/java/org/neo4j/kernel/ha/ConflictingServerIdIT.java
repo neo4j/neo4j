@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -34,7 +35,8 @@ import static org.junit.Assert.fail;
 
 public class ConflictingServerIdIT
 {
-    private static final File path = TargetDirectory.forTest( ConflictingServerIdIT.class ).makeGraphDbDir();
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void testConflictingIdDoesNotSilentlyFail() throws Exception
@@ -104,8 +106,8 @@ public class ConflictingServerIdIT
         }
     }
 
-    private static String path( int i )
+    private String path( int i )
     {
-        return new File( path, "" + i ).getAbsolutePath();
+        return new File( testDirectory.graphDbDir(), "" + i ).getAbsolutePath();
     }
 }

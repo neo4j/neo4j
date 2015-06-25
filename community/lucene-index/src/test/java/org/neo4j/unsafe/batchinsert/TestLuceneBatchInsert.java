@@ -21,6 +21,7 @@ package org.neo4j.unsafe.batchinsert;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -510,7 +511,10 @@ public class TestLuceneBatchInsert
         }
     }
 
-    private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsoluteFile();
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    private File storeDir;
     private BatchInserter inserter;
     private GraphDatabaseService db;
 
@@ -518,6 +522,7 @@ public class TestLuceneBatchInsert
     @Before
     public void startInserter() throws Exception
     {
+        storeDir = testDirectory.graphDbDir();
         Iterable filteredKernelExtensions = filter( onlyRealLuceneExtensions(),
                 Service.load( KernelExtensionFactory.class ) );
         inserter = BatchInserters.inserter( storeDir, stringMap(), filteredKernelExtensions );

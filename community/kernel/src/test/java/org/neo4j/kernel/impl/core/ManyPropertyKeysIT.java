@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -60,7 +61,8 @@ public class ManyPropertyKeysIT
     public void creating_many_property_keys_should_have_all_loaded_the_next_restart() throws Exception
     {
         // GIVEN
-        GraphDatabaseAPI db = databaseWithManyPropertyKeys( 3000 ); // The previous limit to load was 2500, so go some above that
+        // The previous limit to load was 2500, so go some above that
+        GraphDatabaseAPI db = databaseWithManyPropertyKeys( 3000 );
         int countBefore = propertyKeyCount( db );
 
         // WHEN
@@ -74,7 +76,8 @@ public class ManyPropertyKeysIT
     }
 
     @Test
-    public void concurrently_creating_same_property_key_in_different_transactions_should_end_up_with_same_key_id() throws Exception
+    public void concurrently_creating_same_property_key_in_different_transactions_should_end_up_with_same_key_id()
+            throws Exception
     {
         // GIVEN
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
@@ -99,7 +102,16 @@ public class ManyPropertyKeysIT
 
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    private File storeDir;
+
+
+    @Before
+    public void setup()
+    {
+        storeDir  = testDirectory.graphDbDir();
+    }
 
     private GraphDatabaseAPI database()
     {
@@ -110,7 +122,8 @@ public class ManyPropertyKeysIT
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, NullLogProvider.getInstance(), new Monitors() );
+        StoreFactory storeFactory =
+                new StoreFactory( fs, storeDir, pageCache, NullLogProvider.getInstance(), new Monitors() );
         NeoStore neoStore = storeFactory.newNeoStore( true );
         PropertyKeyTokenStore store = neoStore.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )

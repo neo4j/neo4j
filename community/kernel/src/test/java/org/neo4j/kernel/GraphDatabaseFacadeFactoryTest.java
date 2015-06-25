@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.Map;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.io.File;
+import java.util.Collections;
+import java.util.Map;
+
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -48,7 +49,12 @@ import static org.mockito.Mockito.mock;
 public class GraphDatabaseFacadeFactoryTest
 {
     @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    public final TargetDirectory.TestDirectory dir =
+            TargetDirectory.testDirForTestWithEphemeralFS( new EphemeralFileSystemAbstraction(), getClass() );
+
+    private final GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
+    private final GraphDatabaseFacadeFactory.Dependencies deps =
+            mock( GraphDatabaseFacadeFactory.Dependencies.class, RETURNS_MOCKS );
 
     @Test
     public void shouldThrowAppropriateExceptionIfStartFails()
@@ -57,12 +63,10 @@ public class GraphDatabaseFacadeFactoryTest
         RuntimeException startupError = new RuntimeException();
 
         GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError );
-        GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
         try
         {
             // When
-            db.newFacade( dir.graphDbDir(), Collections.<String, String>emptyMap(), mock( GraphDatabaseFacadeFactory.Dependencies.class ),
-                    mockFacade );
+            db.newFacade( dir.graphDbDir(), Collections.<String,String>emptyMap(), deps, mockFacade );
             fail( "Should have thrown " + RuntimeException.class );
         }
         catch ( RuntimeException exception )
@@ -80,13 +84,11 @@ public class GraphDatabaseFacadeFactoryTest
         RuntimeException shutdownError = new RuntimeException();
 
         GraphDatabaseFacadeFactory db = newFaultyGraphDatabaseFacadeFactory( startupError );
-        GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
         doThrow( shutdownError ).when( mockFacade ).shutdown();
         try
         {
             // When
-            db.newFacade( dir.graphDbDir(), Collections.<String, String>emptyMap(), mock( GraphDatabaseFacadeFactory.Dependencies.class ),
-                    mockFacade );
+            db.newFacade( dir.graphDbDir(), Collections.<String,String>emptyMap(), deps, mockFacade );
             fail( "Should have thrown " + RuntimeException.class );
         }
         catch ( RuntimeException exception )
@@ -102,8 +104,8 @@ public class GraphDatabaseFacadeFactoryTest
         return new GraphDatabaseFacadeFactory()
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies,
-                                                     GraphDatabaseFacade graphDatabaseFacade )
+            protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
+                    Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
                 final LifeSupport lifeMock = mock( LifeSupport.class );
                 doThrow( startupError ).when( lifeMock ).start();
@@ -114,12 +116,10 @@ public class GraphDatabaseFacadeFactoryTest
                     {
                         return invocationOnMock.getArguments()[0];
                     }
-                } ).when(lifeMock).add( any() );
+                } ).when( lifeMock ).add( any() );
 
 
-                PlatformModule module = new PlatformModule( storeDir, mock( Map.class ),
-                        mock( Dependencies.class, RETURNS_MOCKS ),
-                        mock( GraphDatabaseFacade.class ) )
+                return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
                 {
                     @Override
                     public LifeSupport createLife()
@@ -127,7 +127,6 @@ public class GraphDatabaseFacadeFactoryTest
                         return lifeMock;
                     }
                 };
-                return module;
             }
 
             @Override
@@ -137,8 +136,8 @@ public class GraphDatabaseFacadeFactoryTest
             }
 
             @Override
-            protected DataSourceModule createDataSource( Dependencies dependencies, PlatformModule platformModule,
-                                                         EditionModule editionModule )
+            protected DataSourceModule createDataSource(
+                    Dependencies dependencies, PlatformModule platformModule, EditionModule editionModule )
             {
                 return null;
             }

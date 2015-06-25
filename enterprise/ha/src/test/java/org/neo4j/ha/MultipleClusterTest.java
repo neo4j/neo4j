@@ -19,12 +19,12 @@
  */
 package org.neo4j.ha;
 
-import java.io.File;
-import java.util.logging.Level;
-
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.logging.Level;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -38,7 +38,6 @@ import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 /**
@@ -49,11 +48,13 @@ public class MultipleClusterTest
 {
     @Rule
     public LoggerRule logging = new LoggerRule( Level.OFF );
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void runTwoClusters() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).cleanDirectory( "cluster" );
+        File root = testDirectory.directory( "cluster" );
 
         ClusterManager clusterManager = new ClusterManager(
                 fromXml( getClass().getResource( "/twoclustertest.xml" ).toURI() ), root, MapUtil.stringMap() );

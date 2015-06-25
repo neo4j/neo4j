@@ -19,14 +19,15 @@
  */
 package examples;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -50,11 +51,13 @@ import static org.junit.Assert.assertTrue;
 
 public class AutoIndexerExampleTests implements GraphHolder
 {
-    private static final TargetDirectory target = TargetDirectory.forTest( AutoIndexerExampleTests.class );
+    @ClassRule
+    public static TargetDirectory.TestDirectory target = TargetDirectory.testDirForTest( AutoIndexerExampleTests.class );
+
+    @Rule
+    public TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
     private static GraphDatabaseService graphdb;
-    public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
     private String getStoreDir( String testName ) throws IOException
     {
@@ -221,7 +224,7 @@ public class AutoIndexerExampleTests implements GraphHolder
     @BeforeClass
     public static void startDatabase()
     {
-        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( target.makeGraphDbDir().getAbsolutePath() );
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( target.graphDbDir() );
     }
 
     @AfterClass

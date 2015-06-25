@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.store.LockObtainFailedException;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -33,13 +41,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
-
-import org.apache.lucene.store.LockObtainFailedException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -59,7 +60,6 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-
 import static org.hamcrest.core.IsCollectionContaining.hasItem;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -70,13 +70,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.tracking;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 @RunWith(Parameterized.class)
 public class LuceneLabelScanStoreTest
@@ -417,12 +416,15 @@ public class LuceneLabelScanStoreTest
         assertTrue( "Unexpected nodes in scan store " + nodeSet, nodeSet.isEmpty() );
     }
 
-    private final File dir = TargetDirectory.forTest( getClass() ).cleanDirectory( "lucene" );
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     private final Random random = new Random();
     private DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private LifeSupport life;
     private TrackingMonitor monitor;
     private LuceneLabelScanStore store;
+    private File dir;
 
     private List<NodeLabelUpdate> noData()
     {
@@ -514,7 +516,8 @@ public class LuceneLabelScanStoreTest
     @Before
     public void clearDir() throws IOException
     {
-        if(dir.exists())
+        dir = testDirectory.directory( "lucene" );
+        if ( dir.exists() )
         {
             deleteRecursively( dir );
         }

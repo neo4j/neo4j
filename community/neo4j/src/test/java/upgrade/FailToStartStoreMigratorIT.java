@@ -45,13 +45,14 @@ public class FailToStartStoreMigratorIT
     public void shouldFailToStartWithImproperlyUpgradedPropertyKeyStore() throws Exception
     {
         // given
+        File storeDir = testDirectory.graphDbDir();
         // a store with duplicate property keys, that was upgraded from 1.9 to 2.1.3, where no de-duplication was made
         Unzip.unzip( LegacyStore.class, "v21/upgradeMissedPropKeyDup.zip", storeDir );
 
         // when
         try
         {
-            new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath() ).
+            new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).
                     setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" ).
                     newGraphDatabase();
             fail( "should have failed to start" );
@@ -69,7 +70,8 @@ public class FailToStartStoreMigratorIT
         }
     }
 
-    private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Rule
     public final CleanupRule cleanup = new CleanupRule();

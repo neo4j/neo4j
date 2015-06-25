@@ -19,6 +19,7 @@
  */
 package slavetest;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -39,7 +40,6 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.TargetDirectory.forTest;
 
 /*
  * This test case ensures that instances with the same store id but very old txids
@@ -47,7 +47,8 @@ import static org.neo4j.test.TargetDirectory.forTest;
  */
 public class TestInstanceJoin
 {
-    private final TargetDirectory dir = forTest( getClass() );
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void makeSureSlaveCanJoinEvenIfTooFarBackComparedToMaster() throws Exception
@@ -57,15 +58,17 @@ public class TestInstanceJoin
 
         HighlyAvailableGraphDatabase master = null;
         HighlyAvailableGraphDatabase slave = null;
+        String masterDir = testDirectory.directory( "master" ).getAbsolutePath();
+        String slaveDir = testDirectory.directory( "slave" ).getAbsolutePath();
         try
         {
-            master = start( dir.cleanDirectory( "master" ).getAbsolutePath(), 0,
+            master = start( masterDir, 0,
                     stringMap( keep_logical_logs.name(), "1 txs",
                                ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
             createNode( master, "something", "unimportant" );
             checkPoint( master );
             // Need to start and shutdown the slave so when we start it up later it verifies instead of copying
-            slave = start( dir.cleanDirectory( "slave" ).getAbsolutePath(), 1,
+            slave = start( slaveDir, 1,
                     stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001,127.0.0.1:5002" ) );
             slave.shutdown();
 
@@ -82,7 +85,7 @@ public class TestInstanceJoin
              * restart.
              */
             master.shutdown();
-            master = start( dir.existingDirectory( "master" ).getAbsolutePath(), 0,
+            master = start( masterDir, 0,
                     stringMap( keep_logical_logs.name(), "1 txs",
                                ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
 
@@ -99,7 +102,7 @@ public class TestInstanceJoin
 
             checkPoint( master );
 
-            slave = start( dir.existingDirectory( "slave" ).getAbsolutePath(), 1,
+            slave = start( slaveDir, 1,
                     stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001,127.0.0.1:5002" ) );
             slave.getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
 

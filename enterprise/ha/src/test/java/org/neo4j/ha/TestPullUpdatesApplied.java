@@ -21,6 +21,7 @@ package org.neo4j.ha;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -47,7 +48,6 @@ import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.test.TargetDirectory.forTest;
 
 /**
  * This test case ensures that updates in HA are first written out to the log
@@ -65,7 +65,8 @@ import static org.neo4j.test.TargetDirectory.forTest;
 public class TestPullUpdatesApplied
 {
     private final HighlyAvailableGraphDatabase[] dbs = new HighlyAvailableGraphDatabase[3];
-    private final TargetDirectory dir = forTest( getClass() );
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Before
     public void doBefore() throws Exception
@@ -126,7 +127,7 @@ public class TestPullUpdatesApplied
 
         addNode( master ); // this will be pulled by tne next start up, applied
         // but not written to log.
-        File targetDirectory = dir.existingDirectory( "" + toKill );
+        File targetDirectory = testDirectory.directory( "" + toKill );
 
         // Setup to detect shutdown of separate JVM, required since we don't exit cleanly. That is also why we go
         // through the heartbeat and not through the cluster change as above.
@@ -173,12 +174,12 @@ public class TestPullUpdatesApplied
 
     private HighlyAvailableGraphDatabase newDb( int serverId )
     {
-        return database( serverId, dir.cleanDirectory( Integer.toString( serverId ) ).getAbsolutePath() );
+        return database( serverId, testDirectory.directory( Integer.toString( serverId ) ).getAbsolutePath() );
     }
 
     private void restart( int serverId )
     {
-        dbs[serverId] = database( serverId, dir.existingDirectory( Integer.toString( serverId ) ).getAbsolutePath() );
+        dbs[serverId] = database( serverId, testDirectory.directory( Integer.toString( serverId ) ).getAbsolutePath() );
     }
 
     private static HighlyAvailableGraphDatabase database( int serverId, String path )

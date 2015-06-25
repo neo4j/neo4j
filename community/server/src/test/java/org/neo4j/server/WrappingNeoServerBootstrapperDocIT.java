@@ -31,7 +31,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Settings;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.jmx.impl.JmxKernelExtension;
@@ -44,7 +43,6 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.shell.ShellSettings;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -96,8 +94,8 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     {
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
         // let the database accept remote neo4j-shell connections
-        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath() )
+        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .newImpermanentDatabaseBuilder()
                 .setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE )
                 .newGraphDatabase();
         ServerConfigurator config;

@@ -21,6 +21,7 @@ package jmx;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.File;
@@ -78,13 +79,14 @@ public class JmxDocTest
             put( "java.util.Date", "Date (java.util.Date)" );
         }
     };
-    private static final TargetDirectory dir = TargetDirectory.forTest( JmxDocTest.class );
+    @ClassRule
+    public static final TargetDirectory.TestDirectory test = TargetDirectory.testDirForTest( JmxDocTest.class );
     private static GraphDatabaseService d1b;
 
     @BeforeClass
     public static void startDb() throws Exception
     {
-        File storeDir = dir.makeGraphDbDir( /*clean=*/ );
+        File storeDir = test.graphDbDir();
         GraphDatabaseBuilder builder =
                 new TestHighlyAvailableGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder(
                         storeDir.getAbsolutePath() );
@@ -102,7 +104,6 @@ public class JmxDocTest
             d1b.shutdown();
         }
         d1b = null;
-//        dir.cleanup();
     }
 
     @Test

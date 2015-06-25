@@ -49,7 +49,6 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -60,7 +59,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class NonUniqueIndexTests
 {
     @Rule
-    public final TestDirectory directory = TargetDirectory.forTest( getClass() ).testDirectory();
+    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws IOException

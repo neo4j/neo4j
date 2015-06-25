@@ -26,6 +26,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 
 /**
@@ -37,25 +38,25 @@ import org.neo4j.io.fs.FileUtils;
 public class EmbeddedDatabaseRule extends DatabaseRule
 {
     private final TempDirectory temp;
-    
+
     public EmbeddedDatabaseRule()
     {
         this.temp = new TempDirectory()
         {
             private final TemporaryFolder folder = new TemporaryFolder();
-            
+
             @Override
             public File root()
             {
                 return folder.getRoot();
             }
-            
+
             @Override
             public void delete()
             {
                 folder.delete();
             }
-            
+
             @Override
             public void create() throws IOException
             {
@@ -63,12 +64,13 @@ public class EmbeddedDatabaseRule extends DatabaseRule
             }
         };
     }
-    
+
     public EmbeddedDatabaseRule( final Class<?> testClass )
     {
         this.temp = new TempDirectory()
         {
-            private final TargetDirectory targetDirectory = TargetDirectory.forTest( testClass );
+            private final TargetDirectory targetDirectory =
+                    new TargetDirectory( new DefaultFileSystemAbstraction(), testClass );
             private File dbDir;
 
             @Override
@@ -76,13 +78,13 @@ public class EmbeddedDatabaseRule extends DatabaseRule
             {
                 return dbDir;
             }
-            
+
             @Override
             public void delete() throws IOException
             {
                 targetDirectory.cleanup();
             }
-            
+
             @Override
             public void create()
             {
@@ -117,13 +119,13 @@ public class EmbeddedDatabaseRule extends DatabaseRule
             }
         };
     }
-    
+
     @Override
     protected GraphDatabaseFactory newFactory()
     {
         return new TestGraphDatabaseFactory();
     }
-    
+
     @Override
     protected GraphDatabaseBuilder newBuilder(GraphDatabaseFactory factory )
     {
@@ -135,7 +137,7 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     {
         temp.create();
     }
-    
+
     @Override
     protected void deleteResources()
     {
@@ -153,13 +155,13 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     {
         return temp.root();
     }
-    
+
     private interface TempDirectory
     {
         File root();
-        
+
         void create() throws IOException;
-        
+
         void delete() throws IOException;
     }
 }

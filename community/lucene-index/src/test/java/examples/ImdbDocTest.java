@@ -55,7 +55,6 @@ import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
 import org.neo4j.test.AsciiDocGenerator;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
@@ -68,7 +67,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
@@ -205,8 +203,7 @@ public class ImdbDocTest
     @Test
     public void deleteIndex()
     {
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase( TargetDirectory.forTest(
-                getClass() ).cleanDirectory( "delete" ) );
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         try ( Transaction tx = graphDb.beginTx() )
         {
             // START SNIPPET: delete

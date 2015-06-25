@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -31,18 +32,17 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.TargetDirectory;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
-import static java.lang.String.format;
-
 import static org.neo4j.kernel.StoreLocker.STORE_LOCK_FILENAME;
 
 public class StoreLockerTest
 {
-    private static final TargetDirectory target = TargetDirectory.forTest( StoreLockerTest.class );
+    @Rule
+    public TargetDirectory.TestDirectory target = TargetDirectory.testDirForTest( StoreLockerTest.class );
 
     @Test
     public void shouldObtainLockWhenStoreFileNotLocked() throws Exception
@@ -59,7 +59,7 @@ public class StoreLockerTest
 
         try
         {
-            storeLocker.checkLock( target.cleanDirectory( "unused" ) );
+            storeLocker.checkLock( target.directory( "unused" ) );
 
             // Ok
         }
@@ -88,7 +88,7 @@ public class StoreLockerTest
 
         try
         {
-            storeLocker.checkLock( target.cleanDirectory( "unused" ) );
+            storeLocker.checkLock( target.directory( "unused" ) );
             // Ok
         }
         catch ( StoreLockException e )
@@ -119,7 +119,7 @@ public class StoreLockerTest
             }
         };
         StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
-        File storeDir = target.cleanDirectory( "unused" );
+        File storeDir = target.directory( "unused" );
 
         try
         {
@@ -155,7 +155,7 @@ public class StoreLockerTest
             }
         };
         StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
-        File storeDir = target.cleanDirectory( "unused" );
+        File storeDir = target.directory( "unused" );
 
         try
         {
@@ -195,7 +195,7 @@ public class StoreLockerTest
 
         try
         {
-            storeLocker.checkLock( target.cleanDirectory( "unused" ) );
+            storeLocker.checkLock( target.directory( "unused" ) );
             fail();
         }
         catch ( StoreLockException e )

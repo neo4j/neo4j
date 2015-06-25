@@ -19,16 +19,19 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-
 import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
+
+import static org.junit.Assert.assertNotNull;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 /**
  * Test for a regression:
@@ -54,6 +57,9 @@ public class DeletionTest
 {
     private ClusterManager clusterManager;
 
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     @After
     public void after() throws Throwable
     {
@@ -69,12 +75,12 @@ public class DeletionTest
      * Slave pulls updates and tries to apply the transaction. The reason for the test to run transactions against the
      * Slave is because it makes guarantees for when the master has to apply the transaction.
      */
-//    @Test
+    @Test
     public void shouldDeleteRecords() throws Throwable
     {
         // given
-        clusterManager = new ClusterManager( clusterOfSize( 2 ), TargetDirectory.forTest( getClass() ).cleanDirectory(
-                "deleteRecords" ), stringMap() );
+        clusterManager =
+                new ClusterManager( clusterOfSize( 2 ), testDirectory.directory( "deleteRecords" ), stringMap() );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 

@@ -62,10 +62,10 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     public void givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses() throws Exception
     {
         // given
-        File logDirectory = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+        File logDirectory = testDirectory.directory(
                 "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-logdir" );
         FileUtils.forceMkdir( logDirectory );
-        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+        final File confDir = testDirectory.directory(
                 "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-confdir" );
         FileUtils.forceMkdir( confDir );
 
@@ -75,7 +75,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withProperty( Configurator.HTTP_LOGGING, "false" )
                 .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
-                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+                .usingDatabaseDir( testDirectory.directory(
                         "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-dbdir"
                 ).getAbsolutePath() )
                 .build();
@@ -104,11 +104,11 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     public void givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess() throws Exception
     {
         // given
-        final File logDirectory = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
-                "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-logdir" );
+        final File logDirectory =
+                testDirectory.directory( "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-logdir" );
         FileUtils.forceMkdir( logDirectory );
-        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
-                "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-confdir" );
+        final File confDir =
+                testDirectory.directory( "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-confdir" );
         FileUtils.forceMkdir( confDir );
 
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
@@ -119,7 +119,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withProperty( Configurator.HTTP_LOGGING, "true" )
                 .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
-                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+                .usingDatabaseDir( testDirectory.directory(
                         "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-dbdir"
                 ).getAbsolutePath() )
                 .build();
@@ -148,11 +148,9 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     public void givenDebugContentLoggingEnabledShouldLogContent() throws Exception
     {
         // given
-        final File logDirectory = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
-                "givenDebugContentLoggingEnabledShouldLogContent-logdir" );
+        final File logDirectory = testDirectory.directory( "givenDebugContentLoggingEnabledShouldLogContent-logdir" );
         FileUtils.forceMkdir( logDirectory );
-        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
-                "givenDebugContentLoggingEnabledShouldLogContent-confdir" );
+        final File confDir = testDirectory.directory( "givenDebugContentLoggingEnabledShouldLogContent-confdir" );
         FileUtils.forceMkdir( confDir );
 
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
@@ -162,9 +160,8 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
                 .withProperty( Configurator.HTTP_LOGGING, "true" )
                 .withProperty( Configurator.HTTP_CONTENT_LOGGING, "true" )
                 .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
-                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).cleanDirectory(
-                        "givenDebugContentLoggingEnabledShouldLogContent-dbdir"
-                ).getAbsolutePath() )
+                .usingDatabaseDir( testDirectory.directory( "givenDebugContentLoggingEnabledShouldLogContent-dbdir" )
+                        .getAbsolutePath() )
                 .build();
 
         try
@@ -190,7 +187,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     public void givenConfigurationWithUnwritableLogDirectoryShouldFailToStartServer() throws Exception
     {
         // given
-        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "confdir" );
+        final File confDir = testDirectory.directory( "confdir" );
         final File unwritableLogDir = createUnwritableDirectory();
 
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
@@ -213,6 +210,9 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
                 .build();
     }
 
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     private ThrowingSupplier<String, IOException> fileContentSupplier( final File file )
     {
         return new ThrowingSupplier<String, IOException>()
@@ -234,9 +234,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         }
         else
         {
-            TargetDirectory targetDirectory = TargetDirectory.forTest( this.getClass() );
-
-            file = targetDirectory.file( "unwritable-" + System.currentTimeMillis() );
+            file = testDirectory.file( "unwritable-" + System.currentTimeMillis() );
             assertThat( "create directory to be unwritable", file.mkdirs(), is( true ) );
             assertThat( "mark directory as unwritable", file.setWritable( false, false ), is( true ) );
         }

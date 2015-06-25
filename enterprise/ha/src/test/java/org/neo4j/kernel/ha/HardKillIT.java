@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -51,7 +52,8 @@ import static org.junit.Assert.fail;
 
 public class HardKillIT
 {
-    private static final File path = TargetDirectory.forTest( HardKillIT.class ).makeGraphDbDir();
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     private ProcessStreamHandler processHandler;
 
@@ -62,10 +64,10 @@ public class HardKillIT
         HighlyAvailableGraphDatabase dbWithId2 = null, dbWithId3 = null, oldMaster = null;
         try
         {
-            proc = run( "1" );
+            proc = run( 1 );
             Thread.sleep( 12000 );
-            dbWithId2 = startDb( 2 );
-            dbWithId3 = startDb( 3 );
+            dbWithId2 = startDb( 2, path( 2 ) );
+            dbWithId3 = startDb( 3, path( 3 ) );
 
             assertTrue( !dbWithId2.isMaster() );
             assertTrue( !dbWithId3.isMaster() );
@@ -73,27 +75,29 @@ public class HardKillIT
             final CountDownLatch newMasterAvailableLatch = new CountDownLatch( 1 );
             dbWithId2.getDependencyResolver().resolveDependency( ClusterClient.class ).addAtomicBroadcastListener(
                     new AtomicBroadcastListener()
-            {
-                @Override
-                public void receive( Payload value )
-                {
-                    try
                     {
-                        Object event = new AtomicBroadcastSerializer(new ObjectStreamFactory(), new ObjectStreamFactory()).receive( value );
-                        if ( event instanceof MemberIsAvailable )
+                        @Override
+                        public void receive( Payload value )
                         {
-                            if ( HighAvailabilityModeSwitcher.MASTER.equals( ((MemberIsAvailable) event).getRole() ) )
+                            try
                             {
-                                newMasterAvailableLatch.countDown();
+                                Object event = new AtomicBroadcastSerializer( new ObjectStreamFactory(), new
+                                        ObjectStreamFactory() ).receive( value );
+                                if ( event instanceof MemberIsAvailable )
+                                {
+                                    if ( HighAvailabilityModeSwitcher.MASTER.equals( ((MemberIsAvailable) event)
+                                            .getRole() ) )
+                                    {
+                                        newMasterAvailableLatch.countDown();
+                                    }
+                                }
+                            }
+                            catch ( Exception e )
+                            {
+                                fail( e.toString() );
                             }
                         }
-                    }
-                    catch ( Exception e )
-                    {
-                        fail( e.toString() );
-                    }
-                }
-            } );
+                    } );
             proc.destroy();
             proc = null;
 
@@ -103,9 +107,9 @@ public class HardKillIT
             assertTrue( !dbWithId3.isMaster() );
 
             // Ensure that everyone has marked the killed instance as failed, otherwise it cannot rejoin
-            Thread.sleep(15000);
+            Thread.sleep( 15000 );
 
-            oldMaster = startDb( 1 );
+            oldMaster = startDb( 1, path( 1 ) );
             long oldMasterNode = createNamedNode( oldMaster, "Old master" );
             assertEquals( oldMasterNode, getNamedNode( dbWithId2, "Old master" ) );
         }
@@ -119,8 +123,14 @@ public class HardKillIT
             {
                 oldMaster.shutdown();
             }
-            dbWithId2.shutdown();
-            dbWithId3.shutdown();
+            if ( dbWithId2 != null )
+            {
+                dbWithId2.shutdown();
+            }
+            if ( dbWithId3 != null )
+            {
+                dbWithId3.shutdown();
+            }
         }
     }
 
@@ -152,11 +162,12 @@ public class HardKillIT
         }
     }
 
-    private Process run( String machineId ) throws IOException
+    private Process run( int machineId ) throws IOException
     {
         List<String> allArgs = new ArrayList<String>( Arrays.asList( "java", "-cp",
                 System.getProperty( "java.class.path" ), "-Djava.awt.headless=true", HardKillIT.class.getName() ) );
-        allArgs.add( machineId );
+        allArgs.add( "" + machineId );
+        allArgs.add( path( machineId ).getAbsolutePath() );
 
         Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ) );
         processHandler = new ProcessStreamHandler( process, false );
@@ -169,23 +180,20 @@ public class HardKillIT
      */
     public static void main( String[] args )
     {
-        int machineId = Integer.parseInt( args[0] );
-
-        HighlyAvailableGraphDatabase db = startDb( machineId );
+        startDb( Integer.parseInt( args[0] ), new File( args[1] ) );
     }
 
-    private static HighlyAvailableGraphDatabase startDb( int serverId )
+    private static HighlyAvailableGraphDatabase startDb( int serverId, File path )
     {
         GraphDatabaseBuilder builder = new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( path( serverId ) )
+                .newEmbeddedDatabaseBuilder( path )
                 .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003" )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
                 .setConfig( ClusterSettings.server_id, "" + serverId )
                 .setConfig( HaSettings.ha_server, ":" + (8001 + serverId) )
                 .setConfig( HaSettings.tx_push_factor, "0" );
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) builder.newGraphDatabase();
-        Transaction tx = db.beginTx();
-        tx.close();
+        db.beginTx().close();
         try
         {
             Thread.sleep( 2000 );
@@ -197,8 +205,8 @@ public class HardKillIT
         return db;
     }
 
-    private static String path( int i )
+    private File path( int i )
     {
-        return new File( path, "" + i ).getAbsolutePath();
+        return new File( testDirectory.graphDbDir(), "" + i );
     }
 }

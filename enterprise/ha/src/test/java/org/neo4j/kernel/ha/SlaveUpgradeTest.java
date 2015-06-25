@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -41,7 +42,7 @@ public class SlaveUpgradeTest
     {
         try
         {
-            File dir = TargetDirectory.forTest( getClass() ).cleanDirectory( "haShouldFailToStartWithOldStore" );
+            File dir = testDirectory.directory( "haShouldFailToStartWithOldStore" );
             MigrationTestUtils.find20FormatStoreDirectory( dir );
 
             new TestHighlyAvailableGraphDatabaseFactory()
@@ -56,4 +57,7 @@ public class SlaveUpgradeTest
             assertThat( rootCause, instanceOf( UpgradeNotAllowedByDatabaseModeException.class ) );
         }
     }
+
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 }

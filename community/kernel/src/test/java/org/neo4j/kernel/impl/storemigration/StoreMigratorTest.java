@@ -72,8 +72,9 @@ public class StoreMigratorTest
     public void shouldBeAbleToResumeMigration() throws Exception
     {
         // GIVEN a legacy database
-        File storeDirectory = directory.directory().getAbsoluteFile();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, storeDirectory );
+        File storeDirectory = directory.graphDbDir();
+        File prepare = directory.directory( "prepare" );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, storeDirectory, prepare );
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );

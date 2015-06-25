@@ -43,7 +43,7 @@ public class AcceptorConfigurationIT extends ExclusiveServerTestBase
     public void serverShouldNotHangWithThreadPoolSizeSmallerThanCpuCount() throws Exception
     {
         server = server().withMaxJettyThreads( 3 )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 

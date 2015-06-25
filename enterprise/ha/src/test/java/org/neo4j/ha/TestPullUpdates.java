@@ -19,17 +19,17 @@
  */
 package org.neo4j.ha;
 
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
+
 import java.io.File;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -53,10 +53,8 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
@@ -68,6 +66,7 @@ public class TestPullUpdates
     private static final int PULL_INTERVAL = 100;
     private static final int SHELL_PORT = 6370;
     public final @Rule TestName testName = new TestName();
+    public final @Rule TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @After
     public void doAfter() throws Throwable
@@ -81,7 +80,7 @@ public class TestPullUpdates
     @Test
     public void makeSureUpdatePullerGetsGoingAfterMasterSwitch() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
+        File root = testDirectory.directory( testName.getMethodName() );
         ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root, MapUtil.stringMap(
                 HaSettings.pull_interval.name(), PULL_INTERVAL+"ms",
                 ClusterSettings.heartbeat_interval.name(), "2s",
@@ -122,7 +121,7 @@ public class TestPullUpdates
     @Test
     public void pullUpdatesShellAppPullsUpdates() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
+        File root = testDirectory.directory( testName.getMethodName() );
         Map<Integer, Map<String, String>> instanceConfig = new HashMap<>();
         for (int i = 1; i <= 2; i++)
         {
@@ -156,7 +155,7 @@ public class TestPullUpdates
         GraphDatabaseService master = null;
         try
         {
-            File testRootDir = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
+            File testRootDir = testDirectory.directory( testName.getMethodName() );
             File masterDir = new File( testRootDir, "master" );
             master = new TestHighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( masterDir.getAbsolutePath() )

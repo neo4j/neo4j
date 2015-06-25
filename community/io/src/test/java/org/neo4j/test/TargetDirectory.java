@@ -19,13 +19,13 @@
  */
 package org.neo4j.test;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -82,7 +82,7 @@ public class TargetDirectory
         public File directory( String name )
         {
             File dir = new File( directory(), name );
-            if ( ! fileSystem.fileExists( dir ) )
+            if ( !fileSystem.fileExists( dir ) )
             {
                 fileSystem.mkdir( dir );
             }
@@ -151,16 +151,6 @@ public class TargetDirectory
     private final FileSystemAbstraction fileSystem;
     private final File base;
 
-    /**
-     * @deprecated Use {@link org.neo4j.test.TargetDirectory.TestDirectory} instead of creating
-     * {@link org.neo4j.test.TargetDirectory} directly. The easiest way to do this is with
-     * {@link #testDirForTest(Class)}.
-     */
-    public static TargetDirectory forTest( Class<?> owningTest )
-    {
-        return new TargetDirectory( new DefaultFileSystemAbstraction(), owningTest );
-    }
-
     public static TestDirectory testDirForTest( Class<?> owningTest )
     {
         return new TargetDirectory( new DefaultFileSystemAbstraction(), owningTest ).testDirectory();
@@ -172,7 +162,7 @@ public class TargetDirectory
         return new TargetDirectory( fileSystem, owningTest ).testDirectory();
     }
 
-    private TargetDirectory( FileSystemAbstraction fileSystem, Class<?> owningTest )
+    TargetDirectory( FileSystemAbstraction fileSystem, Class<?> owningTest )
     {
         this.fileSystem = fileSystem;
         this.base = new File( new File( locateTarget( owningTest ), "test-data" ), owningTest.getName() )

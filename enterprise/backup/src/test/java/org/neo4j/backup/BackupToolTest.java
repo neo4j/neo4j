@@ -19,6 +19,7 @@
  */
 package org.neo4j.backup;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -156,7 +157,7 @@ public class BackupToolTest
     public void passesOnConfigurationIfProvided() throws Exception
     {
         // given
-        File propertyFile = TargetDirectory.forTest( getClass() ).file( "neo4j.properties" );
+        File propertyFile = testDirectory.file( "neo4j.properties" );
         Properties properties = new Properties();
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         properties.store( new FileWriter( propertyFile ), null );
@@ -179,7 +180,7 @@ public class BackupToolTest
     public void exitWithFailureIfConfigSpecifiedButPropertiesFileDoesNotExist() throws Exception
     {
         // given
-        File propertyFile = TargetDirectory.forTest( getClass() ).file( "nonexistent_file" );
+        File propertyFile = testDirectory.file( "nonexistent_file" );
         String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-config", propertyFile.getPath()};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
@@ -333,4 +334,7 @@ public class BackupToolTest
         verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), eq( new File( "my_backup" ) ), anyBoolean(),
                 any( Config.class ), anyLong(), eq( true ) );
     }
+
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 }

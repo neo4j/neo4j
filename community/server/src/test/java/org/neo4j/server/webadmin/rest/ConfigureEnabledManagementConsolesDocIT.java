@@ -19,17 +19,18 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.helpers.CommunityServerBuilder.server;
-
 import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 
 public class ConfigureEnabledManagementConsolesDocIT extends ExclusiveServerTestBase
 {
@@ -46,7 +47,7 @@ public class ConfigureEnabledManagementConsolesDocIT extends ExclusiveServerTest
     public void shouldBeAbleToExplicitlySetConsolesToEnabled() throws Exception
     {
         server = server().withProperty( Configurator.MANAGEMENT_CONSOLE_ENGINES, "" )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 
@@ -57,7 +58,7 @@ public class ConfigureEnabledManagementConsolesDocIT extends ExclusiveServerTest
     public void shellConsoleShouldBeEnabledByDefault() throws Exception
     {
         server = server()
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 

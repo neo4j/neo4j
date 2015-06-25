@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -66,6 +67,10 @@ public class TestPatternMatching implements GraphHolder
         return graphDb;
     }
 
+    @ClassRule
+    public static TargetDirectory.TestDirectory testDirectory =
+            TargetDirectory.testDirForTest( TestPatternMatching.class );
+
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
@@ -92,8 +97,7 @@ public class TestPatternMatching implements GraphHolder
     @BeforeClass
     public static void setUpDb()
     {
-        String storeDir = TargetDirectory.forTest( TestPatternMatching.class ).makeGraphDbDir().getAbsolutePath();
-        graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
     }
 
     @Before
@@ -711,31 +715,31 @@ public class TestPatternMatching implements GraphHolder
     }
 
     @Test
-    @Graph( { 
-        "User1 hasRoleInGroup U1G1R12", 
-        "U1G1R12 hasGroup Group1", 
+    @Graph( {
+        "User1 hasRoleInGroup U1G1R12",
+        "U1G1R12 hasGroup Group1",
         "U1G1R12 hasRole Role1",
-        "U1G1R12 hasRole Role2", 
-        "User1 hasRoleInGroup U1G2R23", 
+        "U1G1R12 hasRole Role2",
+        "User1 hasRoleInGroup U1G2R23",
         "U1G2R23 hasGroup Group2",
-        "U1G2R23 hasRole Role2", 
-        "U1G2R23 hasRole Role3", 
+        "U1G2R23 hasRole Role2",
+        "U1G2R23 hasRole Role3",
         "User1 hasRoleInGroup U1G3R34",
-        "U1G3R34 hasGroup Group3", 
-        "U1G3R34 hasRole Role3", 
+        "U1G3R34 hasGroup Group3",
+        "U1G3R34 hasRole Role3",
         "U1G3R34 hasRole Role4",
-        "User2 hasRoleInGroup U2G1R25", 
-        "U2G1R25 hasGroup Group1", 
+        "User2 hasRoleInGroup U2G1R25",
+        "U2G1R25 hasGroup Group1",
         "U2G1R25 hasRole Role2",
-        "U2G1R25 hasRole Role5", 
-        "User2 hasRoleInGroup U2G2R34", 
+        "U2G1R25 hasRole Role5",
+        "User2 hasRoleInGroup U2G2R34",
         "U2G2R34 hasGroup Group2",
-        "U2G2R34 hasRole Role3", 
-        "U2G2R34 hasRole Role4", 
+        "U2G2R34 hasRole Role3",
+        "U2G2R34 hasRole Role4",
         "User2 hasRoleInGroup U2G3R56",
-        "U2G3R56 hasGroup Group3", 
-        "U2G3R56 hasRole Role5", 
-        "U2G3R56 hasRole Role6" 
+        "U2G3R56 hasGroup Group3",
+        "U2G3R56 hasRole Role5",
+        "U2G3R56 hasRole Role6"
         } )
     public void testHyperedges()
     {
