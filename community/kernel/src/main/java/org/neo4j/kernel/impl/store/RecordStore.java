@@ -50,17 +50,13 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
 
     R getRecord( long id );
 
-    Long getNextRecordReference( R record );
+    long getNextRecordReference( R record );
 
     Collection<R> getRecords( long id );
 
     void updateRecord( R record );
 
     R forceGetRecord( long id );
-
-    R forceGetRaw( R record );
-
-    R forceGetRaw( long id );
 
     void forceUpdateRecord( R record );
 

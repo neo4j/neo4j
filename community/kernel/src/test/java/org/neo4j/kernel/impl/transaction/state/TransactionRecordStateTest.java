@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,9 +29,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -62,8 +62,8 @@ import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -344,7 +344,7 @@ public class TransactionRecordStateTest
 
     private void assertDynamicLabelRecordInUse( NeoStore store, long id, boolean inUse )
     {
-        DynamicRecord record = store.getNodeStore().getDynamicLabelStore().forceGetRaw( id );
+        DynamicRecord record = store.getNodeStore().getDynamicLabelStore().forceGetRecord( id );
         assertTrue( inUse == record.inUse() );
     }
 

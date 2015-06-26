@@ -59,7 +59,7 @@ import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
  * Implementation of the property store. This implementation has two dynamic
  * stores. One used to store keys and another for string property values.
  */
-public class PropertyStore extends AbstractRecordStore<PropertyRecord> implements Store
+public class PropertyStore extends AbstractRecordStore<PropertyRecord>
 {
     public static abstract class Configuration extends AbstractStore.Configuration
     {
@@ -411,18 +411,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         {
             throw new UnderlyingStorageException( e );
         }
-    }
-
-    @Override
-    public PropertyRecord forceGetRaw( PropertyRecord record )
-    {
-        return record;
-    }
-
-    @Override
-    public PropertyRecord forceGetRaw( long id )
-    {
-        return forceGetRecord( id );
     }
 
     private PropertyRecord getRecordFromBuffer( long id, PageCursor cursor )

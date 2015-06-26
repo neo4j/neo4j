@@ -24,18 +24,23 @@ package org.neo4j.kernel.impl.store.record;
  */
 public enum Record
 {
+    /**
+     * Generic value of a reference not pointing to anything.
+     */
+    NULL_REFERENCE( (byte) -1, -1 ),
+
     NOT_IN_USE( (byte) 0, 0 ),
     IN_USE( (byte) 1, 1 ),
     FIRST_IN_CHAIN( (byte) 2, 2 ),
     RESERVED( (byte) -1, -1 ),
-    NO_NEXT_PROPERTY( (byte) -1, -1 ),
-    NO_PREVIOUS_PROPERTY( (byte) -1, -1 ),
-    NO_NEXT_RELATIONSHIP( (byte) -1, -1 ),
-    NO_PREV_RELATIONSHIP( (byte) -1, -1 ),
+    NO_NEXT_PROPERTY( NULL_REFERENCE ),
+    NO_PREVIOUS_PROPERTY( NULL_REFERENCE ),
+    NO_NEXT_RELATIONSHIP( NULL_REFERENCE ),
+    NO_PREV_RELATIONSHIP( NULL_REFERENCE ),
     NOT_DIRECTED( (byte) 0, 0 ),
     DIRECTED( (byte) 2, 2 ),
-    NO_NEXT_BLOCK( (byte) -1, -1 ),
-    NO_PREV_BLOCK( (byte) -1, -1 ),
+    NO_NEXT_BLOCK( NULL_REFERENCE ),
+    NO_PREV_BLOCK( NULL_REFERENCE ),
 
     NODE_PROPERTY( (byte) 0, 0 ),
     REL_PROPERTY( (byte) 2, 2 ),
@@ -47,7 +52,12 @@ public enum Record
     private byte byteValue;
     private int intValue;
 
-    Record( byte byteValue, int intValue )
+    private Record( Record from )
+    {
+        this( from.byteValue, from.intValue );
+    }
+
+    private Record( byte byteValue, int intValue )
     {
         this.byteValue = byteValue;
         this.intValue = intValue;

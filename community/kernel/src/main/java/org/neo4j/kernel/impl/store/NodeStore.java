@@ -39,8 +39,8 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.Bits;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
@@ -50,7 +50,7 @@ import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArray
 /**
  * Implementation of the node store.
  */
-public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
+public class NodeStore extends AbstractRecordStore<NodeRecord>
 {
     public static Long readOwnerFromDynamicLabelsRecord( DynamicRecord record )
     {
@@ -210,18 +210,6 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         {
             throw new UnderlyingStorageException( e );
         }
-    }
-
-    @Override
-    public NodeRecord forceGetRaw( NodeRecord record )
-    {
-        return record;
-    }
-
-    @Override
-    public NodeRecord forceGetRaw( long id )
-    {
-        return forceGetRecord( id );
     }
 
     @Override
