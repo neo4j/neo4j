@@ -19,7 +19,9 @@
  */
 package org.neo4j.server.security.ssl;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.net.URL;
@@ -31,12 +33,15 @@ import static org.junit.Assert.assertNotNull;
 
 public class KeyStoreFactoryTest
 {
+    @Rule
+    public TemporaryFolder dir = new TemporaryFolder();
+
     @Test
     public void shouldCreateKeyStoreForGivenKeyPair() throws Exception
     {
         // given
-        File certificatePath = File.createTempFile( "cert", "test" );
-        File privateKeyPath = File.createTempFile( "privatekey", "test" );
+        File certificatePath = new File(dir.getRoot(), "cert" );
+        File privateKeyPath =  new File(dir.getRoot(), "key" );
 
         new Certificates().createSelfSignedCertificate( certificatePath, privateKeyPath, "some-hostname" );
 
@@ -51,8 +56,8 @@ public class KeyStoreFactoryTest
     public void shouldImportSingleCertificateWhenNotInAChain() throws Exception
     {
         // given
-        File certificatePath = File.createTempFile( "cert", "test" );
-        File privateKeyPath = File.createTempFile( "privatekey", "test" );
+        File certificatePath = new File(dir.getRoot(), "cert" );
+        File privateKeyPath = new File(dir.getRoot(),"key" );
 
         new Certificates().createSelfSignedCertificate( certificatePath, privateKeyPath, "some-hostname" );
 

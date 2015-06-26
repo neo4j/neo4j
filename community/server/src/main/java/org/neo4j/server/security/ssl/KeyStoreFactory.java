@@ -21,15 +21,9 @@ package org.neo4j.server.security.ssl;
 
 import java.io.File;
 import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
+import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.spec.InvalidKeySpecException;
-import javax.crypto.NoSuchPaddingException;
 
 public class KeyStoreFactory
 {
@@ -40,8 +34,7 @@ public class KeyStoreFactory
         this.certFactory = new Certificates();
     }
 
-    public KeyStoreInformation createKeyStore( File privateKeyPath, File certificatePath )
-            throws Exception
+    public KeyStoreInformation createKeyStore( File privateKeyPath, File certificatePath ) throws IOException, GeneralSecurityException
     {
         char[] keyStorePassword = getRandomChars( 50 );
         char[] keyPassword = getRandomChars( 50 );
@@ -53,10 +46,7 @@ public class KeyStoreFactory
     }
 
     private KeyStore createKeyStore( char[] keyStorePassword, char[] keyPassword, File privateKeyFile, File certFile )
-            throws KeyStoreException, NoSuchAlgorithmException,
-            CertificateException, IOException, InvalidKeyException,
-            InvalidKeySpecException, NoSuchPaddingException,
-            InvalidAlgorithmParameterException
+            throws IOException, GeneralSecurityException
     {
         KeyStore keyStore = KeyStore.getInstance( "JKS" );
 

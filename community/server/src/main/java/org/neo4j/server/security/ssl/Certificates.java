@@ -30,15 +30,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.Security;
-import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -48,6 +47,8 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Collection;
 import java.util.LinkedList;
 import javax.crypto.NoSuchPaddingException;
+
+import org.neo4j.io.fs.FileUtils;
 
 public class Certificates
 {
@@ -67,14 +68,15 @@ public class Certificates
     }
 
     public void createSelfSignedCertificate(File certificatePath, File privateKeyPath, String hostName)
-            throws NoSuchAlgorithmException, CertificateException, NoSuchProviderException, InvalidKeyException,
-            SignatureException, IOException
+            throws GeneralSecurityException, IOException
     {
         SelfSignedCertificate cert = new SelfSignedCertificate(hostName, random, 1024);
+
         certificatePath.getParentFile().mkdirs();
         privateKeyPath.getParentFile().mkdirs();
-        cert.certificate().renameTo( certificatePath );
-        cert.privateKey().renameTo( privateKeyPath );
+
+        FileUtils.moveFile( cert.certificate(), certificatePath );
+        FileUtils.moveFile( cert.privateKey(), privateKeyPath );
     }
 
     public Certificate[] loadCertificates(File certFile) throws CertificateException, IOException

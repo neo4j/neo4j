@@ -104,7 +104,7 @@ public class CommunityNeoServer extends AbstractNeoServer
                 new DBMSModule( webServer ),
                 new RESTApiModule( webServer, database, configurator.configuration(), getDependencyResolver(),
                         logProvider ),
-                new NDPModule( configurator.configuration(), getDependencyResolver() ),
+                new NDPModule( configurator.configuration(), getDependencyResolver(), keyStoreInfo ),
                 new ManagementApiModule( webServer, configurator.configuration() ),
                 new ThirdPartyJAXRSModule( webServer, configurator.configuration(), logProvider, this ),
                 new WebAdminModule( webServer, configurator.configuration() ),

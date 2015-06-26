@@ -143,7 +143,7 @@ public class FileUtils
         }
         if ( target.exists() )
         {
-            throw new FileNotFoundException( "Target file[" + target.getAbsolutePath()
+            throw new IOException( "Target file[" + target.getAbsolutePath()
                     + "] already exists" );
         }
 
