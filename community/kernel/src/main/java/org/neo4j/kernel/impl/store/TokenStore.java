@@ -37,14 +37,14 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.store.PropertyStore.decodeString;
 
-public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordStore<T> implements Store
+public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordStore<T>
 {
     public static abstract class Configuration
         extends AbstractStore.Configuration

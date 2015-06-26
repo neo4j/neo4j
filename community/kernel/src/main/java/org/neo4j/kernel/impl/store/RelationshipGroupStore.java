@@ -31,13 +31,13 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
-public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGroupRecord> implements Store
+public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGroupRecord>
 {
     /* Record layout
      *

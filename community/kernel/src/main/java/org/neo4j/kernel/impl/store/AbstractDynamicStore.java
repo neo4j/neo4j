@@ -65,7 +65,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
  * Note, the first block of a dynamic store is reserved and contains information
  * about the store.
  */
-public abstract class AbstractDynamicStore extends CommonAbstractStore implements Store, RecordStore<DynamicRecord>,
+public abstract class AbstractDynamicStore extends CommonAbstractStore implements RecordStore<DynamicRecord>,
         DynamicBlockSize, DynamicRecordAllocator
 {
     public static final byte[] NO_DATA = new byte[0];

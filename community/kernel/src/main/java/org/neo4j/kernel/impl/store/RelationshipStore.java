@@ -31,8 +31,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
@@ -40,7 +40,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 /**
  * Implementation of the relationship store.
  */
-public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> implements Store
+public class RelationshipStore extends AbstractRecordStore<RelationshipRecord>
 {
     public static abstract class Configuration
         extends AbstractStore.Configuration
