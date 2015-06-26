@@ -21,6 +21,7 @@ package org.neo4j.test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -161,9 +162,9 @@ public class PageCacheRule extends ExternalResource
         }
 
         @Override
-        public PagedFile map( File file, int pageSize ) throws IOException
+        public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
         {
-            PagedFile pagedFile = pageCache.map( file, pageSize );
+            PagedFile pagedFile = pageCache.map( file, pageSize, openOptions );
             return new PossiblyInconsistentPagedFile( pagedFile, decision );
         }
 

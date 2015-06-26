@@ -69,7 +69,9 @@ final class MuninnPagedFile implements PagedFile
             int filePageSize,
             PageSwapperFactory swapperFactory,
             CursorPool cursorPool,
-            PageCacheTracer tracer ) throws IOException
+            PageCacheTracer tracer,
+            boolean createIfNotExists,
+            boolean truncateExisting ) throws IOException
     {
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
@@ -89,7 +91,11 @@ final class MuninnPagedFile implements PagedFile
         // the remaining outer array slots with more inner arrays, and then finally assigns the new outer array to
         // the translationTable field and releases the resize lock.
         PageEvictionCallback onEviction = new MuninnPageEvictionCallback( this );
-        swapper = swapperFactory.createPageSwapper( file, filePageSize, onEviction );
+        swapper = swapperFactory.createPageSwapper( file, filePageSize, onEviction, createIfNotExists );
+        if ( truncateExisting )
+        {
+            swapper.truncate();
+        }
         long lastPageId = swapper.getLastPageId();
 
         int initialChunks = 1 + computeChunkId( lastPageId );

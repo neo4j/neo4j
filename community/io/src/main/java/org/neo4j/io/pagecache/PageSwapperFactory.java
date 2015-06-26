@@ -64,14 +64,17 @@ public interface PageSwapperFactory
      *                     multiple of some record size.
      * @param onEviction The PageSwapper will be told about evictions, and has
      *                   the responsibility of informing the PagedFile via this callback.
+     * @param createIfNotExist When true, creates the given file if it does not exist, instead of throwing an exception.
      * @return A working PageSwapper instance for the given file.
      * @throws IOException If the PageSwapper could not be created, for
-     * instance if the underlying file could not be opened.
+     * instance if the underlying file could not be opened, or the given file does not exist and createIfNotExist is
+     * false.
      */
     PageSwapper createPageSwapper(
             File file,
             int filePageSize,
-            PageEvictionCallback onEviction ) throws IOException;
+            PageEvictionCallback onEviction,
+            boolean createIfNotExist ) throws IOException;
 
     /**
      * Forces all prior writes made through all non-closed PageSwappers that this factory has created, to all the

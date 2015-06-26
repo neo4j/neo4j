@@ -91,4 +91,16 @@ public interface PageSwapper
      * Get the filePageId of the last page in the concrete file.
      */
     long getLastPageId() throws IOException;
+
+    /**
+     * Truncate the file represented by this PageSwapper, so the size of the file is zero and
+     * {@link #getLastPageId()} returns -1.
+     *
+     * Truncation may occur concurrently with writes, in which case both operations will appear to be atomic, such that
+     * either the write happens before the truncation and is lost, or the file is truncated and the write then extends
+     * the file with any zero padding and the written data.
+     *
+     * @throws IOException
+     */
+    void truncate() throws IOException;
 }

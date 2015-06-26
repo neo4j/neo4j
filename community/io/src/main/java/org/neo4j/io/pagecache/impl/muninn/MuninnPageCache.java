@@ -21,6 +21,10 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -131,6 +135,7 @@ public class MuninnPageCache implements PageCache
             "org.neo4j.io.pagecache.impl.muninn.backgroundFlushLongBreak", 1000 );
 
     // This is a pre-allocated constant, so we can throw it without allocating any objects:
+    @SuppressWarnings( "ThrowableInstanceNeverThrown" )
     private static final IOException oomException = new IOException(
             "OutOfMemoryError encountered in the page cache background eviction thread" );
 
@@ -154,6 +159,9 @@ public class MuninnPageCache implements PageCache
     // highly troublesome for our use case; caller-runs, bounded submission queues, bounded thread count, non-daemon
     // thread factories, etc.
     private static final Executor backgroundThreadExecutor = BackgroundThreadExecutor.INSTANCE;
+
+    private static final List<OpenOption> ignoredOpenOptions = Arrays.asList( (OpenOption) StandardOpenOption.APPEND,
+            StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.SPARSE );
 
     private final int pageCacheId;
     private final PageSwapperFactory swapperFactory;
@@ -285,7 +293,7 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized PagedFile map( File file, int filePageSize ) throws IOException
+    public synchronized PagedFile map( File file, int filePageSize, OpenOption... openOptions ) throws IOException
     {
         assertHealthy();
         ensureThreadsInitialised();
@@ -294,6 +302,23 @@ public class MuninnPageCache implements PageCache
             throw new IllegalArgumentException( "Cannot map files with a filePageSize (" +
                     filePageSize + ") that is greater than the cachePageSize (" +
                     cachePageSize + ")" );
+        }
+        boolean createIfNotExists = false;
+        boolean truncateExisting = false;
+        for ( OpenOption option : openOptions )
+        {
+            if ( option.equals( StandardOpenOption.CREATE ) )
+            {
+                createIfNotExists = true;
+            }
+            else if ( option.equals( StandardOpenOption.TRUNCATE_EXISTING ) )
+            {
+                truncateExisting = true;
+            }
+            else if ( !ignoredOpenOptions.contains( option ) )
+            {
+                throw new UnsupportedOperationException( "Unsupported OpenOption: " + option );
+            }
         }
 
         FileMapping current = mappedFiles;
@@ -313,6 +338,10 @@ public class MuninnPageCache implements PageCache
                             " bytes.";
                     throw new IllegalArgumentException( msg );
                 }
+                if ( truncateExisting )
+                {
+                    throw new UnsupportedOperationException( "Cannot truncate a file that is already mapped" );
+                }
                 pagedFile.incrementRefCount();
                 return pagedFile;
             }
@@ -326,7 +355,9 @@ public class MuninnPageCache implements PageCache
                 filePageSize,
                 swapperFactory,
                 cursorPool,
-                tracer );
+                tracer,
+                createIfNotExists,
+                truncateExisting );
         pagedFile.incrementRefCount();
         current = new FileMapping( file, pagedFile );
         current.next = mappedFiles;

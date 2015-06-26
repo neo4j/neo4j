@@ -73,4 +73,9 @@ public class DummyPageSwapper implements PageSwapper
     {
         return 0;
     }
+
+    @Override
+    public void truncate() throws IOException
+    {
+    }
 }
