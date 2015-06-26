@@ -19,44 +19,48 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.kernel.api.exceptions.KernelException;
 
-public class BaseConstraintCreator implements ConstraintCreator
+public class PropertyExistsConstraintCreator extends BaseConstraintCreator
 {
-    protected final InternalSchemaActions actions;
-    protected final Label label;
+    // Only single property key supported a.t.m.
+    protected final String propertyKey;
 
-    public BaseConstraintCreator( InternalSchemaActions actions, Label label )
+    PropertyExistsConstraintCreator( InternalSchemaActions internalCreator, Label label, String propertyKeyOrNull )
     {
-        this.actions = actions;
-        this.label = label;
-
-        assertInUnterminatedTransaction();
+        super( internalCreator, label );
+        this.propertyKey = propertyKeyOrNull;
     }
 
     @Override
-    public ConstraintCreator assertPropertyIsUnique( String propertyKey )
+    public final ConstraintCreator assertPropertyIsUnique( String propertyKey )
     {
-        return new PropertyUniqueConstraintCreator( actions, label, propertyKey );
+        throw new UnsupportedOperationException( "You are already creating a unique constraint." );
     }
 
     @Override
     public ConstraintCreator assertPropertyExists( String propertyKey )
     {
-        return new PropertyExistsConstraintCreator( actions, label, propertyKey );
+        throw new UnsupportedOperationException( "You can only create one unique constraint at a time." );
     }
 
     @Override
-    public ConstraintDefinition create()
+    public final ConstraintDefinition create()
     {
         assertInUnterminatedTransaction();
-        throw new IllegalStateException( "No constraint assertions specified" );
-    }
 
-    protected final void assertInUnterminatedTransaction()
-    {
-        actions.assertInUnterminatedTransaction();
+        try
+        {
+            return actions.createPropertyExistenceConstraint( label, propertyKey );
+        }
+        catch ( KernelException e )
+        {
+            String userMessage = actions.getUserMessage( e );
+            throw new ConstraintViolationException( userMessage, e );
+        }
     }
 }

@@ -56,6 +56,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.StoreLocker;
+import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -96,6 +97,7 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
+import org.neo4j.kernel.impl.store.MandatoryPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -420,6 +422,9 @@ public class BatchInserterImpl implements BatchInserter
                     break;
                 case UNIQUENESS_CONSTRAINT:
                     otherPropertyKeyId = ((UniquePropertyConstraintRule) rule).getPropertyKey();
+                    break;
+                case MANDATORY_PROPERTY_CONSTRAINT:
+                    otherPropertyKeyId = ((MandatoryPropertyConstraintRule) rule).getPropertyKey();
                     break;
                 default:
                     throw new IllegalStateException( "Case not handled.");
@@ -1154,7 +1159,25 @@ public class BatchInserterImpl implements BatchInserter
         }
 
         @Override
+        public ConstraintDefinition createPropertyExistenceConstraint( Label label, String propertyKey )
+        {
+            int labelId = getOrCreateLabelId( label.name() );
+            int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
+
+            checkSchemaCreationConstraints( labelId, propertyKeyId );
+
+            createConstraintRule( new MandatoryPropertyConstraint( labelId, propertyKeyId ) );
+            return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.MANDATORY );
+        }
+
+        @Override
         public void dropPropertyUniquenessConstraint( Label label, String propertyKey )
+        {
+            throw unsupportedException();
+        }
+
+        @Override
+        public void dropPropertyExistenceConstraint( Label label, String propertyKey )
         {
             throw unsupportedException();
         }

@@ -662,6 +662,45 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     }
 
     @Test
+    public void shouldNotLeaveAnyStateBehindAfterFailingToCreateMandatoryPropertyConstraint() throws Exception
+    {
+        // given
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        {
+            assertEquals( Collections.<ConstraintDefinition>emptyList(),
+                    asList( db.schema().getConstraints() ) );
+            assertEquals( Collections.<IndexDefinition, Schema.IndexState>emptyMap(),
+                    indexesWithState( db.schema() ) );
+            db.createNode( label( "Foo" ) ).setProperty( "foo", "baz" );
+
+            tx.success();
+        }
+
+        // when
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        {
+            db.schema().constraintFor( label( "Foo" ) ).assertPropertyExists( "bar" ).create();
+
+            tx.success();
+            fail( "expected failure" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            assertTrue( e.getMessage().startsWith( "Unable to create CONSTRAINT" ) );
+        }
+
+        // then
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        {
+            assertEquals( Collections.<ConstraintDefinition>emptyList(),
+                    asList( db.schema().getConstraints() ) );
+            assertEquals( Collections.<IndexDefinition, Schema.IndexState>emptyMap(),
+                    indexesWithState( db.schema() ) );
+            tx.success();
+        }
+    }
+
+    @Test
     public void shouldBeAbleToResolveConflictsAndRecreateConstraintAfterFailingToCreateUniquePropertyConstraintDueToConflict()
             throws Exception
     {
@@ -706,6 +745,51 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             tx.success();
         }
     }
+
+    @Test
+    public void shouldBeAbleToResolveConflictsAndRecreateConstraintAfterFailingToCreateMandatoryPropertyConstraintDueToConflict()
+            throws Exception
+    {
+        // given
+        Node node1;
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        {
+            assertEquals( Collections.<ConstraintDefinition>emptyList(),
+                    asList( db.schema().getConstraints() ) );
+            assertEquals( Collections.<IndexDefinition, Schema.IndexState>emptyMap(),
+                    indexesWithState( db.schema() ) );
+            node1 = db.createNode( label( "Foo" ) );
+
+            tx.success();
+        }
+
+        // when
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        {
+            db.schema().constraintFor( label( "Foo" ) ).assertPropertyExists( "bar" ).create();
+
+            tx.success();
+            fail( "expected failure" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            assertTrue( e.getMessage().startsWith( "Unable to create CONSTRAINT" ) );
+        }
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        {
+            node1.setProperty( "bar", "baz" );
+            tx.success();
+        }
+
+        // then - this should not fail
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        {
+            db.schema().constraintFor( label( "Foo" ) ).assertPropertyExists( "bar" ).create();
+
+            tx.success();
+        }
+    }
+
 
     private static Map<IndexDefinition, Schema.IndexState> indexesWithState( Schema schema )
     {

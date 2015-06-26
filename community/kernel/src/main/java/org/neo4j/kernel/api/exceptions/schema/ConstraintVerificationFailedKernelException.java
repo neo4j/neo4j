@@ -85,6 +85,12 @@ public class ConstraintVerificationFailedKernelException extends KernelException
         this.constraint = constraint;
         this.evidence = null;
     }
+    public ConstraintVerificationFailedKernelException( PropertyConstraint constraint )
+    {
+        super( Status.Schema.ConstraintVerificationFailure, "Failed to verify constraint %s", constraint);
+        this.constraint = constraint;
+        this.evidence = null;
+    }
 
     public Set<Evidence> evidence()
     {

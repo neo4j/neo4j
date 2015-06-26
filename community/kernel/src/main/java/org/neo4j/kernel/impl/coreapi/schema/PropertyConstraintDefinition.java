@@ -45,7 +45,14 @@ public class PropertyConstraintDefinition implements ConstraintDefinition
     public void drop()
     {
         assertInUnterminatedTransaction();
-        actions.dropPropertyUniquenessConstraint( label, propertyKey );
+        switch(type) {
+        case UNIQUENESS:
+            actions.dropPropertyUniquenessConstraint( label, propertyKey );
+            break;
+        case MANDATORY:
+            actions.dropPropertyExistenceConstraint( label, propertyKey );
+
+        }
     }
 
     @Override

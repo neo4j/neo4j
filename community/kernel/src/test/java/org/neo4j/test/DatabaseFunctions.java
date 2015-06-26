@@ -93,6 +93,26 @@ public class DatabaseFunctions
         };
     }
 
+    public static AlgebraicFunction<GraphDatabaseService, Void> mandatoryPropertyConstraint(
+            final Label label, final String propertyKey )
+    {
+        return new AlgebraicFunction<GraphDatabaseService, Void>()
+        {
+            @Override
+            public Void apply( GraphDatabaseService graphDb )
+            {
+                graphDb.schema().constraintFor( label ).assertPropertyExists( propertyKey ).create();
+                return null;
+            }
+
+            @Override
+            public String toString()
+            {
+                return super.toString() + "( label=" + label.name() + ", property=" + propertyKey + " )";
+            }
+        };
+    }
+
     public static AlgebraicFunction<GraphDatabaseService, Void> awaitIndexesOnline(
             final long timeout, final TimeUnit unit )
     {

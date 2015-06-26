@@ -40,6 +40,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -464,6 +465,43 @@ public class SchemaImpl implements Schema
         }
 
         @Override
+        public ConstraintDefinition createPropertyExistenceConstraint( Label label, String propertyKey )
+        {
+            try ( Statement statement = ctxSupplier.get() )
+            {
+                try
+                {
+                    int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
+                    int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
+                    statement.schemaWriteOperations().mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
+                    return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.MANDATORY );
+                }
+                catch ( AlreadyConstrainedException e )
+                {
+                    throw new ConstraintViolationException(
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                }
+                catch ( CreateConstraintFailureException e )
+                {
+                    throw new ConstraintViolationException(
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                }
+                catch ( IllegalTokenNameException e )
+                {
+                    throw new IllegalArgumentException( e );
+                }
+                catch ( TooManyLabelsException e )
+                {
+                    throw new IllegalStateException( e );
+                }
+                catch ( InvalidTransactionTypeKernelException e )
+                {
+                    throw new InvalidTransactionTypeException( e.getMessage(), e );
+                }
+            }
+        }
+
+        @Override
         public void dropPropertyUniquenessConstraint( Label label, String propertyKey )
         {
             try ( Statement statement = ctxSupplier.get() )
@@ -476,6 +514,26 @@ public class SchemaImpl implements Schema
             catch ( IllegalTokenNameException | TooManyLabelsException | DropConstraintFailureException e )
             {
                 throw new ThisShouldNotHappenError( "Mattias", "Unable to drop property unique constraint", e );
+            }
+            catch ( InvalidTransactionTypeKernelException e )
+            {
+                throw new ConstraintViolationException( e.getMessage(), e );
+            }
+        }
+
+        @Override
+        public void dropPropertyExistenceConstraint( Label label, String propertyKey )
+        {
+            try ( Statement statement = ctxSupplier.get() )
+            {
+                int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
+                int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
+                PropertyConstraint constraint = new MandatoryPropertyConstraint( labelId, propertyKeyId );
+                statement.schemaWriteOperations().constraintDrop( constraint );
+            }
+            catch ( IllegalTokenNameException | TooManyLabelsException | DropConstraintFailureException e )
+            {
+                throw new ThisShouldNotHappenError( "Pontus", "Unable to drop property unique constraint", e );
             }
             catch ( InvalidTransactionTypeKernelException e )
             {

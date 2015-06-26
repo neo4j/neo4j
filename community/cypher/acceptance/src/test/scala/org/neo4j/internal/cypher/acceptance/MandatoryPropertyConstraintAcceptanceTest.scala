@@ -20,27 +20,41 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
-import org.neo4j.cypher.{ConstraintValidationException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{CypherExecutionException, ConstraintValidationException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.kernel.api.exceptions.Status
 
-class MandatoryPropertyConstraintValidationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with  CollectionSupport {
+class MandatoryPropertyConstraintAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with  CollectionSupport {
 
-  test("should enforce constraints on creation") {
+  test("should enforce constraints on node creation") {
+    // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is not null")
 
+    // WHEN
     val e = intercept[ConstraintValidationException](execute("create (node:Label1)"))
+
+    // THEN
     e.getMessage should endWith("with label \"Label1\" does not have a \"key1\" property")
   }
 
   test("should enforce on removing property") {
+    // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is not null")
+
+    // WHEN
     execute("create (node1:Label1 {key1:'value1'})")
 
+    // THEN
     intercept[ConstraintValidationException](execute("match (node:Label1) remove node.key1"))
   }
 
   test("should enforce on setting property to null") {
+    // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is not null")
+
+    // WHEN
     execute("create ( node1:Label1 {key1:'value1' } )")
+
+    //THEN
     intercept[ConstraintValidationException](execute("match (node:Label1) set node.key1 = null"))
   }
 
@@ -51,7 +65,7 @@ class MandatoryPropertyConstraintValidationAcceptanceTest extends ExecutionEngin
     // WHEN
     val res = execute("create (node:Label1) set node.key1 = 'foo' return node")
 
-    // THEN
+    //THEN
     res.toList should have size 1
   }
 
@@ -68,5 +82,16 @@ class MandatoryPropertyConstraintValidationAcceptanceTest extends ExecutionEngin
     // THEN
     val result = execute("match (n) return count(*) as nodeCount")
     result.columnAs[Int]("nodeCount").toList should equal(List(4))
+  }
+
+  test("should fail to create constraint when existing data violates it") {
+    // GIVEN
+    execute("create (node:Label1)")
+
+    // WHEN
+    val e = intercept[CypherExecutionException](execute("create constraint on (node:Label1) assert node.key1 is not null"))
+
+    //THEN
+    e.status should equal(Status.Schema.ConstraintCreationFailure)
   }
 }
