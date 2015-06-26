@@ -132,7 +132,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   def indexSeek(index: IndexDescriptor, value: Any) =
-    JavaConversionSupport.mapToScala(statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
 
   def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
     case StringSeekRange(LowerBounded(InclusiveBound(prefix))) =>
@@ -176,8 +176,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     def propertyKeyIds(id: Long): Iterator[Int] =
       JavaConversionSupport.asScala(statement.readOperations().nodeGetAllPropertiesKeys(id))
 
-    def getProperty(id: Long, propertyKeyId: Int): Any = {
+    def getProperty(id: Long, propertyKeyId: Int): Any = try {
       statement.readOperations().nodeGetProperty(id, propertyKeyId).value(null)
+    } catch {
+      case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null
     }
 
     def hasProperty(id: Long, propertyKey: Int) =

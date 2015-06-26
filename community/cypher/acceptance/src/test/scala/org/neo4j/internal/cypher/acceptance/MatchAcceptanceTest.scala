@@ -27,6 +27,11 @@ import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("make sure non-existing nodes are not returned") {
+    executeWithAllPlanners("match n where id(n) = 10 return n") should be(empty)
+    executeWithAllPlanners("match ()-[r]->() where id(r) = 10 return r") should be(empty)
+  }
+
   test("combines aggregation and named path") {
     val node1 = createNode("num" -> 1)
     val node2 = createNode("num" -> 2)
