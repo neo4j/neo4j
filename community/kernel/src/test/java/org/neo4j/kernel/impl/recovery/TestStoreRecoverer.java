@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.recovery;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -28,6 +30,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -35,31 +38,41 @@ import static org.junit.Assert.assertThat;
 
 public class TestStoreRecoverer
 {
+    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory =
+            TargetDirectory.testDirForTestWithEphemeralFS(fileSystem, getClass() );
+
+    private File storeDir;
+
+    @Before
+    public void setup()
+    {
+        storeDir = testDirectory.graphDbDir();
+        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
+    }
+
     @Test
     public void shouldNotWantToRecoverIntactStore() throws Exception
     {
-        File store = createIntactStore();
-
         StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
 
-        assertThat( recoverer.recoveryNeededAt( store ), is( false ) );
+        assertThat( recoverer.recoveryNeededAt( storeDir ), is( false ) );
     }
 
     @Test
     public void shouldWantToRecoverBrokenStore() throws Exception
     {
-        File store = createIntactStore();
-        FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( store, fileSystem );
+        FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem );
 
         StoreRecoverer recoverer = new StoreRecoverer( fileSystemAbstraction );
 
-        assertThat( recoverer.recoveryNeededAt( store ), is( true ) );
+        assertThat( recoverer.recoveryNeededAt( storeDir ), is( true ) );
     }
 
     @Test
     public void shouldBeAbleToRecoverBrokenStore() throws Exception
     {
-        File storeDir = createIntactStore();
         FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem );
 
         StoreRecoverer recoverer = new StoreRecoverer( fileSystemAbstraction );
@@ -67,17 +80,10 @@ public class TestStoreRecoverer
         assertThat( recoverer.recoveryNeededAt( storeDir ), is( true ) );
 
         // Don't call recoverer.recover, because currently it's hard coded to start an embedded db
-        new TestGraphDatabaseFactory().setFileSystem( fileSystemAbstraction ).newImpermanentDatabase( storeDir ).shutdown();
+        new TestGraphDatabaseFactory().setFileSystem( fileSystemAbstraction )
+                .newImpermanentDatabase( storeDir ).shutdown();
 
         assertThat( recoverer.recoveryNeededAt( storeDir ), is( false ) );
-    }
-
-    private File createIntactStore()
-    {
-        File storeDir = new File( "dir" ).getAbsoluteFile();
-        fileSystem.mkdirs( storeDir );
-        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
-        return storeDir;
     }
 
     private FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem )
@@ -98,6 +104,4 @@ public class TestStoreRecoverer
         db.shutdown();
         return snapshot;
     }
-
-    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
 }

@@ -28,16 +28,15 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder;
+import org.neo4j.kernel.recovery.PositionToRecoverFrom;
 import org.neo4j.logging.LogProvider;
-
-import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 
 /**
  * For now, an external tool that can determine if a given store will need
@@ -80,22 +79,8 @@ public class StoreRecoverer
         LogEntryReader<ReadableVersionableLogChannel> reader = new LogEntryReaderFactory().versionable();
 
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        LatestCheckPointFinder.LatestCheckPoint result = finder.find( currentLogVersion );
-        if ( result.checkPoint == null )
-        {
-            if ( result.oldestLogVersionFound == 0 )
-            {
-                return true;
-            }
-            else
-            {
-                throw new UnderlyingStorageException( "No check point found in any log file from version " +
-                                                      Math.max( INITIAL_LOG_VERSION, result.oldestLogVersionFound ) +
-                                                      " to " + currentLogVersion );
-            }
-        }
 
-        return result.commitsAfterCheckPoint;
+        return new PositionToRecoverFrom( finder ).apply( currentLogVersion ) != LogPosition.UNSPECIFIED;
     }
 
     public void recover( File dataDir, Map<String,String> params, LogProvider userLogProvider )

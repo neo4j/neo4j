@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 
-import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.tryOpenForVersion;
 
 public class DefaultRecoverySPI implements Recovery.SPI
@@ -46,7 +45,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
     private final PhysicalLogFiles logFiles;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final LogVersionRepository logVersionRepository;
-    private final LatestCheckPointFinder checkPointFinder;
+    private final PositionToRecoverFrom positionToRecoverFrom;
 
     public DefaultRecoverySPI( RecoveryLabelScanWriterProvider labelScanWriters,
             RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup,
@@ -61,7 +60,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
         this.logFiles = logFiles;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.logVersionRepository = logVersionRepository;
-        this.checkPointFinder = checkPointFinder;
+        this.positionToRecoverFrom = new PositionToRecoverFrom( checkPointFinder );
     }
 
     @Override
@@ -124,23 +123,6 @@ public class DefaultRecoverySPI implements Recovery.SPI
     @Override
     public LogPosition getPositionToRecoverFrom() throws IOException
     {
-        long currentLogVersion = logVersionRepository.getCurrentLogVersion();
-        LatestCheckPointFinder.LatestCheckPoint latestCheckPoint = checkPointFinder.find( currentLogVersion );
-        if ( latestCheckPoint.checkPoint != null )
-        {
-            return latestCheckPoint.checkPoint.getLogPosition();
-        }
-        else if ( latestCheckPoint.commitsAfterCheckPoint )
-        {
-            if ( latestCheckPoint.oldestLogVersionFound != INITIAL_LOG_VERSION )
-            {
-                throw new UnderlyingStorageException( "No check point found in any log file from version " +
-                                                      Math.max( INITIAL_LOG_VERSION, latestCheckPoint.oldestLogVersionFound )
-                                                      + " to " + currentLogVersion );
-            }
-            return LogPosition.start( 0 );
-        }
-
-        return LogPosition.UNSPECIFIED;
+        return positionToRecoverFrom.apply( logVersionRepository.getCurrentLogVersion() );
     }
 }
