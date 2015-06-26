@@ -62,7 +62,10 @@ public class RecoveryLegacyIndexApplierLookup implements LegacyIndexApplierLooku
     {
         for ( RecoveryCommandHandler applier : appliers.values() )
         {
-            applier.applyForReal();
+            try ( RecoveryCommandHandler closeThisPlease = applier )
+            {
+                applier.applyForReal();
+            }
         }
     }
 
