@@ -413,18 +413,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
         }
     }
 
-    @Override
-    public PropertyRecord forceGetRaw( PropertyRecord record )
-    {
-        return record;
-    }
-
-    @Override
-    public PropertyRecord forceGetRaw( long id )
-    {
-        return forceGetRecord( id );
-    }
-
     private PropertyRecord getRecordFromBuffer( long id, PageCursor cursor )
     {
         return getRecordFromBuffer( cursor, new PropertyRecord( id ) );

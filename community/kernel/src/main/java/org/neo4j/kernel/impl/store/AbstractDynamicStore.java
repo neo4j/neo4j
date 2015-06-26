@@ -660,18 +660,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     }
 
     @Override
-    public DynamicRecord forceGetRaw( DynamicRecord record )
-    {
-        return record;
-    }
-
-    @Override
-    public DynamicRecord forceGetRaw( long id )
-    {
-        return forceGetRecord( id );
-    }
-
-    @Override
     public Collection<DynamicRecord> getRecords( long startBlockId )
     {
         return getRecords( startBlockId, true );
@@ -680,8 +668,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     @Override
     public long getNextRecordReference( DynamicRecord record )
     {
-        long nextId = record.getNextBlock();
-        return Record.NO_NEXT_BLOCK.is( nextId ) ? -1 : nextId;
+        return record.getNextBlock();
     }
 
     @Override

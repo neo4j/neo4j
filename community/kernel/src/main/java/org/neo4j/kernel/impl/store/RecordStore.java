@@ -58,10 +58,6 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
 
     R forceGetRecord( long id );
 
-    R forceGetRaw( R record );
-
-    R forceGetRaw( long id );
-
     void forceUpdateRecord( R record );
 
     <FAILURE extends Exception> void accept( Processor<FAILURE> processor, R record ) throws FAILURE;

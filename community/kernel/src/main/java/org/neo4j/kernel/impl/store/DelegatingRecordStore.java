@@ -93,18 +93,6 @@ public class DelegatingRecordStore<R extends AbstractBaseRecord> implements Reco
     }
 
     @Override
-    public R forceGetRaw( R record )
-    {
-        return delegate.forceGetRaw( record );
-    }
-
-    @Override
-    public R forceGetRaw( long id )
-    {
-        return delegate.forceGetRaw( id );
-    }
-
-    @Override
     public void forceUpdateRecord( R record )
     {
         delegate.forceUpdateRecord( record );

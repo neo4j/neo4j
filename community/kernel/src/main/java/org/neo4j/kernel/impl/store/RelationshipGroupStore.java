@@ -266,12 +266,6 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     }
 
     @Override
-    public RelationshipGroupRecord forceGetRaw( long id )
-    {
-        return forceGetRecord( id );
-    }
-
-    @Override
     public void forceUpdateRecord( RelationshipGroupRecord record )
     {
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_EXCLUSIVE_LOCK ) )
@@ -288,12 +282,6 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         {
             throw new UnderlyingStorageException( e );
         }
-    }
-
-    @Override
-    public RelationshipGroupRecord forceGetRaw( RelationshipGroupRecord record )
-    {
-        return record;
     }
 
     @Override

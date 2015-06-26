@@ -111,18 +111,6 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord>
         return fillRecord( id, record, RecordLoad.FORCE ) ? record : null;
     }
 
-    @Override
-    public RelationshipRecord forceGetRaw( RelationshipRecord record )
-    {
-        return record;
-    }
-
-    @Override
-    public RelationshipRecord forceGetRaw( long id )
-    {
-        return forceGetRecord( id );
-    }
-
     public RelationshipRecord getLightRel( long id )
     {
         RelationshipRecord record = new RelationshipRecord( id );

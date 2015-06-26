@@ -213,18 +213,6 @@ public class NodeStore extends AbstractRecordStore<NodeRecord>
     }
 
     @Override
-    public NodeRecord forceGetRaw( NodeRecord record )
-    {
-        return record;
-    }
-
-    @Override
-    public NodeRecord forceGetRaw( long id )
-    {
-        return forceGetRecord( id );
-    }
-
-    @Override
     public void forceUpdateRecord( NodeRecord record )
     {
         writeRecord( record, true );

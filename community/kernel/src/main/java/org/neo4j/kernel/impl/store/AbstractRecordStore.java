@@ -28,6 +28,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
@@ -60,7 +61,7 @@ public abstract class AbstractRecordStore<R extends AbstractBaseRecord> extends 
     @Override
     public long getNextRecordReference( R record )
     {
-        return -1;
+        return Record.NULL_REFERENCE.intValue();
     }
 
     @Override

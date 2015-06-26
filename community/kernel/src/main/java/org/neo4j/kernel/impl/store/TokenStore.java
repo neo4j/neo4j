@@ -227,18 +227,6 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         }
     }
 
-    @Override
-    public T forceGetRaw( T record )
-    {
-        return record;
-    }
-
-    @Override
-    public T forceGetRaw( long id )
-    {
-        return forceGetRecord( id );
-    }
-
     public Collection<DynamicRecord> allocateNameRecords( byte[] chars )
     {
         Collection<DynamicRecord> records = new ArrayList<>();
