@@ -62,11 +62,10 @@ public class ResultRowImpl implements Result.ResultRow
         return get( key, String.class );
     }
 
-
     @Override
     public Number getNumber( String key )
     {
-        return get( key, Double.class );
+        return get( key, Number.class );
     }
 
     @Override
@@ -94,8 +93,9 @@ public class ResultRowImpl implements Result.ResultRow
         }
         catch ( ClassCastException e )
         {
-            throw new NoSuchElementException( "The current item in column \"" + key + "\" is not a " +
-                    type.getSimpleName() );
+            String message = String.format("The current item in column \"%s\" is not a %s; it's \"%s\"",
+                    key, type.getSimpleName(), value);
+            throw new NoSuchElementException(message);
         }
     }
 
