@@ -37,14 +37,14 @@ import static org.neo4j.register.Register.DoubleLong;
 public interface IndexReader extends Resource
 {
     /**
-     * Index lookup by value
+     * Index seek by value
      */
-    PrimitiveLongIterator lookup( Object value );
+    PrimitiveLongIterator indexSeek( Object value );
 
     /**
-     * Index lookup by prefix search
+     * Index seek by prefix search
      */
-    PrimitiveLongIterator lookupByPrefixSearch( String prefix );
+    PrimitiveLongIterator indexSeekByPrefix( String prefix );
 
     /**
      * Index scan for all objects
@@ -80,15 +80,15 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public PrimitiveLongIterator lookup( Object value )
+        public PrimitiveLongIterator indexSeek( Object value )
         {
-            return delegate.lookup( value );
+            return delegate.indexSeek( value );
         }
 
         @Override
-        public PrimitiveLongIterator lookupByPrefixSearch( String prefix )
+        public PrimitiveLongIterator indexSeekByPrefix( String prefix )
         {
-            return delegate.lookupByPrefixSearch( prefix );
+            return delegate.indexSeekByPrefix( prefix );
         }
 
         @Override
@@ -131,13 +131,13 @@ public interface IndexReader extends Resource
     IndexReader EMPTY = new IndexReader()
     {
         @Override
-        public PrimitiveLongIterator lookup( Object value )
+        public PrimitiveLongIterator indexSeek( Object value )
         {
             return PrimitiveLongCollections.emptyIterator();
         }
 
         @Override
-        public PrimitiveLongIterator lookupByPrefixSearch( String prefix )
+        public PrimitiveLongIterator indexSeekByPrefix( String prefix )
         {
             return PrimitiveLongCollections.emptyIterator();
         }

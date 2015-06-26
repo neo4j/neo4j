@@ -57,9 +57,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 @RunWith(value = Parameterized.class)
 public abstract class SchemaIndexProviderApprovalTest
 {
-    /*
-    These are the values that will be checked. Searching
-     */
+    // These are the values that will be checked.
     public enum TestValue
     {
         BOOLEAN_TRUE( true ),

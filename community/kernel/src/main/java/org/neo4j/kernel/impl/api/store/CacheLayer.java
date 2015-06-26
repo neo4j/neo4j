@@ -292,13 +292,13 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodeGetUniqueFromIndexLookup(
+    public PrimitiveLongResourceIterator nodeGetFromUniqueIndexSeek(
             KernelStatement state,
             IndexDescriptor index,
             Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        return diskLayer.nodeGetUniqueFromIndexLookup( state, schemaCache.indexId( index ), value );
+        return diskLayer.nodeGetFromUniqueIndexSeek( state, schemaCache.indexId( index ), value );
     }
 
     @Override
@@ -308,21 +308,21 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesGetFromIndexLookup( KernelStatement state,
+    public PrimitiveLongResourceIterator nodesGetFromIndexSeek( KernelStatement state,
             IndexDescriptor index,
             Object value )
             throws IndexNotFoundKernelException
     {
-        return diskLayer.nodesGetFromIndexLookup( state, schemaCache.indexId( index ), value );
+        return diskLayer.nodesGetFromIndexSeek( state, schemaCache.indexId( index ), value );
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesGetFromIndexByPrefixSearch( KernelStatement state,
+    public PrimitiveLongResourceIterator nodesGetFromIndexSeekByPrefix( KernelStatement state,
             IndexDescriptor index,
             String prefix )
             throws IndexNotFoundKernelException
     {
-        return diskLayer.nodesGetFromIndexByPrefixSearch( state, schemaCache.indexId( index ), prefix );
+        return diskLayer.nodesGetFromIndexSeekByPrefix( state, schemaCache.indexId( index ), prefix );
     }
 
     @Override

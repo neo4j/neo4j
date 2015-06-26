@@ -121,9 +121,9 @@ class SnitchingQueryContext extends QueryContext {
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int) = ???
 
-  def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = ???
+  def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node] = ???
 
-  def rangeIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = ???
+  def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[Node] = ???
 
   def indexScan(index: IndexDescriptor): Iterator[Node] = ???
 
@@ -151,7 +151,7 @@ class SnitchingQueryContext extends QueryContext {
 
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
 
-  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = ???
+  def uniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = ???
 
   def commitAndRestartTx() { ??? }
 

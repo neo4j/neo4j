@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.util.InstanceCache;
 
 /**
  * Cursor for iterating a set of nodes. It is attached to an iterator, typically from
- * an index lookup or similar.
+ * an index seek or similar.
  */
 public class StoreIteratorNodeCursor extends StoreAbstractNodeCursor
 {

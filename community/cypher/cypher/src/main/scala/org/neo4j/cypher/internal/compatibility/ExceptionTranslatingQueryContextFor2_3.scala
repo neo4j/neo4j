@@ -88,8 +88,8 @@ class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends Delega
   override def dropIndexRule(labelId: Int, propertyKeyId: Int) =
     translateException(super.dropIndexRule(labelId, propertyKeyId))
 
-  override def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] =
-    translateException(super.exactIndexSearch(index, value))
+  override def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node] =
+    translateException(super.indexSeek(index, value))
 
   override def getNodesByLabel(id: Int): Iterator[Node] =
     translateException(super.getNodesByLabel(id))
@@ -133,8 +133,8 @@ class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends Delega
   override def getRelTypeName(id: Int) =
     translateException(super.getRelTypeName(id))
 
-  override def exactUniqueIndexSearch(index: IndexDescriptor, value: Any) =
-    translateException(super.exactUniqueIndexSearch(index, value))
+  override def uniqueIndexSeek(index: IndexDescriptor, value: Any) =
+    translateException(super.uniqueIndexSeek(index, value))
 
   override def commitAndRestartTx() =
     translateException(super.commitAndRestartTx())

@@ -169,19 +169,19 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
+    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
         guard.check();
-        return entityReadDelegate.nodesGetFromIndexLookup( state, index, value );
+        return entityReadDelegate.nodesGetFromIndexSeek( state, index, value );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexByPrefixSearch( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, IndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
         guard.check();
-        return entityReadDelegate.nodesGetFromIndexByPrefixSearch( state, index, prefix );
+        return entityReadDelegate.nodesGetFromIndexSeekByPrefix( state, index, prefix );
     }
 
     @Override
@@ -193,11 +193,11 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public long nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
+    public long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         guard.check();
-        return entityReadDelegate.nodeGetUniqueFromIndexLookup( state, index, value );
+        return entityReadDelegate.nodeGetFromUniqueIndexSeek( state, index, value );
     }
 
     @Override
@@ -384,11 +384,11 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexLookup( KernelStatement statement, IndexDescriptor index, Object value )
+    public NodeCursor nodeCursorGetFromIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
         guard.check();
-        return entityReadDelegate.nodeCursorGetFromIndexLookup( statement, index, value );
+        return entityReadDelegate.nodeCursorGetFromIndexSeek( statement, index, value );
     }
 
     @Override
@@ -400,21 +400,21 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexByPrefixScan( KernelStatement statement,
+    public NodeCursor nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement,
             IndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
         guard.check();
-        return entityReadDelegate.nodeCursorGetFromIndexByPrefixScan( statement, index, prefix );
+        return entityReadDelegate.nodeCursorGetFromIndexSeekByPrefix( statement, index, prefix );
     }
 
     @Override
-    public NodeCursor nodeCursorGetUniqueFromIndexLookup( KernelStatement statement,
+    public NodeCursor nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
             IndexDescriptor index,
             Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         guard.check();
-        return entityReadDelegate.nodeCursorGetUniqueFromIndexLookup( statement, index, value );
+        return entityReadDelegate.nodeCursorGetFromUniqueIndexSeek( statement, index, value );
     }
 
     private static class GuardedRelationshipIterator implements RelationshipIterator

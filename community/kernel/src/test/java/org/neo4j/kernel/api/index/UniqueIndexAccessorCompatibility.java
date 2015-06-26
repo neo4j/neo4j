@@ -49,7 +49,7 @@ public class UniqueIndexAccessorCompatibility extends IndexAccessorCompatibility
         // we cannot have them go around and throw exceptions, because that could potentially break
         // recovery.
         // Conflicting data can happen because of faulty data coercion. These faults are resolved by
-        // the exact-match filtering we do on index lookups in StateHandlingStatementOperations.
+        // the exact-match filtering we do on index seeks in StateHandlingStatementOperations.
 
         updateAndCommit( asList(
                 NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),

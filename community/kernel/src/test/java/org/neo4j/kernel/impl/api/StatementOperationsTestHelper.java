@@ -74,7 +74,7 @@ public abstract class StatementOperationsTestHelper
         try
         {
             IndexReader indexReader = mock( IndexReader.class );
-            when( indexReader.lookup( Matchers.any() ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
+            when( indexReader.indexSeek( Matchers.any() ) ).thenReturn( PrimitiveLongCollections.emptyIterator() );
             when( state.getIndexReader( anyLong() ) ).thenReturn( indexReader );
         }
         catch ( IndexNotFoundKernelException e )

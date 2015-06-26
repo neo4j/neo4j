@@ -73,7 +73,7 @@ public class LuceneIndexAccessorTest
 
         // THEN
         assertEquals( asSet( nodeId, nodeId2 ), asSet( results ) );
-        assertEquals( asSet( nodeId ), asUniqueSet( reader.lookup( value ) ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( reader.indexSeek( value ) ) );
         reader.close();
     }
 
@@ -88,7 +88,7 @@ public class LuceneIndexAccessorTest
         updateAndCommit( asList( remove( nodeId, value ) ) );
 
         // THEN
-        assertEquals( asSet( nodeId ), asUniqueSet( reader.lookup( value ) ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( reader.indexSeek( value ) ) );
         reader.close();
     }
 
@@ -102,10 +102,10 @@ public class LuceneIndexAccessorTest
         IndexReader secondReader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), asUniqueSet( firstReader.lookup( value ) ) );
-        assertEquals( asSet(  ), asUniqueSet( firstReader.lookup( value2 ) ) );
-        assertEquals( asSet( nodeId ), asUniqueSet( secondReader.lookup( value ) ) );
-        assertEquals( asSet( nodeId2 ), asUniqueSet( secondReader.lookup( value2 ) ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( firstReader.indexSeek( value ) ) );
+        assertEquals( asSet(  ), asUniqueSet( firstReader.indexSeek( value2 ) ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( secondReader.indexSeek( value ) ) );
+        assertEquals( asSet( nodeId2 ), asUniqueSet( secondReader.indexSeek( value2 ) ) );
         firstReader.close();
         secondReader.close();
     }
@@ -120,7 +120,7 @@ public class LuceneIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), asUniqueSet( reader.lookup( value ) ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( reader.indexSeek( value ) ) );
         reader.close();
     }
 
@@ -135,8 +135,8 @@ public class LuceneIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), asUniqueSet( reader.lookup( value2 ) ) );
-        assertEquals( emptySetOf( Long.class ), asUniqueSet( reader.lookup( value ) ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( reader.indexSeek( value2 ) ) );
+        assertEquals( emptySetOf( Long.class ), asUniqueSet( reader.indexSeek( value ) ) );
         reader.close();
     }
 
@@ -153,8 +153,8 @@ public class LuceneIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId2 ), asUniqueSet( reader.lookup( value2 ) ) );
-        assertEquals( asSet(  ), asUniqueSet( reader.lookup( value ) ) );
+        assertEquals( asSet( nodeId2 ), asUniqueSet( reader.indexSeek( value2 ) ) );
+        assertEquals( asSet(  ), asUniqueSet( reader.indexSeek( value ) ) );
         reader.close();
     }
 

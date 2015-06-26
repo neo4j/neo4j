@@ -51,8 +51,8 @@ final class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) exte
     inner.isLabelSetOnNode(label, node)
   }
 
-  override def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] =
-    lockAll(inner.exactIndexSearch(index, value))
+  override def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node] =
+    lockAll(inner.indexSeek(index, value))
 
   override def getNodesByLabel(id: Int): Iterator[Node] = lockAll(inner.getNodesByLabel(id))
 

@@ -92,9 +92,9 @@ class InMemoryIndex
         return new OnlineAccessor();
     }
 
-    protected final PrimitiveLongIterator lookup( Object propertyValue )
+    protected final PrimitiveLongIterator indexSeek( Object propertyValue )
     {
-        return indexData.lookup( propertyValue );
+        return indexData.indexSeek( propertyValue );
     }
 
     protected boolean add( long nodeId, Object propertyValue, boolean applyIdempotently )

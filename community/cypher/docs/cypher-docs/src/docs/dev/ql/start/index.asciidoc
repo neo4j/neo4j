@@ -10,7 +10,7 @@ In all other cases, use `MATCH` instead (see <<query-match>>).
 
 In Cypher, every query describes a pattern, and in that pattern one can have multiple starting points.
 A starting point is a relationship or a node where a pattern is anchored.
-Using `START` you can only introduce starting points by legacy index lookups.
+Using `START` you can only introduce starting points by legacy index seeks.
 Note that trying to use a legacy index that doesn't exist will generate an error.
 
 This is the graph the examples are using:
@@ -22,9 +22,9 @@ include::includes/cypher-start-graph.asciidoc[]
 
 :leveloffset: 3
 
-include::node-by-index-lookup.asciidoc[]
+include::node-by-index-seek.asciidoc[]
 
-include::relationship-by-index-lookup.asciidoc[]
+include::relationship-by-index-seek.asciidoc[]
 
 include::node-by-index-query.asciidoc[]
 

@@ -137,7 +137,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexUniqueSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
+        case Seq(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
       }
     }
   }
@@ -177,7 +177,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexUniqueSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
+        case Seq(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
       }
 
       resultPlans.map(_.solved.graph) should beLike {

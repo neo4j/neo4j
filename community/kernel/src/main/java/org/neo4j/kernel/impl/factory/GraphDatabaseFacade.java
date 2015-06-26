@@ -452,7 +452,7 @@ public class GraphDatabaseFacade
             if ( null != descriptor )
             {
                 // Ha! We found an index - let's use it to find matching nodes
-                return map2nodes( readOps.nodesGetFromIndexLookup( descriptor, value ), statement );
+                return map2nodes( readOps.nodesGetFromIndexSeek( descriptor, value ), statement );
             }
         }
         catch ( IndexNotFoundKernelException e )

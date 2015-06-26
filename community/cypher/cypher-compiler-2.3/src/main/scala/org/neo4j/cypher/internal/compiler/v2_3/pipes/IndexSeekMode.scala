@@ -19,21 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{RangeQueryExpression, QueryExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{QueryExpression, RangeQueryExpression}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-object NonUniqueIndexSeekMode {
+case class IndexSeekModeFactory(unique: Boolean) {
   def fromQueryExpression[T](qexpr: QueryExpression[T]) = qexpr match {
-    case _: RangeQueryExpression[_] => NonUniqueIndexRangeSeek
-    case _ => NonUniqueIndexEqualitySeek
-  }
-}
-
-object UniqueIndexSeekMode {
-  def fromQueryExpression[T](qexpr: QueryExpression[T]) = qexpr match {
-    case _: RangeQueryExpression[_] => UniqueIndexRangeSeek
-    case _ => UniqueIndexEqualitySeek
+    case _: RangeQueryExpression[_] if unique => UniqueIndexSeekByRange
+    case _: RangeQueryExpression[_] => IndexSeekByRange
+    case _ if unique => UniqueIndexSeek
+    case _ => IndexSeek
   }
 }
 
@@ -42,34 +37,34 @@ sealed trait IndexSeekMode {
   def name: String
 }
 
-case object NonUniqueIndexEqualitySeek extends IndexSeekMode {
+case object IndexSeek extends IndexSeekMode {
 
   override def indexFactory(descriptor: IndexDescriptor): (QueryState) => (Any) => Iterator[Node] =
-    (state: QueryState) => (x: Any) => state.query.exactIndexSearch(descriptor, x)
+    (state: QueryState) => (x: Any) => state.query.indexSeek(descriptor, x)
 
   override def name: String = "NodeIndexSeek"
 }
 
-case object UniqueIndexEqualitySeek extends IndexSeekMode {
+case object UniqueIndexSeek extends IndexSeekMode {
 
   override def indexFactory(descriptor: IndexDescriptor): (QueryState) => (Any) => Iterator[Node] =
-    (state: QueryState) => (x: Any) => state.query.exactUniqueIndexSearch(descriptor, x).toIterator
+    (state: QueryState) => (x: Any) => state.query.uniqueIndexSeek(descriptor, x).toIterator
 
   override def name: String = "NodeUniqueIndexSeek"
 }
 
-case object NonUniqueIndexRangeSeek extends IndexSeekMode {
+case object IndexSeekByRange extends IndexSeekMode {
 
   override def indexFactory(descriptor: IndexDescriptor): (QueryState) => (Any) => Iterator[Node] =
-    (state: QueryState) => (x: Any) => state.query.rangeIndexSearch(descriptor, x)
+    (state: QueryState) => (x: Any) => state.query.indexSeekByRange(descriptor, x)
 
-  override def name: String = "NodeIndexRangeSeek"
+  override def name: String = "NodeIndexSeekByRange"
 }
 
-case object UniqueIndexRangeSeek extends IndexSeekMode {
+case object UniqueIndexSeekByRange extends IndexSeekMode {
 
   override def indexFactory(descriptor: IndexDescriptor): (QueryState) => (Any) => Iterator[Node] =
-    (state: QueryState) => (x: Any) => state.query.rangeIndexSearch(descriptor, x)
+    (state: QueryState) => (x: Any) => state.query.indexSeekByRange(descriptor, x)
 
-  override def name: String = "NodeUniqueIndexRangeSeek"
+  override def name: String = "NodeUniqueIndexSeekByRange"
 }

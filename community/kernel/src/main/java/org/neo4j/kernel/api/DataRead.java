@@ -46,7 +46,7 @@ interface DataRead
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexLookup( IndexDescriptor index, Object value )
+    PrimitiveLongIterator nodesGetFromIndexSeek( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
 
     /**
@@ -54,7 +54,7 @@ interface DataRead
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexByPrefixSearch( IndexDescriptor index, String prefix )
+    PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( IndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException;
 
     /**
@@ -93,7 +93,7 @@ interface DataRead
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    long nodeGetUniqueFromIndexLookup( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
+    long nodeGetFromUniqueIndexSeek( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
             IndexBrokenKernelException;
 
     boolean nodeExists( long nodeId );

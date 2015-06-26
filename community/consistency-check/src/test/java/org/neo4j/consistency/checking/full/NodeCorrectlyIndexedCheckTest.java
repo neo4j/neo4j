@@ -211,7 +211,7 @@ public class NodeCorrectlyIndexedCheckTest
             return new IndexReader()
             {
                 @Override
-                public PrimitiveLongIterator lookup( Object value )
+                public PrimitiveLongIterator indexSeek( Object value )
                 {
                     if ( entries.containsKey( value ) )
                     {
@@ -221,7 +221,7 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
-                public PrimitiveLongIterator lookupByPrefixSearch( String prefix )
+                public PrimitiveLongIterator indexSeekByPrefix( String prefix )
                 {
                     throw new UnsupportedOperationException();
                 }

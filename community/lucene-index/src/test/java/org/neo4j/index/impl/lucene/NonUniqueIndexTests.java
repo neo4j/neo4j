@@ -155,7 +155,7 @@ public class NonUniqueIndexTests
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId, indexConfig, samplingConfig );
               IndexReader reader = accessor.newReader() )
         {
-            return IteratorUtil.asList( reader.lookup( value ) );
+            return IteratorUtil.asList( reader.indexSeek( value ) );
         }
     }
 }

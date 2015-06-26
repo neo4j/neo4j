@@ -482,7 +482,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldSupportIndexPrefixSearch()
+    public void shouldSupportIndexSeekByPrefix()
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
         // GIVEN
@@ -498,7 +498,7 @@ public class IndexingAcceptanceTest
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations ops = statement.readOperations();
             IndexDescriptor descriptor = indexDescriptor( ops, index );
-            found.addAll( ops.nodesGetFromIndexByPrefixSearch( descriptor, "Karl" ) );
+            found.addAll( ops.nodesGetFromIndexSeekByPrefix( descriptor, "Karl" ) );
         }
 
         // THEN
@@ -506,7 +506,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldIncludeNodesCreatedInSameTxInIndexPrefixSearch()
+    public void shouldIncludeNodesCreatedInSameTxInIndexSeekByPrefix()
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
         // GIVEN
@@ -523,14 +523,14 @@ public class IndexingAcceptanceTest
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
             IndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            found.addAll( readOperations.nodesGetFromIndexByPrefixSearch( descriptor, "Karl" ) );
+            found.addAll( readOperations.nodesGetFromIndexSeekByPrefix( descriptor, "Karl" ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
     }
 
     @Test
-    public void shouldNotIncludeNodesDeletedInSameTxInIndexPrefixSearch()
+    public void shouldNotIncludeNodesDeletedInSameTxInIndexSeekByPrefix()
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
         // GIVEN
@@ -553,7 +553,7 @@ public class IndexingAcceptanceTest
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
             IndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            found.addAll( readOperations.nodesGetFromIndexByPrefixSearch( descriptor, "Karl" ) );
+            found.addAll( readOperations.nodesGetFromIndexSeekByPrefix( descriptor, "Karl" ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -592,7 +592,7 @@ public class IndexingAcceptanceTest
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
             IndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            found.addAll( readOperations.nodesGetFromIndexByPrefixSearch( descriptor, prefix ) );
+            found.addAll( readOperations.nodesGetFromIndexSeekByPrefix( descriptor, prefix ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );

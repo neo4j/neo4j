@@ -70,7 +70,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     }
 
     @Test
-    public void testIndexPrefixSearch() throws Exception
+    public void testIndexSeekByPrefix() throws Exception
     {
         updateAndCommit( asList(
                 NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
@@ -79,19 +79,19 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
                 NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "apA", new long[]{1000} ),
                 NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "b", new long[]{1000} ) ) );
 
-        assertThat( getAllNodesFromPrefixSearch( "a" ), equalTo( asList( 1L, 3L, 4L ) ) );
-        assertThat( getAllNodesFromPrefixSearch( "A" ), equalTo( asList( 2L ) ) );
-        assertThat( getAllNodesFromPrefixSearch( "ba" ), equalTo( Collections.EMPTY_LIST ) );
-        assertThat( getAllNodesFromPrefixSearch( "" ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromIndexSeekByPrefix( "a" ), equalTo( asList( 1L, 3L, 4L ) ) );
+        assertThat( getAllNodesFromIndexSeekByPrefix( "A" ), equalTo( asList( 2L ) ) );
+        assertThat( getAllNodesFromIndexSeekByPrefix( "ba" ), equalTo( Collections.EMPTY_LIST ) );
+        assertThat( getAllNodesFromIndexSeekByPrefix( "" ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
     }
 
     @Test
-    public void testIndexPrefixSearchOnNonStrings() throws Exception
+    public void testIndexSeekByPrefixOnNonStrings() throws Exception
     {
         updateAndCommit( asList(
                 NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
                 NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, 2L, new long[]{1000} ) ) );
-        assertThat( getAllNodesFromPrefixSearch( "2" ), equalTo( Collections.EMPTY_LIST ) );
+        assertThat( getAllNodesFromIndexSeekByPrefix( "2" ), equalTo( Collections.EMPTY_LIST ) );
     }
 
     protected List<Long> getAllNodesWithProperty( String propertyValue ) throws IOException
@@ -99,7 +99,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         try ( IndexReader reader = accessor.newReader() )
         {
             List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.lookup( propertyValue ); iterator.hasNext(); )
+            for ( PrimitiveLongIterator iterator = reader.indexSeek( propertyValue ); iterator.hasNext(); )
             {
                 list.add( iterator.next() );
             }
@@ -108,12 +108,12 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         }
     }
 
-    protected List<Long> getAllNodesFromPrefixSearch( String prefix ) throws IOException
+    protected List<Long> getAllNodesFromIndexSeekByPrefix( String prefix ) throws IOException
     {
         try ( IndexReader reader = accessor.newReader() )
         {
             List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.lookupByPrefixSearch( prefix ); iterator.hasNext(); )
+            for ( PrimitiveLongIterator iterator = reader.indexSeekByPrefix( prefix ); iterator.hasNext(); )
             {
                 list.add( iterator.next() );
             }

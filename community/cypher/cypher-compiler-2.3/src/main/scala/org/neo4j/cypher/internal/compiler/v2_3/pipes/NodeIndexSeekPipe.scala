@@ -34,7 +34,7 @@ case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,
                              propertyKey: PropertyKeyToken,
                              valueExpr: QueryExpression[Expression],
-                             indexMode: IndexSeekMode = NonUniqueIndexEqualitySeek)
+                             indexMode: IndexSeekMode = IndexSeek)
                             (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe with RonjaPipe {
 
@@ -57,13 +57,13 @@ case class NodeIndexSeekPipe(ident: String,
   def planDescriptionWithoutCardinality = {
     val name = indexMode.name
     val indexDesc = indexMode match {
-      case NonUniqueIndexRangeSeek | UniqueIndexRangeSeek =>
+      case IndexSeekByRange | UniqueIndexSeekByRange =>
         valueExpr match {
           case RangeQueryExpression(StringSeekRange(LowerBounded(lower))) =>
             RangeIndex(label.name, propertyKey.name, lower.endPoint)
           case _ => throw new InternalException("This should never happen.")
         }
-      case NonUniqueIndexEqualitySeek | UniqueIndexEqualitySeek => Index(label.name, propertyKey.name)
+      case IndexSeek | UniqueIndexSeek => Index(label.name, propertyKey.name)
       case _ => throw new InternalException("This should never happen. Missing a case?")
     }
     new PlanDescriptionImpl(this.id, name, NoChildren, Seq(indexDesc), identifiers)

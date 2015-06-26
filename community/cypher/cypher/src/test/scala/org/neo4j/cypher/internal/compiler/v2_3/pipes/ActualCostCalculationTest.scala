@@ -126,7 +126,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val literal = Literal(42)
 
       Seq(
-        "index seek" -> new NodeIndexSeekPipe("x", labelToken, propertyKeyToken, SingleQueryExpression(literal), NonUniqueIndexEqualitySeek)(),
+        "index seek" -> new NodeIndexSeekPipe("x", labelToken, propertyKeyToken, SingleQueryExpression(literal), IndexSeek)(),
         "label scan X" -> labelScan("X"),
         "label scan Y" -> labelScan("Y"),
         "label scan Z" -> labelScan("Z"),

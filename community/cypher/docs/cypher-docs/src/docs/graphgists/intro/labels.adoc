@@ -29,11 +29,11 @@ If we drop a constraint, and still want an index on the same property, we have t
 
 Constraints can be added after a label is already in use, but that requires that the existing data complies with the constraints.
 
-== Lookup indexes
+== Using indexes
 
 For a graph query to run fast, you don't need indexes, you only need them to find your starting points.
 The main reason for using indexes in a graph database is to find the starting points in the graph as fast as possible.
-After the initial lookups you rely on in-graph structures and the first class citizenship of relationships in the graph database to achieve high performance.
+After the initial index seek you rely on in-graph structures and the first class citizenship of relationships in the graph database to achieve high performance.
 
 In this case we want an index to speed up finding actors by name in the database:
 

@@ -33,9 +33,9 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
     abstract void drop();
 
     @Override
-    public final PrimitiveLongIterator lookup( Object value )
+    public final PrimitiveLongIterator indexSeek( Object value )
     {
-        return doLookup( encode( value ) );
+        return doIndexSeek( encode( value ) );
     }
 
     final boolean add( long nodeId, Object propertyValue, boolean applyIdempotently )
@@ -48,7 +48,7 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
         doRemove( encode( propertyValue ), nodeId );
     }
 
-    abstract PrimitiveLongIterator doLookup( Object propertyValue );
+    abstract PrimitiveLongIterator doIndexSeek( Object propertyValue );
 
     abstract boolean doAdd( Object propertyValue, long nodeId, boolean applyIdempotently );
 
