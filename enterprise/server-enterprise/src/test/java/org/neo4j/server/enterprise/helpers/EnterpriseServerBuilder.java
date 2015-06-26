@@ -29,7 +29,6 @@ import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.rest.web.DatabaseActions;
 
 public class EnterpriseServerBuilder extends CommunityServerBuilder
@@ -76,12 +75,6 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
         {
             super( propertyFileConfigurator, dependencies, logProvider );
             this.configFile = configFile;
-        }
-
-        @Override
-        protected PreFlightTasks createPreflightTasks()
-        {
-            return preflightTasks;
         }
 
         @Override

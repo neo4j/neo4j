@@ -28,7 +28,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.database.Database;
@@ -43,10 +42,6 @@ import org.neo4j.server.modules.SecurityRulesModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.modules.WebAdminModule;
-import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
-import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
-import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
-import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.JmxService;
 import org.neo4j.server.rest.management.MonitorService;
@@ -82,19 +77,6 @@ public class CommunityNeoServer extends AbstractNeoServer
     public CommunityNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
     {
         super( configurator, dbFactory, dependencies, logProvider );
-    }
-
-    @Override
-    protected PreFlightTasks createPreflightTasks()
-    {
-        return new PreFlightTasks( logProvider,
-				// TODO: Move the config check into bootstrapper
-				//new EnsureNeo4jPropertiesExist(configurator.configuration()),
-				new EnsurePreparedForHttpLogging(configurator.configuration()),
-				new PerformUpgradeIfNecessary(getConfig(),
-                        configurator.getDatabaseTuningProperties(), logProvider, StoreUpgrader.NO_MONITOR ),
-                new PerformRecoveryIfNecessary(getConfig(),
-                        configurator.getDatabaseTuningProperties(), logProvider ) );
     }
 
     @Override
