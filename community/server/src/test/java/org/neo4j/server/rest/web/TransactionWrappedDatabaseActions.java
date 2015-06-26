@@ -529,4 +529,40 @@ public class TransactionWrappedDatabaseActions extends DatabaseActions
             transaction.finish();
         }
     }
+
+    @Override
+    public ConstraintDefinitionRepresentation createPropertyExistenceConstraint( String labelName,
+            Iterable<String> propertyKeys )
+    {
+        Transaction transaction = graph.beginTx();
+
+        try
+        {
+            ConstraintDefinitionRepresentation constraintDefinitionRepresentation = super
+                    .createPropertyExistenceConstraint( labelName, propertyKeys );
+            transaction.success();
+            return constraintDefinitionRepresentation;
+        }
+        finally
+        {
+            transaction.finish();
+        }
+    }
+
+    @Override
+    public boolean dropPropertyExistenceConstraint( String labelName, Iterable<String> propertyKeys )
+    {
+        Transaction transaction = graph.beginTx();
+
+        try
+        {
+            boolean result = super.dropPropertyExistenceConstraint( labelName, propertyKeys );
+            transaction.success();
+            return result;
+        }
+        finally
+        {
+            transaction.finish();
+        }
+    }
 }

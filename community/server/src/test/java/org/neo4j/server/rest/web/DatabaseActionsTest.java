@@ -1487,6 +1487,31 @@ public class DatabaseActionsTest
     }
 
     @Test
+    public void shouldCreatePropertyExistenceConstraint() throws Exception
+    {
+        // GIVEN
+        String labelName = "person", propertyKey = "name";
+
+        // WHEN
+        actions.createPropertyExistenceConstraint( labelName, asList( propertyKey ) );
+
+        // THEN
+        Transaction tx  = graph.beginTx();
+        try
+        {
+            Iterable<ConstraintDefinition> defs = graphdbHelper.getPropertyExistenceConstraints( labelName,
+                    propertyKey );
+            assertEquals( asSet( propertyKey ), asSet( single( defs ).getPropertyKeys() ) );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+
+    @Test
     public void shouldDropPropertyUniquenessConstraint() throws Exception
     {
         // GIVEN
@@ -1500,6 +1525,22 @@ public class DatabaseActionsTest
         // THEN
         assertFalse( "Constraint should have been dropped",
                 asSet( graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey ) ).contains( index ) );
+    }
+
+    @Test
+    public void shouldDropPropertyExistencesConstraint() throws Exception
+    {
+        // GIVEN
+        String labelName = "user", propertyKey = "login";
+        ConstraintDefinition index = graphdbHelper.createPropertyExistenceConstraint( labelName,
+                asList( propertyKey ) );
+
+        // WHEN
+        actions.dropPropertyExistenceConstraint( labelName, asList( propertyKey ) );
+
+        // THEN
+        assertFalse( "Constraint should have been dropped",
+                asSet( graphdbHelper.getPropertyExistenceConstraints( labelName, propertyKey ) ).contains( index ) );
     }
 
     @Test
@@ -1527,6 +1568,33 @@ public class DatabaseActionsTest
         assertEquals( labelName, definition.get( "label" ) );
         assertEquals( asList( propertyKey ), definition.get( "property_keys" ) );
         assertEquals( "UNIQUENESS", definition.get( "type" ) );
+    }
+
+    @Test
+    public void shouldGetPropertyExistenceConstraint() throws Exception
+    {
+        // GIVEN
+        String labelName = "mylabel", propertyKey = "name";
+        graphdbHelper.createPropertyExistenceConstraint( labelName, asList( propertyKey ) );
+
+        // WHEN
+        Transaction transaction = graph.beginTx();
+        List<Object> serialized;
+        try
+        {
+            serialized = serialize( actions.getPropertyExistenceConstraint( labelName, asList( propertyKey ) ) );
+        }
+        finally
+        {
+            transaction.finish();
+        }
+
+        // THEN
+        assertEquals( 1, serialized.size() );
+        Map<?, ?> definition = (Map<?, ?>) serialized.get( 0 );
+        assertEquals( labelName, definition.get( "label" ) );
+        assertEquals( asList( propertyKey ), definition.get( "property_keys" ) );
+        assertEquals( "MANDATORY", definition.get( "type" ) );
     }
 
     @Test

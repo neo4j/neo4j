@@ -144,7 +144,9 @@ public class RestfulGraphDatabase
 
     public static final String PATH_SCHEMA_CONSTRAINT_LABEL = PATH_SCHEMA_CONSTRAINT + "/{label}";
     public static final String PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS = PATH_SCHEMA_CONSTRAINT_LABEL + "/uniqueness";
+    public static final String PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE = PATH_SCHEMA_CONSTRAINT_LABEL + "/existence";
     public static final String PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY = PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS + "/{property}";
+    public static final String PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE_PROPERTY = PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE + "/{property}";
 
     public static final String NODE_AUTO_INDEX_TYPE = "node";
     public static final String RELATIONSHIP_AUTO_INDEX_TYPE = "relationship";
@@ -1853,6 +1855,35 @@ public class RestfulGraphDatabase
         }
     }
 
+    @POST
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE )
+    public Response createPropertyExistenceConstraint( @PathParam( "label" ) String labelName, String body )
+    {
+        try
+        {
+            Map<String, Object> data = input.readMap( body, "property_keys" );
+            Iterable<String> singlePropertyKey = singleOrList( data, "property_keys" );
+            if ( singlePropertyKey == null )
+            {
+                return output.badRequest( new IllegalArgumentException(
+                        "Supply single property key or list of property keys" ) );
+            }
+            return output.ok( actions.createPropertyExistenceConstraint( labelName, singlePropertyKey ) );
+        }
+        catch( UnsupportedOperationException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( org.neo4j.graphdb.ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
+    }
+
     @DELETE
     @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY )
     public Response dropPropertyUniquenessConstraint( @PathParam( "label" ) String labelName,
@@ -1861,6 +1892,28 @@ public class RestfulGraphDatabase
         try
         {
             if ( actions.dropPropertyUniquenessConstraint( labelName, properties ) )
+            {
+                return nothing();
+            }
+            else
+            {
+                return output.notFound();
+            }
+        }
+        catch ( org.neo4j.graphdb.ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
+    }
+
+    @DELETE
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE_PROPERTY )
+    public Response dropPropertyExistenceConstraint( @PathParam( "label" ) String labelName,
+            @PathParam( "property" ) AmpersandSeparatedCollection properties )
+    {
+        try
+        {
+            if ( actions.dropPropertyExistenceConstraint( labelName, properties ) )
             {
                 return nothing();
             }
@@ -1897,6 +1950,13 @@ public class RestfulGraphDatabase
     }
 
     @GET
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE )
+    public Response getSchemaConstraintsForLabelAndExistence( @PathParam( "label" ) String labelName )
+    {
+        return output.ok( actions.getLabelExistenceConstraints( labelName ) );
+    }
+
+    @GET
     @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY )
     public Response getSchemaConstraintsForLabelAndPropertyUniqueness( @PathParam( "label" ) String labelName,
             @PathParam( "property" ) AmpersandSeparatedCollection propertyKeys )
@@ -1909,6 +1969,22 @@ public class RestfulGraphDatabase
         catch ( IllegalArgumentException e )
         {
         	return output.notFound( e );
+        }
+    }
+
+    @GET
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE_PROPERTY )
+    public Response getSchemaConstraintsForLabelAndPropertyExistence( @PathParam( "label" ) String labelName,
+            @PathParam( "property" ) AmpersandSeparatedCollection propertyKeys )
+    {
+        try
+        {
+            ListRepresentation constraints = actions.getPropertyExistenceConstraint( labelName, propertyKeys );
+            return output.ok( constraints );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            return output.notFound( e );
         }
     }
 
