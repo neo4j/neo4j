@@ -27,10 +27,12 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
@@ -49,7 +51,8 @@ public class NodeStoreScanTest
         when( nodeStore.getHighId() ).thenReturn( (long) total );
         NodeRecord inUseRecord = new NodeRecord( 42 );
         inUseRecord.setInUse( true );
-        when( nodeStore.forceGetRecord( anyLong() ) ).thenReturn( inUseRecord, inUseRecord, inUseRecord, inUseRecord,
+        when( nodeStore.getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) ) ).thenReturn(
+                inUseRecord, inUseRecord, inUseRecord, inUseRecord,
                 inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord );
 
         final PercentageSupplier percentageSupplier = new PercentageSupplier();

@@ -131,7 +131,7 @@ public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstractio
         else if ( fileName.getName().endsWith( "nodestore.db.labels" ) )
         {
             return Integer.parseInt( GraphDatabaseSettings.label_block_size.getDefaultValue() ) +
-                    AbstractDynamicStore.BLOCK_HEADER_SIZE;
+                    AbstractDynamicStore.RECORD_HEADER_SIZE;
         }
         else if ( fileName.getName().endsWith( "schemastore.db" ) )
         {

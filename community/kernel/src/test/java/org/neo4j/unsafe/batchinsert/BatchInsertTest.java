@@ -88,6 +88,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
@@ -129,6 +130,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
+import static org.neo4j.kernel.impl.store.CommonAbstractStore.getRecord;
 
 @RunWith( Parameterized.class )
 public class BatchInsertTest
@@ -913,9 +915,10 @@ public class BatchInsertTest
             SchemaStore store = neoStores.getSchemaStore();
             SchemaStorage storage = new SchemaStorage( store );
             List<Long> inUse = new ArrayList<>();
+            DynamicRecord record = store.newRecord();
             for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
             {
-                DynamicRecord record = store.forceGetRecord( i );
+                store.getRecord( i, record, RecordLoad.FORCE );
                 if ( record.inUse() && record.isStartRecord() )
                 {
                     inUse.add( i );
@@ -1335,7 +1338,7 @@ public class BatchInsertTest
             NeoStores neoStores = dependencyResolver
                     .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
             NodeStore nodeStore = neoStores.getNodeStore();
-            NodeRecord record = nodeStore.getRecord( 1 );
+            NodeRecord record = getRecord( nodeStore, 1 );
             assertTrue( "Node " + record + " should have been dense", record.isDense() );
         }
         finally
@@ -1375,7 +1378,7 @@ public class BatchInsertTest
         NeoStores neoStores = switchToNeoStores( inserter );
         try
         {
-            NodeRecord node = neoStores.getNodeStore().getRecord( nodeId );
+            NodeRecord node = getRecord( neoStores.getNodeStore(), nodeId );
             NodeLabels labels = NodeLabelsField.parseLabelsField( node );
             long[] labelIds = labels.get( neoStores.getNodeStore() );
             assertEquals( 1, labelIds.length );
@@ -1401,7 +1404,7 @@ public class BatchInsertTest
         // THEN
         try ( NeoStores neoStores = switchToNeoStores( inserter ) )
         {
-            NodeRecord node = neoStores.getNodeStore().getRecord( nodeId );
+            NodeRecord node = getRecord( neoStores.getNodeStore(), nodeId );
             NodeLabels labels = NodeLabelsField.parseLabelsField( node );
 
             long[] labelIds = labels.get( neoStores.getNodeStore() );

@@ -48,27 +48,29 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord, To
             LogProvider logProvider,
             DynamicStringStore nameStore )
     {
-        super( fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache,
-                logProvider, nameStore, new Token.Factory() );
+        super( fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
+                TYPE_DESCRIPTOR, new Token.Factory() );
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, PropertyKeyTokenRecord record ) throws FAILURE
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor,
+            PropertyKeyTokenRecord record ) throws FAILURE
     {
         processor.processPropertyKeyToken( this, record );
     }
 
     @Override
-    protected PropertyKeyTokenRecord newRecord( int id )
+    public PropertyKeyTokenRecord newRecord()
     {
-        return new PropertyKeyTokenRecord( id );
+        return new PropertyKeyTokenRecord( -1 );
     }
 
     @Override
-    protected void readRecord( PropertyKeyTokenRecord record, PageCursor cursor )
+    protected void readRecord( PageCursor cursor, PropertyKeyTokenRecord record, boolean inUse )
     {
-        record.setPropertyCount( cursor.getInt() );
-        record.setNameId( cursor.getInt() );
+        int propertyCount = cursor.getInt();
+        int nameId = cursor.getInt();
+        record.initialize( inUse, nameId, propertyCount );
     }
 
     @Override
@@ -82,11 +84,5 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord, To
     public int getRecordSize()
     {
         return RECORD_SIZE;
-    }
-
-    @Override
-    public String getTypeDescriptor()
-    {
-        return TYPE_DESCRIPTOR;
     }
 }

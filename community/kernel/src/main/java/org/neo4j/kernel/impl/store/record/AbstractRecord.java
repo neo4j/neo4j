@@ -19,18 +19,27 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import org.neo4j.unsafe.impl.batchimport.Utils;
+
 public abstract class AbstractRecord extends AbstractBaseRecord
 {
-    private final int id;
+    private int id;
 
     public AbstractRecord( int id )
     {
         this.id = id;
+        clear();
     }
 
     public int getId()
     {
         return id;
+    }
+
+    @Override
+    public void setId( long id )
+    {
+        this.id = Utils.safeCastLongToInt( id );
     }
 
     @Override

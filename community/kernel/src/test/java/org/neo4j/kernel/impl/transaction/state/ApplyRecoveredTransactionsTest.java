@@ -134,5 +134,4 @@ public class ApplyRecoveredTransactionsTest
         record.setCreated();
         return record;
     }
-
 }

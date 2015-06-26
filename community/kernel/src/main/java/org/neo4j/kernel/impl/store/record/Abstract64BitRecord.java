@@ -23,14 +23,17 @@ public abstract class Abstract64BitRecord extends AbstractBaseRecord
 {
     private long id;
 
-    protected Abstract64BitRecord()
-    {
-
-    }
-
-    protected Abstract64BitRecord( long id )
+    public Abstract64BitRecord( long id )
     {
         this.id = id;
+        clear();
+    }
+
+    @Override
+    protected Abstract64BitRecord initialize( boolean inUse )
+    {
+        super.initialize( inUse );
+        return this;
     }
 
     public long getId()
@@ -38,14 +41,15 @@ public abstract class Abstract64BitRecord extends AbstractBaseRecord
         return id;
     }
 
+    @Override
     public void setId( long id )
     {
         this.id = id;
     }
-    
+
     @Override
     public long getLongId()
     {
-        return id;
+        return getId();
     }
 }

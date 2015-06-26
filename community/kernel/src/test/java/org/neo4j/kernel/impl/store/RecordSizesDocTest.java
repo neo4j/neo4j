@@ -71,7 +71,7 @@ public class RecordSizesDocTest
 
     private static int defaultDynamicSize( Setting<Integer> setting )
     {
-        return AbstractDynamicStore.BLOCK_HEADER_SIZE + Integer.parseInt( setting.getDefaultValue() );
+        return AbstractDynamicStore.RECORD_HEADER_SIZE + Integer.parseInt( setting.getDefaultValue() );
     }
 
     private static class Store

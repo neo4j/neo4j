@@ -58,7 +58,7 @@ public class ReadRelationshipCountsDataStep extends IoProducerStep
         int i = 0;
         for ( ; i < batchSize && ++id <= highestId; )
         {
-            if ( store.fillRecord( id, record, RecordLoad.CHECK ) )
+            if ( store.getRecord( id, record, RecordLoad.CHECK ).inUse() )
             {
                 int index = i++ * 3;
                 batch[index++] = record.getFirstNode();

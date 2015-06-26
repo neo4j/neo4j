@@ -54,9 +54,10 @@ public class DynamicArrayStore extends AbstractDynamicStore
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            int blockSize )
+            int dataSizeFromConfiguration )
     {
-        super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, blockSize );
+        super( fileName, configuration, idType, idGeneratorFactory, pageCache,
+                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration );
     }
 
     @Override
@@ -64,12 +65,6 @@ public class DynamicArrayStore extends AbstractDynamicStore
             throws FAILURE
     {
         processor.processArray( this, record );
-    }
-
-    @Override
-    public String getTypeDescriptor()
-    {
-        return TYPE_DESCRIPTOR;
     }
 
     public static void allocateFromNumbers( Collection<DynamicRecord> target, Object array,

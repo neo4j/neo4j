@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-
 import org.junit.Test;
 
 import java.io.File;
@@ -39,22 +38,24 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+
 public class LabelTokenStoreTest
 {
-
-    private File file = mock( File.class );
-    private Config config = mock( Config.class );
-    private IdGeneratorFactory generatorFactory = mock( IdGeneratorFactory.class );
-    private PageCache cache = mock( PageCache.class );
-    private LogProvider logProvider = mock( LogProvider.class );
-    private DynamicStringStore dynamicStringStore = mock( DynamicStringStore.class );
-    private PageCursor pageCursor = mock( PageCursor.class );
+    private final File file = mock( File.class );
+    private final Config config = mock( Config.class );
+    private final IdGeneratorFactory generatorFactory = mock( IdGeneratorFactory.class );
+    private final PageCache cache = mock( PageCache.class );
+    private final LogProvider logProvider = mock( LogProvider.class );
+    private final DynamicStringStore dynamicStringStore = mock( DynamicStringStore.class );
+    private final PageCursor pageCursor = mock( PageCursor.class );
 
     @Test
     public void forceGetRecordSkipInUsecheck() throws IOException
     {
         LabelTokenStore store = new UnusedLabelTokenStore();
-        LabelTokenRecord record = store.forceGetRecord( 7 );
+        LabelTokenRecord record = store.getRecord( 7, store.newRecord(), FORCE );
         assertFalse( "Record should not be in use", record.inUse() );
     }
 
@@ -64,12 +65,11 @@ public class LabelTokenStoreTest
         when( pageCursor.getByte() ).thenReturn( Record.NOT_IN_USE.byteValue() );
 
         LabelTokenStore store = new UnusedLabelTokenStore();
-        store.getRecord( 7 );
+        store.getRecord( 7, store.newRecord(), NORMAL );
     }
 
     class UnusedLabelTokenStore extends LabelTokenStore
     {
-
         public UnusedLabelTokenStore() throws IOException
         {
             super( file, config, generatorFactory, cache, logProvider, dynamicStringStore );
@@ -78,14 +78,6 @@ public class LabelTokenStoreTest
             when( storeFile.io( any( Long.class ), any( Integer.class ) ) ).thenReturn( pageCursor );
             when( storeFile.pageSize() ).thenReturn( 1 );
             when( pageCursor.next() ).thenReturn( true );
-        }
-
-        @Override
-        protected LabelTokenRecord newRecord( int id )
-        {
-            LabelTokenRecord labelTokenRecord = super.newRecord( id );
-            labelTokenRecord.setInUse( false );
-            return labelTokenRecord;
         }
     }
 }

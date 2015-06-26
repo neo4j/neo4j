@@ -21,18 +21,21 @@ package org.neo4j.consistency.repair;
 
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 public class OwningNodeRelationshipChain
 {
     private final RelationshipChainExplorer relationshipChainExplorer;
     private final RecordStore<NodeRecord> nodeStore;
+    private final NodeRecord nodeRecord;
 
     public OwningNodeRelationshipChain( RelationshipChainExplorer relationshipChainExplorer,
                                         RecordStore<NodeRecord> nodeStore )
     {
         this.relationshipChainExplorer = relationshipChainExplorer;
         this.nodeStore = nodeStore;
+        this.nodeRecord = nodeStore.newRecord();
     }
 
     public RecordSet<RelationshipRecord> findRelationshipChainsThatThisRecordShouldBelongTo(
@@ -42,11 +45,9 @@ public class OwningNodeRelationshipChain
         for ( RelationshipNodeField field : RelationshipNodeField.values() )
         {
             long nodeId = field.get( relationship );
-            NodeRecord nodeRecord = nodeStore.forceGetRecord( nodeId );
+            nodeStore.getRecord( nodeId, nodeRecord, RecordLoad.FORCE );
             records.addAll( relationshipChainExplorer.followChainFromNode( nodeId, nodeRecord.getNextRel() ) );
         }
         return records;
     }
-
-
 }

@@ -217,7 +217,7 @@ public class TestShortStringProperties extends TestShortString
     {
         try
         {
-            storeField = PropertyStore.class.getDeclaredField( "stringPropertyStore" );
+            storeField = PropertyStore.class.getDeclaredField( "stringStore" );
             storeField.setAccessible( true );
         }
         catch ( Exception e )

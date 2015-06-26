@@ -25,25 +25,22 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.cursor.GenericCursor;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+import static java.lang.String.format;
 
 /**
  * An abstract representation of a dynamic store. The difference between a
@@ -63,21 +60,14 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
  * Note, the first block of a dynamic store is reserved and contains information
  * about the store.
  */
-public abstract class AbstractDynamicStore extends CommonAbstractStore implements RecordStore<DynamicRecord>,
-        DynamicBlockSize, DynamicRecordAllocator
+public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRecord>
+        implements DynamicRecordAllocator
 {
     public static final byte[] NO_DATA = new byte[0];
     // (in_use+next high)(1 byte)+nr_of_bytes(3 bytes)+next_block(int)
-    public static final int BLOCK_HEADER_SIZE = 1 + 3 + 4; // = 8
+    public static final int RECORD_HEADER_SIZE = 1 + 3 + 4; // = 8
 
-    // Return signals for the readRecordHeader() method:
-    private static int hasDataSignal = 0;
-    private static int hasNoDataSignal = 1;
-    private static int notInUseSignal = 2;
-    private static int illegalSizeSignal = 3;
-
-    private final int blockSizeFromConfiguration;
-    private int blockSize;
+    private int recordSize;
 
     public AbstractDynamicStore(
             File fileName,
@@ -86,10 +76,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            int blockSizeFromConfiguration )
+            String typeDescriptor,
+            int dataSizeFromConfiguration )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider );
-        this.blockSizeFromConfiguration = blockSizeFromConfiguration;
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor );
+        this.recordSize = dataSizeFromConfiguration + RECORD_HEADER_SIZE;
     }
 
     /**
@@ -100,38 +91,23 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
      */
     public static int getRecordSize( int dataSize )
     {
-        return dataSize + BLOCK_HEADER_SIZE;
+        return dataSize + RECORD_HEADER_SIZE;
     }
 
     @Override
-    protected void initialiseNewStoreFile( PagedFile file ) throws IOException
+    protected ByteBuffer createHeaderRecord()
     {
-        int blockSize = blockSizeFromConfiguration;
-        if ( blockSize < 1 || blockSize > 0xFFFF )
+        if ( recordSize < 1 || recordSize > 0xFFFF )
         {
-            throw new IllegalArgumentException( "Illegal block size[" + blockSize + "], limit is 65535" );
+            throw new IllegalArgumentException( "Illegal block size[" + recordSize + "], limit is 65535" );
         }
+        return intHeaderData( recordSize );
+    }
 
-        blockSize += BLOCK_HEADER_SIZE;
-
-        try ( PageCursor pageCursor = file.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
-        {
-            if ( pageCursor.next() )
-            {
-                do
-                {
-                    pageCursor.putInt( blockSize );
-                }
-                while ( pageCursor.shouldRetry() );
-            }
-        }
-
-        File idFileName = new File( storageFileName.getPath() + ".id" );
-        idGeneratorFactory.create( idFileName, 0, true );
-        // TODO highestIdInUse = 0 works now, but not when slave can create store files.
-        IdGenerator idGenerator = idGeneratorFactory.open( idFileName, idType.getGrabSize(), idType, 0 );
-        idGenerator.nextId(); // reserve first for blockSize
-        idGenerator.close();
+    @Override
+    public long getNextRecordReference( DynamicRecord record )
+    {
+        return record.getNextBlock();
     }
 
     public static void allocateRecordsFromBytes(
@@ -164,7 +140,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 record.setNextBlock( Record.NO_NEXT_BLOCK.intValue() );
             }
             recordList.add( record );
-            assert !record.isLight();
             assert record.getData() != null;
         }
         while ( nextRecord != null );
@@ -255,19 +230,19 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     @Override
     public int dataSize()
     {
-        return getBlockSize() - AbstractDynamicStore.BLOCK_HEADER_SIZE;
+        return getRecordSize() - AbstractDynamicStore.RECORD_HEADER_SIZE;
     }
 
     @Override
     public int getRecordSize()
     {
-        return getBlockSize();
+        return recordSize;
     }
 
     @Override
     public int getRecordHeaderSize()
     {
-        return BLOCK_HEADER_SIZE;
+        return RECORD_HEADER_SIZE;
     }
 
     /**
@@ -282,51 +257,20 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     }
 
     @Override
-    protected void readAndVerifyBlockSize() throws IOException
+    protected void readAndVerifyHeaderRecord() throws IOException
     {
-        blockSize = getHeaderRecord();
-    }
-
-    /**
-     * Returns the byte size of each block for this dynamic store
-     *
-     * @return The block size of this store
-     */
-    @Override
-    public int getBlockSize()
-    {
-        return blockSize;
+        recordSize = getHeaderRecord();
     }
 
     @Override
-    public void updateRecord( DynamicRecord record )
+    public DynamicRecord newRecord()
     {
-        long blockId = record.getId();
-        long pageId = pageIdForRecord( blockId );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
-        {
-            if ( cursor.next() )
-            {
-                do
-                {
-                    writeRecord( cursor, record );
-                }
-                while ( cursor.shouldRetry() );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
+        return new DynamicRecord( -1 );
     }
 
-    // [next][type][data]
-
-    private void writeRecord( PageCursor cursor, DynamicRecord record )
+    @Override
+    protected void writeRecord( PageCursor cursor, DynamicRecord record )
     {
-        long recordId = record.getId();
-        int offset = offsetForId( recordId );
-        cursor.setOffset( offset );
         if ( record.inUse() )
         {
             long nextBlock = record.getNextBlock();
@@ -350,22 +294,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
 
             cursor.putInt( firstInteger );
             cursor.putInt( (int) nextBlock );
-            if ( !record.isLight() )
-            {
-                cursor.putBytes( record.getData() );
-            }
+            cursor.putBytes( record.getData() );
         }
         else
         {
             cursor.putByte( Record.NOT_IN_USE.byteValue() );
-            freeId( recordId );
         }
-    }
-
-    @Override
-    public void forceUpdateRecord( DynamicRecord record )
-    {
-        updateRecord( record );
     }
 
     public void allocateRecordsFromBytes( Collection<DynamicRecord> target, byte src[] )
@@ -373,99 +307,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         allocateRecordsFromBytes( target, src, IteratorUtil.<DynamicRecord>emptyIterator(), this );
     }
 
-    public Collection<DynamicRecord> getLightRecords( long startBlockId )
-    {
-        return getRecords( startBlockId, false );
-    }
-
-    private Collection<DynamicRecord> getRecords( long startBlockId, boolean readBothHeaderAndData )
-    {
-        // TODO we should instead be passed in a consumer of records, so we don't have to spend memory building up
-        // this list
-        List<DynamicRecord> recordList = new LinkedList<>();
-        long blockId = startBlockId;
-        int noNextBlock = Record.NO_NEXT_BLOCK.intValue();
-
-        try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_READ_LOCK ) )
-        {
-            while ( blockId != noNextBlock && cursor.next( pageIdForRecord( blockId ) ) )
-            {
-                DynamicRecord record = new DynamicRecord( blockId );
-                int headerReadResult;
-                do
-                {
-                    cursor.setOffset( offsetForId( blockId ) );
-                    headerReadResult = readRecordHeader( cursor, record, false );
-                    if ( headerReadResult == hasDataSignal && readBothHeaderAndData )
-                    {
-                        readRecordData( cursor, record );
-                    }
-                }
-                while ( cursor.shouldRetry() );
-
-                checkForInUse( headerReadResult, record );
-                checkForIllegalSize( headerReadResult, record );
-                recordList.add( record );
-                blockId = record.getNextBlock();
-            }
-            return recordList;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    public DynamicRecordCursor newDynamicRecordCursor()
-    {
-        return new DynamicRecordCursor();
-    }
-
-    public DynamicRecordCursor getRecordsCursor( final long startBlockId,
-            final boolean readBothHeaderAndData )
-    {
-        return getRecordsCursor( startBlockId, readBothHeaderAndData, newDynamicRecordCursor() );
-    }
-
-    public DynamicRecordCursor getRecordsCursor( final long startBlockId,
-            final boolean readBothHeaderAndData, DynamicRecordCursor dynamicRecordCursor )
-    {
-        try
-        {
-            final PageCursor cursor = storeFile.io( 0, PF_SHARED_READ_LOCK );
-
-            dynamicRecordCursor.init( startBlockId, cursor, readBothHeaderAndData );
-            return dynamicRecordCursor;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    private void checkForInUse( int headerReadResult, DynamicRecord record )
-    {
-        if ( headerReadResult == notInUseSignal )
-        {
-            throw new InvalidRecordException( "DynamicRecord Not in use, blockId[" + record.getId() + "]" );
-        }
-    }
-
-    private void checkForIllegalSize( int headerReadResult, DynamicRecord record )
-    {
-        if ( headerReadResult == illegalSizeSignal )
-        {
-            int dataSize = getBlockSize() - AbstractDynamicStore.BLOCK_HEADER_SIZE;
-            throw new InvalidRecordException( "Next block set[" + record.getNextBlock()
-                    + "] current block illegal size[" + record.getLength() + "/" + dataSize +
-                    "]" );
-        }
-    }
-
-    /**
-     * Reads data from the cursor into the given record, and returns one of the signals specified above.
-     */
-    private int readRecordHeader( PageCursor cursor, DynamicRecord record, boolean force )
+    @Override
+    protected void readRecord( PageCursor cursor, DynamicRecord record, RecordLoad mode )
     {
         /*
          * First 4b
@@ -477,154 +320,43 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
          */
         long firstInteger = cursor.getUnsignedInt();
         boolean isStartRecord = (firstInteger & 0x80000000) == 0;
-        long maskedInteger = firstInteger & ~0x80000000;
-        int highNibbleInMaskedInteger = (int) ((maskedInteger) >> 28);
-        boolean inUse = highNibbleInMaskedInteger == Record.IN_USE.intValue();
-        if ( !inUse && !force )
+        boolean inUse = (firstInteger & 0x10000000) != 0;
+        if ( mode.shouldLoad( inUse ) )
         {
-            return notInUseSignal;
-        }
-        int dataSize = getBlockSize() - AbstractDynamicStore.BLOCK_HEADER_SIZE;
+            int dataSize = getRecordSize() - AbstractDynamicStore.RECORD_HEADER_SIZE;
+            int nrOfBytes = (int) (firstInteger & 0xFFFFFF);
 
-        int nrOfBytes = (int) (firstInteger & 0xFFFFFF);
+            /*
+             * Pointer to next block 4b (low bits of the pointer)
+             */
+            long nextBlock = cursor.getUnsignedInt();
+            long nextModifier = (firstInteger & 0xF000000L) << 8;
 
-        /*
-         * Pointer to next block 4b (low bits of the pointer)
-         */
-        long nextBlock = cursor.getUnsignedInt();
-        long nextModifier = (firstInteger & 0xF000000L) << 8;
-
-        long longNextBlock = CommonAbstractStore.longFromIntAndMod( nextBlock, nextModifier );
-        boolean hasDataToRead = true;
-        record.setInUse( inUse );
-        record.setStartRecord( isStartRecord );
-        record.setLength( nrOfBytes );
-        record.setNextBlock( longNextBlock );
-        if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue()
-                && nrOfBytes < dataSize || nrOfBytes > dataSize )
-        {
-            hasDataToRead = false;
-            if ( !force )
+            long longNextBlock = CommonAbstractStore.longFromIntAndMod( nextBlock, nextModifier );
+            record.initialize( inUse, isStartRecord, longNextBlock, -1, nrOfBytes );
+            if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue()
+                    && nrOfBytes < dataSize || nrOfBytes > dataSize )
             {
-                return illegalSizeSignal;
-            }
-        }
-        return hasDataToRead ? hasDataSignal : hasNoDataSignal;
-    }
-
-    private void readRecordData( PageCursor cursor, DynamicRecord record )
-    {
-        int len = record.getLength();
-        byte[] data = record.getData();
-        if ( data == null || data.length != len )
-        {
-            data = new byte[len];
-        }
-        cursor.getBytes( data );
-        record.setData( data );
-    }
-
-    public void ensureHeavy( DynamicRecord record )
-    {
-        if ( !record.isLight() )
-        {
-            return;
-        }
-        if ( record.getLength() == 0 ) // don't go though the trouble of acquiring the window if we would read nothing
-        {
-            record.setData( NO_DATA );
-            return;
-        }
-
-        long pageId = pageIdForRecord( record.getId() );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
-        {
-            if ( cursor.next() )
-            {
-                int offset = offsetForId( record.getId() );
-                do
-                {
-                    // Add the BLOCK_HEADER_SIZE to the offset, since we don't read it
-                    cursor.setOffset( offset + BLOCK_HEADER_SIZE );
-                    readRecordData( cursor, record );
-                }
-                while ( cursor.shouldRetry() );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    @Override
-    public DynamicRecord getRecord( long id )
-    {
-        DynamicRecord record = new DynamicRecord( id );
-        long pageId = pageIdForRecord( id );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
-        {
-            int headerReadResult = notInUseSignal;
-            if ( cursor.next() )
-            {
-                int offset = offsetForId( record.getId() );
-                do
-                {
-                    cursor.setOffset( offset );
-                    headerReadResult = readRecordHeader( cursor, record, false );
-                    if ( headerReadResult == hasDataSignal )
-                    {
-                        readRecordData( cursor, record );
-                    }
-                }
-                while ( cursor.shouldRetry() );
+                int blockDataSize = getRecordSize() - getRecordHeaderSize();
+                mode.report( format( "Next block set[%d] current block illegal size[%d/%d]",
+                        record.getNextBlock(), record.getLength(), blockDataSize ) );
             }
 
-            checkForInUse( headerReadResult, record );
-            checkForIllegalSize( headerReadResult, record );
-            return record;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    @Override
-    public DynamicRecord forceGetRecord( long id )
-    {
-        DynamicRecord record = new DynamicRecord( id );
-        long pageId = pageIdForRecord( id );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
-        {
-            if ( cursor.next() )
+            if ( record.getLength() == 0 ) // don't go though the trouble of acquiring the window if we would read nothing
             {
-                int offset = offsetForId( record.getId() );
-                int headerReadResult;
-                do
-                {
-                    cursor.setOffset( offset );
-                    headerReadResult = readRecordHeader( cursor, record, true );
-                    if ( headerReadResult == hasDataSignal )
-                    {
-                        readRecordData( cursor, record );
-                    }
-                }
-                while ( cursor.shouldRetry() );
-                checkForIllegalSize( headerReadResult, record );
+                record.setData( NO_DATA );
+                return;
             }
-            return record;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
 
-    @Override
-    public Collection<DynamicRecord> getRecords( long startBlockId )
-    {
-        return getRecords( startBlockId, true );
+            int len = record.getLength();
+            byte[] data = record.getData();
+            if ( data == null || data.length != len )
+            {
+                data = new byte[len];
+            }
+            cursor.getBytes( data );
+            record.setData( data );
+        }
     }
 
     @Override
@@ -649,68 +381,5 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
 
         return readFullByteArrayFromHeavyRecords( records, propertyType );
-    }
-
-    public class DynamicRecordCursor extends GenericCursor<DynamicRecord>
-    {
-        private PageCursor cursor;
-        private boolean readBothHeaderAndData;
-        long blockId;
-        int noNextBlock;
-
-        private final DynamicRecord record = new DynamicRecord( blockId );
-
-        public void init( long startBlockId, PageCursor cursor, boolean readBothHeaderAndData )
-        {
-            this.cursor = cursor;
-            this.readBothHeaderAndData = readBothHeaderAndData;
-            blockId = startBlockId;
-            noNextBlock = Record.NO_NEXT_BLOCK.intValue();
-        }
-
-        @Override
-        public boolean next()
-        {
-            try
-            {
-                if ( blockId != noNextBlock && cursor.next( pageIdForRecord( blockId ) ) )
-                {
-                    record.setId( blockId );
-
-                    int headerReadResult;
-                    do
-                    {
-                        cursor.setOffset( offsetForId( blockId ) );
-                        headerReadResult = readRecordHeader( cursor, record, false );
-                        if ( headerReadResult == hasDataSignal && readBothHeaderAndData )
-                        {
-                            readRecordData( cursor, record );
-                        }
-                    }
-                    while ( cursor.shouldRetry() );
-
-                    checkForInUse( headerReadResult, record );
-                    checkForIllegalSize( headerReadResult, record );
-                    current = record;
-                    blockId = record.getNextBlock();
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
-        }
-
-        @Override
-        public void close()
-        {
-            cursor.close();
-            cursor = null;
-        }
     }
 }

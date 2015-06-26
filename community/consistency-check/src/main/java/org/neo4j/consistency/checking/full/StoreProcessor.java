@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.DEFAULT_QUEUE_SIZE;
+import static org.neo4j.consistency.checking.full.CloningRecordIterable.cloned;
 import static org.neo4j.consistency.checking.full.RecordDistributor.distributeRecords;
 import static org.neo4j.kernel.impl.store.RecordStore.Scanner.scan;
 
@@ -224,6 +225,6 @@ public class StoreProcessor extends AbstractStoreProcessor
             }
         };
         distributeRecords( numberOfThreads, getClass().getSimpleName(), qSize,
-                scan( store, stage.isForward(), filters ), progressListener, processor );
+                cloned( scan( store, stage.isForward(), filters ) ), progressListener, processor );
     }
 }

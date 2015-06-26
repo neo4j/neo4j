@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.Mode;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
@@ -213,8 +214,7 @@ public class TransactionRecordState implements RecordState
                 commands.add( new Command.NeoStoreCommand( change.getBefore(), change.forReadingData() ) );
             }
         }
-        for ( RecordProxy<Long, Collection<DynamicRecord>, SchemaRule> change :
-            recordChangeSet.getSchemaRuleChanges().changes() )
+        for ( RecordProxy<Long, SchemaRecord, SchemaRule> change : recordChangeSet.getSchemaRuleChanges().changes() )
         {
             integrityValidator.validateSchemaRule( change.getAdditionalData() );
             commands.add( new Command.SchemaRuleCommand(
@@ -552,9 +552,9 @@ public class TransactionRecordState implements RecordState
 
     public void dropSchemaRule( SchemaRule rule )
     {
-        RecordProxy<Long, Collection<DynamicRecord>, SchemaRule> change =
+        RecordProxy<Long, SchemaRecord, SchemaRule> change =
                 recordChangeSet.getSchemaRuleChanges().getOrLoad( rule.getId(), rule );
-        Collection<DynamicRecord> records = change.forChangingData();
+        SchemaRecord records = change.forChangingData();
         for ( DynamicRecord record : records )
         {
             record.setInUse( false );
@@ -575,14 +575,13 @@ public class TransactionRecordState implements RecordState
 
     public void setConstraintIndexOwner( IndexRule indexRule, long constraintId )
     {
-        RecordProxy<Long, Collection<DynamicRecord>, SchemaRule> change =
+        RecordProxy<Long, SchemaRecord, SchemaRule> change =
                 recordChangeSet.getSchemaRuleChanges().getOrLoad( indexRule.getId(), indexRule );
-        Collection<DynamicRecord> records = change.forChangingData();
+        SchemaRecord records = change.forChangingData();
 
         indexRule = indexRule.withOwningConstraint( constraintId );
 
-        records.clear();
-        records.addAll( schemaStore.allocateFrom( indexRule ) );
+        records.setDynamicRecords( schemaStore.allocateFrom( indexRule ) );
     }
 
     public interface PropertyReceiver<P extends StorageProperty>

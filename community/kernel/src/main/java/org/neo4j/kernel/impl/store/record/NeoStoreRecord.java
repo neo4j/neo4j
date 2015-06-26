@@ -19,13 +19,25 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-
 public class NeoStoreRecord extends PrimitiveRecord
 {
     public NeoStoreRecord()
     {
-        super( -1, Record.NO_NEXT_PROPERTY.intValue() );
+        super( -1 );
         setInUse( true );
+    }
+
+    @Override
+    public NeoStoreRecord initialize( boolean inUse, long nextProp )
+    {
+        super.initialize( inUse, nextProp );
+        return this;
+    }
+
+    @Override
+    public void clear()
+    {
+        initialize( false, -1 );
     }
 
     @Override

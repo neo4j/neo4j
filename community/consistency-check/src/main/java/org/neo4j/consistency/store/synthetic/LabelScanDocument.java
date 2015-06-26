@@ -28,13 +28,20 @@ import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
  */
 public class LabelScanDocument extends Abstract64BitRecord
 {
-    private final NodeLabelRange nodeLabelRange;
+    private NodeLabelRange nodeLabelRange;
 
     public LabelScanDocument( NodeLabelRange nodeLabelRange )
     {
         super( nodeLabelRange.id() );
+        initialize( true );
         this.nodeLabelRange = nodeLabelRange;
-        setInUse( true );
+    }
+
+    @Override
+    public void clear()
+    {
+        initialize( false );
+        this.nodeLabelRange = null;
     }
 
     public NodeLabelRange getNodeLabelRange()

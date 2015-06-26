@@ -49,6 +49,8 @@ import org.neo4j.storageengine.api.RelationshipItem;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
  * Base cursor for nodes.
@@ -103,7 +105,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             {
                 return new StoreNodeRelationshipCursor( new RelationshipRecord( -1 ),
                         neoStores,
-                        new RelationshipGroupRecord( -1, -1 ), storeStatement, this, lockService );
+                        new RelationshipGroupRecord( -1 ), storeStatement, this, lockService );
             }
         };
         singlePropertyCursor = new InstanceCache<StoreSinglePropertyCursor>()
@@ -157,8 +159,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             try
             {
                 // It's safer to re-read the node record here, specifically nextProp, after acquiring the lock
-                nodeStore.loadRecord( nodeRecord.getId(), nodeRecord );
-                if ( !nodeRecord.inUse() )
+                if ( !nodeStore.getRecord( nodeRecord.getId(), nodeRecord, CHECK ).inUse() )
                 {
                     // So it looks like the node has been deleted. The current behavior of NodeStore#loadRecord
                     // is to only set the inUse field on loading an unused record. This should (and will)
@@ -215,6 +216,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             {
                 private long groupId = nodeRecord.getNextRel();
                 private final IntValue value = new IntValue();
+                private final RelationshipGroupRecord group = relationshipGroupStore.newRecord();
 
                 @Override
                 public boolean next()
@@ -224,7 +226,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
                         return false;
                     }
 
-                    RelationshipGroupRecord group = relationshipGroupStore.getRecord( groupId );
+                    relationshipGroupStore.getRecord( groupId, group, NORMAL );
                     try
                     {
                         value.setValue( group.getType() );
@@ -293,9 +295,10 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         {
             long groupId = nodeRecord.getNextRel();
             long count = 0;
+            RelationshipGroupRecord group = relationshipGroupStore.newRecord();
             while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                RelationshipGroupRecord group = relationshipGroupStore.getRecord( groupId );
+                relationshipGroupStore.getRecord( groupId, group, NORMAL );
                 count += nodeDegreeByDirection( group, direction );
                 groupId = group.getNext();
             }
@@ -321,9 +324,10 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         if ( nodeRecord.isDense() )
         {
             long groupId = nodeRecord.getNextRel();
+            RelationshipGroupRecord group = relationshipGroupStore.newRecord();
             while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                RelationshipGroupRecord group = relationshipGroupStore.getRecord( groupId );
+                relationshipGroupStore.getRecord( groupId, group, NORMAL );
                 if ( group.getType() == relType )
                 {
                     return (int) nodeDegreeByDirection( group, direction );
@@ -408,7 +412,8 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         {
             return 0;
         }
-        RelationshipRecord record = relationshipStore.getRecord( relationshipId );
+        RelationshipRecord record = relationshipStore.getRecord( relationshipId,
+                relationshipStore.newRecord(), NORMAL );
         if ( record.getFirstNode() == nodeRecord.getId() )
         {
             return record.getFirstPrevRel();
@@ -508,6 +513,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         private int type;
         private long outgoing;
         private long incoming;
+        private final RelationshipGroupRecord group = relationshipGroupStore.newRecord();
 
         public DegreeItemDenseCursor( long groupId )
         {
@@ -519,7 +525,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         {
             if ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                RelationshipGroupRecord group = relationshipGroupStore.getRecord( groupId );
+                relationshipGroupStore.getRecord( groupId, group, NORMAL );
                 this.type = group.getType();
                 long loop = countByFirstPrevPointer( group.getFirstLoop() );
                 outgoing = countByFirstPrevPointer( group.getFirstOut() ) + loop;

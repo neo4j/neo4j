@@ -27,6 +27,8 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -34,11 +36,28 @@ import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
+/**
+ * A store for {@link #updateRecord(AbstractBaseRecord) updating} and
+ * {@link #getRecord(long, AbstractBaseRecord, RecordLoad) getting} records.
+ *
+ * There are two ways of getting records, either one-by-one using
+ * {@link #getRecord(long, AbstractBaseRecord, RecordLoad)}, passing in record retrieved from {@link #newRecord()}.
+ * This to make a conscious decision about who will create the record instance and in that process figure out
+ * ways to reduce number of record instances created. The other way is to use a {@link RecordCursor}, created
+ * by {@link #newRecordCursor(AbstractBaseRecord)} and placed at a certain record using
+ * {@link #placeRecordCursor(long, RecordCursor, RecordLoad)}. A {@link RecordCursor} will keep underlying
+ * {@link PageCursor} open until until the {@link RecordCursor} is closed and so will be efficient if multiple
+ * records are retrieved from it. A {@link RecordCursor} will follow {@link #getNextRecordReference(AbstractBaseRecord)}
+ * references to get to {@link RecordCursor#next()} record.
+ *
+ * @param <RECORD> type of {@link AbstractBaseRecord}.
+ */
+public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequence
 {
     File getStorageFileName();
 
@@ -46,17 +65,58 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
 
     long getHighestPossibleIdInUse();
 
-    R getRecord( long id );
+    /**
+     * @return a new record instance for receiving data by {@link #getRecord(long, AbstractBaseRecord, RecordLoad)}
+     * and {@link #newRecordCursor(AbstractBaseRecord)}.
+     */
+    RECORD newRecord();
 
-    Collection<R> getRecords( long id );
+    /**
+     * Reads a record from the store into {@code target}. Depending on {@link RecordLoad} given there will
+     * be different behavior, although the {@code target} record will be marked with the specified
+     * {@code id} after participating in this method call.
+     * <ul>
+     * <li>{@link RecordLoad#CHECK}: As little data as possible is read to determine whether or not the record
+     *     is in use. If not in use then no more data will be loaded into the target record and
+     *     the the data of the record will be {@link AbstractBaseRecord#clear() cleared}.</li>
+     * <li>{@link RecordLoad#NORMAL}: Just like {@link RecordLoad#CHECK}, but with the difference that
+     *     an {@link InvalidRecordException} will be thrown if the record isn't in use.</li>
+     * <li>{@link RecordLoad#FORCE}: The entire contents of the record will be loaded into the target record
+     *     regardless if the record is in use or not. This leaves no guarantees about the data in the record
+     *     after this method call, except that the id will be the specified {@code id}.
+     *
+     * @param id the id of the record to load.
+     * @param target record where data will be loaded into. This record will have its id set to the specified
+     * {@code id} as part of this method call.
+     * @param mode loading behaviour, read more in method description.
+     */
+    RECORD getRecord( long id, RECORD target, RecordLoad mode ) throws InvalidRecordException;
 
-    void updateRecord( R record );
+    /**
+     * For stores that have other stores coupled underneath, the "top level" record will have a flag
+     * saying whether or not it's light. Light means that no records from the coupled store have been loaded yet.
+     * This method can load those records and enrich the target record with those, marking it as heavy.
+     */
+    void ensureHeavy( RECORD record );
 
-    R forceGetRecord( long id );
+    /**
+     * Reads records that belong together, a chain of records that as a whole forms the entirety of a data item.
+     *
+     * @param firstId record id of the first record to start loading from.
+     * @param mode {@link RecordLoad} mode.
+     * @return {@link Collection} of records in the loaded chain.
+     */
+    Collection<RECORD> getRecords( long firstId, RecordLoad mode ) throws InvalidRecordException;
 
-    void forceUpdateRecord( R record );
+    RecordCursor<RECORD> newRecordCursor( RECORD record );
 
-    <FAILURE extends Exception> void accept( Processor<FAILURE> processor, R record ) throws FAILURE;
+    RecordCursor<RECORD> placeRecordCursor( long id, RecordCursor<RECORD> cursor, RecordLoad mode );
+
+    long getNextRecordReference( RECORD record );
+
+    void updateRecord( RECORD record );
+
+    <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RECORD record ) throws FAILURE;
 
     int getRecordSize();
 
@@ -75,6 +135,42 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
     class Delegator<R extends AbstractBaseRecord> implements RecordStore<R>
     {
         private final RecordStore<R> actual;
+
+        @Override
+        public R newRecord()
+        {
+            return actual.newRecord();
+        }
+
+        @Override
+        public R getRecord( long id, R target, RecordLoad mode ) throws InvalidRecordException
+        {
+            return actual.getRecord( id, target, mode );
+        }
+
+        @Override
+        public Collection<R> getRecords( long firstId, RecordLoad mode ) throws InvalidRecordException
+        {
+            return actual.getRecords( firstId, mode );
+        }
+
+        @Override
+        public RecordCursor<R> newRecordCursor( R record )
+        {
+            return actual.newRecordCursor( record );
+        }
+
+        @Override
+        public RecordCursor<R> placeRecordCursor( long id, RecordCursor<R> cursor, RecordLoad mode )
+        {
+            return actual.placeRecordCursor( id, cursor, mode );
+        }
+
+        @Override
+        public long getNextRecordReference( R record )
+        {
+            return actual.getNextRecordReference( record );
+        }
 
         public Delegator( RecordStore<R> actual )
         {
@@ -106,38 +202,13 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
         }
 
         @Override
-        public R getRecord( long id )
-        {
-            return actual.getRecord( id );
-        }
-
-        @Override
-        public Collection<R> getRecords( long id )
-        {
-            return actual.getRecords( id );
-        }
-
-        @Override
         public void updateRecord( R record )
         {
             actual.updateRecord( record );
         }
 
         @Override
-        public R forceGetRecord( long id )
-        {
-            return actual.forceGetRecord( id );
-        }
-
-        @Override
-        public void forceUpdateRecord( R record )
-        {
-            actual.forceUpdateRecord( record );
-        }
-
-        @Override
-        public <FAILURE extends Exception> void accept(
-                org.neo4j.kernel.impl.store.RecordStore.Processor<FAILURE> processor, R record ) throws FAILURE
+        public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, R record ) throws FAILURE
         {
             actual.accept( processor, record );
         }
@@ -176,6 +247,12 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
         public void flush()
         {
             actual.flush();
+        }
+
+        @Override
+        public void ensureHeavy( R record )
+        {
+            actual.ensureHeavy( record );
         }
     }
 
@@ -219,6 +296,20 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
 
         public abstract void processRelationshipGroup( RecordStore<RelationshipGroupRecord> store,
                 RelationshipGroupRecord record ) throws FAILURE;
+
+        protected <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id, R into )
+        {
+            store.getRecord( id, into, RecordLoad.FORCE );
+            return into;
+        }
+
+        public <R extends AbstractBaseRecord> void applyById( RecordStore<R> store, Iterable<Long> ids ) throws FAILURE
+        {
+            for ( R record : Scanner.scanById( store, ids ) )
+            {
+                store.accept( this, record );
+            }
+        }
 
         public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store,
                 Predicate<? super R>... filters ) throws FAILURE
@@ -266,6 +357,7 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
             return () -> new PrefetchingIterator<R>()
             {
                 final PrimitiveLongIterator ids = new StoreIdIterator( store, forward );
+                final R record = store.newRecord();
 
                 @Override
                 protected R fetchNextOrNull()
@@ -273,17 +365,35 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
                     scan:
                     while ( ids.hasNext() )
                     {
-                        R record = store.forceGetRecord( ids.next() );
-                        for ( Predicate<? super R> filter : filters )
+                        if ( store.getRecord( ids.next(), record, RecordLoad.FORCE ).inUse() )
                         {
-                            if ( !filter.test( record ) )
+                            for ( Predicate<? super R> filter : filters )
                             {
-                                continue scan;
+                                if ( !filter.test( record ) )
+                                {
+                                    continue scan;
+                                }
                             }
                         }
                         return record;
                     }
                     return null;
+                }
+            };
+        }
+
+        public static <R extends AbstractBaseRecord> Iterable<R> scanById( final RecordStore<R> store,
+                Iterable<Long> ids )
+        {
+            return new IterableWrapper<R,Long>( ids )
+            {
+                private final R record = store.newRecord();
+
+                @Override
+                protected R underlyingObjectToObject( Long id )
+                {
+                    store.getRecord( id, record, RecordLoad.FORCE );
+                    return record;
                 }
             };
         }

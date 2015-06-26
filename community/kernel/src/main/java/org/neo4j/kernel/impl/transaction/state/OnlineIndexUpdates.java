@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.command.Command.Mode;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
@@ -65,6 +66,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     private final PropertyStore propertyStore;
     private final PropertyLoader propertyLoader;
     private final Collection<NodePropertyUpdate> updates = new ArrayList<>();
+    private NodeRecord nodeRecord;
 
     public OnlineIndexUpdates( NodeStore nodeStore,
                              PropertyStore propertyStore,
@@ -154,7 +156,7 @@ public class OnlineIndexUpdates implements IndexUpdates
              * if this happens and we're in recovery mode that the node in question will be deleted
              * in an upcoming transaction, so just skip this update.
              */
-            NodeRecord nodeRecord = nodeStore.getRecord( nodeId );
+            NodeRecord nodeRecord = loadNode( nodeId );
             nodeLabelsBefore = nodeLabelsAfter = parseLabelsField( nodeRecord ).get( nodeStore );
         }
 
@@ -177,6 +179,16 @@ public class OnlineIndexUpdates implements IndexUpdates
                 return false;
             }
         } );
+    }
+
+    private NodeRecord loadNode( long nodeId )
+    {
+        if ( nodeRecord == null )
+        {
+            nodeRecord = nodeStore.newRecord();
+        }
+        nodeStore.getRecord( nodeId, nodeRecord, RecordLoad.NORMAL );
+        return nodeRecord;
     }
 
     private void gatherUpdatesFromNodeCommand( NodeCommand nodeCommand,
@@ -225,7 +237,7 @@ public class OnlineIndexUpdates implements IndexUpdates
             PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommands )
     {
         NodeCommand nodeCommand = nodeCommands.get( nodeId );
-        NodeRecord nodeRecord = (nodeCommand == null) ? nodeStore.getRecord( nodeId ) : nodeCommand.getAfter();
+        NodeRecord nodeRecord = (nodeCommand == null) ? loadNode( nodeId ) : nodeCommand.getAfter();
 
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
         PrimitiveLongObjectMap<PropertyRecord> propertiesById =

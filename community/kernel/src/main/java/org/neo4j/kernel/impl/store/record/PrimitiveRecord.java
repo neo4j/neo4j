@@ -21,16 +21,32 @@ package org.neo4j.kernel.impl.store.record;
 
 public abstract class PrimitiveRecord extends Abstract64BitRecord
 {
-    private long nextProp;
+    protected long nextProp;
 
-    public PrimitiveRecord()
+    PrimitiveRecord( long id )
     {
+        super( id );
     }
 
-    public PrimitiveRecord( long id, long nextProp )
+    @Deprecated
+    PrimitiveRecord( long id, long nextProp )
     {
         super( id );
         this.nextProp = nextProp;
+    }
+
+    @Override
+    public void clear()
+    {
+        super.clear();
+        nextProp = Record.NO_NEXT_PROPERTY.intValue();
+    }
+
+    protected PrimitiveRecord initialize( boolean inUse, long nextProp )
+    {
+        super.initialize( inUse );
+        this.nextProp = nextProp;
+        return this;
     }
 
     public long getNextProp()

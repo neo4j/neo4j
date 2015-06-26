@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
@@ -43,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
@@ -72,8 +71,8 @@ public class SchemaRuleCommandTest
     public void shouldWriteCreatedSchemaRuleToStore() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
-        Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
+        SchemaRecord beforeRecords = serialize( rule, id, false, false);
+        SchemaRecord afterRecords = serialize( rule, id, true, true);
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
@@ -88,8 +87,8 @@ public class SchemaRuleCommandTest
     public void shouldCreateIndexForCreatedSchemaRule() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
-        Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
+        SchemaRecord beforeRecords = serialize( rule, id, false, false);
+        SchemaRecord afterRecords = serialize( rule, id, true, true);
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
@@ -104,8 +103,8 @@ public class SchemaRuleCommandTest
     public void shouldSetLatestConstraintRule() throws Exception
     {
         // Given
-        Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
-        Collection<DynamicRecord> afterRecords = serialize( rule, id, true, false);
+        SchemaRecord beforeRecords = serialize( rule, id, true, true);
+        SchemaRecord afterRecords = serialize( rule, id, true, false);
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
@@ -124,8 +123,8 @@ public class SchemaRuleCommandTest
     public void shouldDropSchemaRuleFromStore() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
-        Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
+        SchemaRecord beforeRecords = serialize( rule, id, true, true);
+        SchemaRecord afterRecords = serialize( rule, id, false, false);
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
@@ -140,8 +139,8 @@ public class SchemaRuleCommandTest
     public void shouldDropSchemaRuleFromIndex() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
-        Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
+        SchemaRecord beforeRecords = serialize( rule, id, true, true);
+        SchemaRecord afterRecords = serialize( rule, id, false, false);
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
@@ -156,8 +155,8 @@ public class SchemaRuleCommandTest
     public void shouldWriteSchemaRuleToLog() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
-        Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
+        SchemaRecord beforeRecords = serialize( rule, id, false, false);
+        SchemaRecord afterRecords = serialize( rule, id, true, true);
 
         SchemaRuleCommand command = new SchemaRuleCommand( beforeRecords, afterRecords, rule );
         InMemoryClosableChannel buffer = new InMemoryClosableChannel();
@@ -178,8 +177,8 @@ public class SchemaRuleCommandTest
     public void shouldRecreateSchemaRuleWhenDeleteCommandReadFromDisk() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
-        Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
+        SchemaRecord beforeRecords = serialize( rule, id, true, true);
+        SchemaRecord afterRecords = serialize( rule, id, false, false);
 
         SchemaRuleCommand command = new SchemaRuleCommand( beforeRecords, afterRecords, rule );
         InMemoryClosableChannel buffer = new InMemoryClosableChannel();
@@ -216,7 +215,7 @@ public class SchemaRuleCommandTest
     private final PhysicalLogCommandReaderV2_2 reader = new PhysicalLogCommandReaderV2_2();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 
-    private Collection<DynamicRecord> serialize( AbstractSchemaRule rule, long id, boolean inUse, boolean created )
+    private SchemaRecord serialize( AbstractSchemaRule rule, long id, boolean inUse, boolean created )
     {
         RecordSerializer serializer = new RecordSerializer();
         serializer = serializer.append( rule );
@@ -230,7 +229,7 @@ public class SchemaRuleCommandTest
         {
             record.setInUse( true );
         }
-        return Collections.singletonList( record );
+        return new SchemaRecord( Arrays.asList( record ) );
     }
 
     private void assertSchemaRule( SchemaRuleCommand readSchemaCommand )

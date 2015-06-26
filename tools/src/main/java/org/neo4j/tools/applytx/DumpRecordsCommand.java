@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -39,6 +40,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.tools.console.input.Command;
 import org.neo4j.tools.console.input.ConsoleInput;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.tools.console.input.ConsoleUtil.airlineHelp;
 
 /**
@@ -99,9 +101,11 @@ public class DumpRecordsCommand implements Command
         public void run( StoreAccess store, PrintStream out )
         {
             long propId = firstPropId( store );
+            RecordStore<PropertyRecord> propertyStore = store.getPropertyStore();
+            PropertyRecord record = propertyStore.newRecord();
             while ( propId != Record.NO_NEXT_PROPERTY.intValue() )
             {
-                PropertyRecord record = store.getPropertyStore().getRecord( propId );
+                propertyStore.getRecord( propId, record, NORMAL );
                 out.println( record );
                 propId = record.getNextProp();
             }
@@ -114,7 +118,8 @@ public class DumpRecordsCommand implements Command
         @Override
         protected long firstPropId( StoreAccess access )
         {
-            return access.getNodeStore().getRecord( id ).getNextProp();
+            RecordStore<NodeRecord> nodeStore = access.getNodeStore();
+            return nodeStore.getRecord( id, nodeStore.newRecord(), NORMAL ).getNextProp();
         }
     }
 
@@ -124,7 +129,8 @@ public class DumpRecordsCommand implements Command
         @Override
         protected long firstPropId( StoreAccess access )
         {
-            return access.getRelationshipStore().getRecord( id ).getNextProp();
+            RecordStore<RelationshipRecord> relationshipStore = access.getRelationshipStore();
+            return relationshipStore.getRecord( id, relationshipStore.newRecord(), NORMAL ).getNextProp();
         }
     }
 
@@ -137,10 +143,13 @@ public class DumpRecordsCommand implements Command
         @Override
         public void run( StoreAccess store, PrintStream out )
         {
-            NodeRecord node = store.getNodeStore().getRecord( id );
+            RecordStore<NodeRecord> nodeStore = store.getNodeStore();
+            NodeRecord node = nodeStore.getRecord( id, nodeStore.newRecord(), NORMAL );
             if ( node.isDense() )
             {
-                RelationshipGroupRecord group = store.getRelationshipGroupStore().getRecord( node.getNextRel() );
+                RecordStore<RelationshipGroupRecord> relationshipGroupStore = store.getRelationshipGroupStore();
+                RelationshipGroupRecord group = relationshipGroupStore.newRecord();
+                relationshipGroupStore.getRecord( node.getNextRel(), group, NORMAL );
                 do
                 {
                     out.println( "group " + group );
@@ -151,7 +160,7 @@ public class DumpRecordsCommand implements Command
                     out.println( "loop:" );
                     printRelChain( store, out, group.getFirstLoop() );
                     group = group.getNext() != -1 ?
-                            store.getRelationshipGroupStore().getRecord( group.getNext() ) : null;
+                            relationshipGroupStore.getRecord( group.getNext(), group, NORMAL ) : null;
                 } while ( group != null );
             }
             else
@@ -164,7 +173,8 @@ public class DumpRecordsCommand implements Command
         {
             for ( long rel = firstRelId; rel != Record.NO_NEXT_RELATIONSHIP.intValue(); )
             {
-                RelationshipRecord record = access.getRelationshipStore().getRecord( rel );
+                RecordStore<RelationshipRecord> relationshipStore = access.getRelationshipStore();
+                RelationshipRecord record = relationshipStore.getRecord( rel, relationshipStore.newRecord(), NORMAL );
                 out.println( rel + "\t" + record );
                 if ( record.getFirstNode() == id )
                 {

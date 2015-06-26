@@ -30,7 +30,13 @@ public class IndexEntry extends Abstract64BitRecord
     public IndexEntry( long nodeId )
     {
         super( nodeId );
-        setInUse( true );
+        initialize( true );
+    }
+
+    @Override
+    public void clear()
+    {
+        initialize( false );
     }
 
     @Override

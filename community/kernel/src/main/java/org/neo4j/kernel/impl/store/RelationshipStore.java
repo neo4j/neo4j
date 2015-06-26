@@ -20,25 +20,20 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
-
 /**
  * Implementation of the relationship store.
  */
-public class RelationshipStore extends AbstractRecordStore<RelationshipRecord>
+public class RelationshipStore extends CommonAbstractStore<RelationshipRecord>
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipStore";
 
@@ -55,7 +50,8 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord>
             PageCache pageCache,
             LogProvider logProvider )
     {
-        super( fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory, pageCache, logProvider );
+        super( fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
+                pageCache, logProvider, TYPE_DESCRIPTOR );
     }
 
     @Override
@@ -65,148 +61,21 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord>
     }
 
     @Override
-    public String getTypeDescriptor()
-    {
-        return TYPE_DESCRIPTOR;
-    }
-
-    @Override
     public int getRecordSize()
     {
         return RECORD_SIZE;
     }
 
     @Override
-    public int getRecordHeaderSize()
+    public RelationshipRecord newRecord()
     {
-        return getRecordSize();
+        return new RelationshipRecord( -1 );
     }
 
     @Override
-    public RelationshipRecord getRecord( long id )
+    protected void writeRecord( PageCursor cursor, RelationshipRecord record )
     {
-        return getRecord( new RelationshipRecord( id ) );
-    }
-
-    public RelationshipRecord getRecord( RelationshipRecord record )
-    {
-        return fillRecord( record.getId(), record, RecordLoad.NORMAL ) ? record : null;
-    }
-
-    @Override
-    public RelationshipRecord forceGetRecord( long id )
-    {
-        RelationshipRecord record = new RelationshipRecord( -1 );
-        return fillRecord( id, record, RecordLoad.FORCE ) ? record : null;
-    }
-
-    public RelationshipRecord getLightRel( long id )
-    {
-        RelationshipRecord record = new RelationshipRecord( id );
-        return fillRecord( id, record, RecordLoad.CHECK ) ? record : null;
-    }
-
-    /**
-     * @return {@code true} if record successfully loaded and in use.
-     * If not in use the return value depends on the {@code loadMode}:
-     * <ol>
-     * <li>NORMAL: throws {@link InvalidRecordException}</li>
-     * <li>CHECK: returns {@code false}</li>
-     * <li>FORCE: return {@code true}</li>
-     * </ol>
-     */
-    public boolean fillRecord( long id, RelationshipRecord target, RecordLoad loadMode )
-    {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_READ_LOCK ) )
-        {
-            boolean success = false;
-            if ( cursor.next() )
-            {
-                do
-                {
-                    success = readRecord( id, cursor, target );
-                } while ( cursor.shouldRetry() );
-            }
-
-            if ( !success )
-            {
-                if ( loadMode == RecordLoad.NORMAL )
-                {
-                    throw new InvalidRecordException( "RelationshipRecord[" + id + "] not in use" );
-                }
-                else if ( loadMode == RecordLoad.CHECK )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    public boolean inUse( long id )
-    {
-        long pageId = pageIdForRecord( id );
-        int offset = offsetForId( id );
-
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
-        {
-            boolean recordIsInUse = false;
-            if ( cursor.next() )
-            {
-                do
-                {
-                    cursor.setOffset( offset );
-                    recordIsInUse = isInUse( cursor.getByte() );
-                } while ( cursor.shouldRetry() );
-            }
-            return recordIsInUse;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    @Override
-    public void forceUpdateRecord( RelationshipRecord record )
-    {
-        updateRecord( record, true );
-    }
-
-    @Override
-    public void updateRecord( RelationshipRecord record )
-    {
-        updateRecord( record, false );
-    }
-
-    private void updateRecord( RelationshipRecord record, boolean force )
-    {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_SHARED_WRITE_LOCK ) )
-        {
-            if ( cursor.next() ) // should always be true
-            {
-                do
-                {
-                    updateRecord( record, cursor, force );
-                } while ( cursor.shouldRetry() );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    private void updateRecord( RelationshipRecord record,
-        PageCursor cursor, boolean force )
-    {
-        long id = record.getId();
-        cursor.setOffset( offsetForId( id ) );
-        if ( record.inUse() || force )
+        if ( record.inUse() )
         {
             long firstNode = record.getFirstNode();
             short firstNodeMod = (short)((firstNode & 0x700000000L) >> 31);
@@ -262,73 +131,62 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord>
         else
         {
             cursor.putByte( Record.NOT_IN_USE.byteValue() );
-            freeId( id );
         }
     }
 
-    private boolean readRecord( long id, PageCursor cursor,
-        RelationshipRecord record )
+    @Override
+    protected void readRecord( PageCursor cursor, RelationshipRecord record, RecordLoad mode )
     {
-        cursor.setOffset( offsetForId( id ) );
-
         // [    ,   x] in use flag
         // [    ,xxx ] first node high order bits
         // [xxxx,    ] next prop high order bits
         long inUseByte = cursor.getByte();
-
         boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
+        if ( mode.shouldLoad( inUse ) )
+        {
+            long firstNode = cursor.getUnsignedInt();
+            long firstNodeMod = (inUseByte & 0xEL) << 31;
 
-        long firstNode = cursor.getUnsignedInt();
-        long firstNodeMod = (inUseByte & 0xEL) << 31;
+            long secondNode = cursor.getUnsignedInt();
 
-        long secondNode = cursor.getUnsignedInt();
+            // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
+            // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
+            // [    ,   x][xx  ,    ][    ,    ][    ,    ] first next rel high order bits,  0x1C00000
+            // [    ,    ][  xx,x   ][    ,    ][    ,    ] second prev rel high order bits, 0x380000
+            // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
+            // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
+            long typeInt = cursor.getInt();
+            long secondNodeMod = (typeInt & 0x70000000L) << 4;
+            int type = (int)(typeInt & 0xFFFF);
 
-        // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
-        // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
-        // [    ,   x][xx  ,    ][    ,    ][    ,    ] first next rel high order bits,  0x1C00000
-        // [    ,    ][  xx,x   ][    ,    ][    ,    ] second prev rel high order bits, 0x380000
-        // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
-        // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
-        long typeInt = cursor.getInt();
-        long secondNodeMod = (typeInt & 0x70000000L) << 4;
-        int type = (int)(typeInt & 0xFFFF);
+            long firstPrevRel = cursor.getUnsignedInt();
+            long firstPrevRelMod = (typeInt & 0xE000000L) << 7;
 
-        record.setId( id );
-        record.setFirstNode( longFromIntAndMod( firstNode, firstNodeMod ) );
-        record.setSecondNode( longFromIntAndMod( secondNode, secondNodeMod ) );
-        record.setType( type );
-        record.setInUse( inUse );
+            long firstNextRel = cursor.getUnsignedInt();
+            long firstNextRelMod = (typeInt & 0x1C00000L) << 10;
 
-        long firstPrevRel = cursor.getUnsignedInt();
-        long firstPrevRelMod = (typeInt & 0xE000000L) << 7;
-        record.setFirstPrevRel( longFromIntAndMod( firstPrevRel, firstPrevRelMod ) );
+            long secondPrevRel = cursor.getUnsignedInt();
+            long secondPrevRelMod = (typeInt & 0x380000L) << 13;
 
-        long firstNextRel = cursor.getUnsignedInt();
-        long firstNextRelMod = (typeInt & 0x1C00000L) << 10;
-        record.setFirstNextRel( longFromIntAndMod( firstNextRel, firstNextRelMod ) );
+            long secondNextRel = cursor.getUnsignedInt();
+            long secondNextRelMod = (typeInt & 0x70000L) << 16;
 
-        long secondPrevRel = cursor.getUnsignedInt();
-        long secondPrevRelMod = (typeInt & 0x380000L) << 13;
-        record.setSecondPrevRel( longFromIntAndMod( secondPrevRel, secondPrevRelMod ) );
+            long nextProp = cursor.getUnsignedInt();
+            long nextPropMod = (inUseByte & 0xF0L) << 28;
 
-        long secondNextRel = cursor.getUnsignedInt();
-        long secondNextRelMod = (typeInt & 0x70000L) << 16;
-        record.setSecondNextRel( longFromIntAndMod( secondNextRel, secondNextRelMod ) );
+            byte extraByte = cursor.getByte();
 
-        long nextProp = cursor.getUnsignedInt();
-        long nextPropMod = (inUseByte & 0xF0L) << 28;
-
-        byte extraByte = cursor.getByte();
-
-        record.setFirstInFirstChain( (extraByte & 0x1) != 0 );
-        record.setFirstInSecondChain( (extraByte & 0x2) != 0 );
-
-        record.setNextProp( longFromIntAndMod( nextProp, nextPropMod ) );
-        return inUse;
-    }
-
-    public boolean fillChainRecord( long id, RelationshipRecord record )
-    {
-        return fillRecord( id, record, RecordLoad.CHECK );
+            record.initialize( inUse,
+                    longFromIntAndMod( nextProp, nextPropMod ),
+                    longFromIntAndMod( firstNode, firstNodeMod ),
+                    longFromIntAndMod( secondNode, secondNodeMod ),
+                    type,
+                    longFromIntAndMod( firstPrevRel, firstPrevRelMod ),
+                    longFromIntAndMod( firstNextRel, firstNextRelMod ),
+                    longFromIntAndMod( secondPrevRel, secondPrevRelMod ),
+                    longFromIntAndMod( secondNextRel, secondNextRelMod ),
+                    (extraByte & 0x1) != 0,
+                    (extraByte & 0x2) != 0 );
+        }
     }
 }

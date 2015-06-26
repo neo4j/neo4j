@@ -39,8 +39,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandReading.DynamicRecordAdder;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -132,7 +130,7 @@ public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
         }
         else
         {
-            record = new RelationshipRecord( id, -1, -1, -1 );
+            record = new RelationshipRecord( id );
             record.setInUse( false );
         }
         if ( bitFlag( flags, Record.CREATED_IN_TX ) )
@@ -321,8 +319,7 @@ public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
         }
         else
         {
-            record = new NodeRecord( id, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
-                    Record.NO_NEXT_PROPERTY.intValue() );
+            record = new NodeRecord( id );
         }
         record.setInUse( inUse );
         return record;

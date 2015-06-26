@@ -48,6 +48,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+
 public class PropertyStoreTest
 {
     @ClassRule
@@ -99,7 +101,7 @@ public class PropertyStoreTest
                 @Override
                 public Object answer( InvocationOnMock invocation ) throws Throwable
                 {
-                    PropertyRecord recordBeforeWrite = store.forceGetRecord( propertyRecordId );
+                    PropertyRecord recordBeforeWrite = store.getRecord( propertyRecordId, store.newRecord(), FORCE );
                     assertFalse( recordBeforeWrite.inUse() );
                     return null;
                 }

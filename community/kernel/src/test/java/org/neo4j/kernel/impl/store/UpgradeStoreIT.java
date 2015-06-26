@@ -328,7 +328,7 @@ public class UpgradeStoreIT
     {
         FileChannel channel = new RandomAccessFile( file, "rw" ).getChannel();
         ByteBuffer buffer = ByteBuffer.wrap( new byte[4] );
-        buffer.putInt( blockSize + AbstractDynamicStore.BLOCK_HEADER_SIZE );
+        buffer.putInt( blockSize + AbstractDynamicStore.RECORD_HEADER_SIZE );
         buffer.flip();
         channel.write( buffer );
 

@@ -81,13 +81,15 @@ class AdversarialReadPageCursor implements PageCursor
     @Override
     public long getLong()
     {
-        return currentReadIsInconsistent ? 0 : delegate.getLong();
+        long result = delegate.getLong();
+        return currentReadIsInconsistent ? 0 : result;
     }
 
     @Override
     public long getLong( int offset )
     {
-        return currentReadIsInconsistent ? 0 : delegate.getLong( offset );
+        long result = delegate.getLong( offset );
+        return currentReadIsInconsistent ? 0 : result;
     }
 
     @Override
@@ -105,13 +107,15 @@ class AdversarialReadPageCursor implements PageCursor
     @Override
     public int getInt()
     {
-        return currentReadIsInconsistent ? 0 : delegate.getInt();
+        int result = delegate.getInt();
+        return currentReadIsInconsistent ? 0 : result;
     }
 
     @Override
     public int getInt( int offset )
     {
-        return currentReadIsInconsistent ? 0 : delegate.getInt( offset );
+        int result = delegate.getInt( offset );
+        return currentReadIsInconsistent ? 0 : result;
     }
 
     @Override

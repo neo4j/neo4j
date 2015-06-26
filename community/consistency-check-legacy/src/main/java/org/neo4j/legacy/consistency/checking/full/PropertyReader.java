@@ -27,12 +27,13 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class PropertyReader implements PropertyAccessor
 {
@@ -67,9 +68,9 @@ public class PropertyReader implements PropertyAccessor
     @Override
     public Property getProperty( long nodeId, int propertyKeyId )
     {
-        try
+        NodeRecord nodeRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
+        if ( nodeRecord.inUse() )
         {
-            NodeRecord nodeRecord = nodeStore.getRecord( nodeId );
             for ( PropertyBlock block : propertyBlocks( nodeRecord ) )
             {
                 if ( block.getKeyIndexId() == propertyKeyId )
@@ -78,11 +79,6 @@ public class PropertyReader implements PropertyAccessor
                 }
             }
         }
-        catch ( InvalidRecordException e )
-        {
-            // Fine, we'll just return an empty property below
-        }
-
         return Property.noNodeProperty( nodeId, propertyKeyId );
     }
 }

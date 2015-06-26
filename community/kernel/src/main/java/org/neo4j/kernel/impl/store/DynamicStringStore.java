@@ -43,9 +43,10 @@ public class DynamicStringStore extends AbstractDynamicStore
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            int blockSize )
+            int dataSizeFromConfiguration )
     {
-        super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, blockSize );
+        super( fileName, configuration, idType, idGeneratorFactory, pageCache,
+                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration );
     }
 
     @Override
@@ -53,11 +54,5 @@ public class DynamicStringStore extends AbstractDynamicStore
             throws FAILURE
     {
         processor.processString( this, record, idType );
-    }
-
-    @Override
-    protected String getTypeDescriptor()
-    {
-        return TYPE_DESCRIPTOR;
     }
 }

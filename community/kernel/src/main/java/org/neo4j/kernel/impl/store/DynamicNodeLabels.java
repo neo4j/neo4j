@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static java.lang.String.format;
+
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
@@ -70,13 +71,6 @@ public class DynamicNodeLabels implements NodeLabels
         if ( node.isLight() )
         {
             return null;
-        }
-        for ( DynamicRecord dynamic : node.getUsedDynamicLabelRecords() )
-        {
-            if ( dynamic.isLight() )
-            {
-                return null;
-            }
         }
         return stripNodeId( (long[]) getRightArray( readFullByteArrayFromHeavyRecords(
                 node.getUsedDynamicLabelRecords(), ARRAY ) ) );
@@ -143,9 +137,9 @@ public class DynamicNodeLabels implements NodeLabels
     public Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore )
     {
         nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( labelField ) );
-        Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
-        long[] existingLabelIds = nodeStore.getDynamicLabelsArray( existingRecords );
+        long[] existingLabelIds = nodeStore.getDynamicLabelsArray( node.getUsedDynamicLabelRecords() );
         long[] newLabelIds = filter( existingLabelIds, labelId );
+        Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
         if ( InlineNodeLabels.tryInlineInNodeRecord( node, newLabelIds, existingRecords ) )
         {
             setNotInUse( existingRecords );
@@ -162,7 +156,6 @@ public class DynamicNodeLabels implements NodeLabels
                     if ( !newRecords.contains( record ) )
                     {
                         record.setInUse( false );
-                        record.setLength( 0 ); // so that it will not be made heavy again...
                     }
                 }
             }

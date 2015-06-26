@@ -30,20 +30,46 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
  */
 public class CountsEntry extends AbstractBaseRecord
 {
-    private final CountsKey key;
-    private final long count;
+    private CountsKey key;
+    private long count;
+
+    // ========= TRANSITIONAL CONSTRUCTORS =============
+    public CountsEntry()
+    {
+    }
 
     public CountsEntry( CountsKey key, long count )
     {
+        initialize( key, count );
+    }
+    // ========= TRANSITIONAL CONSTRUCTORS =============
+
+    public CountsEntry initialize( CountsKey key, long count )
+    {
+        super.initialize( true );
         this.key = key;
         this.count = count;
-        setInUse( true );
+        return this;
+    }
+
+    @Override
+    public void clear()
+    {
+        super.initialize( false );
+        this.key = null;
+        this.count = 0;
     }
 
     @Override
     public String toString()
     {
         return "CountsEntry[" + key + ": " + count + "]";
+    }
+
+    @Override
+    public void setId( long id )
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override

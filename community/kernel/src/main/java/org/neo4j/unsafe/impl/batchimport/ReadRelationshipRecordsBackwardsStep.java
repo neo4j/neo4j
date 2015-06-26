@@ -53,7 +53,7 @@ public class ReadRelationshipRecordsBackwardsStep extends IoProducerStep
         for ( int i = 0; i < size; i++ )
         {
             batch[i] = new RelationshipRecord( --id );
-            store.fillRecord( batch[i].getId(), batch[i], RecordLoad.CHECK );
+            store.getRecord( batch[i].getId(), batch[i], RecordLoad.CHECK );
         }
         return size > 0 ? batch : null;
     }

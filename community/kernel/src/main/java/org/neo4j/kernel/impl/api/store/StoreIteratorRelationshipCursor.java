@@ -56,8 +56,7 @@ public class StoreIteratorRelationshipCursor extends StoreAbstractRelationshipCu
     {
         while ( iterator != null && iterator.hasNext() )
         {
-            if ( relationshipStore.fillRecord( iterator.next(), relationshipRecord,
-                    CHECK ) && relationshipRecord.inUse() )
+            if ( relationshipStore.getRecord( iterator.next(), relationshipRecord, CHECK ).inUse() )
             {
                 return true;
             }

@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -121,7 +122,7 @@ public class DeferredIndexedConflictResolutionTest
         Map<String,Integer> propertyKeys =
                 PropertyDeduplicatorTestUtil.indexPropertyKeys( neoStores.getPropertyKeyTokenStore() );
 
-        nodeRecord = nodeStore.getRecord( nodeId );
+        nodeRecord = CommonAbstractStore.getRecord( nodeStore, nodeId );
         int propertyKeyId = propertyKeys.get( propertyKey );
         clusterToRemove = createDuplicateCluster( propertyKeyId, nodeRecord.getNextProp() );
         clusters = new ArrayList<>();

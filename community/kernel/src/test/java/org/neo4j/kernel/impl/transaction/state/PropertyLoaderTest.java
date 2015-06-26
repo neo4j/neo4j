@@ -22,13 +22,15 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.store.AbstractRecordStore;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -38,17 +40,23 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.Iterables.toList;
-import static org.neo4j.kernel.api.properties.DefinedProperty.intProperty;
+import static org.neo4j.kernel.api.properties.Property.intProperty;
 
 public class PropertyLoaderTest
 {
@@ -68,8 +76,32 @@ public class PropertyLoaderTest
     public void setUpMocking() throws Exception
     {
         doReturn( nodeStore ).when( neoStores ).getNodeStore();
+        when( nodeStore.newRecord() ).thenAnswer( new Answer<NodeRecord>()
+        {
+            @Override
+            public NodeRecord answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return new NodeRecord( -1 );
+            }
+        } );
         doReturn( relationshipStore ).when( neoStores ).getRelationshipStore();
+        when( relationshipStore.newRecord() ).thenAnswer( new Answer<RelationshipRecord>()
+        {
+            @Override
+            public RelationshipRecord answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return new RelationshipRecord( -1 );
+            }
+        } );
         doReturn( propertyStore ).when( neoStores ).getPropertyStore();
+        when( propertyStore.newRecord() ).thenAnswer( new Answer<PropertyRecord>()
+        {
+            @Override
+            public PropertyRecord answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return new PropertyRecord( -1 );
+            }
+        } );
     }
 
     @Test
@@ -86,7 +118,7 @@ public class PropertyLoaderTest
         catch ( InvalidRecordException e )
         {
             // Then
-            assertThat( e.getMessage(), startsWith( "NodeRecord" ) );
+            assertThat( e.getMessage(), startsWith( "Node" ) );
         }
     }
 
@@ -104,7 +136,7 @@ public class PropertyLoaderTest
         catch ( InvalidRecordException e )
         {
             // Then
-            assertThat( e.getMessage(), startsWith( "RelationshipRecord" ) );
+            assertThat( e.getMessage(), startsWith( "Relationship" ) );
         }
     }
 
@@ -157,12 +189,19 @@ public class PropertyLoaderTest
     }
 
     private <R extends PrimitiveRecord> void setUpPropertyChain( long id, Class<R> recordClass,
-            AbstractRecordStore<R> store, int... propertyValues )
+            CommonAbstractStore<R> store, int... propertyValues )
     {
-        R record = mock( recordClass );
-        doReturn( id ).when( record ).getId();
-        doReturn( 1L ).when( record ).getNextProp();
-        doReturn( record ).when( store ).getRecord( id );
+        when( store.getRecord( eq( id ), any( recordClass ), any( RecordLoad.class ) ) ).thenAnswer( new Answer<R>()
+        {
+            @Override
+            public R answer( InvocationOnMock invocation ) throws Throwable
+            {
+                R record = (R) invocation.getArguments()[1];
+                record.setId( ((Number)invocation.getArguments()[0]).longValue() );
+                record.setNextProp( 1 );
+                return record;
+            }
+        } );
         List<PropertyRecord> propertyChain = new ArrayList<>( propertyValues.length );
         for ( int i = 0; i < propertyValues.length; i++ )
         {

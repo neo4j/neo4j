@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 
 import static org.neo4j.helpers.collection.Iterables.iterable;
 
-
 public enum StoreFile
 {
     // all store files in Neo4j

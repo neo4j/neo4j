@@ -136,6 +136,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule
         .relPropertyExistenceConstraintRule;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -444,7 +445,7 @@ public class FullCheckIntegrationTest
         // given
         for ( Long indexedNodeId : indexedNodes )
         {
-            fixture.directStoreAccess().nativeStores().getNodeStore().forceUpdateRecord(
+            fixture.directStoreAccess().nativeStores().getNodeStore().updateRecord(
                     notInUse( new NodeRecord( indexedNodeId, false, -1, -1 ) ) );
         }
 
@@ -484,7 +485,7 @@ public class FullCheckIntegrationTest
 
         for ( Long indexedNodeId : indexedNodes )
         {
-            storeAccess.nativeStores().getNodeStore().forceUpdateRecord(
+            storeAccess.nativeStores().getNodeStore().updateRecord(
                     notInUse( new NodeRecord( indexedNodeId, false, -1, -1 ) ) );
         }
 
@@ -1178,7 +1179,8 @@ public class FullCheckIntegrationTest
             }
         } );
         StoreAccess access = fixture.directStoreAccess().nativeStores();
-        DynamicRecord record = access.getRelationshipTypeNameStore().forceGetRecord( inconsistentName.get() );
+        DynamicRecord record = access.getRelationshipTypeNameStore().getRecord( inconsistentName.get(),
+                access.getRelationshipTypeNameStore().newRecord(), FORCE );
         record.setNextBlock( record.getId() );
         access.getRelationshipTypeNameStore().updateRecord( record );
 
@@ -1206,7 +1208,8 @@ public class FullCheckIntegrationTest
             }
         } );
         StoreAccess access = fixture.directStoreAccess().nativeStores();
-        DynamicRecord record = access.getPropertyKeyNameStore().forceGetRecord( inconsistentName.get()+1 );
+        DynamicRecord record = access.getPropertyKeyNameStore().getRecord( inconsistentName.get()+1,
+                access.getPropertyKeyNameStore().newRecord(), FORCE );
         record.setNextBlock( record.getId() );
         access.getPropertyKeyNameStore().updateRecord( record );
 
@@ -1224,7 +1227,8 @@ public class FullCheckIntegrationTest
         // given
         StoreAccess access = fixture.directStoreAccess().nativeStores();
         RecordStore<RelationshipTypeTokenRecord> relTypeStore = access.getRelationshipTypeTokenStore();
-        RelationshipTypeTokenRecord record = relTypeStore.forceGetRecord( (int) relTypeStore.nextId() );
+        RelationshipTypeTokenRecord record = relTypeStore.getRecord( (int) relTypeStore.nextId(),
+                relTypeStore.newRecord(), FORCE );
         record.setNameId( 20 );
         record.setInUse( true );
         relTypeStore.updateRecord( record );
@@ -1243,7 +1247,8 @@ public class FullCheckIntegrationTest
     {
         // given
         StoreAccess access = fixture.directStoreAccess().nativeStores();
-        LabelTokenRecord record = access.getLabelTokenStore().forceGetRecord( 1 );
+        LabelTokenRecord record = access.getLabelTokenStore().getRecord( 1,
+                access.getLabelTokenStore().newRecord(), FORCE );
         record.setNameId( 20 );
         record.setInUse( true );
         access.getLabelTokenStore().updateRecord( record );
@@ -1272,7 +1277,8 @@ public class FullCheckIntegrationTest
             }
         } );
         StoreAccess access = fixture.directStoreAccess().nativeStores();
-        DynamicRecord record = access.getPropertyKeyNameStore().forceGetRecord( inconsistentKey.get()+1 );
+        DynamicRecord record = access.getPropertyKeyNameStore().getRecord( inconsistentKey.get()+1,
+                access.getPropertyKeyNameStore().newRecord(), FORCE );
         record.setInUse( false );
         access.getPropertyKeyNameStore().updateRecord( record );
 

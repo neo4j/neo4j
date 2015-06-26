@@ -21,15 +21,19 @@ package org.neo4j.consistency.checking.full;
 
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RecordStoreUtil.NewNodeRecordAnswer;
+import org.neo4j.kernel.impl.store.RecordStoreUtil.ReadNodeAnswer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -45,17 +49,19 @@ public class StoreProcessorTest
         StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE,
                 mock( ConsistencyReport.Reporter.class ), Stage.SEQUENTIAL_FORWARD, CacheAccess.EMPTY );
         RecordStore<NodeRecord> recordStore = mock( RecordStore.class );
+        when( recordStore.newRecord() ).thenAnswer( new NewNodeRecordAnswer() );
         when( recordStore.getHighId() ).thenReturn( 3L );
-        when( recordStore.forceGetRecord( any( Long.class ) ) ).thenReturn( new NodeRecord( 0, false, 0, 0 ) );
+        when( recordStore.getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) ) )
+                .thenAnswer( new ReadNodeAnswer( false, 0, 0 ) );
 
         // when
         processor.applyFiltered( recordStore );
 
         // then
-        verify( recordStore ).forceGetRecord( 0 );
-        verify( recordStore ).forceGetRecord( 1 );
-        verify( recordStore ).forceGetRecord( 2 );
-        verify( recordStore, never() ).forceGetRecord( 3 );
+        verify( recordStore ).getRecord( eq( 0L ), any( NodeRecord.class ), any( RecordLoad.class ) );
+        verify( recordStore ).getRecord( eq( 1L ), any( NodeRecord.class ), any( RecordLoad.class ) );
+        verify( recordStore ).getRecord( eq( 2L ), any( NodeRecord.class ), any( RecordLoad.class ) );
+        verify( recordStore, never() ).getRecord( eq( 3L ), any( NodeRecord.class ), any( RecordLoad.class ) );
     }
 
     @SuppressWarnings("unchecked")
@@ -66,16 +72,20 @@ public class StoreProcessorTest
         final StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE,
                 mock( ConsistencyReport.Reporter.class ), Stage.SEQUENTIAL_FORWARD, CacheAccess.EMPTY );
         RecordStore<NodeRecord> recordStore = mock( RecordStore.class );
+        when( recordStore.newRecord() ).thenAnswer( new NewNodeRecordAnswer() );
         when( recordStore.getHighId() ).thenReturn( 4L );
-        when( recordStore.forceGetRecord( 0L ) ).thenReturn( new NodeRecord( 0, false, 0, 0 ) );
-        when( recordStore.forceGetRecord( 1L ) ).thenReturn( new NodeRecord( 0, false, 0, 0 ) );
-        when( recordStore.forceGetRecord( 2L ) ).thenAnswer( new Answer<NodeRecord>()
+        when( recordStore.getRecord( eq( 0L ), any( NodeRecord.class ), any( RecordLoad.class ) ) )
+                .thenAnswer( new ReadNodeAnswer( false, 0, 0 ) );
+        when( recordStore.getRecord( eq( 1L ), any( NodeRecord.class ), any( RecordLoad.class ) ) )
+                .thenAnswer( new ReadNodeAnswer( false, 0, 0 ) );
+        when( recordStore.getRecord( eq( 2L ), any( NodeRecord.class ), any( RecordLoad.class ) ) )
+                .thenAnswer( new ReadNodeAnswer( false, 0, 0 )
         {
             @Override
             public NodeRecord answer( InvocationOnMock invocation ) throws Throwable
             {
                 processor.stop();
-                return new NodeRecord( 0, false, 0, 0 );
+                return super.answer( invocation );
             }
         } );
 
@@ -83,9 +93,9 @@ public class StoreProcessorTest
         processor.applyFiltered( recordStore );
 
         // then
-        verify( recordStore ).forceGetRecord( 0 );
-        verify( recordStore ).forceGetRecord( 1 );
-        verify( recordStore ).forceGetRecord( 2 );
-        verify( recordStore, never() ).forceGetRecord( 3 );
+        verify( recordStore ).getRecord( eq( 0L ), any( NodeRecord.class ), any( RecordLoad.class ) );
+        verify( recordStore ).getRecord( eq( 1L ), any( NodeRecord.class ), any( RecordLoad.class ) );
+        verify( recordStore ).getRecord( eq( 2L ), any( NodeRecord.class ), any( RecordLoad.class ) );
+        verify( recordStore, never() ).getRecord( eq( 3L ), any( NodeRecord.class ), any( RecordLoad.class ) );
     }
 }

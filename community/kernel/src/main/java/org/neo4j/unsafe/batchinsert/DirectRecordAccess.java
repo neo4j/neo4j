@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.kernel.impl.store.AbstractRecordStore;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
@@ -39,13 +39,13 @@ import org.neo4j.kernel.impl.util.statistics.IntCounter;
 public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends AbstractBaseRecord,ADDITIONAL>
         implements RecordAccess<KEY,RECORD,ADDITIONAL>
 {
-    private final AbstractRecordStore<RECORD> store;
+    private final CommonAbstractStore<RECORD> store;
     private final Loader<KEY, RECORD, ADDITIONAL> loader;
     private final Map<KEY,DirectRecordProxy> batch = new HashMap<>();
 
     private final IntCounter changeCounter = new IntCounter();
 
-    public DirectRecordAccess( AbstractRecordStore<RECORD> store, Loader<KEY, RECORD, ADDITIONAL> loader )
+    public DirectRecordAccess( CommonAbstractStore<RECORD> store, Loader<KEY, RECORD, ADDITIONAL> loader )
     {
         this.store = store;
         this.loader = loader;

@@ -32,8 +32,10 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.record.NeoStoreActualRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
@@ -48,7 +50,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
-public class MetaDataStore extends AbstractStore implements TransactionIdStore, LogVersionRepository
+public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
+        implements TransactionIdStore, LogVersionRepository
 {
     public static final String TYPE_DESCRIPTOR = "NeoStore";
     // This value means the field has not been refreshed from the store. Normally, this should happen only once
@@ -137,8 +140,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
                    IdGeneratorFactory idGeneratorFactory,
                    PageCache pageCache, LogProvider logProvider )
     {
-        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider );
-
+        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR );
         this.transactionCloseWaitLogger = new CappedLogger( logProvider.getLog( MetaDataStore.class ) );
         transactionCloseWaitLogger.setTimeLimit( 30, SECONDS, Clock.SYSTEM_CLOCK );
     }
@@ -179,7 +181,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
          */
         for ( int i = 0; i < META_DATA_RECORD_COUNT; i++ )
         {
-            nextId();
+            idGenerator.nextId();
         }
     }
 
@@ -197,12 +199,35 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         lastCommittingTxField.set( transactionId );
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
         highestCommittedTransaction.set( transactionId, checksum );
-    }
-
-    @Override
-    public String getTypeDescriptor()
-    {
-        return TYPE_DESCRIPTOR;
+//=======
+//        long record;
+//        try
+//        {
+//            record = getRecord( pageCache, storageFileName, Position.STORE_VERSION );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw new UnderlyingStorageException( e );
+//        }
+//
+//        if ( record == FIELD_NOT_PRESENT )
+//        {
+//            // if the record cannot be read, let's assume the neo store has not been create yet
+//            // we'll check again when the store is gonna set to "store ok"
+//            return;
+//        }
+//
+//        String foundVersion = versionLongToString( record );
+//        if ( !ALL_STORES_VERSION.equals( foundVersion ) )
+//        {
+//            throw new IllegalStateException(
+//                    format( "Mismatching store version found (%s while expecting %s). The store cannot be " +
+//                            "automatically upgraded since it isn't cleanly shutdown."
+//                            + " Recover by starting the database using the previous Neo4j version, " +
+//                            "followed by a clean shutdown. Then start with this version again.",
+//                            foundVersion, ALL_STORES_VERSION ) );
+//        }
+//>>>>>>> Simplified store classes
     }
 
     @Override
@@ -548,7 +573,6 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     private void setRecord( Position position, long value )
     {
         long id = position.id;
-        long pageId = pageIdForRecord( id );
 
         // We need to do a little special handling of high id in neostore since it's not updated in the same
         // way as other stores. Other stores always gets updates via commands where records are updated and
@@ -557,17 +581,17 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         // unclear from the outside which record id that refers to, so here we need to manage high id ourselves.
         setHighestPossibleIdInUse( id );
 
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
-        {
-            if ( cursor.next() )
-            {
-                setRecord( cursor, position, value );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
+        NeoStoreActualRecord record = new NeoStoreActualRecord();
+        record.initialize( true, value );
+        record.setId( id );
+        updateRecord( record );
+    }
+
+    @Override
+    protected void writeRecord( PageCursor cursor, NeoStoreActualRecord record )
+    {
+        cursor.putByte( Record.IN_USE.byteValue() );
+        cursor.putLong( record.getValue() );
     }
 
     private void setRecord( PageCursor cursor, Position position, long value ) throws IOException
@@ -825,5 +849,25 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
                 return false;
             }
         } );
+    }
+
+    @Override
+    public NeoStoreActualRecord newRecord()
+    {
+        return new NeoStoreActualRecord();
+    }
+
+    @Override
+    public <FAILURE extends Exception> void accept(
+            org.neo4j.kernel.impl.store.RecordStore.Processor<FAILURE> processor, NeoStoreActualRecord record )
+                    throws FAILURE
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected void readRecord( PageCursor cursor, NeoStoreActualRecord record, RecordLoad mode )
+    {
+        throw new UnsupportedOperationException();
     }
 }

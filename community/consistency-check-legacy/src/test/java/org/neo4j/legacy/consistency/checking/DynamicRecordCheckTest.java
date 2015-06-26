@@ -330,8 +330,8 @@ public abstract class DynamicRecordCheckTest
     {
         @SuppressWarnings( "unchecked" )
         RecordStore<DynamicRecord> mock = mock( RecordStore.class );
-        when( mock.getRecordSize() ).thenReturn( blockSize + AbstractDynamicStore.BLOCK_HEADER_SIZE );
-        when( mock.getRecordHeaderSize() ).thenReturn( AbstractDynamicStore.BLOCK_HEADER_SIZE );
+        when( mock.getRecordSize() ).thenReturn( blockSize + AbstractDynamicStore.RECORD_HEADER_SIZE );
+        when( mock.getRecordHeaderSize() ).thenReturn( AbstractDynamicStore.RECORD_HEADER_SIZE );
         return mock;
     }
 }

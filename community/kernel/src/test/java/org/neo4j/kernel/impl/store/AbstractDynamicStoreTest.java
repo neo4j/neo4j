@@ -96,17 +96,11 @@ public class AbstractDynamicStoreTest
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         AbstractDynamicStore store = new AbstractDynamicStore( fileName, new Config(), IdType.ARRAY_BLOCK,
-                idGeneratorFactory, pageCache, NullLogProvider.getInstance(), BLOCK_SIZE )
+                idGeneratorFactory, pageCache, NullLogProvider.getInstance(), "TestDynamicStore", BLOCK_SIZE )
         {
             @Override
             public void accept( Processor processor, DynamicRecord record )
             {   // Ignore
-            }
-
-            @Override
-            public String getTypeDescriptor()
-            {
-                return "TestDynamicStore";
             }
         };
         store.initialise( true );

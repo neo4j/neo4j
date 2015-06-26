@@ -93,11 +93,9 @@ public class NodeRecordTest
     public void shouldToStringBothUsedAndUnusedDynamicLabelRecords() throws Exception
     {
         // GIVEN
-        DynamicBlockSize blockSize = mock( DynamicBlockSize.class );
-        when( blockSize.getBlockSize() ).thenReturn( 30 );
         IdSequence ids = mock( IdSequence.class );
         when( ids.nextId() ).thenReturn( 1L, 2L );
-        DynamicRecordAllocator allocator = new ExistingThenNewRecordAllocator( blockSize, ids );
+        DynamicRecordAllocator allocator = new ExistingThenNewRecordAllocator( 30, ids );
         NodeRecord node = newUsedNodeRecord( 0 );
         long labelId = 10_123;
         // A dynamic label record

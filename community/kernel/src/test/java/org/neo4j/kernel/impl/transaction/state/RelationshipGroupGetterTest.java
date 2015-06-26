@@ -19,62 +19,87 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import java.io.File;
+
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.transaction.state.Loaders;
-import org.neo4j.kernel.impl.transaction.state.RecordAccess;
-import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter.RelationshipGroupPosition;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccess;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 
 public class RelationshipGroupGetterTest
 {
+    @Rule
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCache = new PageCacheRule();
+
     @Test
     public void shouldAbortLoadingGroupChainIfComeTooFar() throws Exception
     {
         // GIVEN a node with relationship group chain 2-->4-->10-->23
-        RelationshipGroupStore store = mock( RelationshipGroupStore.class );
-        RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( store );
-        RelationshipGroupRecord group_2 = new RelationshipGroupRecord( 0, 2 );
-        RelationshipGroupRecord group_4 = new RelationshipGroupRecord( 1, 4 );
-        RelationshipGroupRecord group_10 = new RelationshipGroupRecord( 2, 10 );
-        RelationshipGroupRecord group_23 = new RelationshipGroupRecord( 3, 23 );
-        linkAndMock( store, group_2, group_4, group_10, group_23 );
-        NodeRecord node = new NodeRecord( 0, true, group_2.getId(), -1 );
+        File dir = new File( "dir" );
+        fs.get().mkdirs( dir );
+        StoreFactory storeFactory = new StoreFactory( fs.get(), dir, pageCache.getPageCache( fs.get() ),
+                NullLogProvider.getInstance() );
+        try ( NeoStores stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP ) )
+        {
+            RelationshipGroupStore store = spy( stores.getRelationshipGroupStore() );
 
-        // WHEN trying to find relationship group 7
-        RecordAccess<Long, RelationshipGroupRecord, Integer> access =
-                new DirectRecordAccess<>( store, Loaders.relationshipGroupLoader( store ) );
-        RelationshipGroupPosition result = groupGetter.getRelationshipGroup( node, 7, access );
+            RelationshipGroupRecord group_2 = group( 0, 2 );
+            RelationshipGroupRecord group_4 = group( 1, 4 );
+            RelationshipGroupRecord group_10 = group( 2, 10 );
+            RelationshipGroupRecord group_23 = group( 3, 23 );
+            link( group_2, group_4, group_10, group_23 );
+            store.updateRecord( group_2 );
+            store.updateRecord( group_4 );
+            store.updateRecord( group_10 );
+            store.updateRecord( group_23 );
+            RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( store );
+            NodeRecord node = new NodeRecord( 0, true, group_2.getId(), -1 );
 
-        // THEN only groups 2, 4 and 10 should have been loaded
-        InOrder verification = inOrder( store );
-        verification.verify( store ).getRecord( group_2.getId() );
-        verification.verify( store ).getRecord( group_4.getId() );
-        verification.verify( store ).getRecord( group_10.getId() );
-        verification.verifyNoMoreInteractions();
+            // WHEN trying to find relationship group 7
+            RecordAccess<Long, RelationshipGroupRecord, Integer> access =
+                    new DirectRecordAccess<>( store, Loaders.relationshipGroupLoader( store ) );
+            RelationshipGroupPosition result = groupGetter.getRelationshipGroup( node, 7, access );
 
-        // it should also be reported as not found
-        assertNull( result.group() );
-        // with group 4 as closes previous one
-        assertEquals( group_4, result.closestPrevious().forReadingData() );
+            // THEN only groups 2, 4 and 10 should have been loaded
+            InOrder verification = inOrder( store );
+            verification.verify( store ).getRecord( eq( group_2.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+            verification.verify( store ).getRecord( eq( group_4.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+            verification.verify( store ).getRecord( eq( group_10.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+            verification.verify( store, times( 0 ) ).getRecord( eq( group_23.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
+
+            // it should also be reported as not found
+            assertNull( result.group() );
+            // with group 4 as closes previous one
+            assertEquals( group_4, result.closestPrevious().forReadingData() );
+        }
     }
 
-    private void linkAndMock( RelationshipGroupStore store, RelationshipGroupRecord... groups )
+    private void link( RelationshipGroupRecord... groups )
     {
         for ( int i = 0; i < groups.length; i++ )
         {
-            when( store.getRecord( groups[i].getId() ) ).thenReturn( groups[i] );
             if ( i > 0 )
             {
                 groups[i].setPrev( groups[i-1].getId() );
@@ -84,5 +109,12 @@ public class RelationshipGroupGetterTest
                 groups[i].setNext( groups[i+1].getId() );
             }
         }
+    }
+
+    private RelationshipGroupRecord group( long id, int type )
+    {
+        RelationshipGroupRecord group = new RelationshipGroupRecord( id, type );
+        group.setInUse( true );
+        return group;
     }
 }

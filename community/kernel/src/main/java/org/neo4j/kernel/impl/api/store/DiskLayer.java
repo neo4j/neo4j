@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -61,6 +60,7 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
@@ -78,6 +78,7 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 /**
@@ -426,12 +427,8 @@ public class DiskLayer implements StoreReadLayer
             RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION
     {
         // TODO Please don't create a record for this, it's ridiculous
-        RelationshipRecord record;
-        try
-        {
-            record = relationshipStore.getRecord( relationshipId );
-        }
-        catch ( InvalidRecordException e )
+        RelationshipRecord record = relationshipStore.newRecord();
+        if ( !relationshipStore.getRecord( relationshipId, record, FORCE ).inUse() )
         {
             throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
         }
@@ -445,7 +442,7 @@ public class DiskLayer implements StoreReadLayer
         {
             private long highId = nodeStore.getHighestPossibleIdInUse();
             private long currentId;
-            private final NodeRecord reusableNodeRecord = new NodeRecord( -1 ); // reused
+            private final NodeRecord record = new NodeRecord( -1 ); // reused
 
             @Override
             protected boolean fetchNext()
@@ -456,8 +453,8 @@ public class DiskLayer implements StoreReadLayer
                     {
                         try
                         {
-                            NodeRecord record = nodeStore.loadRecord( currentId, reusableNodeRecord );
-                            if ( record != null && record.inUse() )
+                            nodeStore.getRecord( currentId, record, RecordLoad.CHECK );
+                            if ( record.inUse() )
                             {
                                 return next( record.getId() );
                             }
@@ -501,7 +498,7 @@ public class DiskLayer implements StoreReadLayer
                     {
                         try
                         {
-                            if ( relationshipStore.fillRecord( currentId, reusableRecord, CHECK ) && reusableRecord.inUse() )
+                            if ( relationshipStore.getRecord( currentId, reusableRecord, CHECK ).inUse() )
                             {
                                 return next( reusableRecord.getId() );
                             }

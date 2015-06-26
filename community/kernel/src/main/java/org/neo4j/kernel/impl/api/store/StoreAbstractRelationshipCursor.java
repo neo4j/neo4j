@@ -33,7 +33,7 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * Base cursor for relationships.
@@ -124,8 +124,7 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
             try
             {
                 // It's safer to re-read the relationship record here, specifically nextProp, after acquiring the lock
-                relationshipStore.fillRecord( relationshipRecord.getId(), relationshipRecord, FORCE );
-                if ( !relationshipRecord.inUse() )
+                if ( !relationshipStore.getRecord( relationshipRecord.getId(), relationshipRecord, CHECK ).inUse() )
                 {
                     // So it looks like the node has been deleted. The current behavior of RelationshipStore#fillRecord
                     // w/ FORCE is to only set the inUse field on loading an unused record. This should (and will)

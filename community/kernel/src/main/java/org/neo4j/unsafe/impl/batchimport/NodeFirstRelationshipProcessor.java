@@ -68,7 +68,8 @@ public class NodeFirstRelationshipProcessor implements RecordProcessor<NodeRecor
         long id = nextGroupId != -1 ? nextGroupId : relGroupStore.nextId();
         nextGroupId = -1;
 
-        RelationshipGroupRecord groupRecord = new RelationshipGroupRecord( id, type );
+        RelationshipGroupRecord groupRecord = new RelationshipGroupRecord( id );
+        groupRecord.setType( type );
         groupRecord.setInUse( true );
         groupRecord.setFirstOut( out );
         groupRecord.setFirstIn( in );

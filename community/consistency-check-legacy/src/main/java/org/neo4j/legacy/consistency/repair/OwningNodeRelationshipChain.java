@@ -23,6 +23,8 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+
 public class OwningNodeRelationshipChain
 {
     private final RelationshipChainExplorer relationshipChainExplorer;
@@ -42,11 +44,9 @@ public class OwningNodeRelationshipChain
         for ( RelationshipNodeField field : RelationshipNodeField.values() )
         {
             long nodeId = field.get( relationship );
-            NodeRecord nodeRecord = nodeStore.forceGetRecord( nodeId );
+            NodeRecord nodeRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
             records.addAll( relationshipChainExplorer.followChainFromNode( nodeId, nodeRecord.getNextRel() ) );
         }
         return records;
     }
-
-
 }

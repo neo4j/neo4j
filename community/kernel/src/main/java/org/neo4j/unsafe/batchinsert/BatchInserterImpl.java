@@ -179,6 +179,7 @@ public class BatchInserterImpl implements BatchInserter
     private final BatchInserterImpl.BatchSchemaActions actions;
     private final StoreLocker storeLocker;
     private boolean labelsTouched;
+    private boolean isShutdown;
 
     private final LongFunction<Label> labelIdToLabelFunction = new LongFunction<Label>()
     {
@@ -188,8 +189,6 @@ public class BatchInserterImpl implements BatchInserter
             return label( labelTokens.byId( safeCastLongToInt( from ) ).name() );
         }
     };
-
-    private boolean isShutdown = false;
 
     private final FlushStrategy flushStrategy;
     // Helper structure for setNodeProperty
@@ -826,7 +825,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new IllegalArgumentException( "id " + id + " is reserved for internal use" );
         }
-        if ( nodeStore.loadLightNode( id ) != null )
+        if ( nodeStore.isInUse( id ) )
         {
             throw new IllegalArgumentException( "id=" + id + " already in use" );
         }
@@ -928,7 +927,7 @@ public class BatchInserterImpl implements BatchInserter
     public boolean nodeExists( long nodeId )
     {
         flushStrategy.forceFlush();
-        return nodeStore.loadLightNode( nodeId ) != null;
+        return nodeStore.isInUse( nodeId );
     }
 
     @Override

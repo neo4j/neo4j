@@ -47,7 +47,7 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord, Token>
             DynamicStringStore nameStore )
     {
         super( file, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
-                logProvider, nameStore, new Token.Factory() );
+                logProvider, nameStore, TYPE_DESCRIPTOR, new Token.Factory() );
     }
 
     @Override
@@ -57,15 +57,9 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord, Token>
     }
 
     @Override
-    protected LabelTokenRecord newRecord( int id )
+    public LabelTokenRecord newRecord()
     {
-        return new LabelTokenRecord( id );
-    }
-
-    @Override
-    protected void readRecord( LabelTokenRecord record, PageCursor cursor )
-    {
-        record.setNameId( cursor.getInt() );
+        return new LabelTokenRecord( -1 );
     }
 
     @Override
@@ -78,11 +72,5 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord, Token>
     public int getRecordSize()
     {
         return RECORD_SIZE;
-    }
-
-    @Override
-    public String getTypeDescriptor()
-    {
-        return TYPE_DESCRIPTOR;
     }
 }

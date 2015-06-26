@@ -19,37 +19,30 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-public class RelationshipTypeTokenRecord extends TokenRecord
+public class NeoStoreActualRecord extends Abstract64BitRecord
 {
-    public RelationshipTypeTokenRecord( int id )
+    private long value;
+
+    public NeoStoreActualRecord()
     {
-        super( id );
+        super( -1 );
     }
 
-    @Override
-    public RelationshipTypeTokenRecord initialize( boolean inUse, int nameId )
+    public NeoStoreActualRecord initialize( boolean inUse, long value )
     {
-        super.initialize( inUse, nameId );
+        super.initialize( inUse );
+        this.value = value;
         return this;
     }
 
     @Override
-    protected String simpleName()
+    public void clear()
     {
-        return "RelationshipType";
+        initialize( false, -1 );
     }
 
-    @Override
-    public RelationshipTypeTokenRecord clone()
+    public long getValue()
     {
-        RelationshipTypeTokenRecord relationshipTypeTokenRecord = new RelationshipTypeTokenRecord( getId() );
-        relationshipTypeTokenRecord.setInUse( inUse() );
-        if ( isCreated() )
-        {
-            relationshipTypeTokenRecord.setCreated();
-        }
-        relationshipTypeTokenRecord.setNameId( getNameId() );
-        relationshipTypeTokenRecord.addNameRecords( getNameRecords() );
-        return relationshipTypeTokenRecord;
+        return value;
     }
 }

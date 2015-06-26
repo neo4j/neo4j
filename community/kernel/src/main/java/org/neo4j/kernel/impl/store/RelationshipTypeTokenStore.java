@@ -48,8 +48,8 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             LogProvider logProvider,
             DynamicStringStore nameStore )
     {
-        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
-                new RelationshipTypeToken.Factory() );
+        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache,
+                logProvider, nameStore, TYPE_DESCRIPTOR, new RelationshipTypeToken.Factory() );
     }
 
     @Override
@@ -60,21 +60,15 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     }
 
     @Override
-    protected RelationshipTypeTokenRecord newRecord( int id )
+    public RelationshipTypeTokenRecord newRecord()
     {
-        return new RelationshipTypeTokenRecord( id );
+        return new RelationshipTypeTokenRecord( -1 );
     }
 
     @Override
     public int getRecordSize()
     {
         return RECORD_SIZE;
-    }
-
-    @Override
-    public String getTypeDescriptor()
-    {
-        return TYPE_DESCRIPTOR;
     }
 
     @Override

@@ -38,9 +38,11 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class TestGrowingFileMemoryMapping
 {
@@ -84,7 +86,7 @@ public class TestGrowingFileMemoryMapping
         for ( int i = 0; i < iterations; i++ )
         {
             record.setId( startingId + i );
-            nodeStore.getRecord( i, record );
+            nodeStore.getRecord( i, record, NORMAL );
             assertTrue( "record[" + i + "] should be in use", record.inUse() );
             assertThat( "record[" + i + "] should have nextRelId of " + i,
                     record.getNextRel(), is( (long) i ) );
@@ -107,5 +109,4 @@ public class TestGrowingFileMemoryMapping
     public PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-
 }

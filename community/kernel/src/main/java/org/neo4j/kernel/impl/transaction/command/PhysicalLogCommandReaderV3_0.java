@@ -419,8 +419,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         }
         else
         {
-            record = new NodeRecord( id, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
-                    Record.NO_NEXT_PROPERTY.intValue() );
+            record = new NodeRecord( id );
         }
         readDynamicRecords( channel, dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
         record.setLabelField( labelField, dynamicLabelRecords );

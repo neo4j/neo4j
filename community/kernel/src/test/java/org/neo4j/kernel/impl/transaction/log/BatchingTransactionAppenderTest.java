@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.Flushable;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import java.io.Flushable;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;

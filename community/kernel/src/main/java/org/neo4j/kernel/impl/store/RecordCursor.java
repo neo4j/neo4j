@@ -19,7 +19,14 @@
  */
 package org.neo4j.kernel.impl.store;
 
-public interface DynamicBlockSize
+import org.neo4j.cursor.Cursor;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
+
+public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
 {
-    int getBlockSize();
+    RecordCursor<R> init( long id, RecordLoad mode, PageCursor pageCursor );
+
+    boolean next( long id );
 }
