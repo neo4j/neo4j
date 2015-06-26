@@ -20,7 +20,6 @@
 package org.neo4j.csv.reader;
 
 import java.io.IOException;
-import java.nio.CharBuffer;
 
 /**
  * Like an ordinary {@link CharReadable}, it's just that the reading happens in a separate thread, so when

@@ -114,7 +114,6 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
     public boolean visitIndexDefineCommand( IndexDefineCommand indexDefineCommand ) throws IOException
     {
         definitions = indexDefineCommand;
-        dataSource.getWriteLock();
         return false;
     }
 
@@ -123,13 +122,17 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
     {
         try
         {
-            for ( CommitContext context : nodeContexts.values() )
+            if ( definitions != null )
             {
-                context.close();
-            }
-            for ( CommitContext context : relationshipContexts.values() )
-            {
-                context.close();
+                dataSource.getWriteLock();
+                for ( CommitContext context : nodeContexts.values() )
+                {
+                    context.close();
+                }
+                for ( CommitContext context : relationshipContexts.values() )
+                {
+                    context.close();
+                }
             }
         }
         catch ( IOException e )

@@ -53,7 +53,7 @@ public class RecoveryIT
         process.destroy();
         process.waitFor();
 
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( path );
+        final GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( path );
         Transaction transaction = db.beginTx();
         try
         {
@@ -84,8 +84,26 @@ public class RecoveryIT
         finally
         {
             transaction.finish();
-            db.shutdown();
         }
+
+        // Added due to a recovery issue where the lucene data source write wasn't released properly after recovery.
+        Thread t = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    Index<Node> index = db.index().forNodes( "myIndex" );
+                    index.add( db.createNode(), "one", "two" );
+                    tx.success();
+                }
+            }
+        };
+        t.start();
+        t.join();
+
+        db.shutdown();
     }
 
     private void awaitFile( File file ) throws InterruptedException
