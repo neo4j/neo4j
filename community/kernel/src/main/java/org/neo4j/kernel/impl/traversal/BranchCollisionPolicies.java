@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import org.neo4j.function.Predicate;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.BranchCollisionDetector;
 import org.neo4j.graphdb.traversal.Evaluator;
 
@@ -33,8 +35,16 @@ public enum BranchCollisionPolicies implements BranchCollisionPolicy
     STANDARD;
 
     @Override
+    @Deprecated
     public BranchCollisionDetector create( Evaluator evaluator )
     {
         return org.neo4j.graphdb.traversal.BranchCollisionPolicies.STANDARD.create( evaluator );
     }
+
+    @Override
+    public BranchCollisionDetector create( Evaluator evaluator, Predicate< Path > pathPredicate )
+    {
+        return org.neo4j.graphdb.traversal.BranchCollisionPolicies.STANDARD.create( evaluator, pathPredicate );
+    }
+
 }
