@@ -28,8 +28,8 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.singletonList;
 
@@ -58,9 +58,9 @@ public abstract class AbstractRecordStore<R extends AbstractBaseRecord> extends 
     }
 
     @Override
-    public Long getNextRecordReference( R record )
+    public long getNextRecordReference( R record )
     {
-        return null;
+        return -1;
     }
 
     @Override

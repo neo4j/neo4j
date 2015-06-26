@@ -69,7 +69,7 @@ public class DelegatingRecordStore<R extends AbstractBaseRecord> implements Reco
     }
 
     @Override
-    public Long getNextRecordReference( R record )
+    public long getNextRecordReference( R record )
     {
         return delegate.getNextRecordReference( record );
     }

@@ -154,7 +154,7 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     {
         Collection<R> result = new ArrayList<>();
         R record;
-        for ( Long nextId = id; nextId != null; nextId = getNextRecordReference( record ) )
+        for ( long nextId = id; nextId != -1; nextId = getNextRecordReference( record ) )
         {
             result.add( record = forceGetRecord( nextId ) );
         }
@@ -162,7 +162,7 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     }
 
     @Override
-    public Long getNextRecordReference( R record )
+    public long getNextRecordReference( R record )
     {
         return actual.getNextRecordReference( record );
     }

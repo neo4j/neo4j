@@ -678,10 +678,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     }
 
     @Override
-    public Long getNextRecordReference( DynamicRecord record )
+    public long getNextRecordReference( DynamicRecord record )
     {
         long nextId = record.getNextBlock();
-        return Record.NO_NEXT_BLOCK.is( nextId ) ? null : nextId;
+        return Record.NO_NEXT_BLOCK.is( nextId ) ? -1 : nextId;
     }
 
     @Override

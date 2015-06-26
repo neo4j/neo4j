@@ -50,7 +50,7 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
 
     R getRecord( long id );
 
-    Long getNextRecordReference( R record );
+    long getNextRecordReference( R record );
 
     Collection<R> getRecords( long id );
 
