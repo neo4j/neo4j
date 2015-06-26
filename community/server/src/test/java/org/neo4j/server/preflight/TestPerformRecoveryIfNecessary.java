@@ -35,10 +35,12 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -50,6 +52,8 @@ public class TestPerformRecoveryIfNecessary
 {
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
     public File homeDirectory;
     public File storeDirectory;
 
@@ -94,11 +98,13 @@ public class TestPerformRecoveryIfNecessary
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        StoreRecoverer recoverer = new StoreRecoverer();
+        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        StoreRecoverer recoverer = new StoreRecoverer( fs, pageCache );
         Config config = buildProperties();
         new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDirectory ).shutdown();
         // Make this look incorrectly shut down
-        createSomeDataAndCrash( storeDirectory, new DefaultFileSystemAbstraction() );
+        createSomeDataAndCrash( storeDirectory, fs );
 
         assertThat( "Store should need recovery", recoverer.recoveryNeededAt( storeDirectory ), is( true ) );
 
@@ -123,7 +129,9 @@ public class TestPerformRecoveryIfNecessary
         new File( storeDirectory, "unrelated_file" ).createNewFile();
 
         // When
-        boolean actual = new StoreRecoverer().recoveryNeededAt( storeDirectory, 0 );
+        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        boolean actual = new StoreRecoverer( fs, pageCache ).recoveryNeededAt( storeDirectory, 0 );
 
         // Then
         assertThat( "Recovery should not be needed", actual,

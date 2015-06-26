@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.File;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 
 public class ReadOnlyLogVersionRepository implements LogVersionRepository
@@ -29,10 +29,10 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
     private final long logVersion;
     private volatile boolean incrementVersionCalled;
 
-    public ReadOnlyLogVersionRepository( FileSystemAbstraction fs, File storeDir )
+    public ReadOnlyLogVersionRepository( PageCache pageCache, File storeDir )
     {
-        this.logVersion = NeoStoreUtil.neoStoreExists( fs, storeDir ) ?
-                new NeoStoreUtil( storeDir, fs ).getLogVersion() : 0;
+        this.logVersion = NeoStoreUtil.neoStoreExists( pageCache, storeDir ) ?
+                          new NeoStoreUtil( storeDir, pageCache ).getLogVersion() : 0;
     }
 
     @Override

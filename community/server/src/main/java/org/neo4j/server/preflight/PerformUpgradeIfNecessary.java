@@ -23,8 +23,10 @@ import java.io.File;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.storemigration.CurrentDatabase;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationTool;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -62,33 +64,38 @@ public class PerformUpgradeIfNecessary implements PreflightTask
         {
             File storeDir = config.get( ServerInternalSettings.legacy_db_location );
 
-            if ( new CurrentDatabase(new StoreVersionCheck( new DefaultFileSystemAbstraction() ) ).storeFilesAtCurrentVersion( storeDir ) )
-            {
-                return true;
-            }
-
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-            UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fileSystem ) );
-            if ( !upgradableDatabase.storeFilesUpgradeable( storeDir ) )
+            try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, config ) )
             {
-                return true;
-            }
+                StoreVersionCheck storeVersionCheck = new StoreVersionCheck(
+                        pageCache );
+                if ( new CurrentDatabase( storeVersionCheck ).storeFilesAtCurrentVersion( storeDir ) )
+                {
+                    return true;
+                }
 
-            try
-            {
-                new StoreMigrationTool().run( fileSystem, storeDir,
-                        new Config( dbConfig ), logProvider, monitor );
-            }
-            catch ( UpgradeNotAllowedByConfigurationException e )
-            {
-                log.error( e.getMessage() );
-                failureMessage = e.getMessage();
-                return false;
-            }
-            catch ( StoreUpgrader.UnableToUpgradeException e )
-            {
-                log.error( "Unable to upgrade store", e );
-                return false;
+                UpgradableDatabase upgradableDatabase = new UpgradableDatabase( storeVersionCheck );
+                if ( !upgradableDatabase.storeFilesUpgradeable( storeDir ) )
+                {
+                    return true;
+                }
+
+                try
+                {
+                    new StoreMigrationTool().run( fileSystem, storeDir,
+                            new Config( dbConfig ), logProvider, monitor );
+                }
+                catch ( UpgradeNotAllowedByConfigurationException e )
+                {
+                    log.error( e.getMessage() );
+                    failureMessage = e.getMessage();
+                    return false;
+                }
+                catch ( StoreUpgrader.UnableToUpgradeException e )
+                {
+                    log.error( "Unable to upgrade store", e );
+                    return false;
+                }
             }
             return true;
         }

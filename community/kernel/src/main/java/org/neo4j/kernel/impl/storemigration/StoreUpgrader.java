@@ -31,7 +31,6 @@ import java.util.regex.Pattern;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -125,13 +124,14 @@ public class StoreUpgrader
         this.participants.add( participant );
     }
 
-    public void migrateIfNeeded( File storeDirectory, SchemaIndexProvider schemaIndexProvider, PageCache pageCache )
+    public void migrateIfNeeded( File storeDirectory, SchemaIndexProvider schemaIndexProvider )
     {
         File migrationDirectory = new File( storeDirectory, MIGRATION_DIRECTORY );
 
         cleanupLegacyLeftOverDirsIn( storeDirectory );
 
-        List<StoreMigrationParticipant> participantsNeedingMigration = getParticipantsEagerToMigrate( storeDirectory );
+        List<StoreMigrationParticipant> participantsNeedingMigration =
+                getParticipantsEagerToMigrate( storeDirectory );
         if ( participantsNeedingMigration.isEmpty() )
         {   // No migration needed
             deleteSilently( migrationDirectory ); // delete stale dir if present
@@ -161,8 +161,7 @@ public class StoreUpgrader
                 cleanMigrationDirectory( migrationDirectory );
                 setMigrationStatus( migrationStateFile, MigrationStatus.migrating );
                 migrateToIsolatedDirectory(
-                        participantsNeedingMigration, storeDirectory, migrationDirectory, schemaIndexProvider,
-                        pageCache );
+                        participantsNeedingMigration, storeDirectory, migrationDirectory, schemaIndexProvider );
                 setMigrationStatus( migrationStateFile, MigrationStatus.moving );
             }
 
@@ -234,7 +233,8 @@ public class StoreUpgrader
 
     private void moveMigratedFilesToWorkingDirectory(
             Iterable<StoreMigrationParticipant> participantsNeedingMigration,
-            File migrationDirectory, File workingDirectory )
+            File migrationDirectory,
+            File workingDirectory )
     {
         try
         {
@@ -271,7 +271,7 @@ public class StoreUpgrader
 
     private void migrateToIsolatedDirectory( List<StoreMigrationParticipant> participantsNeedingMigration,
                                              File storeDir, File migrationDirectory,
-                                             SchemaIndexProvider schemaIndexProvider, PageCache pageCache )
+                                             SchemaIndexProvider schemaIndexProvider )
     {
         try
         {
@@ -279,7 +279,7 @@ public class StoreUpgrader
             {
                 if ( participantsNeedingMigration.contains( participant ) )
                 {   // This participant needs migration, do it
-                    participant.migrate( storeDir, migrationDirectory, schemaIndexProvider, pageCache );
+                    participant.migrate( storeDir, migrationDirectory, schemaIndexProvider );
                 }
             }
         }

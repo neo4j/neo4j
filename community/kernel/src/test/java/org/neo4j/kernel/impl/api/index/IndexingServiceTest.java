@@ -39,6 +39,7 @@ import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -798,7 +799,7 @@ public class IndexingServiceTest
         ).thenReturn( accessor );
         when( indexProvider.snapshotMetaFiles() ).thenReturn( IteratorUtil.<File>emptyIterator() );
         when( indexProvider.storeMigrationParticipant(
-                any( FileSystemAbstraction.class ), any( UpgradableDatabase.class ))
+                any( FileSystemAbstraction.class ), any( PageCache.class ), any( UpgradableDatabase.class ))
         ).thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
 
         when( nameLookup.labelGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "label" ) );

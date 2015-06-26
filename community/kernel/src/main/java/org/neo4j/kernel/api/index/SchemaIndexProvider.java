@@ -29,6 +29,7 @@ import org.neo4j.graphdb.DependencyResolver.SelectionStrategy;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -126,7 +127,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
 
                 @Override
                 public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
-                                                                            UpgradableDatabase upgradableDatabase )
+                        PageCache pageCache, UpgradableDatabase upgradableDatabase )
                 {
                     return StoreMigrationParticipant.NOT_PARTICIPATING;
                 }
@@ -239,7 +240,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         return new File( new File( new File( storeDir, "schema" ), "index" ), key );
     }
 
-    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
+    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
                                                                          UpgradableDatabase upgradableDatabase );
 
     /**

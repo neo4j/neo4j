@@ -555,9 +555,10 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     // of the dependency tree, starting at the bottom
     private void upgradeStore( File storeDir, StoreUpgrader storeMigrationProcess, SchemaIndexProvider indexProvider )
     {
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fs ) );
-        storeMigrationProcess.addParticipant( indexProvider.storeMigrationParticipant( fs, upgradableDatabase ) );
-        storeMigrationProcess.migrateIfNeeded( storeDir, indexProvider, pageCache );
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
+        storeMigrationProcess
+                .addParticipant( indexProvider.storeMigrationParticipant( fs, pageCache, upgradableDatabase ) );
+        storeMigrationProcess.migrateIfNeeded( storeDir, indexProvider );
     }
 
     private NeoStoreModule buildNeoStore( final StoreFactory storeFactory, final LabelTokenHolder

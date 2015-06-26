@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -41,7 +40,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.NO_MONITOR;
@@ -90,7 +88,8 @@ public class StoreMigrationTool
                 kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                 deps, ignore() ) );
 
-        LogService logService = StoreLogService.withUserLogProvider( userLogProvider ).inStoreDirectory( fs, legacyStoreDirectory );
+        LogService logService =
+                StoreLogService.withUserLogProvider( userLogProvider ).inStoreDirectory( fs, legacyStoreDirectory );
 
         // Add the kernel store migrator
         life.start();
@@ -98,23 +97,17 @@ public class StoreMigrationTool
                 SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
 
         Log log = userLogProvider.getLog( StoreMigrationTool.class );
-        try
-        {
-            UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fs ) );
-            migrationProcess.addParticipant( new StoreMigrator(
-                    new VisibleMigrationProgressMonitor( logService.getInternalLog( StoreMigrationTool.class ) ),
-                    fs, upgradableDatabase, config, logService ) );
-            migrationProcess.addParticipant( schemaIndexProvider.storeMigrationParticipant( fs, upgradableDatabase) );
-        }
-        catch ( IllegalArgumentException e )
-        {   // That's fine actually, no schema index provider on the classpath or something
-        }
-
-        // Perform the migration
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
+            UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
+            migrationProcess.addParticipant( new StoreMigrator(
+                    new VisibleMigrationProgressMonitor( logService.getInternalLog( StoreMigrationTool.class ) ),
+                    fs, pageCache, upgradableDatabase, config, logService ) );
+            migrationProcess.addParticipant(
+                    schemaIndexProvider.storeMigrationParticipant( fs, pageCache, upgradableDatabase ) );
+            // Perform the migration
             long startTime = System.currentTimeMillis();
-            migrationProcess.migrateIfNeeded( legacyStoreDirectory, schemaIndexProvider, pageCache );
+            migrationProcess.migrateIfNeeded( legacyStoreDirectory, schemaIndexProvider );
             long duration = System.currentTimeMillis() - startTime;
             log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
         }
@@ -122,30 +115,12 @@ public class StoreMigrationTool
         {
             throw new StoreUpgrader.UnableToUpgradeException( "Failure during upgrade", e );
         }
+        catch ( IllegalArgumentException e )
+        {   // That's fine actually, no schema index provider on the classpath or something
+        }
         finally
         {
             life.shutdown();
         }
-    }
-
-    private DependencyResolver kernelExtensionDependencyResolver(
-            final FileSystemAbstraction fileSystem, final Config config )
-    {
-        return new DependencyResolver.Adapter()
-        {
-            @Override
-            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
-            {
-                if ( type.isInstance( fileSystem ) )
-                {
-                    return type.cast( fileSystem );
-                }
-                if ( type.isInstance( config ) )
-                {
-                    return type.cast( config );
-                }
-                throw new IllegalArgumentException( type.toString() );
-            }
-        };
     }
 }

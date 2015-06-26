@@ -32,15 +32,16 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -76,15 +77,20 @@ public class StoreMigratorTest
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreMigrator migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs, logService );
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
+        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
+        StoreMigrator migrator =
+                new StoreMigrator( progressMonitor, fs, pageCache, upgradableDatabase, new Config(), logService );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
         assertTrue( migrator.needsMigration( storeDirectory ) );
-        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, pageCache );
+        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider );
         migrator.close();
 
         // WHEN simulating resuming the migration
-        migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs, logService );
+        upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
+        progressMonitor = new SilentMigrationProgressMonitor();
+        migrator = new StoreMigrator( progressMonitor, fs, pageCache, upgradableDatabase, new Config(), logService );
         migrator.moveMigratedFiles( migrationDir, storeDirectory );
 
         // THEN starting the new store should be successful

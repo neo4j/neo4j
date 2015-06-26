@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.File;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 
 public class ReadOnlyTransactionIdStore implements TransactionIdStore
@@ -29,12 +29,12 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     private final long transactionId;
     private final long transactionChecksum;
 
-    public ReadOnlyTransactionIdStore( FileSystemAbstraction fs, File storeDir )
+    public ReadOnlyTransactionIdStore( PageCache pageCache, File storeDir )
     {
         long id = 0, checksum = 0;
-        if ( NeoStoreUtil.neoStoreExists( fs, storeDir ) )
+        if ( NeoStoreUtil.neoStoreExists( pageCache, storeDir ) )
         {
-            NeoStoreUtil access = new NeoStoreUtil( storeDir, fs );
+            NeoStoreUtil access = new NeoStoreUtil( storeDir, pageCache );
             id = access.getLastCommittedTx();
             checksum = access.getLastCommittedTxChecksum();
         }

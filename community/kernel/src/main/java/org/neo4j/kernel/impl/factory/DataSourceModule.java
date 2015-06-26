@@ -32,6 +32,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.KernelEventHandlers;
@@ -162,8 +163,9 @@ public class DataSourceModule
                 threadToTransactionBridge, indexProvider, nodeAutoIndexer, relAutoIndexer );
 
         // Factories for things that needs to be created later
+        PageCache pageCache = platformModule.pageCache;
         StoreFactory storeFactory = new StoreFactory( storeDir, config, editionModule.idGeneratorFactory,
-                platformModule.pageCache, fileSystem, logging.getInternalLogProvider(), platformModule.monitors );
+                pageCache, fileSystem, logging.getInternalLogProvider(), platformModule.monitors );
 
         StartupStatisticsProvider startupStatistics = deps.satisfyDependency( new StartupStatisticsProvider() );
 
@@ -174,9 +176,9 @@ public class DataSourceModule
 
         VisibleMigrationProgressMonitor progressMonitor =
                 new VisibleMigrationProgressMonitor( logging.getInternalLog( StoreMigrator.class ) );
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fileSystem ) );
-        storeMigrationProcess.addParticipant( new StoreMigrator(
-                progressMonitor, fileSystem, upgradableDatabase, config, logging ) );
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
+        storeMigrationProcess.addParticipant(
+                new StoreMigrator( progressMonitor, fileSystem, pageCache, upgradableDatabase, config, logging ) );
 
         Guard guard = config.get( execution_guard_enabled ) ?
                 deps.satisfyDependency( new Guard( logging.getInternalLog( Guard.class ) ) ) :
@@ -200,7 +202,7 @@ public class DataSourceModule
                 storeMigrationProcess, platformModule.transactionMonitor, kernelHealth,
                 platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
                 editionModule.headerInformationFactory, startupStatistics, nodeManager, guard, indexStore,
-                editionModule.commitProcessFactory, platformModule.pageCache, platformModule.monitors,
+                editionModule.commitProcessFactory, pageCache, platformModule.monitors,
                 platformModule.tracers ) );
         dataSourceManager.register( neoStoreDataSource );
 

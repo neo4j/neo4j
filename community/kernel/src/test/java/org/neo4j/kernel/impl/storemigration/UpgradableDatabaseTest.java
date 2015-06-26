@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
@@ -33,10 +34,12 @@ import java.util.Collection;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.test.PageCacheRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -70,6 +73,9 @@ public class UpgradableDatabaseTest
             );
         }
 
+        @Rule
+        public final PageCacheRule pageCacheRule = new PageCacheRule();
+
         @Before
         public void setup() throws IOException
         {
@@ -80,7 +86,8 @@ public class UpgradableDatabaseTest
         public void shouldAcceptTheStoresInTheSampleDatabaseAsBeingEligibleForUpgrade() throws IOException
         {
             // given
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fileSystem ) );
+            final UpgradableDatabase upgradableDatabase =
+                    new UpgradableDatabase( new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ) );
 
             // when
             final boolean result = upgradableDatabase.storeFilesUpgradeable( workingDirectory );
@@ -94,7 +101,8 @@ public class UpgradableDatabaseTest
         {
             // given
             changeVersionNumber( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fileSystem ) );
+            final UpgradableDatabase upgradableDatabase
+                    = new UpgradableDatabase( new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ) );
 
             // when
             final boolean result = upgradableDatabase.storeFilesUpgradeable( workingDirectory );
@@ -109,7 +117,8 @@ public class UpgradableDatabaseTest
             // given
             final File storeFile = new File( workingDirectory, "neostore.nodestore.db" );
             truncateFile( fileSystem, storeFile, "StringPropertyStore " + version );
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fileSystem ) );
+            final UpgradableDatabase upgradableDatabase =
+                    new UpgradableDatabase( new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ) );
 
             // when
             final boolean result = upgradableDatabase.storeFilesUpgradeable( workingDirectory );
@@ -122,10 +131,11 @@ public class UpgradableDatabaseTest
         public void shouldDetectOldVersionAsDifferentFromCurrent() throws Exception
         {
             // given
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fileSystem ) );
+            PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
 
             // when
-            boolean currentVersion = upgradableDatabase.hasCurrentVersion( fileSystem, workingDirectory );
+            boolean currentVersion = upgradableDatabase.hasCurrentVersion( pageCache, workingDirectory );
 
             // then
             assertFalse( currentVersion );
@@ -139,7 +149,8 @@ public class UpgradableDatabaseTest
             assertTrue( shortFileLength < UTF8.encode( "StringPropertyStore " + version ).length );
             truncateToFixedLength( fileSystem, new File( workingDirectory, "neostore.relationshiptypestore.db" ),
                     shortFileLength );
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fileSystem ) );
+            final UpgradableDatabase upgradableDatabase =
+                    new UpgradableDatabase( new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ) );
 
             // when
             final boolean result = upgradableDatabase.storeFilesUpgradeable( workingDirectory );
@@ -166,6 +177,9 @@ public class UpgradableDatabaseTest
             );
         }
 
+        @Rule
+        public final PageCacheRule pageCacheRule = new PageCacheRule();
+
         @Before
         public void setup() throws IOException
         {
@@ -178,10 +192,11 @@ public class UpgradableDatabaseTest
         public void shouldDetectOldVersionAsDifferentFromCurrent() throws Exception
         {
             // given
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fileSystem ) );
+            PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
 
             // when
-            boolean currentVersion = upgradableDatabase.hasCurrentVersion( fileSystem, workingDirectory );
+            boolean currentVersion = upgradableDatabase.hasCurrentVersion( pageCache, workingDirectory );
 
             // then
             assertFalse( currentVersion );
@@ -191,7 +206,8 @@ public class UpgradableDatabaseTest
         public void shouldCommunicateWhatCausesInabilityToUpgrade() throws IOException
         {
             // given
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fileSystem ) );
+            final UpgradableDatabase upgradableDatabase =
+                    new UpgradableDatabase( new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ) );
             try
             {
                 // when
@@ -201,8 +217,10 @@ public class UpgradableDatabaseTest
             catch ( StoreUpgrader.UnexpectedUpgradingStoreVersionException e )
             {
                 // then
-                final String expected = "'" + neostoreFilename + "' has a store version number that we cannot upgrade from. " +
-                                        "Expected '" + Legacy21Store.LEGACY_VERSION + "' but file is version 'NodeStore " + version + "'.";
+                final String expected =
+                        "'" + neostoreFilename + "' has a store version number that we cannot upgrade from. " +
+                        "Expected '" + Legacy21Store.LEGACY_VERSION + "' but file is version 'NodeStore " + version +
+                        "'.";
                 assertThat( e.getMessage(), is( expected ) );
             }
         }

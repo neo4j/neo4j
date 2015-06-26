@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -45,21 +45,18 @@ import org.neo4j.logging.LogProvider;
 public class StoreRecoverer
 {
     private final FileSystemAbstraction fs;
+    private final PageCache pageCache;
 
-    public StoreRecoverer()
-    {
-        this( new DefaultFileSystemAbstraction() );
-    }
-
-    public StoreRecoverer( FileSystemAbstraction fs )
+    public StoreRecoverer( FileSystemAbstraction fs, PageCache pageCache )
     {
         this.fs = fs;
+        this.pageCache = pageCache;
     }
 
     public boolean recoveryNeededAt( File dataDir ) throws IOException
     {
         long logVersion = fs.fileExists( new File( dataDir, NeoStore.DEFAULT_NAME ) )
-                          ? new NeoStoreUtil( dataDir, fs ).getLogVersion()
+                          ? new NeoStoreUtil( dataDir, pageCache ).getLogVersion()
                           : 0;
         return recoveryNeededAt( dataDir, logVersion );
     }

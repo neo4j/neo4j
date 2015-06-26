@@ -35,11 +35,15 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
@@ -87,18 +91,20 @@ public class StoreUpgraderInterruptionTestIT
         File workingDirectory = directory.directory();
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, workingDirectory );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-
-        StoreMigrator failingStoreMigrator = new StoreMigrator(
-                new SilentMigrationProgressMonitor(), fileSystem, NullLogService.getInstance() )
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
+        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
+        LogService logService = NullLogService.getInstance();
+        final Config config = new Config();
+        StoreMigrator failingStoreMigrator =
+                new StoreMigrator( progressMonitor, fileSystem, pageCache, upgradableDatabase, config, logService )
         {
             @Override
             public void migrate(
                     File sourceStoreDir,
                     File targetStoreDir,
-                    SchemaIndexProvider schemaIndexProvider,
-                    PageCache pageCache ) throws IOException
+                    SchemaIndexProvider schemaIndexProvider ) throws IOException
             {
-                super.migrate( sourceStoreDir, targetStoreDir, schemaIndexProvider, pageCache );
+                super.migrate( sourceStoreDir, targetStoreDir, schemaIndexProvider );
                 throw new RuntimeException( "This upgrade is failing" );
             }
         };
@@ -107,7 +113,7 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( failingStoreMigrator ).migrateIfNeeded( workingDirectory, schemaIndexProvider, pageCache );
+            newUpgrader( failingStoreMigrator ).migrateIfNeeded( workingDirectory, schemaIndexProvider );
             fail( "Should throw exception" );
         }
         catch ( RuntimeException e )
@@ -117,10 +123,11 @@ public class StoreUpgraderInterruptionTestIT
         }
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
-
-        newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem,
-                NullLogService.getInstance() ) )
-                .migrateIfNeeded( workingDirectory, schemaIndexProvider, pageCache );
+        upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
+        progressMonitor = new SilentMigrationProgressMonitor();
+        StoreMigrator migrator =
+                new StoreMigrator( progressMonitor, fileSystem, pageCache, upgradableDatabase, config, logService );
+        newUpgrader( migrator ).migrateIfNeeded( workingDirectory, schemaIndexProvider );
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
         assertConsistentStore( workingDirectory );
@@ -128,7 +135,8 @@ public class StoreUpgraderInterruptionTestIT
 
     private StoreUpgrader newUpgrader( StoreMigrator migrator )
     {
-        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fileSystem, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
+        StoreUpgrader upgrader =
+                new StoreUpgrader( ALLOW_UPGRADE, fileSystem, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
         upgrader.addParticipant( migrator );
         return upgrader;
     }

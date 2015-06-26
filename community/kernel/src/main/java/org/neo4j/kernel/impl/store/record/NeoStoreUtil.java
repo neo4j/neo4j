@@ -27,19 +27,16 @@ import java.util.Map;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
-import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
-import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 
 import static java.lang.String.format;
-
-import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.kernel.impl.store.NeoStore.RECORD_SIZE;
-import static org.neo4j.kernel.impl.store.NeoStore.TYPE_DESCRIPTOR;
 
 /**
  * Reads the contents of a {@link NeoStore neostore} store. Namely all of its {@link Position records}
@@ -49,66 +46,62 @@ public class NeoStoreUtil
 {
     private final Map<Position,Long> values = new HashMap<>();
 
-    public static void main( String[] args )
+    public static boolean neoStoreExists( PageCache pageCache, File storeDir )
     {
-        if ( args.length < 1 )
+        try ( PagedFile file = pageCache.map( neoStoreFile( storeDir, StoreFileType.STORE ), pageCache.pageSize() ) )
         {
-            System.err.println( "Supply one argument which is the store directory of a neo4j graph database" );
-            System.exit( 1 );
+            if ( file.getLastPageId() == -1 )
+            {
+                return false;
+            }
         }
-        System.out.println( new NeoStoreUtil( new File( args[0] ) ) );
+        catch ( IOException e )
+        {
+            return false;
+        }
+
+        return true;
     }
 
-    public static boolean neoStoreExists( FileSystemAbstraction fs, File storeDir )
-    {
-        return fs.fileExists( neoStoreFile( storeDir, StoreFileType.STORE ) );
-    }
-
-    public NeoStoreUtil( File storeDir )
-    {
-        this( storeDir, new DefaultFileSystemAbstraction() );
-    }
-
-    public NeoStoreUtil( File storeDir, FileSystemAbstraction fs )
+    public NeoStoreUtil( File storeDir, PageCache pageCache )
     {
         File neoStoreFile = neoStoreFile( storeDir, StoreFileType.STORE );
-        String currentTypeDescriptorAndVersion = NeoStore.buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
-        boolean storeHasTrailer = hasTrailer( neoStoreFile, fs, currentTypeDescriptorAndVersion );
-        try ( StoreChannel channel = fs.open( neoStoreFile, "r" ) )
+        try ( PagedFile pagedFile = pageCache.map( neoStoreFile, pageCache.pageSize() ) )
         {
-            int contentSize = (int) channel.size();
-            if ( storeHasTrailer )
+            if ( pagedFile.getLastPageId() != -1 )
             {
-                int trailerSize = encode( currentTypeDescriptorAndVersion ).length;
-                contentSize -= trailerSize;
-            }
-            int records = contentSize/RECORD_SIZE;
-            ByteBuffer buf = ByteBuffer.allocate( records * RECORD_SIZE );
-            channel.read( buf );
-            buf.flip();
-
-            for ( int i = 0; buf.remaining() >= RECORD_SIZE && i < Position.values().length; i++ )
-            {
-                values.put( Position.values()[i], nextRecord( buf ) );
+                try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_LOCK ) )
+                {
+                    if ( cursor.next() )
+                    {
+                        byte[] data = new byte[Position.values().length * RECORD_SIZE];
+                        do
+                        {
+                            cursor.getBytes( data );
+                        }
+                        while ( cursor.shouldRetry() );
+                        ByteBuffer buf = ByteBuffer.wrap( data );
+                        int pos = 0;
+                        while ( pos < Position.values().length && buf.remaining() >= RECORD_SIZE )
+                        {
+                            if ( buf.get() == Record.IN_USE.byteValue() )
+                            {
+                                values.put( Position.values()[pos], buf.getLong() );
+                            }
+                            else
+                            {
+                                buf.getLong();
+                            }
+                            pos++;
+                        }
+                    }
+                }
             }
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
-    }
-
-    private boolean hasTrailer( File neoStoreFile, FileSystemAbstraction fs, String currentTypeDescriptorAndVersion )
-    {
-        StoreVersionCheck trailerCheck = new StoreVersionCheck( fs );
-        Result result = trailerCheck.hasVersion( neoStoreFile, currentTypeDescriptorAndVersion );
-        return result.outcome == Result.Outcome.ok || result.outcome == Result.Outcome.unexpectedUpgradingStoreVersion;
-    }
-
-    private long nextRecord( ByteBuffer buf )
-    {
-        buf.get(); // in use byte
-        return buf.getLong();
     }
 
     /**

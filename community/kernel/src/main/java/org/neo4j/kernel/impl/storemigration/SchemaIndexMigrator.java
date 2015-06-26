@@ -46,6 +46,8 @@ import static org.neo4j.kernel.impl.store.record.SchemaRule.Kind.UNIQUENESS_CONS
 
 public class SchemaIndexMigrator implements StoreMigrationParticipant
 {
+    private final PageCache pageCache;
+
     public interface SchemaStoreProvider
     {
         SchemaStore provide( File storeDir, PageCache pageCache );
@@ -56,10 +58,11 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
     private final SchemaStoreProvider schemaStoreProvider;
     private String versionToUpgradeFrom;
 
-    public SchemaIndexMigrator( FileSystemAbstraction fileSystem, UpgradableDatabase upgradableDatabase,
-                                SchemaStoreProvider schemaStoreProvider )
+    public SchemaIndexMigrator( FileSystemAbstraction fileSystem, PageCache pageCache,
+            UpgradableDatabase upgradableDatabase, SchemaStoreProvider schemaStoreProvider )
     {
         this.fileSystem = fileSystem;
+        this.pageCache = pageCache;
         this.upgradableDatabase = upgradableDatabase;
         this.schemaStoreProvider = schemaStoreProvider;
     }
@@ -67,7 +70,7 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
     @Override
     public boolean needsMigration( File storeDir ) throws IOException
     {
-        if ( upgradableDatabase.hasCurrentVersion( fileSystem, storeDir ) )
+        if ( upgradableDatabase.hasCurrentVersion( pageCache, storeDir ) )
         {
             return false;
         }
@@ -87,8 +90,7 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider,
-                         PageCache pageCache ) throws IOException
+    public void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider ) throws IOException
     {
         switch ( versionToUpgradeFrom( storeDir ) )
         {
