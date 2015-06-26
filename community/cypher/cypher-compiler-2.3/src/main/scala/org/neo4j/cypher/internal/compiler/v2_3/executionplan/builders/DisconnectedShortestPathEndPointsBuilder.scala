@@ -42,7 +42,9 @@ class DisconnectedShortestPathEndPointsBuilder extends PlanBuilder {
         currentWhere.replace(Unsolved(predicate), Solved(predicate))
     }
 
-    plan.copy(query = plan.query.copy(start = plan.query.start :+ Unsolved(singleNodeToAdd.s), where = filteredWhere))
+    val amendedWhere = filteredWhere ++ singleNodeToAdd.newUnsolvedPredicates.map(Unsolved(_))
+
+    plan.copy(query = plan.query.copy(start = plan.query.start :+ Unsolved(singleNodeToAdd.s), where = amendedWhere))
   }
 
   private def unsolvedEndPoints(plan: ExecutionPlanInProgress): Set[String] = {

@@ -56,10 +56,70 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     val query = "MATCH (l:Location) WHERE l.name LIKE 'Lon%' RETURN l"
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     result.executionPlanDescription().toString should include(IndexSeekByRange.name)
     result.toList should equal(List(Map("l" -> london)))
+  }
+
+  test("should perform prefix search in an update query") {
+    createLabeledNode(Map("name" -> "London"), "Location")
+    createLabeledNode(Map("name" -> "london"), "Location")
+    graph.createIndex("Location", "name")
+
+    val query = "MATCH (l:Location) WHERE l.name LIKE 'Lon%' CREATE (L:Location {name: toUpper(l.name)}) RETURN L.name AS NAME"
+
+    val result = executeWithRulePlanner(query)
+
+    result.executionPlanDescription().toString should include("SchemaIndex")
+    result.executionPlanDescription().toString should include("StringSeekRange")
+    result.toList should equal(List(Map("NAME" -> "LONDON")))
+  }
+
+  test("should perform prefix search for _ in an update query") {
+    createLabeledNode(Map("name" -> "Loony"), "Location")
+    createLabeledNode(Map("name" -> "loony"), "Location")
+    graph.createIndex("Location", "name")
+
+    val query = "MATCH (l:Location) WHERE l.name LIKE 'Loon_' CREATE (L:Location {name: toUpper(l.name)}) RETURN L.name AS NAME"
+
+    val result = executeWithRulePlanner(query)
+
+    result.executionPlanDescription().toString should include("SchemaIndex")
+    result.executionPlanDescription().toString should include("StringSeekRange")
+    result.toList should equal(List(Map("NAME" -> "LOONY")))
+  }
+
+  test("should perform prefix search for _ in an update query with complex prefix") {
+    createLabeledNode(Map("name" -> "Loonyboom"), "Location")
+    createLabeledNode(Map("name" -> "loonyboom"), "Location")
+    createLabeledNode(Map("name" -> "boom"), "Location")
+    graph.createIndex("Location", "name")
+
+    val query = "MATCH (l:Location) WHERE l.name LIKE 'Loon_boom' CREATE (L:Location {name: toUpper(l.name)}) RETURN L.name AS NAME"
+
+    val result = executeWithRulePlanner(query)
+
+    println(result.executionPlanDescription())
+    result.executionPlanDescription().toString should include("SchemaIndex")
+    result.executionPlanDescription().toString should include("StringSeekRange")
+    result.toList should equal(List(Map("NAME" -> "LOONYBOOM")))
+  }
+
+  test("should perform complex prefix search in an update query)") {
+    val london = createLabeledNode(Map("name" -> "London"), "Location")
+    createLabeledNode(Map("name" -> "Londinium"), "Location")
+    createLabeledNode(Map("name" -> "london"), "Location")
+    graph.createIndex("Location", "name")
+
+    val query = "MATCH (l:Location) WHERE l.name LIKE 'Lon%don' CREATE (L:Location {name: toUpper(l.name)}) RETURN L.name AS NAME"
+
+    val result = executeWithRulePlanner(query)
+
+    result.executionPlanDescription().toString should include("SchemaIndex")
+    result.executionPlanDescription().toString should include("StringSeekRange")
+    result.executionPlanDescription().toString should include("Filter")
+    result.toList should equal(List(Map("NAME" -> "LONDON")))
   }
 
   test("should only match on the actual prefix") {
@@ -78,7 +138,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     val query = "MATCH (l:Location) WHERE l.name LIKE 'Lon%' RETURN l"
 
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     result.executionPlanDescription().toString should include(IndexSeekByRange.name)
     result.toList should equal(List(Map("l" -> london)))
@@ -96,7 +156,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     graph.createIndex("Address", "prop")
 
-    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'w%' AND a.prop LIKE 'www%' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop LIKE 'w%' AND a.prop LIKE 'www%' RETURN a")
 
     result.executionPlanDescription().toString should include(IndexSeekByRange.name)
     result.executionPlanDescription().toString should include("prop LIKE www%")
@@ -115,7 +175,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     graph.createIndex("Address", "prop")
 
-    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'www%' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop LIKE 'www%' RETURN a")
 
     result.executionPlanDescription().toString should include(IndexSeekByRange.name)
     result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
@@ -134,7 +194,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     graph.createIndex("Address", "prop")
 
-    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'ww_' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop LIKE 'ww_' RETURN a")
 
     result.executionPlanDescription().toString should include("Filter")
     result.executionPlanDescription().toString should include(IndexSeekByRange.name)
@@ -154,7 +214,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     graph.createIndex("Address", "prop")
 
-    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'ww%w%' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop LIKE 'ww%w%' RETURN a")
 
     result.executionPlanDescription().toString should include(IndexSeekByRange.name)
     result.executionPlanDescription().toString should include("Filter")
@@ -175,7 +235,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     graph.createConstraint("Address", "prop")
 
-    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'www%' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop LIKE 'www%' RETURN a")
 
     result.executionPlanDescription().toString should include(UniqueIndexSeekByRange.name)
     result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
@@ -190,7 +250,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     val a1 = createLabeledNode(Map("prop" -> "www123"), "Address")
     val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
 
-    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'www%' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop LIKE 'www%' RETURN a")
 
     result.executionPlanDescription().toString should not include(IndexSeekByRange.name)
     result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
@@ -207,7 +267,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     val a2 = createLabeledNode(Map("prop" -> "www"), "Address")
     val a3 = createLabeledNode(Map("prop" -> "ww"), "Address")
 
-    val result = executeWithCostPlannerOnly("MATCH (a:Address) WHERE a.prop LIKE 'ww_%' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop LIKE 'ww_%' RETURN a")
 
     result.executionPlanDescription().toString should not include(IndexSeekByRange.name)
     result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))

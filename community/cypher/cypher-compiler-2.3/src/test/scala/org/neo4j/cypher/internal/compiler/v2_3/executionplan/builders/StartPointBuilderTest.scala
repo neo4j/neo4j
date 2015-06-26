@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.NodeStartPipe
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{InclusiveBound, LowerBounded}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -38,6 +39,28 @@ class StartPointBuilderTest extends BuilderTest {
   test("says_yes_to_node_by_id_queries") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo")))))
+
+    assertAccepts(q)
+  }
+
+  test("plans index seek by prefix") {
+    val range = StringSeekRange(LowerBounded(InclusiveBound("prefix")))
+    val labelName = "Label"
+    val propertyName = "prop"
+    val q = PartiallySolvedQuery().
+      copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, AnyIndex, Some(RangeQueryExpression(range))))))
+    when(context.getIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+
+    assertAccepts(q)
+  }
+
+  test("plans unique index seek by prefix") {
+    val range = StringSeekRange(LowerBounded(InclusiveBound("prefix")))
+    val labelName = "Label"
+    val propertyName = "prop"
+    val q = PartiallySolvedQuery().
+      copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, UniqueIndex, Some(RangeQueryExpression(range))))))
+    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
 
     assertAccepts(q)
   }

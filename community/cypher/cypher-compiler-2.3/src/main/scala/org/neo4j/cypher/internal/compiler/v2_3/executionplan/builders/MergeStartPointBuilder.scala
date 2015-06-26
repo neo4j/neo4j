@@ -76,8 +76,8 @@ class MergeStartPointBuilder extends PlanBuilder {
     val newMergeNodeAction: MergeNodeAction = NodeFetchStrategy.findUniqueIndexes(props, labels, ctx) match {
       case indexes if indexes.isEmpty =>
         val startItem: RatedStartItem = NodeFetchStrategy.findStartStrategy(identifier, where, ctx, symbols) match {
-          case rated@RatedStartItem(index: SchemaIndex, _, _) => rated.copy(s = index.copy(query = Some(SingleQueryExpression(propsByName(index.property)))))
-          case other                                          => other
+          case rated@RatedStartItem(index: SchemaIndex, _, _, _) => rated.copy(s = index.copy(query = Some(SingleQueryExpression(propsByName(index.property)))))
+          case other                                             => other
         }
 
         val nodeProducer = PlainMergeNodeProducer(entityProducerFactory.nodeStartItems((ctx, startItem.s)))

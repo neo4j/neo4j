@@ -20,11 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_3.IndexHintException
+import org.neo4j.cypher.internal.compiler.v2_3.ast
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{InclusiveBound, LowerBounded}
 
 class IndexLookupBuilderTest extends BuilderTest {
 
@@ -54,6 +57,23 @@ class IndexLookupBuilderTest extends BuilderTest {
     val predicate = Equals(valueExpression, Property(Identifier(identifier), PropertyKey(property)))
 
     check(identifier, label, property, predicate, valueExpression)
+  }
+
+  test("should_accept_a_prefix_seek_query") {
+    object inner extends org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport {
+      import ExpressionConverters._
+
+      def run() = {
+        //GIVEN
+        val like: ast.Like = ast.Like(ast.Property(ident("n"), ast.PropertyKeyName("prop")_)_, ast.LikePattern(ast.StringLiteral("prefix%")_))_
+        val predicate = like.asCommandPredicate
+
+        // WHAM
+        check("n", "label", "prop", predicate, RangeQueryExpression(StringSeekRange(LowerBounded(InclusiveBound("prefix")))))
+      }
+    }
+
+    inner.run()
   }
 
   test("should_throw_if_no_matching_index_is_found") {

@@ -54,6 +54,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
     val disconnectedRatedStartItems: Seq[RatedStartItem] = findStartItemsForDisconnectedPatterns(plan, ctx)
 
     val solvedPredicates: Seq[Predicate] = disconnectedRatedStartItems.flatMap(_.solvedPredicates)
+    val newUnsolvedPredicates: Seq[QueryToken[Predicate]] = disconnectedRatedStartItems.flatMap(_.newUnsolvedPredicates).map(Unsolved(_))
     val disconnectedStartItems = disconnectedRatedStartItems.map( (r: RatedStartItem) => Unsolved(r.s) )
 
     val filteredWhere = solvedPredicates.foldLeft(q.where) {
@@ -61,7 +62,9 @@ class StartPointChoosingBuilder extends PlanBuilder {
         currentWhere.replace(Unsolved(predicate), Solved(predicate))
     }
 
-    plan.copy(query = q.copy(start = disconnectedStartItems ++ q.start, where = filteredWhere))
+    val amendedWhere = filteredWhere ++ newUnsolvedPredicates
+
+    plan.copy(query = q.copy(start = disconnectedStartItems ++ q.start, where = amendedWhere))
   }
 
   private def findStartItemsForDisconnectedPatterns(plan: ExecutionPlanInProgress, ctx: PlanContext): Seq[RatedStartItem] = {
@@ -71,7 +74,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
 
     def findSingleNodePoints(startPoints: Set[RatedStartItem]): Iterable[RatedStartItem] =
       startPoints.filter {
-        case RatedStartItem(si, r, _) => r == NodeFetchStrategy.Single
+        case RatedStartItem(si, r, _, _) => r == NodeFetchStrategy.Single
       }
 
     def findStartItemFor(pattern: MatchPattern): Iterable[RatedStartItem] = {
@@ -87,7 +90,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
 
       if (shortestPathPointsInPattern.nonEmpty) {
         startPoints.filter {
-          case RatedStartItem(si, r, _) => shortestPathPoints.contains(si.identifierName)
+          case RatedStartItem(si, r, _, _) => shortestPathPoints.contains(si.identifierName)
         }.toSet union singleNodePoints.toSet
       } else if (singleNodePoints.nonEmpty) {
         // We want to keep all these start points because cartesian product with them is free
