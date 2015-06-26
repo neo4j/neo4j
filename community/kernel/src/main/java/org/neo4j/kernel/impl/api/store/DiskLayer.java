@@ -700,7 +700,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodeGetUniqueFromIndexSeek( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongResourceIterator nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index,
             Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         throw new UnsupportedOperationException();
@@ -859,7 +859,7 @@ public class DiskLayer implements StoreReadLayer
         return propertyLoader.graphLoadProperties( new IteratingPropertyReceiver() );
     }
 
-    public PrimitiveLongResourceIterator nodeGetUniqueFromIndexSeek( KernelStatement state,
+    public PrimitiveLongResourceIterator nodeGetFromUniqueIndexSeek( KernelStatement state,
             long indexId, Object value )
             throws IndexNotFoundKernelException
     {

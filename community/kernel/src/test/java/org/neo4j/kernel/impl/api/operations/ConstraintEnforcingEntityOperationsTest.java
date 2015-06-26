@@ -63,10 +63,10 @@ public class ConstraintEnforcingEntityOperationsTest
     {
         // given
         long expectedNodeId = 15;
-        when( readOps.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value ) ).thenReturn( expectedNodeId );
+        when( readOps.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn( expectedNodeId );
 
         // when
-        long nodeId = ops.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value );
+        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
 
         // then
         assertEquals( expectedNodeId, nodeId );
@@ -78,10 +78,10 @@ public class ConstraintEnforcingEntityOperationsTest
     public void shouldHoldIndexWriteLockIfNodeDoesNotExist() throws Exception
     {
         // given
-        when( readOps.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value ) ).thenReturn( NO_SUCH_NODE );
+        when( readOps.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn( NO_SUCH_NODE );
 
         // when
-        long nodeId = ops.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value );
+        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
 
         // then
         assertEquals( NO_SUCH_NODE, nodeId );
@@ -96,12 +96,12 @@ public class ConstraintEnforcingEntityOperationsTest
     {
         // given
         long expectedNodeId = 15;
-        when( readOps.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value ) )
+        when( readOps.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) )
                 .thenReturn( NO_SUCH_NODE )
                 .thenReturn( expectedNodeId );
 
         // when
-        long nodeId = ops.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value );
+        long nodeId = ops.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
 
         // then
         assertEquals( expectedNodeId, nodeId );

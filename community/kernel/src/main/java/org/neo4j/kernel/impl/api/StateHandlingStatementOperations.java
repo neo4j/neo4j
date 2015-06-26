@@ -177,11 +177,12 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexLookup( KernelStatement statement, IndexDescriptor index, Object value )
+    public NodeCursor nodeCursorGetFromIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
         // TODO Filter this properly
-        return statement.getStoreStatement().acquireIteratorNodeCursor( storeLayer.nodesGetFromIndexSeek( statement, index, value ) );
+        return statement.getStoreStatement().acquireIteratorNodeCursor( storeLayer.nodesGetFromIndexSeek( statement,
+                index, value ) );
     }
 
     @Override
@@ -189,24 +190,28 @@ public class StateHandlingStatementOperations implements
             throws IndexNotFoundKernelException
     {
         // TODO Filter this properly
-        return statement.getStoreStatement().acquireIteratorNodeCursor( storeLayer.nodesGetFromIndexScan(statement, index) );
+        return statement.getStoreStatement().acquireIteratorNodeCursor(
+                storeLayer.nodesGetFromIndexScan( statement, index ) );
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexByPrefixScan( KernelStatement statement, IndexDescriptor index, String prefix )
+    public NodeCursor nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement, IndexDescriptor index,
+            String prefix )
             throws IndexNotFoundKernelException
     {
         // TODO Filter this properly
-        return statement.getStoreStatement().acquireIteratorNodeCursor( storeLayer.nodesGetFromIndexSeekByPrefix( statement, index, prefix ) );
+        return statement.getStoreStatement().acquireIteratorNodeCursor(
+                storeLayer.nodesGetFromIndexSeekByPrefix( statement, index, prefix ) );
     }
 
     @Override
-    public NodeCursor nodeCursorGetUniqueFromIndexLookup( KernelStatement statement,
+    public NodeCursor nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
             IndexDescriptor index,
             Object value ) throws IndexBrokenKernelException, IndexNotFoundKernelException
     {
         // TODO Filter this properly
-        return statement.getStoreStatement().acquireIteratorNodeCursor( storeLayer.nodeGetUniqueFromIndexSeek( statement, index, value ) );
+        return statement.getStoreStatement().acquireIteratorNodeCursor(
+                storeLayer.nodeGetFromUniqueIndexSeek( statement, index, value ) );
     }
 
     // </Cursors>
@@ -673,10 +678,10 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long nodeGetUniqueFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
+    public long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        PrimitiveLongResourceIterator committed = storeLayer.nodeGetUniqueFromIndexSeek( state, index, value );
+        PrimitiveLongResourceIterator committed = storeLayer.nodeGetFromUniqueIndexSeek( state, index, value );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
         PrimitiveLongIterator changesFiltered = filterIndexStateChanges( state, index, value, exactMatches );
         return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );

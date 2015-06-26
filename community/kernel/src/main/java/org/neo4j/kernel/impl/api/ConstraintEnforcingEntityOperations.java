@@ -113,7 +113,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
             state.locks().acquireExclusive( INDEX_ENTRY,
                     indexEntryResourceId( labelId, propertyKeyId, property.valueAsString() ) );
 
-            long existing = entityReadOperations.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value );
+            long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
             if ( existing != NO_SUCH_NODE && existing != modifiedNode )
             {
                 throw new UniqueConstraintViolationKernelException( labelId, propertyKeyId, value, existing );
@@ -228,7 +228,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public long nodeGetUniqueFromIndexSeek(
+    public long nodeGetFromUniqueIndexSeek(
             KernelStatement state,
             IndexDescriptor index,
             Object value )
@@ -251,13 +251,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
 
         locks.acquireShared( INDEX_ENTRY, indexEntryId );
 
-        long nodeId = entityReadOperations.nodeGetUniqueFromIndexSeek( state, index, value );
+        long nodeId = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, value );
         if ( NO_SUCH_NODE == nodeId )
         {
             locks.releaseShared( INDEX_ENTRY, indexEntryId );
             locks.acquireExclusive( INDEX_ENTRY, indexEntryId );
 
-            nodeId = entityReadOperations.nodeGetUniqueFromIndexSeek( state, index, value );
+            nodeId = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, value );
             if ( NO_SUCH_NODE != nodeId ) // we found it under the exclusive lock
             {
                 // downgrade to a shared lock
@@ -446,10 +446,10 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexLookup( KernelStatement statement, IndexDescriptor index, Object value )
+    public NodeCursor nodeCursorGetFromIndexSeek( KernelStatement statement, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
     {
-        return entityReadOperations.nodeCursorGetFromIndexLookup( statement, index, value );
+        return entityReadOperations.nodeCursorGetFromIndexSeek( statement, index, value );
     }
 
     @Override
@@ -460,18 +460,18 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexByPrefixScan( KernelStatement statement,
+    public NodeCursor nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement,
             IndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
-        return entityReadOperations.nodeCursorGetFromIndexByPrefixScan( statement, index, prefix );
+        return entityReadOperations.nodeCursorGetFromIndexSeekByPrefix( statement, index, prefix );
     }
 
     @Override
-    public NodeCursor nodeCursorGetUniqueFromIndexLookup( KernelStatement statement,
+    public NodeCursor nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
             IndexDescriptor index,
             Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        return entityReadOperations.nodeCursorGetUniqueFromIndexLookup( statement, index, value );
+        return entityReadOperations.nodeCursorGetFromUniqueIndexSeek( statement, index, value );
     }
 }

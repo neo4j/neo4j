@@ -129,7 +129,7 @@ public interface StoreReadLayer
 
     Iterator<UniquenessConstraint> constraintsGetAll();
 
-    PrimitiveLongResourceIterator nodeGetUniqueFromIndexSeek( KernelStatement state, IndexDescriptor index,
+    PrimitiveLongResourceIterator nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index,
             Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 

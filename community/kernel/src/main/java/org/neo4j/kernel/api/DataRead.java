@@ -93,7 +93,7 @@ interface DataRead
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    long nodeGetUniqueFromIndexSeek( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
+    long nodeGetFromUniqueIndexSeek( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
             IndexBrokenKernelException;
 
     boolean nodeExists( long nodeId );

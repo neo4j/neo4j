@@ -146,7 +146,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     mapToScala(statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
   def uniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
-    val nodeId: Long = statement.readOperations().nodeGetUniqueFromIndexSeek(index, value)
+    val nodeId: Long = statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 

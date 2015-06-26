@@ -48,7 +48,7 @@ public interface DataReadCursors
     NodeCursor nodeCursorGetFromIndexScan( IndexDescriptor index )
             throws IndexNotFoundKernelException;
 
-    NodeCursor nodeCursorGetUniqueFromIndexSeek( IndexDescriptor index, Object value )
+    NodeCursor nodeCursorGetFromUniqueIndexSeek( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
 }

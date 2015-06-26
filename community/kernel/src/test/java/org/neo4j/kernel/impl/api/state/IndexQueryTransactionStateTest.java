@@ -92,7 +92,7 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeRemovedNodeFromUniqueIndexQuery() throws Exception
     {
         // Given
-        when( store.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value ) ).thenReturn(
+        when( store.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator( 1l ) );
 
         when( statement.acquireSingleNodeCursor( 1l ) ).thenReturn(
@@ -101,7 +101,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeDelete( state, 1l );
 
         // When
-        long result = txContext.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
 
         // Then
         assertNoSuchNode( result );
@@ -128,13 +128,13 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeChangedNodeWithMissingLabelFromUniqueIndexQuery() throws Exception
     {
         // Given
-        when( store.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value ) ).thenReturn(
+        when( store.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator() );
         state.txState().nodeDoReplaceProperty( 1l, Property.noNodeProperty( 1l, propertyKeyId ),
                 Property.intProperty( propertyKeyId, 10 ) );
 
         // When
-        long result = txContext.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
 
         // Then
         assertNoSuchNode( result );
@@ -167,7 +167,7 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeUniqueCreatedNodeWithCorrectLabelAndProperty() throws Exception
     {
         // Given
-        when( store.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value ) ).thenReturn(
+        when( store.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator() );
 
         when( statement.acquireSingleNodeCursor( 1l ) ).thenReturn(
@@ -179,7 +179,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeAddLabel( state, 1l, labelId );
 
         // When
-        long result = txContext.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
 
         // Then
         assertThat( result, equalTo( 1l ) );
@@ -209,7 +209,7 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeExistingUniqueNodeWithCorrectPropertyAfterAddingLabel() throws Exception
     {
         // Given
-        when( store.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value ) ).thenReturn(
+        when( store.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator() );
 
         when( statement.acquireSingleNodeCursor( 2l ) ).thenReturn(
@@ -219,7 +219,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeAddLabel( state, 2l, labelId );
 
         // When
-        long result = txContext.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
 
         // Then
         assertThat( result, equalTo( 2l ) );
@@ -249,7 +249,7 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeExistingUniqueNodeWithCorrectPropertyAfterRemovingLabel() throws Exception
     {
         // Given
-        when( store.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value ) ).thenReturn(
+        when( store.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator( 1l ) );
 
         when( statement.acquireSingleNodeCursor( 1l ) ).thenReturn(
@@ -259,7 +259,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeRemoveLabel( state, 1l, labelId );
 
         // When
-        long result = txContext.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
 
         // Then
         assertNoSuchNode( result );
@@ -292,7 +292,7 @@ public class IndexQueryTransactionStateTest
     {
         // Given
 
-        when( store.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value ) ).thenReturn(
+        when( store.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator( 1l ) );
 
         when( statement.acquireSingleNodeCursor( 1l ) ).thenReturn( asNodeCursor( 1l,
@@ -301,7 +301,7 @@ public class IndexQueryTransactionStateTest
         txContext.nodeRemoveProperty( state, 1l, propertyKeyId );
 
         // When
-        long result = txContext.nodeGetUniqueFromIndexSeek( state, indexDescriptor, value );
+        long result = txContext.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
 
         // Then
         assertNoSuchNode( result );

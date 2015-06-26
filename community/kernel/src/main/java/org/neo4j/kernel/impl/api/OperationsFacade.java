@@ -188,11 +188,11 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public long nodeGetUniqueFromIndexSeek( IndexDescriptor index, Object value )
+    public long nodeGetFromUniqueIndexSeek( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         statement.assertOpen();
-        return dataRead().nodeGetUniqueFromIndexSeek( statement, index, value );
+        return dataRead().nodeGetFromUniqueIndexSeek( statement, index, value );
     }
 
     @Override
@@ -380,7 +380,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             Object value ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexLookup( statement, index, value );
+        return dataRead().nodeCursorGetFromIndexSeek( statement, index, value );
     }
 
     @Override
@@ -395,15 +395,15 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             String prefix ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexByPrefixScan( statement, index, prefix );
+        return dataRead().nodeCursorGetFromIndexSeekByPrefix( statement, index, prefix );
     }
 
     @Override
-    public NodeCursor nodeCursorGetUniqueFromIndexSeek( IndexDescriptor index,
+    public NodeCursor nodeCursorGetFromUniqueIndexSeek( IndexDescriptor index,
             Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         statement.assertOpen();
-        return dataRead().nodeCursorGetUniqueFromIndexLookup( statement, index, value );
+        return dataRead().nodeCursorGetFromUniqueIndexSeek( statement, index, value );
     }
 
     // </DataReadCursors>
