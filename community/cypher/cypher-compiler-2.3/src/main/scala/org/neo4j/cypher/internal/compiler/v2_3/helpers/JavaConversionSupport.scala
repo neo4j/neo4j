@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.helpers
 
 import org.neo4j.collection.primitive.{PrimitiveIntIterator, PrimitiveLongIterator}
 
-object JavaConversionSupport
-{
+object JavaConversionSupport {
   def asScala(iterator: PrimitiveLongIterator): Iterator[Long] = new Iterator[Long] {
     def hasNext = iterator.hasNext
     def next() = iterator.next()
@@ -41,5 +40,34 @@ object JavaConversionSupport
   def mapToScala[T](iterator: PrimitiveIntIterator)(f: Int => T): Iterator[T] = new Iterator[T] {
     def hasNext = iterator.hasNext
     def next() = f(iterator.next())
+  }
+
+  // Same as mapToScala, but handles concurrency exceptions by swallowing exceptions
+  def mapToScalaENFXSafe[T](iterator: PrimitiveLongIterator)(f: Long => T): Iterator[T] = new Iterator[T] {
+    private var _next: Option[T] = fetchNext()
+
+    // Init
+    private def fetchNext(): Option[T] = {
+      if (!iterator.hasNext)
+        _next = None
+      else {
+        try {
+          _next = Some(f(iterator.next()))
+        } catch {
+          case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => fetchNext()
+          case _: org.neo4j.cypher.internal.compiler.v2_3.EntityNotFoundException => fetchNext()
+        }
+      }
+
+      _next
+    }
+
+    def hasNext = _next.nonEmpty
+
+    def next() = {
+      val r = _next.getOrElse(throw new NoSuchElementException("next on empty result"))
+      fetchNext()
+      r
+    }
   }
 }
