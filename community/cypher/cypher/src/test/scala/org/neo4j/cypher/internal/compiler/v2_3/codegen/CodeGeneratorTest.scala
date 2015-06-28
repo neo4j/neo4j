@@ -678,6 +678,105 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toSet should equal(Set(Map("a" -> Map("FOO" -> 1))))
   }
 
+  test("string equality") {
+    val equals = Equals(StringLiteral("a string")(pos), StringLiteral("a string")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> equals))(solved))
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> true)))
+  }
+
+  test("number equality, double and long") {
+    val equals = Equals(SignedDecimalIntegerLiteral("9007199254740993")(pos), DecimalDoubleLiteral("9007199254740992")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> equals))(solved))
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> false)))
+  }
+
+  test("number equality, one from parameter") {
+    val equals = Equals(SignedDecimalIntegerLiteral("9007199254740993")(pos), Parameter("BAR")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> equals))(solved))
+    val compiled = compileAndExecute(plan, Map("BAR" -> Double.box(9007199254740992D)))
+
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> false)))
+  }
+
+  test("or between two literal booleans") {
+    val or = Or(True()(pos), False()(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> or))(solved))
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> true)))
+  }
+
+  test("or one from parameter") {
+    val or = Or(False()(pos), Parameter("FOO")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> or))(solved))
+    val compiled = compileAndExecute(plan, Map("FOO" -> Boolean.box(false)))
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> false)))
+  }
+
+  test("or two from parameter, one null") {
+    val or = Or(Parameter("FOO")(pos), Parameter("BAR")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> or))(solved))
+    val compiled = compileAndExecute(plan, Map("FOO" -> Boolean.box(true), "BAR" -> null))
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> true)))
+  }
+
+  test("or two from parameter, both null") {
+    val or = Or(Parameter("FOO")(pos), Parameter("BAR")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> or))(solved))
+    val compiled = compileAndExecute(plan, Map("FOO" -> null, "BAR" -> null))
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> null)))
+  }
+
+  test("not on a literal") {
+    val not = Not(False()(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> not))(solved))
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> true)))
+  }
+
+  test("not on a parameter") {
+    val not = Not(Parameter("FOO")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> not))(solved))
+    val compiled = compileAndExecute(plan, Map("FOO" -> Boolean.box(false)))
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> true)))
+  }
+
+  test("not on a null parameter") {
+    val not = Not(Parameter("FOO")(pos))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("result"), Projection(SingleRow()(solved), Map("result" -> not))(solved))
+    val compiled = compileAndExecute(plan, Map("FOO" -> null))
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> null)))
+  }
+
   test("close transaction after successfully exhausting result") {
     // given
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))

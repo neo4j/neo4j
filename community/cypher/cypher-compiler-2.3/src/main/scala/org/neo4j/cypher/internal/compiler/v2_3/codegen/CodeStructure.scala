@@ -80,9 +80,12 @@ trait MethodStructure[E] {
   def mod(lhs: E, rhs: E): E
 
   // predicates
+  def ternaryNot(value: E): E
   def not(value: E): E
-  def equals(lhs: E, rhs: E): E
+  def ternaryEquals(lhs: E, rhs: E): E
+  def eq(lhs: E, rhs: E): E
   def or(lhs: E, rhs: E): E
+  def ternaryOr(lhs: E, rhs: E): E
 
   // null handling
   def markAsNull(varName: String, cypherType: CypherType): Unit
@@ -90,8 +93,7 @@ trait MethodStructure[E] {
   def notNull(name: String, cypherType: CypherType): E
 
   // parameters
-  def expectParameter(key: String): Unit
-  def parameter(key: String): E
+  def expectParameter(key: String, variableName: String): Unit
 
   // tracing
   def trace[V](planStepId: String)(block: MethodStructure[E] => V): V
@@ -131,7 +133,9 @@ trait MethodStructure[E] {
 
   // results
   def materializeNode(nodeIdVar: String): E
+  def node(nodeIdVar: String): E
   def materializeRelationship(relIdVar: String): E
+  def relationship(relIdVar: String): E
   def visitRow(): Unit
   def setInRow(column: String, value: E): Unit
 }

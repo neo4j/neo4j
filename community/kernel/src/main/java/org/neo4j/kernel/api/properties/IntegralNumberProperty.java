@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.kernel.api.properties;
+import org.neo4j.helpers.MathUtil;
 
 abstract class IntegralNumberProperty extends NumberProperty implements DefinedProperty.WithLongValue
 {
@@ -46,7 +47,7 @@ abstract class IntegralNumberProperty extends NumberProperty implements DefinedP
             Number that = (Number) other;
             if ( other instanceof Double || other instanceof Float )
             {
-                return numbersEqual( that.doubleValue(), this.longValue() );
+                return MathUtil.numbersEqual( that.doubleValue(), this.longValue() );
             }
             else
             {
@@ -67,7 +68,7 @@ abstract class IntegralNumberProperty extends NumberProperty implements DefinedP
         else if ( other instanceof FloatingPointNumberProperty )
         {
             FloatingPointNumberProperty that = (FloatingPointNumberProperty) other;
-            return numbersEqual( that.doubleValue(), this.longValue() );
+            return MathUtil.numbersEqual( that.doubleValue(), this.longValue() );
         }
         else
         {

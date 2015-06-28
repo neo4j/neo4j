@@ -17,19 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
+package org.neo4j.cypher.internal.codegen;
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+public final class NodeIdWrapper
+{
+    private final long id;
 
-case class ToSet(expression: CodeGenExpression) extends CodeGenExpression {
+    public NodeIdWrapper( long id )
+    {
+        this.id = id;
+    }
 
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = expression.init(generator)
+    public long id()
+    {
+        return id;
+    }
 
-  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.toSet(expression.generateExpression(structure))
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
 
-  override def nullable(implicit context: CodeGenContext) = false
+        NodeIdWrapper that = (NodeIdWrapper) o;
 
-  override def cypherType(implicit context: CodeGenContext) = CTCollection(CTAny)
+        return id == that.id;
+
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return (int) (id ^ (id >>> 32));
+    }
 }

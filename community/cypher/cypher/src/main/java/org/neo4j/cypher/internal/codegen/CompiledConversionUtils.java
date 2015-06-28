@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen;
+package org.neo4j.cypher.internal.codegen;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException;
 import org.neo4j.cypher.internal.compiler.v2_3.IncomparableValuesException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.MathUtil;
 
 // Class with static methods used by compiled execution plans
 public abstract class CompiledConversionUtils
@@ -105,10 +106,10 @@ public abstract class CompiledConversionUtils
             return null;
         }
 
-        if ( (lhs instanceof Node && !(rhs instanceof Node)) ||
-             (rhs instanceof Node && !(lhs instanceof Node)) ||
-             (lhs instanceof Relationship && !(rhs instanceof Relationship)) ||
-             (rhs instanceof Relationship && !(lhs instanceof Relationship)) )
+        if ( (lhs instanceof NodeIdWrapper && !(rhs instanceof NodeIdWrapper)) ||
+             (rhs instanceof NodeIdWrapper && !(lhs instanceof NodeIdWrapper)) ||
+             (lhs instanceof RelationshipIdWrapper && !(rhs instanceof RelationshipIdWrapper)) ||
+             (rhs instanceof RelationshipIdWrapper && !(lhs instanceof RelationshipIdWrapper)) )
         {
 
             throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
@@ -118,22 +119,30 @@ public abstract class CompiledConversionUtils
         //compare long values
         if ( lhs instanceof Number && rhs instanceof Number )
         {
-            if ( lhs instanceof Double || rhs instanceof Double ||
-                 lhs instanceof Float || rhs instanceof Float )
+            if ( (lhs instanceof Double || lhs instanceof Float)
+                 && (rhs instanceof Double || rhs instanceof Float) )
             {
                 double left = ((Number) lhs).doubleValue();
                 double right = ((Number) rhs).doubleValue();
                 return left == right;
             }
-            if ( lhs instanceof Long || rhs instanceof Long ||
-                 lhs instanceof Integer || rhs instanceof Integer ||
-                 lhs instanceof Short || rhs instanceof Short ||
-                 lhs instanceof Byte || rhs instanceof Byte )
+            else if ( (lhs instanceof Double || lhs instanceof Float) )
+            {
+                double left = ((Number) lhs).doubleValue();
+                long right = ((Number) rhs).longValue();
+                return MathUtil.numbersEqual( left, right );
+            }
+            else if ( (rhs instanceof Double || rhs instanceof Float) )
             {
                 long left = ((Number) lhs).longValue();
-                long right = ((Number) rhs).longValue();
-                return left == right;
+                double right = ((Number) rhs).doubleValue();
+                return MathUtil.numbersEqual( right, left );
             }
+
+            //evertyhing else is long from cyphers point-of-view
+            long left = ((Number) lhs).longValue();
+            long right = ((Number) rhs).longValue();
+            return left == right;
         }
 
         //for everything else call equals
@@ -177,5 +186,21 @@ public abstract class CompiledConversionUtils
         }
 
         throw new CypherTypeException( "Don't know how to treat that as a boolean: " + predicate.toString(), null );
+    }
+
+    public static Object loadParameter( Object value )
+    {
+        if ( value instanceof Node )
+        {
+            return new NodeIdWrapper( ((Node) value).getId() );
+        }
+        else if ( value instanceof Relationship )
+        {
+            return new RelationshipIdWrapper( ((Relationship) value).getId() );
+        }
+        else
+        {
+            return value;
+        }
     }
 }

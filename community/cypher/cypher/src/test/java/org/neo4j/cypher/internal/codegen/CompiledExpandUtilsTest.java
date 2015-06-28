@@ -17,30 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen;
+package org.neo4j.cypher.internal.codegen;
 
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
 import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.cypher.internal.compiler.v2_3.codegen.CompiledExpandUtils.connectingRelationships;
+import static org.neo4j.cypher.internal.codegen.CompiledExpandUtils.connectingRelationships;
 
 public class CompiledExpandUtilsTest
 {

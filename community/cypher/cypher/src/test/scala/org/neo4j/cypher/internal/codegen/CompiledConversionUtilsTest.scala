@@ -17,10 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.codegen
+package org.neo4j.cypher.internal.codegen
 
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, IncomparableValuesException}
+import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.{Node, Relationship}
 
 class CompiledConversionUtilsTest extends CypherFunSuite {
 
@@ -72,9 +74,12 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     //when/then
     theMap(theKey) should equal(theObject)
   }
+
   val testEquality = Seq(
     (null, "foo") -> null,
     (false, false) -> true,
+    (9007199254740993L, 9007199254740992D) -> false,
+    (9007199254740992D, 9007199254740993L) -> false,
     (1, null) -> null,
     ("foo", "foo") -> true,
     ("foo", "bar") -> false,
@@ -105,9 +110,34 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
       }
   }
 
-  test("not tests"){
-    CompiledConversionUtils.not(null) shouldBe null
-    CompiledConversionUtils.not(false) shouldBe true
-    CompiledConversionUtils.not(true) shouldBe false
+  val testNot= Seq(
+    (null, null),
+    (false, true),
+    (true, false)
+  )
+
+  testNot.foreach {
+    case (v, expected) =>
+      test(s"$v != $expected)") {
+        CompiledConversionUtils.not(v) should equal(expected)
+      }
+  }
+
+  val node = mock[Node]
+  when(node.getId).thenReturn(11L)
+  val rel = mock[Relationship]
+  when(rel.getId).thenReturn(13L)
+
+  val testLoadParameter = Seq(
+    (null, null),
+    (node, new NodeIdWrapper(11L)),
+    (rel, new RelationshipIdWrapper(13L))
+  )
+
+  testLoadParameter.foreach {
+    case (v, expected) =>
+      test(s"loadParameter($v) == $expected)") {
+        CompiledConversionUtils.loadParameter(v) should equal(expected)
+      }
   }
 }

@@ -34,9 +34,9 @@ trait BinaryOperator {
   }
 
   override final def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    generator(structure)(lhs.generateExpression(structure), rhs.generateExpression(structure))
+    generator(structure)(context)(lhs.generateExpression(structure), rhs.generateExpression(structure))
 
-  protected def generator[E](structure: MethodStructure[E]): (E, E) => E
+  protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext): (E, E) => E
 }
 
 // Trait that resolves type based on inputs.

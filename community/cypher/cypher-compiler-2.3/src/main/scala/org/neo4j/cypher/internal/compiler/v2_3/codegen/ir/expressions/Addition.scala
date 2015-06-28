@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression with BinaryOperator {
 
-  override protected def generator[E](structure: MethodStructure[E]) = structure.add
+  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = structure.add
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 

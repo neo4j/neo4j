@@ -19,17 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v2_3.symbols
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
-case class ToSet(expression: CodeGenExpression) extends CodeGenExpression {
+case class RelationshipProjection(relId: Variable) extends CodeGenExpression {
+  assert(relId.cypherType == symbols.CTRelationship)
 
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = expression.init(generator)
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.toSet(expression.generateExpression(structure))
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) ={
+    if (relId.nullable)
+      structure.nullable(relId.name, relId.cypherType, structure.materializeRelationship(relId.name))
+    else
+      structure.materializeRelationship(relId.name)
+  }
 
-  override def nullable(implicit context: CodeGenContext) = false
+  override def nullable(implicit context: CodeGenContext) = relId.nullable
 
-  override def cypherType(implicit context: CodeGenContext) = CTCollection(CTAny)
+  override def cypherType(implicit context: CodeGenContext) = CTRelationship
 }

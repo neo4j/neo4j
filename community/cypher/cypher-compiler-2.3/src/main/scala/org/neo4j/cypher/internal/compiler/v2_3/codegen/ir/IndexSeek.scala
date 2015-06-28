@@ -26,6 +26,7 @@ case class IndexSeek(opName: String, labelName: String, propName: String, descri
                      expression: CodeGenExpression) extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    expression.init(generator)
     val labelVar = context.namer.newVarName()
     val propKeyVar = context.namer.newVarName()
     generator.lookupLabelId(labelVar, labelName)

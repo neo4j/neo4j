@@ -31,7 +31,8 @@ import org.neo4j.codegen._
 import org.neo4j.codegen.source.SourceVisitor
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.CompiledConversionUtils.CompositeKey
+import org.neo4j.cypher.internal.codegen.{NodeIdWrapper, RelationshipIdWrapper, CompiledExpandUtils, CompiledMathHelper, CompiledConversionUtils}
+import CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.compiler.v2_3.codegen._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{GeneratedQuery, GeneratedQueryExecution, SuccessfulCloseable}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers._
@@ -333,6 +334,9 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def materializeNode(nodeIdVar: String) = Expression.invoke(db, Methods.getNodeById, generator.load(nodeIdVar))
 
+  override def node(nodeIdVar: String) = Templates.newInstance(typeRef[NodeIdWrapper], generator.load(nodeIdVar))
+
+
   override def nullable(varName: String, cypherType: CypherType, onSuccess: Expression) = {
     Expression.ternary(
       Expression.eq(GeneratedQueryStructure.nullValue(cypherType), generator.load(varName)),
@@ -341,6 +345,8 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   }
 
   override def materializeRelationship(relIdVar: String) = Expression.invoke(db, Methods.getRelationshipById, generator.load(relIdVar))
+
+  override def relationship(relIdVar: String) = Templates.newInstance(typeRef[RelationshipIdWrapper], generator.load(relIdVar))
 
   override def trace[V](planStepId: String)(block: MethodStructure[Expression]=>V) = if(!tracing) block(this)
   else {
@@ -360,20 +366,27 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   private def loadEvent = generator.load(event.getOrElse(throw new IllegalStateException("no current trace event")))
 
-  override def expectParameter(key: String) =
+  override def expectParameter(key: String, variableName: String) = {
     using(generator.ifStatement(Expression.not(Expression.invoke(params, Methods.mapContains, Expression.constant(key))))) { block =>
       block.throwException(parameterNotFoundException(key))
     }
-
-  override def parameter(key: String) = Expression.invoke(params, Methods.mapGet, Expression.constant(key))
+    generator.assign(typeRef[Object], variableName, Expression.invoke(Methods.loadParameter,
+      Expression.invoke(params, Methods.mapGet, Expression.constant(key))))
+  }
 
   override def constant(value: Object) = Expression.constant(value)
 
-  override def not(value: Expression): Expression = Expression.invoke(Methods.not, value)
+  override def not(value: Expression): Expression = Expression.not(value)
 
-  override def equals(lhs: Expression, rhs: Expression) = Expression.invoke(Methods.equals, lhs, rhs)
+  override def ternaryNot(value: Expression): Expression = Expression.invoke(Methods.not, value)
 
-  override def or(lhs: Expression, rhs: Expression): Expression = Expression.invoke(Methods.or, lhs, rhs)
+  override def ternaryEquals(lhs: Expression, rhs: Expression) = Expression.invoke(Methods.ternaryEquals, lhs, rhs)
+
+  override def eq(lhs: Expression, rhs: Expression) = Expression.eq(lhs, rhs)
+
+  override def or(lhs: Expression, rhs: Expression) = Expression.or(lhs, rhs)
+
+  override def ternaryOr(lhs: Expression, rhs: Expression) = Expression.invoke(Methods.or, lhs, rhs)
 
   override def markAsNull(varName: String, cypherType: CypherType) =
     generator.assign(GeneratedQueryStructure.lowerType(cypherType), varName, GeneratedQueryStructure.nullValue(cypherType))
@@ -766,9 +779,11 @@ private object Methods {
   val propertyKeyGetForName = method[ReadOperations, Int]("propertyKeyGetForName", typeRef[String])
   val coerceToPredicate = method[CompiledConversionUtils, Boolean]("coerceToPredicate", typeRef[Object])
   val toCollection = method[CompiledConversionUtils, java.util.Collection[Object]]("toCollection", typeRef[Object])
-  val equals = method[CompiledConversionUtils, java.lang.Boolean]("equals", typeRef[Object], typeRef[Object])
+  val ternaryEquals = method[CompiledConversionUtils, java.lang.Boolean]("equals", typeRef[Object], typeRef[Object])
+  val equals = method[Object, Boolean]("equals", typeRef[Object])
   val or = method[CompiledConversionUtils, java.lang.Boolean]("or", typeRef[Object], typeRef[Object])
   val not = method[CompiledConversionUtils, java.lang.Boolean]("not", typeRef[Object])
+  val loadParameter = method[CompiledConversionUtils, java.lang.Object]("loadParameter", typeRef[Object])
   val relationshipTypeGetForName = method[ReadOperations, Int]("relationshipTypeGetForName", typeRef[String])
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
   val nodeGetProperty = method[ReadOperations, Object]("nodeGetProperty")
@@ -779,6 +794,8 @@ private object Methods {
   val nodeHasLabel = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])
   val nextLong = method[PrimitiveLongIterator, Long]("next")
   val getNodeById = method[GraphDatabaseService, Node]("getNodeById")
+  val nodeId = method[NodeIdWrapper, Long]("id")
+  val relId = method[RelationshipIdWrapper, Long]("id")
   val getRelationshipById = method[GraphDatabaseService, Relationship]("getRelationshipById")
   val set = method[ResultRowImpl, Unit]("set", typeRef[String], typeRef[Object])
   val visit = method[ResultVisitor[_], Boolean]("visit", typeRef[ResultRow])

@@ -71,7 +71,7 @@ object LogicalPlanConverter {
       val projectionOpName = context.registerOperator(projection)
       val produceResultOpName = context.registerOperator(produceResults)
       val projections = Eagerly.immutableMapValues(projection.expressions,
-        (e: Expression) => ExpressionConverter.createExpression(e)(context))
+        (e: Expression) => ExpressionConverter.createProjection(e)(context))
 
       (None, AcceptVisitor(produceResultOpName, projectionOpName, projections))
     }

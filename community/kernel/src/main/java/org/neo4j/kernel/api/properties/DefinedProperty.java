@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.properties;
 
+import org.neo4j.helpers.MathUtil;
 import org.neo4j.helpers.ObjectUtil;
 
 /**
@@ -109,49 +110,6 @@ public abstract class DefinedProperty extends Property implements Comparable<Def
         super( propertyKeyId );
     }
 
-    private static final long NON_DOUBLE_LONG = 0xFFE0_0000_0000_0000L; // doubles are exact integers up to 53 bits
-
-    static boolean numbersEqual( double fpn, long in )
-    {
-        if ( in < 0 )
-        {
-            if ( fpn < 0.0 )
-            {
-                if ( (NON_DOUBLE_LONG & in) == NON_DOUBLE_LONG ) // the high order bits are only sign bits
-                { // no loss of precision if converting the long to a double, so it's safe to compare as double
-                    return fpn == in;
-                }
-                else if ( fpn < Long.MIN_VALUE )
-                { // the double is too big to fit in a long, they cannot be equal
-                    return false;
-                }
-                else if ( (fpn == Math.floor( fpn )) && !Double.isInfinite( fpn ) ) // no decimals
-                { // safe to compare as long
-                    return in == (long) fpn;
-                }
-            }
-        }
-        else
-        {
-            if ( !(fpn < 0.0) )
-            {
-                if ( (NON_DOUBLE_LONG & in) == 0 ) // the high order bits are only sign bits
-                { // no loss of precision if converting the long to a double, so it's safe to compare as double
-                    return fpn == in;
-                }
-                else if ( fpn > Long.MAX_VALUE )
-                { // the double is too big to fit in a long, they cannot be equal
-                    return false;
-                }
-                else if ( (fpn == Math.floor( fpn )) && !Double.isInfinite( fpn ) )  // no decimals
-                { // safe to compare as long
-                    return in == (long) fpn;
-                }
-            }
-        }
-        return false;
-    }
-
     static boolean numbersEqual( ArrayValue.IntegralArray lhs, ArrayValue.IntegralArray rhs )
     {
         int length = lhs.length();
@@ -195,7 +153,7 @@ public abstract class DefinedProperty extends Property implements Comparable<Def
         }
         for ( int i = 0; i < length; i++ )
         {
-            if ( !numbersEqual( fps.doubleValue( i ), ins.longValue( i ) ) )
+            if ( !MathUtil.numbersEqual( fps.doubleValue( i ), ins.longValue( i ) ) )
             {
                 return false;
             }

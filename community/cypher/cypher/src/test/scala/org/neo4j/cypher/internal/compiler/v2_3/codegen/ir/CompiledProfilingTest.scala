@@ -45,7 +45,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val id2 = new Id()
 
     val variable = Variable("name", symbols.CTNode)
-    val projectNode = expressions.Node(variable)
+    val projectNode = expressions.NodeProjection(variable)
     val compiled = compile(Seq(WhileLoop(variable,
       ScanAllNodes("OP1"), AcceptVisitor("OP2", "X", Map("n" -> projectNode)))),
       Map("OP1" -> id1, "OP2" -> id2, "X" -> new Id()))

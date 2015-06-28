@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Variable, CodeGenContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
-case class Node(nodeIdVar: Variable) extends CodeGenExpression {
+case class NodeProjection(nodeIdVar: Variable) extends CodeGenExpression {
   assert(nodeIdVar.cypherType == symbols.CTNode)
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
