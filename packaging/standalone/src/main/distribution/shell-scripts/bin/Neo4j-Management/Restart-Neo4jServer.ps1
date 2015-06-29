@@ -66,7 +66,7 @@ Function Restart-Neo4jServer
 
     if ($ServiceName -eq '')
     {
-      Throw "Could not find the Windows Service Name for Neo4j"
+      Write-Error 'Could not find the Windows Service Name for Neo4j'
       return
     }
 

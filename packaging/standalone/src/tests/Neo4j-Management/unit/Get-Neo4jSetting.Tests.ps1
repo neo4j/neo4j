@@ -3,8 +3,6 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.", ".")
 $common = Join-Path (Split-Path -Parent $here) 'Common.ps1'
 . $common
 
-# TODO Add tests for 'ConfigurationFile' and 'Name' parameters
-
 Import-Module "$src\Neo4j-Management.psm1"
 
 InModuleScope Neo4j-Management {

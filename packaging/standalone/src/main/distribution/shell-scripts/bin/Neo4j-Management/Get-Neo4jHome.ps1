@@ -30,10 +30,7 @@ Function Get-Neo4jHome
   Process
   {
     $path = $Env:NEO4J_HOME
-    if ($path -ne $null)
-    {
-      if (Test-Path -Path $path) { Write-Output $path }
-    }
+    if ( ($path -ne $null) -and (Test-Path -Path $path) ) { Write-Output $path }
   }
   
   End

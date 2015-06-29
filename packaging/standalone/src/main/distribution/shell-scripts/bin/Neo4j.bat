@@ -1,4 +1,4 @@
-@ECHO OFF
+@echo off
 rem Copyright (c) 2002-2015 "Neo Technology,"
 rem Network Engine for Objects in Lund AB [http://neotechnology.com]
 rem
@@ -17,5 +17,11 @@ rem
 rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; Import-Module '%~dp0Neo4j-Management.psd1'; Exit (Get-Neo4jServer '%~dp0..' | Start-Neo4jServer -Console -Wait)"
-EXIT /B %ERRORLEVEL%
+set serviceName=Neo4j-Server
+set serviceDisplayName=Neo4j-Server
+set serviceStartType=auto
+set classpath="-DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/**/*.jar;./conf*"
+set mainclass="-DserverMainClass=#{neo4j.mainClass}"
+set configFile="conf\neo4j-wrapper.conf"
+
+call "%~dps0base.bat" %1 %2 %3 %4 %5

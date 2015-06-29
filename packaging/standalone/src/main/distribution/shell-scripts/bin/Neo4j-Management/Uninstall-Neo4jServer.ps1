@@ -30,10 +30,6 @@ Function Uninstall-Neo4jServer
 
     ,[Parameter(Mandatory=$false)]
     [switch]$SucceedIfNotExist
-
-    ,[Parameter(Mandatory=$false)]
-    [Alias('Legacy')]
-    [switch]$LegacyOutput
   )
   
   Begin
@@ -70,8 +66,7 @@ Function Uninstall-Neo4jServer
 
     if ($ServiceName -eq '')
     {
-      if ($LegacyOutput) { Write-Host "Could not find the Windows Service Name for Neo4j" }
-      Throw "Could not find the Windows Service Name for Neo4j"
+      Write-Error "Could not find the Windows Service Name for Neo4j"
       return
     }
     
@@ -79,21 +74,17 @@ Function Uninstall-Neo4jServer
     $service = Get-WmiObject -Class Win32_Service -Filter "Name='$ServiceName'"
     if (($service -eq $null) -and (-not $SucceedIfNotExist) ) 
     {
-      if ($LegacyOutput) { Write-Host "Windows service $ServiceName cannot be removed as it does not exist" }
-      Throw "Windows service $ServiceName cannot be removed as it does not exist"
+      Write-Error "Windows service $ServiceName cannot be removed as it does not exist"
       return
     }
 
     if ($service -ne $null)
     {
-      if ($LegacyOutput) { Write-Host "Stopping $($ServiceName)..." }
       Stop-Service -ServiceName $ServiceName | Out-Null
-      if ($LegacyOutput) { Write-Host "Uninstalling $($ServiceName)..." }
       if ($PSCmdlet.ShouldProcess($ServiceName, 'Remove Windows Service'))
       {  
         $service.delete() | Out-Null
       }
-      if ($LegacyOutput) { Write-Host "Service uninstalled" }
     }
     
     Write-Output $thisServer

@@ -57,6 +57,13 @@ Function Stop-Neo4jArbiter
       }
     }
     if ($thisServer -eq $null) { return }
+
+    # Check if this feature is supported
+    if ($thisServer.ServerType -ne 'Enterprise')
+    {
+      Write-Error "Neo4j Server type $($thisServer.ServerType) does not support HA"
+      return
+    }
     
     if ($ServiceName -eq '')
     {
@@ -66,7 +73,7 @@ Function Stop-Neo4jArbiter
 
     if ($ServiceName -eq '')
     {
-      Throw "Could not find the Windows Service Name for Neo4j Arbiter"
+      Write-Error 'Could not find the Windows Service Name for Neo4j Arbiter'
       return
     }
 

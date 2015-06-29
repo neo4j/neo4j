@@ -20,13 +20,28 @@
 
 Function Get-Java
 {
-  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
+  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low',DefaultParameterSetName='Default')]
   param (
-    [Parameter(Mandatory=$false,ValueFromPipeline=$false)]
+    [Parameter(Mandatory=$true,ValueFromPipeline=$false)]
+    [PSCustomObject]$Neo4jServer
+    
+    ,[Parameter(Mandatory=$false,ValueFromPipeline=$false)]
     [string[]]$ExtraClassPath = @()
+    
+    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInvoke')]
+    [switch]$ForServer
 
-    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false)]
-    [string]$BaseDir
+    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ArbiterInvoke')]
+    [switch]$ForArbiter
+
+    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
+    [switch]$ForUtility
+
+    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
+    [string]$AppName
+
+    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
+    [string]$StartingClass    
   )
   
   Begin
@@ -37,6 +52,7 @@ Function Get-Java
   {
     $javaPath = ''
     $javaVersion = ''
+    $javaCMD = ''
     
     # Is JAVA specified in an environment variable
     if (($javaPath -eq '') -and ($Env:JAVA_HOME -ne $null))
@@ -87,28 +103,83 @@ Function Get-Java
       }
     }
     
-    $javaCMD = "$javaPath\bin\java.exe"
-    If (-not (Test-Path -Path $javaCMD)) { Throw "Found JAVAHOME but missing bin\java.exe"; return $null }
+    # Attempt to find Java in the search path
+    if ($javaPath -eq '')
+    {
+      $javaExe = (Get-Command 'java.exe' -ErrorAction SilentlyContinue)
+      if ($javaExe -ne $null)
+      {
+        $javaCMD = $javaExe.Path
+        $javaPath = Split-Path -Path $javaCMD -Parent
+      }
+    }
 
-    # Get the commandline args
-    $RepoPath = Join-Path  -Path $BaseDir -ChildPath 'lib'
-    #  Get the default classpath jars
-    $ClassPath = ''    
-    Get-ChildItem -Path $RepoPath | Where-Object { $_.Extension -eq '.jar'} | % {
-      $ClassPath += "`"$($_.FullName)`";"
-    }
-    #  Get the additional classpath jars
-    $ExtraClassPath | ForEach-Object -Process { If (Test-Path -Path $_) { Write-Output $_} } | Get-ChildItem | Where-Object { $_.Extension -eq '.jar'} | % {
-      $ClassPath += "`"$($_.FullName)`";"
-    }
-    
-    
-    if ($ClassPath.Length -gt 0) { $ClassPath = $ClassPath.SubString(0, $ClassPath.Length-1) } # Strip the trailing semicolon if needed    
-    
+    if ($javaVersion -eq '') { Write-Verbose 'Unable to determine Java version' }
+    if ($javaPath -eq '') { Write-Error "Unable to determine the path to java.exe"; return $null }
+    if ($javaCMD -eq '') { $javaCMD = "$javaPath\bin\java.exe" }
+    if (-not (Test-Path -Path $javaCMD)) { Write-Error "Could not find java at $javaCMD"; return $null }
+  
     $ShellArgs = @()
-    if ($Env:JAVA_OPTS -ne $null) { $ShellArgs += $Env:JAVA_OPTS }
-    if ($Env:EXTRA_JVM_ARGUMENTS -ne $null) { $ShellArgs += $Env:EXTRA_JVM_ARGUMENTS }
-    $ShellArgs += @("-classpath $($Env:CLASSPATH_PREFIX);$ClassPath","-Dapp.repo=`"$($RepoPath)`"","-Dbasedir=`"$($BaseDir)`"")
+
+    # Shell arguments for the Neo4jServer and Arbiter classes
+    if (($PsCmdlet.ParameterSetName -eq 'ServerInvoke') -or ($PsCmdlet.ParameterSetName -eq 'ArbiterInvoke') )
+    {
+      if ($PsCmdlet.ParameterSetName -eq 'ServerInvoke')
+      {
+        $serverMainClass = ''
+        # Server Class Path for version 2.3 and above
+        if ($Neo4jServer.ServerType -eq 'Advanced') { $serverMainClass = 'org.neo4j.server.advanced.AdvancedBootstrapper' }
+        if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseBootstrapper' }
+        if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityBootstrapper' }
+        # Server Class Path for version 2.2 and below
+        if ($Neo4jServer.ServerVersion -match '^(2\.2|2\.1|2\.0|1\.)')
+        {
+          $serverMainClass = 'org.neo4j.server.Bootstrapper'
+        }
+        if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }
+        $wrapperConfig = 'neo4j-wrapper.conf'
+      }
+      if ($PsCmdlet.ParameterSetName -eq 'ArbiterInvoke')
+      {
+        $serverMainClass = 'org.neo4j.server.enterprise.StandaloneClusterClient'
+        $wrapperConfig = 'arbiter-wrapper.conf'
+      }
+      
+      # Note -DserverMainClass must appear before -jar in the argument list.  Changing this order raises a Null Pointer Exception in the Windows Service Wrapper
+      $ShellArgs = @( `
+        "-DworkingDir=`"$($Neo4jServer.Home)`"" `
+        ,"-Djava.util.logging.config.file=`"$($Neo4jServer.Home)\conf\windows-wrapper-logging.properties`"" `
+        ,"-DconfigFile=`"conf/$($wrapperConfig)`"" `
+        ,"-DserverClasspath=`"lib/*.jar;system/lib/*.jar;plugins/**/*.jar;./conf*`"" `
+        ,"-DserverMainClass=$($serverMainClass)" `
+        ,"-jar","`"$($Neo4jServer.Home)\bin\windows-service-wrapper-5.jar`""
+      )
+    }
+    
+    # Shell arguments for the utility classes e.g. Import, Shell
+    if ($PsCmdlet.ParameterSetName -eq 'UtilityInvoke')
+    {
+      # Get the commandline args
+      $RepoPath = Join-Path  -Path $Neo4jServer.Home -ChildPath 'lib'
+      #  Get the default classpath jars
+      $ClassPath = ''    
+      Get-ChildItem -Path $RepoPath | Where-Object { $_.Extension -eq '.jar'} | % {
+        $ClassPath += "`"$($_.FullName)`";"
+      }
+      #  Get the additional classpath jars
+      $ExtraClassPath | ForEach-Object -Process { If (Test-Path -Path $_) { Write-Output $_} } | Get-ChildItem | Where-Object { $_.Extension -eq '.jar'} | % {
+        $ClassPath += "`"$($_.FullName)`";"
+      }
+      if ($ClassPath.Length -gt 0) { $ClassPath = $ClassPath.SubString(0, $ClassPath.Length-1) } # Strip the trailing semicolon if needed    
+
+      $ShellArgs = @()
+      if ($Env:JAVA_OPTS -ne $null) { $ShellArgs += $Env:JAVA_OPTS }
+      if ($Env:EXTRA_JVM_ARGUMENTS -ne $null) { $ShellArgs += $Env:EXTRA_JVM_ARGUMENTS }
+      $ShellArgs += @("-classpath $($Env:CLASSPATH_PREFIX);$ClassPath","-Dapp.repo=`"$($RepoPath)`"","-Dbasedir=`"$($Neo4jServer.Home)`"")
+      
+      # Add the appname and starting class
+      $ShellArgs += @("-Dapp.name=$($AppName)",$StartingClass)
+    }
 
     Write-Output @{'java' = $javaCMD; 'args' = $ShellArgs}
   }

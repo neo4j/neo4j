@@ -34,9 +34,12 @@ Function Confirm-Neo4jHome
   Process
   {
     if ( ($Neo4jHome -eq '') -or ($Neo4jHome -eq $null) ) { return $false }
-    if (-not (Test-Path -Path $Neo4jHome)) { return $false }
-    
-    # TODO Add test to see if this really is a Neo install
+
+    $testPath = $Neo4jHome
+    if (-not (Test-Path -Path $testPath)) { return $false }
+
+    $testPath = (Join-Path -Path $Neo4jHome -ChildPath 'system\lib')
+    if (-not (Test-Path -Path $testPath)) { return $false }
     
     return $true
   }

@@ -77,7 +77,7 @@ Function Initialize-Neo4jHACluster
     
     if ($thisServer.ServerType -ne 'Enterprise')
     {
-      Throw "Neo4j Server type $($thisServer.ServerType) does not support HA"
+      Write-Error "Neo4j Server type $($thisServer.ServerType) does not support HA"
       return $null
     }
 

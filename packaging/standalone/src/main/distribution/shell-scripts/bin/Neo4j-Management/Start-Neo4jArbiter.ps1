@@ -63,26 +63,28 @@ Function Start-Neo4jArbiter
       }
     }
     if ($thisServer -eq $null) { return }
-    
-    $JavaCMD = Get-Java -BaseDir $thisServer.Home
-    if ($JavaCMD -eq $null)
+
+    # Check if this feature is supported
+    if ($thisServer.ServerType -ne 'Enterprise')
     {
-      Throw "Unable to locate Java"
+      Write-Error "Neo4j Server type $($thisServer.ServerType) does not support HA"
       return
     }
-
+    
     if ($PsCmdlet.ParameterSetName -eq 'Console')
     {    
-  
-      $ShellArgs = @( `
-        "-DworkingDir=`"$($thisServer.Home)`"" `
-        ,"-Djava.util.logging.config.file=`"$($thisServer.Home)\conf\windows-wrapper-logging.properties`"" `
-        ,"-DconfigFile=`"conf/arbiter-wrapper.conf`"" `
-        ,"-DserverClasspath=`"lib/*.jar;system/lib/*.jar;plugins/**/*.jar;./conf*`"" `
-        ,"-DserverMainClass=org.neo4j.server.enterprise.StandaloneClusterClient" `
-        ,"-jar","$($thisServer.Home)\bin\windows-service-wrapper-5.jar"      
-      )
-      $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $ShellArgs -Wait:$Wait -NoNewWindow:$Wait -PassThru -WorkingDirectory $thisServer.Home )
+      $JavaCMD = Get-Java -Neo4jServer $thisServer -ForArbiter
+      if ($JavaCMD -eq $null)
+      {
+        Write-Error 'Unable to locate Java'
+        return
+      }
+
+      $result = 0
+      if ($PSCmdlet.ShouldProcess("$($JavaCMD.java) $($ShellArgs)", 'Start Neo4j Arbiter'))
+      {
+        $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $JavaCMD.args -Wait:$Wait -NoNewWindow:$Wait -PassThru -WorkingDirectory $thisServer.Home)
+      }
       
       if ($PassThru) { Write-Output $thisServer } else { Write-Output $result.ExitCode }
     }
@@ -97,7 +99,7 @@ Function Start-Neo4jArbiter
 
       if ($ServiceName -eq '')
       {
-        Throw "Could not find the Windows Service Name for Neo4j Arbiter"
+        Write-Error 'Could not find the Windows Service Name for Arbiter'
         return
       }
 

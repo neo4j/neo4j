@@ -30,10 +30,6 @@ Function Stop-Neo4jServer
     
     ,[Parameter(Mandatory=$false)]
     [string]$ServiceName = ''
-
-    ,[Parameter(Mandatory=$false)]
-    [Alias('Legacy')]
-    [switch]$LegacyOutput
   )
   
   Begin
@@ -70,14 +66,11 @@ Function Stop-Neo4jServer
 
     if ($ServiceName -eq '')
     {
-      if ($LegacyOutput) { Write-Host "Could not find the Windows Service Name for Neo4j" }
-      Throw "Could not find the Windows Service Name for Neo4j"
+      Write-Error 'Could not find the Windows Service Name for Neo4j'
       return
     }
 
-    if ($LegacyOutput) { Write-Host "Stopping $($ServiceName)..." }
     $result = Stop-Service -Name $ServiceName -PassThru
-    if ($LegacyOutput) { Write-Host "Service stopped" }
     if ($PassThru) { Write-Output $thisServer } else { Write-Output $result }
   }
   

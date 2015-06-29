@@ -81,17 +81,15 @@ Function Start-Neo4jShell
     if ($UseHost -ne '') { $ShellHost = $UseHost }
     if ($UsePort -ne -1) { $Port = $UsePort }
 
-    $JavaCMD = Get-Java -BaseDir $thisServer.Home -ErrorAction Stop
+    $JavaCMD = Get-Java -Neo4jServer $thisServer -ForUtility -AppName 'neo4j-shell' -StartingClass 'org.neo4j.shell.StartClient'
     if ($JavaCMD -eq $null)
     {
-      Throw "Unable to locate Java"
+      Write-Error 'Unable to locate Java'
       return
     }
     
     $ShellArgs = $JavaCMD.args
     if ($ShellArgs -eq $null) { $ShellArgs = @() }
-    $ShellArgs += @([string]'-Dapp.name=neo4j-shell')
-    $ShellArgs += @('org.neo4j.shell.StartClient')
     $ShellArgs += @('-host',"$ShellHost")
     $ShellArgs += @('-port',"$Port")
     # Add unbounded command line arguments

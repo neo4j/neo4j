@@ -19,6 +19,7 @@ InModuleScope Neo4j-Management {
     Context "Valid Neo4jHome path" {
       $neo4jPath = 'TestDrive:\SomePath'
       Mock Test-Path { $true } -ParameterFilter { $Path -eq $neo4jPath }
+      Mock Test-Path { $true } -ParameterFilter { $Path -eq "$($neo4jPath)\system\lib" }
   
       It "return true" {
         Confirm-Neo4jHome -Neo4jHome $neo4jPath | Should Be $true

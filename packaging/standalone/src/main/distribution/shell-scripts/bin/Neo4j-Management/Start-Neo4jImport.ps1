@@ -65,11 +65,12 @@ Function Start-Neo4jImport
     }
     if ($thisServer -eq $null) { return }
 
+
     # Get Java
-    $JavaCMD = Get-Java -BaseDir $thisServer.Home -ExtraClassPath (Join-Path -Path $thisServer.Home -ChildPath 'system\coordinator\lib')  -ErrorAction Stop
+    $JavaCMD = Get-Java -Neo4jServer $thisServer -ForUtility -AppName 'neo4j-import' -StartingClass 'org.neo4j.tooling.ImportTool' -ExtraClassPath (Join-Path -Path $thisServer.Home -ChildPath 'system\coordinator\lib')
     if ($JavaCMD -eq $null)
     {
-      Throw "Unable to locate Java"
+      Write-Error 'Unable to locate Java'
       return
     }
     
@@ -79,8 +80,6 @@ Function Start-Neo4jImport
     if ($setting -ne $null) { $graphPath = "$($thisServer.Home)\$($setting.Value.Replace('/','\'))" }
     
     $ShellArgs = $JavaCMD.args
-    $ShellArgs += @('-Dapp.name=neo4j-import')
-    $ShellArgs += @('org.neo4j.tooling.ImportTool')
     # Add unbounded command line arguments.  Check if --into was specified
     $intoParam = $false
     if ($OtherArgs -ne $null)

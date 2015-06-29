@@ -57,6 +57,13 @@ Function Remove-Neo4jArbiter
       }
     }
     if ($thisServer -eq $null) { return }
+
+    # Check if this feature is supported
+    if ($thisServer.ServerType -ne 'Enterprise')
+    {
+      Write-Error "Neo4j Server type $($thisServer.ServerType) does not support HA"
+      return
+    }
     
     if ($ServiceName -eq '')
     {
@@ -66,7 +73,7 @@ Function Remove-Neo4jArbiter
 
     if ($ServiceName -eq '')
     {
-      Throw "Could not find the Windows Service Name for Neo4j Arbiter"
+      Write-Error 'Could not find the Windows Service Name for Neo4j Arbiter'
       return
     }
     
@@ -74,7 +81,7 @@ Function Remove-Neo4jArbiter
     $service = Get-WmiObject -Class Win32_Service -Filter "Name='$ServiceName'"
     if (($service -eq $null) -and (-not $SucceedIfNotExist) ) 
     {
-      Throw "Windows service $ServiceName cannot be removed as it does not exist"
+      Write-Error "Windows service $ServiceName cannot be removed as it does not exist"
       return
     }
 

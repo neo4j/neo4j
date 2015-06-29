@@ -95,44 +95,6 @@ Function Get-Neo4jSetting
         }
       }
     }
-    
-    $defaultsXML = Join-Path -Path $PSScriptRoot -ChildPath 'neo4j-default-settings.xml'
-    if (Test-Path -Path $defaultsXML)
-    {
-      $defaultsXML = [xml](Get-Content -Path $defaultsXML)
-      
-      $defaultsXML.selectNodes('/defaults/section') | ForEach-Object -Process `
-      {
-        $node = $_
-        $processSection = $true
-        if ( ($node.versionregex -ne $null) -and ($processSection) )
-        {
-          $processSection = ( $thisServer.ServerVersion -match ([string]$node.versionregex) )
-        }
-        if ( ($node.editionregex -ne $null) -and ($processSection) )
-        {
-          $processSection = ( $thisServer.ServerType -match ([string]$node.editionregex) )
-        }
-        
-        if ( $processSection )
-        {
-          $node.selectNodes("setting") | Where-Object { $ConfigurationFile -contains $_.file } | Where-Object { ($Name -eq '') -or ($_.name -eq $Name) } |  ForEach-Object -Process `
-          {
-            $properties = @{
-              'Name' = $_.name;
-              'Value' = $_."#text";
-              'ConfigurationFile' = $_.file;
-              'IsDefault' = $true;
-              'Neo4jHome' = $thisServer.Home;
-            }
-            # Only emit the default value if it was not configured
-            $hash = "|$($_.file);$($_.name)"
-            if ($ConfiguredSettings.IndexOf($hash) -eq -1) { Write-Output (New-Object -TypeName PSCustomObject -Property $properties) }
-          }
-        }
-      }
-      
-    }
   }
   
   End

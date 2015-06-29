@@ -6,8 +6,6 @@ $common = Join-Path (Split-Path -Parent $here) 'Common.ps1'
 
 Import-Module "$src\Neo4j-Management.psm1"
 
-# TODO DisableAuthentication, ClearExistingDatabase, DisableOnlineBackup, OnlineBackupServer parameters
-
 InModuleScope Neo4j-Management {
   Describe "Initialize-Neo4jServer" {
   

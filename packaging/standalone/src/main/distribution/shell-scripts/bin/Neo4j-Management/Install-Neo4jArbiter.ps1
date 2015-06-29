@@ -43,8 +43,6 @@ Function Install-Neo4jArbiter
 
     ,[Parameter(Mandatory=$false)]
     [switch]$PassThru   
-    
-    # Optionally run the service under an account other than LOCAL SYSTEM?
   )
   
   Begin
@@ -73,35 +71,38 @@ Function Install-Neo4jArbiter
     }
     if ($thisServer -eq $null) { return }
     
-    $JavaCMD = Get-Java -BaseDir $thisServer.Home
+    # Check if this feature is supported
+    if ($thisServer.ServerType -ne 'Enterprise')
+    {
+      Write-Error "Neo4j Server type $($thisServer.ServerType) does not support HA"
+      return
+    }
+
+    $JavaCMD = Get-Java -Neo4jServer $thisServer -ForArbiter
     if ($JavaCMD -eq $null)
     {
-      Throw "Unable to locate Java"
+      Write-Error 'Unable to locate Java'
       return
     }
     
+    $Name = $Name.Trim()
     if ($DisplayName -eq '') { $DisplayName = $Name }
-
-    $binPath = "`"$($JavaCMD.java)`"" + `
-               " -DworkingDir=`"$($thisServer.Home)`"" + `
-               " -Djava.util.logging.config.file=`"$($thisServer.Home)\conf\windows-wrapper-logging.properties`"" + `
-               " -DconfigFile=`"conf/arbiter-wrapper.conf`"" + `
-               " -Dorg.neo4j.cluster.logdirectory==`"$($thisServer.Home)\data\log`"" + `
-               " -DserverClasspath=`"lib/*.jar;system/lib/*.jar;plugins/**/*.jar;./conf*`"" + `
-               " -DserverMainClass=org.neo4j.server.enterprise.StandaloneClusterClient" + `
-               " -jar `"$($thisServer.Home)\bin\windows-service-wrapper-5.jar`"" + `
-               " $Name"
+    
+    $binPath = "`"$($JavaCMD.java)`" $($JavaCMD.args -join ' ') $Name"    
 
     $result = $null
     if ($SucceedIfAlreadyExists)
     {
       $result = Get-Service -Name $Name -ComputerName '.' -ErrorAction 'SilentlyContinue'
     }
-    if ($result -eq $null) { $result = (New-Service -Name $Name -Description $Description -DisplayName $Name -BinaryPathName $binPath -StartupType $StartType) }
+
+    if ($result -eq $null)
+    {
+      $result = (New-Service -Name $Name -Description $Description -DisplayName $Name -BinaryPathName $binPath -StartupType $StartType)
+    }
     
     $thisServer | Set-Neo4jSetting -ConfigurationFile 'arbiter-wrapper.conf' -Name 'wrapper.name' -Value $Name | Out-Null
-    
-    
+        
     if ($PassThru) { Write-Output $thisServer } else { Write-Output $result }
   }
   

@@ -75,7 +75,7 @@ Function Start-Neo4jBackup
 
     if ($thisServer.ServerType -ne 'Enterprise')
     {
-      Throw "Neo4j Server type $($thisServer.ServerType) does not support online backup"
+      Write-Error "Neo4j Server type $($thisServer.ServerType) does not support online backup"
       return
     }
 
@@ -94,7 +94,7 @@ Function Start-Neo4jBackup
     }
     if (!$BackupEnabled)
     {
-      throw "Online Backup Server is not enabled"
+      Write-Error "Online Backup Server is not enabled"
       return
     }
     
@@ -106,21 +106,26 @@ Function Start-Neo4jBackup
     }
     else
     {
-      Throw "$BackupHost is an invalid Backup Server address"
+      Write-Error "$BackupHost is an invalid Backup Server address"
       return
     }
 
     # Get Java
+    $JavaCMD = Get-Java -Neo4jServer $thisServer -ForUtility -AppName 'neo4j-backup' -StartingClass 'org.neo4j.backup.BackupTool' -ExtraClassPath (Join-Path -Path $thisServer.Home -ChildPath 'system\coordinator\lib')
+    if ($JavaCMD -eq $null)
+    {
+      Write-Error 'Unable to locate Java'
+      return
+    }
+
     $JavaCMD = Get-Java -BaseDir $thisServer.Home -ExtraClassPath (Join-Path -Path $thisServer.Home -ChildPath 'system\coordinator\lib')  -ErrorAction Stop
     if ($JavaCMD -eq $null)
     {
-      Throw "Unable to locate Java"
+      Write-Error "Unable to locate Java"
       return
     }
     
     $ShellArgs = $JavaCMD.args
-    $ShellArgs += @('-Dapp.name=neo4j-backup')
-    $ShellArgs += @('org.neo4j.backup.BackupTool')
     $ShellArgs += @('-host',"$serverHost")
     $ShellArgs += @('-port',"$serverport")
     $ShellArgs += @('-to',"$To")    

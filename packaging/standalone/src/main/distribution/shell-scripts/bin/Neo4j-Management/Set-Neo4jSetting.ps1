@@ -115,7 +115,6 @@ Function Set-Neo4jSetting
       $misc = $line.IndexOf('#')
       if ($misc -ge 0) { $line = $line.SubString(0,$misc) }
   
-      # Get the server version from the name of the neo4j-server-<version>.jar file
       if ($matches -ne $null) { $matches.Clear() }
       if ($line -match "^$($Name)=(.+)`$")
       {
