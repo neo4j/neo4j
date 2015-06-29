@@ -32,11 +32,11 @@ import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
-import org.neo4j.unsafe.impl.batchimport.input.DataException;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
 
 /**
  * Provides {@link Input} from data contained in tabular/csv form. Expects factories for instantiating
@@ -154,15 +154,18 @@ public class CsvInput implements Input
                                     {
                                         if ( entity.startNode() == null )
                                         {
-                                            throw new DataException( entity + " is missing " + Type.START_ID + " field" );
+                                            throw new MissingRelationshipDataException(Type.START_ID,
+                                                                entity + " is missing " + Type.START_ID + " field" );
                                         }
                                         if ( entity.endNode() == null )
                                         {
-                                            throw new DataException( entity + " is missing " + Type.END_ID + " field" );
+                                            throw new MissingRelationshipDataException(Type.END_ID,
+                                                                entity + " is missing " + Type.END_ID + " field" );
                                         }
                                         if ( !entity.hasTypeId() && entity.type() == null )
                                         {
-                                            throw new DataException( entity + " is missing " + Type.TYPE + " field" );
+                                            throw new MissingRelationshipDataException(Type.TYPE,
+                                                                entity + " is missing " + Type.TYPE + " field" );
                                         }
                                     }
                                 } );

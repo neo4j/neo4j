@@ -56,7 +56,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.test.Mute.muteAll;
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class PagedTraverserDocIT extends ExclusiveServerTestBase
 {
@@ -92,7 +92,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
                 .withClock( clock )
                 .build();
 
-        muteAll().call( new Callable<Void>()
+        suppressAll().call( new Callable<Void>()
         {
             @Override
             public Void call() throws Exception
@@ -113,7 +113,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     @AfterClass
     public static void stopServer() throws Exception
     {
-        muteAll().call( new Callable<Void>()
+        suppressAll().call( new Callable<Void>()
         {
             @Override
             public Void call() throws Exception

@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.helpers.ProcessFailureException;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -604,7 +604,7 @@ public class ProgressMonitorTest
     @Rule
     public final TestName testName = new TestName();
     @Rule
-    public Mute mute = Mute.muteAll();
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
     public final SingleIndicator factory = new SingleIndicator();
 

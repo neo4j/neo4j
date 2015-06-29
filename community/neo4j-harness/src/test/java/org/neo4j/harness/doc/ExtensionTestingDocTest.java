@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.harness.TestServerBuilders;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 
 import static org.junit.Assert.*;
@@ -42,7 +42,7 @@ import static org.junit.Assert.*;
 public class ExtensionTestingDocTest
 {
     @Rule
-    public Mute mute = Mute.muteAll();
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     // START SNIPPET: testExtension
     @Path("")

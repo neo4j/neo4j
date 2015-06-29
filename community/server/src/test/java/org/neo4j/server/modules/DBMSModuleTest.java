@@ -26,7 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.web.WebServer;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollection;
@@ -36,7 +36,8 @@ import static org.mockito.Mockito.*;
 public class DBMSModuleTest
 {
     @Rule
-    public Mute mute = Mute.mute( Mute.System.err, Mute.System.out );
+    public SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.System.err,
+            SuppressOutput.System.out );
     
     @SuppressWarnings( "unchecked" )
     @Test

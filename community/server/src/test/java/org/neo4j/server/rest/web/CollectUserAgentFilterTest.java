@@ -29,7 +29,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.concurrent.RecentK;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
@@ -40,7 +40,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.test.Mute.muteAll;
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class CollectUserAgentFilterTest
 {
@@ -49,7 +49,7 @@ public class CollectUserAgentFilterTest
     private final CollectUserAgentFilter filter = new CollectUserAgentFilter( agents );
 
     @Rule
-    public Mute mute = muteAll();
+    public SuppressOutput suppressOutput = suppressAll();
 
     @Test
     public void shouldRecordASingleUserAgent() throws IOException, ServletException

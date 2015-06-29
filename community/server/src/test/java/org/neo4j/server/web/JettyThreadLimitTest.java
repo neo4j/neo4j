@@ -26,18 +26,18 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.test.Mute.muteAll;
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 import org.neo4j.kernel.configuration.Config;
 
 public class JettyThreadLimitTest
 {
     @Rule
-    public Mute mute = muteAll();
+    public SuppressOutput suppressOutput = suppressAll();
 
     @Test
     public void shouldHaveConfigurableJettyThreadPoolSize() throws Exception

@@ -27,7 +27,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.junit.Assert.assertEquals;
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertNotNull;
 public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 {
     @Rule
-    public final Mute mute = Mute.muteAll();
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     private Bootstrapper bootstrapper;
 

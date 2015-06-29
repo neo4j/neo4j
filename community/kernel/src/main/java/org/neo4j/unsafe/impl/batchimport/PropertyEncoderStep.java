@@ -36,7 +36,7 @@ import static java.util.Arrays.copyOf;
 
 /**
  * Encodes property data into {@link PropertyBlock property blocks}, attaching them to each
- * {@link BatchEntity}. This step is designed to handle multiple threads doing the property encoding,
+ * {@link Batch}. This step is designed to handle multiple threads doing the property encoding,
  * since property encoding is potentially the most costly step in this {@link Stage}.
  */
 public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends InputEntity>

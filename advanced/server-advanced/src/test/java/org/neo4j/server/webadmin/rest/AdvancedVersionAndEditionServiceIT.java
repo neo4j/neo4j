@@ -43,7 +43,7 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.test.Mute.muteAll;
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 /*
 Note that when running this test from within an IDE, the version field will be an empty string. This is because the
@@ -78,7 +78,7 @@ public class AdvancedVersionAndEditionServiceIT extends ExclusiveServerTestBase
                 .withClock( clock )
                 .build();
 
-        muteAll().call( new Callable<Void>()
+        suppressAll().call( new Callable<Void>()
         {
             @Override
             public Void call() throws Exception
@@ -99,7 +99,7 @@ public class AdvancedVersionAndEditionServiceIT extends ExclusiveServerTestBase
     @AfterClass
     public static void stopServer() throws Exception
     {
-        muteAll().call( new Callable<Void>()
+        suppressAll().call( new Callable<Void>()
         {
             @Override
             public Void call() throws Exception

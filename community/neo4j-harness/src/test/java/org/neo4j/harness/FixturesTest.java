@@ -29,7 +29,7 @@ import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.HTTP;
 
@@ -44,7 +44,7 @@ public class FixturesTest
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( FixturesTest.class );
 
-    @Rule public Mute mute = Mute.muteAll();
+    @Rule public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldAccepSingleCypherFileAsFixture() throws Exception

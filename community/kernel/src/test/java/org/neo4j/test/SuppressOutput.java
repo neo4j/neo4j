@@ -38,25 +38,25 @@ import java.util.logging.SimpleFormatter;
 import java.util.logging.StreamHandler;
 
 /**
- * Mutes outputs such as System.out, System.err and java.util.logging for example when running a test.
+ * Suppresses outputs such as System.out, System.err and java.util.logging for example when running a test.
  * It's also a {@link TestRule} which makes it fit in nicely in JUnit.
  * 
- * The muting occurs visitor-style and if there's an exception in the code executed when being muted
+ * The suppressing occurs visitor-style and if there's an exception in the code executed when being muted
  * all the logging that was temporarily muted will be resent to the peers as if they weren't muted to begin with.
  */
-public final class Mute implements TestRule
+public final class SuppressOutput implements TestRule
 {
-    public static Mute mute( Mutable... mutables )
+    public static SuppressOutput suppress( Suppressible... suppressibles )
     {
-        return new Mute( mutables );
+        return new SuppressOutput( suppressibles );
     }
     
-    public static Mute muteAll()
+    public static SuppressOutput suppressAll()
     {
-        return mute( System.out, System.err, java_util_logging );
+        return suppress( System.out, System.err, java_util_logging );
     }
 
-    public enum System implements Mutable
+    public enum System implements Suppressible
     {
         out
         {
@@ -80,11 +80,11 @@ public final class Mute implements TestRule
         };
 
         @Override
-        public Voice mute()
+        public Voice suppress()
         {
             final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             final PrintStream old = replace( new PrintStream( buffer ) );
-            return new Voice()
+            return new Voice(this, buffer)
             {
                 @Override
                 void restore( boolean failure ) throws IOException
@@ -101,19 +101,19 @@ public final class Mute implements TestRule
         abstract PrintStream replace( PrintStream replacement );
     }
 
-    public static final Mutable java_util_logging = java_util_logging( null, null );
+    public static final Suppressible java_util_logging = java_util_logging( new ByteArrayOutputStream(), null );
 
-    public static Mutable java_util_logging( OutputStream redirectTo, Level level )
+    public static Suppressible java_util_logging( final OutputStream redirectTo, Level level )
     {
         final Handler replacement = redirectTo == null ? null : new StreamHandler( redirectTo, new SimpleFormatter() );
         if ( replacement != null && level != null )
         {
             replacement.setLevel( level );
         }
-        return new Mutable()
+        return new Suppressible()
         {
             @Override
-            public Voice mute()
+            public Voice suppress()
             {
                 final Logger logger = LogManager.getLogManager().getLogger( "" );
                 final Level level = logger.getLevel();
@@ -127,7 +127,7 @@ public final class Mute implements TestRule
                     logger.addHandler( replacement );
                     logger.setLevel( Level.ALL );
                 }
-                return new Voice()
+                return new Voice(this, redirectTo)
                 {
                     @Override
                     void restore( boolean failure ) throws IOException
@@ -163,12 +163,42 @@ public final class Mute implements TestRule
         }
     }
 
-    private final Mutable[] mutables;
+    private final Suppressible[] suppressibles;
+    private Voice[] voices;
 
-    private Mute( Mutable[] mutables )
+    private SuppressOutput( Suppressible[] suppressibles )
     {
-        this.mutables = mutables;
+        this.suppressibles = suppressibles;
     }
+
+    public Voice[] getAllVoices()
+    {
+        return voices;
+    }
+
+    public Voice getOutputVoice()
+    {
+        return getVoice( System.out );
+    }
+
+    public Voice getErrorVoice()
+    {
+        return getVoice( System.err );
+    }
+
+    public Voice getVoice( Suppressible suppressible )
+    {
+        for ( Voice voice : voices )
+        {
+            if ( suppressible.equals( voice.getSuppressible() ) )
+            {
+                return voice;
+            }
+        }
+        return null;
+    }
+
+
 
     @Override
     public Statement apply( final Statement base, Description description )
@@ -178,7 +208,7 @@ public final class Mute implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                Voice[] voices = captureVoices();
+                voices = captureVoices();
                 boolean failure = true;
                 try
                 {
@@ -193,25 +223,44 @@ public final class Mute implements TestRule
         };
     }
 
-    public interface Mutable
+    public interface Suppressible
     {
-        Voice mute();
+        Voice suppress();
     }
 
-    private static abstract class Voice
+    public static abstract class Voice
     {
+        private Suppressible suppressible;
+        private OutputStream voiceStream;
+
+        public Voice(Suppressible suppressible, OutputStream originalStream)
+        {
+            this.suppressible = suppressible;
+            this.voiceStream = originalStream;
+        }
+
+        public Suppressible getSuppressible()
+        {
+            return suppressible;
+        }
+
+        public boolean containsMessage( String message )
+        {
+            return voiceStream.toString().contains( message );
+        }
+
         abstract void restore( boolean failure ) throws IOException;
     }
 
     Voice[] captureVoices()
     {
-        Voice[] voices = new Voice[mutables.length];
+        Voice[] voices = new Voice[suppressibles.length];
         boolean ok = false;
         try
         {
             for ( int i = 0; i < voices.length; i++ )
             {
-                voices[i] = mutables[i].mute();
+                voices[i] = suppressibles[i].suppress();
             }
             ok = true;
         }

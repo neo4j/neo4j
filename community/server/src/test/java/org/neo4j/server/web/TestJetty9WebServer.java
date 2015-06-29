@@ -36,13 +36,14 @@ import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.Mute;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
+import org.neo4j.test.SuppressOutput;
+
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.Mute.muteAll;
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class TestJetty9WebServer extends ExclusiveServerTestBase
 {
@@ -128,7 +129,7 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
     }
 
     @Rule
-    public Mute mute = muteAll();
+    public SuppressOutput suppressOutput = suppressAll();
 
     @Rule
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
