@@ -49,13 +49,13 @@ public class Workload implements Resource
         TransactionThroughput NONE = new TransactionThroughput()
         {
             @Override
-            public void report( long transactions, long timeSlotMillis, long timeElapsedMillis )
+            public void report( long transactions, long timeSlotMillis )
             {
                 // ignore
             }
         };
 
-        void report( long transactions, long timeSlotMillis, long timeElapsedMillis );
+        void report( long transactions, long timeSlotMillis);
     }
 
     public void run( long runningTimeMillis, TransactionThroughput throughput )
@@ -67,6 +67,7 @@ public class Workload implements Resource
         }
 
         long now = System.currentTimeMillis();
+        long previousReportTime = System.currentTimeMillis();
         long finishLine = runningTimeMillis + now;
         long lastReport = TimeUnit.SECONDS.toMillis( 10 ) + now;
         long previousTransactionCount = 0;
@@ -78,25 +79,36 @@ public class Workload implements Resource
             {
                 long currentTransactionCount = sync.transactions();
                 long diff = currentTransactionCount - previousTransactionCount;
-                throughput.report( diff, 1000, finishLine - now );
+                throughput.report( diff, now - previousReportTime );
+
+                previousReportTime = now;
                 previousTransactionCount = currentTransactionCount;
+
                 lastReport = TimeUnit.SECONDS.toMillis( 10 ) + now;
             }
         }
         while ( now < finishLine );
 
-        if ( lastReport < now)
+        if ( lastReport < now )
         {
             long diff = sync.transactions() - previousTransactionCount;
-            throughput.report( diff, 1000, finishLine - now );
+            throughput.report( diff, now - previousReportTime );
         }
-
         sync.stopAndWaitWorkers();
+
     }
 
     @Override
     public void close()
     {
-        executor.shutdown();
+        try
+        {
+            executor.shutdown();
+            executor.awaitTermination( 10, TimeUnit.SECONDS );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

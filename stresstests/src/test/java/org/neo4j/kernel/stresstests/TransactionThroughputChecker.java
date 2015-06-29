@@ -32,12 +32,12 @@ public class TransactionThroughputChecker implements Workload.TransactionThrough
     private final List<Double> reports = new ArrayList<>();
 
     @Override
-    public void report( long transactions, long timeSlotMillis, long timeElapsedMillis )
+    public void report( long transactions, long elapsedTime)
     {
-        reports.add( ((double) transactions / (double) timeSlotMillis) );
+        reports.add( ((double) transactions / (double) elapsedTime) );
     }
 
-    public void assertUniformThroughput( PrintStream out )
+    public void assertThroughput( PrintStream out )
     {
         // dropping the first report which is
 
@@ -60,19 +60,23 @@ public class TransactionThroughputChecker implements Workload.TransactionThrough
         double average = sum / (double) reports.size();
         out.println( "Average throughput (tx/ms): " + average );
         double tolerance = average * 0.20d;
-        out.println( "Start check uniform throughput with tolerance: " + tolerance );
+        out.println( "Start check throughput with tolerance: " + tolerance );
 
-        boolean success = true;
+        int nonMatchingCounter = 0;
         for ( double report : reports )
         {
             if ( doubleIsDifferent( average, report, tolerance ) )
             {
                 System.err.println( "Found a time slot when throughput differs too much wrt the average:" );
-                System.err.println( "\tAverage="+average+", current="+report+", tolerance="+tolerance );
-                success = false;
+                System.err.println( "\tAverage=" + average + ", current=" + report + ", tolerance=" + tolerance );
+                nonMatchingCounter++;
             }
         }
-        assertTrue( success );
+        int nonSuccessPercentage = (int) ((nonMatchingCounter / (double) reports.size()) * 100);
+        System.out.println( "Non successful percentage is: " + nonSuccessPercentage );
+        assertTrue( "Assumption is that more then 80 percent should be in " +
+                    "range [average - (average * 0.2 ); average  + (average * 0.2)] ",
+                nonSuccessPercentage < 20 );
     }
 
     private boolean doubleIsDifferent( double expected, double actual, double tolerance )
