@@ -202,3 +202,5 @@ include::lower.asciidoc[]
 include::upper.asciidoc[]
 
 include::split.asciidoc[]
+
+include::reverse.asciidoc[]

@@ -95,4 +95,12 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
 
     result should equal("wow!")
   }
+
+  test("reverse function should work as expected") {
+    // When
+    val result = executeScalarWithAllPlanners[String]("RETURN reverse('raksO')")
+
+    // Then
+    result should equal("Oskar")
+  }
 }

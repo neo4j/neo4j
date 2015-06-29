@@ -122,5 +122,13 @@ split({original}, {delimiter})
 ###
 
 Split a string into a collection of strings.
+
+###assertion=returns-one parameters=sub
+RETURN
+
+reverse({original})
+###
+
+Reverse a string.
 """
 }

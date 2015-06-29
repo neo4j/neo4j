@@ -69,6 +69,7 @@ object Function {
     functions.Relationships,
     functions.Rels,
     functions.Replace,
+    functions.Reverse,
     functions.Right,
     functions.Round,
     functions.RTrim,

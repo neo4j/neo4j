@@ -144,4 +144,15 @@ class StringFunctionsTest extends CypherFunSuite {
     str(List(1, 2, 3, 4)) should equal("[1,2,3,4]")
     str(null) should equal(expectedNull)
   }
+
+  test("reverse function test") {
+    def reverse(x: Any) = ReverseFunction(Literal(x)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
+
+    reverse("Foo") should equal("ooF")
+    reverse("") should equal("")
+    reverse(" L") should equal("L ")
+    reverse(null) should equal(expectedNull)
+    reverse("\r\n") should equal("\n\r")
+    reverse("\uD801\uDC37") should equal("\uD801\uDC37")
+  }
 }
