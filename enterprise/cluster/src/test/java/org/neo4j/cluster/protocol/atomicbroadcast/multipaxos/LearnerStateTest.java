@@ -19,6 +19,9 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import org.junit.Test;
+import org.mockito.Matchers;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,15 +29,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Test;
-import org.mockito.Matchers;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
 import org.neo4j.cluster.statemachine.State;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -48,15 +51,17 @@ public class LearnerStateTest
     {
         // Given
         LearnerState state = LearnerState.learner;
-        LearnerContext ctx = mock(LearnerContext.class);
+        LearnerContext ctx = mock( LearnerContext.class );
         MessageHolder outgoing = mock( MessageHolder.class );
         org.neo4j.cluster.InstanceId upToDateClusterMember = new org.neo4j.cluster.InstanceId( 1 );
 
         // What we know
-        when(ctx.getLastLearnedInstanceId()).thenReturn( 0l );
-        when(ctx.getPaxosInstance( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 1l ) )).thenReturn( new PaxosInstance( null, new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 1l )));
-        when(ctx.getLastKnownAliveUpToDateInstance()).thenReturn( upToDateClusterMember );
-        when(ctx.getUriForId( upToDateClusterMember )).thenReturn( new URI("c:/1") );
+        when( ctx.getLastLearnedInstanceId() ).thenReturn( 0l );
+        when( ctx.getPaxosInstance( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 1l ) ) )
+                .thenReturn( new PaxosInstance( null, new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos
+                        .InstanceId( 1l ) ) );
+        when( ctx.getLastKnownAliveUpToDateInstance() ).thenReturn( upToDateClusterMember );
+        when( ctx.getUriForId( upToDateClusterMember ) ).thenReturn( new URI( "c:/1" ) );
 
         // What we know the cluster knows
         when( ctx.getLastKnownLearnedInstanceInCluster() ).thenReturn( 1l );
@@ -68,12 +73,12 @@ public class LearnerStateTest
 
         // Then
 
-        assertThat(newState, equalTo((State)LearnerState.learner));
-        verify(outgoing).offer( Message.to( LearnerMessage.learnRequest, new URI( "c:/1" ),
+        assertThat( newState, equalTo( (State) LearnerState.learner ) );
+        verify( outgoing ).offer( Message.to( LearnerMessage.learnRequest, new URI( "c:/1" ),
                 new LearnerMessage.LearnRequestState() ).setHeader(
                 org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE,
                 Long.toString( 1l ) ) );
-        verify(ctx).setTimeout( "learn", Message.timeout( LearnerMessage.learnTimedout, message ) );
+        verify( ctx ).setTimeout( "learn", Message.timeout( LearnerMessage.learnTimedout, message ) );
     }
 
     @Test
@@ -85,7 +90,7 @@ public class LearnerStateTest
         MessageHolder outgoing = mock( MessageHolder.class );
         // The instance will be asked for paxos instance 4...
         InstanceId paxosInstanceIdIDontHave = new InstanceId( 4 );
-        Message<LearnerMessage> messageRequestingId = Message.to( LearnerMessage.learnRequest, URI.create( "c:/1" ))
+        Message<LearnerMessage> messageRequestingId = Message.to( LearnerMessage.learnRequest, URI.create( "c:/1" ) )
                 .setHeader( Message.FROM, "c:/2" )
                 .setHeader( InstanceId.INSTANCE, "4" );
         // ...but it does not have it yet
@@ -97,7 +102,7 @@ public class LearnerStateTest
 
         // Then
         // verify there is no logging of the failure
-        verify( ctx, times( 0 )).notifyLearnMiss( paxosInstanceIdIDontHave );
+        verify( ctx, times( 0 ) ).notifyLearnMiss( paxosInstanceIdIDontHave );
         // but the learn failed went out anyway
         verify( outgoing, times( 1 ) ).offer(
                 Matchers.<Message<? extends MessageType>>argThat( new MessageArgumentMatcher()
@@ -113,12 +118,12 @@ public class LearnerStateTest
         LearnerContext ctx = mock( LearnerContext.class );
         MessageHolder outgoing = mock( MessageHolder.class );
         InstanceId paxosInstanceIdIAskedFor = new InstanceId( 4 );
-        Message<LearnerMessage> theLearnFailure = Message.to( LearnerMessage.learnFailed, URI.create("c:/1"))
-                .setHeader( Message.FROM, "c:/2")
+        Message<LearnerMessage> theLearnFailure = Message.to( LearnerMessage.learnFailed, URI.create( "c:/1" ) )
+                .setHeader( Message.FROM, "c:/2" )
                 .setHeader( InstanceId.INSTANCE, "4" );
         when( ctx.getPaxosInstance( paxosInstanceIdIAskedFor ) )
                 .thenReturn( new PaxosInstance( mock( PaxosInstanceStore.class ), paxosInstanceIdIAskedFor ) );
-        when( ctx.getMemberURIs() ).thenReturn( Collections.singletonList( URI.create("c:/2") ) );
+        when( ctx.getMemberURIs() ).thenReturn( Collections.singletonList( URI.create( "c:/2" ) ) );
 
         // When
         state.handle( ctx, theLearnFailure, outgoing );
@@ -178,5 +183,33 @@ public class LearnerStateTest
                         .onMessageType( LearnerMessage.learnRequest ).to( instance4 ) )
         );
         verifyNoMoreInteractions( outgoing );
+    }
+
+    @Test
+    public void shouldHandleLocalLearnMessagesWithoutInstanceIdInTheMessageHeaderWhenCatchingUp() throws Throwable
+    {
+        // Given
+        LearnerState learner = LearnerState.learner;
+        org.neo4j.cluster.InstanceId instanceId = new org.neo4j.cluster.InstanceId( 42 );
+        long payload = 12l;
+
+        LearnerContext context = mock( LearnerContext.class );
+        when( context.getMyId() ).thenReturn( instanceId );
+        when( context.getLastKnownLearnedInstanceInCluster() ).thenReturn( 11l );
+        when( context.getLastLearnedInstanceId() ).thenReturn( payload );
+
+        @SuppressWarnings( "unchecked" )
+        Message<LearnerMessage> message = mock( Message.class );
+        when( message.getMessageType() ).thenReturn( LearnerMessage.catchUp );
+        when( message.hasHeader( Message.INSTANCE_ID )).thenReturn( false );
+        when( message.getHeader( Message.INSTANCE_ID ) ).thenThrow( new IllegalArgumentException() );
+        when( message.getPayload() ).thenReturn( payload );
+
+        // When
+        State<?,?> state = learner.handle( context, message, mock( MessageHolder.class ) );
+
+        // Then
+        assertSame( state, learner );
+        verify( context, times(1) ).setLastKnownLearnedInstanceInCluster( payload, instanceId );
     }
 }
