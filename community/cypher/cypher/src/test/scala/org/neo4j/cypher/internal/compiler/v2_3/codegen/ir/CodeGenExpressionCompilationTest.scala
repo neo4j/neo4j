@@ -130,22 +130,22 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
         }
 
         test(s"$name: literal($lhs) & literal($rhs)") {
-          verify(evaluate(project(Literal(lhs), Literal(rhs)), operatorIds = traceIds,
+          verify(evaluate(project(Literal(lhs), Literal(rhs)), columns = Seq("result"), operatorIds = traceIds,
                           params = Map.empty))
         }
 
         test(s"$name: parameter($lhs) & parameter($rhs)") {
-          verify(evaluate(project(Parameter("lhs", "v1"), Parameter("rhs", "v2")), operatorIds = traceIds,
+          verify(evaluate(project(Parameter("lhs", "v1"), Parameter("rhs", "v2")), columns = Seq("result"), operatorIds = traceIds,
                           params = Map("lhs" -> lhs, "rhs" -> rhs)))
         }
 
         test(s"$name: literal($lhs) & parameter($rhs)") {
-          verify(evaluate(project(Literal(lhs), Parameter("rhs", "v2")), operatorIds = traceIds,
+          verify(evaluate(project(Literal(lhs), Parameter("rhs", "v2")), columns = Seq("result"), operatorIds = traceIds,
                           params = Map("rhs" -> rhs)))
         }
 
         test(s"$name: parameter($lhs) & literal($rhs)") {
-          verify(evaluate(project(Parameter("lhs", "v2"), Literal(rhs)), operatorIds = traceIds,
+          verify(evaluate(project(Parameter("lhs", "v2"), Literal(rhs)), columns = Seq("result"), operatorIds = traceIds,
                           params = Map("lhs" -> lhs)))
         }
     }

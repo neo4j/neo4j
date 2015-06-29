@@ -213,9 +213,8 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           val ep = entityProducerFactory.nodeStartItems((planContext, StatementConverters.StartItemConverter(hint).asCommandStartItem))
           NodeStartPipe(source, id.name, ep)()
 
-        case ProduceResult(nodes, rels, others, lhs) =>
+        case ProduceResult(columns, lhs) =>
           val source = buildPipe(lhs)
-          val columns = nodes ++ rels ++ others
           ProduceResultsPipe(source, columns)()
 
         case x =>

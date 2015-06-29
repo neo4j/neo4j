@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.neo4j.cypher.internal.compiler.v2_3.InternalException
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{LabelName, Hint}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{Identifier, LabelName, Hint}
 import org.neo4j.cypher.internal.compiler.v2_3.perty._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{StrictnessMode, IdName, PatternRelationship}
@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{Strictness
 import scala.annotation.tailrec
 import scala.collection.GenTraversableOnce
 
-case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean)
+case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[IdName])
 
 case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
                         horizon: QueryHorizon = QueryProjection.empty,

@@ -81,9 +81,10 @@ trait CodeGenSugar extends MockitoSugar {
   def evaluate(instructions: Seq[Instruction],
                stmt: Statement = mock[Statement],
                nodeManager: NodeManager = null,
+                columns: Seq[String] = Seq.empty,
                params: Map[String, AnyRef] = Map.empty,
                operatorIds: Map[String, Id] = Map.empty): List[Map[String, Object]] = {
-    val clazz = compile(instructions, operatorIds)
+    val clazz = compile(instructions, columns,  operatorIds)
     val result = newInstance(clazz, statement = stmt, nodeManager = nodeManager, params = params)
     evaluate(result)
   }
@@ -100,10 +101,10 @@ trait CodeGenSugar extends MockitoSugar {
     rows
   }
 
-  def compile(instructions: Seq[Instruction], operatorIds: Map[String, Id] = Map.empty): GeneratedQuery = {
+  def compile(instructions: Seq[Instruction], columns: Seq[String], operatorIds: Map[String, Id] = Map.empty): GeneratedQuery = {
     //In reality the same namer should be used for construction Instruction as in generating code
     //these tests separate the concerns so we give this namer non-standard prefixes
-    CodeGenerator.generateCode(GeneratedQueryStructure)(instructions, operatorIds)(
+    CodeGenerator.generateCode(GeneratedQueryStructure)(instructions, operatorIds, columns)(
       new CodeGenContext(new SemanticTable(), Map.empty, new Namer(
         new AtomicInteger(0), varPrefix = "TEST_VAR", methodPrefix = "TEST_METHOD")))
   }

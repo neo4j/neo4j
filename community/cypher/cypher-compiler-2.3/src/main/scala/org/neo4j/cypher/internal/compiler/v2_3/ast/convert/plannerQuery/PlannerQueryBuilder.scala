@@ -24,8 +24,11 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{PlannerQuery, QueryGraph, QueryHorizon}
 
 
-case class PlannerQueryBuilder(private val q: PlannerQuery)
+case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName] = Seq.empty)
   extends CollectionSupport {
+
+  def withReturns(returns: Seq[IdName]): PlannerQueryBuilder = copy(returns = returns)
+
   def updateGraph(f: QueryGraph => QueryGraph): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.updateGraph(f)))
 

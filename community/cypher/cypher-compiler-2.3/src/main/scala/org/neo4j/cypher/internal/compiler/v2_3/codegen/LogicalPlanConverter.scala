@@ -45,7 +45,7 @@ object LogicalPlanConverter {
       case p: CartesianProduct => p.asCodeGenPlan
       case p: Selection => p.asCodeGenPlan
       case p: plans.Limit => p.asCodeGenPlan
-      case produceResult@ProduceResult(_, _, _, projection: Projection) =>
+      case produceResult@ProduceResult(_, projection: Projection) =>
         ProduceProjectionResults(produceResult, projection)
 
       case _ =>

@@ -34,11 +34,7 @@ trait Instruction {
   // Aggregating methods -- final to prevent overriding
   final def allOperatorIds: Set[String] = treeView.flatMap(_.operatorId).toSet
 
-  final def allColumns: Set[String] = treeView.flatMap(_.columnNames).toSet
-
   protected def operatorId: Set[String] = Set.empty
-
-  protected def columnNames: Iterable[String] = Iterable.empty
 }
 
 object Instruction {

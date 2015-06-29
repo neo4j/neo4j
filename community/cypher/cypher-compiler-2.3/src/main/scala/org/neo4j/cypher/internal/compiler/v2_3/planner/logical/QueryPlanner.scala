@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{LogicalPlan, ProduceResult}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan, ProduceResult}
 
 trait QueryPlanner {
   def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext): LogicalPlan
@@ -33,7 +33,7 @@ case class DefaultQueryPlanner(planRewriter: Rewriter,
   extends QueryPlanner {
 
   def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext): LogicalPlan = unionQuery match {
-    case UnionQuery(queries, distinct) =>
+    case UnionQuery(queries, distinct, returns) =>
       val plan = planQueries(queries, distinct)
       val rewrittenPlan = plan.endoRewrite(planRewriter)
       createProduceResultOperator(rewrittenPlan, unionQuery)
@@ -44,15 +44,8 @@ case class DefaultQueryPlanner(planRewriter: Rewriter,
 
   private def createProduceResultOperator(in: LogicalPlan, unionQuery: UnionQuery)
                                          (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val lastQuery = unionQuery.queries.last
-    val columns = lastQuery.lastQueryHorizon.exposedSymbols(lastQuery.lastQueryGraph)
-
-    val stringColumns = columns.map(_.name)
-    val rels = stringColumns.filter(context.semanticTable.isRelationship)
-    val nodes = stringColumns.filter(context.semanticTable.isNode)
-    val others = stringColumns -- rels -- nodes
-
-    ProduceResult(nodes.toSeq, rels.toSeq, others.toSeq, in)
+    val columns = unionQuery.returns.map(_.name)
+    ProduceResult(columns, in)
   }
 
   private def planQueries(queries: Seq[PlannerQuery], distinct: Boolean)(implicit context: LogicalPlanningContext) = {
