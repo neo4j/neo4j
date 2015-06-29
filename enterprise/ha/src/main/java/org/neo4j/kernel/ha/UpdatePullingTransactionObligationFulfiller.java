@@ -38,12 +38,14 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
 {
     private final UpdatePuller updatePuller;
     private final RoleListener listener;
-    private TransactionIdStore transactionIdStore;
     private final HighAvailabilityMemberStateMachine memberStateMachine;
-    private Supplier<TransactionIdStore> transactionIdStoreSupplier;
+    private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
+
+    private volatile TransactionIdStore transactionIdStore;
 
     public UpdatePullingTransactionObligationFulfiller( UpdatePuller updatePuller,
-            HighAvailabilityMemberStateMachine memberStateMachine, InstanceId serverId, Supplier<TransactionIdStore> transactionIdStoreSupplier )
+            HighAvailabilityMemberStateMachine memberStateMachine, InstanceId serverId,
+            Supplier<TransactionIdStore> transactionIdStoreSupplier )
     {
         this.updatePuller = updatePuller;
         this.memberStateMachine = memberStateMachine;
@@ -63,12 +65,13 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
             @Override
             public boolean evaluate( int currentTicket, int targetTicket )
             {
-                /**
+                /*
                  * We need to await last *closed* transaction id, not last *committed* transaction id since
                  * right after leaving this method we might read records off of disk, and they had better
                  * be up to date, otherwise we read stale data.
                  */
-                return transactionIdStore.getLastClosedTransactionId() >= toTxId;
+                return transactionIdStore != null &&
+                       transactionIdStore.getLastClosedTransactionId() >= toTxId;
             }
         }, true /*We strictly need the update puller to be and remain active while we wait*/ );
     }
@@ -105,6 +108,16 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
                 // when joining a cluster or switching to a new master and there might have been a store copy
                 // just now where there has been a new transaction id store created.
                 transactionIdStore = transactionIdStoreSupplier.get();
+            }
+        }
+
+        @Override
+        public void instanceStops( HighAvailabilityMemberChangeEvent event )
+        {
+            if ( event.getInstanceId().equals( myInstanceId ) )
+            {
+                // clear state to avoid calling out of date objects
+                transactionIdStore = null;
             }
         }
     }
