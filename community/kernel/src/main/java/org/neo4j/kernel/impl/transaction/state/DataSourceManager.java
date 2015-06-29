@@ -64,11 +64,6 @@ public class DataSourceManager implements Lifecycle, Supplier<KernelAPI>
         dsRegistrationListeners = Listeners.addListener( listener, dsRegistrationListeners );
     }
 
-    public void removeListener( Listener listener )
-    {
-        dsRegistrationListeners = Listeners.removeListener( listener, dsRegistrationListeners );
-    }
-
     public void register( final NeoStoreDataSource dataSource )
     {
         this.dataSource = dataSource;

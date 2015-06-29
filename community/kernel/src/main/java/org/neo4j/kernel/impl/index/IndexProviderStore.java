@@ -36,12 +36,12 @@ public class IndexProviderStore
 {
     private static final int RECORD_SIZE = 8;
     private static final int RECORD_COUNT = 5;
-    
+
     private final long creationTime;
     private final long randomIdentifier;
     private long version;
     private final long indexVersion;
-    
+
     private final StoreChannel fileChannel;
     private final ByteBuffer buf = ByteBuffer.allocate( RECORD_SIZE*RECORD_COUNT );
     private long lastCommittedTx;
@@ -59,7 +59,7 @@ public class IndexProviderStore
             // Create it if it doesn't exist
             if ( !fileSystem.fileExists( file ) || fileSystem.getFileSize( file ) == 0 )
                 create( file, fileSystem, expectedVersion );
-            
+
             // Read all the records in the file
             channel = fileSystem.open( file, "rw" );
             Long[] records = readRecordsWithNullDefaults( channel, RECORD_COUNT, allowUpgrade );
@@ -69,10 +69,10 @@ public class IndexProviderStore
             lastCommittedTx = records[3].longValue();
             Long readIndexVersion = records[4];
             fileChannel = channel;
-            
+
             // Compare version and throw exception if there's a mismatch, also considering "allow upgrade"
             boolean versionDiffers = compareExpectedVersionWithStoreVersion( expectedVersion, allowUpgrade, readIndexVersion );
-            
+
             // Here we know that either the version matches or we just upgraded to the expected version
             indexVersion = expectedVersion;
             if ( versionDiffers )
@@ -123,7 +123,7 @@ public class IndexProviderStore
         }
         return versionDiffers;
     }
-    
+
     private Long[] readRecordsWithNullDefaults( StoreChannel fileChannel, int count, boolean allowUpgrade ) throws IOException
     {
         buf.clear();
@@ -133,19 +133,19 @@ public class IndexProviderStore
             throw new UpgradeNotAllowedByConfigurationException( "Index version (managed by " + file + ") has changed " +
             		"and cannot be upgraded unless " + GraphDatabaseSettings.allow_store_upgrade.name() +
             		"=true is supplied in the configuration" );
-        
+
         buf.flip();
         Long[] result = new Long[count];
         for ( int i = 0; i < wholeRecordsRead; i++ )
             result[i] = buf.getLong();
         return result;
     }
-    
+
     private void create( File file, FileSystemAbstraction fileSystem, long indexVersion ) throws IOException
     {
         if ( fileSystem.fileExists( file ) && fileSystem.getFileSize( file ) > 0 )
             throw new IllegalArgumentException( file + " already exist" );
-        
+
         StoreChannel fileChannel = null;
         try
         {
@@ -174,7 +174,7 @@ public class IndexProviderStore
         if ( written != expectedLength )
             throw new RuntimeException( "Expected to write " + expectedLength + " bytes, but wrote " + written );
     }
-    
+
     public File getFile()
     {
         return file;
@@ -194,7 +194,7 @@ public class IndexProviderStore
     {
         return version;
     }
-    
+
     public long getIndexVersion()
     {
         return indexVersion;
@@ -213,22 +213,17 @@ public class IndexProviderStore
         this.version = version;
         writeOut();
     }
-    
+
     public synchronized void setLastCommittedTx( long txId )
     {
         this.lastCommittedTx = txId;
     }
-    
+
     public long getLastCommittedTx()
     {
         return this.lastCommittedTx;
     }
-    
-    public synchronized void flush()
-    {
-        writeOut();
-    }
-    
+
     private void writeOut()
     {
         try
@@ -245,7 +240,7 @@ public class IndexProviderStore
     {
         if ( !fileChannel.isOpen() )
             return;
-        
+
         writeOut();
         try
         {

@@ -52,14 +52,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
-import static org.neo4j.graphdb.Direction.BOTH;
-import static org.neo4j.graphdb.Direction.INCOMING;
-import static org.neo4j.graphdb.Direction.OUTGOING;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
-import static org.neo4j.kernel.impl.util.PrimitiveIteratorMatchers.containsLongs;
 
 public class TxStateTest
 {
@@ -258,43 +254,6 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldIncludeAddedNodesWithCorrectProperty() throws Exception
-    {
-        // Given
-        long nodeId = 1337l;
-        int propertyKey = 2;
-        String propValue = "hello";
-
-        state.nodeDoReplaceProperty( nodeId, noNodeProperty( nodeId, propertyKey ), stringProperty(
-                propertyKey, propValue ) );
-
-        // When
-        ReadableDiffSets<Long> diff = state.nodesWithChangedProperty( propertyKey, propValue );
-
-        // Then
-        assertThat( diff.getAdded(), equalTo( asSet( nodeId ) ) );
-        assertThat( diff.getRemoved(), equalTo( emptySet ) );
-    }
-
-    @Test
-    public void shouldExcludeNodesWithCorrectPropertyRemoved() throws Exception
-    {
-        // Given
-        long nodeId = 1337l;
-        int propertyKey = 2;
-        String propValue = "hello";
-
-        state.nodeDoRemoveProperty( nodeId, stringProperty( propertyKey, propValue ) );
-
-        // When
-        ReadableDiffSets<Long> diff = state.nodesWithChangedProperty( propertyKey, propValue );
-
-        // Then
-        assertThat( diff.getAdded(), equalTo( emptySet ) );
-        assertThat( diff.getRemoved(), equalTo( asSet( nodeId ) ) );
-    }
-
-    @Test
     public void shouldListNodeAsDeletedIfItIsDeleted() throws Exception
     {
         // Given
@@ -361,54 +320,6 @@ public class TxStateTest
         // Then
         assertTrue( state.hasChanges() );
         assertTrue( state.relationshipIsAddedInThisTx( relId ) );
-    }
-
-    @Test
-    public void shouldAugmentWithAddedRelationships() throws Exception
-    {
-        // When
-        int startNode = 1, endNode = 2, relType = 0;
-        long relId = 10;
-        state.relationshipDoCreate( relId, relType, startNode, endNode );
-
-        // Then
-        long otherRel = relId + 1;
-        assertTrue( state.hasChanges() );
-        assertThat( state.augmentRelationships( startNode, OUTGOING, wrapInRelationshipIterator( iterator( otherRel ) ) ),
-                containsLongs( relId, otherRel ) );
-        assertThat( state.augmentRelationships( startNode, BOTH, wrapInRelationshipIterator( iterator( otherRel ) ) ),
-                containsLongs( relId, otherRel ) );
-        assertThat( state.augmentRelationships( endNode, INCOMING, wrapInRelationshipIterator( iterator( otherRel ) ) ),
-                containsLongs( relId, otherRel ) );
-        assertThat( state.augmentRelationships( endNode, BOTH, wrapInRelationshipIterator( iterator( otherRel ) ) ),
-                containsLongs( relId, otherRel ) );
-        assertThat( state.addedRelationships( endNode, new int[]{relType}, BOTH ),
-                    containsLongs( relId ) );
-        assertThat( state.addedRelationships( endNode, new int[]{relType + 1}, BOTH ),
-                    containsLongs() );
-    }
-
-    @Test
-    public void addedAndThenRemovedRelShouldNotShowUp() throws Exception
-    {
-        // Given
-        int startNode = 1, endNode = 2, relType = 0;
-        long relId = 10;
-        state.relationshipDoCreate( relId, relType, startNode, endNode );
-
-        // When
-        state.relationshipDoDelete( relId, relType, startNode, endNode );
-
-        // Then
-        long otherRel = relId + 1;
-        assertThat( state.augmentRelationships( startNode, OUTGOING, wrapInRelationshipIterator( iterator( otherRel ) ) ),
-                containsLongs( otherRel ) );
-        assertThat( state.augmentRelationships( startNode, BOTH, wrapInRelationshipIterator( iterator( otherRel ) ) ),
-                containsLongs( otherRel ) );
-        assertThat( state.augmentRelationships( endNode, INCOMING, wrapInRelationshipIterator( iterator( otherRel ) ) ),
-                containsLongs( otherRel ) );
-        assertThat( state.augmentRelationships( endNode, BOTH, wrapInRelationshipIterator( iterator( otherRel ) ) ),
-                containsLongs( otherRel ) );
     }
 
     @Test

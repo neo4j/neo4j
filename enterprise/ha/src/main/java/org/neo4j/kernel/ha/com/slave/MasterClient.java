@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
-
-import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.com.ComExceptionHandler;
 import org.neo4j.com.Deserializer;
@@ -116,8 +116,6 @@ public interface MasterClient extends Master
 
     @Override
     public Response<Long> commit( RequestContext context, final TransactionRepresentation channel );
-
-    public void rollbackOngoingTransactions( RequestContext context );
 
     @Override
     public Response<Void> pullUpdates( RequestContext context );

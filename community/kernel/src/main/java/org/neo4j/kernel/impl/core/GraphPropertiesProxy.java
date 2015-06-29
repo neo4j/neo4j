@@ -50,8 +50,6 @@ public class GraphPropertiesProxy implements GraphProperties
         GraphDatabaseService getGraphDatabaseService();
 
         void failTransaction();
-
-        void assertInUnterminatedTransaction();
     }
 
     public GraphPropertiesProxy( GraphPropertiesActions actions )

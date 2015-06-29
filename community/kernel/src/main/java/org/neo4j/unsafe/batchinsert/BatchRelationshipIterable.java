@@ -21,30 +21,41 @@ package org.neo4j.unsafe.batchinsert;
 
 import java.util.Iterator;
 
-import org.neo4j.function.IntPredicates;
+import org.neo4j.function.Consumers;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.StoreRelationshipIterable;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.api.store.StoreNodeRelationshipCursor;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.neo4j.graphdb.Direction.BOTH;
-
-abstract class BatchRelationshipIterable<T> implements Iterable<T>, RelationshipVisitor<RuntimeException>
+abstract class BatchRelationshipIterable<T> implements Iterable<T>
 {
-    protected final StoreRelationshipIterable storeIterable;
+    private final StoreNodeRelationshipCursor relationshipCursor;
 
     public BatchRelationshipIterable( NeoStore neoStore, long nodeId )
     {
+        RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
+        RelationshipGroupRecord relationshipGroupRecord = new RelationshipGroupRecord( -1, -1 );
+        this.relationshipCursor = new StoreNodeRelationshipCursor(
+                relationshipRecord, neoStore.getRelationshipStore(),
+                relationshipGroupRecord, neoStore.getRelationshipGroupStore(), null,
+                Consumers.<StoreNodeRelationshipCursor>noop() );
+
+        // TODO There's an opportunity to reuse lots of instances created here, but this isn't a
+        // critical path instance so perhaps not necessary a.t.m.
         try
         {
-            this.storeIterable = new StoreRelationshipIterable( neoStore, nodeId, IntPredicates.alwaysTrue(), BOTH );
+            NodeRecord nodeRecord = neoStore.getNodeStore().getRecord( nodeId );
+            relationshipCursor.init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeId,
+                    Direction.BOTH );
         }
-        catch ( EntityNotFoundException e )
+        catch ( InvalidRecordException e )
         {
-            throw new NotFoundException( e.entityType() + " " + e.entityId() + " not found" );
+            throw new NotFoundException( "Node " + nodeId + " not found" );
         }
     }
 
@@ -53,26 +64,19 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>, Relationship
     {
         return new PrefetchingIterator<T>()
         {
-            private final RelationshipIterator storeIterator = storeIterable.iterator();
-
             @Override
             protected T fetchNextOrNull()
             {
-                if ( !storeIterator.hasNext() )
+                if ( !relationshipCursor.next() )
                 {
                     return null;
                 }
-                long relationshipId = storeIterator.next();
-                return nextFrom( relationshipId, storeIterator );
+
+                return nextFrom( relationshipCursor.getId(), relationshipCursor.getType(),
+                        relationshipCursor.getStartNode(), relationshipCursor.getEndNode() );
             }
         };
     }
 
-    @Override
-    public void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
-    {
-        throw new UnsupportedOperationException( "Should have been implemented by subclass using it" );
-    }
-
-    protected abstract T nextFrom( long relationshipId, RelationshipIterator storeIterator );
+    protected abstract T nextFrom( long relId, int type, long startNode, long endNode );
 }

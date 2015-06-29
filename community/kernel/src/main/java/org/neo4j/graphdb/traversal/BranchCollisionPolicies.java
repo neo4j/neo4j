@@ -62,4 +62,3 @@ public enum BranchCollisionPolicies implements BranchCollisionPolicy
         }
     }
 }
-

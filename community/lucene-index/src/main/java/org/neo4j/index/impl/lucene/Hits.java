@@ -66,24 +66,23 @@ import java.util.Vector;
 public final class Hits {
   private static int MAX_CACHED_DOCS = 200;    // max to cache
 
-  private Weight weight;
-  private IndexSearcher searcher;
+  private final Weight weight;
+  private final IndexSearcher searcher;
   private Filter filter = null;
   private Sort sort = null;
 
   private int length;                 // the total number of hits
-  private Vector<HitDoc> hitDocs = new Vector<HitDoc>();      // cache of hits retrieved
+  private final Vector<HitDoc> hitDocs = new Vector<HitDoc>();      // cache of hits retrieved
 
   private HitDoc first;         // head of LRU cache
   private HitDoc last;          // tail of LRU cache
   private int numDocs = 0;      // number cached
 
   private int nDeletions;       // # deleted docs in the index.
-  private int lengthAtStart;    // this is the number apps usually count on (although deletions can bring it down).
+  private final int lengthAtStart;    // this is the number apps usually count on (although deletions can bring it down).
   private int nDeletedHits = 0; // # of already collected hits that were meanwhile deleted.
 
-  boolean debugCheckedForDeletions = false; // for test purposes.
-  private boolean score;
+  private final boolean score;
 
   public Hits(IndexSearcher s, Query q, Filter f) throws IOException
   {
@@ -108,7 +107,7 @@ public final class Hits {
   }
 
   // count # deletions, return -1 if unknown.
-  private int countDeletions(IndexSearcher s) throws IOException {
+  private int countDeletions(IndexSearcher s) {
     int cnt = -1;
     if ( s != null ) {
       cnt = s.maxDoc() - s.getIndexReader().numDocs();
@@ -145,7 +144,7 @@ public final class Hits {
             topDocs = searcher.search( weight, filter, n, sort );
         }
     }
-            
+
 
     length = topDocs.totalHits;
     ScoreDoc[] scoreDocs = topDocs.scoreDocs;
@@ -160,11 +159,9 @@ public final class Hits {
 
     // any new deletions?
     int nDels2 = countDeletions(searcher);
-    debugCheckedForDeletions = false;
     if (nDeletions < 0 || nDels2 > nDeletions) {
       // either we cannot count deletions, or some "previously valid hits" might have been deleted, so find exact start point
       nDeletedHits = 0;
-      debugCheckedForDeletions = true;
       int i2 = 0;
       for (int i1=0; i1<hitDocs.size() && i2<scoreDocs.length; i1++) {
         int id1 = hitDocs.get(i1).id;
@@ -221,14 +218,6 @@ public final class Hits {
   /** Returns the score for the n<sup>th</sup> document in this set. */
   public float score(int n) throws IOException {
     return hitDoc(n).score;
-  }
-
-  /** Returns the id for the n<sup>th</sup> document in this set.
-   * Note that ids may change when the index changes, so you cannot
-   * rely on the id to be stable.
-   */
-  public int id(int n) throws IOException {
-    return hitDoc(n).id;
   }
 
   private HitDoc hitDoc(int n) throws IOException {

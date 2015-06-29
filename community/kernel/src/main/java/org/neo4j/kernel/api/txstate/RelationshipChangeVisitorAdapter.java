@@ -57,25 +57,6 @@ public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisito
         this.removed = null;
     }
 
-    /**
-     * Causes {@link #visitRemovedRelationship(long, int, long, long)} to be invoked for removed relationships.
-     */
-    public RelationshipChangeVisitorAdapter( StoreReadLayer store )
-    {
-        this.added = null;
-        this.removed = removed( requireNonNull( store, "StoreReadLayer" ) );
-    }
-
-    /**
-     * Causes {@link #visitAddedRelationship(long, int, long, long)} to be invoked for added relationships, and
-     * {@link #visitRemovedRelationship(long, int, long, long)} to be invoked for removed relationships.
-     */
-    public RelationshipChangeVisitorAdapter( StoreReadLayer store, ReadableTxState txState )
-    {
-        this.added = added( requireNonNull( txState, "ReadableTxState" ) );
-        this.removed = removed( requireNonNull( store, "StoreReadLayer" ) );
-    }
-
     protected void visitAddedRelationship( long relationshipId )
     {
         if ( added != null )

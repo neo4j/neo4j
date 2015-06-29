@@ -60,7 +60,7 @@ public class Config implements DiagnosticsProvider
 
     // Messages to this log get replayed into a real logger once logging has been
     // instantiated.
-    private BufferingLog bufferedLog = new BufferingLog();
+    private final BufferingLog bufferedLog = new BufferingLog();
     private Log log = bufferedLog;
 
     private Iterable<Class<?>> settingsClasses = emptyList();
@@ -87,12 +87,6 @@ public class Config implements DiagnosticsProvider
         this.settingsFunction = Functions.map( params );
         this.params.putAll( inputParams );
         registerSettingsClasses( settingsClasses );
-    }
-
-    /** Add more settings classes */
-    public Config registerSettingsClasses( Class<?> ... settingsClasses )
-    {
-        return registerSettingsClasses( asList(settingsClasses) );
     }
 
     /** Add more settings classes. */

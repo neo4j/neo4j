@@ -69,7 +69,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     private final IdGeneratorFactory idGeneratorFactory;
     private final StoreVersionMismatchHandler versionMismatchHandler;
     protected FileSystemAbstraction fileSystemAbstraction;
-    protected final LogProvider logProvider;
     protected final Log log;
     protected PagedFile storeFile;
     private IdGenerator idGenerator;
@@ -110,7 +109,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         this.pageCache = pageCache;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.idType = idType;
-        this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.versionMismatchHandler = versionMismatchHandler;
 

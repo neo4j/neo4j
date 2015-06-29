@@ -211,20 +211,6 @@ public enum StoreFile
         return fileName( StoreFileType.ID );
     }
 
-    /**
-     * @return the last part of the neostore filename, f.ex:
-     *
-     * <pre>
-     * neostore.nodestore.db
-     *         |           |
-     *         <-this part-> (yes, including the leading dot)
-     * </pre>
-     */
-    public String storeFileNamePart()
-    {
-        return storeFileNamePart;
-    }
-
     public static Iterable<StoreFile> legacyStoreFilesForVersion( final String version )
     {
         Predicate<StoreFile> predicate = new Predicate<StoreFile>()

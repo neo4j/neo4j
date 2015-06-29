@@ -50,7 +50,7 @@ public interface JobScheduler extends Lifecycle
     class Group
     {
         public static final String THREAD_ID = "thread-id";
-        public static final Map<String, String> NO_METADATA = Collections.EMPTY_MAP;
+        public static final Map<String, String> NO_METADATA = Collections.emptyMap();
 
         private final String name;
         private final SchedulingStrategy strategy;
@@ -126,7 +126,6 @@ public interface JobScheduler extends Lifecycle
          */
         public static final Group indexSamplingController = new Group( "IndexSamplingController", POOLED );
         public static final Group indexSampling = new Group( "IndexSampling", POOLED );
-        public static final Group pageCacheEviction = new Group( "PageCacheEviction", POOLED );
 
         /**
          * Rotates internal diagnostic logs

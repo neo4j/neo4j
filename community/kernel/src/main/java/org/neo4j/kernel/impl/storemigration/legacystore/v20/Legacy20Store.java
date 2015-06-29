@@ -121,19 +121,6 @@ public class Legacy20Store implements LegacyStore
         return relStoreReader;
     }
 
-    static void readIntoBuffer( StoreChannel fileChannel, ByteBuffer buffer, long atPosition, int nrOfBytes )
-    {
-        try
-        {
-            fileChannel.position( atPosition );
-            readIntoBuffer( fileChannel, buffer, nrOfBytes );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
     static void readIntoBuffer( StoreChannel fileChannel, ByteBuffer buffer, int nrOfBytes )
     {
         buffer.clear();

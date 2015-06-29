@@ -305,16 +305,6 @@ class RWLock
     }
 
     /**
-     * Calls {@link #acquireWriteLock(Object)} with the
-     * transaction associated with the current thread.
-     * @throws DeadlockDetectedException
-     */
-    void acquireWriteLock() throws DeadlockDetectedException
-    {
-        acquireWriteLock( null );
-    }
-
-    /**
      * Tries to acquire write lock for a given transaction. If
      * <CODE>this.writeCount</CODE> is greater than the currents tx's write
      * count or the read count is greater than the currents tx's read count the

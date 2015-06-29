@@ -49,24 +49,6 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     }
 
     @Override
-    public void removeRelationshipTypeFromCache( int id )
-    {
-        relationshipTypeTokenHolder.removeToken( id );
-    }
-
-    @Override
-    public void removePropertyKeyFromCache( int id )
-    {
-        propertyKeyTokenHolder.removeToken( id );
-    }
-
-    @Override
-    public void removeLabelFromCache( int id )
-    {
-        labelTokenHolder.removeToken( id );
-    }
-
-    @Override
     public void addSchemaRule( SchemaRule rule )
     {
         schemaCache.addSchemaRule( rule );

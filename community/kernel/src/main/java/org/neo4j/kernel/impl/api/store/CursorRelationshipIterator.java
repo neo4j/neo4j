@@ -55,10 +55,7 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
             }
             return hasNext;
         }
-        else
-        {
-            return false;
-        }
+        return false;
     }
 
     @Override
@@ -86,10 +83,7 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
                 hasNext = nextCursor();
             }
         }
-        else
-        {
-            throw new NoSuchElementException();
-        }
+        throw new NoSuchElementException();
     }
 
     @Override

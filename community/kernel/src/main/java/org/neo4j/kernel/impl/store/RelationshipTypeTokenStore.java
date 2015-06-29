@@ -29,8 +29,8 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Implementation of the relationship type store. Uses a dynamic store to store
@@ -38,12 +38,6 @@ import org.neo4j.kernel.monitoring.Monitors;
  */
 public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeTokenRecord>
 {
-    public static abstract class Configuration
-        extends TokenStore.Configuration
-    {
-
-    }
-
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
     public static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 

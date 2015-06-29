@@ -71,7 +71,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             extends AbstractStore.Configuration
     {
         public static final Setting<Integer> relationship_grab_size = GraphDatabaseSettings.relationship_grab_size;
-        public static final Setting<Integer> dense_node_threshold = GraphDatabaseSettings.dense_node_threshold;
     }
 
     public static final String TYPE_DESCRIPTOR = "NeoStore";

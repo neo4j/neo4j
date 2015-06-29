@@ -32,9 +32,6 @@ public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T,PrimitiveLo
     @Override
     ReadableDiffSets<T> filterAdded( Predicate<T> addedFilter );
 
-    @Override
-    ReadableDiffSets<T> filter( Predicate<T> filter );
-
     static final class Empty<T> implements ReadableDiffSets<T>
     {
         @SuppressWarnings( "unchecked" )
@@ -116,19 +113,7 @@ public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T,PrimitiveLo
         }
 
         @Override
-        public PrimitiveLongIterator augmentWithAdditions( PrimitiveLongIterator source )
-        {
-            return source;
-        }
-
-        @Override
         public ReadableDiffSets<T> filterAdded( Predicate<T> addedFilter )
-        {
-            return this;
-        }
-
-        @Override
-        public ReadableDiffSets<T> filter( Predicate<T> filter )
         {
             return this;
         }

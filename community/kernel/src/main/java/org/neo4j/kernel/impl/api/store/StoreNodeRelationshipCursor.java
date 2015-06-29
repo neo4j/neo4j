@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -27,7 +28,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.util.InstanceCache;
 
 /**
  * Cursor over the chain of relationships from one node.
@@ -39,7 +39,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     private final RelationshipGroupRecord groupRecordInstance;
 
     private final RelationshipGroupStore groupStore;
-    private InstanceCache<StoreNodeRelationshipCursor> instanceCache;
+    private final Consumer<StoreNodeRelationshipCursor> instanceCache;
 
     private boolean isDense;
     private long relationshipId;
@@ -54,13 +54,21 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
             RelationshipGroupRecord groupRecord,
             RelationshipGroupStore groupStore,
             StoreStatement storeStatement,
-            InstanceCache<StoreNodeRelationshipCursor> instanceCache )
+            Consumer<StoreNodeRelationshipCursor> instanceCache )
     {
         super( relationshipRecord, relationshipStore, storeStatement );
 
         this.groupRecordInstance = groupRecord;
         this.groupStore = groupStore;
         this.instanceCache = instanceCache;
+    }
+
+    public StoreNodeRelationshipCursor init( boolean isDense,
+            long firstRelId,
+            long fromNodeId,
+            Direction direction )
+    {
+        return init( isDense, firstRelId, fromNodeId, direction, null );
     }
 
     public StoreNodeRelationshipCursor init( boolean isDense,
@@ -90,6 +98,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         return this;
     }
 
+    @Override
     public boolean next()
     {
         while ( relationshipId != Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -215,10 +224,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
             return false;
 
         }
-        else
-        {
-            return true;
-        }
+        return true;
     }
 
     private static enum GroupChain

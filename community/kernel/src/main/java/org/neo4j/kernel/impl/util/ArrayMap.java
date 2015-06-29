@@ -21,43 +21,13 @@ package org.neo4j.kernel.impl.util;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 public class ArrayMap<K,V>
 {
-    @SuppressWarnings( "rawtypes" )
-    private static ArrayMap EMPTY = new ArrayMap()
-    {
-        @Override
-        public void put( Object key, Object value )
-        {
-            throw new IllegalStateException( "Immutable" );
-        }
-
-        @Override
-        public Object remove( Object key )
-        {
-            throw new IllegalStateException( "Immutable" );
-        }
-
-        @Override
-        public void clear()
-        {
-            throw new IllegalStateException( "Immutable" );
-        }
-    };
-    
-    @SuppressWarnings( "unchecked" )
-    public static <K,V> ArrayMap<K,V> empty()
-    {
-        return EMPTY;
-    }
-    
     private Object data;
     private volatile byte arrayCount;
     private byte toMapThreshold = 5;
@@ -108,10 +78,7 @@ public class ArrayMap<K,V>
             }
             return result.append( "]" ).toString();
         }
-        else
-        {
-            return snapshot.toString();
-        }
+        return snapshot.toString();
     }
 
     public void put( K key, V value )
@@ -372,20 +339,6 @@ public class ArrayMap<K,V>
         return values;
     }
 
-    public Set<Entry<K,V>> entrySet()
-    {
-        if ( arrayCount == -1 )
-        {
-            return ((Map)data).entrySet();
-        }
-        Set<Entry<K,V>> entries = new HashSet<Entry<K,V>>();
-        for ( int i = 0; i < arrayCount; i++ )
-        {
-            entries.add( ((ArrayEntry[])data)[i] );
-        }
-        return entries;
-    }
-
     public int size()
     {
         if ( useThreadSafeMap )
@@ -398,7 +351,7 @@ public class ArrayMap<K,V>
         }
         return ((Map)data).size();
     }
-    
+
     private synchronized int synchronizedSize()
     {
         if ( arrayCount != -1 )

@@ -23,12 +23,6 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
 
 public interface CacheAccessBackDoor
 {
-    void removeRelationshipTypeFromCache( int id );
-
-    void removePropertyKeyFromCache( int id );
-
-    void removeLabelFromCache( int id );
-
     void addSchemaRule( SchemaRule schemaRule );
 
     void removeSchemaRuleFromCache( long id );

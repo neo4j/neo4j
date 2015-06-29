@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.lucene;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
 import org.neo4j.kernel.configuration.Config;
@@ -33,8 +32,6 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
     public interface Dependencies
     {
         Config getConfig();
-
-        GraphDatabaseService getDatabase();
 
         IndexProviders getIndexProviders();
 

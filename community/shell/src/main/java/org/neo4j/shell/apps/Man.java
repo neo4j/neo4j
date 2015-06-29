@@ -36,7 +36,6 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.impl.AbstractApp;
 import org.neo4j.shell.impl.AbstractAppServer;
-import org.neo4j.shell.impl.ClassLister;
 
 import static org.neo4j.helpers.Args.splitLongLine;
 
@@ -153,7 +152,7 @@ public class Man extends AbstractApp
      * @return the short introductory help string.
      */
     public static void printHelpString( Output out, ShellServer server, boolean list )
-            throws ShellException, RemoteException
+            throws RemoteException
     {
         String header = "Available commands:";
         if ( list )
@@ -174,7 +173,7 @@ public class Man extends AbstractApp
     }
 
     /**
-     * Uses {@link ClassLister} to list apps available at the server.
+     * Lists apps available at the server.
      *
      * @param server
      *            the {@link ShellServer}.
@@ -186,7 +185,7 @@ public class Man extends AbstractApp
     {
         if ( availableCommands == null )
         {
-            Collection<String> list = new ArrayList<String>();
+            Collection<String> list = new ArrayList<>();
             // TODO Shouldn't trust the server to be an AbstractAppServer
             for ( String name : ( ( AbstractAppServer ) server )
                 .getAllAvailableCommands() )

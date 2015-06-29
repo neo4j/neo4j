@@ -33,7 +33,6 @@ import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -528,7 +527,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     @Override
     public IndexDescriptor indexCreate( KernelStatement state, int labelId, int propertyKeyId )
-            throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
+            throws AlreadyIndexedException, AlreadyConstrainedException
     {
         return schemaWriteOperations.indexCreate( state, labelId, propertyKeyId );
     }

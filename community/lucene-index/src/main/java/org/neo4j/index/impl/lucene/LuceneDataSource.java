@@ -19,16 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -42,7 +32,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
@@ -51,6 +40,16 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -81,12 +80,10 @@ public class LuceneDataSource implements Lifecycle
     public static abstract class Configuration
     {
         public static final Setting<Integer> lucene_searcher_cache_size = GraphDatabaseSettings.lucene_searcher_cache_size;
-        public static final Setting<Boolean> allow_store_upgrade = GraphDatabaseSettings.allow_store_upgrade;
         public static final Setting<Boolean> ephemeral = GraphDatabaseFacadeFactory.Configuration.ephemeral;
     }
 
     public static final Version LUCENE_VERSION = Version.LUCENE_36;
-    public static final String DEFAULT_NAME = "lucene-index";
 
     /**
      * Default {@link Analyzer} for fulltext parsing.
@@ -485,18 +482,6 @@ public class LuceneDataSource implements Lifecycle
             }
         }
         return true;
-    }
-
-    static void remove( IndexWriter writer, Query query )
-    {
-        try
-        {
-            writer.deleteDocuments( query );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Unable to delete for " + query + " using" + writer, e );
-        }
     }
 
     private synchronized void closeIndex( IndexIdentifier identifier )

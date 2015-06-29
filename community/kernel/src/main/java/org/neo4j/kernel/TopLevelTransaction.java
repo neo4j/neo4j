@@ -50,11 +50,6 @@ public class TopLevelTransaction implements Transaction
             success = true;
         }
 
-        public boolean canCommit()
-        {
-            return success && !failure;
-        }
-
         public boolean successCalled()
         {
             return success;
@@ -132,10 +127,7 @@ public class TopLevelTransaction implements Transaction
                 throw new TransactionFailureException( "Transaction was marked as successful, " +
                         "but unable to commit transaction so rolled back.", e );
             }
-            else
-            {
-                throw new TransactionFailureException( "Unable to rollback transaction", e );
-            }
+            throw new TransactionFailureException( "Unable to rollback transaction", e );
         }
         finally
         {

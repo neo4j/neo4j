@@ -32,11 +32,6 @@ public final class NodeKey implements CountsKey
         this.labelId = labelId;
     }
 
-    public int labelId()
-    {
-        return labelId;
-    }
-
     @Override
     public String toString()
     {
@@ -79,9 +74,6 @@ public final class NodeKey implements CountsKey
                     (org.neo4j.kernel.impl.store.counts.keys.NodeKey) other;
             return this.labelId - that.labelId;
         }
-        else
-        {
-            return recordType().ordinal() - other.recordType().ordinal();
-        }
+        return recordType().ordinal() - other.recordType().ordinal();
     }
 }

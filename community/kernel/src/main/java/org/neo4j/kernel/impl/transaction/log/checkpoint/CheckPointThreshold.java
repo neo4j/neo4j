@@ -24,24 +24,6 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
  */
 public interface CheckPointThreshold
 {
-    CheckPointThreshold NONE = new CheckPointThreshold()
-    {
-        @Override
-        public void initialize( long transactionId )
-        {
-        }
-
-        @Override
-        public boolean isCheckPointingNeeded( long lastCommittedTransactionId )
-        {
-            return false;
-        }
-
-        @Override
-        public void checkPointHappened( long transactionId )
-        {
-        }
-    };
     /**
      * This method initialize the threshold by providing the initial transaction id
      *

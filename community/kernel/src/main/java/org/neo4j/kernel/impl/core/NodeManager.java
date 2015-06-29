@@ -44,8 +44,8 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
     private long epoch;
-    private GraphDatabaseService graphDatabaseService;
-    private RelationshipTypeTokenHolder relationshipTypeTokenHolder;
+    private final GraphDatabaseService graphDatabaseService;
+    private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
 
     public NodeManager( GraphDatabaseService graphDatabaseService,
                         ThreadToStatementContextBridge threadToTransactionBridge, RelationshipTypeTokenHolder
@@ -249,12 +249,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         public void failTransaction()
         {
             threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).failure();
-        }
-
-        @Override
-        public void assertInUnterminatedTransaction()
-        {
-            threadToTransactionBridge.assertInUnterminatedTransaction();
         }
 
         @Override

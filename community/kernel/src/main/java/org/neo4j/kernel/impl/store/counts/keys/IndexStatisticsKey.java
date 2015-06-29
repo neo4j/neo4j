@@ -48,9 +48,6 @@ public final class IndexStatisticsKey extends IndexKey
             }
             return cmp;
         }
-        else
-        {
-            return recordType().ordinal() - other.recordType().ordinal();
-        }
+        return recordType().ordinal() - other.recordType().ordinal();
     }
 }

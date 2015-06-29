@@ -35,8 +35,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.store.record.SchemaRule.Kind.deserialize;
 
@@ -94,12 +94,6 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
     public Iterator<SchemaRule> iterator()
     {
         return loadAllSchemaRules();
-    }
-
-    public static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records )
-            throws MalformedSchemaRuleException
-    {
-        return readSchemaRule( id, records, new byte[ BLOCK_SIZE * 4 ] );
     }
 
     static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records, byte[] buffer )

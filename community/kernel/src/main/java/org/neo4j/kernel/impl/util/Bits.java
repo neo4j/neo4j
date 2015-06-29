@@ -108,24 +108,6 @@ public final class Bits implements Cloneable
     }
 
     /**
-     * A mask which has the {@code steps} most significant bits set to 1, all others 0.
-     * It's used to carry bits over between carriers (longs) when shifting left.
-     *
-     * @param steps the number of most significant bits to have set to 1 in the mask.
-     * @return the created mask.
-     */
-    public static long leftOverflowMask( int steps )
-    {
-        long mask = 0L;
-        for ( int i = 0; i < steps; i++ )
-        {
-            mask >>= 1;
-            mask |= 0x8000000000000000L;
-        }
-        return mask;
-    }
-
-    /**
      * A mask which has the {@code steps} least significant bits set to 1, all others 0.
      * It's used to carry bits over between carriers (longs) when shifting right.
      *
