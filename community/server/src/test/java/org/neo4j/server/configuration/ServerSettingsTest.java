@@ -39,13 +39,13 @@ public class ServerSettingsTest
 
         // When
         final Config config = new Config( stringMap(
-                webserver_https_cert_path.name(), "whatever/cert",
-                webserver_https_key_path.name(), "whatever/key" ), ServerSettings.class );
+                webserver_https_cert_path.name(), "cert",
+                webserver_https_key_path.name(), "key" ), ServerSettings.class );
         config.setLogger( logging.getLog( "config" ) );
 
         // Then
-        assertEquals( "whatever/cert", config.get( ServerSettings.tls_certificate_file ).getPath() );
-        assertEquals( "whatever/key", config.get( ServerSettings.tls_key_file ).getPath() );
+        assertEquals( "cert", config.get( ServerSettings.tls_certificate_file ).getPath() );
+        assertEquals( "key", config.get( ServerSettings.tls_key_file ).getPath() );
         logging.assertContainsMessageContaining(
                 "The TLS certificate configuration you are using, 'org.neo4j.server.webserver.https.cert.location' " +
                 "is deprecated. Please use 'dbms.security.tls_certificate_file' instead." );
