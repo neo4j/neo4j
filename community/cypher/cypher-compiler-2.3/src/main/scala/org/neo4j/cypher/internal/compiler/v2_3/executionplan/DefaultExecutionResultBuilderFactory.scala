@@ -56,7 +56,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
       exceptionDecorator = newDecorator
     }
 
-    def build(graph: GraphDatabaseService, queryId: AnyRef, planType: ExecutionMode, params: Map[String, Any], notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
+    def build(queryId: AnyRef, planType: ExecutionMode, params: Map[String, Any], notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
       taskCloser.addTask(queryContext.close)
       val state = new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId)
       try {

@@ -37,6 +37,7 @@ import org.neo4j.function.Supplier
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.impl.core.NodeManager
 
 import scala.collection.immutable
 
@@ -69,12 +70,12 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
         }
 
         val builder = new RunnablePlan {
-          def apply(statement: Statement, db: GraphDatabaseService, execMode: ExecutionMode,
+          def apply(statement: Statement, nodeManager: NodeManager, execMode: ExecutionMode,
                     descriptionProvider: PlanDescriptionProvider,
                     params: immutable.Map[String, Any], closer: TaskCloser): InternalExecutionResult = {
             val (supplier, tracer) = descriptionProvider(description)
-            val execution: GeneratedQueryExecution = query.execute(closer, statement, db, execMode, supplier,
-              tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
+            val execution: GeneratedQueryExecution = query.execute(closer, statement, nodeManager, execMode,
+              supplier, tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
             new CompiledExecutionResult(closer, statement, execution, supplier)
           }
         }

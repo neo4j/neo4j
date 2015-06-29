@@ -23,14 +23,13 @@ import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode
 import org.neo4j.cypher.internal.compiler.v2_3.{InternalNotificationLogger, CypherException}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
-import org.neo4j.graphdb.GraphDatabaseService
 
 trait ExecutionResultBuilder {
   def setQueryContext(context: QueryContext)
   def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
   def setPipeDecorator(newDecorator: PipeDecorator)
   def setExceptionDecorator(newDecorator: CypherException => CypherException)
-  def build(graph: GraphDatabaseService, queryId: AnyRef, planType: ExecutionMode, params: Map[String, Any], notificationLogger: InternalNotificationLogger): InternalExecutionResult
+  def build(queryId: AnyRef, planType: ExecutionMode, params: Map[String, Any], notificationLogger: InternalNotificationLogger): InternalExecutionResult
 }
 
 trait ExecutionResultBuilderFactory {

@@ -137,7 +137,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
     case StringSeekRange(LowerBounded(InclusiveBound(prefix))) =>
       val indexedNodes = statement.readOperations().nodesGetFromIndexSeekByPrefix(index, prefix)
-      JavaConversionSupport.mapToScala(indexedNodes)(nodeOps.getById)
+      JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
     case range =>
       throw new InternalException(s"Unsupported index seek by range: $range")
   }
@@ -156,7 +156,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   def getNodesByLabel(id: Int): Iterator[Node] =
-    JavaConversionSupport.mapToScala(statement.readOperations().nodesGetForLabel(id))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetForLabel(id))(nodeOps.getById)
 
   def nodeGetDegree(node: Long, dir: Direction): Int = statement.readOperations().nodeGetDegree(node, dir)
 

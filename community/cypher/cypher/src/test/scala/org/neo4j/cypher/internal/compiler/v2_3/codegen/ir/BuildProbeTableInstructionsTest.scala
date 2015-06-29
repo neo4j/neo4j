@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{GraphDatabaseService, Node}
 import org.neo4j.kernel.api.{ReadOperations, Statement}
+import org.neo4j.kernel.impl.core.{NodeProxy, NodeManager}
 
 import scala.collection.mutable
 
@@ -40,7 +41,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private val buildTableMethodName = "buildProbeTable"
   private val resultRowKey = "resultKey"
 
-  private val db = mock[GraphDatabaseService]
+  private val nodeManager = mock[NodeManager]
   private val statement = mock[Statement]
   private val readOps = mock[ReadOperations]
   private val allNodeIds = mutable.ArrayBuffer[Long]()
@@ -139,9 +140,9 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
 
   private def setUpNodeMocks(ids: Long*): Unit = {
     ids.foreach { id =>
-      val nodeMock = mock[Node]
+      val nodeMock = mock[NodeProxy]
       when(nodeMock.getId).thenReturn(id)
-      when(db.getNodeById(id)).thenReturn(nodeMock)
+      when(nodeManager.newNodeProxyById(id)).thenReturn(nodeMock)
       allNodeIds += id
     }
   }
@@ -163,7 +164,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private def runTest(buildInstruction: BuildProbeTable, nodes: Set[Variable]): List[Map[String, Object]] = {
     val instructions = buildProbeTableWithTwoAllNodeScans(buildInstruction, nodes)
     val ids = instructions.flatMap(_.allOperatorIds.map(id => id -> null)).toMap
-    evaluate(instructions, statement, db, Map.empty[String, Object], ids)
+    evaluate(instructions, statement, nodeManager, Map.empty[String, Object], ids)
   }
 
   private def buildProbeTableWithTwoAllNodeScans(buildInstruction: BuildProbeTable, nodes: Set[Variable]): Seq[Instruction] = {

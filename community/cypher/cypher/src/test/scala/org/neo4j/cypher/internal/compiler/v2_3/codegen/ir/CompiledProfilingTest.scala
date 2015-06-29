@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.{ProfileMode, symbols}
 import org.neo4j.function.Supplier
 import org.neo4j.graphdb.{GraphDatabaseService, Node}
 import org.neo4j.kernel.api._
+import org.neo4j.kernel.impl.core.{NodeProxy, NodeManager}
 import org.neo4j.test.ImpermanentGraphDatabase
 
 class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
@@ -52,8 +53,8 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
     val statement = mock[Statement]
     val readOps = mock[ReadOperations]
-    val db = mock[GraphDatabaseService]
-    when(db.getNodeById(anyLong())).thenReturn(mock[Node])
+    val nodeManager = mock[NodeManager]
+    when(nodeManager.newNodeProxyById(anyLong())).thenReturn(mock[NodeProxy])
     when(statement.readOperations()).thenReturn(readOps)
     when(readOps.nodesGetAll()).thenReturn(new PrimitiveLongIterator {
       private var counter = 0
@@ -73,7 +74,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
     // when
     val tracer = new ProfilingTracer()
-    newInstance(compiled, statement = statement, graphdb = db, supplier = supplier, queryExecutionTracer = tracer).size
+    newInstance(compiled, statement = statement, nodeManager = nodeManager, supplier = supplier, queryExecutionTracer = tracer).size
 
     // then
     tracer.dbHitsOf(id1) should equal(3)
