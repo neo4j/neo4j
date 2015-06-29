@@ -63,7 +63,6 @@
       <outputDirectory>/</outputDirectory>
       <lineEnding>dos</lineEnding>
       <includes>
-        <include>**/neo4j-default-settings.xml</include>
         <include>**/*.psd1</include>
         <include>**/*.psm1</include>
         <include>**/*.ps1</include>
