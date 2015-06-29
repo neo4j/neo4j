@@ -24,6 +24,7 @@ import org.apache.commons.configuration.Configuration;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -129,6 +130,7 @@ public abstract class AbstractNeoServer implements NeoServer
     protected WebServer webServer;
 
     protected AuthManager authManager;
+    protected KeyStoreInformation keyStoreInfo;
 
     private DatabaseActions databaseActions;
 
@@ -137,7 +139,6 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private TransactionFacade transactionFacade;
     private TransactionHandleRegistry transactionRegistry;
-    private KeyStoreInformation keyStoreInfo;
 
     protected abstract PreFlightTasks createPreflightTasks();
 
@@ -159,6 +160,8 @@ public abstract class AbstractNeoServer implements NeoServer
         this.authManager = life.add(new AuthManager( users, Clock.SYSTEM_CLOCK, configurator.configuration().get( ServerSettings.auth_enabled ) ));
         this.preFlight = dependencyResolver.satisfyDependency(createPreflightTasks());
         this.webServer = createWebServer();
+
+        this.keyStoreInfo = initHttpsKeyStore();
 
         for ( ServerModule moduleClass : createServerModules() )
         {
@@ -209,8 +212,6 @@ public abstract class AbstractNeoServer implements NeoServer
                 transactionFacade = createTransactionalActions();
 
                 cypherExecutor = new CypherExecutor( database );
-
-                keyStoreInfo = initHttpsKeyStore();
 
                 configureWebServer();
 
@@ -543,20 +544,44 @@ public abstract class AbstractNeoServer implements NeoServer
      * permissions etc), like you do with Apache Web Server. On each startup
      * we set up a key store for them with their certificate in it.
      */
-    protected KeyStoreInformation initHttpsKeyStore() throws Exception
+    protected KeyStoreInformation initHttpsKeyStore()
     {
         File privateKeyPath = configurator.configuration().get( ServerSettings.tls_key_file ).getAbsoluteFile();
         File certificatePath = configurator.configuration().get( ServerSettings.tls_certificate_file ).getAbsoluteFile();
 
-        if ( !certificatePath.exists() )
+        try
         {
-            //noinspection deprecation
-            log.info( "No SSL certificate found, generating a self-signed certificate.." );
-            Certificates certFactory = new Certificates();
-            certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, getWebServerAddress() );
-        }
+            // If neither file is specified
+            if ( (!certificatePath.exists() && !privateKeyPath.exists()) )
+            {
+                //noinspection deprecation
+                log.info( "No SSL certificate found, generating a self-signed certificate.." );
+                Certificates certFactory = new Certificates();
+                certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, getWebServerAddress() );
+            }
 
-        return new KeyStoreFactory().createKeyStore( privateKeyPath, certificatePath );
+            // Make sure both files were there, or were generated
+            if( !certificatePath.exists() )
+            {
+                throw new ServerStartupException(
+                        String.format("TLS private key found, but missing certificate at '%s'. Cannot start server without certificate.", certificatePath ) );
+            }
+            if( !privateKeyPath.exists() )
+            {
+                throw new ServerStartupException(
+                        String.format("TLS certificate found, but missing key at '%s'. Cannot start server without key.", privateKeyPath ) );
+            }
+
+            return new KeyStoreFactory().createKeyStore( privateKeyPath, certificatePath );
+        }
+        catch( GeneralSecurityException e )
+        {
+            throw new ServerStartupException( "TLS certificate error occurred, unable to start server: " + e.getMessage(), e );
+        }
+        catch( IOException e )
+        {
+            throw new ServerStartupException( "IO problem while loading or creating TLS certificates: " + e.getMessage(), e );
+        }
     }
 
     @Override

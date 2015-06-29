@@ -22,9 +22,14 @@ package org.neo4j.server.modules;
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslProvider;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.io.File;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLException;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
@@ -47,6 +52,7 @@ import org.neo4j.ndp.transport.socket.SocketTransport;
 import org.neo4j.ndp.transport.socket.WebSocketTransport;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.logging.Netty4LoggerFactory;
+import org.neo4j.server.security.ssl.KeyStoreInformation;
 import org.neo4j.udc.UsageData;
 
 import static java.util.Arrays.asList;
@@ -59,12 +65,14 @@ public class NDPModule implements ServerModule
 {
     private final Config config;
     private final DependencyResolver dependencyResolver;
+    private final KeyStoreInformation ksi;
     private final LifeSupport life = new LifeSupport();
 
-    public NDPModule( Config config, DependencyResolver dependencyResolver )
+    public NDPModule( Config config, DependencyResolver dependencyResolver, KeyStoreInformation ksi )
     {
         this.config = config;
         this.dependencyResolver = dependencyResolver;
+        this.ksi = ksi;
     }
 
     @Override
@@ -85,6 +93,7 @@ public class NDPModule implements ServerModule
 
             final File certificateFile = config.get( ServerSettings.tls_certificate_file );
             final File keyFile = config.get( ServerSettings.tls_key_file );
+
             final HostnamePort socketAddress = config.get( ServerSettings.ndp_socket_address );
             final HostnamePort webSocketAddress = config.get( ServerSettings.ndp_ws_address );
 
@@ -105,9 +114,8 @@ public class NDPModule implements ServerModule
                     }
                 } );
 
-                SslContext sslCtx = config.get( ServerSettings.ndp_tls_enabled ) ?
-                        SslContextBuilder.forServer( certificateFile, keyFile ).build() :
-                        null;
+
+                SslContext sslCtx = createSSLContext(certificateFile, keyFile);
 
                 InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logging.getInternalLogProvider() ) );
                 life.add( new NettyServer( scheduler.threadFactory( JobScheduler.Groups.gapNetworkIO ), asList(
@@ -120,10 +128,30 @@ public class NDPModule implements ServerModule
 
             life.start();
         }
-        catch( SSLException e )
+        catch( SSLException | UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException e )
         {
             throw new RuntimeException( "Failed to configure TLS during NDP startup: " + e.getMessage(), e );
         }
+    }
+
+    private SslContext createSSLContext( File certificateFile, File keyFile )
+            throws NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException, SSLException
+    {
+        SslContext sslCtx = null;
+
+        // Configure SSL context if enabled
+        if ( config.get( ServerSettings.ndp_tls_enabled ) )
+        {
+            KeyManagerFactory keyManager = KeyManagerFactory.getInstance( "SunX509" );
+            keyManager.init( ksi.getKeyStore(), ksi.getKeyPassword() );
+
+            sslCtx = SslContextBuilder
+                    .forServer( certificateFile, keyFile     )
+                    .sslProvider( SslProvider.JDK )
+                    .keyManager( keyManager )
+                    .build();
+        }
+        return sslCtx;
     }
 
     @Override
