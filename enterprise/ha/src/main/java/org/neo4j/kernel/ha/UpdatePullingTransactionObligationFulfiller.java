@@ -114,11 +114,8 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
         @Override
         public void instanceStops( HighAvailabilityMemberChangeEvent event )
         {
-            if ( event.getInstanceId().equals( myInstanceId ) )
-            {
-                // clear state to avoid calling out of date objects
-                transactionIdStore = null;
-            }
+            // clear state to avoid calling out of date objects
+            transactionIdStore = null;
         }
     }
 }
