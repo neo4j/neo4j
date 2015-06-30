@@ -37,12 +37,12 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
+import org.neo4j.kernel.impl.transaction.state.RecoverableTransaction;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -367,7 +367,7 @@ public class PhysicalLogicalTransactionStoreTest
         return commands;
     }
 
-    private static class FakeRecoveryVisitor implements CloseableVisitor<CommittedTransactionRepresentation, IOException>
+    private static class FakeRecoveryVisitor implements CloseableVisitor<RecoverableTransaction, IOException>
     {
         private final byte[] additionalHeader;
         private final int masterId;
@@ -391,9 +391,9 @@ public class PhysicalLogicalTransactionStoreTest
         }
 
         @Override
-        public boolean visit( CommittedTransactionRepresentation committedTx ) throws IOException
+        public boolean visit( RecoverableTransaction committedTx ) throws IOException
         {
-            TransactionRepresentation transaction = committedTx.getTransactionRepresentation();
+            TransactionRepresentation transaction = committedTx.representation().getTransactionRepresentation();
             assertArrayEquals( additionalHeader, transaction.additionalHeader() );
             assertEquals( masterId, transaction.getMasterId() );
             assertEquals( authorId, transaction.getAuthorId() );
@@ -401,8 +401,8 @@ public class PhysicalLogicalTransactionStoreTest
             assertEquals( timeCommitted, transaction.getTimeCommitted() );
             assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
             visitedTransactions++;
-            checksum = committedTx.getStartEntry().checksum();
-                    startPosition = committedTx.getStartEntry().getStartPosition();
+            checksum = committedTx.representation().getStartEntry().checksum();
+            startPosition = committedTx.representation().getStartEntry().getStartPosition();
             return false;
         }
 

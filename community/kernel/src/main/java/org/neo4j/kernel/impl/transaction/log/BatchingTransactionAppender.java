@@ -203,16 +203,16 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         private final boolean hasLegacyIndexChanges;
         private final long transactionId;
         private final long transactionChecksum;
-        private final LogPosition transactionLogPosition;
+        private final LogPosition logPositionAfterTransaction;
         private final TransactionIdStore transactionIdStore;
 
         TransactionCommitment( boolean hasLegacyIndexChanges, long transactionId, long transactionChecksum,
-                LogPosition transactionLogPosition, TransactionIdStore transactionIdStore )
+                LogPosition logPositionAfterTransaction, TransactionIdStore transactionIdStore )
         {
             this.hasLegacyIndexChanges = hasLegacyIndexChanges;
             this.transactionId = transactionId;
             this.transactionChecksum = transactionChecksum;
-            this.transactionLogPosition = transactionLogPosition;
+            this.logPositionAfterTransaction = logPositionAfterTransaction;
             this.transactionIdStore = transactionIdStore;
         }
 
@@ -220,7 +220,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         public void publishAsCommitted()
         {
             transactionIdStore.transactionCommitted( transactionId, transactionChecksum,
-                    transactionLogPosition.getLogVersion(), transactionLogPosition.getByteOffset() );
+                    logPositionAfterTransaction.getLogVersion(), logPositionAfterTransaction.getByteOffset() );
         }
     }
 
@@ -243,17 +243,19 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         // log rotation, which will wait for all transactions closed or fail on kernel panic.
         try
         {
-            LogPosition logPosition;
+            LogPosition logPositionBeforeCommit;
+            LogPosition logPositionAfterCommit;
             synchronized ( channel )
             {
-                logPosition = channel.getCurrentPosition( positionMarker ).newPosition();
+                logPositionBeforeCommit = channel.getCurrentPosition( positionMarker ).newPosition();
                 transactionLogWriter.append( transaction, transactionId );
+                logPositionAfterCommit = channel.getCurrentPosition( positionMarker ).newPosition();
             }
 
             long transactionChecksum = checksum(
                     transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() );
             transactionMetadataCache.cacheTransactionMetadata(
-                    transactionId, logPosition, transaction.getMasterId(), transaction.getAuthorId(),
+                    transactionId, logPositionBeforeCommit, transaction.getMasterId(), transaction.getAuthorId(),
                     transactionChecksum );
 
             boolean hasLegacyIndexChanges = indexCommandDetector.hasWrittenAnyLegacyIndexCommand();
@@ -263,7 +265,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                 legacyIndexTransactionOrdering.offer( transactionId );
             }
             return new TransactionCommitment(
-                    hasLegacyIndexChanges, transactionId, transactionChecksum, logPosition, transactionIdStore );
+                    hasLegacyIndexChanges, transactionId, transactionChecksum, logPositionAfterCommit, transactionIdStore );
         }
         catch ( final Throwable panic )
         {

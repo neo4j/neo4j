@@ -81,7 +81,7 @@ public class LatestCheckPointFinder
                     {
                         latestCheckPoint = entry.as();
                     }
-                    if ( entry instanceof LogEntryStart && (latestStartEntry == null || version == fromVersionBackwards ) )
+                    if ( entry instanceof LogEntryStart && ( version == fromVersionBackwards ) )
                     {
                         latestStartEntry = entry.as();
                     }

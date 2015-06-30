@@ -61,7 +61,7 @@ public interface TransactionIdStore
      * @param transactionId the applied transaction id.
      * @param checksum checksum of the transaction.
      * @param logVersion version of log the committed entry has been written into.
-     * @param byteOffset offset in the log file where the committed entry has been written.
+     * @param byteOffset offset in the log file where start writing the next log entry.
      */
     void transactionCommitted(  long transactionId, long checksum, long logVersion, long byteOffset );
 
