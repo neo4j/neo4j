@@ -20,10 +20,14 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.cursor.NodeCursor;
+import org.neo4j.kernel.api.cursor.RelationshipCursor;
 
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.TestCase.assertTrue;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -47,9 +51,9 @@ public class DiskLayerNodeAndRelTest extends DiskLayerTest
         }
 
         // When & then
-        assertTrue(  disk.nodeExists( created ));
-        assertFalse( disk.nodeExists( createdAndRemoved ) );
-        assertFalse( disk.nodeExists( neverExisted ) );
+        assertTrue(  nodeExists( created ));
+        assertFalse( nodeExists( createdAndRemoved ) );
+        assertFalse( nodeExists( neverExisted ) );
     }
 
     @Test
@@ -75,9 +79,31 @@ public class DiskLayerNodeAndRelTest extends DiskLayerTest
         neverExisted = created + 99;
 
         // When & then
-        assertTrue(  disk.relationshipExists( node ));
-        assertFalse( disk.relationshipExists( createdAndRemoved ) );
-        assertFalse( disk.relationshipExists( neverExisted ) );
+        assertTrue(  relationshipExists( node ));
+        assertFalse( relationshipExists( createdAndRemoved ) );
+        assertFalse( relationshipExists( neverExisted ) );
+    }
+
+    private boolean nodeExists( long id )
+    {
+        try (StoreStatement statement = disk.acquireStatement())
+        {
+            try (NodeCursor node = statement.acquireSingleNodeCursor( id ))
+            {
+                return node.next();
+            }
+        }
+    }
+
+    private boolean relationshipExists( long id )
+    {
+        try (StoreStatement statement = disk.acquireStatement())
+        {
+            try (RelationshipCursor relationship = statement.acquireSingleRelationshipCursor( id ))
+            {
+                return relationship.next();
+            }
+        }
     }
 
 }
