@@ -1043,21 +1043,20 @@ order by a.COL1""")
     val planningListener = PlanningListener()
     kernelMonitors.addMonitorListener(planningListener)
 
-    createLabeledNode("Dog")
-    (0 until 10).foreach { _ => createLabeledNode("Person") }
+    (0 until 100).foreach { _ => createLabeledNode("Person") }
 
     // WHEN
-    eengine.execute(s"match (n:Person:Dog) return n").toList
+    eengine.execute(s"match (n:Person) return n").toList
     planningListener.planRequests.toSeq should equal(Seq(
-      s"match (n:Person:Dog) return n"
+      s"match (n:Person) return n"
     ))
-    (0 until 1000).foreach { _ => createLabeledNode("Dog") }
-    eengine.execute(s"match (n:Person:Dog) return n").toList
+    (0 until 50).foreach { _ => createLabeledNode("Person") }
+    eengine.execute(s"match (n:Person) return n").toList
 
     //THEN
     planningListener.planRequests.toSeq should equal (Seq(
-      s"match (n:Person:Dog) return n",
-      s"match (n:Person:Dog) return n"
+      s"match (n:Person) return n",
+      s"match (n:Person) return n"
     ))
   }
 
@@ -1066,19 +1065,18 @@ order by a.COL1""")
     val planningListener = PlanningListener()
     kernelMonitors.addMonitorListener(planningListener)
 
-    createLabeledNode("Dog")
-    (0 until 400).foreach { _ => createLabeledNode("Person") }
+    (0 until 100).foreach { _ => createLabeledNode("Person") }
     //WHEN
-    eengine.execute(s"match (n:Person:Dog) return n").toList
+    eengine.execute(s"match (n:Person) return n").toList
     planningListener.planRequests.toSeq should equal(Seq(
-      s"match (n:Person:Dog) return n"
+      s"match (n:Person) return n"
     ))
-    (0 until 500).foreach { _ => createLabeledNode("Dog") }
-    eengine.execute(s"match (n:Person:Dog) return n").toList
+    (0 until 9).foreach { _ => createLabeledNode("Dog") }
+    eengine.execute(s"match (n:Person) return n").toList
 
     //THEN
     planningListener.planRequests.toSeq should equal(Seq(
-      s"match (n:Person:Dog) return n"
+      s"match (n:Person) return n"
     ))
   }
 

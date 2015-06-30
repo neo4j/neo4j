@@ -30,6 +30,7 @@ o Cypher may now use full index scans to solve queries containing has(n.prop) if
 2.2.4
 -----
 o Identifiers are properly exposed in nested foreach clauses
+o Better eviction policy for the plan cache
 
 2.2.3
 -----

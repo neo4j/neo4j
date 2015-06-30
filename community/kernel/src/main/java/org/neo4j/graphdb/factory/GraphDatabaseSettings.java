@@ -38,6 +38,7 @@ import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
 import static org.neo4j.helpers.Settings.DEFAULT;
+import static org.neo4j.helpers.Settings.DOUBLE;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
@@ -110,6 +111,12 @@ public abstract class GraphDatabaseSettings
 
     @Description( "The number of Cypher query execution plans that are cached." )
     public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "1000", min( 0 ) );
+
+    @Description( "The threshold when a plan is considered stale. If any of the underlying" +
+                  " statistics used to create the plan has changed more than this value, " +
+                  "the plan is considered stale and will be replanned. " +
+                  "A value of 0 means always replan, and 1 means never replan." )
+    public static Setting<Double> query_statistics_divergence_threshold = setting( "dbms.cypher.statistics_divergence_threshold", DOUBLE, "0.1", min( 0.0 ), max( 1.0 ) );
 
     @Description("The minimum lifetime of a query plan before a query is considered for replanning")
     public static Setting<Long> cypher_min_replan_interval = setting( "dbms.cypher.min_replan_interval", DURATION, "1s" );

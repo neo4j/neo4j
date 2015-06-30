@@ -35,7 +35,7 @@ object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
   val DEFAULT_QUERY_PLAN_TTL: Long = 1000 // 1 second
   val CLOCK = Clock.SYSTEM_CLOCK
-  val STATISTICS_DIVERGENCE_THRESHOLD = 0.5
+  val DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD = 0.1
 
   def notificationLoggerBuilder(executionMode: CypherExecutionMode): InternalNotificationLogger = executionMode  match {
       case CypherExecutionMode.explain => new RecordingNotificationLogger()
@@ -74,16 +74,16 @@ class CypherCompiler(graph: GraphDatabaseService,
     private val log: Log = logProvider.getLog(getClass)
     private val queryCacheSize: Int = getQueryCacheSize
     private val queryPlanTTL: Long = getMinimumTimeBeforeReplanning
-
+    private val statisticsDivergenceThreshold = getStatisticsDivergenceThreshold
     override def create[S](spec: PlannerSpec { type SPI = S }): S = spec match {
       case PlannerSpec_v1_9 => CompatibilityFor1_9(graph, queryCacheSize, kernelMonitors)
       case PlannerSpec_v2_2(planner) => planner match {
-        case CypherPlanner.rule => CompatibilityFor2_2Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
-        case _ => CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner)
+        case CypherPlanner.rule => CompatibilityFor2_2Rule(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
+        case _ => CompatibilityFor2_2Cost(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner)
       }
       case PlannerSpec_v2_3(planner, runtime) => planner match {
-        case CypherPlanner.rule => CompatibilityFor2_3Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
-        case _ => CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner, runtime, useErrorsOverWarnings)
+        case CypherPlanner.rule => CompatibilityFor2_3Rule(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
+        case _ => CompatibilityFor2_3Cost(graph, queryCacheSize, statisticsDivergenceThreshold, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner, runtime, useErrorsOverWarnings)
       }
     }
   }
@@ -154,6 +154,12 @@ class CypherCompiler(graph: GraphDatabaseService,
     optGraphAs[GraphDatabaseFacade]
       .andThen(_.platformModule.config.get(GraphDatabaseSettings.query_cache_size).intValue())
       .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_QUERY_CACHE_SIZE)
+
+
+  private def getStatisticsDivergenceThreshold : Double =
+    optGraphAs[GraphDatabaseFacade]
+      .andThen(_.platformModule.config.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue())
+      .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD)
 
 
   private def getMinimumTimeBeforeReplanning: Long = {
