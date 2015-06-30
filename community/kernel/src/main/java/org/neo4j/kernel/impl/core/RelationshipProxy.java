@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -30,6 +30,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -37,7 +38,6 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -217,10 +217,10 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement statement = actions.statement() )
         {
             List<String> keys = new ArrayList<>();
-            Iterator<DefinedProperty> properties = statement.readOperations().relationshipGetAllProperties( getId() );
+            PrimitiveIntIterator properties = statement.readOperations().relationshipGetAllPropertiesKeys( getId() );
             while ( properties.hasNext() )
             {
-                keys.add( statement.readOperations().propertyKeyGetName( properties.next().propertyKeyId() ) );
+                keys.add( statement.readOperations().propertyKeyGetName( properties.next() ) );
             }
             return keys;
         }
@@ -252,7 +252,15 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
                 {
                     throw new NotFoundException( String.format( "No such property, '%s'.", key ) );
                 }
-                return statement.readOperations().relationshipGetProperty( getId(), propertyId ).value();
+
+                Object value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
+
+                if (value == null)
+                {
+                    throw new PropertyNotFoundException( propertyId, EntityType.RELATIONSHIP, getId() );
+                }
+
+                return value;
             }
             catch ( EntityNotFoundException | PropertyNotFoundException e )
             {
@@ -273,7 +281,8 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement statement = actions.statement() )
         {
             int propertyId = statement.readOperations().propertyKeyGetForName( key );
-            return statement.readOperations().relationshipGetProperty( getId(), propertyId ).value( defaultValue );
+            Object value = statement.readOperations().relationshipGetProperty( getId(), propertyId );
+            return value == null ? defaultValue : value;
         }
         catch ( EntityNotFoundException e )
         {
@@ -293,7 +302,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         {
             int propertyId = statement.readOperations().propertyKeyGetForName( key );
             return propertyId != KeyReadOperations.NO_SUCH_PROPERTY_KEY &&
-                   statement.readOperations().relationshipGetProperty( getId(), propertyId ).isDefined();
+                   statement.readOperations().relationshipHasProperty( getId(), propertyId );
         }
         catch ( EntityNotFoundException e )
         {

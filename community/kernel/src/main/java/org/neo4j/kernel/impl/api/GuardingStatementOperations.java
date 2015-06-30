@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Iterator;
-
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
@@ -215,7 +213,16 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Property nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId )
+    public boolean nodeHasProperty( KernelStatement statement,
+            long nodeId,
+            int propertyKeyId ) throws EntityNotFoundException
+    {
+        guard.check();
+        return entityReadDelegate.nodeHasProperty( statement, nodeId, propertyKeyId );
+    }
+
+    @Override
+    public Object nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId )
             throws EntityNotFoundException
     {
         guard.check();
@@ -223,7 +230,16 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Property relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId )
+    public boolean relationshipHasProperty( KernelStatement state,
+            long relationshipId,
+            int propertyKeyId ) throws EntityNotFoundException
+    {
+        guard.check();
+        return entityReadDelegate.relationshipHasProperty( state, relationshipId, propertyKeyId );
+    }
+
+    @Override
+    public Object relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId )
             throws EntityNotFoundException
     {
         guard.check();
@@ -231,7 +247,14 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Property graphGetProperty( KernelStatement state, int propertyKeyId )
+    public boolean graphHasProperty( KernelStatement state, int propertyKeyId )
+    {
+        guard.check();
+        return entityReadDelegate.graphHasProperty( state, propertyKeyId );
+    }
+
+    @Override
+    public Object graphGetProperty( KernelStatement state, int propertyKeyId )
     {
         guard.check();
         return entityReadDelegate.graphGetProperty( state, propertyKeyId );
@@ -246,14 +269,6 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Iterator<DefinedProperty> nodeGetAllProperties( KernelStatement state, long nodeId )
-            throws EntityNotFoundException
-    {
-        guard.check();
-        return entityReadDelegate.nodeGetAllProperties( state, nodeId );
-    }
-
-    @Override
     public PrimitiveIntIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId )
             throws EntityNotFoundException
     {
@@ -262,25 +277,10 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public Iterator<DefinedProperty> relationshipGetAllProperties( KernelStatement state, long relationshipId )
-            throws EntityNotFoundException
-    {
-        guard.check();
-        return entityReadDelegate.relationshipGetAllProperties( state, relationshipId );
-    }
-
-    @Override
     public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state )
     {
         guard.check();
         return entityReadDelegate.graphGetPropertyKeys( state );
-    }
-
-    @Override
-    public Iterator<DefinedProperty> graphGetAllProperties( KernelStatement state )
-    {
-        guard.check();
-        return entityReadDelegate.graphGetAllProperties( state );
     }
 
     @Override

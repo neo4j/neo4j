@@ -98,7 +98,7 @@ public class StateHandlingStatementOperationsTest
         // ctx.getOrCreateLabelId("0");
         // ctx.getOrCreatePropertyKeyId("0");
 
-        verify( storeStatement, times( 3 ) ).acquireSingleNodeCursor( 0 );
+        verify( storeStatement, times( 2 ) ).acquireSingleNodeCursor( 0 );
         verifyNoMoreInteractions( storeStatement );
     }
 

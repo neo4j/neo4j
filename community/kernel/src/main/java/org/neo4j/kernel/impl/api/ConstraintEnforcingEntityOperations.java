@@ -88,10 +88,11 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         {
             PropertyConstraint constraint = constraints.next();
             int propertyKeyId = constraint.propertyKeyId();
-            Property property = entityReadOperations.nodeGetProperty( state, nodeId, propertyKeyId );
-            if ( property.isDefined() )
+            Object value = entityReadOperations.nodeGetProperty( state, nodeId, propertyKeyId );
+            if ( value != null )
             {
-                validateNoExistingNodeWithLabelAndProperty( state, labelId, (DefinedProperty) property, nodeId );
+                DefinedProperty property = Property.property( propertyKeyId, value );
+                validateNoExistingNodeWithLabelAndProperty( state, labelId, property, nodeId );
             }
         }
         return entityWriteOperations.nodeAddLabel( state, nodeId, labelId );
@@ -321,7 +322,15 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Property nodeGetProperty( KernelStatement state,
+    public boolean nodeHasProperty( KernelStatement statement,
+            long nodeId,
+            int propertyKeyId ) throws EntityNotFoundException
+    {
+        return entityReadOperations.nodeHasProperty( statement, nodeId, propertyKeyId );
+    }
+
+    @Override
+    public Object nodeGetProperty( KernelStatement state,
             long nodeId,
             int propertyKeyId ) throws EntityNotFoundException
     {
@@ -329,14 +338,28 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Property relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId ) throws
+    public boolean relationshipHasProperty( KernelStatement state,
+            long relationshipId,
+            int propertyKeyId ) throws EntityNotFoundException
+    {
+        return entityReadOperations.relationshipHasProperty( state, relationshipId, propertyKeyId );
+    }
+
+    @Override
+    public Object relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId ) throws
             EntityNotFoundException
     {
         return entityReadOperations.relationshipGetProperty( state, relationshipId, propertyKeyId );
     }
 
     @Override
-    public Property graphGetProperty( KernelStatement state, int propertyKeyId )
+    public boolean graphHasProperty( KernelStatement state, int propertyKeyId )
+    {
+        return entityReadOperations.graphHasProperty( state, propertyKeyId );
+    }
+
+    @Override
+    public Object graphGetProperty( KernelStatement state, int propertyKeyId )
     {
         return entityReadOperations.graphGetProperty( state, propertyKeyId );
     }
@@ -348,13 +371,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Iterator<DefinedProperty> nodeGetAllProperties( KernelStatement state,
-            long nodeId ) throws EntityNotFoundException
-    {
-        return entityReadOperations.nodeGetAllProperties( state, nodeId );
-    }
-
-    @Override
     public PrimitiveIntIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId ) throws
             EntityNotFoundException
     {
@@ -362,22 +378,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Iterator<DefinedProperty> relationshipGetAllProperties( KernelStatement state, long relationshipId ) throws
-            EntityNotFoundException
-    {
-        return entityReadOperations.relationshipGetAllProperties( state, relationshipId );
-    }
-
-    @Override
     public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state )
     {
         return entityReadOperations.graphGetPropertyKeys( state );
-    }
-
-    @Override
-    public Iterator<DefinedProperty> graphGetAllProperties( KernelStatement state )
-    {
-        return entityReadOperations.graphGetAllProperties( state );
     }
 
     @Override

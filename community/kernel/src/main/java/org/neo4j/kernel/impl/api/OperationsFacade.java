@@ -226,12 +226,23 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public boolean nodeHasProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
-            return Property.noNodeProperty( nodeId, propertyKeyId );
+            return false;
+        }
+        return dataRead().nodeHasProperty(statement, nodeId, propertyKeyId);
+    }
+
+    @Override
+    public Object nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        {
+            return null;
         }
         return dataRead().nodeGetProperty( statement, nodeId, propertyKeyId );
     }
@@ -274,23 +285,45 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Property relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
+    public boolean relationshipHasProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
-            return Property.noRelationshipProperty( relationshipId, propertyKeyId );
+            return false;
+        }
+        return dataRead().relationshipHasProperty( statement, relationshipId, propertyKeyId );
+    }
+
+    @Override
+    public Object relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        {
+            return null;
         }
         return dataRead().relationshipGetProperty( statement, relationshipId, propertyKeyId );
     }
 
     @Override
-    public Property graphGetProperty( int propertyKeyId )
+    public boolean graphHasProperty( int propertyKeyId )
     {
         statement.assertOpen();
         if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
         {
-            return Property.noGraphProperty( propertyKeyId );
+            return false;
+        }
+        return dataRead().graphHasProperty(statement, propertyKeyId);
+    }
+
+    @Override
+    public Object graphGetProperty( int propertyKeyId )
+    {
+        statement.assertOpen();
+        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        {
+            return null;
         }
         return dataRead().graphGetProperty( statement, propertyKeyId );
     }
@@ -303,32 +336,17 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Iterator<DefinedProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
-    {
-        statement.assertOpen();
-        return dataRead().nodeGetAllProperties( statement, nodeId );
-    }
-
-    @Override
     public PrimitiveIntIterator relationshipGetAllPropertiesKeys( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        return dataRead().relationshipGetPropertyKeys( statement, nodeId );
+        return dataRead().relationshipGetPropertyKeys(statement, nodeId);
     }
 
     @Override
-    public Iterator<DefinedProperty> relationshipGetAllProperties( long relationshipId )
-            throws EntityNotFoundException
+    public PrimitiveIntIterator graphGetAllPropertiesKeys()
     {
         statement.assertOpen();
-        return dataRead().relationshipGetAllProperties( statement, relationshipId );
-    }
-
-    @Override
-    public Iterator<DefinedProperty> graphGetAllProperties()
-    {
-        statement.assertOpen();
-        return dataRead().graphGetAllProperties( statement );
+        return dataRead().graphGetPropertyKeys( statement );
     }
 
     @Override

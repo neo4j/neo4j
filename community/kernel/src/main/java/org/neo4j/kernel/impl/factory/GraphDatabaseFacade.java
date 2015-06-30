@@ -69,6 +69,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -586,7 +587,7 @@ public class GraphDatabaseFacade
                 long nextValue = nodesWithLabel.next();
                 try
                 {
-                    if ( statement.nodeGetProperty( nextValue, propertyKeyId ).valueEquals( value ) )
+                    if ( Property.property(propertyKeyId, statement.nodeGetProperty( nextValue, propertyKeyId )).valueEquals( value ) )
                     {
                         return next( nextValue );
                     }
