@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 /**
  * Cursor over a set of {@link PropertyBlock} instances.
  *
- * This is used by the {@link StorePropertyCursor} to find
+ * This is used by the {@link LegacyStorePropertyCursor} to find
  * all properties of a node.
  */
 public class PropertyBlockCursor

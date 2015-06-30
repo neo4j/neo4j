@@ -62,7 +62,22 @@ public class PrimitiveIntStack implements PrimitiveIntCollection
     @Override
     public PrimitiveIntIterator iterator()
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        return new PrimitiveIntIterator()
+        {
+            int idx = 0;
+
+            @Override
+            public boolean hasNext()
+            {
+                return idx <= cursor;
+            }
+
+            @Override
+            public int next()
+            {
+                return array[idx++];
+            }
+        };
     }
 
     @Override

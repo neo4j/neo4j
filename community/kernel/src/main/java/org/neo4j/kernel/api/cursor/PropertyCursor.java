@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.api.cursor;
 
+import java.nio.channels.WritableByteChannel;
+
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Function;
 import org.neo4j.function.ToIntFunction;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 
 /**
  * Cursor for iterating over the properties of a node or relationship.
@@ -30,21 +30,12 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 public interface PropertyCursor
         extends Cursor
 {
-    Function<PropertyCursor, DefinedProperty> GET_PROPERTY = new Function<PropertyCursor, DefinedProperty>()
-    {
-        @Override
-        public DefinedProperty apply( PropertyCursor propertyCursor )
-        {
-            return propertyCursor.getProperty();
-        }
-    };
-
     ToIntFunction<PropertyCursor> GET_KEY_INDEX_ID = new ToIntFunction<PropertyCursor>()
     {
         @Override
-        public int apply( PropertyCursor value )
+        public int apply( PropertyCursor cursor )
         {
-            return value.getProperty().propertyKeyId();
+            return cursor.propertyKeyId();
         }
     };
 
@@ -57,7 +48,43 @@ public interface PropertyCursor
         }
 
         @Override
-        public DefinedProperty getProperty()
+        public int propertyKeyId()
+        {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public Object value()
+        {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public boolean booleanValue()
+        {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public long longValue()
+        {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public double doubleValue()
+        {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public String stringValue()
+        {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public void propertyData( WritableByteChannel channel )
         {
             throw new IllegalStateException();
         }
@@ -75,14 +102,19 @@ public interface PropertyCursor
         }
     };
 
-
-    /**
-     * Move the cursor to a particular property.
-     *
-     * @param keyId of the property to find
-     * @return true if found
-     */
     boolean seek( int keyId );
 
-    DefinedProperty getProperty();
+    int propertyKeyId();
+
+    Object value();
+
+    boolean booleanValue();
+
+    long longValue();
+
+    double doubleValue();
+
+    String stringValue();
+
+    void propertyData( WritableByteChannel channel );
 }

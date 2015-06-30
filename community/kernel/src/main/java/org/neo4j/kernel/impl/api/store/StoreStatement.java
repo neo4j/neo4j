@@ -79,8 +79,7 @@ public class StoreStatement
             @Override
             protected StorePropertyCursor create()
             {
-                return new StorePropertyCursor( StoreStatement.this.neoStore.getPropertyStore(),
-                        StoreStatement.this, this );
+                return new StorePropertyCursor( StoreStatement.this.neoStore.getPropertyStore(), this );
             }
         };
         labelCursor = new InstanceCache<StoreLabelCursor>()
@@ -135,10 +134,10 @@ public class StoreStatement
         return iteratorNodeCursor.get().init( nodeIdIterator );
     }
 
-    public PropertyCursor acquirePropertyCursor( long firstPropertyId )
+    public PropertyCursor acquirePropertyCursor( long firstPropertyRecordId )
     {
         neoStore.assertOpen();
-        return propertyCursor.get().init( firstPropertyId );
+        return propertyCursor.get().init( firstPropertyRecordId );
     }
 
     public LabelCursor acquireLabelCursor( long[] labels )

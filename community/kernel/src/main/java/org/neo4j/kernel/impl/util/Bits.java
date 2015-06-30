@@ -46,6 +46,7 @@ public final class Bits implements Cloneable
      * Calculate all the right overflow masks
      */
     private static final long[] RIGHT_OVERFLOW_MASKS;
+
     static
     {
         RIGHT_OVERFLOW_MASKS = new long[Long.SIZE];
@@ -60,17 +61,18 @@ public final class Bits implements Cloneable
 
     public static Bits bits( int numberOfBytes )
     {
-        int requiredLongs = requiredLongs(numberOfBytes);
+        int requiredLongs = requiredLongs( numberOfBytes );
         return new Bits( new long[requiredLongs], numberOfBytes );
     }
 
-    public static int requiredLongs(int numberOfBytes) {
-        return ((numberOfBytes-1)>>3)+1; // /8
+    public static int requiredLongs( int numberOfBytes )
+    {
+        return ((numberOfBytes - 1) >> 3) + 1; // /8
     }
 
     public static Bits bitsFromLongs( long[] longs )
     {
-        return new Bits( longs, longs.length<<3 ); // *8
+        return new Bits( longs, longs.length << 3 ); // *8
     }
 
     public static Bits bitsFromBytes( byte[] bytes )
@@ -89,6 +91,16 @@ public final class Bits implements Cloneable
         return bits;
     }
 
+    public static Bits bitsFromBytes( byte[] bytes, int offset, int length )
+    {
+        Bits bits = bits( length - offset );
+        for ( int i = offset; i < (offset + length); i++ )
+        {
+            bits.put( bytes[i] );
+        }
+        return bits;
+    }
+
     private Bits( long[] longs, int numberOfBytes )
     {
         this.longs = longs;
@@ -98,6 +110,7 @@ public final class Bits implements Cloneable
     /**
      * A mask which has the {@code steps} most significant bits set to 1, all others 0.
      * It's used to carry bits over between carriers (longs) when shifting left.
+     *
      * @param steps the number of most significant bits to have set to 1 in the mask.
      * @return the created mask.
      */
@@ -115,20 +128,22 @@ public final class Bits implements Cloneable
     /**
      * A mask which has the {@code steps} least significant bits set to 1, all others 0.
      * It's used to carry bits over between carriers (longs) when shifting right.
+     *
      * @param steps the number of least significant bits to have set to 1 in the mask.
      * @return the created mask.
      */
     public static long rightOverflowMask( int steps )
     {
-        return RIGHT_OVERFLOW_MASKS[steps-1];
+        return RIGHT_OVERFLOW_MASKS[steps - 1];
     }
 
     /**
      * Returns the underlying long values that has got all the bits applied.
      * The first item in the array has got the most significant bits.
+     *
      * @return the underlying long values that has got all the bits applied.
      */
-    @SuppressWarnings( "EI_EXPOSE_REP" )
+    @SuppressWarnings("EI_EXPOSE_REP")
     public long[] getLongs()
     {
         return longs;
@@ -162,7 +177,7 @@ public final class Bits implements Cloneable
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        for ( int longIndex = longs.length-1; longIndex >= 0; longIndex-- )
+        for ( int longIndex = longs.length - 1; longIndex >= 0; longIndex-- )
         {
             long value = longs[longIndex];
             if ( builder.length() > 0 )
@@ -183,7 +198,7 @@ public final class Bits implements Cloneable
     public static StringBuilder numberToString( StringBuilder builder, long value, int numberOfBytes )
     {
         builder.append( "[" );
-        for ( int i = 8*numberOfBytes-1; i >= 0; i-- )
+        for ( int i = 8 * numberOfBytes - 1; i >= 0; i-- )
         {
             if ( i > 0 && i % 8 == 0 )
             {
@@ -249,7 +264,7 @@ public final class Bits implements Cloneable
 
     public Bits put( byte value, int steps )
     {
-        return put( (long)value, steps );
+        return put( (long) value, steps );
     }
 
     public Bits put( short value )
@@ -259,7 +274,7 @@ public final class Bits implements Cloneable
 
     public Bits put( short value, int steps )
     {
-        return put( (long)value, steps );
+        return put( (long) value, steps );
     }
 
     public Bits put( int value )
@@ -269,7 +284,7 @@ public final class Bits implements Cloneable
 
     public Bits put( int value, int steps )
     {
-        return put( (long)value, steps );
+        return put( (long) value, steps );
     }
 
     public Bits put( long value )
@@ -280,16 +295,25 @@ public final class Bits implements Cloneable
     public Bits put( long value, int steps )
     {
         int lowLongIndex = writePosition >> 6; // /64
-        int lowBitInLong = writePosition%64;
-        int lowBitsAvailable = 64-lowBitInLong;
+        int lowBitInLong = writePosition % 64;
+        int lowBitsAvailable = 64 - lowBitInLong;
         long lowValueMask = rightOverflowMask( Math.min( lowBitsAvailable, steps ) );
-        longs[lowLongIndex] |= (((value)&lowValueMask) << lowBitInLong);
+        longs[lowLongIndex] |= (((value) & lowValueMask) << lowBitInLong);
         if ( steps > lowBitsAvailable )
         {   // High bits
-            long highValueMask = rightOverflowMask( steps-lowBitsAvailable );
-            longs[lowLongIndex+1] |= ((value) >>> lowBitsAvailable)&highValueMask;
+            long highValueMask = rightOverflowMask( steps - lowBitsAvailable );
+            longs[lowLongIndex + 1] |= ((value) >>> lowBitsAvailable) & highValueMask;
         }
         writePosition += steps;
+        return this;
+    }
+
+    public Bits put( byte[] bytes, int offset, int length )
+    {
+        for ( int i = offset; i < offset + length; i++ )
+        {
+            put( bytes[i], Byte.SIZE );
+        }
         return this;
     }
 
@@ -341,15 +365,15 @@ public final class Bits implements Cloneable
     public long getLong( int steps )
     {
         int lowLongIndex = readPosition >> 6; // 64
-        int lowBitInLong = readPosition%64;
-        int lowBitsAvailable = 64-lowBitInLong;
+        int lowBitInLong = readPosition % 64;
+        int lowBitsAvailable = 64 - lowBitInLong;
         long lowLongMask = rightOverflowMask( Math.min( lowBitsAvailable, steps ) ) << lowBitInLong;
         long lowValue = longs[lowLongIndex] & lowLongMask;
         long result = lowValue >>> lowBitInLong;
         if ( steps > lowBitsAvailable )
         {   // High bits
-            long highLongMask = rightOverflowMask( steps-lowBitsAvailable );
-            result |= ((longs[lowLongIndex+1] & highLongMask) << lowBitsAvailable);
+            long highLongMask = rightOverflowMask( steps - lowBitsAvailable );
+            result |= ((longs[lowLongIndex + 1] & highLongMask) << lowBitsAvailable);
         }
         readPosition += steps;
         return result;
@@ -401,6 +425,6 @@ public final class Bits implements Cloneable
      */
     public int longsInUse()
     {
-        return ((writePosition-1) / Long.SIZE) + 1;
+        return ((writePosition - 1) / Long.SIZE) + 1;
     }
 }
