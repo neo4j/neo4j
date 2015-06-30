@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.GetGraphElements
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{IndexSeekModeFactory, EntityProducer, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
@@ -139,9 +139,10 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
 
       val expression = valueExp getOrElse
         (throw new InternalException("Something went wrong trying to build your query."))
+      val indexFactory = IndexSeekModeFactory(unique = false).fromQueryExpression(expression).indexFactory(index)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        indexQuery(expression, m, state, state.query.indexSeek(index, _), labelName, propertyName)
+        indexQuery(expression, m, state, indexFactory(state), labelName, propertyName)
       }
 
     case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, UniqueIndex, valueExp)) =>
@@ -153,9 +154,10 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
 
       val expression = valueExp getOrElse
         (throw new InternalException("Something went wrong trying to build your query."))
+      val indexFactory = IndexSeekModeFactory(unique = true).fromQueryExpression(expression).indexFactory(index)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        indexQuery(expression, m, state, state.query.uniqueIndexSeek(index, _), labelName, propertyName)
+        indexQuery(expression, m, state, indexFactory(state), labelName, propertyName)
       }
   }
 

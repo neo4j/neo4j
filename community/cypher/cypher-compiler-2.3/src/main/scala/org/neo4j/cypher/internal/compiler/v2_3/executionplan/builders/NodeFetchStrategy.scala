@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_3._
-import commands._
-import commands.expressions._
-import commands.values.KeyToken
-import spi.PlanContext
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.commands._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_3.parser._
+import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 /*
 This rather simple class finds a starting strategy for a given single node and a list of predicates required
@@ -60,16 +60,13 @@ object NodeFetchStrategy {
   val Global = 5
 }
 
-import NodeFetchStrategy.Single
-import NodeFetchStrategy.Global
-import NodeFetchStrategy.IndexEquality
-import NodeFetchStrategy.LabelScan
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.NodeFetchStrategy.{Global, IndexEquality, LabelScan, Single}
 
 /*
 Bundles a possible start item with a rating (where lower implies better) and a list of predicates that
 are implicitly solved when using the start item
  */
-case class RatedStartItem(s: StartItem, rating: Int, solvedPredicates: Seq[Predicate])
+case class RatedStartItem(s: StartItem, rating: Int, solvedPredicates: Seq[Predicate], newUnsolvedPredicates: Seq[Predicate] = Seq.empty)
 
 /*
 Finders produce StartItemWithRatings for a node and a set of required predicates over that node
@@ -87,7 +84,7 @@ trait NodeStrategy {
       case predicate @ HasLabel(Identifier(identifier), label) if identifier == node => SolvedPredicate(label.name, predicate)
     }
 
-  case class SolvedPredicate[+T](solution: T, predicate: Predicate)
+  case class SolvedPredicate[+T](solution: T, predicate: Predicate, newUnsolvedPredicate: Option[Predicate] = None)
 }
 
 object NodeByIdStrategy extends NodeStrategy {
@@ -122,18 +119,33 @@ object IndexSeekStrategy extends NodeStrategy {
 
   def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext, symbols: SymbolTable): Seq[RatedStartItem] = {
     val labelPredicates: Seq[SolvedPredicate[LabelName]] = findLabelsForNode(node, where)
-    val propertyPredicates: Seq[SolvedPredicate[PropertyKey]] = findEqualityPredicatesOnProperty(node, where, symbols)
+    val equalityPredicates: Seq[SolvedPredicate[PropertyKey]] = findEqualityPredicatesOnProperty(node, where, symbols)
+    val seekByPrefixPredicates: Seq[SolvedPredicate[PropertyKey]] = findIndexSeekByPrefixPredicatesOnProperty(node, where, symbols)
 
-    for (
-      labelPredicate <- labelPredicates;
-      propertyPredicate <- propertyPredicates if ctx.getIndexRule(labelPredicate.solution, propertyPredicate.solution).nonEmpty
+    val result = for (
+      labelPredicate <- labelPredicates
     ) yield {
-      val schemaIndex = SchemaIndex(node, labelPredicate.solution, propertyPredicate.solution, AnyIndex, None)
-      val optConstraint = ctx.getUniquenessConstraint(labelPredicate.solution, propertyPredicate.solution)
-      val rating = if (optConstraint.isDefined) Single else IndexEquality
-      val predicates = Seq.empty // These are still not solved.
-      RatedStartItem(schemaIndex, rating, predicates)
+      val equalityItems: Seq[RatedStartItem] =
+        for (equalityPredicate <- equalityPredicates if ctx.getIndexRule(labelPredicate.solution, equalityPredicate.solution).nonEmpty)
+        yield {
+          val schemaIndex = SchemaIndex(node, labelPredicate.solution, equalityPredicate.solution, AnyIndex, None)
+          val optConstraint = ctx.getUniquenessConstraint(labelPredicate.solution, equalityPredicate.solution)
+          val rating = if (optConstraint.isDefined) Single else IndexEquality
+          RatedStartItem(schemaIndex, rating, solvedPredicates = Seq.empty, newUnsolvedPredicates = equalityPredicate.newUnsolvedPredicate.toSeq)
+        }
+
+      val seekByPrefixItems: Seq[RatedStartItem] =
+        for (seekByPrefixPredicate <- seekByPrefixPredicates if ctx.getIndexRule(labelPredicate.solution, seekByPrefixPredicate.solution).nonEmpty)
+          yield {
+            val schemaIndex = SchemaIndex(node, labelPredicate.solution, seekByPrefixPredicate.solution, AnyIndex, None)
+            val optConstraint = ctx.getUniquenessConstraint(labelPredicate.solution, seekByPrefixPredicate.solution)
+            RatedStartItem(schemaIndex, NodeFetchStrategy.IndexRange, solvedPredicates = Seq.empty, newUnsolvedPredicates = seekByPrefixPredicate.newUnsolvedPredicate.toSeq)
+          }
+
+      equalityItems ++ seekByPrefixItems
     }
+
+    result.flatten
   }
 
   private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], initialSymbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
@@ -150,6 +162,35 @@ object IndexSeekStrategy extends NodeStrategy {
         if id == identifier && predicate.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
     }
   }
+
+  private def findIndexSeekByPrefixPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], initialSymbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
+    val symbols = initialSymbols.add(identifier, CTNode)
+
+    where.collect {
+      case literalPredicate@LiteralLikePattern(
+      reg@LiteralRegularExpression(p@Property(Identifier(id), prop), _),
+      ParsedLikePattern(MatchText(prefix) :: (wildcard: WildcardLikePatternOp) :: tl),
+      caseInsensitive
+      ) if !caseInsensitive && id == identifier && literalPredicate.symbolDependenciesMet(symbols) =>
+        if (tl.isEmpty && wildcard == MatchMany) {
+          SolvedPredicate(prop.name, literalPredicate)
+        } else {
+          val pattern = ParsedLikePattern(List(MatchText(prefix), MatchMany))
+          val prefixPredicate = LiteralLikePattern(
+            LiteralRegularExpression(p, Literal(convertLikePatternToRegex(pattern, caseInsensitive))),
+            pattern,
+            caseInsensitive
+          )
+          val filterPattern = ParsedLikePattern(prefix.map(_ => MatchSingle).toList ++ (wildcard :: tl))
+          val filterPredicate = LiteralLikePattern(
+            LiteralRegularExpression(p, Literal(convertLikePatternToRegex(filterPattern, caseInsensitive))),
+            filterPattern,
+            caseInsensitive
+          )
+          SolvedPredicate(prop.name, predicate = prefixPredicate, newUnsolvedPredicate = Some(filterPredicate))
+        }
+    }
+  }
 }
 
 object GlobalStrategy extends NodeStrategy {
@@ -162,8 +203,8 @@ object LabelScanStrategy extends NodeStrategy {
     val labelPredicates: Seq[SolvedPredicate[LabelName]] = findLabelsForNode(node, where)
 
     labelPredicates.map {
-      case SolvedPredicate(labelName, predicate) =>
-        RatedStartItem(NodeByLabel(node, labelName), LabelScan, Seq(predicate))
+      case SolvedPredicate(labelName, predicate, newUnsolvedPredicate) =>
+        RatedStartItem(NodeByLabel(node, labelName), LabelScan, Seq(predicate), newUnsolvedPredicate.toSeq)
     }
   }
 }

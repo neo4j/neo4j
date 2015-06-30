@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_3.ast
+import org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Collection, Identifier, Property}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedLabel, UnresolvedProperty}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{AnyInCollection, Equals, HasLabel}
@@ -83,5 +85,34 @@ class NodeFetchStrategyTest extends CypherFunSuite {
 
     // Then
     foundStartItem.rating should equal(NodeFetchStrategy.IndexEquality)
+  }
+
+  test("should_select_schema_index_for_prefix_search") {
+    object inner extends AstConstructionTestSupport {
+      import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
+
+      def run(): Unit = {
+        //Given
+        val nodeName = "n"
+        val symbols = new SymbolTable(Map(nodeName -> CTNode))
+        val labelPredicate = HasLabel(Identifier(nodeName), UnresolvedLabel(labelName))
+        val like: ast.Like = ast.Like(ast.Property(ident(nodeName), ast.PropertyKeyName(propertyName)_)_, ast.LikePattern(ast.StringLiteral("prefix%")_))_
+        val likePredicate = like.asCommandPredicate
+
+        val planCtx = mock[PlanContext]
+        val indexDescriptor = new IndexDescriptor(0, 0)
+
+        when(planCtx.getIndexRule(labelName, propertyName)).thenReturn(Some(indexDescriptor))
+        when(planCtx.getUniquenessConstraint(labelName, propertyName)).thenReturn(None)
+
+        // When
+        val foundStartItem = NodeFetchStrategy.findStartStrategy(nodeName, Seq(likePredicate, labelPredicate), planCtx, symbols)
+
+        // Then
+        foundStartItem.rating should equal(NodeFetchStrategy.IndexRange)
+      }
+    }
+
+    inner.run()
   }
 }

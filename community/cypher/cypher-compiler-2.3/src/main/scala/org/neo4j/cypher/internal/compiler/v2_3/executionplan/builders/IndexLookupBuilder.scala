@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import commands._
-import commands.expressions.{Expression, Identifier, Property}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{StringSeekRange, Expression, Identifier, Property}
 import executionplan._
+import org.neo4j.cypher.internal.compiler.v2_3.parser.{ParsedLikePattern, WildcardLikePatternOp, MatchText}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{InclusiveBound, LowerBounded}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.PipeMonitor
 
@@ -33,7 +35,8 @@ class IndexLookupBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
     val querylessHint: QueryToken[SchemaIndex] = extractInterestingStartItem(plan)
     val hint: SchemaIndex = querylessHint.token
-    val propertyPredicates = findPropertyPredicates(plan, hint)
+
+    val propertyPredicates = findPropertyPredicates(plan, hint) ++ findLikePredicates(plan, hint)
     val labelPredicates = findLabelPredicates(plan, hint)
 
     if (propertyPredicates.isEmpty || labelPredicates.isEmpty)
@@ -53,7 +56,7 @@ class IndexLookupBuilder extends PlanBuilder {
     plan.copy(query = newQuery)
   }
 
-  def findLabelPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[QueryToken[Predicate]] =
+  private def findLabelPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[QueryToken[Predicate]] =
     plan.query.where.collect {
       case predicate@QueryToken(HasLabel(Identifier(identifier), label))
         if identifier == hint.identifier && label.name == hint.label => predicate
@@ -72,7 +75,18 @@ class IndexLookupBuilder extends PlanBuilder {
 
       case predicate@QueryToken(PropertyExists(expr@Identifier(id), prop))
         if id == hint.identifier && prop.name == hint.property => (predicate, ScanQueryExpression(expr))
-  }
+    }
+
+  private def findLikePredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[(QueryToken[Predicate], QueryExpression[Expression])] =
+    plan.query.where.collect {
+      case predicate@QueryToken(LiteralLikePattern(
+        LiteralRegularExpression(Property(Identifier(id), prop), _),
+        ParsedLikePattern(MatchText(prefix) :: (_: WildcardLikePatternOp) :: tl),
+        caseInsensitive)
+      ) if !caseInsensitive && id == hint.identifier && prop.name == hint.property =>
+        val range = StringSeekRange(LowerBounded(InclusiveBound(prefix)))
+        (predicate, RangeQueryExpression(range))
+    }
 
   private def extractInterestingStartItem(plan: ExecutionPlanInProgress): QueryToken[SchemaIndex] =
     plan.query.start.filter(interestingFilter).head.asInstanceOf[QueryToken[SchemaIndex]]

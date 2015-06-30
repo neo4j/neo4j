@@ -24,13 +24,14 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression,
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CastSupport, CollectionSupport, IsCollection}
+import org.neo4j.cypher.internal.compiler.v2_3.parser.ParsedLikePattern
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{SeekRange, LowerBounded, StringRangeSeekable}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.SeekRange
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.graphdb._
 
 abstract class Predicate extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState) = isMatch(ctx).getOrElse(null)
+  def apply(ctx: ExecutionContext)(implicit state: QueryState) = isMatch(ctx).orNull
   def isTrue(m: ExecutionContext)(implicit state: QueryState): Boolean = isMatch(m).getOrElse(false)
   def ++(other: Predicate): Predicate = And.apply(this, other)
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean]
@@ -41,10 +42,10 @@ abstract class Predicate extends Expression {
   def containsIsNull: Boolean
   protected def calculateType(symbols: SymbolTable) = CTBoolean
 
-  def andWith(preds: Predicate*): Predicate = { preds match {
+  def andWith(preds: Predicate*): Predicate = preds match {
     case _ if preds.isEmpty => this
     case _                  => preds.fold(this)(_ ++ _)
-  } }
+  }
 }
 
 object Predicate {
@@ -250,6 +251,17 @@ case class PropertyExists(identifier: Expression, propertyKey: KeyToken) extends
   def symbolTableDependencies = identifier.symbolTableDependencies
 
   override def localEffects(symbols: SymbolTable) = Effects.propertyRead(identifier, symbols)(propertyKey.name)
+}
+
+case class LiteralLikePattern(predicate: Predicate, pattern: ParsedLikePattern, caseInsensitive: Boolean = false) extends Predicate {
+  def isMatch(m: ExecutionContext)(implicit state: QueryState) = predicate.isMatch(m)
+  def containsIsNull = predicate.containsIsNull
+
+  def rewrite(f: (Expression) => Expression) = f(copy(predicate = f(predicate).asInstanceOf[Predicate]))
+
+  def arguments = predicate.arguments
+
+  def symbolTableDependencies = predicate.symbolTableDependencies
 }
 
 case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)(implicit converter: String => String = identity) extends Predicate {

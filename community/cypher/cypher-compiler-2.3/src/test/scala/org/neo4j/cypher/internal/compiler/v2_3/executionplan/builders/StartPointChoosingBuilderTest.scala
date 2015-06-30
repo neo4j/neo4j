@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.mockito.Matchers
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_3.ast
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
@@ -146,7 +148,6 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     plan.query.start.toList should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))))
   }
 
-
   test("should_pick_an_index_if_only_one_possible_exists_other_side") {
     // Given
     val query = q(where = Seq(
@@ -261,6 +262,35 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
     // Then
     result.start.exists(_.token.isInstanceOf[SchemaIndex]) should equal(true)
+  }
+
+  test("should_pick_any_index_available_for_prefix_search") {
+    object inner extends org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport {
+      import ExpressionConverters._
+
+      def run() = {
+        // Given
+        val labelPredicate = HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label))
+        val like: ast.Like = ast.Like(ast.Property(ident("n"), ast.PropertyKeyName(property)_)_, ast.LikePattern(ast.StringLiteral("prefix%")_))_
+        val likePredicate = like.asCommandPredicate
+
+        val query = q(
+          where = Seq(labelPredicate, likePredicate),
+          patterns = Seq(SingleNode(identifier))
+        )
+
+        when(context.getIndexRule(label, property)).thenReturn(Some(new IndexDescriptor(123, 456)))
+        when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
+
+        // When
+        val result = assertAccepts(query).query
+
+        // Then
+        result.start.exists(_.token.isInstanceOf[SchemaIndex]) should equal(true)
+      }
+    }
+
+    inner.run()
   }
 
   test("should_prefer_uniqueness_constraint_indexes_over_other_indexes") {

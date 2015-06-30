@@ -22,10 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v2_3.mutation._
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.IndexSeekMode
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.SeekRange
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 trait NodeStartItemIdentifiers extends StartItem {
