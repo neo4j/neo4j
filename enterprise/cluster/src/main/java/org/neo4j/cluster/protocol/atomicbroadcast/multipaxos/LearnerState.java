@@ -252,9 +252,12 @@ public enum LearnerState
                                     }
                                 }
 
-                                context.setLastKnownLearnedInstanceInCluster(
-                                        catchUpTo,
-                                        new org.neo4j.cluster.InstanceId( Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) )));
+                                org.neo4j.cluster.InstanceId instanceId =
+                                        message.hasHeader( Message.INSTANCE_ID )
+                                        ? new org.neo4j.cluster.InstanceId(
+                                                Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) )
+                                        : context.getMyId();
+                                context.setLastKnownLearnedInstanceInCluster( catchUpTo, instanceId );
                             }
                             break;
                         }
