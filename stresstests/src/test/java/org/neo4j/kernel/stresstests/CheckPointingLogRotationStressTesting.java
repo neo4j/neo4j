@@ -101,7 +101,7 @@ public class CheckPointingLogRotationStressTesting
         {
             System.out.println( "6/6\tPrinting stats and recorded timings..." );
             TimerTransactionTracer.printStats( System.out );
-            throughput.assertUniformThroughput( System.out );
+            throughput.assertThroughput( System.out );
         }
         finally
         {
