@@ -678,15 +678,14 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public Iterator<PropertyConstraint> constraintsGetForLabel( int labelId )
     {
-        return schemaStorage.schemaRules( RULE_TO_CONSTRAINT, UniquePropertyConstraintRule.class,
-                labelId, Predicates.<UniquePropertyConstraintRule>alwaysTrue() );
+        return schemaStorage.schemaRules( RULE_TO_CONSTRAINT, PropertyConstraintRule.class,
+                labelId, Predicates.<PropertyConstraintRule>alwaysTrue() );
     }
 
     @Override
     public Iterator<PropertyConstraint> constraintsGetAll()
     {
-        return schemaStorage.schemaRules( RULE_TO_CONSTRAINT, SchemaRule.Kind.UNIQUENESS_CONSTRAINT,
-                Predicates.<UniquePropertyConstraintRule>alwaysTrue() );
+        return schemaStorage.schemaRules( RULE_TO_CONSTRAINT, PropertyConstraintRule.class);
     }
 
     @Override

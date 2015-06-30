@@ -27,10 +27,8 @@ import org.junit.Test;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.LabelCursor;
 import org.neo4j.kernel.api.cursor.PropertyCursor;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -347,7 +345,7 @@ public class IndexQueryTransactionStateTest
                 mock( ConstraintIndexCreator.class ),
                 mock( LegacyIndexStore.class ) );
         txContext = new ConstraintEnforcingEntityOperations(
-                stateHandlingOperations, stateHandlingOperations, stateHandlingOperations );
+                stateHandlingOperations, stateHandlingOperations, stateHandlingOperations, stateHandlingOperations );
     }
 
     private void assertNoSuchNode( long node )

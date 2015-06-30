@@ -383,16 +383,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private TxStateVisitor txStateVisitor()
     {
-        TxStateVisitor visitor = txStateToRecordStateVisitor;
-        for ( PropertyConstraint constraint : loop( storeLayer.constraintsGetAll() ) )
+        Iterator<PropertyConstraint> constraints = storeLayer.constraintsGetAll();
+        while ( constraints.hasNext() )
         {
+            PropertyConstraint constraint = constraints.next();
             if ( constraint instanceof MandatoryPropertyConstraint )
             {
-                visitor = new MandatoryPropertyEnforcer( visitor, storeLayer, txState );
-                break;
+                return new MandatoryPropertyEnforcer( txStateToRecordStateVisitor, storeLayer, txState );
             }
         }
-        return visitor;
+        return txStateToRecordStateVisitor;
     }
 
     private void assertTransactionOpen()

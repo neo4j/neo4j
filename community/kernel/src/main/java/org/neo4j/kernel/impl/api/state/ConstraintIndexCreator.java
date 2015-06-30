@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException.Evidence;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -38,8 +39,6 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-
-import static java.util.Collections.singleton;
 
 public class ConstraintIndexCreator
 {
@@ -127,9 +126,8 @@ public class ConstraintIndexCreator
             Throwable cause = e.getCause();
             if ( cause instanceof IndexEntryConflictException )
             {
-                throw new ConstraintVerificationFailedKernelException( constraint, singleton(
-                        new ConstraintVerificationFailedKernelException.Evidence(
-                                (IndexEntryConflictException) cause ) ) );
+                Evidence evidence = Evidence.of( (IndexEntryConflictException) cause );
+                throw new ConstraintVerificationFailedKernelException( constraint, evidence );
             }
             else
             {

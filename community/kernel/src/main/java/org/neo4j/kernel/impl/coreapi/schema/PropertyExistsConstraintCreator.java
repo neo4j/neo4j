@@ -27,7 +27,6 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 
 public class PropertyExistsConstraintCreator extends BaseConstraintCreator
 {
-    // Only single property key supported a.t.m.
     protected final String propertyKey;
 
     PropertyExistsConstraintCreator( InternalSchemaActions internalCreator, Label label, String propertyKeyOrNull )
@@ -39,13 +38,13 @@ public class PropertyExistsConstraintCreator extends BaseConstraintCreator
     @Override
     public final ConstraintCreator assertPropertyIsUnique( String propertyKey )
     {
-        throw new UnsupportedOperationException( "You are already creating a unique constraint." );
+        throw new UnsupportedOperationException( "You are already creating a mandatory property constraint." );
     }
 
     @Override
     public ConstraintCreator assertPropertyExists( String propertyKey )
     {
-        throw new UnsupportedOperationException( "You can only create one unique constraint at a time." );
+        throw new UnsupportedOperationException( "You can only create one mandatory property constraint at a time." );
     }
 
     @Override

@@ -26,13 +26,22 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.FilteringIterator;
+import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException.Evidence;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
+import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
@@ -43,6 +52,7 @@ import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
+import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.locking.Locks;
 
@@ -50,19 +60,22 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 
-public class ConstraintEnforcingEntityOperations implements EntityOperations
+public class ConstraintEnforcingEntityOperations implements EntityOperations, SchemaWriteOperations
 {
     private final EntityWriteOperations entityWriteOperations;
     private final EntityReadOperations entityReadOperations;
+    private final SchemaWriteOperations schemaWriteOperations;
     private final SchemaReadOperations schemaReadOperations;
 
     public ConstraintEnforcingEntityOperations(
             EntityWriteOperations entityWriteOperations,
             EntityReadOperations entityReadOperations,
+            SchemaWriteOperations schemaWriteOperations,
             SchemaReadOperations schemaReadOperations )
     {
         this.entityWriteOperations = entityWriteOperations;
         this.entityReadOperations = entityReadOperations;
+        this.schemaWriteOperations = schemaWriteOperations;
         this.schemaReadOperations = schemaReadOperations;
     }
 
@@ -488,5 +501,68 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
             Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         return entityReadOperations.nodeCursorGetFromUniqueIndexSeek( statement, index, value );
+    }
+
+    @Override
+    public IndexDescriptor indexCreate( KernelStatement state, int labelId, int propertyKeyId )
+            throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
+    {
+        return schemaWriteOperations.indexCreate( state, labelId, propertyKeyId );
+    }
+
+    @Override
+    public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    {
+        schemaWriteOperations.indexDrop( state, descriptor );
+    }
+
+    @Override
+    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    {
+        schemaWriteOperations.uniqueIndexDrop( state, descriptor );
+    }
+
+    @Override
+    public UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, int labelId, int propertyKeyId )
+            throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
+    {
+        return schemaWriteOperations.uniquePropertyConstraintCreate( state, labelId, propertyKeyId );
+    }
+
+    @Override
+    public MandatoryPropertyConstraint mandatoryPropertyConstraintCreate( KernelStatement state, int labelId,
+            int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    {
+        PrimitiveLongIterator nodes = nodesGetForLabel( state, labelId );
+        while ( nodes.hasNext() )
+        {
+            try
+            {
+                long nodeId = nodes.next();
+                if ( !nodeGetProperty( state, nodeId, propertyKeyId ).isDefined() )
+                {
+                    PropertyConstraint constraint = new MandatoryPropertyConstraint( labelId, propertyKeyId );
+
+                    ConstraintVerificationFailedKernelException cause = new ConstraintVerificationFailedKernelException(
+                            constraint, Evidence.ofNodeWithNullProperty( nodeId ) );
+
+                    throw new CreateConstraintFailureException( constraint, cause );
+                }
+            }
+            catch ( EntityNotFoundException e )
+            {
+                PropertyConstraint constraint = new MandatoryPropertyConstraint( labelId, propertyKeyId );
+                throw new CreateConstraintFailureException( constraint, e );
+            }
+        }
+
+        return schemaWriteOperations.mandatoryPropertyConstraintCreate( state, labelId, propertyKeyId );
+    }
+
+    @Override
+    public void constraintDrop( KernelStatement state, PropertyConstraint constraint )
+            throws DropConstraintFailureException
+    {
+        schemaWriteOperations.constraintDrop( state, constraint );
     }
 }

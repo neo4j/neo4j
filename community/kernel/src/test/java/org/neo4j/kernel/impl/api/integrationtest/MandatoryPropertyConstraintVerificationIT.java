@@ -27,16 +27,24 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.api.OperationsFacade;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.ThreadingRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -57,9 +65,10 @@ public class MandatoryPropertyConstraintVerificationIT
     public void shouldFailToCreateConstraintIfSomeNodeLacksTheMandatoryProperty() throws Exception
     {
         // given
+        long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( label( "Foo" ) );
+            nodeId = db.createNode( label( "Foo" ) ).getId();
 
             tx.success();
         }
@@ -78,7 +87,12 @@ public class MandatoryPropertyConstraintVerificationIT
         // then
         catch ( ConstraintViolationException e )
         {
-            assertThat( e.getCause(), instanceOf( CreateConstraintFailureException.class ) );
+            Throwable cause = e.getCause();
+            assertThat( cause, instanceOf( CreateConstraintFailureException.class ) );
+
+            Throwable rootCause = cause.getCause();
+            assertThat( rootCause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
+            assertThat( userMessageOf( (KernelException) rootCause ), containsString( "Node(" + nodeId + ")" ) );
         }
     }
 
@@ -145,6 +159,17 @@ public class MandatoryPropertyConstraintVerificationIT
         catch ( ConstraintViolationException e )
         {
             assertThat( e.getCause(), instanceOf( ConstraintViolationTransactionFailureException.class ) );
+        }
+    }
+
+    private String userMessageOf( KernelException exception )
+    {
+        try ( Transaction ignored = db.beginTx() )
+        {
+            DependencyResolver dependencyResolver = db.getGraphDatabaseAPI().getDependencyResolver();
+            Statement statement = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();
+            TokenNameLookup tokenNameLookup = new StatementTokenNameLookup( statement.readOperations() );
+            return exception.getUserMessage( tokenNameLookup );
         }
     }
 }

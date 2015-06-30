@@ -52,7 +52,7 @@ public interface SchemaWriteOperations
     UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, int labelId, int propertyKeyId )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException;
 
-    MandatoryPropertyConstraint mandatoryPropertyConstraintCreate( KernelStatement statement, int labelId, int propertyKeyId )
+    MandatoryPropertyConstraint mandatoryPropertyConstraintCreate( KernelStatement state, int labelId, int propertyKeyId )
             throws AlreadyConstrainedException, CreateConstraintFailureException;
 
     void constraintDrop( KernelStatement state, PropertyConstraint constraint ) throws DropConstraintFailureException;

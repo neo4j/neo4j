@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.api;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.InvalidTransactionTypeException;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.ha.HaSettings;
@@ -36,26 +39,33 @@ import org.neo4j.kernel.impl.coreapi.schema.PropertyConstraintDefinition;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
-import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
-public class UniqueConstraintHaIT
+public abstract class ConstraintHaIT
 {
+    private static final Label LABEL = DynamicLabel.label( "User" );
+    private static final String PROPERTY_KEY = "name";
+
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() );
 
+    protected abstract void createConstraint( GraphDatabaseService db, Label label, String propertyKey );
+
+    protected abstract void createConstraintOffendingNode( GraphDatabaseService db, Label label, String propertyKey,
+            String propertyValue );
+
+    protected abstract void assertConstraintHolds( GraphDatabaseService db, Label label, String propertyKey,
+            String propertyValue );
+
     @Test
-    public void shouldCreateUniqueConstraintOnMaster() throws Exception
+    public void shouldCreateConstraintOnMaster() throws Exception
     {
         // given
         ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
@@ -64,7 +74,7 @@ public class UniqueConstraintHaIT
         // when
         try ( Transaction tx = master.beginTx() )
         {
-            master.schema().constraintFor( label( "Label1" ) ).assertPropertyIsUnique( "key1" ).create();
+            createConstraint( master, LABEL, PROPERTY_KEY );
             tx.success();
         }
 
@@ -75,9 +85,8 @@ public class UniqueConstraintHaIT
         {
             try ( Transaction tx = clusterMember.beginTx() )
             {
-                ConstraintDefinition constraint =
-                        single( clusterMember.schema().getConstraints( label( "Label1" ) ) );
-                assertEquals( "key1", single( constraint.getPropertyKeys() ) );
+                ConstraintDefinition constraint = single( clusterMember.schema().getConstraints( LABEL ) );
+                assertEquals( PROPERTY_KEY, single( constraint.getPropertyKeys() ) );
                 tx.success();
             }
         }
@@ -93,12 +102,12 @@ public class UniqueConstraintHaIT
         // when
         try ( Transaction ignored = slave.beginTx() )
         {
-            slave.schema().constraintFor( label( "Label1" ) ).assertPropertyIsUnique( "key1" ).create();
+            createConstraint( slave, LABEL, PROPERTY_KEY );
             fail( "We expected to not be able to create a constraint on a slave in a cluster." );
         }
         catch ( Exception e )
         {
-            assertThat(e, instanceOf(InvalidTransactionTypeException.class));
+            assertThat( e, instanceOf( InvalidTransactionTypeException.class ) );
         }
     }
 
@@ -111,7 +120,7 @@ public class UniqueConstraintHaIT
 
         try ( Transaction tx = master.beginTx() )
         {
-            master.schema().constraintFor( label( "User" ) ).assertPropertyIsUnique( "name" ).create();
+            createConstraint( master, LABEL, PROPERTY_KEY );
             tx.success();
         }
         cluster.sync();
@@ -132,8 +141,8 @@ public class UniqueConstraintHaIT
         {
             try ( Transaction tx = clusterMember.beginTx() )
             {
-                assertEquals( count(clusterMember.schema().getConstraints()), 0);
-                assertEquals( count(clusterMember.schema().getIndexes()), 0);
+                assertEquals( count( clusterMember.schema().getConstraints() ), 0 );
+                assertEquals( count( clusterMember.schema().getIndexes() ), 0 );
                 createUser( clusterMember, "Bob" );
                 tx.success();
             }
@@ -144,25 +153,25 @@ public class UniqueConstraintHaIT
     public void shouldNotAllowOldUncommittedTransactionsToResumeAndViolateConstraint() throws Exception
     {
         // Given
-        ClusterManager.ManagedCluster cluster = clusterRule.config(HaSettings.read_timeout, "4000s").startCluster();
+        ClusterManager.ManagedCluster cluster = clusterRule.config( HaSettings.read_timeout, "4000s" ).startCluster();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
 
-        ThreadToStatementContextBridge txBridge = slave.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        ThreadToStatementContextBridge txBridge = threadToStatementContextBridge( slave );
 
         // And given there is a user named bob
-        createUser(master, "Bob");
+        createUser( master, "Bob" );
 
-        // And given that I begin a transaction that will create another user named bob
+        // And given that I begin a transaction that will create a constraint offending node
         slave.beginTx();
-        slave.createNode( label("User") ).setProperty( "name", "Bob" );
+        createConstraintOffendingNode( slave, LABEL, PROPERTY_KEY, "Bob" );
         TopLevelTransaction slaveTx = txBridge.getTopLevelTransactionBoundToThisThread( true );
         txBridge.unbindTransactionFromCurrentThread();
 
-        // When I create a constraint for unique user names
-        try(Transaction tx = master.beginTx())
+        // When I create a constraint
+        try ( Transaction tx = master.beginTx() )
         {
-            master.schema().constraintFor( label("User") ).assertPropertyIsUnique( "name" ).create();
+            createConstraint( master, LABEL, PROPERTY_KEY );
             tx.success();
         }
 
@@ -174,15 +183,18 @@ public class UniqueConstraintHaIT
             slaveTx.close();
             fail( "Expected this commit to fail :(" );
         }
-        catch( TransactionFailureException e )
+        catch ( org.neo4j.graphdb.TransactionFailureException e )
         {
-            assertThat(e.getCause().getCause(), instanceOf( org.neo4j.kernel.api.exceptions.TransactionFailureException.class ));
+            assertThat(
+                    e.getCause().getCause(),
+                    instanceOf( org.neo4j.kernel.api.exceptions.TransactionFailureException.class )
+            );
         }
 
         // And then both master and slave should keep working, accepting reads
-        assertOneBob( master );
+        assertConstraintHolds( master, LABEL, PROPERTY_KEY, "Bob" );
         cluster.sync();
-        assertOneBob( slave );
+        assertConstraintHolds( slave, LABEL, PROPERTY_KEY, "Bob" );
 
         // And then I should be able to perform new write transactions, on both master and slave
         createUser( slave, "Steven" );
@@ -204,9 +216,9 @@ public class UniqueConstraintHaIT
         ClusterManager.RepairKit shutdownSlave = cluster.shutdown( slave );
         deleteRecursively( slaveStoreDirectory );
 
-        try(Transaction tx = master.beginTx())
+        try ( Transaction tx = master.beginTx() )
         {
-            master.schema().constraintFor( label("User") ).assertPropertyIsUnique( "name" ).create();
+            createConstraint( master, LABEL, PROPERTY_KEY );
             tx.success();
         }
 
@@ -214,31 +226,28 @@ public class UniqueConstraintHaIT
         slave = shutdownSlave.repair();
 
         // Then
-        try( Transaction ignored = slave.beginTx() )
+        try ( Transaction ignored = slave.beginTx() )
         {
-            assertThat(single( slave.schema().getConstraints() ), instanceOf(PropertyConstraintDefinition.class));
+            assertThat( single( slave.schema().getConstraints() ), instanceOf( PropertyConstraintDefinition.class ) );
             PropertyConstraintDefinition constraint =
-                    (PropertyConstraintDefinition)single(slave.schema().getConstraints());
-            assertThat(single(constraint.getPropertyKeys()), equalTo("name"));
-            assertThat(constraint.getLabel(), equalTo(label("User")));
+                    (PropertyConstraintDefinition) single( slave.schema().getConstraints() );
+            assertThat( single( constraint.getPropertyKeys() ), equalTo( PROPERTY_KEY ) );
+            assertThat( constraint.getLabel(), equalTo( LABEL ) );
         }
     }
 
-    private void createUser( HighlyAvailableGraphDatabase db, String name )
+    private static void createUser( HighlyAvailableGraphDatabase db, String name )
     {
-        try(Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( label("User") ).setProperty( "name", name );
+            db.createNode( LABEL ).setProperty( PROPERTY_KEY, name );
             tx.success();
         }
     }
 
-    private void assertOneBob( HighlyAvailableGraphDatabase db)
+    private static ThreadToStatementContextBridge threadToStatementContextBridge( HighlyAvailableGraphDatabase db )
     {
-        try(Transaction tx = db.beginTx())
-        {
-            assertThat( asList( db.findNodes( label( "User" ), "name", "Bob" ) ).size(), equalTo(1));
-            tx.success();
-        }
+        DependencyResolver dependencyResolver = db.getDependencyResolver();
+        return dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
     }
 }

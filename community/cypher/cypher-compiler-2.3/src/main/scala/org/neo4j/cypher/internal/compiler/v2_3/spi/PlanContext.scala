@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.spi
 
-import org.neo4j.kernel.api.constraints.PropertyConstraint
+import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 /**
@@ -35,7 +35,7 @@ trait PlanContext extends TokenContext {
 
   def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
 
-  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[PropertyConstraint]
+  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint]
 
   def checkNodeIndex(idxName: String)
 

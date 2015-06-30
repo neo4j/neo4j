@@ -87,7 +87,6 @@ import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -513,23 +512,6 @@ public class StateHandlingStatementOperations implements
             int propertyKeyId ) throws CreateConstraintFailureException
     {
         MandatoryPropertyConstraint constraint = new MandatoryPropertyConstraint( labelId, propertyKeyId );
-        PrimitiveLongIterator nodes = nodesGetForLabel( state, labelId );
-        while ( nodes.hasNext() )
-        {
-            try
-            {
-                if (!nodeGetProperty(state, nodes.next(), propertyKeyId).isDefined())
-                {
-                    throw new CreateConstraintFailureException( constraint,
-                            new ConstraintVerificationFailedKernelException( constraint ) );
-                }
-            }
-            catch ( EntityNotFoundException e )
-            {
-                throw new CreateConstraintFailureException( constraint, e);
-            }
-        }
-
         state.txState().constraintDoAdd( constraint );
         return constraint;
     }

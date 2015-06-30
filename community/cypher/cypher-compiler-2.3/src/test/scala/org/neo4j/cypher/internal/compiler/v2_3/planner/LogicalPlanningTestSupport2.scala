@@ -95,7 +95,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         else
           None
 
-      def getUniquenessConstraint(labelName: String, propertyKey: String): Option[PropertyConstraint] = {
+      def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = {
         if (config.uniqueIndexes((labelName, propertyKey)))
           Some(new UniquenessConstraint(
             semanticTable.resolvedLabelIds(labelName).id,

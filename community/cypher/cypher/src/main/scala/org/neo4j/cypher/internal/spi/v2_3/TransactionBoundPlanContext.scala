@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.api.constraints.PropertyConstraint
+import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
@@ -57,12 +57,16 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
       case _                         => None
     }
 
-  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[PropertyConstraint] = try {
+  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
     val labelId = statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
 
     val matchingConstraints = statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
-    if ( matchingConstraints.hasNext ) Some(matchingConstraints.next()) else None
+
+    import scala.collection.JavaConverters._
+    statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).asScala.collectFirst {
+      case unique: UniquenessConstraint => unique
+    }
   } catch {
     case _: KernelException => None
   }

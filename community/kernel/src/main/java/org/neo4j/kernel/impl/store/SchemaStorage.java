@@ -151,8 +151,7 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     public <R extends SchemaRule, T> Iterator<T> schemaRules(
-            Function<? super R, T> conversion, final SchemaRule.Kind kind,
-            final Predicate<R> predicate )
+            Function<? super R, T> conversion, final Class<R> ruleClass )
     {
         @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
         Function<SchemaRule, T> ruleConversion = (Function) conversion;
@@ -162,8 +161,7 @@ public class SchemaStorage implements SchemaRuleAccess
             @Override
             public boolean test( SchemaRule rule )
             {
-                return rule.getKind() == kind &&
-                       predicate.test( (R) rule );
+                return ruleClass.isInstance( rule );
             }
         }, loadAllSchemaRules() ) );
     }
