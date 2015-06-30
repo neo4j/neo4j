@@ -87,8 +87,8 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
 
     val frozen1 = snapshot1.freeze
     val frozen2 = snapshot2.freeze
-    val smallNumber = 1e-10
-    val bigNumber = 0.5
+    val smallNumber = 0.1
+    val bigNumber = 0.6
 
     frozen1.diverges(frozen2, smallNumber) should equal(true)
     frozen1.diverges(frozen2, bigNumber) should equal(false)
