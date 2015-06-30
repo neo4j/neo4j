@@ -19,19 +19,14 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite}
 
-class FunctionsAcceptanceTest extends ExecutionEngineFunSuite {
+class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("split should work as expected") {
     // When
-    val result = executeScalar[Long](
-      "FOREACH (y in split(\"one1two\",\"1\")| "  +
-      "  CREATE (x:y)" +
-      ") " +
-      "WITH * " +
-      "MATCH (n) " +
-      "RETURN count(n)"
+    val result = executeScalarWithAllPlanners[Long](
+      "UNWIND split(\"one1two\",\"1\") AS item RETURN count(item)"
     )
 
     // Then
@@ -39,12 +34,12 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("toInt should work as expected") {
+    // Given
+    createLabeledNode(Map("age" -> "42"), "Person")
+
     // When
-    val result = executeScalar[Long](
-      "CREATE (p:Person { age: \"42\" })" +
-      "WITH * " +
-      "MATCH (n) " +
-      "RETURN toInt(n.age)"
+    val result = executeScalarWithAllPlanners[Long](
+      "MATCH (p:Person { age: \"42\" }) WITH * MATCH (n) RETURN toInt(n.age)"
     )
 
     // Then
@@ -52,12 +47,12 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("toFloat should work as expected") {
+    // Given
+    createLabeledNode(Map("rating" -> 4), "Movie")
+
     // When
-    val result = executeScalar[Double](
-      "CREATE (m:Movie { rating: 4 })" +
-        "WITH * " +
-        "MATCH (n) " +
-        "RETURN toFloat(n.rating)"
+    val result = executeScalarWithAllPlanners[Double](
+      "MATCH (m:Movie { rating: 4 }) WITH * MATCH (n) RETURN toFloat(n.rating)"
     )
 
     // Then
@@ -65,16 +60,16 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("toString should work as expected") {
+    // Given
+    createLabeledNode(Map("rating" -> 4), "Movie")
+
     // When
-    val result = executeScalar[String](
-      "CREATE (m:Movie { rating: 4 })" +
-        "WITH * " +
-        "MATCH (n) " +
-        "RETURN toString(n.rating)"
+    val result = executeScalarWithAllPlanners[String](
+      "MATCH (m:Movie { rating: 4 }) WITH * MATCH (n) RETURN toString(n.rating)"
     )
 
     // Then
-    assert(result === "4")
+    result should equal("4")
   }
 
   test("case should handle mixed number types") {
@@ -84,9 +79,9 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite {
         |RETURN x + 1
       """.stripMargin
 
-      val result = executeScalar[Long](query)
+    val result = executeScalarWithAllPlanners[Long](query)
 
-      assert(result === 2)
+    result should equal(2)
   }
 
   test("case should handle mixed types") {
@@ -96,8 +91,16 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite {
         |RETURN x + "!"
       """.stripMargin
 
-    val result = executeScalar[String](query)
+    val result = executeScalarWithAllPlanners[String](query)
 
-    assert(result === "wow!")
+    result should equal("wow!")
+  }
+
+  test("reverse function should work as expected") {
+    // When
+    val result = executeScalarWithAllPlanners[String]("RETURN reverse('raksO')")
+
+    // Then
+    result should equal("Oskar")
   }
 }

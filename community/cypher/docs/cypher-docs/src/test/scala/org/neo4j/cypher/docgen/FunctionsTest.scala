@@ -735,6 +735,18 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
     )
   }
 
+  @Test def reverse() {
+    testThis(
+      title = "REVERSE",
+      syntax = "REVERSE( original )",
+      arguments = List("original" -> "An expression that returns a string"),
+      text = "`REVERSE` returns the original string reversed.",
+      queryText = "return reverse(\"anagram\")",
+      returns = "",
+      assertions = (p) => assert(List(Map("reverse(\"anagram\")" -> "margana")) === p.toList)
+    )
+  }
+
   @Test def ltrim() {
     testThis(
       title = "LTRIM",

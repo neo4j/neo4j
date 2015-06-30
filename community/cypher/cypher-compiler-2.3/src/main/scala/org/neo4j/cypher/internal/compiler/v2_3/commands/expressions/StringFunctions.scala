@@ -123,6 +123,15 @@ case class LowerFunction(argument: Expression) extends StringFunction(argument) 
   def rewrite(f: (Expression) => Expression) = f(LowerFunction(argument.rewrite(f)))
 }
 
+case class ReverseFunction(argument: Expression) extends StringFunction(argument) with StringHelper {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
+    val string: String = asString(argument(m))
+    if (string == null) null else new java.lang.StringBuilder(string).reverse.toString
+  }
+
+  def rewrite(f: (Expression) => Expression) = f(ReverseFunction(argument.rewrite(f)))
+}
+
 case class UpperFunction(argument: Expression) extends StringFunction(argument) with StringHelper {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toUpperCase
 

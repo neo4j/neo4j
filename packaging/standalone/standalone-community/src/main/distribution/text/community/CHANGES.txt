@@ -4,6 +4,7 @@ For Release Notes, see http://neo4j.com/release-notes/neo4j-#{project.version}/
 -------
 
 Cypher:
+o Added reverse function for reversing strings
 o Unfulfillable index hints (e.g. on non-existing indices) will now produce a warning or throw an error as configured
 o String prefix searches using LIKE are now solved using index seeks
 o Now supports dynamic property lookup (f.e. using n['property'])
