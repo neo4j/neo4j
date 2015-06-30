@@ -94,6 +94,12 @@ public abstract class TxAbstractRelationshipCursor implements RelationshipCursor
     }
 
     @Override
+    public long getOtherNode( long nodeId )
+    {
+        return startNodeId == nodeId ? endNodeId : startNodeId;
+    }
+
+    @Override
     public PropertyCursor properties()
     {
         return state.augmentPropertyCursor(

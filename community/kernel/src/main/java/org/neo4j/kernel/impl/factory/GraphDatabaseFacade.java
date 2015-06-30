@@ -587,9 +587,13 @@ public class GraphDatabaseFacade
                 long nextValue = nodesWithLabel.next();
                 try
                 {
-                    if ( Property.property(propertyKeyId, statement.nodeGetProperty( nextValue, propertyKeyId )).valueEquals( value ) )
+                    Object propertyValue = statement.nodeGetProperty( nextValue, propertyKeyId );
+                    if ( propertyValue != null )
                     {
-                        return next( nextValue );
+                        if ( Property.property( propertyKeyId, propertyValue ).valueEquals( value ) )
+                        {
+                            return next( nextValue );
+                        }
                     }
                 }
                 catch ( EntityNotFoundException e )

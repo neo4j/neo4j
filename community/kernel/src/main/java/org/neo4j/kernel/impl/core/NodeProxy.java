@@ -358,7 +358,7 @@ public class NodeProxy implements Node
         try ( Statement statement = actions.statement() )
         {
             List<String> keys = new ArrayList<>();
-            PrimitiveIntIterator properties = statement.readOperations().nodeGetAllPropertiesKeys( getId() );
+            PrimitiveIntIterator properties = statement.readOperations().nodeGetPropertyKeys( getId() );
             while ( properties.hasNext() )
             {
                 keys.add( statement.readOperations().propertyKeyGetName( properties.next() ) );

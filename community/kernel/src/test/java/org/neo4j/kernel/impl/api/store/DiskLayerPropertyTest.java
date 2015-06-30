@@ -46,7 +46,7 @@ public class DiskLayerPropertyTest extends DiskLayerTest
         String longString =
                 "AlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalongAlalalalalong";
         Object[] properties = {
-/*                longString,
+                longString,
                 createNew( String.class ),
                 createNew( long.class ),
                 createNew( int.class ),
@@ -73,9 +73,8 @@ public class DiskLayerPropertyTest extends DiskLayerTest
                 array( 1, boolean.class ),
                 array( 1, char.class ),
                 array( 1, float.class ),
-                array( 1, double.class ),*/
+                array( 1, double.class ),
                 array( 256, String.class ),
-/*
                 array( 256, long.class ),
                 array( 256, int.class ),
                 array( 256, byte.class ),
@@ -84,7 +83,6 @@ public class DiskLayerPropertyTest extends DiskLayerTest
                 array( 256, char.class ),
                 array( 256, float.class ),
                 array( 256, double.class ),
-*/
         };
 
         int propKey = disk.propertyKeyGetOrCreateForName( "prop" );
@@ -96,18 +94,19 @@ public class DiskLayerPropertyTest extends DiskLayerTest
             long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label1 ).getId();
 
             // when
-            try (NodeCursor node = statement.acquireSingleNodeCursor( nodeId ))
+            try ( NodeCursor node = statement.acquireSingleNodeCursor( nodeId ) )
             {
                 node.next();
 
-                try (PropertyCursor props = node.properties())
+                try ( PropertyCursor props = node.properties() )
                 {
-                    if (props.seek( propKey ))
+                    if ( props.seek( propKey ) )
                     {
                         Object propVal = props.value();
 
                         //then
-                        assertTrue( propVal + ".valueEquals(" + value + ")", Property.property(propKey, propVal).valueEquals( value ) );
+                        assertTrue( propVal + ".valueEquals(" + value + ")",
+                                Property.property( propKey, propVal ).valueEquals( value ) );
                     }
                     else
                     {

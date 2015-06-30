@@ -26,6 +26,9 @@ import org.neo4j.function.ToIntFunction;
 
 /**
  * Cursor for iterating over the properties of a node or relationship.
+ *
+ * If the cursor is not in a valid state ({@link #next()} or {@link #seek(int)} returns false,
+ * then accessor calls will result in IllegalStateException being thrown.
  */
 public interface PropertyCursor
         extends Cursor
@@ -102,19 +105,54 @@ public interface PropertyCursor
         }
     };
 
+    /**
+      * Move the cursor to a particular property.
+      *
+      * @param keyId of the property to find
+      * @return true if found
+      */
     boolean seek( int keyId );
 
+    /**
+     * @return the key id of the current property.
+     */
     int propertyKeyId();
 
+    /**
+     * @return the value of the current property.
+     */
     Object value();
 
+    /**
+     * @return the boolean value of the current property
+     * @throws IllegalStateException if current property is not a boolean
+     */
     boolean booleanValue();
 
+    /**
+     * @return the integer value of the current property
+     * @throws IllegalStateException if current property is not an integer number
+     */
     long longValue();
 
+    /**
+     * @return the real value of the current property
+     * @throws IllegalStateException if current property is not a real number
+     */
     double doubleValue();
 
+    /**
+     * @return the string value of the current property
+     */
     String stringValue();
 
+    /**
+     * The byte representation of the current value.
+     *
+     * NOTE: this is currently less than useful as it will return
+     * the internal formats for e.g. strings, rather than UTF-8.
+     *
+     * @param channel to write the data into
+     */
     void propertyData( WritableByteChannel channel );
 }

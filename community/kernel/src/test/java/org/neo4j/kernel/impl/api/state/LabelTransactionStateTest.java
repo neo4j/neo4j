@@ -237,8 +237,6 @@ public class LabelTransactionStateTest
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, PropertyCursor.EMPTY,
                 asLabelCursor( 12 ) ) );
 
-//        when( store.nodeHasLabel( storeStatement, 1337, 12 ) ).thenReturn( true );
-
         // WHEN and THEN
         assertFalse( "Label should have been added", txContext.nodeAddLabel( state, 1337, 12 ) );
     }

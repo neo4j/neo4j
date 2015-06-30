@@ -73,8 +73,6 @@ public class PropertyIT extends KernelIntegrationTest
 
             // THEN
             Object value = statement.nodeGetProperty( nodeId, propertyKeyId );
-
-            System.out.println( value );
         }
     }
 
@@ -91,9 +89,7 @@ public class PropertyIT extends KernelIntegrationTest
 
             // WHEN
             propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
-            statement.nodeSetProperty( nodeId,
-                    stringProperty( propertyKeyId, value ) );
-//            statement.nodeSetProperty( nodeId, byteProperty( propertyKeyId, (byte)42 ) );
+            statement.nodeSetProperty( nodeId, stringProperty( propertyKeyId, value ) );
 
             // THEN
             assertEquals( value, statement.nodeGetProperty(
@@ -209,7 +205,7 @@ public class PropertyIT extends KernelIntegrationTest
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
             assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), equalTo( newProperty.value() ) );
-            assertThat( IteratorUtil.asList( statement.nodeGetAllPropertiesKeys( nodeId ) ), equalTo( Arrays.asList(
+            assertThat( IteratorUtil.asList( statement.nodeGetPropertyKeys( nodeId ) ), equalTo( Arrays.asList(
                     newProperty.propertyKeyId() ) ) );
         }
     }

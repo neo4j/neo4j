@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.cursor.EntityCursor;
 import org.neo4j.kernel.api.cursor.LabelCursor;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.PropertyCursor;
@@ -102,6 +103,8 @@ public class StateHandlingStatementOperations implements
         LegacyIndexReadOperations,
         LegacyIndexWriteOperations
 {
+    private static final int KEY_LIST_INITIAL_SIZE = 16;
+
     private final StoreReadLayer storeLayer;
     private final LegacyPropertyTrackers legacyPropertyTrackers;
     private final ConstraintIndexCreator constraintIndexCreator;
@@ -990,16 +993,7 @@ public class StateHandlingStatementOperations implements
                 throw new EntityNotFoundException( EntityType.NODE, nodeId );
             }
 
-            PrimitiveIntStack keys = new PrimitiveIntStack( 16 );
-            try (PropertyCursor properties = nodeCursor.properties())
-            {
-                while (properties.next())
-                {
-                    keys.push( properties.propertyKeyId() );
-                }
-            }
-
-            return keys.iterator();
+            return getPropertyKeys( nodeCursor );
         }
     }
 
@@ -1008,17 +1002,9 @@ public class StateHandlingStatementOperations implements
             long nodeId,
             int propertyKeyId ) throws EntityNotFoundException
     {
-        try ( NodeCursor storeNodeCursor = nodeCursor( statement, nodeId ) )
+        try ( NodeCursor nodeCursor = nodeCursor( statement, nodeId ) )
         {
-            if ( !storeNodeCursor.next() )
-            {
-                throw new EntityNotFoundException( EntityType.NODE, nodeId );
-            }
-
-            try ( PropertyCursor cursor = storeNodeCursor.properties() )
-            {
-                return cursor.seek( propertyKeyId );
-            }
+            return hasProperty( nodeCursor, EntityType.NODE, nodeId, propertyKeyId );
         }
     }
 
@@ -1063,22 +1049,9 @@ public class StateHandlingStatementOperations implements
     public Object nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId )
             throws EntityNotFoundException
     {
-        try ( NodeCursor storeNodeCursor = nodeCursor( state, nodeId ) )
+        try ( NodeCursor nodeCursor = nodeCursor( state, nodeId ) )
         {
-            if ( !storeNodeCursor.next() )
-            {
-                throw new EntityNotFoundException( EntityType.NODE, nodeId );
-            }
-
-            try ( PropertyCursor cursor = storeNodeCursor.properties() )
-            {
-                if ( cursor.seek( propertyKeyId ) )
-                {
-                    return cursor.value();
-                }
-            }
-
-            return null;
+            return getProperty( nodeCursor, EntityType.NODE, nodeId, propertyKeyId );
         }
     }
 
@@ -1093,16 +1066,7 @@ public class StateHandlingStatementOperations implements
                 throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
             }
 
-            PrimitiveIntStack keys = new PrimitiveIntStack( 16 );
-            try (PropertyCursor properties = relCursor.properties())
-            {
-                while (properties.next())
-                {
-                    keys.push( properties.propertyKeyId() );
-                }
-            }
-
-            return keys.iterator();
+            return getPropertyKeys( relCursor );
         }
     }
 
@@ -1113,15 +1077,7 @@ public class StateHandlingStatementOperations implements
     {
         try ( RelationshipCursor relationshipCursor = relationshipCursor( state, relationshipId ) )
         {
-            if ( !relationshipCursor.next() )
-            {
-                throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
-            }
-
-            try ( PropertyCursor cursor = relationshipCursor.properties() )
-            {
-                return ( cursor.seek( propertyKeyId ) );
-            }
+            return hasProperty( relationshipCursor, EntityType.RELATIONSHIP, relationshipId, propertyKeyId );
         }
     }
 
@@ -1131,20 +1087,7 @@ public class StateHandlingStatementOperations implements
     {
         try ( RelationshipCursor relationshipCursor = relationshipCursor( state, relationshipId ) )
         {
-            if ( !relationshipCursor.next() )
-            {
-                throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
-            }
-
-            try ( PropertyCursor cursor = relationshipCursor.properties() )
-            {
-                if ( cursor.seek( propertyKeyId ) )
-                {
-                    return cursor.value();
-                }
-            }
-
-            return null;
+            return getProperty( relationshipCursor, EntityType.RELATIONSHIP, relationshipId, propertyKeyId );
         }
     }
 
@@ -1795,4 +1738,53 @@ public class StateHandlingStatementOperations implements
     }
     // </Legacy index>
 
+    private PrimitiveIntIterator getPropertyKeys( EntityCursor entityCursor )
+    {
+        PrimitiveIntStack keys = new PrimitiveIntStack( KEY_LIST_INITIAL_SIZE );
+        try ( PropertyCursor properties = entityCursor.properties() )
+        {
+            while ( properties.next() )
+            {
+                keys.push( properties.propertyKeyId() );
+            }
+        }
+
+        return keys.iterator();
+    }
+
+    private boolean hasProperty( EntityCursor entityCursor, EntityType type, long nodeId, int propertyKeyId )
+            throws EntityNotFoundException
+    {
+        if ( !entityCursor.next() )
+        {
+            throw new EntityNotFoundException( type, nodeId );
+        }
+
+        try ( PropertyCursor cursor = entityCursor.properties() )
+        {
+            return cursor.seek( propertyKeyId );
+        }
+    }
+
+    private Object getProperty( EntityCursor entityCursor,
+            EntityType type,
+            long id,
+            int propertyKeyId ) throws EntityNotFoundException
+
+    {
+        if ( !entityCursor.next() )
+        {
+            throw new EntityNotFoundException( type, id );
+        }
+
+        try ( PropertyCursor cursor = entityCursor.properties() )
+        {
+            if ( cursor.seek( propertyKeyId ) )
+            {
+                return cursor.value();
+            }
+        }
+
+        return null;
+    }
 }

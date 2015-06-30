@@ -68,6 +68,13 @@ public abstract class StoreAbstractRelationshipCursor implements RelationshipCur
     }
 
     @Override
+    public long getOtherNode( long nodeId )
+    {
+        return relationshipRecord.getFirstNode() == nodeId ?
+                relationshipRecord.getSecondNode() : relationshipRecord.getFirstNode();
+    }
+
+    @Override
     public PropertyCursor properties()
     {
         return storeStatement.acquirePropertyCursor( relationshipRecord.getNextProp() );

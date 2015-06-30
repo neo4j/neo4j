@@ -72,7 +72,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     public TxStateTransactionDataSnapshot(
             ReadableTxState state,
             NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions relationshipActions,
-            StoreReadLayer storeReadLayer)
+            StoreReadLayer storeReadLayer )
     {
         this.state = state;
         this.nodeActions = nodeActions;
@@ -164,24 +164,26 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             for ( Long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
-                try (NodeCursor node = storeStatement.acquireSingleNodeCursor( nodeId ))
+                try ( NodeCursor node = storeStatement.acquireSingleNodeCursor( nodeId ) )
                 {
-                    if (node.next())
+                    if ( node.next() )
                     {
-                        try (PropertyCursor properties = node.properties())
+                        try ( PropertyCursor properties = node.properties() )
                         {
-                            while (properties.next())
+                            while ( properties.next() )
                             {
                                 removedNodeProperties.add( new NodePropertyEntryView( nodeId,
-                                        storeReadLayer.propertyKeyGetName( properties.propertyKeyId()), null, properties.value() ) );
+                                        storeReadLayer.propertyKeyGetName( properties.propertyKeyId() ), null,
+                                        properties.value() ) );
                             }
                         }
 
-                        try (LabelCursor labels = node.labels())
+                        try ( LabelCursor labels = node.labels() )
                         {
-                            while (labels.next())
+                            while ( labels.next() )
                             {
-                                removedLabels.add( new LabelEntryView( nodeId, storeReadLayer.labelGetName( labels.getLabel() ) ) );
+                                removedLabels.add( new LabelEntryView( nodeId,
+                                        storeReadLayer.labelGetName( labels.getLabel() ) ) );
                             }
                         }
                     }
@@ -190,16 +192,17 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             for ( Long relId : state.addedAndRemovedRelationships().getRemoved() )
             {
                 Relationship relationshipProxy = relationship( relId );
-                try (RelationshipCursor relationship = storeStatement.acquireSingleRelationshipCursor( relId ))
+                try ( RelationshipCursor relationship = storeStatement.acquireSingleRelationshipCursor( relId ) )
                 {
-                    if (relationship.next())
+                    if ( relationship.next() )
                     {
-                        try (PropertyCursor properties = relationship.properties())
+                        try ( PropertyCursor properties = relationship.properties() )
                         {
-                            while (properties.next())
+                            while ( properties.next() )
                             {
                                 removedRelationshipProperties.add( new RelationshipPropertyEntryView( relationshipProxy,
-                                        storeReadLayer.propertyKeyGetName( properties.propertyKeyId() ), null, properties.value() ) );
+                                        storeReadLayer.propertyKeyGetName( properties.propertyKeyId() ), null,
+                                        properties.value() ) );
                             }
                         }
 
@@ -270,7 +273,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
     private Iterable<Node> map2Nodes( Iterable<Long> added )
     {
-        return new IterableWrapper<Node,Long>( added )
+        return new IterableWrapper<Node, Long>( added )
         {
             @Override
             protected Node underlyingObjectToObject( Long id )
@@ -282,7 +285,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
 
     private Iterable<Relationship> map2Rels( Iterable<Long> ids )
     {
-        return new IterableWrapper<Relationship,Long>( ids )
+        return new IterableWrapper<Relationship, Long>( ids )
         {
             @Override
             protected Relationship underlyingObjectToObject( Long id )
@@ -299,15 +302,19 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try (NodeCursor node = storeStatement.acquireSingleNodeCursor( nodeState.getId() ))
+        try ( NodeCursor node = storeStatement.acquireSingleNodeCursor( nodeState.getId() ) )
         {
-            if (!node.next())
-                return null;
-
-            try (PropertyCursor properties = node.properties())
+            if ( !node.next() )
             {
-                if (properties.seek( property ))
+                return null;
+            }
+
+            try ( PropertyCursor properties = node.properties() )
+            {
+                if ( properties.seek( property ) )
+                {
                     return properties.value();
+                }
             }
         }
 
@@ -321,15 +328,19 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try (RelationshipCursor relationship = storeStatement.acquireSingleRelationshipCursor( relState.getId() ))
+        try ( RelationshipCursor relationship = storeStatement.acquireSingleRelationshipCursor( relState.getId() ) )
         {
-            if (!relationship.next())
-                return null;
-
-            try (PropertyCursor properties = relationship.properties())
+            if ( !relationship.next() )
             {
-                if (properties.seek( property ))
+                return null;
+            }
+
+            try ( PropertyCursor properties = relationship.properties() )
+            {
+                if ( properties.seek( property ) )
+                {
                     return properties.value();
+                }
             }
         }
 

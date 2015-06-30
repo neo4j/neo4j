@@ -208,11 +208,15 @@ public class TxPropertyCursor implements PropertyCursor
 
     private void check()
     {
-        if (property == null && !seekFoundIt)
-            throw new IllegalStateException(  );
+        if ( property == null && !seekFoundIt )
+        {
+            throw new IllegalStateException();
+        }
 
-        if (seekFoundIt)
+        if ( seekFoundIt )
+        {
             property = Property.property( cursor.propertyKeyId(), cursor.value() );
+        }
         seekFoundIt = false;
     }
 }

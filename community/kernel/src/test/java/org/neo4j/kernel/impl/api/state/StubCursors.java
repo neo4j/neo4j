@@ -115,6 +115,12 @@ public class StubCursors
             }
 
             @Override
+            public long getOtherNode( long nodeId )
+            {
+                return startNode == nodeId ? endNode : startNode;
+            }
+
+            @Override
             public PropertyCursor properties()
             {
                 return propertyCursor;

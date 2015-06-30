@@ -762,8 +762,8 @@ public enum LongerShortString
      */
     public static String decode( PropertyBlock block )
     {
-        Bits bits = Bits.bitsFromLongs( block.getValueBlocks());
-        return decode(bits);
+        Bits bits = Bits.bitsFromLongs( block.getValueBlocks() );
+        return decode( bits );
     }
 
     public static String decode(Bits bits)

@@ -25,7 +25,8 @@ import java.util.Collections
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{Eagerly, IsCollection}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport.asScala
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.{JavaConversionSupport, Eagerly, IsCollection}
 import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
@@ -174,12 +175,12 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
   private def props(x: PropertyContainer): String = {
     val readOperations = statement.readOperations()
     val (properties, propFcn, id) = x match {
-      case n: Node => (readOperations.nodeGetAllProperties(n.getId).asScala.map(_.propertyKeyId()), readOperations.nodeGetProperty _, n.getId )
-      case r: Relationship => (readOperations.relationshipGetAllProperties(r.getId).asScala.map(_.propertyKeyId()), readOperations.relationshipGetProperty _, r.getId)
+      case n: Node => (asScala(readOperations.nodeGetPropertyKeys(n.getId)), readOperations.nodeGetProperty _, n.getId )
+      case r: Relationship => (asScala(readOperations.relationshipGetPropertyKeys(r.getId)), readOperations.relationshipGetProperty _, r.getId)
     }
 
     val keyValStrings = properties.
-      map(pkId => readOperations.propertyKeyGetName(pkId) + ":" + text(propFcn(id, pkId).value(null)))
+      map(pkId => readOperations.propertyKeyGetName(pkId) + ":" + text(propFcn(id, pkId)))
 
     keyValStrings.mkString("{", ",", "}")
   }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.Iterator;
-
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
@@ -28,8 +26,6 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
@@ -116,24 +112,25 @@ interface DataRead
      */
     PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException;
 
-    PrimitiveIntIterator nodeGetAllPropertiesKeys( long nodeId ) throws EntityNotFoundException;
+    PrimitiveIntIterator nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException;
 
-    PrimitiveIntIterator relationshipGetAllPropertiesKeys( long relationshipId ) throws EntityNotFoundException;
+    PrimitiveIntIterator relationshipGetPropertyKeys( long relationshipId ) throws EntityNotFoundException;
+
+    PrimitiveIntIterator graphGetPropertyKeys();
 
     PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException;
 
-    Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+    boolean nodeHasProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Property relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
+    Object nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Property graphGetProperty( int propertyKeyId );
+    boolean relationshipHasProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Iterator<DefinedProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException;
+    Object relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Iterator<DefinedProperty> relationshipGetAllProperties( long relationshipId )
-            throws EntityNotFoundException;
+    boolean graphHasProperty( int propertyKeyId );
 
-    Iterator<DefinedProperty> graphGetAllProperties();
+    Object graphGetProperty( int propertyKeyId );
 
     <EXCEPTION extends Exception> void relationshipVisit( long relId, RelationshipVisitor<EXCEPTION> visitor )
             throws EntityNotFoundException, EXCEPTION;

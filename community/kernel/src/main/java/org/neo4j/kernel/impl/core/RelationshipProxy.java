@@ -217,7 +217,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement statement = actions.statement() )
         {
             List<String> keys = new ArrayList<>();
-            PrimitiveIntIterator properties = statement.readOperations().relationshipGetAllPropertiesKeys( getId() );
+            PrimitiveIntIterator properties = statement.readOperations().relationshipGetPropertyKeys( getId() );
             while ( properties.hasNext() )
             {
                 keys.add( statement.readOperations().propertyKeyGetName( properties.next() ) );

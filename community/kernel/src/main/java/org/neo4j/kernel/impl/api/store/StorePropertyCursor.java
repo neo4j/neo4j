@@ -49,6 +49,8 @@ import org.neo4j.kernel.impl.util.InstanceCache;
 public class StorePropertyCursor implements PropertyCursor
 {
     private static final long KEY_BITMASK = 0xFFFFFFL;
+    private static final int BITS_BYTE_SIZE = 32;
+    private static final int INTERNAL_BYTE_ARRAY_SIZE = 4096;
 
     private final PropertyStore propertyStore;
     private final DynamicStringStore stringStore;
@@ -64,9 +66,9 @@ public class StorePropertyCursor implements PropertyCursor
     private PropertyType type;
     private int keyId;
 
-    private byte[] bytes = new byte[4096];
+    private byte[] bytes = new byte[INTERNAL_BYTE_ARRAY_SIZE];
     private ByteBuffer buffer = ByteBuffer.wrap( bytes ).order( ByteOrder.LITTLE_ENDIAN );
-    private Bits bits = Bits.bits( 32 );
+    private Bits bits = Bits.bits( BITS_BYTE_SIZE );
 
     private AbstractDynamicStore.DynamicRecordCursor stringRecordCursor;
     private AbstractDynamicStore.DynamicRecordCursor arrayRecordCursor;
@@ -132,8 +134,10 @@ public class StorePropertyCursor implements PropertyCursor
     @Override
     public Object value()
     {
-        if (type == null)
-            throw new IllegalStateException(  );
+        if ( type == null )
+        {
+            throw new IllegalStateException();
+        }
 
         switch ( type )
         {
@@ -149,24 +153,24 @@ public class StorePropertyCursor implements PropertyCursor
 
             case SHORT:
             {
-                return (short)header;
+                return (short) header;
             }
 
             case CHAR:
             {
-                return (char)header;
+                return (char) header;
             }
 
             case INT:
             {
-                return (int)header;
+                return (int) header;
             }
 
             case LONG:
             {
                 if ( (header & 0x1L) > 0 )
                 {
-                   return header >>> 1;
+                    return header >>> 1;
                 }
                 else
                 {
@@ -183,7 +187,7 @@ public class StorePropertyCursor implements PropertyCursor
             case DOUBLE:
             {
                 remainingBlocksToRead--;
-                return Double.longBitsToDouble( cursor.getLong());
+                return Double.longBitsToDouble( cursor.getLong() );
             }
 
             case STRING:
@@ -218,9 +222,10 @@ public class StorePropertyCursor implements PropertyCursor
                 {
                     readPropertyData();
                     bits.clear( true );
-                    bits.put(bytes, 0, buffer.limit());
+                    bits.put( bytes, 0, buffer.limit() );
                     return LongerShortString.decode( bits );
-                } catch ( IOException e )
+                }
+                catch ( IOException e )
                 {
                     throw new UnderlyingStorageException( e );
                 }
@@ -234,7 +239,8 @@ public class StorePropertyCursor implements PropertyCursor
                     bits.clear( true );
                     bits.put( bytes, 0, buffer.limit() );
                     return ShortArray.decode( bits );
-                } catch ( IOException e )
+                }
+                catch ( IOException e )
                 {
                     throw new UnderlyingStorageException( e );
                 }
@@ -242,7 +248,7 @@ public class StorePropertyCursor implements PropertyCursor
 
             default:
             {
-                throw new IllegalStateException( "No such type:"+type );
+                throw new IllegalStateException( "No such type:" + type );
             }
         }
     }
@@ -250,14 +256,28 @@ public class StorePropertyCursor implements PropertyCursor
     @Override
     public boolean booleanValue()
     {
-        return ((Boolean)value());
+        if ( type == null )
+        {
+            throw new IllegalStateException();
+        }
+
+        if ( type == PropertyType.BOOL )
+        {
+            return header == 1;
+        }
+        else
+        {
+            throw new IllegalStateException( "Not a boolean type:" + type );
+        }
     }
 
     @Override
     public long longValue()
     {
-        if (type == null)
-            throw new IllegalStateException(  );
+        if ( type == null )
+        {
+            throw new IllegalStateException();
+        }
 
         switch ( type )
         {
@@ -274,7 +294,7 @@ public class StorePropertyCursor implements PropertyCursor
             {
                 if ( (header & 0x1L) > 0 )
                 {
-                   return header >>> 1;
+                    return header >>> 1;
                 }
                 else
                 {
@@ -286,7 +306,7 @@ public class StorePropertyCursor implements PropertyCursor
 
             default:
             {
-                throw new IllegalStateException( "Not an integral type:"+type );
+                throw new IllegalStateException( "Not an integral type:" + type );
             }
         }
     }
@@ -294,8 +314,10 @@ public class StorePropertyCursor implements PropertyCursor
     @Override
     public double doubleValue()
     {
-        if (type == null)
-            throw new IllegalStateException(  );
+        if ( type == null )
+        {
+            throw new IllegalStateException();
+        }
 
         switch ( type )
         {
@@ -307,12 +329,12 @@ public class StorePropertyCursor implements PropertyCursor
             case DOUBLE:
             {
                 remainingBlocksToRead--;
-                return Double.longBitsToDouble( cursor.getLong());
+                return Double.longBitsToDouble( cursor.getLong() );
             }
 
             default:
             {
-                throw new IllegalStateException( "Not a real number type:"+type );
+                throw new IllegalStateException( "Not a real number type:" + type );
             }
         }
     }
@@ -384,7 +406,7 @@ public class StorePropertyCursor implements PropertyCursor
 
             case FLOAT:
             {
-                buffer.putInt( (int) header);
+                buffer.putInt( (int) header );
                 break;
             }
 
@@ -438,7 +460,7 @@ public class StorePropertyCursor implements PropertyCursor
                     {
                         DynamicRecord dynamicRecord = arrayRecords.get();
 
-                        while (true)
+                        while ( true )
                         {
                             try
                             {
@@ -465,8 +487,8 @@ public class StorePropertyCursor implements PropertyCursor
             case SHORT_STRING:
             case SHORT_ARRAY:
             {
-                buffer.putLong(originalHeader);
-                while (remainingBlocksToRead-->0)
+                buffer.putLong( originalHeader );
+                while ( remainingBlocksToRead-- > 0 )
                 {
                     buffer.putLong( cursor.getLong() );
                 }
@@ -592,10 +614,8 @@ public class StorePropertyCursor implements PropertyCursor
 
     private Object getRightArray()
     {
-       // byte[] header = data.first();
-       // byte[] bArray = data.other();
         byte typeId = buffer.get();
-        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.order( ByteOrder.BIG_ENDIAN );
         try
         {
             if ( typeId == PropertyType.STRING.intValue() )
@@ -623,22 +643,22 @@ public class StorePropertyCursor implements PropertyCursor
                 Object result;
                 if ( type == ShortArray.BYTE && requiredBits == Byte.SIZE )
                 {   // Optimization for byte arrays (probably large ones)
-                    byte[] byteArray = new byte[buffer.limit()-buffer.position()];
+                    byte[] byteArray = new byte[buffer.limit() - buffer.position()];
                     buffer.get( byteArray );
                     result = byteArray;
                 }
                 else
                 {   // Fallback to the generic approach, which is a slower
                     Bits bits = Bits.bitsFromBytes( bytes, buffer.position() );
-                    int length = ((buffer.limit()-buffer.position())*8-(8-bitsUsedInLastByte))/requiredBits;
-                    result = type.createArray(length, bits, requiredBits);
+                    int length = ((buffer.limit() - buffer.position()) * 8 - (8 - bitsUsedInLastByte)) / requiredBits;
+                    result = type.createArray( length, bits, requiredBits );
                 }
                 return result;
             }
         }
         finally
         {
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
+            buffer.order( ByteOrder.LITTLE_ENDIAN );
         }
     }
 }

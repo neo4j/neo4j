@@ -233,7 +233,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         {
             return false;
         }
-        return dataRead().nodeHasProperty(statement, nodeId, propertyKeyId);
+        return dataRead().nodeHasProperty( statement, nodeId, propertyKeyId );
     }
 
     @Override
@@ -314,7 +314,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         {
             return false;
         }
-        return dataRead().graphHasProperty(statement, propertyKeyId);
+        return dataRead().graphHasProperty( statement, propertyKeyId );
     }
 
     @Override
@@ -329,21 +329,21 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public PrimitiveIntIterator nodeGetAllPropertiesKeys( long nodeId ) throws EntityNotFoundException
+    public PrimitiveIntIterator nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
         return dataRead().nodeGetPropertyKeys( statement, nodeId );
     }
 
     @Override
-    public PrimitiveIntIterator relationshipGetAllPropertiesKeys( long nodeId ) throws EntityNotFoundException
+    public PrimitiveIntIterator relationshipGetPropertyKeys( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        return dataRead().relationshipGetPropertyKeys(statement, nodeId);
+        return dataRead().relationshipGetPropertyKeys( statement, nodeId );
     }
 
     @Override
-    public PrimitiveIntIterator graphGetAllPropertiesKeys()
+    public PrimitiveIntIterator graphGetPropertyKeys()
     {
         statement.assertOpen();
         return dataRead().graphGetPropertyKeys( statement );
@@ -364,25 +364,25 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public NodeCursor nodeCursor( long nodeId )
     {
         statement.assertOpen();
-        return dataRead().nodeCursor(statement, nodeId);
+        return dataRead().nodeCursor( statement, nodeId );
     }
 
     @Override
     public RelationshipCursor relationshipCursor( long relId )
     {
         statement.assertOpen();
-        return dataRead().relationshipCursor(statement, relId);
+        return dataRead().relationshipCursor( statement, relId );
     }
 
     @Override
-    public NodeCursor nodeCursorGetAll( )
+    public NodeCursor nodeCursorGetAll()
     {
         statement.assertOpen();
-        return dataRead().nodeCursorGetAll(statement);
+        return dataRead().nodeCursorGetAll( statement );
     }
 
     @Override
-    public RelationshipCursor relationshipCursorGetAll(  )
+    public RelationshipCursor relationshipCursorGetAll()
     {
         statement.assertOpen();
         return dataRead().relationshipCursorGetAll( statement );
@@ -396,7 +396,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexSeek(  IndexDescriptor index,
+    public NodeCursor nodeCursorGetFromIndexSeek( IndexDescriptor index,
             Object value ) throws IndexNotFoundKernelException
     {
         statement.assertOpen();

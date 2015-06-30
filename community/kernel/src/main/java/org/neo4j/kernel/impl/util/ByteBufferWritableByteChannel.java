@@ -28,12 +28,12 @@ import java.nio.channels.WritableByteChannel;
 /**
  * WritableByteChannel which is backed by a ByteBuffer. If data cannot fit
  * the buffer will be expanded on the fly.
- *
+ * <p>
  * Instances can be reused by calling {@link #reset()}. The internal buffer will not be reset
  * to the initial size, but will retain whatever size it had before resetting.
  */
 public class ByteBufferWritableByteChannel
-    implements WritableByteChannel
+        implements WritableByteChannel
 {
     private boolean closed = false;
 
@@ -41,10 +41,10 @@ public class ByteBufferWritableByteChannel
 
     public ByteBufferWritableByteChannel()
     {
-        this(1024);
+        this( 1024 );
     }
 
-    public ByteBufferWritableByteChannel(int initialSize)
+    public ByteBufferWritableByteChannel( int initialSize )
     {
         buffer = ByteBuffer.allocate( initialSize );
     }
@@ -64,8 +64,10 @@ public class ByteBufferWritableByteChannel
     @Override
     public int write( ByteBuffer src ) throws IOException
     {
-        if (closed)
+        if ( closed )
+        {
             throw new ClosedChannelException();
+        }
 
         int remaining = src.remaining();
 

@@ -710,8 +710,8 @@ public enum ShortArray
 
     public static Object decode( PropertyBlock block )
     {
-        Bits bits = Bits.bitsFromLongs(Arrays.copyOf(block.getValueBlocks(), block.getValueBlocks().length));
-        return decode(bits);
+        Bits bits = Bits.bitsFromLongs( Arrays.copyOf( block.getValueBlocks(), block.getValueBlocks().length) );
+        return decode( bits );
     }
 
     public static Object decode( Bits bits )
