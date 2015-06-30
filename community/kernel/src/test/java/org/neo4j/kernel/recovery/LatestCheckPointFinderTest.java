@@ -166,7 +166,7 @@ public class LatestCheckPointFinderTest
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, false, olderLogVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, false, logVersion ), latestCheckPoint );
     }
 
     @Test
@@ -182,7 +182,7 @@ public class LatestCheckPointFinderTest
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, false, olderLogVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, false, logVersion ), latestCheckPoint );
     }
 
     @Test
@@ -198,7 +198,23 @@ public class LatestCheckPointFinderTest
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, olderLogVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, true, logVersion ), latestCheckPoint );
+    }
+
+    @Test
+    public void latestLogFileContainingACheckPointAndAStartAtSamePosition() throws Throwable
+    {
+        // given
+        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( logVersion, 16 ) );
+        LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, new byte[0], new LogPosition( logVersion, 16 ) );
+        when( reader.readLogEntry( any( ReadableVersionableLogChannel.class ) ) ).thenReturn( start, checkPoint, null );
+
+        // when
+        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+
+        // then
+        assertEquals( new LatestCheckPoint( checkPoint, true, logVersion ), latestCheckPoint );
     }
 
     @Test
@@ -216,7 +232,7 @@ public class LatestCheckPointFinderTest
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, false, olderLogVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, false, logVersion ), latestCheckPoint );
     }
 
     @Test
@@ -234,7 +250,7 @@ public class LatestCheckPointFinderTest
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, olderLogVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, true, logVersion ), latestCheckPoint );
     }
 
     @Test
@@ -295,7 +311,7 @@ public class LatestCheckPointFinderTest
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, true, olderLogVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, true, logVersion ), latestCheckPoint );
     }
 
     @Test
@@ -315,6 +331,6 @@ public class LatestCheckPointFinderTest
         LatestCheckPoint latestCheckPoint = finder.find( logVersion );
 
         // then
-        assertEquals( new LatestCheckPoint( checkPoint, false, olderLogVersion ), latestCheckPoint );
+        assertEquals( new LatestCheckPoint( checkPoint, false, logVersion ), latestCheckPoint );
     }
 }
