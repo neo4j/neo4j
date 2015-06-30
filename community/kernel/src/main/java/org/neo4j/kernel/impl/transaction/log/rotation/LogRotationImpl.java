@@ -49,29 +49,28 @@ public class LogRotationImpl implements LogRotation
     @Override
     public boolean rotateLogIfNeeded( LogAppendEvent logAppendEvent ) throws IOException
     {
-        if ( logFile.rotationNeeded() )
+        /* We synchronize on the writer because we want to have a monitor that another thread
+         * doing force (think batching of writes), such that it can't see a bad state of the writer
+         * even when rotating underlying channels.
+         */
+        synchronized ( logFile )
         {
-            /* We synchronize on the writer because we want to have a monitor that another thread
-             * doing force (think batching of writes), such that it can't see a bad state of the writer
-             * even when rotating underlying channels.
-             */
-            boolean rotated;
-            synchronized ( logFile )
+            if ( logFile.rotationNeeded() )
             {
-                if ( rotated = logFile.rotationNeeded() )
+                try ( LogRotateEvent rotateEvent = logAppendEvent.beginLogRotate() )
                 {
-                    try ( LogRotateEvent rotateEvent = logAppendEvent.beginLogRotate() )
-                    {
-                        doRotate();
-                    }
+                    doRotate();
                 }
-                return rotated;
+                return true;
             }
+            return false;
         }
-
-        return false;
     }
 
+    /**
+     * use for test purpose only
+     * @throws IOException
+     */
     @Override
     public void rotateLogFile() throws IOException
     {

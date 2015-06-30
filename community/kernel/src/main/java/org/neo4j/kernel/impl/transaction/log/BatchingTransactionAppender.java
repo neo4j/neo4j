@@ -87,7 +87,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     private final KernelHealth kernelHealth;
     private final Lock forceLock = new ReentrantLock();
 
-    private WritableLogChannel channel;
+    private WritableLogChannel writer;
     private TransactionLogWriter transactionLogWriter;
     private IndexCommandDetector indexCommandDetector;
 
@@ -106,9 +106,9 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     @Override
     public void start() throws Throwable
     {
-        this.channel = logFile.getWriter();
-        this.indexCommandDetector = new IndexCommandDetector( new CommandWriter( channel ) );
-        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriterV1( channel, indexCommandDetector ) );
+        this.writer = logFile.getWriter();
+        this.indexCommandDetector = new IndexCommandDetector( new CommandWriter( writer ) );
+        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriterV1( writer, indexCommandDetector ) );
     }
 
     @Override
@@ -183,10 +183,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
             // Synchronized with logFile to get absolute control over concurrent rotations happening
             synchronized ( logFile )
             {
-                synchronized ( channel )
-                {
-                    transactionLogWriter.checkPoint( logPosition );
-                }
+                transactionLogWriter.checkPoint( logPosition );
             }
         }
         catch ( Throwable cause )
@@ -243,14 +240,9 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         // log rotation, which will wait for all transactions closed or fail on kernel panic.
         try
         {
-            LogPosition logPositionBeforeCommit;
-            LogPosition logPositionAfterCommit;
-            synchronized ( channel )
-            {
-                logPositionBeforeCommit = channel.getCurrentPosition( positionMarker ).newPosition();
-                transactionLogWriter.append( transaction, transactionId );
-                logPositionAfterCommit = channel.getCurrentPosition( positionMarker ).newPosition();
-            }
+            LogPosition logPositionBeforeCommit = writer.getCurrentPosition( positionMarker ).newPosition();
+            transactionLogWriter.append( transaction, transactionId );
+            LogPosition logPositionAfterCommit = writer.getCurrentPosition( positionMarker ).newPosition();
 
             long transactionChecksum = checksum(
                     transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() );
@@ -265,7 +257,8 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                 legacyIndexTransactionOrdering.offer( transactionId );
             }
             return new TransactionCommitment(
-                    hasLegacyIndexChanges, transactionId, transactionChecksum, logPositionAfterCommit, transactionIdStore );
+                    hasLegacyIndexChanges, transactionId, transactionChecksum, logPositionAfterCommit,
+                    transactionIdStore );
         }
         catch ( final Throwable panic )
         {
@@ -377,15 +370,14 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     @Override
     public void force() throws IOException
     {
-        // Empty buffer into channel. We want to synchronize with appenders somehow so that they
+        // Empty buffer into writer. We want to synchronize with appenders somehow so that they
         // don't append while we're doing that. The way rotation is coordinated we can't synchronize
-        // on logFile because it would cause deadlocks. Synchronizing on channel assumes that appenders
-        // also synchronize on channel.
-        synchronized ( channel )
+        // on logFile because it would cause deadlocks. Synchronizing on writer assumes that appenders
+        // also synchronize on writer.
+        synchronized ( logFile )
         {
-            channel.emptyBufferIntoChannelAndClearIt();
+            writer.emptyBufferIntoChannelAndClearIt();
+            writer.force();
         }
-
-        channel.force();
     }
 }
