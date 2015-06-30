@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import java.math.BigDecimal
+import org.neo4j.cypher.internal.compiler.v2_3.commands.CypherValueOrdering
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 
@@ -27,45 +27,12 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
  * Comparer is a trait that enables it's subclasses to compare to AnyRef with each other.
  */
 trait Comparer extends StringHelper {
-  private def compareValuesOfSameType(l: AnyRef, r: AnyRef): Int =
-    l.asInstanceOf[Comparable[AnyRef]].compareTo(r)
 
-  private def compareValuesOfDifferentTypes(l: Any, r: Any)(implicit qtx: QueryState): Int = (l, r) match {
-    case (left: Long, right: Number) => BigDecimal.valueOf(left).compareTo(BigDecimal.valueOf(right.doubleValue()))
-    case (left: Number, right: Long) => BigDecimal.valueOf(left.doubleValue()).compareTo(BigDecimal.valueOf(right))
-    case (left: Number, right: Number) => java.lang.Double.compare(left.doubleValue(), right.doubleValue())
-    case (left: String, right: Character) => left.compareTo(right.toString)
-    case (left: Character, right: String) => left.toString.compareTo(right.toString)
-    case (null, null) => 0
-    case (null, _) => 1
-    case (_, null) => -1
-    case (left, right) => throw new IncomparableValuesException(textWithType(left), textWithType(right))
-  }
-
-  private def areComparableOfSameType(l: AnyRef, r: AnyRef): Boolean =
-    l.isInstanceOf[Comparable[_]] && l.getClass.isInstance(r)
-
-  def compare(left: Any, right: Any)(implicit qtx: QueryState): Int = {
-    val l = left.asInstanceOf[AnyRef]
-    val r = right.asInstanceOf[AnyRef]
-
-    val comparisonResult: Int =
-      if (areComparableOfSameType(l, r)) {
-        compareValuesOfSameType(l, r)
-      } else {
-        compareValuesOfDifferentTypes(left, right)
-      }
-    comparisonResult
-  }
+  def compare(l: Any, r: Any)(implicit qtx: QueryState): Int =
+    try {
+      CypherValueOrdering.compare(l, r)
+    } catch {
+      case _: IllegalArgumentException =>
+        throw new IncomparableValuesException(textWithType(l), textWithType(r))
+    }
 }
-
-
-
-
-
-
-
-
-
-
-

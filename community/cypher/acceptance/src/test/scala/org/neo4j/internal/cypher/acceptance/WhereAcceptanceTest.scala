@@ -19,14 +19,71 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.{ExecutionEngineFunSuite, IncomparableValuesException, NewPlannerTestSupport}
 
-class WhereAcceptanceTest extends ExecutionEngineFunSuite {
+class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+
   test("NOT(p1 AND p2) should return true when p2 is false") {
     createNode("apa")
 
-    val result = execute("match n where not(n.name = 'apa' and false) return n")
+    val result = executeWithAllPlanners("match n where not(n.name = 'apa' and false) return n")
 
     result should have size 1
+  }
+
+  test("should throw exception if comparing string and number") {
+    createLabeledNode(Map("prop" -> "15"), "Label")
+
+    val query = "MATCH (n:Label) WHERE n.prop < 10 RETURN n.prop AS prop"
+
+    a[IncomparableValuesException] should be thrownBy (executeWithCostPlannerOnly(query))
+  }
+
+  test("should be able to plan index seek for numerical less than") {
+    // Given matches
+    createLabeledNode(Map("prop" -> Double.NegativeInfinity), "Label")
+    createLabeledNode(Map("prop" -> -5), "Label")
+    createLabeledNode(Map("prop" -> 0), "Label")
+    createLabeledNode(Map("prop" -> 5), "Label")
+    createLabeledNode(Map("prop" -> 5.0), "Label")
+
+    // Non-matches
+    createLabeledNode(Map("prop" -> 10), "Label")
+    createLabeledNode(Map("prop" -> 10.0), "Label")
+    createLabeledNode(Map("prop" -> 100), "Label")
+    createLabeledNode(Map("prop" -> Double.PositiveInfinity), "Label")
+    createLabeledNode(Map("prop" -> Double.NaN), "Label")
+
+    val query = "MATCH (n:Label) WHERE n.prop < 10 RETURN n.prop AS prop"
+
+    // When
+    val result = executeWithCostPlannerOnly(query)
+
+    // Then
+    result.columnAs[Number]("prop").toSet should equal(Set(Double.NegativeInfinity, -5, 0, 5, 5.0))
+  }
+
+  test("should be able to plan index seek for textual less than") {
+    // Given matches
+    createLabeledNode(Map("prop" -> ""), "Label")
+    createLabeledNode(Map("prop" -> "-5"), "Label")
+    createLabeledNode(Map("prop" -> "0"), "Label")
+    createLabeledNode(Map("prop" -> "10"), "Label")
+    createLabeledNode(Map("prop" -> "14whatever"), "Label")
+
+    // Non-matches
+    createLabeledNode(Map("prop" -> s"15${java.lang.Character.MIN_VALUE}"), "Label")
+    createLabeledNode(Map("prop" -> "5"), "Label")
+    createLabeledNode(Map("prop" -> "5"), "Label")
+
+    val query = "MATCH (n:Label) WHERE n.prop < '15' RETURN n.prop AS prop"
+
+    // When
+    val result = executeWithCostPlannerOnly(query)
+
+    println(result.executionPlanDescription())
+
+    // Then
+    result.columnAs[Number]("prop").toSet should equal(Set("", "-5", "0", "10", "14whatever"))
   }
 }
