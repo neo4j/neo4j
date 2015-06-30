@@ -85,7 +85,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         String script = createScript( scriptTemplate );
         String queryString = "{\"query\": \"" + script + "\",\"params\":{" + parameterString + "}}";
 
-        String snippet = org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier$.MODULE$.apply(script);
+        String snippet = org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier$.MODULE$.apply( script );
         gen().expectedStatus( status.getStatusCode() )
                 .payload( queryString )
                 .description( AsciidocHelper.createAsciiDocSnippet( "cypher", snippet ) );
@@ -183,7 +183,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         {
             result.add( getNode( name ) );
         }
-        return result.toArray(nodes);
+        return result.toArray( nodes );
     }
 
     public void assertSize( int expectedSize, String entity )
@@ -206,7 +206,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     }
     public String getPropertiesUri( Node node )
     {
-        return getNodeUri(node)+  "/properties";
+        return getNodeUri( node )+  "/properties";
     }
 
     public RESTDocsGenerator gen() {
@@ -273,8 +273,18 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/uniqueness/";
     }
 
+    public String getSchemaConstraintLabelExistenceUri( String label )
+    {
+        return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/existence/";
+    }
+
     public String getSchemaConstraintLabelUniquenessPropertyUri( String label, String property )
     {
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/uniqueness/" + property;
+    }
+
+    public String getSchemaConstraintLabelExistencePropertyUri( String label, String property )
+    {
+        return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/existence/" + property;
     }
 }
