@@ -76,7 +76,7 @@ public class QueryInvalidationIT
         distantFriend( random, USERS );
 
         // THEN
-        assertEquals( "Query should have been replanned.", 1, monitor.discards );
+        assertEquals( "Query should have been replanned.", 1, monitor.discards.get() );
     }
 
     @Test
