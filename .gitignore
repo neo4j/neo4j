@@ -26,3 +26,5 @@ community/server-plugin-test/neo4j-home
 enterprise/server-enterprise/neo4j-home
 integrationtests/data
 Thumbs.db
+.cache-main
+.cache-tests
