@@ -210,6 +210,12 @@ table.json-object
         display: table
         width: 100%
         height: 100%
+        &.one-legend-row
+          .frame-notifications
+            padding-top: legend-row-height
+        &.two-legend-rows
+          .frame-notifications
+            padding-top: legend-row-height*2
         > *
           display: table-row
           > .cell
