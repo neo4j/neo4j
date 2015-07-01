@@ -471,7 +471,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                     tokenNameLookup, logProvider, indexingServiceMonitor,
                     neoStoreModule.neoStore(), cacheModule.updateableSchemaState() );
 
-            StoreLayerModule storeLayerModule = buildStoreLayer( config, neoStoreModule.neoStore(),
+            StoreLayerModule storeLayerModule = buildStoreLayer( neoStoreModule.neoStore(),
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
                     indexingModule.indexingService(), cacheModule.schemaCache() );
 
@@ -704,25 +704,16 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         };
     }
 
-    private StoreLayerModule buildStoreLayer( Config config, final NeoStore neoStore,
+    private StoreLayerModule buildStoreLayer( NeoStore neoStore,
             PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
             IndexingService indexingService,
             SchemaCache schemaCache )
     {
-        Supplier<NeoStore> neoStoreSupplier = new Supplier<NeoStore>()
-        {
-            @Override
-            public NeoStore get()
-            {
-                return neoStoreModule.neoStore();
-            }
-        };
-
-        final StoreReadLayer storeLayer;
-        storeLayer = new CacheLayer( new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
-                new SchemaStorage( neoStore.getSchemaStore() ), neoStoreSupplier, indexingService ),
-                indexingService, schemaCache );
+        SchemaStorage schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
+        DiskLayer diskLayer = new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, schemaStorage,
+                neoStore, indexingService );
+        final StoreReadLayer storeLayer = new CacheLayer( diskLayer, schemaCache );
 
         return new StoreLayerModule()
         {

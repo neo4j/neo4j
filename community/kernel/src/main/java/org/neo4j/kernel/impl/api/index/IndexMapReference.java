@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 
 public class IndexMapReference implements IndexMapSnapshotProvider
 {
@@ -41,16 +42,26 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return proxy;
     }
 
-    public IndexProxy getOnlineIndexProxy( long indexId ) throws IndexNotFoundKernelException
+    public IndexProxy getIndexProxy( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        IndexProxy proxy = getIndexProxy( indexId );
+        IndexProxy proxy = indexMap.getIndexProxy( descriptor );
+        if ( proxy == null )
+        {
+            throw new IndexNotFoundKernelException( "No index for " + descriptor + " exists." );
+        }
+        return proxy;
+    }
+
+    public IndexProxy getOnlineIndexProxy( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        IndexProxy proxy = getIndexProxy( descriptor );
         switch ( proxy.getState() )
         {
             case ONLINE:
                 return proxy;
 
             default:
-                throw new IndexNotFoundKernelException( "Expected index with id " + indexId + " to be online.");
+                throw new IndexNotFoundKernelException( "Expected index on " + descriptor + " to be online.");
         }
     }
 

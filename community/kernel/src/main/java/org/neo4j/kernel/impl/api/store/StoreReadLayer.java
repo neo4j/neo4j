@@ -135,14 +135,13 @@ public interface StoreReadLayer
 
     PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId );
 
-    PrimitiveLongResourceIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
+    PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
 
-    PrimitiveLongResourceIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, IndexDescriptor index,
-            String prefix )
+    PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, IndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException;
 
-    PrimitiveLongResourceIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index )
+    PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index )
             throws IndexNotFoundKernelException;
 
     IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey );

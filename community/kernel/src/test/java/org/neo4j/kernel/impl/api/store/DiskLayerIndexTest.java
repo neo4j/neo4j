@@ -24,6 +24,7 @@ import java.util.Set;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -39,6 +40,7 @@ public class DiskLayerIndexTest extends DiskLayerTest
     public void should_find_nodes_with_given_label_and_property_via_index() throws Exception
     {
         // GIVEN
+        IndexDescriptor descriptor = new IndexDescriptor( 0, 0 );
         createIndexAndAwaitOnline( label1, propertyKey );
 
         String name = "Mr. Taylor";
@@ -46,7 +48,7 @@ public class DiskLayerIndexTest extends DiskLayerTest
         try ( Transaction ignored = db.beginTx() )
         {
             // WHEN
-            Set<Long> foundNodes = asUniqueSet( disk.nodesGetFromIndexSeek( state, 1l, name ) );
+            Set<Long> foundNodes = asUniqueSet( disk.nodesGetFromIndexSeek( state, descriptor, name ) );
 
             // THEN
             assertEquals( asSet( mrTaylor.getId() ), foundNodes );

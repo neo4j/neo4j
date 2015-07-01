@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -136,14 +137,14 @@ public class KernelStatement implements TxStateHolder, Statement
         return locks;
     }
 
-    public IndexReader getIndexReader( long indexId ) throws IndexNotFoundKernelException
+    public IndexReader getIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexReaderFactory.newReader( indexId );
+        return indexReaderFactory.newReader( descriptor );
     }
 
-    public IndexReader getFreshIndexReader( long indexId ) throws IndexNotFoundKernelException
+    public IndexReader getFreshIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexReaderFactory.newUnCachedReader( indexId );
+        return indexReaderFactory.newUnCachedReader( descriptor );
     }
 
     public LabelScanReader getLabelScanReader()
