@@ -96,15 +96,10 @@ public class CacheLayer implements StoreReadLayer
 
     private final SchemaCache schemaCache;
     private final DiskLayer diskLayer;
-    private final IndexingService indexingService;
 
-    public CacheLayer(
-            DiskLayer diskLayer,
-            IndexingService indexingService,
-            SchemaCache schemaCache )
+    public CacheLayer( DiskLayer diskLayer, SchemaCache schemaCache )
     {
         this.diskLayer = diskLayer;
-        this.indexingService = indexingService;
         this.schemaCache = schemaCache;
     }
 
@@ -298,7 +293,7 @@ public class CacheLayer implements StoreReadLayer
             Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        return diskLayer.nodeGetFromUniqueIndexSeek( state, schemaCache.indexId( index ), value );
+        return diskLayer.nodeGetFromUniqueIndexSeek( state, index, value );
     }
 
     @Override
@@ -313,7 +308,7 @@ public class CacheLayer implements StoreReadLayer
             Object value )
             throws IndexNotFoundKernelException
     {
-        return diskLayer.nodesGetFromIndexSeek( state, schemaCache.indexId( index ), value );
+        return diskLayer.nodesGetFromIndexSeek( state, index, value );
     }
 
     @Override
@@ -322,14 +317,14 @@ public class CacheLayer implements StoreReadLayer
             String prefix )
             throws IndexNotFoundKernelException
     {
-        return diskLayer.nodesGetFromIndexSeekByPrefix( state, schemaCache.indexId( index ), prefix );
+        return diskLayer.nodesGetFromIndexSeekByPrefix( state, index, prefix );
     }
 
     @Override
     public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index )
             throws IndexNotFoundKernelException
     {
-        return diskLayer.nodesGetFromIndexScan( state, schemaCache.indexId( index ) );
+        return diskLayer.nodesGetFromIndexScan( state, index );
     }
 
     @Override
@@ -342,19 +337,19 @@ public class CacheLayer implements StoreReadLayer
     public InternalIndexState indexGetState( IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return indexingService.getIndexProxy( schemaCache.indexId( descriptor ) ).getState();
+        return diskLayer.indexGetState( descriptor );
     }
 
     @Override
     public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexingService.indexSize( schemaCache.indexId( descriptor ) );
+        return diskLayer.indexSize( descriptor );
     }
 
     @Override
     public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexingService.indexUniqueValuesPercentage( schemaCache.indexId( descriptor ) );
+        return diskLayer.indexUniqueValuesPercentage( descriptor );
     }
 
     @Override

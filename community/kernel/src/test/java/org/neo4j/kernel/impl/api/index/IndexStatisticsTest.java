@@ -55,8 +55,6 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -384,7 +382,7 @@ public class IndexStatisticsTest
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( NeoStoreDataSource.class )
                                       .getIndexService()
-                                      .indexUpdatesAndSize( indexId( descriptor ) ).readSecond();
+                                      .indexUpdatesAndSize( descriptor ).readSecond();
     }
 
     private long indexUpdates( IndexDescriptor descriptor ) throws KernelException
@@ -392,16 +390,7 @@ public class IndexStatisticsTest
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( NeoStoreDataSource.class )
                                       .getIndexService()
-                                      .indexUpdatesAndSize( indexId( descriptor ) ).readFirst();
-    }
-
-    private long indexId( IndexDescriptor descriptor )
-    {
-        SchemaStore schemaStore = ((GraphDatabaseAPI) db).getDependencyResolver()
-                                                         .resolveDependency( NeoStore.class )
-                                                         .getSchemaStore();
-        SchemaStorage schemaStorage = new SchemaStorage( schemaStore );
-        return schemaStorage.indexRule( descriptor.getLabelId(), descriptor.getPropertyKeyId() ).getId();
+                                      .indexUpdatesAndSize( descriptor ).readFirst();
     }
 
     private double indexSelectivity( IndexDescriptor descriptor ) throws KernelException

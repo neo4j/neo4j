@@ -319,25 +319,25 @@ public class IndexingService extends LifecycleAdapter
         closeAllIndexes();
     }
 
-    public DoubleLongRegister indexUpdatesAndSize( long indexId ) throws IndexNotFoundKernelException
+    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        final IndexProxy indexProxy = indexMapRef.getOnlineIndexProxy( indexId );
+        final IndexProxy indexProxy = indexMapRef.getOnlineIndexProxy( descriptor );
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
         storeView.indexUpdatesAndSize( indexProxy.getDescriptor(), output );
         return output;
     }
 
-    public long indexSize( long indexId ) throws IndexNotFoundKernelException
+    public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        final IndexProxy indexProxy = indexMapRef.getOnlineIndexProxy( indexId );
+        final IndexProxy indexProxy = indexMapRef.getOnlineIndexProxy( descriptor );
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
         storeView.indexSample( indexProxy.getDescriptor(), output );
         return output.readSecond();
     }
 
-    public double indexUniqueValuesPercentage( long indexId ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        final IndexProxy indexProxy = indexMapRef.getOnlineIndexProxy( indexId );
+        final IndexProxy indexProxy = indexMapRef.getOnlineIndexProxy( descriptor );
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
         storeView.indexSample( indexProxy.getDescriptor(), output );
         long unique = output.readFirst();
@@ -749,6 +749,11 @@ public class IndexingService extends LifecycleAdapter
     public IndexProxy getIndexProxy( long indexId ) throws IndexNotFoundKernelException
     {
         return indexMapRef.getIndexProxy( indexId );
+    }
+
+    public IndexProxy getIndexProxy( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return indexMapRef.getIndexProxy( descriptor );
     }
 
     public void validateIndex( long indexId ) throws IndexNotFoundKernelException, ConstraintVerificationFailedKernelException, IndexPopulationFailedKernelException

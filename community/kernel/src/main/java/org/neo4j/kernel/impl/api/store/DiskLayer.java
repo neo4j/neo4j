@@ -32,7 +32,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.EntityType;
@@ -125,23 +124,16 @@ public class DiskLayer implements StoreReadLayer
     private final CountsAccessor counts;
     private final PropertyLoader propertyLoader;
 
-    /**
-     * A note on this taking Supplier<NeoStore> rather than just neo store: This is a workaround until the cache is
-     * removed. Because the neostore may be restarted while the database is running, and because lazy properties keep
-     * a reference to the property store, we need a way to resolve the property store on demand for properties in the
-     * cache. As such, this takes a provider, and uses that provider to provide property store references when resolving
-     * lazy properties.
-     */
     public DiskLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
-            RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage,
-            final Supplier<NeoStore> neoStoreSupplier, IndexingService indexService )
+            RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStore neoStore,
+            IndexingService indexService )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
         this.indexService = indexService;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
-        this.neoStore = neoStoreSupplier.get();
+        this.neoStore = neoStore;
         this.nodeStore = this.neoStore.getNodeStore();
         this.relationshipStore = this.neoStore.getRelationshipStore();
         this.relationshipGroupStore = this.neoStore.getRelationshipGroupStore();
@@ -496,7 +488,8 @@ public class DiskLayer implements StoreReadLayer
     public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index,
             Object value ) throws IndexNotFoundKernelException
     {
-        throw new UnsupportedOperationException();
+        IndexReader reader = state.getIndexReader( index );
+        return reader.indexSeek( value );
     }
 
     @Override
@@ -505,14 +498,16 @@ public class DiskLayer implements StoreReadLayer
             String prefix )
             throws IndexNotFoundKernelException
     {
-        throw new UnsupportedOperationException();
+        IndexReader reader = state.getIndexReader( index );
+        return reader.indexSeekByPrefix( prefix );
     }
 
     @Override
     public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index ) throws
             IndexNotFoundKernelException
     {
-        throw new UnsupportedOperationException();
+        IndexReader reader = state.getIndexReader( index );
+        return reader.scan();
     }
 
     @Override
@@ -645,30 +640,25 @@ public class DiskLayer implements StoreReadLayer
     public InternalIndexState indexGetState( IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( indexId( descriptor ) ).getState();
+        return indexService.getIndexProxy( descriptor ).getState();
     }
 
     @Override
     public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.indexSize( indexId( descriptor ) );
+        return indexService.indexSize( descriptor );
     }
 
     @Override
     public double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.indexUniqueValuesPercentage( indexId( descriptor ) );
+        return indexService.indexUniqueValuesPercentage( descriptor );
     }
 
     @Override
     public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( indexId( descriptor ) ).getPopulationFailure().asString();
-    }
-
-    private long indexId( IndexDescriptor descriptor )
-    {
-        return schemaStorage.indexRule( descriptor.getLabelId(), descriptor.getPropertyKeyId() ).getId();
+        return indexService.getIndexProxy( descriptor ).getPopulationFailure().asString();
     }
 
     @Override
@@ -700,10 +690,16 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongResourceIterator nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor descriptor,
             Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        throw new UnsupportedOperationException();
+        /* Here we have an intricate scenario where we need to return the PrimitiveLongIterator
+         * since subsequent filtering will happen outside, but at the same time have the ability to
+         * close the IndexReader when done iterating over the lookup result. This is because we get
+         * a fresh reader that isn't associated with the current transaction and hence will not be
+         * automatically closed. */
+        IndexReader reader = state.getFreshIndexReader( descriptor );
+        return resourceIterator( reader.indexSeek( value ), reader );
     }
 
     @Override
@@ -857,40 +853,6 @@ public class DiskLayer implements StoreReadLayer
     public Iterator<DefinedProperty> graphGetAllProperties()
     {
         return propertyLoader.graphLoadProperties( new IteratingPropertyReceiver() );
-    }
-
-    public PrimitiveLongResourceIterator nodeGetFromUniqueIndexSeek( KernelStatement state,
-            long indexId, Object value )
-            throws IndexNotFoundKernelException
-    {
-        /* Here we have an intricate scenario where we need to return the PrimitiveLongIterator
-         * since subsequent filtering will happen outside, but at the same time have the ability to
-         * close the IndexReader when done iterating over the lookup result. This is because we get
-         * a fresh reader that isn't associated with the current transaction and hence will not be
-         * automatically closed. */
-        IndexReader reader = state.getFreshIndexReader( indexId );
-        return resourceIterator( reader.indexSeek( value ), reader );
-    }
-
-    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, long index, Object value )
-            throws IndexNotFoundKernelException
-    {
-        IndexReader reader = state.getIndexReader( index );
-        return reader.indexSeek( value );
-    }
-
-    public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, long index, String prefix )
-            throws IndexNotFoundKernelException
-    {
-        IndexReader reader = state.getIndexReader( index );
-        return reader.indexSeekByPrefix( prefix );
-    }
-
-    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, long index )
-            throws IndexNotFoundKernelException
-    {
-        IndexReader reader = state.getIndexReader( index );
-        return reader.scan();
     }
 
     @Override

@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.Set;
 
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -37,8 +36,7 @@ public class CacheLayerTest
 {
     private final DiskLayer diskLayer = mock( DiskLayer.class );
     private final SchemaCache schemaCache = mock( SchemaCache.class );
-    private final IndexingService indexingService = mock( IndexingService.class );
-    private final CacheLayer context = new CacheLayer( diskLayer, indexingService, schemaCache );
+    private final CacheLayer context = new CacheLayer( diskLayer, schemaCache );
 
     @Test
     public void shouldLoadAllConstraintsFromCache() throws Exception
