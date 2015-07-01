@@ -22,22 +22,24 @@ package org.neo4j.server.configuration;
 import org.junit.Test;
 
 import java.net.URI;
+import java.util.HashMap;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.web.ServerInternalSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConfigWrappingConfigurationTest
 {
+
     @Test
     public void shouldGetDefaultPropertyByKey() throws Exception
     {
         // GIVEN
-        final Config config = new Config();
-        ServerConfigFactory.setServerSettingsClasses( config );
-        final ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
+        Config config = new Config( new HashMap<String,String>(), ServerConfigFactory.getDefaultSettingsClasses() );
+        ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
 
         // WHEN
         final Object propertyValue = wrappingConfiguration.getProperty( ServerInternalSettings.rest_api_path.name() );
@@ -50,12 +52,12 @@ public class ConfigWrappingConfigurationTest
     public void shouldGetPropertyInRightFormat() throws Exception
     {
         // GIVEN
-        final Config config = new Config();
-        ServerConfigFactory.setServerSettingsClasses( config );
-        final ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
+        Config config = new Config( new HashMap<String,String>(), ServerConfigFactory.getDefaultSettingsClasses() );
+        ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
 
         // WHEN
-        wrappingConfiguration.setProperty( ServerInternalSettings.rest_api_path.name(), "http://localhost:7474///db///data///" );
+        wrappingConfiguration
+                .setProperty( ServerInternalSettings.rest_api_path.name(), "http://localhost:7474///db///data///" );
         final Object dataPath = wrappingConfiguration.getProperty( ServerInternalSettings.rest_api_path.name() );
 
         // THEN
@@ -66,13 +68,29 @@ public class ConfigWrappingConfigurationTest
     public void shouldContainAllKeysOfPropertiesWithDefaultOrUserDefinedValues() throws Exception
     {
         // GIVEN
-        final Config config = new Config();
-        ServerConfigFactory.setServerSettingsClasses( config );
 
-        // WHEN
-        final ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
+        Config config = new Config( new HashMap<String,String>(), ServerConfigFactory.getDefaultSettingsClasses() );
+        ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
 
         // THEN
         assertTrue( wrappingConfiguration.getKeys().hasNext() );
+    }
+
+    @Test
+    public void shouldAbleToAccessRegisteredPropertyByName()
+    {
+        Config config = new Config( new HashMap<String,String>(), ServerConfigFactory.getDefaultSettingsClasses() );
+        ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
+
+        assertEquals( 60000L, wrappingConfiguration.getProperty( ServerSettings.transaction_timeout.name() ) );
+    }
+
+    @Test
+    public void shouldAbleToAccessNonRegisteredPropertyByName()
+    {
+        Config config = new Config( stringMap( ServerSettings.transaction_timeout.name(), "600" ) );
+        ConfigWrappingConfiguration wrappingConfiguration = new ConfigWrappingConfiguration( config );
+
+        assertEquals( "600", wrappingConfiguration.getProperty( ServerSettings.transaction_timeout.name() ) );
     }
 }
