@@ -155,6 +155,10 @@ public interface ConsistencyReport
         /** The property chain contains multiple properties that have the same property key id, which means that the entity has at least one duplicate property. */
         @Documented
         void propertyKeyNotUniqueInChain();
+
+        /** The property chain does not contain a property that is mandatory for this entity. */
+        @Documented
+        void missingMandatoryProperty( int key );
     }
 
     interface NeoStoreConsistencyReport extends PrimitiveConsistencyReport
