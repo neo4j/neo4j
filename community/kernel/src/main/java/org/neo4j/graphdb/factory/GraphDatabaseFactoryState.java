@@ -22,6 +22,7 @@ package org.neo4j.graphdb.factory;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.embedded.CommunityGraphDatabase;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -30,6 +31,10 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 
+/**
+ * Use {@link CommunityGraphDatabase#build()} to construct Graph Databases and set state
+ */
+@Deprecated
 public class GraphDatabaseFactoryState
 {
     private final List<Class<?>> settingsClasses;
