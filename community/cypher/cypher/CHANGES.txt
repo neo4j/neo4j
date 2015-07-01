@@ -1,5 +1,6 @@
 2.2.4
 -----
+o DbHits for property lookups reduced to one per lookup
 o Identifiers are properly exposed in nested foreach clauses
 o Better eviction policy for the plan cache
 
