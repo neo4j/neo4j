@@ -24,10 +24,9 @@ import _root_.cucumber.api.scala.{EN, ScalaDsl}
 import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
 import cypher.cucumber.db.DatabaseLoader
 import cypher.cucumber.prettifier.prettifier
-import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
+import org.neo4j.embedded.CommunityTestGraphDatabase
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.helpers.collection.IteratorUtil
-import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.{FunSuiteLike, Matchers}
 
 import scala.annotation.tailrec
@@ -48,13 +47,15 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
   }
 
   Given(USING_DB) { (dbName: String) =>
-    val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(DatabaseLoader(dbName))
-    graph = loadConfig(builder).newGraphDatabase()
+    val builder = CommunityTestGraphDatabase.build()
+    cypherConfig().map { case (s, v) => builder.withSetting(s, v) }
+    graph = builder.open(DatabaseLoader(dbName))
   }
 
   Given(INIT_DB) { (initQuery: String) =>
-    val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-    graph = loadConfig(builder).newGraphDatabase()
+    val builder = CommunityTestGraphDatabase.buildEphemeral()
+    cypherConfig().map { case (s, v) => builder.withSetting(s, v) }
+    graph = builder.open()
     assert(!initQuery.contains("cypher"), "init query should do specify pre parser options")
     // init update queries should go with rule+interpreted regardless the database configuration
     graph.execute(s"cypher planner=rule runtime=interpreted $initQuery")
@@ -92,12 +93,6 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
     map.asScala.map { case (k, v) =>
       k -> Try(Integer.valueOf(v.toString)).getOrElse(v)
     }.asJava
-  }
-
-  private def loadConfig(builder: GraphDatabaseBuilder): GraphDatabaseBuilder = {
-    builder.setConfig(GraphDatabaseSettings.pagecache_memory, "8M")
-    cypherConfig().map { case (s, v) => builder.setConfig(s, v) }
-    builder
   }
 
   object sorter extends ((collection.Map[String, String], collection.Map[String, String]) => Boolean) {

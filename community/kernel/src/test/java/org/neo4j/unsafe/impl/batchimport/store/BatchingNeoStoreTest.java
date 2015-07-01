@@ -24,14 +24,14 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -71,8 +71,7 @@ public class BatchingNeoStoreTest
 
     private void someDataInTheDatabase()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fsr.get() )
-                .newImpermanentDatabase( storeDir );
+        GraphDatabase db = CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fsr.get() ).open( storeDir );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );

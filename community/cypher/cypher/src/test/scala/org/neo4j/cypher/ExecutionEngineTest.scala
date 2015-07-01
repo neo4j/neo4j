@@ -21,17 +21,17 @@ package org.neo4j.cypher
 
 import java.io.{File, PrintWriter}
 import java.util.concurrent.TimeUnit
-
 import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer.QueryEvent
+import org.neo4j.embedded.CommunityTestGraphDatabase
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.TopLevelTransaction
-import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory}
+import org.neo4j.test.ImpermanentGraphDatabase
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -1082,11 +1082,11 @@ order by a.COL1""")
 
   private def createReadOnlyEngine(): ExecutionEngine = {
     FileUtils.deleteRecursively(new File("target/readonly"))
-    val old = new TestGraphDatabaseFactory().newEmbeddedDatabase("target/readonly")
+    var old = CommunityTestGraphDatabase.open( new File( "target/readonly" ) )
     old.shutdown()
-    val db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder("target/readonly")
-      .setConfig( GraphDatabaseSettings.read_only, "true" )
-      .newGraphDatabase()
+    val db = CommunityTestGraphDatabase.build()
+      .readOnly()
+      .open( new File( "target/readonly" ) )
     new ExecutionEngine(db)
   }
 }

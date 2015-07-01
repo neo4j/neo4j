@@ -25,9 +25,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -46,7 +47,7 @@ public class GraphDatabaseShutdownTest
     public void transactionShouldReleaseLocksWhenGraphDbIsBeingShutdown() throws Exception
     {
         // GIVEN
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final TestGraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
         final Locks locks = db.getDependencyResolver().resolveDependency( Locks.class );
         assertEquals( 0, lockCount( locks ) );
         Exception exceptionThrownByTxClose = null;
@@ -78,7 +79,7 @@ public class GraphDatabaseShutdownTest
     public void shouldBeAbleToShutdownWhenThereAreTransactionsWaitingForLocks() throws Exception
     {
         // GIVEN
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
 
         final Node node;
         try ( Transaction tx = db.beginTx() )

@@ -23,14 +23,14 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
 import java.util.concurrent.CountDownLatch;
 
-import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.embedded.EnterpriseHighAvailabilityTestGraphDatabase;
+import org.neo4j.embedded.HighAvailabilityGraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakPoint.Event;
@@ -58,23 +58,18 @@ public class TestClientThreadIsolation
             "readNextChunk", "waitTxCopyToStart", "finish"})
     public void testTransactionsPulled() throws Exception
     {
-        final HighlyAvailableGraphDatabase master =
-                (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).cleanDirectory(
-                        "master" ).getAbsolutePath() ).
-                setConfig( ClusterSettings.server_id, "1" ).
-                newGraphDatabase();
+        File masterDir = TargetDirectory.forTest( TestClientThreadIsolation.class ).cleanDirectory( "master" );
+        final HighAvailabilityGraphDatabase master =
+                EnterpriseHighAvailabilityTestGraphDatabase.withMemberId( 1 ).open( masterDir );
 
-        final HighlyAvailableGraphDatabase slave1 =
-                (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).cleanDirectory(
-                        "slave1" ).getAbsolutePath() ).
-                setConfig( ClusterSettings.cluster_server, "127.0.0.1:5002" ).
-                setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" ).
-                setConfig( ClusterSettings.server_id, "2" ).
-                setConfig( HaSettings.max_concurrent_channels_per_slave, "2" ).
-                setConfig( HaSettings.ha_server, "127.0.0.1:8001" ).
-                newGraphDatabase();
+        File slave1Dir =  TargetDirectory.forTest( TestClientThreadIsolation.class ).cleanDirectory( "slave1" );
+        final HighAvailabilityGraphDatabase slave1 =
+                EnterpriseHighAvailabilityTestGraphDatabase.withMemberId( 2 )
+                .bindClusterListenerTo( "127.0.0.1:5002" )
+                .bindTransactionListenerTo( "127.0.0.1:8001" )
+                .withInitialHostAddresses( "127.0.0.1:5001" )
+                .withSetting( HaSettings.max_concurrent_channels_per_slave, "2" )
+                .open( slave1Dir );
 
         Transaction masterTx = master.beginTx();
         master.createNode().createRelationshipTo( master.createNode(),

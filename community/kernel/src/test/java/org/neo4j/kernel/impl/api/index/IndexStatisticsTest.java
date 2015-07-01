@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.api.index;
 
 import com.google.common.jimfs.Jimfs;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -38,11 +38,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DelegateFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -59,9 +58,6 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -634,40 +630,26 @@ public class IndexStatisticsTest
     private static final int MISSED_UPDATES_TOLERANCE = NAMES.length;
     private static final double DOUBLE_ERROR_TOLERANCE = 0.00001d;
 
-    @Rule
-    public DatabaseRule dbRule = new ImpermanentDatabaseRule()
-    {
-        @Override
-        protected GraphDatabaseFactory newFactory()
-        {
-            TestGraphDatabaseFactory factory = (TestGraphDatabaseFactory) super.newFactory();
-            factory.setFileSystem( new DelegateFileSystemAbstraction( Jimfs.newFileSystem() ) );
-            return factory;
-        }
-
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            super.configure( builder );
-            // make sure we don't sample in these tests
-            builder.setConfig( GraphDatabaseSettings.index_background_sampling_enabled, "false" );
-        }
-    };
-
-    private GraphDatabaseService db;
+    private TestGraphDatabase db;
     private ThreadToStatementContextBridge bridge;
     private final IndexOnlineMonitor indexOnlineMonitor = new IndexOnlineMonitor();
 
     @Before
     public void before()
     {
-        GraphDatabaseAPI graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
-        this.db = graphDatabaseAPI;
-        DependencyResolver dependencyResolver = graphDatabaseAPI.getDependencyResolver();
+        this.db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( new DelegateFileSystemAbstraction( Jimfs.newFileSystem() ) )
+                .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, "false" )
+                .open();
+        DependencyResolver dependencyResolver = db.getDependencyResolver();
         this.bridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
-        graphDatabaseAPI.getDependencyResolver()
-                        .resolveDependency( Monitors.class )
-                        .addMonitorListener( indexOnlineMonitor );
+        dependencyResolver.resolveDependency( Monitors.class ).addMonitorListener( indexOnlineMonitor );
+    }
+
+    @After
+    public void after()
+    {
+        this.db.shutdown();
     }
 
     private static class IndexOnlineMonitor extends IndexingService.MonitorAdapter

@@ -28,12 +28,11 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.*;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.cypher.javacompat.internal.DocsExecutionEngine;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 /**
  * Parse AsciiDoc-like content for use in Cypher documentation.
@@ -69,10 +68,10 @@ public final class CypherDoc
         List<Block> blocks = parseBlocks( input );
 
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        //TODO remove config when compiled plans are feature complete
-        Map<Setting<?>, String> config = new HashMap<>();
-        config.put( GraphDatabaseSettings.cypher_runtime, "INTERPRETED" );
-        GraphDatabaseService database = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase(config);
+        GraphDatabase database = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs )
+                .withSetting( GraphDatabaseSettings.cypher_runtime, "INTERPRETED" ) // TODO remove config when compiled plans are feature complete
+                .open();
 
         Connection conn = null;
         TestFailureException failure = null;

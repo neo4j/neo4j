@@ -22,21 +22,22 @@ package org.neo4j.kernel.impl.api;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
+
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.*;
 
 public class PropertyTransactionStateTest
 {
-    private GraphDatabaseService db;
+    private GraphDatabase db;
 
     @Before
     public void setUp() throws Exception
     {
-        db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = CommunityTestGraphDatabase.openEphemeral();
     }
 
     @After

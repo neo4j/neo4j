@@ -30,13 +30,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
@@ -52,7 +53,6 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
 import static org.hamcrest.core.Is.is;
@@ -544,12 +544,12 @@ public class TestLuceneBatchInsert
     private void switchToGraphDatabaseService( ConfigurationParameter... config )
     {
         shutdownInserter();
-        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
+        final TestGraphDatabase.Builder builder = CommunityTestGraphDatabase.build();
         for ( ConfigurationParameter configurationParameter : config )
         {
-            builder = builder.setConfig( configurationParameter.key, configurationParameter.value );
+            builder.withSetting( configurationParameter.key, configurationParameter.value );
         }
-        db = builder.newGraphDatabase();
+        db = builder.open( storeDir );
     }
 
     private static ConfigurationParameter configure( Setting<?> key, String value )

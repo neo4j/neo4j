@@ -26,13 +26,13 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -45,7 +45,7 @@ public class TestStoreRecoverer
     public final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public TargetDirectory.TestDirectory testDirectory =
-            TargetDirectory.testDirForTestWithEphemeralFS(fileSystem, getClass() );
+            TargetDirectory.testDirForTestWithEphemeralFS( fileSystem, getClass() );
 
     private File storeDir;
 
@@ -53,7 +53,7 @@ public class TestStoreRecoverer
     public void setup()
     {
         storeDir = testDirectory.graphDbDir();
-        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
+        CommunityTestGraphDatabase.build().withFileSystem( fileSystem ).open( storeDir ).shutdown();
     }
 
     @Test
@@ -86,8 +86,7 @@ public class TestStoreRecoverer
         assertThat( recoverer.recoveryNeededAt( storeDir ), is( true ) );
 
         // Don't call recoverer.recover, because currently it's hard coded to start an embedded db
-        new TestGraphDatabaseFactory().setFileSystem( fileSystemAbstraction )
-                .newImpermanentDatabase( storeDir ).shutdown();
+        CommunityTestGraphDatabase.build().withFileSystem( fileSystemAbstraction ).open( storeDir ).shutdown();
 
         assertThat( recoverer.recoveryNeededAt( storeDir ), is( false ) );
     }
@@ -95,8 +94,8 @@ public class TestStoreRecoverer
     private FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem )
             throws IOException
     {
-        final GraphDatabaseService db =
-                new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( store );
+        final TestGraphDatabase db =
+                CommunityTestGraphDatabase.build().withFileSystem( fileSystem ).open( store );
 
 
         try ( Transaction tx = db.beginTx() )

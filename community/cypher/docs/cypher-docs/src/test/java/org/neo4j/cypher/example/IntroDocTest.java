@@ -29,6 +29,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -38,7 +39,6 @@ import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TestData;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
@@ -99,7 +99,7 @@ public class IntroDocTest implements GraphHolder
     @BeforeClass
     public static void setup() throws IOException
     {
-        graphdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graphdb = CommunityTestGraphDatabase.openEphemeral();
         cleanDatabaseContent( graphdb );
     }
     

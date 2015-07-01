@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.helpers
 
 import java.util.concurrent.TimeUnit
-
+import org.neo4j.embedded.TestGraphDatabase
 import org.neo4j.graphdb.DynamicLabel._
-import org.neo4j.graphdb.{DynamicLabel, Node, Transaction}
+import org.neo4j.graphdb.{GraphDatabaseService, DynamicLabel, Node, Transaction}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
@@ -40,14 +40,14 @@ trait GraphIcing {
     }
   }
 
-  implicit class RichGraph(graph: GraphDatabaseAPI) {
+  implicit class RichGraphDatabaseService(graph: GraphDatabaseService) {
 
     def indexPropsForLabel(label: String): List[List[String]] = {
       val indexDefs = graph.schema.getIndexes(DynamicLabel.label(label)).asScala.toList
       indexDefs.map(_.getPropertyKeys.asScala.toList)
     }
 
-    def createConstraint(label:String, property: String) = {
+    def createConstraint(label: String, property: String) = {
       inTx {
         graph.schema().constraintFor(DynamicLabel.label(label)).assertPropertyIsUnique(property).create()
       }
@@ -65,8 +65,6 @@ trait GraphIcing {
       indexDef
     }
 
-    def statement: Statement = txBridge.get()
-
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
     def inTx[T](f: => T): T = withTx(_ => f)
 
@@ -81,6 +79,20 @@ trait GraphIcing {
         tx.close()
       }
     }
+  }
+
+  implicit class RichTestGraphDatabase(graph: TestGraphDatabase) {
+    def statement: Statement = txBridge.get()
+
+    def txCounts = TxCounts(txMonitor.getNumberOfCommittedTransactions, txMonitor.getNumberOfRolledbackTransactions, txMonitor.getNumberOfActiveTransactions)
+
+    private def txMonitor: TransactionCounters = graph.getDependencyResolver.resolveDependency(classOf[TransactionCounters])
+
+    private def txBridge: ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+  }
+
+  implicit class RichGraph(graph: GraphDatabaseAPI) {
+    def statement: Statement = txBridge.get()
 
     def txCounts = TxCounts(txMonitor.getNumberOfCommittedTransactions, txMonitor.getNumberOfRolledbackTransactions, txMonitor.getNumberOfActiveTransactions)
 

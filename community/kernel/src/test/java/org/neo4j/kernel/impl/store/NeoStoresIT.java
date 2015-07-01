@@ -26,28 +26,28 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 public class NeoStoresIT
 {
-    public final @Rule DatabaseRule db = new EmbeddedDatabaseRule()
+    @Rule
+    public final TestGraphDatabaseRule db = TestGraphDatabaseRule.forClass( getClass(), new Consumer<TestGraphDatabase.Builder>()
     {
         @Override
-        protected void configure( GraphDatabaseBuilder builder )
+        public void accept( TestGraphDatabase.Builder builder )
         {
-            super.configure( builder );
-            builder.setConfig(  GraphDatabaseSettings.dense_node_threshold, "1");
+            builder.withSetting( GraphDatabaseSettings.dense_node_threshold, "1" );
         }
-    };
+    } );
 
     private static final DynamicRelationshipType FRIEND = DynamicRelationshipType.withName( "FRIEND" );
 
@@ -111,9 +111,9 @@ public class NeoStoresIT
 
         for ( int i = 0; i < 100_000; i++ )
         {
-            try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
+            try ( Transaction tx = db.get().beginTx() )
             {
-                Node node = db.getGraphDatabaseService().getNodeById( latestNodeId[0] );
+                Node node = db.get().getNodeById( latestNodeId[0] );
 
                 for ( String propertyKey : node.getPropertyKeys() )
                 {
@@ -160,9 +160,9 @@ public class NeoStoresIT
 
         for ( int i = 0; i < 100_000; i++ )
         {
-            try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.getGraphDatabaseService().getNodeById( latestNodeId[0] );
+                Node node = db.get().getNodeById( latestNodeId[0] );
 
                 for ( String propertyKey : node.getPropertyKeys() )
                 {
@@ -213,8 +213,8 @@ public class NeoStoresIT
                 {
                     try ( Transaction tx = db.beginTx() )
                     {
-                        Node node1 = db.getGraphDatabaseService().getNodeById( node1Id );
-                        Node node2 = db.getGraphDatabaseService().getNodeById( node2Id );
+                        Node node1 = db.get().getNodeById( node1Id );
+                        Node node2 = db.get().getNodeById( node2Id );
 
                         Relationship rel = node1.createRelationshipTo( node2, FRIEND );
                         latestRelationshipId[0] = rel.getId();
@@ -228,9 +228,9 @@ public class NeoStoresIT
 
         for ( int i = 0; i < 100_000; i++ )
         {
-            try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                Relationship rel = db.getGraphDatabaseService().getRelationshipById( latestRelationshipId[0] );
+                Relationship rel = db.get().getRelationshipById( latestRelationshipId[0] );
 
                 for ( String propertyKey : rel.getPropertyKeys() )
                 {

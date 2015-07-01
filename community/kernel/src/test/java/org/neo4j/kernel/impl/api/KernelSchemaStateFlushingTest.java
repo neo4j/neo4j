@@ -25,8 +25,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.function.Function;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -36,13 +37,14 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 public class KernelSchemaStateFlushingTest
 {
-    public @Rule ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
-    private GraphDatabaseAPI db;
+    private TestGraphDatabase db;
     private KernelAPI kernel;
 
     @Test
@@ -210,7 +212,7 @@ public class KernelSchemaStateFlushingTest
     @Before
     public void setup()
     {
-        db = dbRule.getGraphDatabaseAPI();
+        db = dbRule.get();
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
     }
 

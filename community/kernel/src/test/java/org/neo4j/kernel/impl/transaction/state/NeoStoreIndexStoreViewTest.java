@@ -31,12 +31,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -65,11 +65,11 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 public class NeoStoreIndexStoreViewTest
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     Label label = DynamicLabel.label( "Person" );
 
-    GraphDatabaseAPI graphDb;
+    TestGraphDatabase graphDb;
     NeoStoreIndexStoreView storeView;
 
     int labelId;
@@ -159,12 +159,12 @@ public class NeoStoreIndexStoreViewTest
     @Before
     public void before() throws KernelException
     {
-        graphDb = dbRule.getGraphDatabaseAPI();
+        graphDb = dbRule.get();
 
         createAlistairAndStefanNodes();
         getOrCreateIds();
 
-        neoStore = new StoreAccess( graphDb ).getRawNeoStore();
+        neoStore = new StoreAccess( graphDb.getGraphDatabaseAPI() ).getRawNeoStore();
         counts = neoStore.getCounts();
         locks = mock( LockService.class, new Answer()
         {

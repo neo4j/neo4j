@@ -23,13 +23,13 @@ import java.util.HashSet;
 
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
 
@@ -90,7 +90,7 @@ public class DiskLayerLabelTest extends DiskLayerTest
     public void labels_should_not_leak_out_as_properties() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
+        GraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
         Node node = createLabeledNode( db, map( "name", "Node" ), label1 );
 
         // WHEN THEN

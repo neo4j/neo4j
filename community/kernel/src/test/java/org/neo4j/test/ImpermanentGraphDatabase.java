@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
@@ -60,7 +61,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     protected static final File PATH = new File( "target/test-data/impermanent-db" );
 
     /**
-     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     * This is deprecated. Use {@link CommunityTestGraphDatabase} instead
      */
     @Deprecated
     public ImpermanentGraphDatabase()
@@ -83,7 +84,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     }
 
     /**
-     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     * This is deprecated. Use {@link CommunityTestGraphDatabase} instead
      */
     @Deprecated
     public ImpermanentGraphDatabase( Map<String, String> params )
@@ -92,7 +93,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     }
 
     /**
-     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     * This is deprecated. Use {@link CommunityTestGraphDatabase} instead
      */
     @Deprecated
     public ImpermanentGraphDatabase( File storeDir, Map<String, String> params )
@@ -103,7 +104,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     }
 
     /**
-     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     * This is deprecated. Use {@link CommunityTestGraphDatabase} instead
      */
     @Deprecated
     public ImpermanentGraphDatabase( Map<String, String> params,
@@ -113,7 +114,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     }
 
     /**
-     * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
+     * This is deprecated. Use {@link CommunityTestGraphDatabase} instead
      */
     @Deprecated
     public ImpermanentGraphDatabase( File storeDir, Map<String, String> params,

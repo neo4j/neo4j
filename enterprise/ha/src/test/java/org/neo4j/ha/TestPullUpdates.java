@@ -31,17 +31,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+import org.neo4j.embedded.EnterpriseHighAvailabilityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.HighAvailabilityGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -152,31 +153,26 @@ public class TestPullUpdates
     @Test
     public void shouldPullUpdatesOnStartupNoMatterWhat() throws Exception
     {
-        GraphDatabaseService slave = null;
-        GraphDatabaseService master = null;
+        GraphDatabase slave = null;
+        TestGraphDatabase master = null;
         try
         {
             File testRootDir = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
             File masterDir = new File( testRootDir, "master" );
-            master = new TestHighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( masterDir.getAbsolutePath() )
-                    .setConfig( ClusterSettings.server_id, "1" )
-                    .setConfig( ClusterSettings.initial_hosts, ":5001" )
-                    .newGraphDatabase();
+            master = EnterpriseHighAvailabilityTestGraphDatabase.withMemberId( 1 )
+                    .withInitialHostAddresses( ":5001" )
+                    .open( masterDir );
 
             // Copy the store, then shutdown, so update pulling later makes sense
             File slaveDir = new File( testRootDir, "slave" );
-            slave = new TestHighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() )
-                    .setConfig( ClusterSettings.server_id, "2" )
-                    .setConfig( ClusterSettings.initial_hosts, ":5001" )
-                    .newGraphDatabase();
+            slave = EnterpriseHighAvailabilityTestGraphDatabase.withMemberId( 2 )
+                    .withInitialHostAddresses( ":5001" )
+                    .open( slaveDir );
 
             // Required to block until the slave has left for sure
             final CountDownLatch slaveLeftLatch = new CountDownLatch( 1 );
 
-            final ClusterClient masterClusterClient = ( (HighlyAvailableGraphDatabase) master ).getDependencyResolver()
-                    .resolveDependency( ClusterClient.class );
+            final ClusterClient masterClusterClient = master.getDependencyResolver().resolveDependency( ClusterClient.class );
 
             masterClusterClient.addClusterListener( new ClusterListener.Adapter()
             {
@@ -188,7 +184,7 @@ public class TestPullUpdates
                 }
             } );
 
-            ((GraphDatabaseAPI)master).getDependencyResolver().resolveDependency( LogService.class ).getInternalLog( getClass() ).info( "SHUTTING DOWN SLAVE" );
+            master.getDependencyResolver().resolveDependency( LogService.class ).getInternalLog( getClass() ).info( "SHUTTING DOWN SLAVE" );
             slave.shutdown();
 
             // Make sure that the slave has left, because shutdown() may return before the master knows
@@ -207,12 +203,10 @@ public class TestPullUpdates
             }
 
             // Store is already in place, should pull updates
-            slave = new TestHighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() )
-                    .setConfig( ClusterSettings.server_id, "2" )
-                    .setConfig( ClusterSettings.initial_hosts, ":5001" )
-                    .setConfig( HaSettings.pull_interval, "0" ) // no pull updates, should pull on startup
-                    .newGraphDatabase();
+            slave = EnterpriseHighAvailabilityTestGraphDatabase.withMemberId( 2 )
+                    .withInitialHostAddresses( ":5001" )
+                    .withSetting( HaSettings.pull_interval, "0" )
+                    .open( slaveDir );
 
             slave.beginTx().close(); // Make sure switch to slave completes and so does the update pulling on startup
 
@@ -264,9 +258,9 @@ public class TestPullUpdates
         {
             ok = true;
             loop:
-            for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+            for ( HighAvailabilityGraphDatabase db : cluster.getAllMembers() )
             {
-                for (HighlyAvailableGraphDatabase except: excepts) {
+                for (HighAvailabilityGraphDatabase except: excepts) {
                     if (db == except){
                         continue loop;
                     }
@@ -292,7 +286,7 @@ public class TestPullUpdates
         assertTrue( "Change wasn't propagated by pulling updates", ok );
     }
 
-    private void setProperty( HighlyAvailableGraphDatabase db, long nodeId, int i ) throws Exception
+    private void setProperty( HighAvailabilityGraphDatabase db, long nodeId, int i ) throws Exception
     {
         try ( Transaction tx = db.beginTx() )
         {

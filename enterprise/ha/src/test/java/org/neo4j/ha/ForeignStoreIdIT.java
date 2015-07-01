@@ -24,21 +24,19 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.EnterpriseHighAvailabilityGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.HighAvailabilityGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.cluster.ClusterSettings.cluster_server;
-import static org.neo4j.cluster.ClusterSettings.initial_hosts;
-import static org.neo4j.cluster.ClusterSettings.server_id;
-import static org.neo4j.kernel.ha.HaSettings.ha_server;
-import static org.neo4j.kernel.ha.HaSettings.state_switch_timeout;
 
 public class ForeignStoreIdIT
 {
@@ -47,25 +45,23 @@ public class ForeignStoreIdIT
     {
         // GIVEN
         // -- one instance running
-        firstInstance = new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( DIR.cleanDirectory( "1" ).getAbsolutePath() )
-                .setConfig( server_id, "1" )
-                .setConfig( cluster_server, "127.0.0.1:5001" )
-                .setConfig( ha_server, "127.0.0.1:6031" )
-                .setConfig( initial_hosts, "127.0.0.1:5001" )
-                .newGraphDatabase();
+        firstInstance = EnterpriseHighAvailabilityGraphDatabase.withMemberId( 1 )
+                .bindClusterListenerTo( "127.0.0.1:5001" )
+                .bindTransactionListenerTo( "127.0.0.1:6031" )
+                .withInitialHostAddresses( "127.0.0.1:5001" )
+                .open( DIR.cleanDirectory( "1" ) );
+
         // -- another instance preparing to join with a store with a different store ID
-        String foreignDbStoreDir = createAnotherStore( DIR.cleanDirectory( "2" ), 0 );
+        File foreignDbStoreDir = createAnotherStore( DIR.cleanDirectory( "2" ), 0 );
 
         // WHEN
         // -- the other joins
-        foreignInstance = new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( foreignDbStoreDir )
-                .setConfig( server_id, "2" )
-                .setConfig( initial_hosts, "127.0.0.1:5001" )
-                .setConfig( cluster_server, "127.0.0.1:5002" )
-                .setConfig( ha_server, "127.0.0.1:6032" )
-                .newGraphDatabase();
+        foreignInstance = EnterpriseHighAvailabilityGraphDatabase.withMemberId( 2 )
+                .bindClusterListenerTo( "127.0.0.1:5002" )
+                .bindTransactionListenerTo( "127.0.0.1:6032" )
+                .withInitialHostAddresses( "127.0.0.1:5001" )
+                .open( foreignDbStoreDir );
+
         // -- and creates a node
         long foreignNode = createNode( foreignInstance, "foreigner" );
 
@@ -79,27 +75,24 @@ public class ForeignStoreIdIT
     {
         // GIVEN
         // -- one instance running
-        firstInstance = new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( DIR.cleanDirectory( "1" ).getAbsolutePath() )
-                .setConfig( server_id, "1" )
-                .setConfig( initial_hosts, "127.0.0.1:5001" )
-                .setConfig( cluster_server, "127.0.0.1:5001" )
-                .setConfig( ha_server, "127.0.0.1:6041" )
-                .newGraphDatabase();
+        firstInstance = EnterpriseHighAvailabilityGraphDatabase.withMemberId( 1 )
+                .bindClusterListenerTo( "127.0.0.1:5001" )
+                .bindTransactionListenerTo( "127.0.0.1:6041" )
+                .withInitialHostAddresses( "127.0.0.1:5001" )
+                .open( DIR.cleanDirectory( "1" ) );
+
         createNodes( firstInstance, 3, "first" );
         // -- another instance preparing to join with a store with a different store ID
-        String foreignDbStoreDir = createAnotherStore( DIR.cleanDirectory( "2" ), 1 );
+        File foreignDbStoreDir = createAnotherStore( DIR.cleanDirectory( "2" ), 1 );
 
         // WHEN
         // -- the other joins
-        foreignInstance = new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( foreignDbStoreDir )
-                .setConfig( server_id, "2" )
-                .setConfig( initial_hosts, "127.0.0.1:5001" )
-                .setConfig( cluster_server, "127.0.0.1:5002" )
-                .setConfig( ha_server, "127.0.0.1:6042" )
-                .setConfig( state_switch_timeout, "5s" )
-                .newGraphDatabase();
+        foreignInstance = EnterpriseHighAvailabilityGraphDatabase.withMemberId( 2 )
+                .bindClusterListenerTo( "127.0.0.1:5002" )
+                .bindTransactionListenerTo( "127.0.0.1:6042" )
+                .withInitialHostAddresses( "127.0.0.1:5001" )
+                .withSetting( HaSettings.state_switch_timeout, "5s" )
+                .open( foreignDbStoreDir );
 
         try
         {
@@ -115,7 +108,7 @@ public class ForeignStoreIdIT
     }
     
     private final TargetDirectory DIR = TargetDirectory.forTest( getClass() );
-    private GraphDatabaseService firstInstance, foreignInstance;
+    private HighAvailabilityGraphDatabase firstInstance, foreignInstance;
     
     @After
     public void after() throws Exception
@@ -138,10 +131,9 @@ public class ForeignStoreIdIT
         }
     }
 
-    private String createAnotherStore( File directory, int transactions )
+    private File createAnotherStore( File storeDir, int transactions )
     {
-        String storeDir = directory.getAbsolutePath();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabase db = CommunityTestGraphDatabase.open( storeDir );
         createNodes( db, transactions, "node" );
         db.shutdown();
         return storeDir;

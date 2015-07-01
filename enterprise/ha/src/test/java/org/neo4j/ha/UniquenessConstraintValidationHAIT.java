@@ -26,13 +26,13 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.Future;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.ha.ClusterManager;
 
 import static org.junit.Assert.assertFalse;
@@ -178,7 +178,7 @@ public class UniquenessConstraintValidationHAIT
     private File databaseWithUniquenessConstraint( String label, String propertyKey )
     {
         File storeDir = new File( targetDir.directory(), "seed" );
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
+        GraphDatabase graphDb = CommunityTestGraphDatabase.open( storeDir );
         try
         {
             try ( Transaction tx = graphDb.beginTx() )

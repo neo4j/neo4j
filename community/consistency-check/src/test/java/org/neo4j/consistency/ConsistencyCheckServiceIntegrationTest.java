@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.graphdb.DynamicLabel;
@@ -42,7 +43,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -117,7 +117,7 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+        GraphDatabaseService db = CommunityTestGraphDatabase.open( testDirectory.graphDbDir() );
 
         String propertyKey = "itemId";
         Label label = DynamicLabel.label( "Item" );

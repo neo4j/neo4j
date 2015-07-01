@@ -22,14 +22,16 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.List;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.subprocess.SubProcess;
 
 import static org.junit.Assert.assertEquals;
@@ -42,13 +44,13 @@ public class SchemaRecoveryIT
     public void schemaTransactionsShouldSurviveRecovery() throws Exception
     {
         // given
-        String storeDir = testDirectory.absolutePath();
+        File storeDir = testDirectory.graphDbDir();
         Process process = new CreateConstraintButDoNotShutDown().start( storeDir );
         process.waitForSchemaTransactionCommitted();
         SubProcess.kill( process );
 
         // when
-        GraphDatabaseService recoveredDatabase = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabase recoveredDatabase = CommunityTestGraphDatabase.open( storeDir );
 
         // then
         assertEquals(1, constraints( recoveredDatabase ).size());
@@ -81,15 +83,15 @@ public class SchemaRecoveryIT
         void waitForSchemaTransactionCommitted() throws InterruptedException;
     }
 
-    static class CreateConstraintButDoNotShutDown extends SubProcess<Process, String> implements Process
+    static class CreateConstraintButDoNotShutDown extends SubProcess<Process, File> implements Process
     {
         // Would use a CountDownLatch but fields of this class need to be serializable.
         private volatile boolean started = false;
 
         @Override
-        protected void startup( String storeDir ) throws Throwable
+        protected void startup( File storeDir ) throws Throwable
         {
-            GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+            GraphDatabase database = CommunityTestGraphDatabase.open( storeDir );
             try ( Transaction transaction = database.beginTx() )
             {
                 database.schema().constraintFor( label("User") ).assertPropertyIsUnique( "uuid" ).create();

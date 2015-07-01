@@ -33,7 +33,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static java.lang.String.format;
 
@@ -47,12 +47,12 @@ public class ManyMergesStressTest
     private final static int TRIES = 8000;
 
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    public TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.forClass( getClass() );
 
     @Test
     public void shouldWorkFine() throws IOException
     {
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
 
         Label person = DynamicLabel.label( "Person" );
 

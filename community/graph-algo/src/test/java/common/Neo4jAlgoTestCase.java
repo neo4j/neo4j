@@ -32,12 +32,12 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -63,7 +63,7 @@ public abstract class Neo4jAlgoTestCase
     @BeforeClass
     public static void setUpGraphDb() throws Exception
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graphDb = CommunityTestGraphDatabase.openEphemeral();
         graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
     }
 

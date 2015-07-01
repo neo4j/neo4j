@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.function.Supplier;
@@ -51,7 +52,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -145,7 +145,7 @@ public class StoreCopyClientTest
 
     private GraphDatabaseService startDatabase( File storeDir )
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        return CommunityTestGraphDatabase.open( storeDir );
     }
 
     @Test

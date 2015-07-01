@@ -25,13 +25,13 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.JavaDocsGenerator;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import static org.junit.Assert.assertEquals;
@@ -55,7 +55,7 @@ public class OrderedPathDocTest
         {
             FileUtils.deleteRecursively( dir );
         }
-        db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = CommunityTestGraphDatabase.openEphemeral();
         orderedPath = new OrderedPath( db );
         gen = new JavaDocsGenerator( "ordered-path-java", "dev" );
     }

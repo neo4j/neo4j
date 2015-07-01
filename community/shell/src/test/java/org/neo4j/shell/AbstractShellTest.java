@@ -29,19 +29,19 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;
@@ -53,7 +53,7 @@ import static org.neo4j.shell.ShellLobby.remoteLocation;
 
 public abstract class AbstractShellTest
 {
-    protected GraphDatabaseAPI db;
+    protected TestGraphDatabase db;
     protected ShellServer shellServer;
     protected ShellClient shellClient;
     private Integer remotelyAvailableOnPort;
@@ -83,14 +83,14 @@ public abstract class AbstractShellTest
         return new SameJvmClient( session, server, new CollectingOutput(), InterruptSignalHandler.getHandler() );
     }
 
-    protected GraphDatabaseAPI newDb()
+    protected TestGraphDatabase newDb()
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase();
+        return CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs.get() ).open();
     }
 
-    protected ShellServer newServer( GraphDatabaseAPI db ) throws ShellException, RemoteException
+    protected ShellServer newServer( TestGraphDatabase db ) throws ShellException, RemoteException
     {
-        return new GraphDatabaseShellServer( db );
+        return new GraphDatabaseShellServer( db.getGraphDatabaseAPI() );
     }
 
     @After

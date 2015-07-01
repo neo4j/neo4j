@@ -28,8 +28,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -39,7 +38,8 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class DataAndSchemaTransactionSeparationIT
 {
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestGraphDatabaseRule db = TestGraphDatabaseRule.ephemeral();
 
     private static Function<GraphDatabaseService, Void> expectFailureAfterSchemaOperation(
             final Function<GraphDatabaseService, ?> function )

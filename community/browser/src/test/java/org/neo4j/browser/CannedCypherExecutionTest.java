@@ -36,12 +36,12 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.util.Charsets;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
 
@@ -64,7 +64,7 @@ public class CannedCypherExecutionTest
         URL resourceLoc = getClass().getClassLoader().getResource( "browser" );
         assertNotNull( resourceLoc );
 
-        final GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        final GraphDatabaseService database = CommunityTestGraphDatabase.openEphemeral();
         final AtomicInteger cypherStatementCount = new AtomicInteger( 0 );
 
         Files.walkFileTree( Paths.get( resourceLoc.toURI() ), new SimpleFileVisitor<Path>()

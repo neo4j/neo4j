@@ -23,6 +23,7 @@ import java.io.{ByteArrayOutputStream, File, PrintWriter, StringWriter}
 import java.util.concurrent.TimeUnit
 
 import org.junit.{After, Before}
+import org.neo4j.embedded.{CommunityTestGraphDatabase, GraphDatabase, TestGraphDatabase}
 import org.neo4j.cypher.CypherException
 import org.neo4j.cypher.example.JavaExecutionEngineDocTest
 import org.neo4j.cypher.export.{DatabaseSubGraph, SubGraphExporter}
@@ -36,11 +37,10 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.index.Index
 import org.neo4j.helpers.Settings
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
-import org.neo4j.test.{AsciiDocGenerator, GraphDescription, TestGraphDatabaseFactory}
+import org.neo4j.test.{AsciiDocGenerator, GraphDescription}
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphStyle, GraphvizWriter}
@@ -53,7 +53,7 @@ import scala.reflect.ClassTag
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
-  def db: GraphDatabaseAPI
+  def db: GraphDatabase
 
   def niceify(in: String): String = in.toLowerCase.replace(" ", "-")
 
@@ -154,7 +154,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
   }
 
   def prepareAndTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String,
-                          prepare: GraphDatabaseAPI => Unit, assertions: InternalExecutionResult => Unit) {
+                          prepare: GraphDatabase => Unit, assertions: InternalExecutionResult => Unit) {
     internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(prepare), Map.empty, assertions)
   }
 
@@ -167,7 +167,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
                                    queryText: String,
                                    realQuery: Option[String],
                                    expectedException: Option[ClassTag[_ <: CypherException]],
-                                   prepare: Option[GraphDatabaseAPI => Unit],
+                                   prepare: Option[GraphDatabase => Unit],
                                    assertions: InternalExecutionResult => Unit) {
     preparationQueries = List()
 
@@ -235,7 +235,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
                                 queryText: String,
                                 optionalResultExplanation: String,
                                 expectedException: Option[ClassTag[_ <: CypherException]],
-                                prepare: Option[GraphDatabaseAPI => Unit],
+                                prepare: Option[GraphDatabase => Unit],
                                 parameters: Map[String, Any],
                                 assertions: InternalExecutionResult => Unit)
   {
@@ -287,9 +287,9 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     }
   }
 
-  def prepareForTest(title: String, prepare: Option[GraphDatabaseAPI => Unit]) {
+  def prepareForTest(title: String, prepare: Option[GraphDatabase => Unit]) {
     prepare.foreach {
-      (prepareStep: GraphDatabaseAPI => Any) => prepareStep(db)
+      (prepareStep: GraphDatabase => Any) => prepareStep(db)
     }
     if (preparationQueries.nonEmpty) {
       dumpPreparationQueries(preparationQueries, dir, title)
@@ -328,7 +328,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     results.headOption
   }
 
-  var db: GraphDatabaseAPI = null
+  var db: TestGraphDatabase = null
   var engine: ServerExecutionEngine = null
   var nodeMap: Map[String, Long] = null
   var nodeIndex: Index[Node] = null
@@ -429,10 +429,10 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
   override def hardReset() {
     tearDown()
-    db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
-      setConfig(GraphDatabaseSettings.node_keys_indexable, "name").
-      setConfig(GraphDatabaseSettings.node_auto_indexing, Settings.TRUE).
-      newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
+    db = CommunityTestGraphDatabase.buildEphemeral().
+      withSetting(GraphDatabaseSettings.node_keys_indexable, "name").
+      withSetting(GraphDatabaseSettings.node_auto_indexing, Settings.TRUE).
+      open()
     engine = new ServerExecutionEngine(db)
 
     softReset()

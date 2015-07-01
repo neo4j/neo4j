@@ -26,14 +26,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.GraphTransactionRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 public class LargePropertiesIT
 {
     @ClassRule
-    public static DatabaseRule db = new ImpermanentDatabaseRule();
+    public static final TestGraphDatabaseRule db = TestGraphDatabaseRule.ephemeral();
 
     @Rule
     public GraphTransactionRule tx = new GraphTransactionRule( db );
@@ -43,7 +42,7 @@ public class LargePropertiesIT
     @Before
     public void createInitialNode()
     {
-        node = db.getGraphDatabaseService().createNode();
+        node = db.get().createNode();
     }
 
     @After

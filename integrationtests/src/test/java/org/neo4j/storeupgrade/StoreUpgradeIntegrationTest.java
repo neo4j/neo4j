@@ -35,12 +35,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -62,7 +62,6 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -148,18 +147,16 @@ public class StoreUpgradeIntegrationTest
         public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
         @Test
-        public void embeddedDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
+        public void databaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
         {
             File dir = store.prepareDirectory( testDir.graphDbDir() );
 
-            GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
-            builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
-            builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-            GraphDatabaseService db = builder.newGraphDatabase();
+            TestGraphDatabase db = CommunityTestGraphDatabase.build()
+                    .allowStoreUpgrade()
+                    .open( dir );
             try
             {
-                checkInstance( store, (GraphDatabaseAPI) db );
+                checkInstance( store, db.getGraphDatabaseAPI() );
 
             }
             finally
@@ -212,14 +209,12 @@ public class StoreUpgradeIntegrationTest
         {
             // migrate the store using a single instance
             File dir = store.prepareDirectory( testDir.graphDbDir() );
-            GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
-            builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
-            builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-            GraphDatabaseService db = builder.newGraphDatabase();
+            TestGraphDatabase db = CommunityTestGraphDatabase.build()
+                    .allowStoreUpgrade()
+                    .open( dir );
             try
             {
-                checkInstance( store, (GraphDatabaseAPI) db );
+                checkInstance( store, db.getGraphDatabaseAPI() );
             }
             finally
             {
@@ -269,13 +264,10 @@ public class StoreUpgradeIntegrationTest
             // migrate the store using a single instance
             File dir = AbstractNeo4jTestCase.unzip( testDir.graphDbDir(), getClass(), "0.A.3-to-be-recovered.zip" );
             new File( dir, "messages.log" ).delete(); // clear the log
-            GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-            GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
-            builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
-            builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-            try
-            {
-                GraphDatabaseService db = builder.newGraphDatabase();
+            try {
+                GraphDatabaseService db = CommunityTestGraphDatabase.build()
+                        .allowStoreUpgrade()
+                        .open( dir );
                 db.shutdown();
                 fail( "It should have failed." );
             }
@@ -478,7 +470,7 @@ public class StoreUpgradeIntegrationTest
         return new long[]{upgrade, size, unique, sampleSize};
     }
 
-    private static IndexDescriptor awaitOnline( GraphDatabaseAPI db,
+    private static IndexDescriptor awaitOnline( GraphDatabaseService db,
             ThreadToStatementContextBridge bridge,
             IndexDescriptor index ) throws KernelException
     {

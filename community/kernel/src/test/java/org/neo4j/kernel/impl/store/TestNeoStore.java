@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -76,7 +77,6 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.NeoStoreDataSourceRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -1076,7 +1076,7 @@ public class TestNeoStore
     {
         FileSystemAbstraction fileSystem = fs.get();
         File storeDir = new File("target/test-data/set-version").getAbsoluteFile();
-        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
+        CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fileSystem ).open( storeDir ).shutdown();
         assertEquals( 0, NeoStore.setRecord( fileSystem, new File( storeDir,
                 NeoStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 10 ) );
         assertEquals( 10, NeoStore.setRecord( fileSystem, new File( storeDir,

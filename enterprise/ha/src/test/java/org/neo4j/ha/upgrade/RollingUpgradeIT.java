@@ -37,6 +37,8 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.backup.OnlineBackup;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -54,7 +56,6 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertTrue;
@@ -314,7 +315,7 @@ public class RollingUpgradeIT
             break;
         }
 
-        startStandaloneDbToRunUpgrade( storeDir, i );
+        startStandaloneDbToRunUpgrade( storeDirFile, i );
 
         // start that db up in this JVM
         newDbs[i] = (GraphDatabaseAPI) new TestHighlyAvailableGraphDatabaseFactory()
@@ -355,16 +356,15 @@ public class RollingUpgradeIT
         }
     }
 
-    private void startStandaloneDbToRunUpgrade( String storeDir, int dbIndex )
+    private void startStandaloneDbToRunUpgrade( File storeDir, int dbIndex )
     {
-        GraphDatabaseService tempDbForUpgrade = null;
+        GraphDatabase tempDbForUpgrade = null;
         try
         {
             debug( "Starting standalone db " + dbIndex + " to run upgrade" );
-            tempDbForUpgrade = new TestGraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( storeDir )
-                    .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
-                    .newGraphDatabase();
+            tempDbForUpgrade = CommunityTestGraphDatabase.build()
+                    .allowStoreUpgrade()
+                    .open( storeDir );
         }
         finally
         {

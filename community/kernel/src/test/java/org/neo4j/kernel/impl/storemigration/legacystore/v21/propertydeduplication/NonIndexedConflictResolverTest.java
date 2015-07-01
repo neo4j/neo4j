@@ -29,10 +29,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertNotNull;
@@ -55,8 +55,8 @@ import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydedup
 public class NonIndexedConflictResolverTest
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( IndexLookupTest.class );
-    private GraphDatabaseAPI api;
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
+    private TestGraphDatabase api;
     private PropertyKeyTokenStore propertyKeyTokenStore;
     private PropertyStore propertyStore;
     private Token tokenA;
@@ -68,7 +68,7 @@ public class NonIndexedConflictResolverTest
     @Before
     public void setUp()
     {
-        api = dbRule.getGraphDatabaseAPI();
+        api = dbRule.get();
 
         String propKeyA = "keyA";
         String propKeyB = "keyB";

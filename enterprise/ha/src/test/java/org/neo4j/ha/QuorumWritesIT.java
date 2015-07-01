@@ -26,7 +26,8 @@ import java.io.File;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 
-import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.embedded.EnterpriseHighAvailabilityGraphDatabase;
+import org.neo4j.embedded.HighAvailabilityGraphDatabase;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberEvents;
@@ -35,7 +36,6 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -201,15 +201,12 @@ public class QuorumWritesIT
         waitOnRoleIsAvailable( master, latch4, HighAvailabilityModeSwitcher.MASTER );
         waitOnRoleIsAvailable( master, latch5, HighAvailabilityModeSwitcher.SLAVE );
 
-        HighlyAvailableGraphDatabase replacement =
-                (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( new File( root, "replacement" ).getAbsolutePath() ).
-                setConfig( ClusterSettings.cluster_server, ":5010" ).
-                setConfig( HaSettings.ha_server, ":6010" ).
-                setConfig( ClusterSettings.server_id, "3" ).
-                setConfig( ClusterSettings.initial_hosts, cluster.getInitialHostsConfigString() ).
-                setConfig( HaSettings.tx_push_factor, "0" ).
-                newGraphDatabase();
+        HighAvailabilityGraphDatabase replacement = EnterpriseHighAvailabilityGraphDatabase.withMemberId( 3 )
+                .bindClusterListenerTo( ":5010" )
+                .bindTransactionListenerTo( "6010" )
+                .withInitialHostAddresses( cluster.getInitialHostsConfigString() )
+                .withSetting( HaSettings.tx_push_factor, "0" )
+                .open( new File( root, "replacement" ) );
 
         latch3.await();
         latch4.await();

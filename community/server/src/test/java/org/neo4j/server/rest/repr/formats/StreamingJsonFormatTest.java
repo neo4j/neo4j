@@ -27,7 +27,8 @@ import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -37,7 +38,6 @@ import org.neo4j.server.rest.repr.MappingSerializer;
 import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.ValueRepresentation;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -57,7 +57,7 @@ public class StreamingJsonFormatTest
     @Test
     public void canFormatNode() throws Exception
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        GraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
         try ( Transaction transaction = db.beginTx() )
         {
             final Node n = db.createNode();

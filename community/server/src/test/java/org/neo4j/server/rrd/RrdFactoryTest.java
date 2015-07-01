@@ -32,7 +32,7 @@ import org.rrd4j.DsType;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.RrdDef;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.Configurator;
@@ -42,7 +42,6 @@ import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Double.NaN;
 
@@ -159,8 +158,8 @@ public class RrdFactoryTest
     @Test
     public void shouldCreateRrdFileInDbSubdirectory() throws Exception
     {
-        String storeDir = testDirectory.directory().getAbsolutePath();
-        db = new WrappedDatabase((GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
+        File storeDir = testDirectory.directory();
+        db = new WrappedDatabase( CommunityTestGraphDatabase.open( storeDir ).getGraphDatabaseAPI() );
         TestableRrdFactory factory = createRrdFactory();
 
         // When
@@ -169,7 +168,7 @@ public class RrdFactoryTest
         //Then
         String rrdParent = new File( factory.directoryUsed ).getParent();
 
-        assertThat( rrdParent, is( storeDir ) );
+        assertThat( rrdParent, is( storeDir.getAbsolutePath() ) );
     }
 
 

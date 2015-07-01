@@ -23,16 +23,15 @@ import org.junit.Test;
 
 import java.io.PrintWriter;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -41,6 +40,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.loadPropertiesFromURL;
 import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
 import static org.neo4j.shell.ShellLobby.remoteLocation;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
@@ -97,11 +97,10 @@ public class ShellDocTest
     public void testEnableRemoteShellOnCustomPort() throws Exception
     {
         int port = 8085;
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().
-                newImpermanentDatabaseBuilder().
-                setConfig( ShellSettings.remote_shell_enabled, "true" ).
-                setConfig( ShellSettings.remote_shell_port, "" + port ).
-                newGraphDatabase();
+        GraphDatabase graphDb = CommunityTestGraphDatabase.buildEphemeral()
+                .withSetting( ShellSettings.remote_shell_enabled, "true" )
+                .withSetting( ShellSettings.remote_shell_port, String.valueOf( port ) )
+                .open();
         RemoteClient client = new RemoteClient( NO_INITIAL_SESSION, remoteLocation( port ), new CollectingOutput() );
         client.evaluate( "help" );
         client.shutdown();
@@ -111,9 +110,9 @@ public class ShellDocTest
     @Test
     public void testEnableServerOnDefaultPort() throws Exception
     {
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
-                setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE ).
-                newGraphDatabase();
+        GraphDatabase graphDb = CommunityTestGraphDatabase.buildEphemeral()
+                .withSetting( ShellSettings.remote_shell_enabled, "true" )
+                .open();
         try
         {
             RemoteClient client = new RemoteClient( NO_INITIAL_SESSION, remoteLocation(), new CollectingOutput() );
@@ -129,8 +128,8 @@ public class ShellDocTest
     @Test
     public void testRemoveReferenceNode() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
+        TestGraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
+        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db.getGraphDatabaseAPI(), false );
 
         Documenter doc = new Documenter( "sample session", server );
         doc.add( "mknode --cd", "", "Create a node");
@@ -160,8 +159,8 @@ public class ShellDocTest
     @Test
     public void testDumpCypherResultSimple() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
+        TestGraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
+        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db.getGraphDatabaseAPI(), false );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -179,8 +178,8 @@ public class ShellDocTest
     @Test
     public void testDumpDatabase() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
+        TestGraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
+        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db.getGraphDatabaseAPI(), false );
 
         Documenter doc = new Documenter( "database dump", server );
         doc.add( "create index on :Person(name);", "", "create an index" );
@@ -199,9 +198,10 @@ public class ShellDocTest
     @Test
     public void testMatrix() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .loadPropertiesFromURL( getClass().getResource( "/autoindex.properties" ) ).newGraphDatabase();
-        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withParams( loadPropertiesFromURL( getClass().getResource( "/autoindex.properties" ) ) )
+                .open();
+        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db.getGraphDatabaseAPI(), false );
 
         Documenter doc = new Documenter( "a matrix example", server );
         doc.add("mknode --cd", "", "Create a reference node");

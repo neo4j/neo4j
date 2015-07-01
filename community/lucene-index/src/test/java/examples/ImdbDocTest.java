@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -56,7 +58,6 @@ import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
@@ -74,7 +75,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class ImdbDocTest
 {
-    private static GraphDatabaseService graphDb;
+    private static GraphDatabase graphDb;
     private Transaction tx;
 
     /*
@@ -97,7 +98,7 @@ public class ImdbDocTest
     @BeforeClass
     public static void setUpDb()
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
+        graphDb = CommunityTestGraphDatabase.openEphemeral();
         try ( Transaction tx = graphDb.beginTx() )
         {
             // START SNIPPET: createIndexes
@@ -205,7 +206,7 @@ public class ImdbDocTest
     @Test
     public void deleteIndex()
     {
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase( TargetDirectory.forTest(
+        GraphDatabase graphDb = CommunityTestGraphDatabase.open( TargetDirectory.forTest(
                 getClass() ).cleanDirectory( "delete" ) );
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -648,7 +649,7 @@ public class ImdbDocTest
         inserter.shutdown();
         // END SNIPPET: batchInsert
 
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( "target/neo4jdb-batchinsert" );
+        GraphDatabase db = CommunityTestGraphDatabase.open( new File( "target/neo4jdb-batchinsert" ) );
         try ( Transaction tx = db.beginTx() )
         {
             Index<Node> index = db.index().forNodes( "actors" );

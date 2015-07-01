@@ -43,10 +43,11 @@ import java.lang.reflect.Field;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -55,7 +56,6 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase( false )
 public abstract class AbstractNeo4jTestCase
@@ -82,11 +82,11 @@ public abstract class AbstractNeo4jTestCase
         }
     };
 
-    private static ThreadLocal<GraphDatabaseAPI> threadLocalGraphDb = new ThreadLocal<>();
+    private static ThreadLocal<TestGraphDatabase> threadLocalGraphDb = new ThreadLocal<>();
     private static ThreadLocal<String> currentTestClassName = new ThreadLocal<>();
     private static ThreadLocal<Boolean> requiresPersistentGraphDatabase = new ThreadLocal<>();
 
-    private GraphDatabaseAPI graphDb;
+    private TestGraphDatabase graphDb;
 
     private Transaction tx;
 
@@ -116,15 +116,9 @@ public abstract class AbstractNeo4jTestCase
             }
         }
 
-        threadLocalGraphDb.set( (GraphDatabaseAPI) (requiresPersistentGraphDatabase ?
-                                                    new TestGraphDatabaseFactory().newEmbeddedDatabase( getStorePath(
-                                                            "neo-test" ) ) :
-                                                    new TestGraphDatabaseFactory().newImpermanentDatabase()) );
-    }
-
-    public GraphDatabaseAPI getGraphDbAPI()
-    {
-        return graphDb;
+        threadLocalGraphDb.set( requiresPersistentGraphDatabase ?
+                                CommunityTestGraphDatabase.open( getStorePath( "neo-test" ) ) :
+                                CommunityTestGraphDatabase.openEphemeral() );
     }
 
     protected boolean restartGraphDbBetweenTests()
@@ -254,11 +248,6 @@ public abstract class AbstractNeo4jTestCase
     public IdGenerator getIdGenerator( IdType idType )
     {
         return graphDb.getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( idType );
-    }
-
-    public static void deleteFileOrDirectory( String dir )
-    {
-        deleteFileOrDirectory( new File( dir ) );
     }
 
     public static void deleteFileOrDirectory( File file )

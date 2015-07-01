@@ -37,11 +37,10 @@ public class TransitionalPeriodTransactionMessContainer
     public TransitionalTxManagementKernelTransaction newTransaction()
     {
         Transaction tx = db.beginTx();
-        TransactionTerminator txInterruptor = new TransactionTerminator( tx );
 
         // Get and use the TransactionContext created in db.beginTx(). The role of creating
         // TransactionContexts will be reversed soonish.
-        return new TransitionalTxManagementKernelTransaction( txInterruptor, txBridge );
+        return new TransitionalTxManagementKernelTransaction( tx, txBridge );
     }
 
 }

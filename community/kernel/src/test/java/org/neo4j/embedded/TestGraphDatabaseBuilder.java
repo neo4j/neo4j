@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.AbstractLogService;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
@@ -47,6 +48,7 @@ abstract class TestGraphDatabaseBuilder<BUILDER extends TestGraphDatabaseBuilder
     private LogProvider internalLogProvider;
     private Monitors monitors;
     private IdGeneratorFactory idFactory;
+    private TransactionHeaderInformationFactory thiFactory;
 
     TestGraphDatabaseBuilder()
     {
@@ -92,6 +94,12 @@ abstract class TestGraphDatabaseBuilder<BUILDER extends TestGraphDatabaseBuilder
     public BUILDER withIdGeneratorFactory( IdGeneratorFactory idFactory )
     {
         this.idFactory = idFactory;
+        return self();
+    }
+
+    public BUILDER withTransactionHeaderInformationFactory( TransactionHeaderInformationFactory thiFactory )
+    {
+        this.thiFactory = thiFactory;
         return self();
     }
 
@@ -156,6 +164,12 @@ abstract class TestGraphDatabaseBuilder<BUILDER extends TestGraphDatabaseBuilder
                     protected IdGeneratorFactory createIdGeneratorFactory()
                     {
                         return (idFactory != null) ? idFactory : super.createIdGeneratorFactory();
+                    }
+
+                    @Override
+                    protected TransactionHeaderInformationFactory createHeaderInformationFactory()
+                    {
+                        return (thiFactory != null) ? thiFactory : super.createHeaderInformationFactory();
                     }
                 };
             }

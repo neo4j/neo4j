@@ -30,11 +30,11 @@ import org.neo4j.graphdb.Transaction;
 public class GraphTransactionRule
     extends ExternalResource
 {
-    private final DatabaseRule database;
+    private final TestGraphDatabaseRule database;
 
     private Transaction tx;
 
-    public GraphTransactionRule( DatabaseRule database )
+    public GraphTransactionRule( TestGraphDatabaseRule database )
     {
         this.database = database;
     }
@@ -59,7 +59,7 @@ public class GraphTransactionRule
 
     public Transaction begin()
     {
-        tx = database.getGraphDatabaseService().beginTx();
+        tx = database.get().beginTx();
         return tx;
     }
 

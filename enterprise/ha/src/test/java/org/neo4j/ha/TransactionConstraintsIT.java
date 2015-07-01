@@ -27,6 +27,8 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -44,7 +46,6 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.qa.tooling.DumpProcessInformationRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
@@ -339,7 +340,7 @@ public class TransactionConstraintsIT
         // -- these fiddlings with the stores must not throw
         for ( HighlyAvailableGraphDatabase instance : cluster.getAllMembers() )
         {
-            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( instance.getStoreDir() );
+            GraphDatabase db = CommunityTestGraphDatabase.open( instance.getStoreDirectory() );
             Label label = DynamicLabel.label( LABEL );
             try ( Transaction tx = db.beginTx() )
             {

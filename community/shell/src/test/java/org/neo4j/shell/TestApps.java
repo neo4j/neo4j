@@ -318,7 +318,7 @@ public class TestApps extends AbstractShellTest
             tx.success();
         }
 
-        GraphDatabaseShellServer server = new GraphDatabaseShellServer( db );
+        GraphDatabaseShellServer server = new GraphDatabaseShellServer( db.getGraphDatabaseAPI() );
         ShellClient client = newShellClient( server );
         executeCommand( client, "pwd", Pattern.quote( "(?)" ) );
         executeCommand( client, "ls " + node.getId(), "Test" );

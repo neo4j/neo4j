@@ -27,12 +27,13 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -42,7 +43,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -63,7 +63,7 @@ public class StoreHighIdInflationTest
         // GIVEN
         FileSystemAbstraction fs = fsr.get();
         fs.mkdirs( storeDir );
-        GraphDatabaseAPI db = (GraphDatabaseAPI) newImpermanentDb();
+        TestGraphDatabase db = newImpermanentDb();
         long highestCreatedNodeId = createACoupleOfNodes( db, 3 );
         long highestPropertyStringRecord = getHighestDynamicStringPropertyId( db );
         db.shutdown();
@@ -71,7 +71,7 @@ public class StoreHighIdInflationTest
         inflateStore( DynamicStringStore.TYPE_DESCRIPTOR, PROPERTY_STRINGS_STORE_NAME, megabyteWorthOfZeros() );
 
         // WHEN
-        db = (GraphDatabaseAPI) newImpermanentDb();
+        db = newImpermanentDb();
         long nodeIdAfterInflation = createACoupleOfNodes( db, 1 );
         long stringPropertyIdAfterInflation = getHighestDynamicStringPropertyId( db );
         db.shutdown();
@@ -91,7 +91,7 @@ public class StoreHighIdInflationTest
 
         FileSystemAbstraction fs = fsr.get();
         fs.mkdirs( storeDir );
-        GraphDatabaseService db = newImpermanentDb();
+        TestGraphDatabase db = newImpermanentDb();
         createLabeledNodesAndRels( nodesWithUniqueLabels, relsWithUniqueTypes, db );
         labelTokenRecordSize = neoStoreOf( db ).getLabelTokenStore().getRecordSize();
         db.shutdown();
@@ -107,9 +107,9 @@ public class StoreHighIdInflationTest
                 nodesWithUniqueLabels * labelTokenRecordSize, fileSize - trailerLength );
     }
 
-    private static NeoStore neoStoreOf( GraphDatabaseService db )
+    private static NeoStore neoStoreOf( TestGraphDatabase db )
     {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
+        return db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
     }
 
     @Test
@@ -124,7 +124,7 @@ public class StoreHighIdInflationTest
 
         FileSystemAbstraction fs = fsr.get();
         fs.mkdirs( storeDir );
-        GraphDatabaseService db = newImpermanentDb();
+        TestGraphDatabase db = newImpermanentDb();
         createLabeledNodesAndRels( nodesWithUniqueLabels, relsWithUniqueTypes, db );
         relTypeTokenRecordSize = relTypeTokenStore( db ).getRecordSize();
         assertEquals( "Unexpected highest inUse id",
@@ -150,14 +150,14 @@ public class StoreHighIdInflationTest
         }
     }
 
-    private long getHighestDynamicStringPropertyId( GraphDatabaseAPI db )
+    private long getHighestDynamicStringPropertyId( TestGraphDatabase db )
     {
         return db.getDependencyResolver().resolveDependency( DataSourceManager.class )
                 .getDataSource().getNeoStore().getPropertyStore()
                 .getStringStore().getHighestPossibleIdInUse();
     }
 
-    private static RelationshipTypeTokenStore relTypeTokenStore( GraphDatabaseService db )
+    private static RelationshipTypeTokenStore relTypeTokenStore( TestGraphDatabase db )
     {
         return neoStoreOf( db ).getRelationshipTypeTokenStore();
     }
@@ -257,9 +257,9 @@ public class StoreHighIdInflationTest
         }
     }
 
-    private GraphDatabaseService newImpermanentDb()
+    private TestGraphDatabase newImpermanentDb()
     {
-        return new TestGraphDatabaseFactory().setFileSystem( fsr.get() ).newImpermanentDatabase( storeDir );
+        return CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fsr.get() ).open( storeDir );
     }
 
     private static int trailerLength( String typeDescriptor )

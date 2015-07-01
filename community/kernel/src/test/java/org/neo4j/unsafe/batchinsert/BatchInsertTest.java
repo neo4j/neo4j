@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
@@ -93,7 +94,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.*;
@@ -292,12 +292,11 @@ public class BatchInsertTest
     private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
     {
         inserter.shutdown();
-        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fs );
-        return factory.newImpermanentDatabaseBuilder( new File( inserter.getStoreDir() ) )
-                // Shouldn't be necessary to set dense node threshold since it's a stick config
-                .setConfig( configuration() )
-                .newGraphDatabase();
+
+        return CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs )
+                .withParams( configuration() )
+                .open( new File( inserter.getStoreDir() ) );
     }
 
     private NeoStore switchToNeoStore( BatchInserter inserter )

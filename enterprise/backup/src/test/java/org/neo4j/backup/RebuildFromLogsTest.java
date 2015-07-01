@@ -32,13 +32,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
@@ -54,7 +55,7 @@ public class RebuildFromLogsTest
     {
         // given
         File prototypePath = new File( dir.graphDbDir(), "prototype" );
-        GraphDatabaseService prototype = db( prototypePath );
+        GraphDatabase prototype = CommunityTestGraphDatabase.open( prototypePath );
         try
         {
             for ( Transaction transaction : work )
@@ -69,10 +70,10 @@ public class RebuildFromLogsTest
 
         // when
         File rebuildPath = new File( dir.graphDbDir(), "rebuild" );
-        GraphDatabaseAPI rebuilt = db( rebuildPath );
+        TestGraphDatabase rebuilt = CommunityTestGraphDatabase.open( rebuildPath );
         try
         {
-            new RebuildFromLogs( rebuilt ).applyTransactionsFrom( prototypePath );
+            new RebuildFromLogs( rebuilt.getGraphDatabaseAPI() ).applyTransactionsFrom( prototypePath );
         }
         finally
         {
@@ -81,11 +82,6 @@ public class RebuildFromLogsTest
 
         // then
         assertEquals( DbRepresentation.of( prototypePath ), DbRepresentation.of( rebuildPath ) );
-    }
-
-    private GraphDatabaseAPI db( File rebuiltPath )
-    {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( rebuiltPath.getAbsolutePath() );
     }
 
     enum Transaction

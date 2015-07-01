@@ -47,10 +47,8 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Triplet;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -74,7 +72,7 @@ public class TestTransactionEvents
         DummyTransactionEventHandler<Integer> handler1 = new DummyTransactionEventHandler<>( (Integer) value1 );
         DummyTransactionEventHandler<Double> handler2 = new DummyTransactionEventHandler<>( (Double) value2 );
 
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         try
         {
             db.unregisterTransactionEventHandler( handler1 );
@@ -125,7 +123,7 @@ public class TestTransactionEvents
     public void makeSureHandlersCantBeRegisteredTwice()
     {
         DummyTransactionEventHandler<Object> handler = new DummyTransactionEventHandler<>( null );
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         db.registerTransactionEventHandler( handler );
         db.registerTransactionEventHandler( handler );
         try ( Transaction tx = db.beginTx() )
@@ -146,7 +144,7 @@ public class TestTransactionEvents
         // Create new data, nothing modified, just added/created
         ExpectedTransactionData expectedData = new ExpectedTransactionData();
         VerifyingTransactionEventHandler handler = new VerifyingTransactionEventHandler( expectedData );
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         db.registerTransactionEventHandler( handler );
         Node node1 = null, node2, node3 = null;
         Relationship rel1 = null, rel2 = null;
@@ -275,7 +273,7 @@ public class TestTransactionEvents
         handlers.add( new FailingEventHandler<>( new DummyTransactionEventHandler<>( null ), false ) );
         handlers.add( new FailingEventHandler<>( new DummyTransactionEventHandler<>( null ), true ) );
         handlers.add( new FailingEventHandler<>( new DummyTransactionEventHandler<>( null ), false ) );
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         for ( TransactionEventHandler<Object> handler : handlers )
         {
             db.registerTransactionEventHandler( handler );
@@ -326,7 +324,7 @@ public class TestTransactionEvents
         }
 
         ExceptionThrowingEventHandler handler = new ExceptionThrowingEventHandler( new MyFancyException(), null, null );
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         db.registerTransactionEventHandler( handler );
 
         try
@@ -363,7 +361,7 @@ public class TestTransactionEvents
     @Test
     public void deleteNodeRelTriggerPropertyRemoveEvents()
     {
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         Node node1;
         Node node2;
         Relationship rel;
@@ -383,7 +381,6 @@ public class TestTransactionEvents
         db.registerTransactionEventHandler( handler );
         try ( Transaction tx = db.beginTx() )
         {
-            GraphDatabaseAPI dbApi = dbRule.getGraphDatabaseAPI();
             rel.delete();
             node1.delete();
             node2.delete();
@@ -601,7 +598,7 @@ public class TestTransactionEvents
     {
         DummyTransactionEventHandler<Integer> handler =
             new DummyTransactionEventHandler<>( 10 );
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         db.registerTransactionEventHandler( handler );
         try
         {
@@ -624,7 +621,7 @@ public class TestTransactionEvents
     {
         // Given
         // -- create node and set property on it in one transaction
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         final String key = "key";
         final Object value1 = "the old value";
         final Object value2 = "the new value";
@@ -664,7 +661,7 @@ public class TestTransactionEvents
     public void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingProperty() throws Exception
     {
         // Given we have a schema index...
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         Label label = DynamicLabel.label( "Label" );
         IndexDefinition index;
         try ( Transaction tx = db.beginTx() )
@@ -720,7 +717,7 @@ public class TestTransactionEvents
     public void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingLabel() throws Exception
     {
         // Given we have a schema index...
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         final Label label = DynamicLabel.label( "Label" );
         IndexDefinition index;
         try ( Transaction tx = db.beginTx() )
@@ -777,7 +774,7 @@ public class TestTransactionEvents
     public void shouldAccessAssignedLabels() throws Exception
     {
         // given
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
 
         ChangedLabels labels = (ChangedLabels) db.registerTransactionEventHandler( new ChangedLabels() );
         try
@@ -808,7 +805,7 @@ public class TestTransactionEvents
     public void shouldAccessRemovedLabels() throws Exception
     {
         // given
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
 
         ChangedLabels labels = (ChangedLabels) db.registerTransactionEventHandler( new ChangedLabels() );
         try
@@ -853,7 +850,7 @@ public class TestTransactionEvents
     public void shouldAccessRelationshipDataInAfterCommit() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         final AtomicInteger accessCount = new AtomicInteger();
         final Map<Long,Triplet<Node,String,Node>> expectedRelationshipData = new HashMap<>();
         TransactionEventHandler<Void> handler = new TransactionEventHandler.Adapter<Void>()
@@ -934,7 +931,7 @@ public class TestTransactionEvents
     @Test
     public void shouldProvideTheCorrectRelationshipData()
     {
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
 
         // create a rel type so the next type id is non zero
         try( Transaction tx = db.beginTx() )
@@ -1061,5 +1058,5 @@ public class TestTransactionEvents
     }
 
     @Rule
-    public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 }

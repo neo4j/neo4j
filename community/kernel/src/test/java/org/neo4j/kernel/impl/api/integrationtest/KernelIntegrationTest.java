@@ -22,8 +22,9 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.After;
 import org.junit.Before;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -37,13 +38,10 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.test.TestGraphDatabaseBuilder;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 public abstract class KernelIntegrationTest
 {
-    @SuppressWarnings("deprecation")
-    protected GraphDatabaseAPI db;
+    protected TestGraphDatabase db;
     protected ThreadToStatementContextBridge statementContextSupplier;
     protected KernelAPI kernel;
     protected IndexingService indexingService;
@@ -114,7 +112,7 @@ public abstract class KernelIntegrationTest
     public void setup()
     {
         fs = new EphemeralFileSystemAbstraction();
-        startDb("soft");
+        startDb();
     }
 
     @After
@@ -124,21 +122,12 @@ public abstract class KernelIntegrationTest
         fs.shutdown();
     }
 
-    protected void startDb(String cacheType)
+    protected void startDb()
     {
-        TestGraphDatabaseBuilder graphDatabaseFactory = (TestGraphDatabaseBuilder) new TestGraphDatabaseFactory().setFileSystem(fs).newImpermanentDatabaseBuilder();
-
-        //noinspection deprecation
-        db = (GraphDatabaseAPI) graphDatabaseFactory.newGraphDatabase();
+        db = CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs ).open();
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         statementContextSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-    }
-
-    protected void dbWithNoCache() throws TransactionFailureException
-    {
-        stopDb();
-        startDb("none");
     }
 
     protected void stopDb() throws TransactionFailureException
@@ -153,7 +142,7 @@ public abstract class KernelIntegrationTest
     protected void restartDb() throws TransactionFailureException
     {
         stopDb();
-        startDb("soft");
+        startDb();
     }
 
     protected NeoStore neoStore()

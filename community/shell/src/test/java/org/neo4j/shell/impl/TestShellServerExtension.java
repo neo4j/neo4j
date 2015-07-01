@@ -19,8 +19,7 @@
  */
 package org.neo4j.shell.impl;
 
-import java.util.Map;
-
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
 import org.neo4j.shell.ShellSettings;
@@ -34,14 +33,13 @@ public class TestShellServerExtension extends
     }
 
     @Override
-    protected Map<String, String> configuration( boolean shouldLoad, int instance )
+    protected void configure( TestGraphDatabase.EphemeralBuilder builder, boolean shouldLoad, int instance )
     {
-        Map<String, String> configuration = super.configuration( shouldLoad, instance );
+        super.configure( builder, shouldLoad, instance );
         if ( shouldLoad )
         {
-            configuration.put( ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
-            configuration.put( ShellSettings.remote_shell_name.name(), "neo4j-shell-" + instance );
+            builder.withSetting( ShellSettings.remote_shell_enabled, Settings.TRUE );
+            builder.withSetting( ShellSettings.remote_shell_name, "neo4j-shell-" + instance );
         }
-        return configuration;
     }
 }
