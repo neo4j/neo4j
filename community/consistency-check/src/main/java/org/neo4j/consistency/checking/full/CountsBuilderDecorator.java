@@ -207,8 +207,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
             {
                 if ( record.inUse() )
                 {
-                    final Set<Long> labels = labelsFor( nodeStore, engine, records, record.getId()
-                    );
+                    final Set<Long> labels = labelsFor( nodeStore, engine, records, record.getId() );
                     counts.add( nodeKey( WILDCARD ) );
                     for ( long label : labels )
                     {
