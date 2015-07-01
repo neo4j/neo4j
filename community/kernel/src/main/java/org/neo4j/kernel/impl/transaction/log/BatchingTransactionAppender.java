@@ -112,7 +112,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     }
 
     @Override
-    public long append( TransactionRepresentation transaction, LogAppendEvent logAppendEvent ) throws IOException
+    public Commitment append( TransactionRepresentation transaction, LogAppendEvent logAppendEvent ) throws IOException
     {
         long transactionId = -1;
         int phase = 0;
@@ -122,7 +122,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         boolean logRotated = logRotation.rotateLogIfNeeded( logAppendEvent );
         logAppendEvent.setLogRotated( logRotated );
 
-        TransactionCommitment commit;
+        TransactionCommitment commitment;
         try
         {
             // Synchronized with logFile to get absolute control over concurrent rotations happening
@@ -132,15 +132,15 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                 {
                     transactionId = transactionIdStore.nextCommittingTransactionId();
                     phase = 1;
-                    commit = appendToLog( transaction, transactionId );
+                    commitment = appendToLog( transaction, transactionId );
                 }
             }
 
             forceAfterAppend( logAppendEvent );
-            commit.publishAsCommitted();
-            orderLegacyIndexChanges( commit );
+            commitment.publishAsCommitted();
+            orderLegacyIndexChanges( commitment );
             phase = 2;
-            return transactionId;
+            return commitment;
         }
         finally
         {
@@ -148,7 +148,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
             {
                 // So we end up here if we enter phase 1, but fails to reach phase 2, which means that
                 // we told TransactionIdStore that we committed transaction, but something failed right after
-                transactionIdStore.transactionClosed( transactionId );
+                transactionIdStore.transactionClosed( transactionId, 0l, 0l );
             }
         }
     }
@@ -200,24 +200,36 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         private final boolean hasLegacyIndexChanges;
         private final long transactionId;
         private final long transactionChecksum;
-        private final LogPosition logPositionAfterTransaction;
+        private final LogPosition logPosition;
         private final TransactionIdStore transactionIdStore;
 
         TransactionCommitment( boolean hasLegacyIndexChanges, long transactionId, long transactionChecksum,
-                LogPosition logPositionAfterTransaction, TransactionIdStore transactionIdStore )
+                LogPosition logPosition, TransactionIdStore transactionIdStore )
         {
             this.hasLegacyIndexChanges = hasLegacyIndexChanges;
             this.transactionId = transactionId;
             this.transactionChecksum = transactionChecksum;
-            this.logPositionAfterTransaction = logPositionAfterTransaction;
+            this.logPosition = logPosition;
             this.transactionIdStore = transactionIdStore;
         }
 
         @Override
         public void publishAsCommitted()
         {
-            transactionIdStore.transactionCommitted( transactionId, transactionChecksum,
-                    logPositionAfterTransaction.getLogVersion(), logPositionAfterTransaction.getByteOffset() );
+            transactionIdStore.transactionCommitted( transactionId, transactionChecksum );
+        }
+
+        @Override
+        public void publishAsApplied()
+        {
+            transactionIdStore.transactionClosed( transactionId,
+                    logPosition.getLogVersion(), logPosition.getByteOffset() );
+        }
+
+        @Override
+        public long transactionId()
+        {
+            return transactionId;
         }
     }
 

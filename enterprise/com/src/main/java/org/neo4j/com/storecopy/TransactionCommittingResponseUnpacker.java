@@ -100,10 +100,11 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
                 Access<Commitment> commitmentAccess ) throws IOException
         {
             long transactionId = transaction.getCommitEntry().getTxId();
+            Commitment commitment = commitmentAccess.get();
             TransactionRepresentation representation = transaction.getTransactionRepresentation();
             try
             {
-                commitmentAccess.get().publishAsCommitted();
+                commitment.publishAsCommitted();
                 try ( LockGroup locks = new LockGroup();
                       ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( representation, EXTERNAL ) )
                 {
@@ -113,7 +114,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             }
             finally
             {
-                transactionIdStore.transactionClosed( transactionId );
+                commitment.publishAsApplied();
             }
         }
     };

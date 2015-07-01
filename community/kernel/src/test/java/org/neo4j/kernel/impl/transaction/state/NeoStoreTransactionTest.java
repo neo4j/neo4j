@@ -97,6 +97,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
@@ -1454,7 +1455,7 @@ public class NeoStoreTransactionTest
         TransactionAppender appenderMock = mock( TransactionAppender.class );
         when( appenderMock.append(
                 Matchers.<TransactionRepresentation>any(),
-                any( LogAppendEvent.class ) ) ).thenReturn( nextTxId++ );
+                any( LogAppendEvent.class ) ) ).thenReturn( new FakeCommitment( nextTxId++, neoStore ) );
         @SuppressWarnings( "unchecked" )
         Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
         when( labelScanStore.instance() ).thenReturn( mock( LabelScanWriter.class ) );

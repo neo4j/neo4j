@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
+import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -95,6 +96,7 @@ public class TransactionCommittingResponseUnpackerTest
     public void testStopShouldAllowTransactionsToCompleteCommitAndApply() throws Throwable
     {
         // Given
+        long committingTransactionId = BASE_TX_ID + 1;
 
         // Handcrafted deep mocks, otherwise the dependency resolution throws ClassCastExceptions
         final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
@@ -113,6 +115,8 @@ public class TransactionCommittingResponseUnpackerTest
 
         TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( txIdStore, logFile, logRotation,
                 indexUpdatesValidator, applier, appender, mock( TransactionObligationFulfiller.class ) );
+        when( appender.append( any( TransactionRepresentation.class ), eq( committingTransactionId ) ) )
+                .thenReturn( new FakeCommitment( committingTransactionId, txIdStore ) );
 
         int maxBatchSize = 10;
         TransactionCommittingResponseUnpacker unpacker =
@@ -121,14 +125,13 @@ public class TransactionCommittingResponseUnpackerTest
 
         // When
         unpacker.start();
-        long committingTransactionId = BASE_TX_ID + 1;
         DummyTransactionResponse response = new DummyTransactionResponse( committingTransactionId, 1, appender,
                 maxBatchSize );
         unpacker.unpackResponse( response, stoppingTxHandler );
 
         // Then
-        // we can't verify transactionCommitted since that's part of the TransactionAppender, which we have mocked
-        verify( txIdStore, times( 1 ) ).transactionClosed( committingTransactionId );
+        verify( txIdStore, times( 1 ) ).transactionCommitted( eq( committingTransactionId ), anyLong() );
+        verify( txIdStore, times( 1 ) ).transactionClosed( eq( committingTransactionId ), anyLong(), anyLong() );
         verify( appender, times( 1 ) ).append( any( TransactionRepresentation.class ), anyLong() );
         verify( appender, times( 1 ) ).force();
         verify( logRotation, times( 1 ) ).rotateLogIfNeeded( logAppendEvent );
@@ -309,8 +312,8 @@ public class TransactionCommittingResponseUnpackerTest
         catch ( Exception e )
         {
             // THEN apart from failing we don't want any committed/closed calls to TransactionIdStore
-            verify( transactionIdStore, times( 0 ) ).transactionCommitted( anyLong(), anyLong(), anyLong(), anyLong() );
-            verify( transactionIdStore, times( 0 ) ).transactionClosed( anyLong() );
+            verify( transactionIdStore, times( 0 ) ).transactionCommitted( anyLong(), anyLong() );
+            verify( transactionIdStore, times( 0 ) ).transactionClosed( anyLong(), anyLong(), anyLong() );
         }
     }
 

@@ -63,7 +63,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public void start() throws Throwable
     {
-        threshold.initialize( transactionIdStore.getLastCommittedTransactionId() );
+        threshold.initialize( transactionIdStore.getLastClosedTransactionId() );
     }
 
     @Override
@@ -75,7 +75,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public void checkPointIfNeeded() throws IOException
     {
-        if ( threshold.isCheckPointingNeeded( transactionIdStore.getLastCommittedTransactionId() ) )
+        if ( threshold.isCheckPointingNeeded( transactionIdStore.getLastClosedTransactionId() ) )
         {
             try ( LogCheckPointEvent event = tracer.beginCheckPoint() )
             {
@@ -86,11 +86,10 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 
     private void doCheckPoint( LogCheckPointEvent logCheckPointEvent ) throws IOException
     {
-        long[] lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
-        long lastCommittedTransactionId = lastCommittedTransaction[0];
-        LogPosition logPosition =
-                new LogPosition( lastCommittedTransaction[2], lastCommittedTransaction[3] );
-        msgLog.info( prefix( lastCommittedTransactionId ) + "Starting check pointing..." );
+        long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
+        long lastClosedTransactionId = lastClosedTransaction[0];
+        LogPosition logPosition = new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
+        msgLog.info( prefix( lastClosedTransactionId ) + "Starting check pointing..." );
 
         /*
          * Check kernel health before going into waiting for transactions to be closed, to avoid
@@ -103,7 +102,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
          * First we flush the store. If we fail now or during the flush, on recovery we'll find the
          * earlier check point and replay from there all the log entries. Everything will be ok.
          */
-        msgLog.info( prefix( lastCommittedTransactionId ) + " Starting store flush..." );
+        msgLog.info( prefix( lastClosedTransactionId ) + " Starting store flush..." );
         storeFlusher.forceEverything();
 
         /*
@@ -113,8 +112,8 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
          */
         kernelHealth.assertHealthy( IOException.class );
         appender.checkPoint( logPosition, logCheckPointEvent );
-        threshold.checkPointHappened( lastCommittedTransactionId );
-        msgLog.info( prefix( lastCommittedTransactionId ) + "Check pointing completed" );
+        threshold.checkPointHappened( lastClosedTransactionId );
+        msgLog.info( prefix( lastClosedTransactionId ) + "Check pointing completed" );
 
         /*
          * Prune up to the version pointed from the latest check point,

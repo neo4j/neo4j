@@ -857,10 +857,10 @@ public class StoreMigrator implements StoreMigrationParticipant
         NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.LAST_TRANSACTION_CHECKSUM, lastTxChecksum );
         NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.UPGRADE_TRANSACTION_CHECKSUM, lastTxChecksum );
 
-        // add LAST_TRANSACTION_LOG_VERSION and LAST_TRANSACTION_LOG_BYTE_OFFSET to the migated NeoStore
+        // add LAST_CLOSED_TRANSACTION_LOG_VERSION and LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET to the migated NeoStore
         LogPosition logPosition = readLastTxLogPosition( migrationDir );
-        NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.LAST_TRANSACTION_LOG_VERSION, logPosition.getLogVersion() );
-        NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.LAST_TRANSACTION_LOG_BYTE_OFFSET, logPosition.getByteOffset() );
+        NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logPosition.getLogVersion() );
+        NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, logPosition.getByteOffset() );
     }
 
     @Override

@@ -244,7 +244,7 @@ public class BatchingTransactionAppenderTest
             // THEN
             assertSame( failure, e );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
-            verify( transactionIdStore, times( 1 ) ).transactionClosed( txId );
+            verify( transactionIdStore, times( 1 ) ).transactionClosed( eq( txId ), anyLong(), anyLong() );
             verify( kernelHealth ).panic( failure );
         }
     }
@@ -282,7 +282,7 @@ public class BatchingTransactionAppenderTest
             // THEN
             assertSame( failure, e );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
-            verify( transactionIdStore, times( 1 ) ).transactionClosed( txId );
+            verify( transactionIdStore, times( 1 ) ).transactionClosed( eq( txId ), anyLong(), anyLong() );
             verify( kernelHealth ).panic( failure );
         }
     }
@@ -332,12 +332,12 @@ public class BatchingTransactionAppenderTest
                 {
                     if ( !completed[i] )
                     {
-                        Long tx = tryComplete( committers[i], 100 );
-                        if ( tx != null )
+                        Commitment commitment = tryComplete( committers[i], 100 );
+                        if ( commitment != null )
                         {
                             assertNull( "Multiple legacy index transactions seems to have " +
                                         "moved on from append at the same time", doneTx );
-                            doneTx = tx;
+                            doneTx = commitment.transactionId();
                             completed[i] = true;
                         }
                     }
@@ -376,8 +376,8 @@ public class BatchingTransactionAppenderTest
             // THEN
             assertTrue( contains( e, failureMessage, RuntimeException.class ) );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
-            verify( transactionIdStore, times( 1 ) ).transactionCommitted( eq( txId ), anyLong(), anyLong(), anyLong() );
-            verify( transactionIdStore, times( 1 ) ).transactionClosed( txId );
+            verify( transactionIdStore, times( 1 ) ).transactionCommitted( eq( txId ), anyLong() );
+            verify( transactionIdStore, times( 1 ) ).transactionClosed( eq( txId ), anyLong(), anyLong() );
             verifyNoMoreInteractions( transactionIdStore );
         }
     }
@@ -446,12 +446,12 @@ public class BatchingTransactionAppenderTest
         return transaction;
     }
 
-    private Long tryComplete( Future<?> future, int millis )
+    private Commitment tryComplete( Future<?> future, int millis )
     {
         try
         {
             // Let's wait a full second here since in the green case it will return super quickly
-            return (Long) future.get( millis, MILLISECONDS );
+            return (Commitment) future.get( millis, MILLISECONDS );
         }
         catch ( InterruptedException | ExecutionException e )
         {
@@ -488,10 +488,10 @@ public class BatchingTransactionAppenderTest
         for ( int i = 0; i < transactions.length; i++ )
         {
             final TransactionRepresentation transaction = createTransaction( transactions[i], i );
-            futures[i] = executor.submit( new Callable<Long>()
+            futures[i] = executor.submit( new Callable<Commitment>()
             {
                 @Override
-                public Long call() throws IOException
+                public Commitment call() throws IOException
                 {
                     return appender.append( transaction, logAppendEvent );
                 }
