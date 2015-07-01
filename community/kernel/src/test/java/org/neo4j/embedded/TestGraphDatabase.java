@@ -17,31 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.embedded;
+
+import java.io.File;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
 /**
- * This API can be used to get access to services.
- *
- * @deprecated This will be moved to internal packages in the next major release.
+ * A running Neo4j graph database, with additional methods exposed for test purposes.
  */
-@Deprecated
-public interface GraphDatabaseAPI extends GraphDatabaseService
+public interface TestGraphDatabase extends GraphDatabase
 {
-    /**
-     * Look up database components for direct access.
-     * Usage of this method is generally an indication of architectural error.
-     */
-    @Deprecated
+    abstract class Builder extends TestGraphDatabaseBuilder<Builder>
+    {
+    }
+
+    abstract class EphemeralBuilder extends TestGraphDatabaseBuilder<EphemeralBuilder>
+    {
+        public abstract TestGraphDatabase open();
+    }
+
+    FileSystemAbstraction fileSystem();
+
+    File storeDir();
+
     DependencyResolver getDependencyResolver();
 
-    /** Provides the unique id assigned to this database. */
+    /**
+     * @deprecated Method included for transitional purpose only - prefer not using this method
+     */
     @Deprecated
-    StoreId storeId();
-
-    @Deprecated
-    String getStoreDir();
+    GraphDatabaseAPI getGraphDatabaseAPI();
 }

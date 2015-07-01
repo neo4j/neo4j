@@ -22,12 +22,15 @@ package org.neo4j.graphdb.factory;
 import java.io.File;
 import java.util.Map;
 
+import org.neo4j.embedded.HighAvailabilityGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 
 /**
  * Factory for HA Neo4j instances.
+ * @deprecated use {@link HighAvailabilityGraphDatabase} instead
  */
+@Deprecated
 public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
 {
     @Override

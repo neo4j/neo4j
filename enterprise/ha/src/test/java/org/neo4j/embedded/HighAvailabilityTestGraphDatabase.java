@@ -17,20 +17,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory;
+package org.neo4j.embedded;
 
-import org.neo4j.embedded.HighAvailabilityTestGraphDatabase;
+import java.io.File;
 
-/**
- * @deprecated use {@link HighAvailabilityTestGraphDatabase} instead
- */
-@Deprecated
-public class TestHighlyAvailableGraphDatabaseFactory extends HighlyAvailableGraphDatabaseFactory
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+
+public interface HighAvailabilityTestGraphDatabase extends HighAvailabilityGraphDatabase, TestGraphDatabase
 {
-    @Override
-    protected void configure( GraphDatabaseBuilder builder )
+    abstract class Builder extends HighAvailabilityTestGraphDatabaseBuilder<Builder>
     {
-        super.configure( builder );
-        builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
+        Builder( int memberId )
+        {
+            super( memberId );
+        }
+    }
+
+    abstract class EphemeralBuilder extends HighAvailabilityTestGraphDatabaseBuilder<EphemeralBuilder>
+    {
+        public static final File PATH = new File( "target/test-data/impermanent-db" );
+
+        EphemeralBuilder( int memberId )
+        {
+            super( memberId );
+            withFileSystem( new EphemeralFileSystemAbstraction() );
+        }
     }
 }

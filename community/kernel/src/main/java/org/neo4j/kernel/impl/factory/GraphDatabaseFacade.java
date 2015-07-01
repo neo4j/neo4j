@@ -49,6 +49,7 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
@@ -122,6 +123,7 @@ public class GraphDatabaseFacade
     private long transactionStartTimeout;
     private DependencyResolver dependencies;
     private Supplier<StoreId> storeId;
+    protected FileSystemAbstraction fileSystem;
     protected File storeDir;
 
     public PlatformModule platformModule;
@@ -159,6 +161,7 @@ public class GraphDatabaseFacade
         this.transactionStartTimeout = editionModule.transactionStartTimeout;
         this.dependencies = platformModule.dependencies;
         this.storeId = dataSourceModule.storeId;
+        this.fileSystem = platformModule.fileSystem;
         this.storeDir = platformModule.storeDir;
 
         initialized = true;
