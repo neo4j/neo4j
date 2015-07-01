@@ -46,6 +46,17 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
     /**
      * The +shortestPath+ algorithm can find multiple paths between the same
      * nodes, like in this example.
+     *
+     * Layout
+     *
+     * (e)----------------
+     *  |                 |
+     * (d)-------------   |
+     *  |               \/
+     * (a)-(c)-(b)-(f)-(g)
+     *      |\     /   /
+     *      | ----    /
+     *       --------
      */
     @Test
     @Graph( value = { "a to c", "a to d", "c to b", "d to e", "b to f", "c to f", "f to g", "d to g", "e to g",
@@ -79,6 +90,17 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
      * If no path algorithm is specified, a +shortestPath+ algorithm with a max
      * depth of 1 will be chosen. In this example, the +max_depth+ is set to +3+
      * in order to find the shortest path between a maximum of 3 linked nodes.
+     *
+     * Layout
+     *
+     * (e)----------------
+     *  |                 |
+     * (d)-------------   |
+     *  |               \/
+     * (a)-(c)-(b)-(f)-(g)
+     *      |\     /   /
+     *      | ----    /
+     *       --------
      */
     @Title( "Find one of the shortest paths" )
     @Test
@@ -128,6 +150,15 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
      * This example is running a Dijkstra algorithm over a graph with different
      * cost properties on different relationships. Note that the request URI
      * ends with +/path+ which means a single path is what we want here.
+     *
+     * Layout
+     *
+     *    1.5------(b)--------0.5
+     *   /                      \
+     * (a)-0.5-(c)-0.5-(d)-0.5-(e)
+     *   \                     /
+     *   0.5-------(f)------1.2
+     *
      */
     @Test
     @Graph( nodes = { @NODE( name = "a", setNameProperty = true ), @NODE( name = "b", setNameProperty = true ),
@@ -164,6 +195,15 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
      * cost properties on different relationships. Note that the request URI
      * ends with +/paths+ which means we want multiple paths returned, in case
      * they exist.
+     *
+     * Layout
+     *
+     *    1.5------(b)--------0.5
+     *   /                      \
+     * (a)-0.5-(c)-0.5-(d)-0.5-(e)
+     *   \                     /
+     *   0.5-------(f)------1.0
+     *
      */
     @Test
     @Graph( nodes = { @NODE( name = "a", setNameProperty = true ), @NODE( name = "b", setNameProperty = true ),
@@ -200,10 +240,9 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
         assertThatPathEndsWith( secondPath, e );
         assertEquals( 1.5, firstPath.get( "weight" ) );
         assertEquals( 1.5, secondPath.get( "weight" ) );
-        // 5 = 3 +2
+        // 5 = 3 + 2
         assertEquals( 5, (Integer) firstPath.get( "length" ) + (Integer) secondPath.get( "length" ) );
-        assertThatPathHasLength( firstPath, 3 );
-        assertThatPathHasLength( secondPath, 2 );
+        assertEquals( 1, Math.abs( (Integer) firstPath.get( "length" ) - (Integer) secondPath.get( "length" ) ) );
     }
 
     /**
@@ -211,6 +250,15 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
      * weights on all relationships. This example is included to show the
      * difference when the same graph structure is used, but the path weight is
      * equal to the number of hops.
+     *
+     * Layout
+     *
+     *    1------(b)-----1
+     *   /                \
+     * (a)-1-(c)-1-(d)-1-(e)
+     *   \                /
+     *    1------(f)-----1
+     *
      */
     @Test
     @Graph( nodes = { @NODE( name = "a", setNameProperty = true ),
@@ -227,23 +275,35 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
     @Title( "Execute a Dijkstra algorithm with equal weights on relationships" )
     @Documented
     public void shouldGetCorrectDijkstraPathsWithEqualWeightsWithDefaultCost() throws Exception
-            {
+    {
         // Get cheapest path using Dijkstra
         long a = nodeId( data.get(), "a" );
         long e = nodeId( data.get(), "e" );
         String response = gen()
-        .expectedStatus( Status.OK.getStatusCode() )
+                .expectedStatus( Status.OK.getStatusCode() )
                 .payload( getAllPathsUsingDijkstraPayLoad( e, false ) )
                 .post( "http://localhost:7474/db/data/node/" + a + "/path" )
-        .entity();
-        //
+                .entity();
+
         Map<?, ?> path = JsonHelper.jsonToMap( response );
         assertThatPathStartsWith( path, a );
         assertThatPathEndsWith( path, e );
         assertThatPathHasLength( path, 2 );
         assertEquals( 2.0, path.get( "weight" ) );
-            }
+    }
 
+    /**
+     * Layout
+     *
+     * (e)----------------
+     *  |                 |
+     * (d)-------------   |
+     *  |               \/
+     * (a)-(c)-(b)-(f)-(g)
+     *      |\     /   /
+     *      | ----    /
+     *       --------
+     */
     @Test
     @Graph( value = { "a to c", "a to d", "c to b", "d to e", "b to f", "c to f", "f to g", "d to g", "e to g",
     "c to g" } )
