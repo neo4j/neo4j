@@ -289,15 +289,15 @@ module.exports = (grunt) ->
         src: ["<%= yeoman.dist %>/styles/main.css"]
 
     exec:
-      CSVExport:
-        command: 'cat .tmp/lib/helpers.js .tmp/lib/serializer.js src/test/javascript/prepareCSVTest.js | /usr/bin/node'
+      csv_test_prep:
+        command: 'mkdir -p target/test-classes/ && cat .tmp/lib/helpers.js .tmp/lib/serializer.js src/test/javascript/prepareCSVTest.js >target/test-classes/CsvExportImportRoundTripTest.js'
 
   # load all grunt tasks
   require("matchdep").filterDev("grunt-*").forEach grunt.loadNpmTasks
 
   grunt.registerTask "server", ["clean:server", "coffee", "configureProxies", "stylus", "jade", "connect:livereload", "watch"]
-  grunt.registerTask "test", ["clean:server", "coffee", "connect:test", "karma", "exec:CSVExport"]
-  grunt.registerTask "build", ["clean:dist", "test", "coffee", "jade", "stylus", "useminPrepare", "concat", "copy", "imagemin", "cssmin", "htmlmin", "uglify", "rev", "usemin", "replace"]
+  grunt.registerTask "test", ["clean:server", "coffee", "connect:test", "karma", "exec:csv_test_prep"]
+  grunt.registerTask "build", ["clean:dist", "coffee", "test", "jade", "stylus", "useminPrepare", "concat", "copy", "imagemin", "cssmin", "htmlmin", "uglify", "rev", "usemin", "replace"]
   grunt.registerTask "server:dist", ["build", "configureProxies", "connect:dist:keepalive"]
   grunt.registerTask "default", ["build"]
 

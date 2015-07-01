@@ -30,15 +30,26 @@
  e.g. `cat .tmp/lib/helpers.js .tmp/lib/serializer.js src/test/javascript/prepareCSVTest.js | node`
  */
 
-var fs = require('fs');
-var s = new neo.serializer();
+var stdin = process.stdin,
+    inputChunks = [];
 
-s.columns(['col1', 'col2', 'col3']);
-s.append(['Hello "Mr. Quote"', null, '']);
-var out = s.output();
+stdin.resume();
+stdin.setEncoding('utf8');
 
-fs.writeFile("/tmp/csv-export-javascript.csv", out, function(err) {
-  if(err) {
-    throw err;
-  }
+stdin.on('data', function(chunk) {
+    inputChunks.push(chunk);
+});
+
+stdin.on('end', function() {
+    var inputJSON = inputChunks.join(),
+        parsedData = JSON.parse(inputJSON);
+
+    var s = new neo.serializer();
+
+    s.columns(parsedData.columns);
+    parsedData.rows.forEach(function(row) {
+        s.append(row);
+    });
+    process.stdout.write(s.output());
+    process.stdout.write('\n');
 });
