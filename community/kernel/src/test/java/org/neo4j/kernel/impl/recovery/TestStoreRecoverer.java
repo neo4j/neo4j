@@ -30,6 +30,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -37,8 +38,11 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 public class TestStoreRecoverer
+
 {
     private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public TargetDirectory.TestDirectory testDirectory =
             TargetDirectory.testDirForTestWithEphemeralFS(fileSystem, getClass() );
@@ -55,7 +59,7 @@ public class TestStoreRecoverer
     @Test
     public void shouldNotWantToRecoverIntactStore() throws Exception
     {
-        StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
+        StoreRecoverer recoverer = new StoreRecoverer( fileSystem, pageCacheRule.getPageCache( fileSystem ) );
 
         assertThat( recoverer.recoveryNeededAt( storeDir ), is( false ) );
     }
@@ -65,7 +69,8 @@ public class TestStoreRecoverer
     {
         FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem );
 
-        StoreRecoverer recoverer = new StoreRecoverer( fileSystemAbstraction );
+        StoreRecoverer recoverer =
+                new StoreRecoverer( fileSystemAbstraction, pageCacheRule.getPageCache( fileSystemAbstraction ) );
 
         assertThat( recoverer.recoveryNeededAt( storeDir ), is( true ) );
     }
@@ -75,7 +80,8 @@ public class TestStoreRecoverer
     {
         FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem );
 
-        StoreRecoverer recoverer = new StoreRecoverer( fileSystemAbstraction );
+        StoreRecoverer recoverer =
+                new StoreRecoverer( fileSystemAbstraction, pageCacheRule.getPageCache( fileSystemAbstraction ) );
 
         assertThat( recoverer.recoveryNeededAt( storeDir ), is( true ) );
 

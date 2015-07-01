@@ -19,24 +19,23 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 
 import static java.nio.ByteBuffer.wrap;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.kernel.impl.store.NeoStore.TYPE_DESCRIPTOR;
 
@@ -47,7 +46,7 @@ public class NeoStoreUtilTest
     {
         // GIVEN
         long[] values = new long[] {1, 2, 3, 4, 5};
-        NeoStoreUtil access = new NeoStoreUtil( neoStoreFile( fs.get(), true, values ), fs.get() );
+        NeoStoreUtil access = new NeoStoreUtil( neoStoreFile( fs.get(), true, values ), pageCacheRule.getPageCache( fs.get() ) );
 
         // WHEN
         for ( int i = 0; i < values.length; i++ )
@@ -71,7 +70,7 @@ public class NeoStoreUtilTest
     {
         // GIVEN
         long[] values = new long[] {1, 2, 3, 4, 5};
-        NeoStoreUtil access = new NeoStoreUtil( neoStoreFile( fs.get(), false, values ), fs.get() );
+        NeoStoreUtil access = new NeoStoreUtil( neoStoreFile( fs.get(), false, values ), pageCacheRule.getPageCache( fs.get() ) );
 
         // WHEN
         for ( int i = 0; i < values.length; i++ )
@@ -115,5 +114,8 @@ public class NeoStoreUtilTest
         return dir;
     }
 
-    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 }

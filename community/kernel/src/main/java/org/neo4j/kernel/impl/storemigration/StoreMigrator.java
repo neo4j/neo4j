@@ -129,27 +129,22 @@ public class StoreMigrator implements StoreMigrationParticipant
     // complete upgrades in a reasonable time period.
 
     private final MigrationProgressMonitor progressMonitor;
-    private final FileSystemAbstraction fileSystem;
     private final UpgradableDatabase upgradableDatabase;
     private final Config config;
     private final LogService logService;
     private final LegacyLogs legacyLogs;
+    private final FileSystemAbstraction fileSystem;
+    private final PageCache pageCache;
     private String versionToUpgradeFrom;
 
     // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
 
     public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem,
-            LogService logService )
-    {
-        this( progressMonitor, fileSystem, new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ),
-                new Config(), logService );
-    }
-
-    public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem,
-            UpgradableDatabase upgradableDatabase, Config config, LogService logService )
+            PageCache pageCache, UpgradableDatabase upgradableDatabase, Config config, LogService logService )
     {
         this.progressMonitor = progressMonitor;
         this.fileSystem = fileSystem;
+        this.pageCache=pageCache;
         this.upgradableDatabase = upgradableDatabase;
         this.config = config;
         this.logService = logService;
@@ -159,7 +154,7 @@ public class StoreMigrator implements StoreMigrationParticipant
     @Override
     public boolean needsMigration( File storeDir ) throws IOException
     {
-        boolean sameVersion = upgradableDatabase.hasCurrentVersion( fileSystem, storeDir );
+        boolean sameVersion = upgradableDatabase.hasCurrentVersion( pageCache, storeDir );
         if ( !sameVersion )
         {
             upgradableDatabase.checkUpgradeable( storeDir );
@@ -187,12 +182,12 @@ public class StoreMigrator implements StoreMigrationParticipant
 
     @Override
     public void migrate( File storeDir, File migrationDir,
-            SchemaIndexProvider schemaIndexProvider, PageCache pageCache ) throws IOException
+            SchemaIndexProvider schemaIndexProvider ) throws IOException
     {
         progressMonitor.started();
 
         // Extract information about the last transaction from legacy neostore
-        NeoStoreUtil neoStoreAccess = new NeoStoreUtil( storeDir, fileSystem );
+        NeoStoreUtil neoStoreAccess = new NeoStoreUtil( storeDir, pageCache );
         long lastTxId = neoStoreAccess.getLastCommittedTx();
         long lastTxChecksum = extractTransactionChecksum( neoStoreAccess, storeDir, lastTxId );
         LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStoreAccess, lastTxId );
@@ -818,7 +813,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         ensureStoreVersions( storeDir );
 
 
-        NeoStoreUtil neoStoreUtil = new NeoStoreUtil( storeDir, fileSystem );
+        NeoStoreUtil neoStoreUtil = new NeoStoreUtil( storeDir, pageCache );
         long logVersion = neoStoreUtil.getLogVersion();
         long lastCommittedTx = neoStoreUtil.getLastCommittedTx();
 

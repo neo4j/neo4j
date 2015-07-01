@@ -23,7 +23,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -54,11 +58,15 @@ public class PerformRecoveryIfNecessary implements PreflightTask
 
             if ( dbLocation.exists() )
             {
-                StoreRecoverer recoverer = new StoreRecoverer();
-                if ( recoverer.recoveryNeededAt( dbLocation ) )
+                FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+                try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, config ) )
                 {
-                    log.warn( "Detected incorrectly shut down database, performing recovery.." );
-                    recoverer.recover( dbLocation, dbConfig, userLogProvider );
+                    StoreRecoverer recoverer = new StoreRecoverer( fileSystem, pageCache );
+                    if ( recoverer.recoveryNeededAt( dbLocation ) )
+                    {
+                        log.warn( "Detected incorrectly shut down database, performing recovery.." );
+                        recoverer.recover( dbLocation, dbConfig, userLogProvider );
+                    }
                 }
             }
             return true;

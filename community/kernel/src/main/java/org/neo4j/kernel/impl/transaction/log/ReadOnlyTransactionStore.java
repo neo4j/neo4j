@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -37,14 +38,14 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
     private final LifeSupport life = new LifeSupport();
     private final LogicalTransactionStore physicalStore;
 
-    public ReadOnlyTransactionStore( FileSystemAbstraction fs, File fromPath, Monitors monitors )
+    public ReadOnlyTransactionStore( PageCache pageCache, FileSystemAbstraction fs, File fromPath, Monitors monitors )
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( fromPath, fs );
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 100 );
-        final ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( fs, fromPath );
-        PhysicalLogFile logFile = life.add(new PhysicalLogFile( fs, logFiles, 0,
-                transactionIdStore, new ReadOnlyLogVersionRepository(fs, fromPath),
-                monitors.newMonitor( PhysicalLogFile.Monitor.class ), transactionMetadataCache));
+        final ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, fromPath );
+        PhysicalLogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 0,
+                transactionIdStore, new ReadOnlyLogVersionRepository( pageCache, fromPath ),
+                monitors.newMonitor( PhysicalLogFile.Monitor.class ), transactionMetadataCache ) );
         physicalStore = new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache );
     }
 

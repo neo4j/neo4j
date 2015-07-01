@@ -146,10 +146,10 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs,
+    public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache,
                                                                 UpgradableDatabase upgradableDatabase )
     {
-        return new SchemaIndexMigrator( fs, upgradableDatabase, new SchemaIndexMigrator.SchemaStoreProvider()
+        return new SchemaIndexMigrator( fs, pageCache, upgradableDatabase, new SchemaIndexMigrator.SchemaStoreProvider()
         {
             @Override
             public SchemaStore provide( File dir, PageCache pageCache )

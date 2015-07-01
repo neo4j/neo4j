@@ -19,25 +19,32 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import org.junit.Test;
-
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class StoreVersionCheckTest
 {
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
     @Test
     public void shouldReportMissingFileDoesNotHaveSpecifiedVersion()
     {
         // given
         File missingFile = new File("/you/will/never/find/me");
-        StoreVersionCheck storeVersionCheck = new StoreVersionCheck(new EphemeralFileSystemAbstraction());
+        PageCache pageCache = pageCacheRule.getPageCache( new EphemeralFileSystemAbstraction() );
+        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
 
         // then
         assertFalse( storeVersionCheck.hasVersion( missingFile, "version" ).outcome.isSuccessful() );
@@ -50,7 +57,7 @@ public class StoreVersionCheckTest
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         File shortFile = fileContaining( fs, "a" );
 
-        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( fs );
+        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCacheRule.getPageCache( fs ) );
 
         // then
         assertFalse( storeVersionCheck.hasVersion( shortFile, "version" ).outcome.isSuccessful() );
@@ -63,7 +70,7 @@ public class StoreVersionCheckTest
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         File shortFile = fileContaining( fs, "versionWhichIsIncorrect" );
 
-        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( fs );
+        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCacheRule.getPageCache( fs ) );
 
         // then
         assertFalse( storeVersionCheck.hasVersion( shortFile, "correctVersion 1" ).outcome.isSuccessful() );
@@ -76,7 +83,7 @@ public class StoreVersionCheckTest
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         File shortFile = fileContaining( fs, "correctVersion 1" );
 
-        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( fs );
+        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCacheRule.getPageCache( fs ) );
 
         // then
         assertTrue( storeVersionCheck.hasVersion( shortFile, "correctVersion 1" ).outcome.isSuccessful() );

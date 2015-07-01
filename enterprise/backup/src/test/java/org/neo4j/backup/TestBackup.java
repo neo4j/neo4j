@@ -19,16 +19,16 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,12 +38,14 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Settings;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.StoreLockException;
-import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
@@ -51,19 +53,18 @@ import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.subprocess.SubProcess;
 
 import static java.lang.Integer.parseInt;
-
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
@@ -76,6 +77,9 @@ public class TestBackup
 
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( TestBackup.class );
+
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Before
     public void before() throws Exception
@@ -147,9 +151,10 @@ public class TestBackup
             assertTrue( "Should be consistent", backup.isConsistent() );
             shutdownServer( server );
             server = null;
+            PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
 
-            long firstChecksum = lastTxChecksumOf( serverPath );
-            assertEquals( firstChecksum, lastTxChecksumOf( backupPath ) );
+            long firstChecksum = lastTxChecksumOf( serverPath, pageCache );
+            assertEquals( firstChecksum, lastTxChecksumOf( backupPath, pageCache ) );
 
             addMoreData( serverPath );
             server = startServer( serverPath );
@@ -158,8 +163,8 @@ public class TestBackup
             shutdownServer( server );
             server = null;
 
-            long secondChecksum = lastTxChecksumOf( serverPath );
-            assertEquals( secondChecksum, lastTxChecksumOf( backupPath ) );
+            long secondChecksum = lastTxChecksumOf( serverPath, pageCache );
+            assertEquals( secondChecksum, lastTxChecksumOf( backupPath, pageCache ) );
             assertTrue( firstChecksum != secondChecksum );
         }
         finally
@@ -283,7 +288,8 @@ public class TestBackup
             OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
             backup.full( backupPath.getPath() );
             assertTrue( "Should be consistent", backup.isConsistent() );
-            long lastCommittedTx = getLastCommittedTx( backupPath.getPath() );
+            PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
+            long lastCommittedTx = getLastCommittedTx( backupPath.getPath(), pageCache );
 
             for ( int i = 0; i < 5; i++ )
             {
@@ -295,7 +301,7 @@ public class TestBackup
                 }
                 backup = backup.incremental( backupPath.getPath() );
                 assertTrue( "Should be consistent", backup.isConsistent() );
-                assertEquals( lastCommittedTx + i + 1, getLastCommittedTx( backupPath.getPath() ) );
+                assertEquals( lastCommittedTx + i + 1, getLastCommittedTx( backupPath.getPath(), pageCache ) );
             }
         }
         finally
@@ -337,9 +343,9 @@ public class TestBackup
         }
     }
 
-    private long getLastCommittedTx( String path )
+    private long getLastCommittedTx( String path, PageCache pageCache )
     {
-        return new NeoStoreUtil( new File( path ) ).getLastCommittedTx();
+        return new NeoStoreUtil( new File( path ), pageCache ).getLastCommittedTx();
     }
 
     @Test
@@ -517,9 +523,9 @@ public class TestBackup
         return new File( directory, StoreLogService.INTERNAL_LOG_NAME ).exists();
     }
 
-    private long lastTxChecksumOf( File storeDir )
+    private long lastTxChecksumOf( File storeDir, PageCache pageCache )
     {
-        NeoStoreUtil neoStore = new NeoStoreUtil( storeDir );
+        NeoStoreUtil neoStore = new NeoStoreUtil( storeDir, pageCache );
         return neoStore.getValue( Position.LAST_TRANSACTION_CHECKSUM );
     }
 

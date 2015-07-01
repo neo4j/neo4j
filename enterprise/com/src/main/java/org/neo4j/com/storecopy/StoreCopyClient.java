@@ -224,9 +224,9 @@ public class StoreCopyClient
             // Start the log and appender
             PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
             TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 100 );
-            ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( fs, storeDir );
+            ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( pageCache, storeDir );
             LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
-                    new ReadOnlyTransactionIdStore( fs, storeDir ), logVersionRepository,
+                    new ReadOnlyTransactionIdStore( pageCache, storeDir ), logVersionRepository,
                     new Monitors().newMonitor( PhysicalLogFile.Monitor.class ),
                     transactionMetadataCache ) );
             life.start();

@@ -33,9 +33,11 @@ import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -57,7 +59,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
@@ -73,7 +74,7 @@ public class ConsistencyCheckToolTest
         PrintStream systemError = mock( PrintStream.class );
 
         // when
-        new ConsistencyCheckTool( service, systemError ).run( args );
+        newConsistencyCheckToolWith( service, systemError ).run( args );
 
         // then
         verify( service ).runFullConsistencyCheck( eq( storeDir ), any( Config.class ),
@@ -90,7 +91,7 @@ public class ConsistencyCheckToolTest
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
-        new ConsistencyCheckTool( service, systemOut ).run( args );
+        newConsistencyCheckToolWith( service, systemOut ).run( args );
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
@@ -116,7 +117,7 @@ public class ConsistencyCheckToolTest
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
-        new ConsistencyCheckTool( service, systemOut ).run( args );
+        newConsistencyCheckToolWith( service, systemOut ).run( args );
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
@@ -136,7 +137,7 @@ public class ConsistencyCheckToolTest
         try
         {
             // when
-            new ConsistencyCheckTool( service, systemError ).run( args );
+            newConsistencyCheckToolWith( service, systemError ).run( args );
             fail( "should have thrown exception" );
         }
         catch ( ConsistencyCheckTool.ToolFailureException e )
@@ -154,7 +155,7 @@ public class ConsistencyCheckToolTest
         String[] args = {storeDirectory.directory().getPath(), "-config", propertyFile.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
         PrintStream systemOut = mock( PrintStream.class );
-        ConsistencyCheckTool ConsistencyCheckTool = new ConsistencyCheckTool( service, systemOut );
+        ConsistencyCheckTool ConsistencyCheckTool = newConsistencyCheckToolWith( service, systemOut );
 
         try
         {
@@ -182,8 +183,8 @@ public class ConsistencyCheckToolTest
         Recovery.Monitor listener = mock( Recovery.Monitor.class );
         monitors.addMonitorListener( listener );
 
-        ConsistencyCheckTool consistencyCheckTool = newConsistencyCheckToolWith( monitors,
-                new StoreRecoverer( fs.get() ), mock( ConsistencyCheckTool.ExitHandle.class ) );
+        ConsistencyCheckTool consistencyCheckTool =
+                newConsistencyCheckToolWith( monitors, mock( ConsistencyCheckTool.ExitHandle.class ), fs.get() );
 
         // When
         consistencyCheckTool.run( "-recovery", storeDirectory.graphDbDir().getAbsolutePath() );
@@ -197,24 +198,39 @@ public class ConsistencyCheckToolTest
     public void shouldExitWhenRecoveryNeededButRecoveryFalseOptionSpecified() throws Exception
     {
         // Given
-        createGraphDbAndKillIt();
+        File storeDir = storeDirectory.graphDbDir();
+        EphemeralFileSystemAbstraction fileSystem = createDataBaseWithStateThatNeedsRecovery( storeDir );
 
         Monitors monitors = new Monitors();
         PhysicalLogFile.Monitor listener = mock( PhysicalLogFile.Monitor.class );
         monitors.addMonitorListener( listener );
 
         ConsistencyCheckTool.ExitHandle exitHandle = mock( ConsistencyCheckTool.ExitHandle.class );
-        StoreRecoverer storeRecoverer = mock( StoreRecoverer.class );
-        when( storeRecoverer.recoveryNeededAt( any( File.class ) ) ).thenReturn( true );
-
-        ConsistencyCheckTool consistencyCheckTool = newConsistencyCheckToolWith( monitors, storeRecoverer, exitHandle );
+        ConsistencyCheckTool consistencyCheckTool = newConsistencyCheckToolWith( monitors, exitHandle, fileSystem );
 
         // When
-        consistencyCheckTool.run( "-recovery=false", storeDirectory.graphDbDir().getAbsolutePath() );
+        consistencyCheckTool.run( "-recovery=false", storeDir.getAbsolutePath() );
 
         // Then
         verifyZeroInteractions( listener );
         verify( exitHandle ).pull();
+    }
+
+    private EphemeralFileSystemAbstraction createDataBaseWithStateThatNeedsRecovery( File storeDir )
+    {
+        EphemeralFileSystemAbstraction fileSystem = fs.get();
+        final GraphDatabaseService db =
+                new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
+
+        EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
+        db.shutdown();
+        return snapshot;
     }
 
     private void createGraphDbAndKillIt()
@@ -234,8 +250,8 @@ public class ConsistencyCheckToolTest
         fs.snapshot( shutdownDbAction( db ) );
     }
 
-    private ConsistencyCheckTool newConsistencyCheckToolWith( Monitors monitors, StoreRecoverer storeRecoverer,
-            ConsistencyCheckTool.ExitHandle exitHandle ) throws IOException
+    private ConsistencyCheckTool newConsistencyCheckToolWith( Monitors monitors,
+            ConsistencyCheckTool.ExitHandle exitHandle, FileSystemAbstraction fileSystem ) throws IOException
     {
         GraphDatabaseFactory graphDbFactory = new TestGraphDatabaseFactory()
         {
@@ -244,10 +260,17 @@ public class ConsistencyCheckToolTest
             {
                 return newImpermanentDatabase( storeDir );
             }
-        }.setFileSystem( fs.get() ).setMonitors( monitors );
+        }.setFileSystem( fileSystem ).setMonitors( monitors );
 
-        return new ConsistencyCheckTool( mock( ConsistencyCheckService.class ), storeRecoverer,
-                graphDbFactory, mock( PrintStream.class ), exitHandle );
+        return new ConsistencyCheckTool( mock( ConsistencyCheckService.class ),
+                graphDbFactory, fileSystem, mock( PrintStream.class ), exitHandle );
+    }
+
+    private ConsistencyCheckTool newConsistencyCheckToolWith ( ConsistencyCheckService
+        consistencyCheckService, PrintStream systemError )
+    {
+        return new ConsistencyCheckTool( consistencyCheckService, new GraphDatabaseFactory(),
+                new DefaultFileSystemAbstraction(), systemError, ConsistencyCheckTool.ExitHandle.SYSTEM_EXIT );
     }
 
     @Rule

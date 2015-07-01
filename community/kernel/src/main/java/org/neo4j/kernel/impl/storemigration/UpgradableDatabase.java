@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
@@ -115,9 +115,9 @@ public class UpgradableDatabase
         return result;
     }
 
-    public boolean hasCurrentVersion( FileSystemAbstraction fs, File storeDir )
+    public boolean hasCurrentVersion( PageCache pageCache, File storeDir )
     {
-        NeoStoreUtil neoStoreUtil = new NeoStoreUtil( storeDir, fs );
+        NeoStoreUtil neoStoreUtil = new NeoStoreUtil( storeDir, pageCache );
         String versionAsString = NeoStore.versionLongToString( neoStoreUtil.getStoreVersion() );
         return CommonAbstractStore.ALL_STORES_VERSION.equals( versionAsString );
     }

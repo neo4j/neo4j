@@ -75,6 +75,6 @@ public class TestStoreAccess
 
     private boolean isUnclean( FileSystemAbstraction fileSystem ) throws IOException
     {
-        return new StoreRecoverer( fileSystem ).recoveryNeededAt( storeDir );
+        return new StoreRecoverer( fileSystem, pageCacheRule.getPageCache( fileSystem ) ).recoveryNeededAt( storeDir );
     }
 }

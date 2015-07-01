@@ -65,7 +65,7 @@ public class SchemaIndexMigratorTest
     public void shouldNotMigrateFor1_9Version() throws Exception
     {
         // given
-        when( upgradableDatabase.hasCurrentVersion( fs, storeDir )).thenReturn( false );
+        when( upgradableDatabase.hasCurrentVersion( pageCache, storeDir )).thenReturn( false );
         when( upgradableDatabase.checkUpgradeable( storeDir ) ).thenReturn( Legacy19Store.LEGACY_VERSION );
 
         // when
@@ -79,7 +79,7 @@ public class SchemaIndexMigratorTest
     public void shouldMigrateFor2_0Version() throws Exception
     {
         // given
-        when( upgradableDatabase.hasCurrentVersion( fs, storeDir )).thenReturn( false );
+        when( upgradableDatabase.hasCurrentVersion( pageCache, storeDir )).thenReturn( false );
         when( upgradableDatabase.checkUpgradeable( storeDir ) ).thenReturn( Legacy20Store.LEGACY_VERSION );
 
         // when
@@ -93,7 +93,7 @@ public class SchemaIndexMigratorTest
     public void shouldMigrateFor2_1Version() throws Exception
     {
         // given
-        when( upgradableDatabase.hasCurrentVersion( fs, storeDir )).thenReturn( false );
+        when( upgradableDatabase.hasCurrentVersion( pageCache, storeDir )).thenReturn( false );
         when( upgradableDatabase.checkUpgradeable( storeDir ) ).thenReturn( Legacy21Store.LEGACY_VERSION );
 
         // when
@@ -107,7 +107,7 @@ public class SchemaIndexMigratorTest
     public void shouldNotMigrateFor2_2Version() throws Exception
     {
         // given
-        when( upgradableDatabase.hasCurrentVersion( fs, storeDir )).thenReturn( true );
+        when( upgradableDatabase.hasCurrentVersion( pageCache, storeDir )).thenReturn( true );
         when( upgradableDatabase.checkUpgradeable( storeDir ) ).thenThrow( new UnexpectedUpgradingStoreVersionException(
                 NeoStore.DEFAULT_NAME, Legacy21Store.LEGACY_VERSION, AbstractStore.ALL_STORES_VERSION ) );
 
@@ -127,7 +127,7 @@ public class SchemaIndexMigratorTest
         // when
         try
         {
-            migrator.migrate( storeDir, migrationDir, schemaIndexProvider, pageCache );
+            migrator.migrate( storeDir, migrationDir, schemaIndexProvider );
             fail( "should have thrown" );
         }
         catch ( IllegalStateException ex )
@@ -145,7 +145,7 @@ public class SchemaIndexMigratorTest
         when( indexReader.valueTypesInIndex() ).thenReturn( asSet( String.class, Array.class ) );
 
         // when
-        migrator.migrate( storeDir, migrationDir, schemaIndexProvider, pageCache );
+        migrator.migrate( storeDir, migrationDir, schemaIndexProvider );
 
         // then
         verify( fs ).deleteRecursively( new File( getRootDirectory( storeDir, schemaIndexProvider.getProviderDescriptor().getKey() ), "" + indexRuleId ) );
@@ -159,7 +159,7 @@ public class SchemaIndexMigratorTest
         when( indexReader.valueTypesInIndex() ).thenReturn( asSet( String.class, Boolean.class ) );
 
         // when
-        migrator.migrate( storeDir, migrationDir, schemaIndexProvider, pageCache );
+        migrator.migrate( storeDir, migrationDir, schemaIndexProvider );
 
         // then
         verify( fs, never() ).deleteRecursively( new File( getRootDirectory( storeDir, schemaIndexProvider.getProviderDescriptor().getKey() ), "" + indexRuleId ) );
@@ -200,7 +200,7 @@ public class SchemaIndexMigratorTest
         when( yetAnotherIndexReader.valueTypesInIndex() ).thenReturn( asSet( Array.class ) );
 
         // when
-        migrator.migrate( storeDir, migrationDir, schemaIndexProvider, pageCache );
+        migrator.migrate( storeDir, migrationDir, schemaIndexProvider );
 
         // then
         verify( fs, never() ).deleteRecursively( new File( getRootDirectory( storeDir, schemaIndexProvider.getProviderDescriptor().getKey() ), "" + indexRuleId ) );
@@ -235,7 +235,8 @@ public class SchemaIndexMigratorTest
     private final SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
     private final SchemaStoreProvider schemaStoreProvider = mock( SchemaStoreProvider.class );
     private final PageCache pageCache = mock( PageCache.class );
-    private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, upgradableDatabase, schemaStoreProvider );
+    private final SchemaIndexMigrator migrator =
+            new SchemaIndexMigrator( fs, pageCache, upgradableDatabase, schemaStoreProvider );
     private final SchemaStore schemaStore = mock( SchemaStore.class );
     private final IndexAccessor accessor = mock( IndexAccessor.class );
     private final IndexReader indexReader = mock( IndexReader.class );

@@ -37,7 +37,7 @@ public interface StoreMigrationParticipant extends Resource
      * @throws IOException if there was an error checking need for migration, or for example if this participant
      * would have liked to do a migration, but the underlying data makes it impossible.
      */
-    boolean needsMigration( File storeDir ) throws IOException;
+    boolean needsMigration( File storeDir) throws IOException;
 
     /**
      * Performs migration of data this participant is responsible for.
@@ -49,11 +49,10 @@ public interface StoreMigrationParticipant extends Resource
      * @param storeDir data to migrate.
      * @param migrationDir place to migrate to.
      * @param schemaIndexProvider The SchemaIndexProvider for the migrating database.
-     * @param pageCache A page cache instance the participant can use if need be.
      * @throws IOException if there was an error migrating.
      * @throws UnsatisfiedDependencyException if one or more dependencies were unsatisfied.
      */
-    void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider, PageCache pageCache )
+    void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider )
             throws IOException;
 
     /**
@@ -89,8 +88,7 @@ public interface StoreMigrationParticipant extends Resource
         }
 
         @Override
-        public void migrate( File sourceStoreDir, File targetStoreDir, SchemaIndexProvider schemaIndexProvider,
-                             PageCache pageCache )
+        public void migrate( File sourceStoreDir, File targetStoreDir, SchemaIndexProvider schemaIndexProvider )
                 throws IOException, UnsatisfiedDependencyException
         {
             throw new UnsupportedOperationException( "Should not have been called" );

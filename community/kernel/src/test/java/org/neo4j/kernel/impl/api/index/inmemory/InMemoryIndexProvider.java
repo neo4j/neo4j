@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -61,7 +62,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
+    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
                                                                 UpgradableDatabase upgradableDatabase )
     {
         return StoreMigrationParticipant.NOT_PARTICIPATING;

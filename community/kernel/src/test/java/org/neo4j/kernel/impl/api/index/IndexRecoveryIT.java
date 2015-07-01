@@ -43,6 +43,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -270,7 +271,8 @@ public class IndexRecoveryIT
         when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority
         when( mockedIndexProvider.storeMigrationParticipant(
-                any( FileSystemAbstraction.class), any( UpgradableDatabase.class)) ).thenReturn( NOT_PARTICIPATING );
+                any( FileSystemAbstraction.class), any( PageCache.class ), any( UpgradableDatabase.class)) )
+                .thenReturn( NOT_PARTICIPATING );
     }
 
     @SuppressWarnings("deprecation")

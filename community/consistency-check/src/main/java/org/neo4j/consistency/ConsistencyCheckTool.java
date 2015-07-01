@@ -31,9 +31,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -60,7 +64,8 @@ public class ConsistencyCheckTool
 
     public static void main( String[] args ) throws IOException
     {
-        ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(), System.err );
+        ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(), new GraphDatabaseFactory(),
+                new DefaultFileSystemAbstraction(), System.err, ExitHandle.SYSTEM_EXIT );
         try
         {
             tool.run( args );
@@ -72,23 +77,18 @@ public class ConsistencyCheckTool
     }
 
     private final ConsistencyCheckService consistencyCheckService;
-    private final StoreRecoverer recoveryChecker;
     private final GraphDatabaseFactory dbFactory;
     private final PrintStream systemError;
     private final ExitHandle exitHandle;
+    private StoreRecoverer recoveryChecker;
+    private FileSystemAbstraction fs;
 
-    ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService, PrintStream systemError )
-    {
-        this( consistencyCheckService, new StoreRecoverer(), new GraphDatabaseFactory(), systemError,
-                ExitHandle.SYSTEM_EXIT );
-    }
-
-    ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService, StoreRecoverer recoveryChecker,
-            GraphDatabaseFactory dbFactory, PrintStream systemError, ExitHandle exitHandle )
+    ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService,
+            GraphDatabaseFactory dbFactory, FileSystemAbstraction fs, PrintStream systemError, ExitHandle exitHandle )
     {
         this.consistencyCheckService = consistencyCheckService;
-        this.recoveryChecker = recoveryChecker;
         this.dbFactory = dbFactory;
+        this.fs = fs;
         this.systemError = systemError;
         this.exitHandle = exitHandle;
     }
@@ -98,18 +98,22 @@ public class ConsistencyCheckTool
         Args arguments = Args.withFlags( RECOVERY, PROP_OWNER ).parse( args );
         File storeDir = determineStoreDirectory( arguments );
         Config tuningConfiguration = readTuningConfiguration( arguments );
-
-        attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir );
-
-        LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
-        try
+        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
         {
-            consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
-                    ProgressMonitorFactory.textual( System.err ), logProvider );
-        }
-        catch ( ConsistencyCheckIncompleteException e )
-        {
-            throw new ToolFailureException( "Check aborted due to exception", e );
+            recoveryChecker = new StoreRecoverer( fs, pageCache );
+
+            attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir );
+
+            LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
+            try
+            {
+                consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
+                        ProgressMonitorFactory.textual( System.err ), logProvider );
+            }
+            catch ( ConsistencyCheckIncompleteException e )
+            {
+                throw new ToolFailureException( "Check aborted due to exception", e );
+            }
         }
     }
 
