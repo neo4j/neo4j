@@ -46,7 +46,7 @@ import org.neo4j.server.web.WebServer;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
+import static java.util.Arrays.asList;
 
 /**
  * Mounts the database REST API.
@@ -107,7 +107,7 @@ public class RESTApiModule implements ServerModule
 
     private List<String> getClassNames()
     {
-        return listFrom(
+        return asList(
                 RestfulGraphDatabase.class.getName(),
                 TransactionalService.class.getName(),
                 CypherService.class.getName(),

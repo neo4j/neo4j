@@ -31,7 +31,7 @@ import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.web.WebServer;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
+import static java.util.Arrays.asList;
 
 public class ThirdPartyJAXRSModule implements ServerModule
 {
@@ -66,7 +66,7 @@ public class ThirdPartyJAXRSModule implements ServerModule
 
     private List<String> packagesFor( ThirdPartyJaxRsPackage tpp )
     {
-        return listFrom( new String[] { tpp.getPackageName() } );
+        return asList( tpp.getPackageName() );
     }
 
     @Override

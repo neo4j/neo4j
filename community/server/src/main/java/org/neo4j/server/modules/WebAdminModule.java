@@ -28,7 +28,7 @@ import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
+import static java.util.Arrays.asList;
 
 public class WebAdminModule implements ServerModule
 {
@@ -57,7 +57,7 @@ public class WebAdminModule implements ServerModule
 
     private List<String> getClassNames()
     {
-        return listFrom(
+        return asList(
                 MonitorService.class.getName(),
                 ConsoleService.class.getName() );
     }

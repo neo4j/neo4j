@@ -39,17 +39,15 @@ import static javax.xml.bind.DatatypeConverter.printBase64Binary;
  */
 public class ErrorTranslator
 {
-    private final Log internalLog;
     private final Log userLog;
 
     public ErrorTranslator( LogService logging )
     {
-        this(logging.getUserLog( ErrorTranslator.class ), logging.getInternalLog( ErrorTranslator.class ));
+        this(logging.getUserLog( ErrorTranslator.class ) );
     }
 
-    public ErrorTranslator( Log userLog, Log internalLog )
+    public ErrorTranslator( Log userLog )
     {
-        this.internalLog = internalLog;
         this.userLog = userLog;
     }
 
@@ -72,8 +70,7 @@ public class ErrorTranslator
         // Log unknown errors.
         userLog.error( String.format(
                 "Client triggered unexpected error. Help us fix this error by emailing the " +
-                "following report to issues@neotechnology.com: %n%s", generateReport( any, reference ) ), any );
-        internalLog.error( String.format( "Client triggered unexpected error, reference %s.", reference), any );
+                "following report to issues@neotechnology.com: %n%s", generateReport( any, reference ) ) );
 
         return new Neo4jError( Status.General.UnknownFailure,
                 String.format( "An unexpected failure occurred, see details in the database " +
@@ -81,7 +78,8 @@ public class ErrorTranslator
     }
 
     /**
-     * For unexpected errors, we generate a report and urge users to send it to us for debugging.
+     * For unrecognized errors, we generate a report and urge users to send it to us for debugging. The report just contains some basic system info
+     * and a base64-encoded stack trace.
      */
     private String generateReport( Throwable err, String reference )
     {
@@ -98,7 +96,7 @@ public class ErrorTranslator
                               "OS            : %s%n" +
                               "Reference     : %s%n" + // This will help us correlate emailed reports with user logs
                               "Error data    : %n" +
-                              "%s%n" +
+                              "%s" +
                               "---- END OF REPORT ----%n",
                 dateFormatGmt.format( new Date() ),
                 Version.getKernelVersion(),
@@ -106,7 +104,8 @@ public class ErrorTranslator
                 System.getProperty("os.name"),
                 reference,
                 printBase64Binary( Exceptions.stringify( err ).getBytes( StandardCharsets.UTF_8 ) )
-                        .replaceAll( "(.{100})", "$1\n" ) );
+                        // Below replaceAll call inserts a line break every 100 characters
+                        .replaceAll( "(.{100})", "$1" + System.getProperty("line.separator") ) );
     }
 
 }
