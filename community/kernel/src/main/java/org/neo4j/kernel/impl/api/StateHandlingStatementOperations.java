@@ -688,35 +688,32 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException
+    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException
     {
-        PrimitiveLongResourceIterator committed = storeLayer.nodesGetFromIndexSeek( state, index, value );
+        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexSeek( state, index, value );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
-        PrimitiveLongIterator changesFiltered = filterIndexStateChanges( state, index, value, exactMatches );
-        return resourceIterator( changesFiltered, committed );
+        return filterIndexStateChanges( state, index, value, exactMatches );
     }
 
     @Override
     public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, IndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
-        PrimitiveLongResourceIterator committed = storeLayer.nodesGetFromIndexSeekByPrefix( state, index, prefix );
-        PrimitiveLongIterator changesFiltered = filterIndexStateChangesForPrefix( state, index, prefix, committed );
-        return resourceIterator( changesFiltered, committed );
+        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexSeekByPrefix( state, index, prefix );
+        return filterIndexStateChangesForPrefix( state, index, prefix, committed );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index ) throws
-            IndexNotFoundKernelException
+    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index )
+            throws IndexNotFoundKernelException
     {
-        PrimitiveLongResourceIterator committed = storeLayer.nodesGetFromIndexScan( state, index );
-        PrimitiveLongIterator changesFiltered = filterIndexStateChanges( state, index, null, committed );
-        return resourceIterator( changesFiltered, committed );
+        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexScan( state, index );
+        return filterIndexStateChanges( state, index, null, committed );
     }
 
     private PrimitiveLongIterator filterExactIndexMatches( final KernelStatement state, IndexDescriptor index,
-            Object value, PrimitiveLongResourceIterator committed )
+            Object value, PrimitiveLongIterator committed )
     {
         return LookupFilter.exactIndexMatches( this, state, committed, index.getPropertyKeyId(), value );
     }

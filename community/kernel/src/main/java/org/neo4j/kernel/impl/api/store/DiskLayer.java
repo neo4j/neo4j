@@ -493,14 +493,14 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index,
+    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index,
             Object value ) throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesGetFromIndexSeekByPrefix( KernelStatement state,
+    public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state,
             IndexDescriptor index,
             String prefix )
             throws IndexNotFoundKernelException
@@ -509,7 +509,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index ) throws
+    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index ) throws
             IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException();
@@ -872,26 +872,25 @@ public class DiskLayer implements StoreReadLayer
         return resourceIterator( reader.indexSeek( value ), reader );
     }
 
-    public PrimitiveLongResourceIterator nodesGetFromIndexSeek( KernelStatement state, long index, Object value )
+    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, long index, Object value )
             throws IndexNotFoundKernelException
     {
         IndexReader reader = state.getIndexReader( index );
-        return resourceIterator( reader.indexSeek( value ), reader );
+        return reader.indexSeek( value );
     }
 
-    public PrimitiveLongResourceIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, long index,
-            String prefix )
+    public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, long index, String prefix )
             throws IndexNotFoundKernelException
     {
         IndexReader reader = state.getIndexReader( index );
-        return resourceIterator( reader.indexSeekByPrefix( prefix ), reader );
+        return reader.indexSeekByPrefix( prefix );
     }
 
-    public PrimitiveLongResourceIterator nodesGetFromIndexScan( KernelStatement state, long index )
+    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, long index )
             throws IndexNotFoundKernelException
     {
         IndexReader reader = state.getIndexReader( index );
-        return resourceIterator( reader.scan(), reader );
+        return reader.scan();
     }
 
     @Override
