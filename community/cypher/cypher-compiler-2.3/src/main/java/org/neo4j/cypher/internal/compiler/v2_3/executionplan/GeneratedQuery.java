@@ -28,13 +28,14 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescr
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.core.NodeManager;
 
 public interface GeneratedQuery
 {
     GeneratedQueryExecution execute(
             TaskCloser closer,
             Statement statement,
-            GraphDatabaseService db,
+            NodeManager nodeManager,
             ExecutionMode executionMode,
             Supplier<InternalPlanDescription> description,
             QueryExecutionTracer tracer,

@@ -39,12 +39,14 @@ import org.neo4j.function.Suppliers.singleton
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.helpers.Clock
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{Statement => KernelStatement}
+import org.neo4j.kernel.impl.core.NodeManager
 
 
 trait RunnablePlan {
   def apply(statement: KernelStatement,
-            db: GraphDatabaseService,
+            nodeManager: NodeManager,
             execMode: ExecutionMode,
             descriptionProvider: DescriptionProvider,
             params: Map[String, Any],
@@ -96,6 +98,11 @@ trait ExecutablePlanBuilder {
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold: Double, queryPlanTTL: Long,
                            clock: Clock, pipeBuilder: ExecutablePlanBuilder) extends PatternGraphBuilder {
+  val nodeManager = {
+    val gdapi = graph.asInstanceOf[GraphDatabaseAPI]
+    gdapi.getDependencyResolver.resolveDependency(classOf[NodeManager])
+  }
+
   def build(planContext: PlanContext, inputQuery: PreparedQuery, tracer: CompilationPhaseTracer=CompilationPhaseTracer.NO_TRACING): ExecutionPlan = {
     val executablePlan = pipeBuilder.producePlan(inputQuery, planContext, tracer)
     executablePlan match {
@@ -121,7 +128,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
             new ExplainExecutionResult(compiledPlan.columns.toList,
               compiledPlan.planDescription, QueryType.READ_ONLY, inputQuery.notificationLogger.notifications)
           } else
-            compiledPlan.executionResultBuilder(kernelStatement, graph, executionMode, tracer(executionMode), params, taskCloser)
+            compiledPlan.executionResultBuilder(kernelStatement, nodeManager, executionMode, tracer(executionMode), params, taskCloser)
         } catch {
           case (t: Throwable) =>
             taskCloser.close(success = false)
@@ -205,7 +212,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
       if (profiling)
         builder.setPipeDecorator(new Profiler())
 
-      builder.build(graph, queryId, planType, params, notificationLogger)
+      builder.build(queryId, planType, params, notificationLogger)
     }
 }
 

@@ -34,11 +34,12 @@ import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.{CostBasedPlannerName, NormalMode, ParameterNotFoundException, TaskCloser}
 import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.graphdb.{Relationship, Direction, GraphDatabaseService, Node}
+import org.neo4j.graphdb.{Relationship, Direction, Node}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.kernel.impl.core.{RelationshipProxy, NodeProxy, NodeManager}
 
 import scala.collection.JavaConverters
 
@@ -885,7 +886,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private def compileAndExecute(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, taskCloser: TaskCloser = new TaskCloser) = {
     compile(plan).
-    executionResultBuilder(statement, graphDatabaseService, NormalMode, tracer(NormalMode), params, taskCloser)
+    executionResultBuilder(statement, nodeManager, NormalMode, tracer(NormalMode), params, taskCloser)
   }
 
   /*
@@ -1004,29 +1005,30 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       )
     }
   })
-  val graphDatabaseService = mock[GraphDatabaseService]
-  when(graphDatabaseService.getNodeById(anyLong())).thenAnswer(new Answer[Node]() {
-    override def answer(invocationOnMock: InvocationOnMock): Node = {
+
+  val nodeManager = mock[NodeManager]
+  when(nodeManager.newNodeProxyById(anyLong())).thenAnswer(new Answer[Node]() {
+    override def answer(invocationOnMock: InvocationOnMock): NodeProxy = {
       val id = invocationOnMock.getArguments.apply(0).asInstanceOf[Long].toInt
       allNodes(id)
     }
   })
-  when(graphDatabaseService.getRelationshipById(anyLong())).thenAnswer(new Answer[Relationship]() {
-    override def answer(invocationOnMock: InvocationOnMock): Relationship = {
+  when(nodeManager.newRelationshipProxyById(anyLong())).thenAnswer(new Answer[Relationship]() {
+    override def answer(invocationOnMock: InvocationOnMock): RelationshipProxy = {
       val id = invocationOnMock.getArguments.apply(0).asInstanceOf[Long].toInt
       relMap(id).relationship
     }
   })
 
   private def mockNode(id: Long, name: String) = {
-    val node = mock[Node]
+    val node = mock[NodeProxy]
     when(node.getId).thenReturn(id)
     when(node.toString).thenReturn(name)
     node
   }
 
   private def mockRelationship(relationshipData: RelationshipData) = {
-    val rel = mock[Relationship]
+    val rel = mock[RelationshipProxy]
     val toStringValue = relationshipData.toString
     when(rel.getId).thenReturn(relationshipData.id)
     when(rel.getStartNode).thenReturn(relationshipData.from)
