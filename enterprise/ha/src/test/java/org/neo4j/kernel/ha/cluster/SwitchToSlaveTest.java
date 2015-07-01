@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import org.junit.Test;
-
 import java.io.File;
+
+import org.junit.Test;
 
 import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
@@ -57,12 +57,14 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -152,6 +154,9 @@ public class SwitchToSlaveTest
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         when(dataSource.getStoreId()).thenReturn( new StoreId( 42, 42, 42, 42 ) );
 
+        TransactionCounters transactionCounters = mock( TransactionCounters.class );
+        when(transactionCounters.getNumberOfActiveTransactions()).thenReturn( 0l );
+
         return spy( new SwitchToSlave(  mock( File.class ), NullLogService.getInstance(),
                 mock( FileSystemAbstraction.class ),
                 clusterMembers,
@@ -178,7 +183,7 @@ public class SwitchToSlaveTest
             {
                 return mock(SlaveServer.class);
             }
-        }, mock(UpdatePuller.class), mock(PageCache.class), mock(Monitors.class) ) );
+        }, mock(UpdatePuller.class), mock(PageCache.class), mock(Monitors.class), transactionCounters ) );
     }
 
     private static Config configMock()

@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.ha.factory;
 
-import org.jboss.netty.logging.InternalLoggerFactory;
-
 import java.io.File;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -400,7 +400,8 @@ public class EnterpriseEditionModule
                 monitors.newMonitor( StoreCopyClient.Monitor.class ),
                 dependencies.provideDependency( NeoStoreDataSource.class ),
                 dependencies.provideDependency( TransactionIdStore.class ),
-                slaveFactory, slaveServerFactory, updatePuller, platformModule.pageCache, monitors );
+                slaveFactory, slaveServerFactory, updatePuller, platformModule.pageCache, monitors,
+                platformModule.transactionMonitor);
 
         final Factory<MasterImpl.SPI> masterSPIFactory = new Factory<MasterImpl.SPI>()
         {
@@ -473,7 +474,8 @@ public class EnterpriseEditionModule
                 masterServerFactory,
                 masterDelegateInvocationHandler, clusterMemberAvailability,
                 platformModule.dependencies.provideDependency(
-                        NeoStoreDataSource.class ) );
+                        NeoStoreDataSource.class ),
+                platformModule.transactionMonitor);
 
         final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher(
                 switchToSlaveInstance, switchToMasterInstance,

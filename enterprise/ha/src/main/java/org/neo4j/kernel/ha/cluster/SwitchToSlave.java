@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -81,7 +82,10 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
+
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -130,6 +134,7 @@ public class SwitchToSlave
     private final UpdatePuller updatePuller;
     private final PageCache pageCache;
     private final Monitors monitors;
+    private TransactionCounters transactionCounters;
 
     private final Log userLog;
     private final Log msgLog;
@@ -144,18 +149,28 @@ public class SwitchToSlave
     private final StoreCopyClient.Monitor storeCopyMonitor;
     private final Monitor monitor;
 
-    public SwitchToSlave( File storeDir, LogService logService, FileSystemAbstraction fileSystemAbstraction,
-            ClusterMembers clusterMembers, Config config, DependencyResolver resolver,
-                          HaIdGeneratorFactory idGeneratorFactory,
-                          DelegateInvocationHandler<Master> masterDelegateHandler,
-                          ClusterMemberAvailability clusterMemberAvailability,
-                          RequestContextFactory requestContextFactory,
-                          Iterable<KernelExtensionFactory<?>> kernelExtensions, MasterClientResolver masterClientResolver,
-                          Monitor monitor,
-                          StoreCopyClient.Monitor storeCopyMonitor,
-                          Supplier<NeoStoreDataSource> neoDataSourceSupplier,
-                          Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                          Factory<Slave> slaveFactory, Function<Slave, SlaveServer> slaveServerFactory, UpdatePuller updatePuller, PageCache pageCache, Monitors monitors )
+    public SwitchToSlave( File storeDir,
+            LogService logService,
+            FileSystemAbstraction fileSystemAbstraction,
+            ClusterMembers clusterMembers,
+            Config config,
+            DependencyResolver resolver,
+            HaIdGeneratorFactory idGeneratorFactory,
+            DelegateInvocationHandler<Master> masterDelegateHandler,
+            ClusterMemberAvailability clusterMemberAvailability,
+            RequestContextFactory requestContextFactory,
+            Iterable<KernelExtensionFactory<?>> kernelExtensions,
+            MasterClientResolver masterClientResolver,
+            Monitor monitor,
+            StoreCopyClient.Monitor storeCopyMonitor,
+            Supplier<NeoStoreDataSource> neoDataSourceSupplier,
+            Supplier<TransactionIdStore> transactionIdStoreSupplier,
+            Factory<Slave> slaveFactory,
+            Function<Slave, SlaveServer> slaveServerFactory,
+            UpdatePuller updatePuller,
+            PageCache pageCache,
+            Monitors monitors,
+            TransactionCounters transactionCounters )
     {
         this.logService = logService;
         this.fileSystemAbstraction = fileSystemAbstraction;
@@ -167,6 +182,7 @@ public class SwitchToSlave
         this.updatePuller = updatePuller;
         this.pageCache = pageCache;
         this.monitors = monitors;
+        this.transactionCounters = transactionCounters;
         this.userLog = logService.getUserLog( getClass() );
         this.storeDir = storeDir;
         this.config = config;
@@ -202,6 +218,13 @@ public class SwitchToSlave
         boolean success = false;
 
         monitor.switchToSlaveStarted();
+
+        // Wait for current transactions to stop first
+        long deadline = SYSTEM_CLOCK.currentTimeMillis() + config.get( HaSettings.state_switch_timeout );
+        while ( transactionCounters.getNumberOfActiveTransactions() > 0 && SYSTEM_CLOCK.currentTimeMillis() < deadline )
+        {
+            parkNanos( MILLISECONDS.toNanos( 10 ) );
+        }
 
         try
         {
