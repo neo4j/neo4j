@@ -23,26 +23,24 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertTrue;
 
 public class TestConfiguration
 {
-    private GraphDatabaseAPI db;
+    private TestGraphDatabase db;
     private ShellServer server;
     private ShellClient client;
 
     @Before
     public void before() throws Exception
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .newImpermanentDatabaseBuilder()
-                .newGraphDatabase();
-        server = new GraphDatabaseShellServer( db );
+        db = CommunityTestGraphDatabase.openEphemeral();
+        server = new GraphDatabaseShellServer( db.getGraphDatabaseAPI() );
         client = ShellLobby.newClient( server, InterruptSignalHandler.getHandler() );
     }
 

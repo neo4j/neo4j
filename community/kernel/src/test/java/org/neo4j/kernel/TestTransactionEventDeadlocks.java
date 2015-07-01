@@ -27,8 +27,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
@@ -38,12 +37,12 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 public class TestTransactionEventDeadlocks
 {
     @Rule
-    public DatabaseRule database = new ImpermanentDatabaseRule();
+    public final TestGraphDatabaseRule database = TestGraphDatabaseRule.ephemeral();
     
     @Test
     public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData() throws Exception
     {
-        GraphDatabaseService graphdb = database.getGraphDatabaseService();
+        GraphDatabaseService graphdb = database.get();
         Node node = null;
         try ( Transaction tx = graphdb.beginTx() )
         {

@@ -28,7 +28,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collection;
@@ -39,16 +38,14 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.concurrent.RecentK;
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.ext.udc.UdcSettings;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -69,6 +66,8 @@ import static org.neo4j.ext.udc.UdcConstants.SOURCE;
 import static org.neo4j.ext.udc.UdcConstants.TAGS;
 import static org.neo4j.ext.udc.UdcConstants.USER_AGENTS;
 import static org.neo4j.ext.udc.UdcConstants.VERSION;
+import static org.neo4j.helpers.collection.MapUtil.loadPropertiesFromURL;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Unit testing for the UDC kernel extension.
@@ -86,7 +85,7 @@ public class UdcExtensionImplTest
 
     private PingerHandler handler;
     private Map<String, String> config;
-    private GraphDatabaseService graphdb;
+    private TestGraphDatabase graphdb;
 
     @Before
     public void resetUdcState()
@@ -114,8 +113,8 @@ public class UdcExtensionImplTest
     @Test
     public void shouldLoadForEachCreatedGraphdb() throws IOException
     {
-        GraphDatabaseService graphdb1 = createDatabase( null );
-        GraphDatabaseService graphdb2 = createDatabase( null );
+        TestGraphDatabase graphdb1 = createDatabase( null );
+        TestGraphDatabase graphdb2 = createDatabase( null );
         Set<String> successCountValues = UdcTimerTask.successCounts.keySet();
         assertThat( successCountValues.size(), equalTo( 2 ) );
         assertThat( "this", is( not( "that" ) ) );
@@ -127,12 +126,11 @@ public class UdcExtensionImplTest
     public void shouldRecordFailuresWhenThereIsNoServer() throws Exception
     {
         // When
-        graphdb = new TestGraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( path.directory( "should-record-failures" ).getPath() ).
-                loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) ).
-                setConfig( UdcSettings.first_delay, "100" ).
-                setConfig( UdcSettings.udc_host, "127.0.0.1:1" ).
-                newGraphDatabase();
+        graphdb = CommunityTestGraphDatabase.build()
+                .withSetting( UdcSettings.first_delay, "100" )
+                .withSetting( UdcSettings.udc_host, "127.0.0.1:1" )
+                .withParams( loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) ) )
+                .open( path.directory( "should-record-failures" ) );
 
         // Then
         assertGotFailureWithRetry( IS_GREATER_THAN_ZERO );
@@ -568,17 +566,13 @@ public class UdcExtensionImplTest
         fail();
     }
 
-    private GraphDatabaseService createDatabase( Map<String, String> config ) throws IOException
+    private TestGraphDatabase createDatabase( Map<String, String> params ) throws IOException
     {
-        GraphDatabaseBuilder graphDatabaseBuilder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder();
-        graphDatabaseBuilder.loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) );
-
-        if ( config != null )
-        {
-            graphDatabaseBuilder.setConfig( config );
-        }
-
-        return graphDatabaseBuilder.newGraphDatabase();
+        Map<String,String> loadedParams = loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) );
+        return CommunityTestGraphDatabase.buildEphemeral()
+                .withParams( (loadedParams != null) ? loadedParams : stringMap() )
+                .withParams( (params != null) ? params : stringMap() )
+                .open();
     }
 
     @After
@@ -587,13 +581,12 @@ public class UdcExtensionImplTest
         cleanup( graphdb );
     }
 
-    private void cleanup( GraphDatabaseService gdb ) throws IOException
+    private void cleanup( TestGraphDatabase gdb ) throws IOException
     {
         if(gdb != null)
         {
-            @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db = (GraphDatabaseAPI) gdb;
             gdb.shutdown();
-            FileUtils.deleteDirectory( new File( db.getStoreDir() ) );
+            FileUtils.deleteDirectory( gdb.storeDir() );
         }
     }
 
@@ -621,7 +614,7 @@ public class UdcExtensionImplTest
     private void makeRequestWithAgent( String agent )
     {
         RecentK<String> clients =
-                ((GraphDatabaseAPI) graphdb).getDependencyResolver().resolveDependency( UsageData.class ).get(
+                graphdb.getDependencyResolver().resolveDependency( UsageData.class ).get(
                         UsageDataKeys.clientNames );
         clients.add( agent );
     }

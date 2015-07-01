@@ -34,9 +34,7 @@ import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.test.RepeatRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
@@ -44,7 +42,8 @@ import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class QueryInvalidationIT
 {
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestGraphDatabaseRule db = TestGraphDatabaseRule.ephemeral();
 
     @Test
     public void shouldRePlanAfterDataChangesFromAnEmptyDatabase() throws Exception

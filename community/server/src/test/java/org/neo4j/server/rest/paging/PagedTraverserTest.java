@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertNull;
 public class PagedTraverserTest
 {
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( );
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     private static final int LIST_LENGTH = 100;
     private Node startNode;
@@ -50,7 +50,7 @@ public class PagedTraverserTest
     @Before
     public void clearDb() throws Throwable
     {
-        createLinkedList( LIST_LENGTH, dbRule.getGraphDatabaseService() );
+        createLinkedList( LIST_LENGTH, dbRule.get() );
     }
 
     private void createLinkedList( int listLength, GraphDatabaseService db )
@@ -93,7 +93,7 @@ public class PagedTraverserTest
     @SuppressWarnings( "unused" )
     private int iterateThroughPagedTraverser( PagedTraverser traversalPager )
     {
-        try ( Transaction transaction = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction transaction = dbRule.get().beginTx() )
         {
             int count = 0;
             for ( List<Path> paths : traversalPager )

@@ -23,12 +23,13 @@ import java.util.Collection;
 import java.util.HashSet;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -41,12 +42,14 @@ public class TestDatasourceCommitOrderDataVisibility
     private static final String PROPERTY_NAME = "quux";
     private static final int PROPERTY_VALUE = 42;
 
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
     private GraphDatabaseService graphDatabaseService;
 
     @Before
     public void setUp() throws Exception
     {
-        graphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graphDatabaseService = dbRule.get();
     }
 
     @Test

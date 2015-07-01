@@ -24,6 +24,8 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -37,7 +39,6 @@ import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.kernel.impl.transaction.LogMatchers.checkPoint;
@@ -136,12 +137,10 @@ public class KernelRecoveryTest
         IdGeneratorImpl.createGenerator( fs, file, 1 );
     }
 
-    private GraphDatabaseService newDB( EphemeralFileSystemAbstraction fs )
+    private TestGraphDatabase newDB( EphemeralFileSystemAbstraction fs )
     {
         fs.mkdirs( storeDir );
-        return new TestGraphDatabaseFactory()
-                    .setFileSystem( fs )
-                    .newImpermanentDatabase( storeDir );
+        return CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs ).open( storeDir );
     }
 
     private long createNode( GraphDatabaseService db )

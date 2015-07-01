@@ -27,14 +27,16 @@ import java.nio.channels.FileChannel;
 import java.util.Random;
 import java.util.Set;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.function.Consumer;
 import org.neo4j.function.Predicates;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.DatabaseRule.RestartAction;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -52,6 +54,26 @@ import static org.neo4j.io.fs.FileUtils.deleteRecursively;
  */
 public class LuceneLabelScanStoreChaosIT
 {
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    private final Random random = new Random();
+    private File storeDir;
+    private TestGraphDatabase db;
+
+    @Before
+    public void setUp()
+    {
+        storeDir = testDirectory.graphDbDir();
+        db = CommunityTestGraphDatabase.build().open( storeDir );
+    }
+
+    @After
+    public void tearDown()
+    {
+        db.shutdown();
+    }
+
     @Test
     public void shouldRebuildDeletedLabelScanStoreOnStartup() throws Exception
     {
@@ -64,7 +86,7 @@ public class LuceneLabelScanStoreChaosIT
         // WHEN
         // TODO how do we make sure it was deleted and then fully rebuilt? I mean if we somehow deleted
         // the wrong directory here then it would also work, right?
-        dbRule.restartDatabase( deleteTheLabelScanStoreIndex() );
+        restartDatabase( deleteTheLabelScanStoreIndex() );
 
         // THEN
         assertEquals(
@@ -83,7 +105,7 @@ public class LuceneLabelScanStoreChaosIT
         // the wrong directory here then it would also work, right?
         try
         {
-            dbRule.restartDatabase( corruptTheLabelScanStoreIndex() );
+            restartDatabase( corruptTheLabelScanStoreIndex() );
             fail( "Shouldn't be able to start up" );
         }
         catch ( RuntimeException e )
@@ -95,12 +117,19 @@ public class LuceneLabelScanStoreChaosIT
         }
     }
 
-    private RestartAction corruptTheLabelScanStoreIndex()
+    public void restartDatabase( Consumer<File> action ) throws IOException
     {
-        return new RestartAction()
+        db.shutdown();
+        action.accept( storeDir );
+        db = CommunityTestGraphDatabase.build().open( storeDir );
+    }
+
+    private Consumer<File> corruptTheLabelScanStoreIndex()
+    {
+        return new Consumer<File>()
         {
             @Override
-            public void run( FileSystemAbstraction fs, File storeDirectory )
+            public void accept( File storeDirectory )
             {
                 try
                 {
@@ -120,12 +149,12 @@ public class LuceneLabelScanStoreChaosIT
         };
     }
 
-    private RestartAction deleteTheLabelScanStoreIndex()
+    private static Consumer<File> deleteTheLabelScanStoreIndex()
     {
-        return new RestartAction()
+        return new Consumer<File>()
         {
             @Override
-            public void run( FileSystemAbstraction fs, File storeDirectory )
+            public void accept( File storeDirectory )
             {
                 try
                 {
@@ -142,17 +171,16 @@ public class LuceneLabelScanStoreChaosIT
         };
     }
 
-    private File labelScanStoreIndexDirectory( File storeDirectory )
+    private static File labelScanStoreIndexDirectory( File storeDirectory )
     {
-        File directory = new File( new File( new File( storeDirectory, "schema" ), "label" ), "lucene" );
-        return directory;
+        return new File( new File( new File( storeDirectory, "schema" ), "label" ), "lucene" );
     }
 
     private Node createLabeledNode( Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            Node node = dbRule.getGraphDatabaseService().createNode( labels );
+            Node node = db.createNode( labels );
             tx.success();
             return node;
         }
@@ -160,15 +188,15 @@ public class LuceneLabelScanStoreChaosIT
 
     private Set<Node> getAllNodesWithLabel( Label label )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            return asSet( dbRule.getGraphDatabaseService().findNodes( label ) );
+            return asSet( db.findNodes( label ) );
         }
     }
 
     private void deleteNode( Node node )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             node.delete();
             tx.success();
@@ -203,7 +231,4 @@ public class LuceneLabelScanStoreChaosIT
         Second,
         Third;
     }
-
-    public final @Rule DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
-    private final Random random = new Random();
 }

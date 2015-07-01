@@ -26,6 +26,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -33,7 +35,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertThat;
 
@@ -154,7 +155,7 @@ public class SchemaIndexAcceptanceTest
     }
 
     private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-    private GraphDatabaseService db;
+    private GraphDatabase db;
     private final Label label = label( "PERSON" );
     private final String propertyKey = "key";
 
@@ -164,9 +165,9 @@ public class SchemaIndexAcceptanceTest
         db = newDb();
     }
 
-    private GraphDatabaseService newDb()
+    private GraphDatabase newDb()
     {
-        return new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();
+        return CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs ).open();
     }
 
     private void crashAndRestart()

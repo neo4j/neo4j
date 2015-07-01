@@ -26,12 +26,12 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -52,9 +52,9 @@ import static org.mockito.Mockito.when;
 public class IndexConsultedPropertyBlockSweeperTest
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( IndexLookupTest.class );
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
-    private GraphDatabaseAPI api;
+    private TestGraphDatabase api;
     private long nodeId;
     private NodeStore nodeStore;
     private PropertyStore propertyStore;
@@ -72,7 +72,7 @@ public class IndexConsultedPropertyBlockSweeperTest
     @Before
     public void setUp() throws IOException
     {
-        api = dbRule.getGraphDatabaseAPI();
+        api = dbRule.get();
 
         nonIndexedPropKey = "notIndexed";
         indexedPropKey = "indexed";

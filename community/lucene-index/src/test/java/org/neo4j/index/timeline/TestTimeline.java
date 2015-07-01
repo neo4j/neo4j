@@ -27,8 +27,10 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -39,7 +41,6 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.Pair;
 import org.neo4j.index.lucene.LuceneTimeline;
 import org.neo4j.index.lucene.TimelineIndex;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Collections.sort;
 import static org.junit.Assert.*;
@@ -47,12 +48,12 @@ import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
 public class TestTimeline
 {
-    private GraphDatabaseService db;
+    private GraphDatabase db;
 
     @Before
     public void before() throws Exception
     {
-        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
+        db = CommunityTestGraphDatabase.openEphemeral();
     }
 
     @After

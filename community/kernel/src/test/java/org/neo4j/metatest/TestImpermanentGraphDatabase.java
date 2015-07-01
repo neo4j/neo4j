@@ -23,12 +23,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.is;
@@ -39,12 +39,12 @@ import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 
 public class TestImpermanentGraphDatabase
 {
-    private GraphDatabaseService db;
+    private GraphDatabase db;
 
     @Before
     public void createDb()
     {
-        db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = CommunityTestGraphDatabase.openEphemeral();
     }
 
     @After

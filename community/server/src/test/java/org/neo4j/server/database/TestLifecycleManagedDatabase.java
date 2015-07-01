@@ -34,8 +34,8 @@ import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.web.ServerInternalSettings;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.SuppressOutput;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -57,7 +57,7 @@ public class TestLifecycleManagedDatabase
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logProvider );
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral( logProvider );
 
     private File databaseDirectory;
     private Database theDatabase;
@@ -71,7 +71,7 @@ public class TestLifecycleManagedDatabase
 
         dbFactory = mock( LifecycleManagingDatabase.GraphFactory.class );
         when(dbFactory.newGraphDatabase( any( Config.class ), any( GraphDatabaseFacadeFactory.Dependencies.class ) ))
-                .thenReturn( dbRule.getGraphDatabaseAPI() );
+                .thenReturn( dbRule.get().getGraphDatabaseAPI() );
         theDatabase = newDatabase();
     }
 

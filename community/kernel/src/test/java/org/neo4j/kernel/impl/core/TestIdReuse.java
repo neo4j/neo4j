@@ -24,11 +24,12 @@ import java.io.File;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -68,16 +69,18 @@ public class TestIdReuse
     {
         File storeDir = new File( "target/var/idreuse" );
         File file = new File( storeDir, fileName );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).
-            newImpermanentDatabaseBuilder( storeDir ).
-            newGraphDatabase();
+        GraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs.get() )
+                .open();
         for ( int i = 0; i < 5; i++ )
         {
             setAndRemoveSomeProperties( db, value );
         }
         db.shutdown();
         long sizeBefore = file.length();
-        db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
+        db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs.get() )
+                .open( storeDir );
         for ( int i = 0; i < iterations; i++ )
         {
             setAndRemoveSomeProperties( db, value );

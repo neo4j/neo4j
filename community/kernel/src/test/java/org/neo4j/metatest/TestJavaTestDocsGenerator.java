@@ -29,6 +29,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.Map;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -38,14 +40,13 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TestJavaTestDocsGenerator implements GraphHolder
 {
-    private static GraphDatabaseService graphdb;
+    private static GraphDatabase graphdb;
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
@@ -157,7 +158,7 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     @BeforeClass
     public static void setUp()
     {
-        graphdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graphdb = CommunityTestGraphDatabase.openEphemeral();
     }
 
     @AfterClass

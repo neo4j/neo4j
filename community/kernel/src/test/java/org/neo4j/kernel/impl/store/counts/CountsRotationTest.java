@@ -28,14 +28,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -48,7 +48,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -63,7 +62,7 @@ public class CountsRotationTest
     public void shouldCreateEmptyCountsTrackerStoreWhenCreatingDatabase() throws IOException
     {
         // GIVEN
-        GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        final TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs ).open( dir );
 
         // WHEN
         db.shutdown();
@@ -97,7 +96,7 @@ public class CountsRotationTest
     public void shouldRotateCountsStoreWhenClosingTheDatabase() throws IOException
     {
         // GIVEN
-        GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        final TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs ).open( dir );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( A );
@@ -128,7 +127,7 @@ public class CountsRotationTest
     public void shouldRotateCountsStoreWhenRotatingLog() throws IOException
     {
         // GIVEN
-        GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        final TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs ).open( dir );
 
         // WHEN doing a transaction (actually two, the label-mini-tx also counts)
         try ( Transaction tx = db.beginTx() )
@@ -175,7 +174,7 @@ public class CountsRotationTest
         db.shutdown();
     }
 
-    private void checkPoint( GraphDatabaseAPI db ) throws IOException
+    private void checkPoint( TestGraphDatabase db ) throws IOException
     {
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
     }
@@ -194,7 +193,6 @@ public class CountsRotationTest
 
     private FileSystemAbstraction fs;
     private File dir;
-    private GraphDatabaseBuilder dbBuilder;
     private PageCache pageCache;
 
     @Before
@@ -202,7 +200,6 @@ public class CountsRotationTest
     {
         fs = fsRule.get();
         dir = testDir.directory( "dir" ).getAbsoluteFile();
-        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir );
         pageCache = pcRule.getPageCache( fs );
     }
 

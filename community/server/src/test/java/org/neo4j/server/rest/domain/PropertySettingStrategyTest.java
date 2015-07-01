@@ -30,11 +30,11 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rest.web.PropertyValueException;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -42,14 +42,14 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class PropertySettingStrategyTest
 {
-    private static GraphDatabaseAPI db;
+    private static GraphDatabase db;
     private Transaction tx;
     private static PropertySettingStrategy propSetter;
 
     @BeforeClass
     public static void createDb()
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = CommunityTestGraphDatabase.openEphemeral();
         propSetter = new PropertySettingStrategy( db );
     }
 

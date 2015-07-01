@@ -25,19 +25,19 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -49,9 +49,9 @@ import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydedup
 public class IndexLookupTest
 {
     @ClassRule
-    public static EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( IndexLookupTest.class );
+    public static final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
-    private static GraphDatabaseAPI api;
+    private static TestGraphDatabase api;
     private static IndexLookup indexLookup;
 
     private static long indexedNode;
@@ -67,7 +67,7 @@ public class IndexLookupTest
     @BeforeClass
     public static void setUp()
     {
-        api = dbRule.getGraphDatabaseAPI();
+        api = dbRule.get();
 
         String notUsedIndexPropKey = "notUsed";
         String usedIndexPropKey = "used";

@@ -40,6 +40,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Expander;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -117,7 +118,7 @@ public class DatabaseActions
     public static final String SCORE_ORDER = "score";
     public static final String RELEVANCE_ORDER = "relevance";
     public static final String INDEX_ORDER = "index";
-    private final GraphDatabaseAPI graphDb;
+    private final GraphDatabaseService graphDb;
     private final LeaseManager leases;
 
     private final TraversalDescriptionBuilder traversalDescriptionBuilder;
@@ -151,10 +152,10 @@ public class DatabaseActions
                 }
             };
 
-    public DatabaseActions( LeaseManager leaseManager, boolean enableScriptSandboxing, GraphDatabaseAPI graphDatabaseAPI )
+    public DatabaseActions( LeaseManager leaseManager, boolean enableScriptSandboxing, GraphDatabaseService graphDatabaseService )
     {
         this.leases = leaseManager;
-        this.graphDb = graphDatabaseAPI;
+        this.graphDb = graphDatabaseService;
         this.enableScriptSandboxing = enableScriptSandboxing;
         this.traversalDescriptionBuilder = new TraversalDescriptionBuilder( enableScriptSandboxing );
         this.propertySetter = new PropertySettingStrategy( graphDb );

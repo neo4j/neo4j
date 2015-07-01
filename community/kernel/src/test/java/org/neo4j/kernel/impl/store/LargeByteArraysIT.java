@@ -22,12 +22,14 @@ package org.neo4j.kernel.impl.store;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.Random;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Math.max;
 import static java.lang.System.currentTimeMillis;
@@ -41,8 +43,8 @@ public class LargeByteArraysIT
     @Test
     public void largeByteArrays() throws Exception
     {
-        String storeDir = forTest( getClass() ).cleanDirectory( "bytearrays" ).getAbsolutePath();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        File storeDir = forTest( getClass() ).cleanDirectory( "bytearrays" );
+        GraphDatabase db = CommunityTestGraphDatabase.open( storeDir );
         try
         {
             for ( int i = 0; i < 100000; i++ )

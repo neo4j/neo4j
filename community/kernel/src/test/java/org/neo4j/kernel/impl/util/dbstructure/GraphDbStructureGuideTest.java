@@ -26,10 +26,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -252,7 +252,7 @@ public class GraphDbStructureGuideTest
     }
 
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
     private GraphDatabaseService graph;
     private ThreadToStatementContextBridge bridge;
     private Transaction tx;
@@ -260,7 +260,7 @@ public class GraphDbStructureGuideTest
     @Before
     public void setUp() throws InvalidTransactionTypeKernelException
     {
-        GraphDatabaseAPI api = dbRule.getGraphDatabaseAPI();
+        TestGraphDatabase api = dbRule.get();
         graph = api;
         DependencyResolver dependencyResolver = api.getDependencyResolver();
         this.bridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );

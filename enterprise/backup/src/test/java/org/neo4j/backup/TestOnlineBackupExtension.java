@@ -19,8 +19,7 @@
  */
 package org.neo4j.backup;
 
-import java.util.Map;
-
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
 
@@ -32,14 +31,13 @@ public class TestOnlineBackupExtension extends KernelExtensionFactoryContractTes
     }
 
     @Override
-    protected Map<String, String> configuration( boolean shouldLoad, int instance )
+    protected void configure( TestGraphDatabase.EphemeralBuilder builder, boolean shouldLoad, int instance )
     {
-        Map<String, String> configuration = super.configuration( shouldLoad, instance );
+        super.configure( builder, shouldLoad, instance );
         if ( shouldLoad )
         {
-            configuration.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.TRUE );
-            configuration.put( OnlineBackupSettings.online_backup_server.name(), ":"+(BackupServer.DEFAULT_PORT + instance) );
+            builder.withSetting( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
+            builder.withSetting( OnlineBackupSettings.online_backup_server, ":" + (BackupServer.DEFAULT_PORT + instance) );
         }
-        return configuration;
     }
 }

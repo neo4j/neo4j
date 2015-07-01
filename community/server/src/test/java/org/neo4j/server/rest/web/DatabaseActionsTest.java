@@ -35,6 +35,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DynamicLabel;
@@ -51,7 +53,6 @@ import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.helpers.ServerHelper;
@@ -67,7 +68,6 @@ import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
 
@@ -95,7 +95,7 @@ public class DatabaseActionsTest
     private static final Label LABEL = DynamicLabel.label( "Label" );
     private static GraphDbHelper graphdbHelper;
     private static Database database;
-    private static GraphDatabaseAPI graph;
+    private static TestGraphDatabase graph;
     private static DatabaseActions actions;
 
     @Rule
@@ -104,8 +104,8 @@ public class DatabaseActionsTest
     @BeforeClass
     public static void createDb() throws IOException
     {
-        graph = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        database = new WrappedDatabase( graph );
+        graph = CommunityTestGraphDatabase.openEphemeral();
+        database = new WrappedDatabase( graph.getGraphDatabaseAPI() );
         graphdbHelper = new GraphDbHelper( database );
         actions = new TransactionWrappedDatabaseActions( new LeaseManager( new FakeClock() ), database.getGraph() );
     }

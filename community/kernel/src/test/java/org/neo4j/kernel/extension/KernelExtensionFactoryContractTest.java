@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.extension;
 
-import java.util.Map;
-
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -52,27 +51,27 @@ public abstract class KernelExtensionFactoryContractTest
         this.key = key;
     }
 
-    public GraphDatabaseAPI graphdb( String name, int instance )
+    public TestGraphDatabase graphdb( int instance )
     {
-        Map<String, String> config = configuration( true, instance );
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
+        TestGraphDatabase.EphemeralBuilder builder = CommunityTestGraphDatabase.buildEphemeral();
+        configure( builder, true, instance );
+        return builder.open();
     }
 
     /**
      * Override to create default configuration for the {@link org.neo4j.kernel.extension.KernelExtensionFactory}
      * under test.
      *
+     * @param builder    the builder to configure
      * @param shouldLoad <code>true</code> if configuration that makes the
      *                   extension load should be created, <code>false</code> if
      *                   configuration that makes the extension not load should be
      *                   created.
      * @param instance   used for differentiating multiple instances that will run
      *                   simultaneously.
-     * @return configuration for an {@link org.neo4j.kernel.EmbeddedGraphDatabase} that
      */
-    protected Map<String, String> configuration( boolean shouldLoad, int instance )
+    protected void configure( TestGraphDatabase.EphemeralBuilder builder, boolean shouldLoad, int instance )
     {
-        return MapUtil.stringMap();
     }
 
     static KernelExtensions getExtensions( GraphDatabaseService graphdb )
@@ -137,7 +136,7 @@ public abstract class KernelExtensionFactoryContractTest
     @Test
     public void canLoadKernelExtension() throws Exception
     {
-        GraphDatabaseService graphdb = graphdb( "graphdb", 0 );
+        GraphDatabase graphdb = graphdb( 0 );
         try
         {
             assertTrue( "Failed to load extension", getExtensions( graphdb ).isRegistered( extClass ) );

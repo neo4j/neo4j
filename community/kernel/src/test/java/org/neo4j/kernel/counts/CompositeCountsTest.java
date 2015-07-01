@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.function.Supplier;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -32,8 +33,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,7 +42,15 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class CompositeCountsTest
 {
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
+    private GraphDatabaseService db;
+
+    @Before
+    public void setUp()
+    {
+        db = dbRule.get();
+    }
 
     @Test
     public void shouldReportNumberOfRelationshipsFromNodesWithGivenLabel() throws Exception
@@ -348,7 +356,7 @@ public class CompositeCountsTest
      */
     private MatchingRelationships numberOfRelationshipsMatching( Label lhs, RelationshipType type, Label rhs )
     {
-        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             long nodeCount = countsForRelationship( lhs, type, rhs );
             tx.success();
@@ -429,7 +437,7 @@ public class CompositeCountsTest
     @Before
     public void exposeGuts()
     {
-        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
+        statementSupplier = dbRule.get().getDependencyResolver()
                               .resolveDependency( ThreadToStatementContextBridge.class );
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.server.enterprise;
 
 import java.io.File;
 
+import org.neo4j.embedded.HighAvailabilityGraphDatabase;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -77,7 +78,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
     @Override
     public Iterable<AdvertisableService> getServices()
     {
-        if ( getDatabase().getGraph() instanceof HighlyAvailableGraphDatabase )
+        if ( getDatabase().getGraph() instanceof HighAvailabilityGraphDatabase )
         {
             return Iterables.append( new MasterInfoService( null, null ), super.getServices() );
         }

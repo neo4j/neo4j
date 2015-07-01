@@ -27,12 +27,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -45,12 +45,12 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class TestIndexImplOnNeo
 {
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private GraphDatabaseService db;
+    private GraphDatabase db;
 
     @Before
     public void createDb() throws Exception
     {
-        db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( new File( "mydb" ) );
+        db = CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs.get() ).open( new File( "mydb" ) );
     }
 
     private void restartDb() throws Exception

@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.core;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -31,7 +34,6 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
@@ -193,7 +195,7 @@ public class TestNeo4jApiExceptions
     }
 
     private Transaction tx;
-    private GraphDatabaseService graph;
+    private GraphDatabase graph;
 
 
     private void newTransaction()
@@ -228,7 +230,7 @@ public class TestNeo4jApiExceptions
     @Before
     public void init()
     {
-        graph = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graph = CommunityTestGraphDatabase.openEphemeral();
         newTransaction();
     }
 

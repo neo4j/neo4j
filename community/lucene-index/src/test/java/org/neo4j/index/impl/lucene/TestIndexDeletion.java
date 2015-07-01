@@ -29,13 +29,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -49,7 +49,7 @@ import static org.neo4j.index.impl.lucene.Contains.contains;
 public class TestIndexDeletion
 {
     private static final String INDEX_NAME = "index";
-    private static GraphDatabaseService graphDb;
+    private static GraphDatabase graphDb;
     private Index<Node> index;
     private Transaction tx;
     private String key;
@@ -60,7 +60,7 @@ public class TestIndexDeletion
     @BeforeClass
     public static void setUpStuff()
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graphDb = CommunityTestGraphDatabase.openEphemeral();
     }
 
     @AfterClass

@@ -29,9 +29,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
@@ -45,7 +47,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.getProperty;
 import static org.junit.Assert.assertEquals;
@@ -60,7 +61,6 @@ public class CheckPointerIntegrationTest
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
-    private GraphDatabaseBuilder builder;
     private FileSystemAbstraction fs;
 
     @Before
@@ -68,7 +68,6 @@ public class CheckPointerIntegrationTest
     {
         fs = fsRule.get();
         fs.deleteRecursively( storeDir );
-        builder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( storeDir );
     }
 
     @Test
@@ -76,11 +75,12 @@ public class CheckPointerIntegrationTest
     {
         // given
         long seconds = 3;
-        GraphDatabaseService db = builder
-                .setConfig( GraphDatabaseSettings.check_point_interval_time, seconds + "s" )
-                .setConfig( GraphDatabaseSettings.check_point_interval_tx, "10000" )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" )
-                .newGraphDatabase();
+        GraphDatabaseService db = CommunityTestGraphDatabase.build()
+                .withFileSystem( fs )
+                .withSetting( GraphDatabaseSettings.check_point_interval_time, seconds + "s" )
+                .withSetting( GraphDatabaseSettings.check_point_interval_tx, "10000" )
+                .withSetting( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" )
+                .open( storeDir );
 
         // when
         try ( Transaction tx = db.beginTx() )
@@ -107,10 +107,12 @@ public class CheckPointerIntegrationTest
     public void shouldCheckPointBasedOnTxCount() throws Throwable
     {
         // given
-        GraphDatabaseService db = builder.setConfig( GraphDatabaseSettings.check_point_interval_time, "300m" )
-                .setConfig( GraphDatabaseSettings.check_point_interval_tx, "1" )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" )
-                .newGraphDatabase();
+        GraphDatabase db = CommunityTestGraphDatabase.build()
+                .withFileSystem( fs )
+                .withSetting( GraphDatabaseSettings.check_point_interval_time, "300m" )
+                .withSetting( GraphDatabaseSettings.check_point_interval_tx, "1" )
+                .withSetting( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" )
+                .open( storeDir );
 
         // when
         try ( Transaction tx = db.beginTx() )
@@ -135,11 +137,12 @@ public class CheckPointerIntegrationTest
     {
         // given
         long seconds = 1;
-        GraphDatabaseService db = builder
-                .setConfig( GraphDatabaseSettings.check_point_interval_time, seconds + "s" )
-                .setConfig( GraphDatabaseSettings.check_point_interval_tx, "10000" )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" )
-                .newGraphDatabase();
+        GraphDatabase db = CommunityTestGraphDatabase.build()
+                .withFileSystem( fs )
+                .withSetting( GraphDatabaseSettings.check_point_interval_time, seconds + "s" )
+                .withSetting( GraphDatabaseSettings.check_point_interval_tx, "10000" )
+                .withSetting( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" )
+                .open( storeDir );
 
         // when
 
@@ -163,14 +166,15 @@ public class CheckPointerIntegrationTest
     public void shouldBeAbleToStartAndShutdownMultipleTimesTheDBWithoutCommittingTransactions() throws Throwable
     {
         // given
-        GraphDatabaseBuilder graphDatabaseBuilder = builder.setConfig( GraphDatabaseSettings
-                .check_point_interval_time, "300m" )
-                .setConfig( GraphDatabaseSettings.check_point_interval_tx, "10000" )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" );
+        final TestGraphDatabase.Builder builder = CommunityTestGraphDatabase.build()
+                .withFileSystem( fs )
+                .withSetting( GraphDatabaseSettings.check_point_interval_time, "300m" )
+                .withSetting( GraphDatabaseSettings.check_point_interval_tx, "10000" )
+                .withSetting( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" );
 
         // when
-        graphDatabaseBuilder.newGraphDatabase().shutdown();
-        graphDatabaseBuilder.newGraphDatabase().shutdown();
+        builder.open( storeDir ).shutdown();
+        builder.open( storeDir ).shutdown();
 
         // then - 2 check points have been written in the log
         List<CheckPoint> checkPoints = new CheckPointCollector( storeDir, fs ).find( 0 );

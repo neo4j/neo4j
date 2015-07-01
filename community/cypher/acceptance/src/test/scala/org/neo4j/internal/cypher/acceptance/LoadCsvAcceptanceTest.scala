@@ -20,12 +20,11 @@
 package org.neo4j.internal.cypher.acceptance
 
 import java.io.{File, PrintWriter}
-
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper.RichString
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CreateTempFileTestSupport
+import org.neo4j.embedded.CommunityTestGraphDatabase
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.BeforeAndAfterAll
 
 class LoadCsvAcceptanceTest
@@ -276,10 +275,9 @@ class LoadCsvAcceptanceTest
       writer =>
         writer.println("String without quotes")
     }).cypherEscape
-    val db = new TestGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.allow_file_urls, "false")
-      .newGraphDatabase()
+    val db = CommunityTestGraphDatabase.buildEphemeral()
+      .withSetting(GraphDatabaseSettings.allow_file_urls, "false")
+      .open
 
     intercept[LoadExternalResourceException] {
       val engine = new ExecutionEngine(db)

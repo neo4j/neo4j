@@ -31,7 +31,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.Database;
@@ -41,7 +41,6 @@ import org.neo4j.server.rest.management.MonitorService;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rrd.JobScheduler;
 import org.neo4j.server.rrd.RrdFactory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -91,7 +90,7 @@ public class MonitorServiceDocTest implements JobScheduler
     @Before
     public void setUp() throws Exception
     {
-        database = new WrappedDatabase( (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase() );
+        database = new WrappedDatabase( CommunityTestGraphDatabase.openEphemeral().getGraphDatabaseAPI() );
 
         rrdDb = new RrdFactory( new Config(), NullLogProvider.getInstance() ).createRrdDbAndSampler( database, this );
 

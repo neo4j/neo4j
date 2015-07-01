@@ -28,10 +28,10 @@ import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.ObjectName;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 import static org.junit.Assert.assertEquals;
@@ -43,7 +43,7 @@ public class DescriptionTest
     @BeforeClass
     public static void startDb()
     {
-        graphdb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
+        graphdb = CommunityTestGraphDatabase.openEphemeral();
     }
 
     @AfterClass

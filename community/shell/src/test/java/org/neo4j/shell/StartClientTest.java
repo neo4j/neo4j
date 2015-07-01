@@ -32,12 +32,13 @@ import java.io.PrintStream;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.Settings;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -52,19 +53,21 @@ import static org.mockito.Mockito.when;
 public class StartClientTest
 {
     @Rule
-    public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule()
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral( new Consumer<TestGraphDatabase.EphemeralBuilder>()
     {
         @Override
-        protected void configure( GraphDatabaseBuilder builder )
+        public void accept( TestGraphDatabase.EphemeralBuilder builder )
         {
-            builder.setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE );
+            builder.withSetting( ShellSettings.remote_shell_enabled, Settings.TRUE );
         }
-    };
+    } );
+
+    private TestGraphDatabase db;
 
     @Before
     public void startDatabase()
     {
-        db.getGraphDatabaseService();
+        db = dbRule.get();
     }
 
     @Test
@@ -77,9 +80,9 @@ public class StartClientTest
         StartClient.main(new String[]{"-file", getClass().getResource( "/testshell.txt" ).getFile()});
 
         // Then
-        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            assertThat( (String) db.getGraphDatabaseService().getNodeById( 0 ).getProperty( "foo" ),
+            assertThat( (String) db.getNodeById( 0 ).getProperty( "foo" ),
                     equalTo( "bar" ) );
             tx.success();
         }
@@ -104,9 +107,9 @@ public class StartClientTest
         }
 
         // Then
-        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            assertThat( (String) db.getGraphDatabaseService().getNodeById( 0 ).getProperty( "foo" ),
+            assertThat( (String) db.getNodeById( 0 ).getProperty( "foo" ),
                     equalTo( "bar" ) );
             tx.success();
         }
@@ -161,7 +164,7 @@ public class StartClientTest
         };
 
         // when
-        startClient.start( new String[]{"-path", db.getGraphDatabaseAPI().getStoreDir(),
+        startClient.start( new String[]{"-path", db.storeDir().getAbsolutePath(),
                 "-c", "CREATE (n {foo:'bar'});"}, ctrlCHandler );
 
         // verify

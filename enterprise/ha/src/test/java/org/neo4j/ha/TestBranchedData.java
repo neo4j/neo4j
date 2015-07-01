@@ -25,17 +25,17 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.EnterpriseHighAvailabilityGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterManager.RepairKit;
@@ -62,11 +62,9 @@ public class TestBranchedData
             Thread.sleep( 1 ); // To make sure we get different timestamps
         }
 
-        new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( dir.getAbsolutePath() )
-                .setConfig( ClusterSettings.server_id, "1" )
-                .setConfig( ClusterSettings.initial_hosts, ":5001" )
-                .newGraphDatabase().shutdown();
+        EnterpriseHighAvailabilityGraphDatabase.withMemberId( 1 )
+                .withInitialHostAddresses( ":5001" )
+                .open( dir ).shutdown();
         // It should have migrated those to the new location. Verify that.
         for ( long timestamp : timestamps )
         {
@@ -90,7 +88,7 @@ public class TestBranchedData
         
         // WHEN
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        String storeDir = slave.getStoreDir();
+        File storeDir = slave.getStoreDirectory();
         RepairKit starter = cluster.shutdown( slave );
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         createNode( master, "B1" );
@@ -111,9 +109,9 @@ public class TestBranchedData
         life.shutdown();
     }
 
-    private void createTransaction( String storeDir, String name )
+    private void createTransaction( File storeDir, String name )
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabase db = CommunityTestGraphDatabase.open( storeDir );
         try
         {
             createNode( db, name );
@@ -151,7 +149,7 @@ public class TestBranchedData
 
     private void startDbAndCreateNode()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.getAbsolutePath() );
+        GraphDatabase db = CommunityTestGraphDatabase.open( dir );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();

@@ -28,25 +28,18 @@ import org.junit.Test;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Settings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
-import org.neo4j.kernel.impl.factory.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
-import org.neo4j.kernel.impl.factory.EditionModule;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -55,7 +48,6 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.subprocess.SubProcess;
 
 import static java.lang.Integer.parseInt;
@@ -272,9 +264,9 @@ public class TestBackup
         GraphDatabaseService db = null;
         try
         {
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
-                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
-                newGraphDatabase();
+            db = CommunityTestGraphDatabase.build()
+                    .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
+                    .open( serverPath );
 
             Index<Node> index;
             try ( Transaction tx = db.beginTx() )
@@ -319,9 +311,9 @@ public class TestBackup
         GraphDatabaseService db = null;
         try
         {
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
-                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
-                newGraphDatabase();
+            db = CommunityTestGraphDatabase.build()
+                    .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
+                    .open( serverPath );
 
             try ( Transaction transaction = db.beginTx() )
             {
@@ -354,9 +346,9 @@ public class TestBackup
     {
         String key = "name";
         String value = "Neo";
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
-            setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
-            newGraphDatabase();
+        GraphDatabaseService db = CommunityTestGraphDatabase.build()
+                .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
+                .open( serverPath );
 
         try
         {
@@ -396,12 +388,12 @@ public class TestBackup
     @Test
     public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase() throws Exception
     {
-        String sourcePath = "target/var/serverdb-lock";
-        FileUtils.deleteDirectory( new File( sourcePath ) );
+        File sourcePath = new File( "target/var/serverdb-lock" );
+        FileUtils.deleteDirectory( sourcePath );
 
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourcePath ).
-            setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
-            newGraphDatabase();
+        GraphDatabaseService db = CommunityTestGraphDatabase.build()
+                .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
+                .open( sourcePath );
         try
         {
             assertStoreIsLocked( sourcePath );
@@ -450,11 +442,11 @@ public class TestBackup
         return DbRepresentation.of( db );
     }
 
-    private static void assertStoreIsLocked( String path )
+    private static void assertStoreIsLocked( File path )
     {
         try
         {
-            new TestGraphDatabaseFactory().newEmbeddedDatabase( path).shutdown();
+            CommunityTestGraphDatabase.open( path ).shutdown();
             fail( "Could start up database in same process, store not locked" );
         }
         catch ( RuntimeException ex )
@@ -479,7 +471,7 @@ public class TestBackup
     }
 
     @SuppressWarnings( "serial" )
-    private static class LockProcess extends SubProcess<StartupChecker, String> implements StartupChecker
+    private static class LockProcess extends SubProcess<StartupChecker, File> implements StartupChecker
     {
         private volatile Object state;
 
@@ -496,12 +488,12 @@ public class TestBackup
         }
 
         @Override
-        protected void startup( String path ) throws Throwable
+        protected void startup( File path ) throws Throwable
         {
             GraphDatabaseService db = null;
             try
             {
-                db = new TestGraphDatabaseFactory().newEmbeddedDatabase( path );
+                db = CommunityTestGraphDatabase.open( path );
             }
             catch ( RuntimeException ex )
             {
@@ -566,42 +558,19 @@ public class TestBackup
 
     private GraphDatabaseService startGraphDatabase( File storeDir, boolean withOnlineBackup )
     {
-        GraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory()
+        TransactionHeaderInformationFactory.WithRandomBytes thiFactory = new TransactionHeaderInformationFactory.WithRandomBytes()
         {
             @Override
-            protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
-                    GraphDatabaseFacadeFactory.Dependencies dependencies )
+            protected TransactionHeaderInformation createUsing( byte[] additionalHeader )
             {
-                return new CommunityFacadeFactory()
-                {
-
-                    @Override
-                    protected EditionModule createEdition( PlatformModule platformModule )
-                    {
-                        return new CommunityEditionModule( platformModule )
-                        {
-
-                            @Override
-                            protected TransactionHeaderInformationFactory createHeaderInformationFactory()
-                            {
-                                return new TransactionHeaderInformationFactory.WithRandomBytes()
-                                {
-                                    @Override
-                                    protected TransactionHeaderInformation createUsing( byte[] additionalHeader )
-                                    {
-                                        return new TransactionHeaderInformation( 1, 2, additionalHeader );
-                                    }
-                                };
-                            }
-                        };
-                    }
-                }.newFacade( storeDir, config, dependencies );
+                return new TransactionHeaderInformation( 1, 2, additionalHeader );
             }
         };
-        return dbFactory.newEmbeddedDatabaseBuilder( storeDir ).
-            setConfig( OnlineBackupSettings.online_backup_enabled, String.valueOf( withOnlineBackup ) ).
-            setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
-            newGraphDatabase();
+
+        return CommunityTestGraphDatabase.build()
+                .withSetting( OnlineBackupSettings.online_backup_enabled, String.valueOf( withOnlineBackup ) )
+                .withTransactionHeaderInformationFactory( thiFactory )
+                .open( storeDir );
     }
 
     private DbRepresentation createInitialDataSet( File path )

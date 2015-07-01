@@ -41,14 +41,14 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 
 public class PathFindingDocTest
 {
     @ClassRule
-    public static EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( PathFindingDocTest.class );
+    public static TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
     private static GraphDatabaseService graphDb;
     private Transaction tx;
 
@@ -60,7 +60,7 @@ public class PathFindingDocTest
     @BeforeClass
     public static void startDb()
     {
-        graphDb = dbRule.getGraphDatabaseAPI();
+        graphDb = dbRule.get();
     }
 
     @Before

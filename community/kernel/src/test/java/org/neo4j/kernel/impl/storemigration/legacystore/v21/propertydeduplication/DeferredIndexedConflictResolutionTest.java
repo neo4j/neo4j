@@ -29,21 +29,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
@@ -64,7 +62,7 @@ public class DeferredIndexedConflictResolutionTest
     private NodeStore nodeStore;
     private List<DuplicateCluster> clusters;
     private DuplicateCluster clusterToRemove;
-    private GraphDatabaseService db;
+    private TestGraphDatabase db;
 
     @Test
     public void shouldRemoveDuplicateClustersForWhichThereIsAnIndex() throws IOException
@@ -99,9 +97,7 @@ public class DeferredIndexedConflictResolutionTest
     @Before
     public void setUp()
     {
-        GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        db = factory.newEmbeddedDatabase( storePath.absolutePath() );
-        GraphDatabaseAPI api = (GraphDatabaseAPI) db;
+        db = CommunityTestGraphDatabase.open( storePath.graphDbDir() );
 
         Label nodeLabel = DynamicLabel.label( "Label" );
         String propertyKey = "someProp";
@@ -115,7 +111,7 @@ public class DeferredIndexedConflictResolutionTest
             transaction.success();
         }
 
-        DependencyResolver resolver = api.getDependencyResolver();
+        DependencyResolver resolver = db.getDependencyResolver();
         NeoStoreSupplier neoStoreSupplier = resolver.resolveDependency( NeoStoreSupplier.class );
         NeoStore neoStore = neoStoreSupplier.get();
         nodeStore = neoStore.getNodeStore();

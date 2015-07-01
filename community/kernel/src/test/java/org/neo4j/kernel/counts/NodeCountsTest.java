@@ -34,16 +34,16 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.NamedFunction;
+import org.neo4j.test.TestGraphDatabaseRule;
 import org.neo4j.test.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;
 
 public class NodeCountsTest
 {
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
     public final @Rule ThreadingRule threading = new ThreadingRule();
 
     @Test
@@ -60,7 +60,7 @@ public class NodeCountsTest
     public void shouldReportNumberOfNodes() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.createNode();
@@ -79,7 +79,7 @@ public class NodeCountsTest
     public void shouldReportAccurateNumberOfNodesAfterDeletion() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
         Node one;
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -105,7 +105,7 @@ public class NodeCountsTest
     public void shouldIncludeNumberOfNodesAddedInTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.createNode();
@@ -131,7 +131,7 @@ public class NodeCountsTest
     public void shouldIncludeNumberOfNodesDeletedInTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
         Node one;
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -157,7 +157,7 @@ public class NodeCountsTest
     public void shouldNotSeeNodeCountsOfOtherTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
         final Barrier.Control barrier = new Barrier.Control();
         long before = numberOfNodes();
         Future<Long> done = threading.execute( new NamedFunction<GraphDatabaseService, Long>( "create-nodes" )
@@ -194,7 +194,7 @@ public class NodeCountsTest
     /** Transactional version of {@link #countsForNode()} */
     private long numberOfNodes()
     {
-        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.get().beginTx() )
         {
             long nodeCount = countsForNode();
             tx.success();
@@ -212,7 +212,7 @@ public class NodeCountsTest
     @Before
     public void exposeGuts()
     {
-        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
+        statementSupplier = dbRule.get().getDependencyResolver()
                               .resolveDependency( ThreadToStatementContextBridge.class );
     }
 }

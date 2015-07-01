@@ -29,21 +29,20 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.test.ImpermanentDatabaseRule;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static java.lang.String.format;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 /**
@@ -67,15 +66,15 @@ public class TestConcurrentModificationOfRelationshipChains
     private static final int RelationshipGrabSize = 2, DenseNode = 50;
 
     @Rule
-    public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule()
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral( new Consumer<TestGraphDatabase.EphemeralBuilder>()
     {
         @Override
-        protected void configure( GraphDatabaseBuilder builder )
+        public void accept( TestGraphDatabase.EphemeralBuilder builder )
         {
-            builder.setConfig( GraphDatabaseSettings.relationship_grab_size, "" + RelationshipGrabSize );
-            builder.setConfig( GraphDatabaseSettings.dense_node_threshold, "" + DenseNode );
+            builder.withSetting( GraphDatabaseSettings.relationship_grab_size, "" + RelationshipGrabSize );
+            builder.withSetting( GraphDatabaseSettings.dense_node_threshold, "" + DenseNode );
         }
-    };
+    } );
 
     private Node node1, node2;
     private Relationship firstFromSecondBatch;
@@ -83,7 +82,7 @@ public class TestConcurrentModificationOfRelationshipChains
     @Before
     public void given()
     {
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
         try ( Transaction tx = graphDb.beginTx() )
         {
             node1 = graphDb.createNode();
@@ -111,7 +110,7 @@ public class TestConcurrentModificationOfRelationshipChains
     public void relationshipChainPositionCachePoisoningFromSameThreadReReadNode()
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
 
         // when
         deleteRelationshipInSameThread( firstFromSecondBatch );
@@ -129,7 +128,7 @@ public class TestConcurrentModificationOfRelationshipChains
     public void relationshipChainPositionCachePoisoningFromDifferentThreadReReadNode() throws InterruptedException
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
 
         // when
         deleteRelationshipInDifferentThread( firstFromSecondBatch );
@@ -147,7 +146,7 @@ public class TestConcurrentModificationOfRelationshipChains
     public void relationshipChainPositionCachePoisoningFromSameThread()
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
 
         // when
         Iterator<Relationship> rels;
@@ -177,7 +176,7 @@ public class TestConcurrentModificationOfRelationshipChains
     public void relationshipChainPositionCachePoisoningFromSameThreadWithReadsInBetween()
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
 
         // when
         Iterator<Relationship> rels;
@@ -208,7 +207,7 @@ public class TestConcurrentModificationOfRelationshipChains
     public void relationshipChainPositionCachePoisoningFromDifferentThreads() throws InterruptedException
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
 
         // when
         Iterator<Relationship> rels;
@@ -232,7 +231,7 @@ public class TestConcurrentModificationOfRelationshipChains
     public void shouldNotInvalidateNodeInCacheOnRollback() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
 
         // when
         try ( Transaction tx = graphDb.beginTx() )
@@ -254,7 +253,7 @@ public class TestConcurrentModificationOfRelationshipChains
     public void shouldNotInvalidateDenseNodeInCacheOnRollback() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
         Node node, other;
         try ( Transaction tx = graphDb.beginTx() )
         {

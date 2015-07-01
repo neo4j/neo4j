@@ -27,25 +27,21 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import java.io.IOException;
-
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.function.Function;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.ndp.runtime.Sessions;
 import org.neo4j.ndp.runtime.internal.StandardSessions;
-import org.neo4j.ndp.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.ndp.transport.socket.NettyServer;
 import org.neo4j.ndp.transport.socket.SocketProtocol;
 import org.neo4j.ndp.transport.socket.SocketProtocolV1;
 import org.neo4j.ndp.transport.socket.SocketTransport;
 import org.neo4j.ndp.transport.socket.WebSocketTransport;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageData;
 
 import static java.util.Arrays.asList;
@@ -70,13 +66,12 @@ public class Neo4jWithSocket implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                final GraphDatabaseService gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-                final GraphDatabaseAPI api = ((GraphDatabaseAPI) gdb);
-                final LogService logging = api.getDependencyResolver().resolveDependency( LogService.class );
-                final UsageData usageData = api.getDependencyResolver().resolveDependency( UsageData.class );
-                final JobScheduler scheduler = api.getDependencyResolver().resolveDependency( JobScheduler.class );
+                final TestGraphDatabase gdb = CommunityTestGraphDatabase.openEphemeral();
+                final LogService logging = gdb.getDependencyResolver().resolveDependency( LogService.class );
+                final UsageData usageData = gdb.getDependencyResolver().resolveDependency( UsageData.class );
+                final JobScheduler scheduler = gdb.getDependencyResolver().resolveDependency( JobScheduler.class );
 
-                final Sessions sessions = life.add( new StandardSessions( api, usageData, logging ) );
+                final Sessions sessions = life.add( new StandardSessions( gdb.getGraphDatabaseAPI(), usageData, logging ) );
 
                 PrimitiveLongObjectMap<Function<Channel, SocketProtocol>> availableVersions = longObjectMap();
                 availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel, SocketProtocol>()

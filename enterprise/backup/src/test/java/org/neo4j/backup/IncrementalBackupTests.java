@@ -27,16 +27,15 @@ import org.junit.rules.TestName;
 
 import java.io.File;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -138,11 +137,9 @@ public class IncrementalBackupTests
 
     private GraphDatabaseService startGraphDatabase( File path )
     {
-        return new TestGraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( path.getPath() ).
-                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
-                setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
-                newGraphDatabase();
+        return CommunityTestGraphDatabase.build()
+                .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .open( path );
     }
 
     private ServerInterface startServer( File path, String serverAddress ) throws Exception

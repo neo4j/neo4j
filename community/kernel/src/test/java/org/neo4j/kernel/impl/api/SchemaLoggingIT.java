@@ -24,12 +24,14 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.function.Consumer;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -38,13 +40,20 @@ public class SchemaLoggingIT
 {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
-    @Rule public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logProvider );
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral( new Consumer<TestGraphDatabase.EphemeralBuilder>()
+    {
+        @Override
+        public void accept( TestGraphDatabase.EphemeralBuilder builder )
+        {
+            builder.withInternalLogProvider( logProvider );
+        }
+    } );
 
     @Test
     public void shouldLogUserReadableLabelAndPropertyNames() throws Exception
     {
-        //noinspection deprecation
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        GraphDatabaseService db = dbRule.get();
 
         String labelName = "User";
         String property = "name";
@@ -60,7 +69,7 @@ public class SchemaLoggingIT
         );
     }
 
-    private void createIndex( @SuppressWarnings("deprecation") GraphDatabaseAPI db, String labelName, String property )
+    private void createIndex( GraphDatabaseService db, String labelName, String property )
     {
         try ( Transaction tx = db.beginTx() )
         {

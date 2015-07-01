@@ -26,7 +26,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
@@ -34,15 +35,12 @@ import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseRule;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.SuppressOutput;
 
-
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class TestJetty9WebServer extends ExclusiveServerTestBase
@@ -83,13 +81,11 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
     @Test
     public void shouldBeAbleToSetExecutionLimit() throws Throwable
     {
-        @SuppressWarnings("deprecation")
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( new File( "path" ), stringMap(),
-                GraphDatabaseDependencies.newDependencies() );
+        TestGraphDatabase db = CommunityTestGraphDatabase.open( new File( "path" ) );
 
-        ServerConfigurator config = new ServerConfigurator( db );
+        ServerConfigurator config = new ServerConfigurator( db.getGraphDatabaseAPI() );
         config.configuration().setProperty( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, "1000s" );
-        WrappingNeoServerBootstrapper testBootstrapper = new WrappingNeoServerBootstrapper( db, config );
+        WrappingNeoServerBootstrapper testBootstrapper = new WrappingNeoServerBootstrapper( db.getGraphDatabaseAPI(), config );
 
         // When
         testBootstrapper.start();
@@ -132,7 +128,7 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
     public SuppressOutput suppressOutput = suppressAll();
 
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     @After
     public void cleanup()
@@ -147,5 +143,4 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
             server.stop();
         }
     }
-
 }

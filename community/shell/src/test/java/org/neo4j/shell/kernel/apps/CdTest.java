@@ -26,10 +26,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
@@ -37,8 +37,7 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.SilentLocalOutput;
 import org.neo4j.shell.Variables;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertTrue;
 
@@ -77,7 +76,7 @@ public class CdTest
 
     private Node createNodeWithSomeSubNodes( String... names )
     {
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         try ( Transaction tx = db.beginTx() )
         {
             Node root = db.createNode();
@@ -94,15 +93,16 @@ public class CdTest
 
     private final Output silence = new SilentLocalOutput();
     private final Session session = new Session( "test" );
-    public final @Rule DatabaseRule dbRule = new ImpermanentDatabaseRule();
-    private GraphDatabaseAPI db;
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
+    private TestGraphDatabase db;
     private GraphDatabaseShellServer server;
 
     @Before
     public void setup() throws Exception
     {
-        db = dbRule.getGraphDatabaseAPI();
-        server = new GraphDatabaseShellServer( db );
+        db = dbRule.get();
+        server = new GraphDatabaseShellServer( db.getGraphDatabaseAPI() );
         session.set( Variables.TITLE_KEYS_KEY, "name" );
     }
 

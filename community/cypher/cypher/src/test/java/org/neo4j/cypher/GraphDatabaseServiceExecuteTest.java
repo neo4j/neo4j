@@ -21,9 +21,9 @@ package org.neo4j.cypher;
 
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
@@ -36,7 +36,7 @@ public class GraphDatabaseServiceExecuteTest
     public void shouldExecuteCypher() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        GraphDatabaseService graphDb = CommunityTestGraphDatabase.openEphemeral();
         final int before, after;
         try ( Transaction tx = graphDb.beginTx() )
         {

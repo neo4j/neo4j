@@ -37,9 +37,8 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.NamedFunction;
+import org.neo4j.test.TestGraphDatabaseRule;
 import org.neo4j.test.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;
@@ -48,7 +47,8 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class RelationshipCountsTest
 {
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
     public final @Rule ThreadingRule threading = new ThreadingRule();
 
     @Test
@@ -65,7 +65,7 @@ public class RelationshipCountsTest
     public void shouldReportTotalNumberOfRelationships() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
         long before = numberOfRelationships();
         long during;
         try ( Transaction tx = graphDb.beginTx() )
@@ -92,7 +92,7 @@ public class RelationshipCountsTest
     public void shouldAccountForDeletedRelationships() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
         Relationship rel;
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -123,7 +123,7 @@ public class RelationshipCountsTest
     public void shouldNotCountRelationshipsCreatedInOtherTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
         final Barrier.Control barrier = new Barrier.Control();
         long before = numberOfRelationships();
         Future<Long> tx = threading.execute( new NamedFunction<GraphDatabaseService, Long>( "create-relationships" )
@@ -163,7 +163,7 @@ public class RelationshipCountsTest
     public void shouldNotCountRelationshipsDeletedInOtherTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = dbRule.get();
         final Relationship rel;
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -210,7 +210,7 @@ public class RelationshipCountsTest
     public void shouldCountRelationshipsByType() throws Exception
     {
         // given
-        final GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        final GraphDatabaseService graphDb = dbRule.get();
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "FOO" ) );
@@ -242,6 +242,7 @@ public class RelationshipCountsTest
     {
         // given
         Node foo;
+        GraphDatabaseService db = dbRule.get();
         try ( Transaction tx = db.beginTx() )
         {
             foo = db.createNode( label( "Foo" ) );
@@ -274,6 +275,7 @@ public class RelationshipCountsTest
     {
         // given
         Node foo;
+        GraphDatabaseService db = dbRule.get();
         try ( Transaction tx = db.beginTx() )
         {
             foo = db.createNode( label( "Foo" ) );
@@ -314,7 +316,7 @@ public class RelationshipCountsTest
     /** Transactional version of {@link #countsForRelationship(Label, RelationshipType, Label)} */
     private long numberOfRelationshipsMatching( Label lhs, RelationshipType type, Label rhs )
     {
-        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.get().beginTx() )
         {
             long nodeCount = countsForRelationship( lhs, type, rhs );
             tx.success();
@@ -375,7 +377,7 @@ public class RelationshipCountsTest
     @Before
     public void exposeGuts()
     {
-        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
+        statementSupplier = dbRule.get().getDependencyResolver()
                               .resolveDependency( ThreadToStatementContextBridge.class );
     }
 }

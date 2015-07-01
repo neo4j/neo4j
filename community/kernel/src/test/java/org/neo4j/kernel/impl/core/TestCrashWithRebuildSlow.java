@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -41,7 +43,6 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -131,8 +131,8 @@ public class TestCrashWithRebuildSlow
     public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
     {
         File storeDir = new File( "dir" ).getAbsoluteFile();
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
+        final TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs.get() ).open( storeDir );
         List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
         Map<IdType,Long> highIdsBeforeCrash = getHighIds( db );
 
@@ -159,11 +159,10 @@ public class TestCrashWithRebuildSlow
 
         // Recover with rebuild_idgenerators_fast=false
         assertNumberOfFreeIdsEquals( storeDir, snapshot, 0 );
-        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .setFileSystem( snapshot )
-                .newImpermanentDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, Settings.FALSE )
-                .newGraphDatabase();
+        TestGraphDatabase newDb = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( snapshot )
+                .withSetting( GraphDatabaseSettings.rebuild_idgenerators_fast, Settings.FALSE )
+                .open( storeDir );
         Map<IdType,Long> highIdsAfterCrash = getHighIds( newDb );
         assertEquals( highIdsBeforeCrash, highIdsAfterCrash );
 
@@ -197,7 +196,7 @@ public class TestCrashWithRebuildSlow
         }
     }
 
-    private Map<IdType,Long> getHighIds( GraphDatabaseAPI db )
+    private Map<IdType,Long> getHighIds( TestGraphDatabase db )
     {
         final Map<IdType,Long> highIds = new HashMap<>();
         NeoStore neoStore = db.getDependencyResolver().resolveDependency(

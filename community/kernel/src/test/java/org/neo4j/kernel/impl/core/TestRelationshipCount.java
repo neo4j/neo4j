@@ -33,18 +33,18 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -69,19 +69,20 @@ public class TestRelationshipCount
         return data;
     }
 
-    public final @Rule DatabaseRule dbRule;
+    @Rule
+    public final TestGraphDatabaseRule dbRule;
     private Transaction tx;
 
     public TestRelationshipCount( final int denseNodeThreshold )
     {
-        this.dbRule = new ImpermanentDatabaseRule()
+        this.dbRule = TestGraphDatabaseRule.ephemeral( new Consumer<TestGraphDatabase.EphemeralBuilder>()
         {
             @Override
-            protected void configure( GraphDatabaseBuilder builder )
+            public void accept( TestGraphDatabase.EphemeralBuilder builder )
             {
-                builder.setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( denseNodeThreshold ) );
+                builder.withSetting( GraphDatabaseSettings.dense_node_threshold, String.valueOf( denseNodeThreshold ) );
             }
-        };
+        } );
     }
 
     @Test
@@ -590,6 +591,6 @@ public class TestRelationshipCount
 
     private GraphDatabaseService getGraphDb()
     {
-        return dbRule.getGraphDatabaseService();
+        return dbRule.get();
     }
 }

@@ -47,10 +47,8 @@ import javax.management.MBeanServer;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 
-import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
+import org.neo4j.embedded.EnterpriseHighAvailabilityGraphDatabase;
+import org.neo4j.embedded.HighAvailabilityGraphDatabase;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.configuration.AsciiDocListGenerator;
@@ -79,19 +77,16 @@ public class JmxDocTest
         }
     };
     private static final TargetDirectory dir = TargetDirectory.forTest( JmxDocTest.class );
-    private static GraphDatabaseService d1b;
+    private static HighAvailabilityGraphDatabase d1b;
 
     @BeforeClass
     public static void startDb() throws Exception
     {
         File storeDir = dir.makeGraphDbDir( /*clean=*/ );
-        GraphDatabaseBuilder builder =
-                new TestHighlyAvailableGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder(
-                        storeDir.getAbsolutePath() );
-        d1b = builder.setConfig( ClusterSettings.server_id, "1" )
-                     .setConfig( "jmx.port", "9913" )
-                     .setConfig( ClusterSettings.initial_hosts, ":5001" )
-                     .newGraphDatabase();
+        d1b = EnterpriseHighAvailabilityGraphDatabase.withMemberId( 1 )
+                .withInitialHostAddresses( ":5001" )
+                .withParam( "jmx.port", "9913" )
+                .open( storeDir );
     }
 
     @AfterClass
@@ -102,7 +97,6 @@ public class JmxDocTest
             d1b.shutdown();
         }
         d1b = null;
-//        dir.cleanup();
     }
 
     @Test

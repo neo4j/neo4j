@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -446,5 +447,22 @@ public abstract class MapUtil
         }
 
         return true;
+    }
+
+    public static Map<String,String> loadPropertiesFromURL( URL url ) throws IOException
+    {
+        Properties props = new Properties();
+        try ( InputStream stream = url.openStream() )
+        {
+            props.load( stream );
+        }
+        Map<String,String> stringMap = new HashMap<>();
+        for ( Map.Entry<Object,Object> entry : props.entrySet() )
+        {
+            String key = (String) entry.getKey();
+            String value = (String) entry.getValue();
+            stringMap.put( key, value );
+        }
+        return stringMap;
     }
 }

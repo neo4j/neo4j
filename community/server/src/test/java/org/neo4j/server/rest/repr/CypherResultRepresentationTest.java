@@ -33,8 +33,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static java.util.Arrays.asList;
 
@@ -107,12 +106,12 @@ public class CypherResultRepresentationTest
     }
 
     @Rule
-    public DatabaseRule database = new ImpermanentDatabaseRule();
+    public final TestGraphDatabaseRule database = TestGraphDatabaseRule.ephemeral();
 
     @Test
     public void shouldFormatMapsProperly() throws Exception
     {
-        GraphDatabaseService graphdb = database.getGraphDatabaseService();
+        GraphDatabaseService graphdb = database.get();
         Result result = graphdb.execute( "RETURN {one:{two:['wait for it...', {three: 'GO!'}]}}" );
         CypherResultRepresentation representation = new CypherResultRepresentation( result, false, false );
 
@@ -130,9 +129,9 @@ public class CypherResultRepresentationTest
     @Test
     public void shouldRenderNestedEntities() throws Exception
     {
-        try ( Transaction ignored = database.getGraphDatabaseService().beginTx() )
+        try ( Transaction ignored = database.get().beginTx() )
         {
-            GraphDatabaseService graphdb = database.getGraphDatabaseService();
+            GraphDatabaseService graphdb = database.get();
             graphdb.execute( "CREATE (n {name: 'Sally'}), (m {age: 42}), n-[r:FOO {drunk: false}]->m" );
             Result result = graphdb.execute( "MATCH p=n-[r]->m RETURN n, r, p, {node: n, edge: r, path: p}" );
             CypherResultRepresentation representation = new CypherResultRepresentation( result, false, false );

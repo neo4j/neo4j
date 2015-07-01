@@ -24,11 +24,11 @@ import javax.management.MalformedObjectNameException;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.server.rrd.sampler.DatabasePrimitivesSampleableBase;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertTrue;
 
@@ -37,7 +37,7 @@ public class DatabasePrimitivesSampleableBaseDocTest
     @Test
     public void sampleTest() throws MalformedObjectNameException, IOException
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
 
         DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( neoStoreSupplier( db ) );
 
@@ -49,7 +49,7 @@ public class DatabasePrimitivesSampleableBaseDocTest
     @Test
     public void rrd_uses_temp_dir() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
 
         DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( neoStoreSupplier( db ) );
 
@@ -58,7 +58,7 @@ public class DatabasePrimitivesSampleableBaseDocTest
         db.shutdown();
     }
 
-    private NeoStoreSupplier neoStoreSupplier( GraphDatabaseAPI db )
+    private NeoStoreSupplier neoStoreSupplier( TestGraphDatabase db )
     {
         return db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class );
     }

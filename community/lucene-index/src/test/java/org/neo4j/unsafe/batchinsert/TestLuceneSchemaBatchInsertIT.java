@@ -21,16 +21,15 @@ package org.neo4j.unsafe.batchinsert;
 
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import java.io.File;
 
@@ -57,8 +56,7 @@ public class TestLuceneSchemaBatchInsertIT
         inserter.shutdown();
 
         // THEN
-        GraphDatabaseFactory graphDatabaseFactory = new TestGraphDatabaseFactory();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) graphDatabaseFactory.newEmbeddedDatabase( storeDir );
+        TestGraphDatabase db = CommunityTestGraphDatabase.open( storeDir );
         DependencyResolver dependencyResolver = db.getDependencyResolver();
         SchemaIndexProvider schemaIndexProvider = dependencyResolver.resolveDependency(
                 SchemaIndexProvider.class,

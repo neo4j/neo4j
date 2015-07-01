@@ -24,13 +24,12 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.Runtime.getRuntime;
@@ -42,7 +41,7 @@ import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestRecoveryMultipleDataSources
 {
-    private static final String dir = forTest( TestRecoveryMultipleDataSources.class ).makeGraphDbDir().getAbsolutePath();
+    private static final File dir = forTest( TestRecoveryMultipleDataSources.class ).makeGraphDbDir();
 
     /**
      * Tests an issue where loading all relationship types and property indexes after
@@ -57,12 +56,12 @@ public class TestRecoveryMultipleDataSources
     public void recoverNeoAndIndexHavingAllRelationshipTypesAfterRecovery() throws Exception
     {
         // Given (create transactions and kill process, leaving it needing for recovery)
-        deleteRecursively( new File( dir ) );
+        deleteRecursively( dir );
         assertEquals( 0, getRuntime().exec( new String[] { "java", "-Djava.awt.headless=true", "-cp", getProperty( "java.class.path" ),
                 getClass().getName() } ).waitFor() );
 
         // When
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir );
+        GraphDatabaseService db = CommunityTestGraphDatabase.open( dir );
 
         // Then
         try(Transaction ignored = db.beginTx())
@@ -77,7 +76,7 @@ public class TestRecoveryMultipleDataSources
 
     public static void main( String[] args ) throws IOException
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( dir );
+        TestGraphDatabase db = CommunityTestGraphDatabase.open( dir );
         Transaction tx = db.beginTx();
         db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
         tx.success();
@@ -86,7 +85,7 @@ public class TestRecoveryMultipleDataSources
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
 
         tx = db.beginTx();
-        db.index().forNodes( "index" ).add( db.createNode(), dir, db.createNode() );
+        db.index().forNodes( "index" ).add( db.createNode(), dir.getAbsolutePath(), db.createNode() );
         tx.success();
         tx.close();
         exit( 0 );

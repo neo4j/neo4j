@@ -28,7 +28,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -50,7 +50,8 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class SchemaAcceptanceTest
 {
-    public @Rule ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     private GraphDatabaseService db;
     private Label label = Labels.MY_LABEL;
@@ -482,7 +483,7 @@ public class SchemaAcceptanceTest
     @Before
     public void init()
     {
-        db = dbRule.getGraphDatabaseService();
+        db = dbRule.get();
     }
 
     private void dropConstraint( GraphDatabaseService db, ConstraintDefinition constraint )

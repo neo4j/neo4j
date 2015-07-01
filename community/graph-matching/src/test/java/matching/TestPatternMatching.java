@@ -26,6 +26,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -51,7 +53,6 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -92,8 +93,8 @@ public class TestPatternMatching implements GraphHolder
     @BeforeClass
     public static void setUpDb()
     {
-        String storeDir = TargetDirectory.forTest( TestPatternMatching.class ).makeGraphDbDir().getAbsolutePath();
-        graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        File storeDir = TargetDirectory.forTest( TestPatternMatching.class ).makeGraphDbDir();
+        graphDb = CommunityTestGraphDatabase.open( storeDir );
     }
 
     @Before

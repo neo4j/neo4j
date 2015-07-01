@@ -19,22 +19,21 @@
  */
 package examples;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.BatchTransaction;
-import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -78,41 +77,41 @@ public class CreateAndLoadDenseNodeIT
     }
 
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule(
-            TargetDirectory.forTest( getClass() ).makeGraphDbDir() );
-    private GraphDatabaseService db;
+    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private TestGraphDatabase db;
 
     @Before
     public void before()
     {
-        createDbIfNecessary();
-        dbRule.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
-        db = dbRule.getGraphDatabaseService();
+        TestGraphDatabase setupDb = CommunityTestGraphDatabase.open( directory.graphDbDir() );
+        try ( BatchTransaction tx = beginBatchTx( setupDb ) )
+        {
+            Node node = setupDb.createNode();
+            createRelationships( setupDb, tx, node, MyRelTypes.TEST, INCOMING, 1 );
+            createRelationships( setupDb, tx, node, MyRelTypes.TEST, OUTGOING, 3_000_000 );
+            createRelationships( setupDb, tx, node, MyRelTypes.TEST2, OUTGOING, 5 );
+            createRelationships( setupDb, tx, node, MyRelTypes.TEST2, BOTH, 5 );
+            createRelationships( setupDb, tx, node, MyRelTypes.TEST_TRAVERSAL, OUTGOING, 2_000_000 );
+            createRelationships( setupDb, tx, node, MyRelTypes.TEST_TRAVERSAL, INCOMING, 2 );
+        }
+        finally
+        {
+            setupDb.shutdown();
+        }
+
+        db = CommunityTestGraphDatabase.build().open( directory.graphDbDir() );
     }
 
-    private void createDbIfNecessary()
+    @After
+    public void after()
     {
-        if ( !new File( dbRule.getStoreDir(), "neostore" ).exists() )
+        if ( db != null )
         {
-            db = dbRule.getGraphDatabaseService();
-            try ( BatchTransaction tx = beginBatchTx( db ) )
-            {
-                Node node = db.createNode();
-                createRelationships( tx, node, MyRelTypes.TEST, INCOMING, 1 );
-                createRelationships( tx, node, MyRelTypes.TEST, OUTGOING, 3_000_000 );
-                createRelationships( tx, node, MyRelTypes.TEST2, OUTGOING, 5 );
-                createRelationships( tx, node, MyRelTypes.TEST2, BOTH, 5 );
-                createRelationships( tx, node, MyRelTypes.TEST_TRAVERSAL, OUTGOING, 2_000_000 );
-                createRelationships( tx, node, MyRelTypes.TEST_TRAVERSAL, INCOMING, 2 );
-            }
-            finally
-            {
-                dbRule.stopAndKeepFiles();
-            }
+            db.shutdown();
         }
     }
 
-    private void createRelationships( BatchTransaction tx, Node node, RelationshipType type, Direction direction,
+    private static void createRelationships( GraphDatabaseService db, BatchTransaction tx, Node node, RelationshipType type, Direction direction,
             int count )
     {
         for ( int i = 0; i < count; i++ )

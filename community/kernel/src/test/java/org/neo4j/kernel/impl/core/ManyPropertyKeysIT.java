@@ -26,12 +26,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -45,7 +46,6 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -60,7 +60,7 @@ public class ManyPropertyKeysIT
     public void creating_many_property_keys_should_have_all_loaded_the_next_restart() throws Exception
     {
         // GIVEN
-        GraphDatabaseAPI db = databaseWithManyPropertyKeys( 3000 ); // The previous limit to load was 2500, so go some above that
+        TestGraphDatabase db = databaseWithManyPropertyKeys( 3000 ); // The previous limit to load was 2500, so go some above that
         int countBefore = propertyKeyCount( db );
 
         // WHEN
@@ -77,7 +77,7 @@ public class ManyPropertyKeysIT
     public void concurrently_creating_same_property_key_in_different_transactions_should_end_up_with_same_key_id() throws Exception
     {
         // GIVEN
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
         OtherThreadExecutor<WorkerState> worker1 = new OtherThreadExecutor<>( "w1", new WorkerState( db ) );
         OtherThreadExecutor<WorkerState> worker2 = new OtherThreadExecutor<>( "w2", new WorkerState( db ) );
         worker1.execute( new BeginTx() );
@@ -101,12 +101,12 @@ public class ManyPropertyKeysIT
     public final PageCacheRule pageCacheRule = new PageCacheRule();
     private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
 
-    private GraphDatabaseAPI database()
+    private TestGraphDatabase database()
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
+        return CommunityTestGraphDatabase.open( storeDir );
     }
 
-    private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount ) throws IOException
+    private TestGraphDatabase databaseWithManyPropertyKeys( int propertyKeyCount ) throws IOException
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
@@ -143,7 +143,7 @@ public class ManyPropertyKeysIT
         }
     }
 
-    private int propertyKeyCount( GraphDatabaseAPI db )
+    private int propertyKeyCount( TestGraphDatabase db )
     {
         return (int) db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get()
                 .getPropertyKeyTokenStore().getHighId();

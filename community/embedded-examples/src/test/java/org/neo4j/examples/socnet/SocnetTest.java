@@ -27,12 +27,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
@@ -50,7 +50,7 @@ public class SocnetTest
     @Before
     public void setup() throws Exception
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graphDb = CommunityTestGraphDatabase.openEphemeral();
         try ( Transaction tx = graphDb.beginTx() )
         {
             Index<Node> index = graphDb.index().forNodes( "nodes" );

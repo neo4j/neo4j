@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
 import org.neo4j.kernel.extension.KernelExtensions;
@@ -51,7 +52,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
     @Test
     public void shouldBeStarted() throws Exception
     {
-        GraphDatabaseAPI graphdb = graphdb( "graphdb", 0 );
+        TestGraphDatabase graphdb = graphdb( 0 );
         try
         {
             assertEquals( LifecycleStatus.STARTED, graphdb.getDependencyResolver().resolveDependency(
@@ -69,7 +70,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
     @Test
     public void dependenciesCanBeRetrieved() throws Exception
     {
-        GraphDatabaseAPI graphdb = graphdb( "graphdb", 0 );
+        TestGraphDatabase graphdb = graphdb( 0 );
         try
         {
             assertEquals( graphdb.getDependencyResolver().resolveDependency( Config.class ),
@@ -91,7 +92,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
     @Test
     public void shouldBeShutdown() throws Exception
     {
-        GraphDatabaseAPI graphdb = graphdb( "graphdb", 0 );
+        TestGraphDatabase graphdb = graphdb( 0 );
         graphdb.shutdown();
 
         assertEquals( LifecycleStatus.SHUTDOWN, graphdb.getDependencyResolver().resolveDependency( KernelExtensions

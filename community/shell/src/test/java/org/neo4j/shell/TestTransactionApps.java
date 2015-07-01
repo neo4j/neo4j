@@ -29,11 +29,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.omg.CORBA.SystemException;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.regex.Pattern.compile;
 
@@ -44,15 +45,15 @@ import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
 public class TestTransactionApps
 {
-    protected GraphDatabaseAPI db;
+    protected TestGraphDatabase db;
     private FakeShellServer shellServer;
     private ShellClient shellClient;
 
     @Before
     public void doBefore() throws Exception
     {
-        db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        shellServer = new FakeShellServer( db );
+        db = CommunityTestGraphDatabase.openEphemeral();
+        shellServer = new FakeShellServer( db.getGraphDatabaseAPI() );
         shellClient = new SameJvmClient( new HashMap<String, Serializable>(), shellServer, new CollectingOutput() );
    }
 

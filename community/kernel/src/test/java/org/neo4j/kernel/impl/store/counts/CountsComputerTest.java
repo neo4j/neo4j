@@ -26,16 +26,16 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -53,7 +53,6 @@ import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -67,7 +66,7 @@ public class CountsComputerTest
     public void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase() throws IOException
     {
         @SuppressWarnings( "deprecation" )
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        final TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs ).open( dir );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
@@ -87,7 +86,7 @@ public class CountsComputerTest
     public void shouldCreateACountsStoreWhenThereAreNodesInTheDB() throws IOException
     {
         @SuppressWarnings( "deprecation" )
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        final TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs ).open( dir );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( DynamicLabel.label( "A" ) );
@@ -119,7 +118,7 @@ public class CountsComputerTest
     public void shouldCreateACountsStoreWhenThereAreUnusedNodeRecordsInTheDB() throws IOException
     {
         @SuppressWarnings( "deprecation" )
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        final TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs ).open( dir );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( DynamicLabel.label( "A" ) );
@@ -152,7 +151,7 @@ public class CountsComputerTest
     public void shouldCreateACountsStoreWhenThereAreUnusedRelationshipRecordsInTheDB() throws IOException
     {
         @SuppressWarnings( "deprecation" )
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        final TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs ).open( dir );
         try ( Transaction tx = db.beginTx() )
         {
             Node nodeA = db.createNode( DynamicLabel.label( "A" ) );
@@ -189,7 +188,7 @@ public class CountsComputerTest
     public void shouldCreateACountsStoreWhenThereAreNodesAndRelationshipsInTheDB() throws IOException
     {
         @SuppressWarnings( "deprecation" )
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+        final TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs ).open( dir );
         try ( Transaction tx = db.beginTx() )
         {
             Node nodeA = db.createNode( DynamicLabel.label( "A" ) );
@@ -232,8 +231,8 @@ public class CountsComputerTest
     public void shouldCreateACountStoreWhenDBContainsDenseNodes() throws IOException
     {
         @SuppressWarnings( "deprecation" )
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.
-                setConfig( GraphDatabaseSettings.dense_node_threshold, "2" ).newGraphDatabase();
+        final TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs )
+                .withSetting( GraphDatabaseSettings.dense_node_threshold, "2" ).open( dir );
         try ( Transaction tx = db.beginTx() )
         {
             Node nodeA = db.createNode( DynamicLabel.label( "A" ) );
@@ -287,7 +286,6 @@ public class CountsComputerTest
 
     private FileSystemAbstraction fs;
     private File dir;
-    private GraphDatabaseBuilder dbBuilder;
     private PageCache pageCache;
 
     @Before
@@ -295,7 +293,6 @@ public class CountsComputerTest
     {
         fs = fsRule.get();
         dir = testDir.directory( "dir" ).getAbsoluteFile();
-        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir );
         pageCache = pcRule.getPageCache( fs );
     }
 
@@ -311,7 +308,7 @@ public class CountsComputerTest
         return new File( dir, COUNTS_STORE_BASE + CountsTracker.RIGHT );
     }
 
-    private long getLastTxId( @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db )
+    private long getLastTxId( TestGraphDatabase db )
     {
         return db.getDependencyResolver().resolveDependency( NeoStore.class )
                 .getLastCommittedTransactionId();

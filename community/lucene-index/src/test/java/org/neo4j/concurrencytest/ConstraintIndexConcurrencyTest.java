@@ -22,18 +22,17 @@ package org.neo4j.concurrencytest;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.function.Function;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 import org.neo4j.test.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;
@@ -44,7 +43,7 @@ import static org.neo4j.kernel.api.properties.Property.property;
 public class ConstraintIndexConcurrencyTest
 {
     @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
     @Rule
     public final ThreadingRule threads = new ThreadingRule();
 
@@ -52,7 +51,7 @@ public class ConstraintIndexConcurrencyTest
     public void shouldNotAllowConcurrentViolationOfConstraint() throws Exception
     {
         // Given
-        GraphDatabaseAPI graphDb = db.getGraphDatabaseAPI();
+        TestGraphDatabase graphDb = dbRule.get();
 
         Supplier<Statement> statementSupplier = graphDb.getDependencyResolver()
                 .resolveDependency( ThreadToStatementContextBridge.class );

@@ -22,15 +22,14 @@ package org.neo4j.kernel.impl.api.state;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 import org.neo4j.test.TestLabels;
 
 import static org.junit.Assert.assertEquals;
@@ -45,7 +44,7 @@ public class NoChangeWriteTransactionTest
     {
         // GIVEN a transaction that has seen some changes, where all those changes result in a net 0 change set
         // a good way of producing such state is to add a label to an existing node, and then remove it.
-        GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
+        TestGraphDatabase db = dbRule.get();
         NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
         long startTxId = neoStore.getLastCommittedTransactionId();
         Node node = createEmptyNode( db );
@@ -66,7 +65,7 @@ public class NoChangeWriteTransactionTest
     {
         // GIVEN a transaction that has seen some changes, where all those changes result in a net 0 change set
         // a good way of producing such state is to add a label to an existing node, and then remove it.
-        GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
+        TestGraphDatabase db = dbRule.get();
         NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
         long startTxId = neoStore.getLastCommittedTransactionId();
         Node node = createEmptyNode( db );
@@ -86,7 +85,7 @@ public class NoChangeWriteTransactionTest
                 startTxId + 3, neoStore.getLastCommittedTransactionId() );
     }
 
-    private Index<Node> createNodeIndex( GraphDatabaseAPI db )
+    private Index<Node> createNodeIndex( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -106,5 +105,7 @@ public class NoChangeWriteTransactionTest
         }
     }
 
-    public final @Rule DatabaseRule dbr = new ImpermanentDatabaseRule();
+
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 }

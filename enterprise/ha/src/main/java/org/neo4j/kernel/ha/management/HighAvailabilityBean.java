@@ -21,12 +21,12 @@ package org.neo4j.kernel.ha.management;
 
 import javax.management.NotCompliantMBeanException;
 
+import org.neo4j.embedded.HighAvailabilityGraphDatabase;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
@@ -61,7 +61,7 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
 
     private static boolean isHA( ManagementData management )
     {
-        return management.getKernelData().graphDatabase() instanceof HighlyAvailableGraphDatabase;
+        return management.getKernelData().graphDatabase() instanceof HighAvailabilityGraphDatabase;
     }
 
     private static class HighAvailabilityImpl extends Neo4jMBean implements HighAvailability
