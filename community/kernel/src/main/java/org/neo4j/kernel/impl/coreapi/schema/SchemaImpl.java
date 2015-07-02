@@ -391,23 +391,27 @@ public class SchemaImpl implements Schema
         {
             try ( Statement statement = ctxSupplier.get() )
             {
-                int labelId = statement.readOperations().labelGetForName( label.name() );
-                int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
-
-                if ( labelId != KeyReadOperations.NO_SUCH_LABEL && propertyKeyId != KeyReadOperations
-                        .NO_SUCH_PROPERTY_KEY )
+                try
                 {
-                    statement.schemaWriteOperations().indexDrop( statement.readOperations().indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) );
+                    int labelId = statement.readOperations().labelGetForName( label.name() );
+                    int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
+
+                    if ( labelId != KeyReadOperations.NO_SUCH_LABEL && propertyKeyId != KeyReadOperations
+                            .NO_SUCH_PROPERTY_KEY )
+                    {
+                        statement.schemaWriteOperations().indexDrop(
+                                statement.readOperations().indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) );
+                    }
                 }
-            }
-            catch ( SchemaRuleNotFoundException | DropIndexFailureException e )
-            {
-                throw new ConstraintViolationException( String.format(
-                        "Unable to drop index on label `%s` for property %s.", label.name(), propertyKey ), e );
-            }
-            catch ( InvalidTransactionTypeKernelException e )
-            {
-                throw new ConstraintViolationException( e.getMessage(), e );
+                catch ( SchemaRuleNotFoundException | DropIndexFailureException e )
+                {
+                    throw new ConstraintViolationException(
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                }
+                catch ( InvalidTransactionTypeKernelException e )
+                {
+                    throw new ConstraintViolationException( e.getMessage(), e );
+                }
             }
         }
 

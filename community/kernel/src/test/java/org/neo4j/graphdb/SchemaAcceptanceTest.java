@@ -214,7 +214,7 @@ public class SchemaAcceptanceTest
             }
             catch ( ConstraintViolationException e )
             {
-                assertThat( e.getMessage(), containsString( "Unable to drop index" ) );
+                assertThat( e.getMessage(), containsString( "Index rule for label:0 and property:0 not found" ) );
             }
             tx.success();
         }
@@ -238,7 +238,7 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertThat( e.getMessage(), containsString( "Unable to drop index" ) );
+            assertThat( e.getMessage(), containsString( "Index rule for label:0 and property:0 not found" ) );
         }
 
         // THEN
