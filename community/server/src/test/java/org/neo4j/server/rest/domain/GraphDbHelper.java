@@ -511,6 +511,38 @@ public class GraphDbHelper
         }
     }
 
+    public Iterable<ConstraintDefinition> getPropertyExistenceConstraints( String labelName, final String propertyKey )
+    {
+        Transaction tx = database.getGraph().beginTx();
+        try
+        {
+            Iterable<ConstraintDefinition> definitions = Iterables.filter( new Predicate<ConstraintDefinition>()
+            {
+
+                @Override
+                public boolean test( ConstraintDefinition item )
+                {
+                    if ( item.isConstraintType( ConstraintType.MANDATORY_PROPERTY ) )
+                    {
+                        Iterable<String> keys = item.getPropertyKeys();
+                        return single( keys ).equals( propertyKey );
+                    }
+                    else
+                    {
+                        return false;
+                    }
+
+                }
+            }, database.getGraph().schema().getConstraints( label( labelName ) ) );
+            tx.success();
+            return definitions;
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
     public ConstraintDefinition createPropertyUniquenessConstraint( String labelName, List<String> propertyKeys )
     {
         Transaction tx = database.getGraph().beginTx();
@@ -520,6 +552,26 @@ public class GraphDbHelper
             for ( String propertyKey : propertyKeys )
             {
                 creator = creator.assertPropertyIsUnique( propertyKey );
+            }
+            ConstraintDefinition result = creator.create();
+            tx.success();
+            return result;
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    public ConstraintDefinition createPropertyExistenceConstraint( String labelName, List<String> propertyKeys )
+    {
+        Transaction tx = database.getGraph().beginTx();
+        try
+        {
+            ConstraintCreator creator = database.getGraph().schema().constraintFor( label( labelName ) );
+            for ( String propertyKey : propertyKeys )
+            {
+                creator = creator.assertPropertyExists( propertyKey );
             }
             ConstraintDefinition result = creator.create();
             tx.success();

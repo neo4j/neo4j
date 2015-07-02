@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.DatabaseRule;
@@ -92,7 +92,7 @@ public class ConstraintIndexConcurrencyTest
                 fail( "exception expected" );
             }
             // Then
-            catch ( UniqueConstraintViolationKernelException e )
+            catch ( UniquePropertyConstraintViolationKernelException e )
             {
                 assertEquals( labelId, e.labelId() );
                 assertEquals( propertyKeyId, e.propertyKeyId() );

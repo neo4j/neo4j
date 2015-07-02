@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.helpers.Strings;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
@@ -85,9 +86,9 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             int propertyKeyId = descriptor.getPropertyKeyId();
             builder.append( format( "new IndexDescriptor( %s, %s )", labelId, propertyKeyId ) );
         }
-        else if ( arg instanceof UniquenessConstraint )
+        else if ( arg instanceof PropertyConstraint )
         {
-            UniquenessConstraint constraint = (UniquenessConstraint) arg;
+            PropertyConstraint constraint = (PropertyConstraint) arg;
             int labelId = constraint.label();
             int propertyKeyId = constraint.propertyKeyId();
             builder.append( format( "new UniquenessConstraint( %s, %s )", labelId, propertyKeyId ) );

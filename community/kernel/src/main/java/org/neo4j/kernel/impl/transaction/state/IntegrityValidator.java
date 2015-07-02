@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
@@ -76,15 +76,15 @@ public class IntegrityValidator
 
     public void validateSchemaRule( SchemaRule schemaRule ) throws TransactionFailureException
     {
-        if ( schemaRule instanceof UniquenessConstraintRule )
+        if ( schemaRule instanceof UniquePropertyConstraintRule )
         {
             try
             {
-                indexes.validateIndex( ((UniquenessConstraintRule)schemaRule).getOwnedIndex() );
+                indexes.validateIndex( ((UniquePropertyConstraintRule)schemaRule).getOwnedIndex() );
             }
             catch ( ConstraintVerificationFailedKernelException e )
             {
-                throw new TransactionFailureException( Status.Transaction.ValidationFailed, e, "Index valiation failed" );
+                throw new TransactionFailureException( Status.Transaction.ValidationFailed, e, "Index validation failed" );
             }
             catch ( IndexNotFoundKernelException | IndexPopulationFailedKernelException e )
             {

@@ -856,7 +856,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListConstraints() throws Exception
+    public void canListUniquePropertyConstraints() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -869,7 +869,20 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListConstraintsByLabel() throws Exception
+    public void canListMandatoryPropertyConstraints() throws Exception
+    {
+        // GIVEN
+        Label label = label( "Person" );
+        beginTx();
+        db.schema().constraintFor( label ).assertPropertyExists( "name" ).create();
+        finishTx();
+
+        // WHEN / THEN
+        executeCommand( "schema ls", "ON \\(person:Person\\) ASSERT person.name IS NOT NULL" );
+    }
+
+    @Test
+    public void canListUniquePropertyConstraintsByLabel() throws Exception
     {
         // GIVEN
         Label label1 = label( "Person" );
@@ -882,7 +895,20 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListConstraintsByLabelAndProperty() throws Exception
+    public void canListMandatoryPropertyConstraintsByLabel() throws Exception
+    {
+        // GIVEN
+        Label label1 = label( "Person" );
+        beginTx();
+        db.schema().constraintFor( label1 ).assertPropertyExists( "name" ).create();
+        finishTx();
+
+        // WHEN / THEN
+        executeCommand( "schema ls -l :Person", "ON \\(person:Person\\) ASSERT person.name IS NOT NULL" );
+    }
+
+    @Test
+    public void canListUniquePropertyConstraintsByLabelAndProperty() throws Exception
     {
         // GIVEN
         Label label1 = label( "Person" );
@@ -892,6 +918,19 @@ public class TestApps extends AbstractShellTest
 
         // WHEN / THEN
         executeCommand( "schema ls -l :Person -p name", "ON \\(person:Person\\) ASSERT person.name IS UNIQUE" );
+    }
+
+    @Test
+    public void canListMandatoryPropertyConstraintsByLabelAndProperty() throws Exception
+    {
+        // GIVEN
+        Label label1 = label( "Person" );
+        beginTx();
+        db.schema().constraintFor( label1 ).assertPropertyExists( "name" ).create();
+        finishTx();
+
+        // WHEN / THEN
+        executeCommand( "schema ls -l :Person -p name", "ON \\(person:Person\\) ASSERT person.name IS NOT NULL" );
     }
 
     @Test
@@ -1145,11 +1184,10 @@ public class TestApps extends AbstractShellTest
         executeCommand( "EXPLAIN OPTIONAL MATCH (n) RETURN n;", "No data returned" );
     }
 
-    //TODO remove interpreted when PROFILE is supported in compiled plans
     @Test
     public void shouldAllowProfileAsStartForACypherQuery() throws Exception
     {
-        executeCommand( "CYPHER runtime=interpreted PROFILE MATCH (n) RETURN n;", "DB Hits" );
+        executeCommand( "PROFILE MATCH (n) RETURN n;", "DB Hits" );
     }
 
     @Test

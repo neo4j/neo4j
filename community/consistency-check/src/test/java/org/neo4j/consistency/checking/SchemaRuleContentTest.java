@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-import static org.neo4j.kernel.impl.store.UniquenessConstraintRule.uniquenessConstraintRule;
+import static org.neo4j.kernel.impl.store.UniquePropertyConstraintRule.uniquenessConstraintRule;
 import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 

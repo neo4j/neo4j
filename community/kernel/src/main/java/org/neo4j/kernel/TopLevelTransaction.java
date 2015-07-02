@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 
@@ -118,6 +120,10 @@ public class TopLevelTransaction implements Transaction
             // in the same sense as unexpected failures are. A deadlock exception signals that the transaction
             // can be retried and might be successful the next time.
             throw e;
+        }
+        catch ( ConstraintViolationTransactionFailureException e)
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
         }
         catch ( Exception e )
         {

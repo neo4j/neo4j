@@ -53,7 +53,8 @@ case class QueryStatistics(nodesCreated: Int = 0,
                            indexesAdded: Int = 0,
                            indexesRemoved: Int = 0,
                            constraintsAdded: Int = 0,
-                           constraintsRemoved: Int = 0) {
+                           constraintsRemoved: Int = 0
+                            ) {
   def containsUpdates =
     nodesCreated > 0 ||
       relationshipsCreated > 0 ||

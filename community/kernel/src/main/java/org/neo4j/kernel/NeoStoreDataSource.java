@@ -1213,12 +1213,12 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 stateHandlingContext );
         // + Constraints
         ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations =
-                new ConstraintEnforcingEntityOperations(
-                        parts.entityWriteOperations(), parts.entityReadOperations(), parts.schemaReadOperations() );
+                new ConstraintEnforcingEntityOperations( parts.entityWriteOperations(), parts.entityReadOperations(),
+                        parts.schemaWriteOperations(), parts.schemaReadOperations() );
         // + Data integrity
         DataIntegrityValidatingStatementOperations dataIntegrityContext =
                 new DataIntegrityValidatingStatementOperations(
-                        parts.keyWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations() );
+                        parts.keyWriteOperations(), parts.schemaReadOperations(), constraintEnforcingEntityOperations );
         parts = parts.override( null, dataIntegrityContext, constraintEnforcingEntityOperations,
                 constraintEnforcingEntityOperations, null, dataIntegrityContext, null, null, null, null, null );
         // + Locking

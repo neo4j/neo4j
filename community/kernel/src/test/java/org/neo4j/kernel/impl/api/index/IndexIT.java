@@ -164,7 +164,7 @@ public class IndexIT extends KernelIntegrationTest
         // given
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquenessConstraintCreate( labelId, propertyKey );
+            statement.uniquePropertyConstraintCreate( labelId, propertyKey );
             commit();
         }
 
@@ -191,8 +191,8 @@ public class IndexIT extends KernelIntegrationTest
         // given
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquenessConstraintCreate( statement.labelGetOrCreateForName( "Label1" ),
-                                         statement.propertyKeyGetOrCreateForName( "property1" ) );
+            statement.uniquePropertyConstraintCreate( statement.labelGetOrCreateForName( "Label1" ),
+                    statement.propertyKeyGetOrCreateForName( "property1" ) );
             commit();
         }
 
@@ -232,7 +232,7 @@ public class IndexIT extends KernelIntegrationTest
         // given
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquenessConstraintCreate( labelId, propertyKey );
+            statement.uniquePropertyConstraintCreate( labelId, propertyKey );
             commit();
         }
 

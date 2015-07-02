@@ -30,10 +30,13 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.LabelCursor;
 import org.neo4j.kernel.api.cursor.NodeCursor;
@@ -389,6 +392,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+
     public RelationshipIterator relationshipsGetAll( KernelStatement state )
     {
         return state.txState().augmentRelationshipsGetAll( storeLayer.relationshipsGetAll() );
@@ -465,7 +469,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public UniquenessConstraint uniquenessConstraintCreate( KernelStatement state, int labelId, int propertyKeyId )
+    public UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, int labelId, int propertyKeyId )
             throws CreateConstraintFailureException
     {
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
@@ -482,10 +486,10 @@ public class StateHandlingStatementOperations implements
             }
             else // *CREATE*
             { // create from scratch
-                for ( Iterator<UniquenessConstraint> it = storeLayer.constraintsGetForLabelAndPropertyKey(
+                for ( Iterator<PropertyConstraint> it = storeLayer.constraintsGetForLabelAndPropertyKey(
                         labelId, propertyKeyId ); it.hasNext(); )
                 {
-                    if ( it.next().equals( labelId, propertyKeyId ) )
+                    if ( it.next().equals( ConstraintType.UNIQUENESS, labelId, propertyKeyId ) )
                     {
                         return constraint;
                     }
@@ -504,7 +508,16 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
+    public MandatoryPropertyConstraint mandatoryPropertyConstraintCreate( KernelStatement state, int labelId,
+            int propertyKeyId ) throws CreateConstraintFailureException
+    {
+        MandatoryPropertyConstraint constraint = new MandatoryPropertyConstraint( labelId, propertyKeyId );
+        state.txState().constraintDoAdd( constraint );
+        return constraint;
+    }
+
+    @Override
+    public Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
             int labelId, int propertyKeyId )
     {
         return applyConstraintsDiff( state, storeLayer.constraintsGetForLabelAndPropertyKey(
@@ -512,20 +525,21 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
+    public Iterator<PropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
     {
         return applyConstraintsDiff( state, storeLayer.constraintsGetForLabel( labelId ), labelId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetAll( KernelStatement state )
+    public Iterator<PropertyConstraint> constraintsGetAll( KernelStatement state )
     {
         return applyConstraintsDiff( state, storeLayer.constraintsGetAll() );
     }
 
-    private Iterator<UniquenessConstraint> applyConstraintsDiff( KernelStatement state,
-            Iterator<UniquenessConstraint> constraints,
-            int labelId, int propertyKeyId )
+
+    private Iterator<PropertyConstraint> applyConstraintsDiff( KernelStatement state,
+                                                                 Iterator<PropertyConstraint> constraints,
+                                                                 int labelId, int propertyKeyId )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -534,9 +548,9 @@ public class StateHandlingStatementOperations implements
         return constraints;
     }
 
-    private Iterator<UniquenessConstraint> applyConstraintsDiff( KernelStatement state,
-            Iterator<UniquenessConstraint> constraints,
-            int labelId )
+    private Iterator<PropertyConstraint> applyConstraintsDiff( KernelStatement state,
+                                                                 Iterator<PropertyConstraint> constraints,
+                                                                 int labelId )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -545,8 +559,9 @@ public class StateHandlingStatementOperations implements
         return constraints;
     }
 
-    private Iterator<UniquenessConstraint> applyConstraintsDiff( KernelStatement state,
-            Iterator<UniquenessConstraint> constraints )
+
+    private Iterator<PropertyConstraint> applyConstraintsDiff( KernelStatement state,
+                                                                 Iterator<PropertyConstraint> constraints )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -556,7 +571,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void constraintDrop( KernelStatement state, UniquenessConstraint constraint )
+    public void constraintDrop( KernelStatement state, PropertyConstraint constraint )
     {
         state.txState().constraintDoDrop( constraint );
     }
@@ -737,7 +752,8 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChangesForPrefix = state.txState().indexUpdatesForPrefix( index, prefix );
+            ReadableDiffSets<Long> labelPropertyChangesForPrefix = state.txState().indexUpdatesForPrefix( index,
+                    prefix );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
@@ -886,6 +902,43 @@ public class StateHandlingStatementOperations implements
 
             return Property.noNodeProperty( nodeId, propertyKeyId );
         }
+    }
+
+    public static Iterator<DefinedProperty> nodeGetAllProperties(
+            StoreReadLayer storeLayer, StoreStatement statement, ReadableTxState txState,
+            long nodeId) throws EntityNotFoundException
+    {
+        if ( txState.nodeIsDeletedInThisTx( nodeId ) )
+        {
+            throw new IllegalStateException( "node has been deleted" );
+        }
+
+        if ( txState.nodeIsAddedInThisTx( nodeId ) )
+        {
+            return txState.addedAndChangedNodeProperties( nodeId );
+        }
+        else
+        {
+            return txState.augmentNodeProperties( nodeId,
+                    storeLayer.nodeGetAllProperties( statement, nodeId ) );
+        }
+    }
+
+    public static Property nodeGetProperty(
+            StoreReadLayer storeLayer, StoreStatement statement, ReadableTxState txState,
+            long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    {
+        Iterator<DefinedProperty> properties = nodeGetAllProperties( storeLayer, statement, txState, nodeId );
+
+        while ( properties.hasNext() )
+        {
+            Property property = properties.next();
+            if ( property.propertyKeyId() == propertyKeyId )
+            {
+                return property;
+            }
+        }
+        return Property.noNodeProperty( nodeId, propertyKeyId );
     }
 
     @Override

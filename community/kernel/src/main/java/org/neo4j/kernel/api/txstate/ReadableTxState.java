@@ -24,11 +24,13 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.LabelCursor;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.PropertyCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -48,7 +50,7 @@ import org.neo4j.kernel.impl.util.diffsets.ReadableRelationshipDiffSets;
  */
 public interface ReadableTxState
 {
-    void accept( TxStateVisitor visitor );
+    void accept( TxStateVisitor visitor ) throws ConstraintValidationKernelException;
 
     boolean hasChanges();
 
@@ -142,16 +144,16 @@ public interface ReadableTxState
 
     Iterable<IndexDescriptor> constraintIndexesCreatedInTx();
 
-    ReadableDiffSets<UniquenessConstraint> constraintsChanges();
+    ReadableDiffSets<PropertyConstraint> constraintsChanges();
 
-    ReadableDiffSets<UniquenessConstraint> constraintsChangesForLabel( int labelId );
+    ReadableDiffSets<PropertyConstraint> constraintsChangesForLabel( int labelId );
 
-    ReadableDiffSets<UniquenessConstraint> constraintsChangesForLabelAndProperty( int labelId, int propertyKey );
+    ReadableDiffSets<PropertyConstraint> constraintsChangesForLabelAndProperty( int labelId, int propertyKey );
 
     Long indexCreatedForConstraint( UniquenessConstraint constraint );
 
     ReadableDiffSets<Long> indexUpdates( IndexDescriptor index, Object value );
-    
+
     ReadableDiffSets<Long> indexUpdatesForPrefix( IndexDescriptor index, String prefix );
 
     NodeState getNodeState( long id );

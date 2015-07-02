@@ -26,6 +26,7 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException.Evidence;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.properties.Property;
@@ -36,7 +37,6 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class UniquenessConstraintCreationIT extends KernelIntegrationTest
@@ -76,7 +76,7 @@ public class UniquenessConstraintCreationIT extends KernelIntegrationTest
         try
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquenessConstraintCreate( foo, name );
+            statement.uniquePropertyConstraintCreate( foo, name );
 
             fail( "expected exception" );
         }
@@ -86,9 +86,10 @@ public class UniquenessConstraintCreationIT extends KernelIntegrationTest
             assertEquals( new UniquenessConstraint( foo, name ), ex.constraint() );
             Throwable cause = ex.getCause();
             assertThat( cause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
-            assertEquals( asSet( new ConstraintVerificationFailedKernelException.Evidence(
-                    new PreexistingIndexEntryConflictException( "foo", node1, node2 ) ) ),
-                    ((ConstraintVerificationFailedKernelException) cause).evidence() );
+            assertEquals(
+                    asSet( Evidence.of( new PreexistingIndexEntryConflictException( "foo", node1, node2 ) ) ),
+                    ((ConstraintVerificationFailedKernelException) cause).evidence()
+            );
         }
     }
 }

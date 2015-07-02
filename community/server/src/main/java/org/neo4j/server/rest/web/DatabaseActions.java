@@ -1540,6 +1540,18 @@ public class DatabaseActions
         return new ConstraintDefinitionRepresentation( constraintDefinition );
     }
 
+    public ConstraintDefinitionRepresentation createPropertyExistenceConstraint( String labelName,
+            Iterable<String> propertyKeys )
+    {
+        ConstraintCreator constraintCreator = graphDb.schema().constraintFor( label( labelName ) );
+        for ( String key : propertyKeys )
+        {
+            constraintCreator = constraintCreator.assertPropertyExists( key );
+        }
+        ConstraintDefinition constraintDefinition = constraintCreator.create();
+        return new ConstraintDefinitionRepresentation( constraintDefinition );
+    }
+
     public boolean dropPropertyUniquenessConstraint( String labelName, Iterable<String> propertyKeys )
     {
         final Set<String> propertyKeysSet = asSet( propertyKeys );
@@ -1550,6 +1562,36 @@ public class DatabaseActions
             constraint.drop();
         }
         return constraint != null;
+    }
+
+    public boolean dropPropertyExistenceConstraint( String labelName, Iterable<String> propertyKeys )
+    {
+        final Set<String> propertyKeysSet = asSet( propertyKeys );
+        ConstraintDefinition constraint =
+                singleOrNull( filteredConstraints( labelName, propertyExistenceFilter( propertyKeysSet ) ) );
+        if ( constraint != null )
+        {
+            constraint.drop();
+        }
+        return constraint != null;
+    }
+
+    public ListRepresentation getPropertyExistenceConstraint( String labelName, Iterable<String> propertyKeys )
+    {
+        Set<String> propertyKeysSet = asSet( propertyKeys );
+        Iterable<ConstraintDefinition> constraints =
+                filteredConstraints( labelName, propertyExistenceFilter( propertyKeysSet ) );
+        if ( constraints.iterator().hasNext() )
+        {
+            Iterable<Representation> representationIterable = map( CONSTRAINT_DEF_TO_REPRESENTATION, constraints );
+            return new ListRepresentation( CONSTRAINT_DEFINITION, representationIterable );
+        }
+        else
+        {
+            throw new IllegalArgumentException(
+                    String.format( "Constraint with label %s for properties %s does not exist", labelName,
+                            propertyKeys ) );
+        }
     }
 
     public ListRepresentation getPropertyUniquenessConstraint( String labelName, Iterable<String> propertyKeys )
@@ -1601,6 +1643,19 @@ public class DatabaseActions
         };
     }
 
+    private Predicate<ConstraintDefinition> propertyExistenceFilter( final Set<String> propertyKeysSet )
+    {
+        return new Predicate<ConstraintDefinition>()
+        {
+            @Override
+            public boolean test( ConstraintDefinition item )
+            {
+                return item.isConstraintType( ConstraintType.MANDATORY_PROPERTY ) &&
+                       propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
+            }
+        };
+    }
+
     public ListRepresentation getConstraints()
     {
         return new ListRepresentation( CONSTRAINT_DEFINITION,
@@ -1617,5 +1672,11 @@ public class DatabaseActions
     {
         return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
                 filteredConstraints( labelName, ConstraintType.UNIQUENESS ) ) );
+    }
+
+    public Representation getLabelExistenceConstraints( String labelName )
+    {
+        return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
+                filteredConstraints( labelName, ConstraintType.MANDATORY_PROPERTY ) ) );
     }
 }

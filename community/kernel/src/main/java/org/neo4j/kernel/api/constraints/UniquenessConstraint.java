@@ -17,72 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.api.constraints;
 
-import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.graphdb.schema.ConstraintType;
 
-// TODO: When we add other types of constraints, we will either want to create a hierarchy, or...
-// TODO: ...rename this to "Constraint" and add a "type" enum (or something like that).
-public class UniquenessConstraint
+public class UniquenessConstraint extends PropertyConstraint
 {
-    private final int labelId;
-    private final int propertyKeyId;
-
     public UniquenessConstraint( int labelId, int propertyKeyId )
     {
-        this.labelId = labelId;
-        this.propertyKeyId = propertyKeyId;
+        super( labelId, propertyKeyId );
     }
 
     @Override
-    public boolean equals( Object obj )
+    public void added( ChangeVisitor visitor )
     {
-        if ( this == obj )
-        {
-            return true;
-        }
-        if ( obj != null && getClass() == obj.getClass() )
-        {
-            UniquenessConstraint that = (UniquenessConstraint) obj;
-            return this.equals( that.labelId, that.propertyKeyId );
-        }
-        return false;
+        visitor.visitAddedUniquePropertyConstraint( this );
     }
 
     @Override
-    public int hashCode()
+    public void removed( ChangeVisitor visitor )
     {
-        int result = labelId;
-        result = 31 * result + propertyKeyId;
-        return result;
-    }
-
-    public int label()
-    {
-        return labelId;
-    }
-
-    public int propertyKeyId()
-    {
-        return propertyKeyId;
-    }
-
-    public boolean equals( int labelId, int propertyKeyId )
-    {
-        return this.labelId == labelId && this.propertyKeyId == propertyKeyId;
+        visitor.visitRemovedUniquePropertyConstraint( this );
     }
 
     @Override
-    public String toString()
+    String constraintString()
     {
-        return String.format( "CONSTRAINT ON ( n:label[%s] ) ASSERT n.property[%s] IS UNIQUE", labelId, propertyKeyId );
+        return "UNIQUE";
     }
 
-    public String userDescription( TokenNameLookup tokenNameLookup )
+    @Override
+    public ConstraintType type()
     {
-        String labelName = tokenNameLookup.labelGetName( labelId );
-        String boundIdentifier = labelName.toLowerCase();
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE", boundIdentifier, labelName,
-                boundIdentifier, tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
+        return ConstraintType.UNIQUENESS;
     }
 }

@@ -62,7 +62,11 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
     val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
 
     val matchingConstraints = statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
-    if ( matchingConstraints.hasNext ) Some(matchingConstraints.next()) else None
+
+    import scala.collection.JavaConverters._
+    statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).asScala.collectFirst {
+      case unique: UniquenessConstraint => unique
+    }
   } catch {
     case _: KernelException => None
   }

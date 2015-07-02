@@ -88,6 +88,12 @@ public abstract class DatabaseRule extends ExternalResource
                     }
                 } );
             }
+
+            @Override
+            public String toString()
+            {
+                return "tx( " + function + " )";
+            }
         };
     }
 

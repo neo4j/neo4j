@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.Collection;
-
 import org.junit.Test;
+
+import java.util.Collection;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -31,15 +31,13 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.store.UniquenessConstraintRule.uniquenessConstraintRule;
+import static org.neo4j.kernel.impl.store.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class SchemaCacheTest
 {

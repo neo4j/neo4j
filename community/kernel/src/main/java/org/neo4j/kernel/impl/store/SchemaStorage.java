@@ -139,20 +139,19 @@ public class SchemaStorage implements SchemaRuleAccess
         Function<SchemaRule, T> ruleConversion = (Function) conversion;
         return map( ruleConversion, filter( new Predicate<SchemaRule>()
         {
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings( "unchecked" )
             @Override
             public boolean test( SchemaRule rule )
             {
                 return rule.getLabel() == labelId &&
-                       rule.getKind().getRuleClass() == ruleType &&
+                       ruleType.isAssignableFrom( rule.getKind().getRuleClass() ) &&
                        predicate.test( (R) rule );
             }
         }, loadAllSchemaRules() ) );
     }
 
     public <R extends SchemaRule, T> Iterator<T> schemaRules(
-            Function<? super R, T> conversion, final SchemaRule.Kind kind,
-            final Predicate<R> predicate )
+            Function<? super R, T> conversion, final Class<R> ruleClass )
     {
         @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
         Function<SchemaRule, T> ruleConversion = (Function) conversion;
@@ -162,8 +161,7 @@ public class SchemaStorage implements SchemaRuleAccess
             @Override
             public boolean test( SchemaRule rule )
             {
-                return rule.getKind() == kind &&
-                       predicate.test( (R) rule );
+                return ruleClass.isInstance( rule );
             }
         }, loadAllSchemaRules() ) );
     }
@@ -245,25 +243,35 @@ public class SchemaStorage implements SchemaRuleAccess
         return schemaStore.nextId();
     }
 
-    public UniquenessConstraintRule uniquenessConstraint( int labelId, final int propertyKeyId )
+    public MandatoryPropertyConstraintRule mandatoryPropertyConstraint( int labelId, final int propertyKeyId )
             throws SchemaRuleNotFoundException
     {
-        Iterator<UniquenessConstraintRule> rules = schemaRules(
-                UniquenessConstraintRule.class, labelId,
-                new Predicate<UniquenessConstraintRule>()
-                {
-                    @Override
-                    public boolean test( UniquenessConstraintRule item )
-                    {
-                        return item.containsPropertyKeyId( propertyKeyId );
-                    }
-                } );
+        return propertyConstraint( MandatoryPropertyConstraintRule.class, labelId, propertyKeyId );
+    }
+
+    public UniquePropertyConstraintRule uniquenessConstraint( int labelId, final int propertyKeyId )
+            throws SchemaRuleNotFoundException
+    {
+        return propertyConstraint( UniquePropertyConstraintRule.class, labelId, propertyKeyId );
+    }
+
+    private <Rule extends PropertyConstraintRule> Rule propertyConstraint( Class<Rule> type,
+            final int labelId, final int propertyKeyId ) throws SchemaRuleNotFoundException
+    {
+        Iterator<Rule> rules = schemaRules( type, labelId, new Predicate<Rule>()
+        {
+            @Override
+            public boolean test( Rule item )
+            {
+                return item.containsPropertyKeyId( propertyKeyId );
+            }
+        } );
         if ( !rules.hasNext() )
         {
             throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "not found" );
         }
 
-        UniquenessConstraintRule rule = rules.next();
+        Rule rule = rules.next();
 
         if ( rules.hasNext() )
         {

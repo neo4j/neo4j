@@ -20,10 +20,11 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -36,49 +37,42 @@ import org.neo4j.kernel.api.index.IndexEntryConflictException;
  */
 public class ConstraintVerificationFailedKernelException extends KernelException
 {
-    private final UniquenessConstraint constraint;
+    private final PropertyConstraint constraint;
 
-    public static final class Evidence
+    public static abstract class Evidence
     {
-        private final IndexEntryConflictException conflict;
-
-        public Evidence( IndexEntryConflictException conflict )
+        Evidence()
         {
-            this.conflict = conflict;
         }
 
-        @Override
-        public boolean equals( Object o )
+        abstract String message( String label, String propertyKey );
+
+        public static Evidence of( IndexEntryConflictException conflict )
         {
-            return this == o || !(o == null || getClass() != o.getClass()) &&
-                    conflict.equals( ((Evidence) o).conflict );
+            return new IndexEntryConflict( conflict );
         }
 
-        @Override
-        public int hashCode()
+        public static Evidence ofNodeWithNullProperty( long nodeId )
         {
-            return conflict.hashCode();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Evidence{" +
-                    "conflict=" + conflict +
-                    '}';
+            return new MandatoryConstraintConflict( nodeId );
         }
     }
 
     private final Set<Evidence> evidence;
 
-    public ConstraintVerificationFailedKernelException( UniquenessConstraint constraint, Set<Evidence> evidence )
+    public ConstraintVerificationFailedKernelException( PropertyConstraint constraint, Evidence evidence )
+    {
+        this( constraint, Collections.singleton( evidence ) );
+    }
+
+    public ConstraintVerificationFailedKernelException( PropertyConstraint constraint, Set<Evidence> evidence )
     {
         super( Status.Schema.ConstraintVerificationFailure, "Existing data does not satisfy %s.", constraint );
         this.constraint = constraint;
         this.evidence = evidence;
     }
 
-    public ConstraintVerificationFailedKernelException( UniquenessConstraint constraint, Throwable failure )
+    public ConstraintVerificationFailedKernelException( PropertyConstraint constraint, Throwable failure )
     {
         super( Status.Schema.ConstraintVerificationFailure, failure, "Failed to verify constraint %s: %s", constraint,
                 failure.getMessage() );
@@ -97,11 +91,96 @@ public class ConstraintVerificationFailedKernelException extends KernelException
         StringBuilder message = new StringBuilder();
         for ( Evidence evidenceItem : evidence() )
         {
-            IndexEntryConflictException conflict = evidenceItem.conflict;
-            message.append( conflict.evidenceMessage(
+            message.append( evidenceItem.message(
                     tokenNameLookup.labelGetName( constraint.label() ),
                     tokenNameLookup.propertyKeyGetName( constraint.propertyKeyId() ) ) );
         }
         return message.toString();
+    }
+
+    private static class IndexEntryConflict extends Evidence
+    {
+        final IndexEntryConflictException cause;
+
+        IndexEntryConflict( IndexEntryConflictException cause )
+        {
+            this.cause = Objects.requireNonNull( cause );
+        }
+
+        @Override
+        String message( String label, String propertyKey )
+        {
+            return cause.evidenceMessage( label, propertyKey );
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            return cause.equals( ((IndexEntryConflict) o).cause );
+
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return cause.hashCode();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "IndexEntryConflict{cause=" + cause + "}";
+        }
+    }
+
+    private static class MandatoryConstraintConflict extends Evidence
+    {
+        final long nodeId;
+
+        MandatoryConstraintConflict( long nodeId )
+        {
+            this.nodeId = nodeId;
+        }
+
+        @Override
+        String message( String label, String propertyKey )
+        {
+            return String.format( "Node(%s) with label `%s` has no value for property `%s`",
+                    nodeId, label, propertyKey );
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            return nodeId == ((MandatoryConstraintConflict) o).nodeId;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return (int) (nodeId ^ (nodeId >>> 32));
+        }
+
+        @Override
+        public String toString()
+        {
+            return "MandatoryConstraintConflict{nodeId=" + nodeId + "}";
+        }
     }
 }

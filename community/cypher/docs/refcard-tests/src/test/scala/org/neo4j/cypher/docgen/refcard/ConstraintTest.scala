@@ -31,11 +31,17 @@ class ConstraintTest extends RefcardTest with QueryStatisticsTestSupport {
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
-      case "create-constraint" =>
-        //        assertStats(result, constraintAdded = 1)
+      case "create-unique-property-constraint" =>
+        assertStats(result, constraintsAdded = 1)
         assert(result.toList.size === 0)
-      case "drop-constraint" =>
-        // assertStats(result, constraintDeleted = 1)
+      case "drop-unique-property-constraint" =>
+        assertStats(result, constraintsRemoved = 1)
+        assert(result.toList.size === 0)
+      case "create-mandatory-property-constraint" =>
+        assertStats(result, constraintsAdded = 1)
+        assert(result.toList.size === 0)
+      case "drop-mandatory-property-constraint" =>
+        assertStats(result, constraintsRemoved = 1)
         assert(result.toList.size === 0)
       case "match" =>
         assertStats(result, nodesCreated = 0)
@@ -56,19 +62,19 @@ class ConstraintTest extends RefcardTest with QueryStatisticsTestSupport {
     }
 
   def text = """
-###assertion=create-constraint
+###assertion=create-unique-property-constraint
 //
 
 CREATE CONSTRAINT ON (p:Person)
        ASSERT p.name IS UNIQUE
 ###
 
-Create a unique constraint on the label `Person` and property `name`.
+Create a unique property constraint on the label `Person` and property `name`.
 If any other node with that label is updated or created with a `name` that
 already exists, the write operation will fail.
 This constraint will create an accompanying index.
 
-###assertion=drop-constraint
+###assertion=drop-unique-property-constraint
 //
 
 DROP CONSTRAINT ON (p:Person)
@@ -76,5 +82,25 @@ DROP CONSTRAINT ON (p:Person)
 ###
 
 Drop the unique constraint and index on the label `Person` and property `name`.
+
+###assertion=create-mandatory-property-constraint
+//
+
+CREATE CONSTRAINT ON (p:Person)
+       ASSERT p.name IS NOT NULL
+###
+
+Create a mandatory property constraint on the label `Person` and property `name`.
+If a node with that label is created without a `name`, or if the name property is
+removed from an existing node with the `Person` label, the write operation will fail.
+
+###assertion=drop-mandatory-property-constraint
+//
+
+DROP CONSTRAINT ON (p:Person)
+     ASSERT p.name IS NOT NULL
+###
+
+Drop the mandatory property constraint on the label `Person` and property `name`.
 """
 }

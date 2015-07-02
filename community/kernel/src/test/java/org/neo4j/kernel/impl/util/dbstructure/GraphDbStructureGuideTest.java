@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -129,7 +129,7 @@ public class GraphDbStructureGuideTest
 
         commitAndReOpen();
 
-        UniquenessConstraint constraint = createUniqueConstraint( labelId, pkId );
+        PropertyConstraint constraint = createUniqueConstraint( labelId, pkId );
         IndexDescriptor descriptor = new IndexDescriptor( labelId, pkId );
 
         // WHEN
@@ -214,9 +214,9 @@ public class GraphDbStructureGuideTest
         return schemaWrite().indexCreate( labelId, pkId );
     }
 
-    private UniquenessConstraint createUniqueConstraint( int labelId, int pkId ) throws Exception
+    private PropertyConstraint createUniqueConstraint( int labelId, int pkId ) throws Exception
     {
-        return schemaWrite().uniquenessConstraintCreate( labelId, pkId );
+        return schemaWrite().uniquePropertyConstraintCreate( labelId, pkId );
     }
 
     private int createLabeledNodes( String labelName, int amount ) throws Exception

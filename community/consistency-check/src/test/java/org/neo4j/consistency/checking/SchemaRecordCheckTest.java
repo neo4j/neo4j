@@ -26,7 +26,7 @@ import org.neo4j.consistency.store.RecordAccessStub;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -126,7 +126,8 @@ public class SchemaRecordCheckTest
 
         DynamicRecord record = inUse( dynamicRecord( schemaRuleId ) );
 
-        UniquenessConstraintRule rule = UniquenessConstraintRule.uniquenessConstraintRule( schemaRuleId, labelId, propertyKeyId, indexRuleId );
+        UniquePropertyConstraintRule rule = UniquePropertyConstraintRule
+                .uniquenessConstraintRule( schemaRuleId, labelId, propertyKeyId, indexRuleId );
 
         when( checker().ruleAccess.loadSingleSchemaRule( schemaRuleId ) ).thenReturn( rule );
 
@@ -155,7 +156,8 @@ public class SchemaRecordCheckTest
         SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
 
         IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId2 );
-        UniquenessConstraintRule rule2 = UniquenessConstraintRule.uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
+        UniquePropertyConstraintRule rule2 = UniquePropertyConstraintRule
+                .uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
 
         when( checker().ruleAccess.loadSingleSchemaRule( ruleId1 ) ).thenReturn( rule1 );
         when( checker().ruleAccess.loadSingleSchemaRule( ruleId2 ) ).thenReturn( rule2 );
@@ -214,8 +216,10 @@ public class SchemaRecordCheckTest
         DynamicRecord record1 = inUse( dynamicRecord( ruleId1 ) );
         DynamicRecord record2 = inUse( dynamicRecord( ruleId2 ) );
 
-        UniquenessConstraintRule rule1 = UniquenessConstraintRule.uniquenessConstraintRule( ruleId1, labelId, propertyKeyId, ruleId2 );
-        UniquenessConstraintRule rule2 = UniquenessConstraintRule.uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
+        UniquePropertyConstraintRule rule1 = UniquePropertyConstraintRule
+                .uniquenessConstraintRule( ruleId1, labelId, propertyKeyId, ruleId2 );
+        UniquePropertyConstraintRule rule2 = UniquePropertyConstraintRule
+                .uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
 
         when( checker().ruleAccess.loadSingleSchemaRule( ruleId1 ) ).thenReturn( rule1 );
         when( checker().ruleAccess.loadSingleSchemaRule( ruleId2 ) ).thenReturn( rule2 );
@@ -241,7 +245,8 @@ public class SchemaRecordCheckTest
 
         DynamicRecord record = inUse( dynamicRecord( ruleId ) );
 
-        UniquenessConstraintRule rule = UniquenessConstraintRule.uniquenessConstraintRule( ruleId, labelId, propertyKeyId, ruleId );
+        UniquePropertyConstraintRule rule = UniquePropertyConstraintRule
+                .uniquenessConstraintRule( ruleId, labelId, propertyKeyId, ruleId );
 
         when( checker().ruleAccess.loadSingleSchemaRule( ruleId ) ).thenReturn( rule );
 
@@ -271,8 +276,10 @@ public class SchemaRecordCheckTest
 
         SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "in-memory", "1.0" );
 
-        IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId1 );
-        UniquenessConstraintRule rule2 = UniquenessConstraintRule.uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId1 );
+        IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long)
+                ruleId1 );
+        UniquePropertyConstraintRule rule2 = UniquePropertyConstraintRule
+                .uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId1 );
 
         when( checker().ruleAccess.loadSingleSchemaRule( ruleId1 ) ).thenReturn( rule1 );
         when( checker().ruleAccess.loadSingleSchemaRule( ruleId2 ) ).thenReturn( rule2 );

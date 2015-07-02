@@ -27,7 +27,7 @@ import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -131,7 +131,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
                     checkIndexRule( (IndexRule) rule, engine, record, records );
                     break;
                 case UNIQUENESS_CONSTRAINT:
-                    checkUniquenessConstraintRule( (UniquenessConstraintRule) rule, engine, record, records );
+                    checkUniquenessConstraintRule( (UniquePropertyConstraintRule) rule, engine, record, records );
                     break;
                 default:
                     engine.report().unsupportedSchemaRuleKind( kind );
@@ -139,7 +139,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         }
     }
 
-    private void checkUniquenessConstraintRule( UniquenessConstraintRule rule,
+    private void checkUniquenessConstraintRule( UniquePropertyConstraintRule rule,
                                                 CheckerEngine<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> engine,
                                                 DynamicRecord record, RecordAccess records )
     {

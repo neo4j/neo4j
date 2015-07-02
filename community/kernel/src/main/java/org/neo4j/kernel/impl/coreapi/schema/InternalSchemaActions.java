@@ -42,8 +42,14 @@ public interface InternalSchemaActions
     ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey )
             throws IllegalTokenNameException, TooManyLabelsException, CreateConstraintFailureException,
                    AlreadyConstrainedException, AlreadyIndexedException;
-    
+
+    ConstraintDefinition createPropertyExistenceConstraint( Label label, String propertyKey )
+            throws IllegalTokenNameException, TooManyLabelsException, CreateConstraintFailureException,
+            AlreadyConstrainedException;
+
     void dropPropertyUniquenessConstraint( Label label, String propertyKey );
+
+    void dropPropertyExistenceConstraint( Label label, String propertyKey );
 
     String getUserMessage( KernelException e );
 

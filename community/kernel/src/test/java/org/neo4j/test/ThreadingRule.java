@@ -93,8 +93,8 @@ public class ThreadingRule extends ExternalResource
     {
         CancellationHandle cancellation = new CancellationHandle();
         executor.submit( new ThreadBlockMonitor( cancellation,
-                                                 requireNonNull( thread, "thread" ),
-                                                 requireNonNull( action, "action" ) ) );
+                requireNonNull( thread, "thread" ),
+                requireNonNull( action, "action" ) ) );
         return cancellation;
     }
 
@@ -142,6 +142,36 @@ public class ThreadingRule extends ExternalResource
             {
                 return String.format( "Predicate[thread.getStackTrace()[%s] == %s.%s()]",
                         depth, owner.getName(), method );
+            }
+        };
+    }
+
+    public static Predicate<Thread> waitingWhileIn( final Class<?> owner, final String method )
+    {
+        return new Predicate<Thread>()
+        {
+            @Override
+            public boolean test( Thread thread )
+            {
+                if ( thread.getState() != Thread.State.WAITING )
+                {
+                    return false;
+                }
+                for ( StackTraceElement element : thread.getStackTrace() )
+                {
+                    if ( element.getClassName().equals( owner.getName() ) && element.getMethodName().equals( method ) )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public String toString()
+            {
+                return String.format( "Predicate[Thread.state=WAITING && thread.getStackTrace() contains %s.%s()]",
+                        owner.getName(), method );
             }
         };
     }

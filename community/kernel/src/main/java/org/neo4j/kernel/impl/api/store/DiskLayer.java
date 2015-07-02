@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.cursor.LabelCursor;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.PropertyCursor;
@@ -69,11 +69,12 @@ import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -96,17 +97,16 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
  */
 public class DiskLayer implements StoreReadLayer
 {
-    private static final Function<UniquenessConstraintRule, UniquenessConstraint> UNIQUENESS_CONSTRAINT_TO_RULE =
-            new Function<UniquenessConstraintRule, UniquenessConstraint>()
+    private static final Function<PropertyConstraintRule,PropertyConstraint> RULE_TO_CONSTRAINT =
+            new Function<PropertyConstraintRule,PropertyConstraint>()
             {
-
                 @Override
-                public UniquenessConstraint apply( UniquenessConstraintRule rule )
+                public PropertyConstraint apply( PropertyConstraintRule rule )
                 {
                     // We can use propertyKeyId straight up here, without reading from the record, since we have
                     // verified that it has that propertyKeyId in the predicate. And since we currently only support
                     // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
-                    return new UniquenessConstraint( rule.getLabel(), rule.getPropertyKey() );
+                    return rule.toConstraint();
                 }
             };
 
@@ -662,13 +662,13 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( int labelId, final int propertyKeyId )
+    public Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, final int propertyKeyId )
     {
-        return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
-                labelId, new Predicate<UniquenessConstraintRule>()
+        return schemaStorage.schemaRules( RULE_TO_CONSTRAINT, PropertyConstraintRule.class,
+                labelId, new Predicate<PropertyConstraintRule>()
                 {
                     @Override
-                    public boolean test( UniquenessConstraintRule rule )
+                    public boolean test( PropertyConstraintRule rule )
                     {
                         return rule.containsPropertyKeyId( propertyKeyId );
                     }
@@ -676,17 +676,16 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabel( int labelId )
+    public Iterator<PropertyConstraint> constraintsGetForLabel( int labelId )
     {
-        return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
-                labelId, Predicates.<UniquenessConstraintRule>alwaysTrue() );
+        return schemaStorage.schemaRules( RULE_TO_CONSTRAINT, PropertyConstraintRule.class,
+                labelId, Predicates.<PropertyConstraintRule>alwaysTrue() );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetAll()
+    public Iterator<PropertyConstraint> constraintsGetAll()
     {
-        return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, SchemaRule.Kind.UNIQUENESS_CONSTRAINT,
-                Predicates.<UniquenessConstraintRule>alwaysTrue() );
+        return schemaStorage.schemaRules( RULE_TO_CONSTRAINT, PropertyConstraintRule.class);
     }
 
     @Override

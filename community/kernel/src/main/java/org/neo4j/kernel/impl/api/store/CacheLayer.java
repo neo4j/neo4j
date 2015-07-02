@@ -45,7 +45,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -269,19 +269,19 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    public Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
     {
         return schemaCache.constraintsForLabelAndProperty( labelId, propertyKeyId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabel( int labelId )
+    public Iterator<PropertyConstraint> constraintsGetForLabel( int labelId )
     {
         return schemaCache.constraintsForLabel( labelId );
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetAll()
+    public Iterator<PropertyConstraint> constraintsGetAll()
     {
         return schemaCache.constraints();
     }

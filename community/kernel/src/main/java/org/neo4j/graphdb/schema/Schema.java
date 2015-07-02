@@ -40,7 +40,7 @@ public interface Schema
      * population of an index, to tell when it is done populating and is online serving
      * requests.
      */
-    public static enum IndexState
+    enum IndexState
     {
         ONLINE,
         POPULATING,

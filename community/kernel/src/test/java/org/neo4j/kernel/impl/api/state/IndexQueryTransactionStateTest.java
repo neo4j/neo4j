@@ -27,9 +27,9 @@ import org.junit.Test;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.LabelCursor;
 import org.neo4j.kernel.api.cursor.PropertyCursor;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.Property;
@@ -331,7 +331,7 @@ public class IndexQueryTransactionStateTest
         when( store.indexesGetForLabel( labelId2 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.<UniquenessConstraint>emptyIterator() );
+        when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.<PropertyConstraint>emptyIterator() );
         when( store.nodeExists( anyLong() ) ).thenReturn( true );
         when( store.indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) )
                 .thenReturn( new IndexDescriptor( labelId, propertyKeyId ) );
@@ -345,7 +345,7 @@ public class IndexQueryTransactionStateTest
                 mock( ConstraintIndexCreator.class ),
                 mock( LegacyIndexStore.class ) );
         txContext = new ConstraintEnforcingEntityOperations(
-                stateHandlingOperations, stateHandlingOperations, stateHandlingOperations );
+                stateHandlingOperations, stateHandlingOperations, stateHandlingOperations, stateHandlingOperations );
     }
 
     private void assertNoSuchNode( long node )

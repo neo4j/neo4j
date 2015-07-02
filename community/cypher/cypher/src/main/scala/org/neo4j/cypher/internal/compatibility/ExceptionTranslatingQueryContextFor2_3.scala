@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
-import org.neo4j.cypher.CypherExecutionException
 import org.neo4j.cypher.internal.compiler.v2_3.spi
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
-import org.neo4j.graphdb.{Direction, Node, PropertyContainer, Relationship}
+import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException}
+import org.neo4j.graphdb.{ConstraintViolationException => KernelConstraintViolationException, Direction, Node, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.TokenNameLookup
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -192,7 +192,7 @@ class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends Delega
 
       def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
     }), e)
-
+    case e : KernelConstraintViolationException => throw new ConstraintValidationException(e.getMessage, e)
   }
 }
 

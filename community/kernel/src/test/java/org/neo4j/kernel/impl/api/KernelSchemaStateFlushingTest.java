@@ -30,7 +30,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -115,7 +115,7 @@ public class KernelSchemaStateFlushingTest
     public void shouldInvalidateSchemaStateOnDropConstraint() throws Exception
     {
         // given
-        UniquenessConstraint descriptor = createConstraint();
+        PropertyConstraint descriptor = createConstraint();
 
         commitToSchemaState( "test", "before" );
 
@@ -128,19 +128,19 @@ public class KernelSchemaStateFlushingTest
         assertEquals( "after", after );
     }
 
-    private UniquenessConstraint createConstraint() throws KernelException
+    private PropertyConstraint createConstraint() throws KernelException
     {
 
         try ( KernelTransaction transaction = kernel.newTransaction();
               Statement statement = transaction.acquireStatement() )
         {
-            UniquenessConstraint descriptor = statement.schemaWriteOperations().uniquenessConstraintCreate( 1, 1 );
+            PropertyConstraint descriptor = statement.schemaWriteOperations().uniquePropertyConstraintCreate( 1, 1 );
             transaction.success();
             return descriptor;
         }
     }
 
-    private void dropConstraint( UniquenessConstraint descriptor ) throws KernelException
+    private void dropConstraint( PropertyConstraint descriptor ) throws KernelException
     {
         try ( KernelTransaction transaction = kernel.newTransaction();
              Statement statement = transaction.acquireStatement() )

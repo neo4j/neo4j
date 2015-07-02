@@ -22,28 +22,29 @@ package org.neo4j.kernel.impl.store;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
-public class UniquenessConstraintRule extends AbstractSchemaRule
+public class UniquePropertyConstraintRule extends PropertyConstraintRule
 {
     private final int[] propertyKeyIds;
     private final long ownedIndexRule;
 
     /** We currently only support uniqueness constraints on a single property. */
-    public static UniquenessConstraintRule uniquenessConstraintRule( long id, int labelId, int propertyKeyId,
-                                                                     long ownedIndexRule )
+    public static UniquePropertyConstraintRule uniquenessConstraintRule( long id, int labelId, int propertyKeyId,
+                                                                         long ownedIndexRule )
     {
-        return new UniquenessConstraintRule( id, labelId, new int[] {propertyKeyId}, ownedIndexRule );
+        return new UniquePropertyConstraintRule( id, labelId, new int[] {propertyKeyId}, ownedIndexRule );
     }
 
-    public static UniquenessConstraintRule readUniquenessConstraintRule( long id, int labelId, ByteBuffer buffer )
+    public static UniquePropertyConstraintRule readUniquenessConstraintRule( long id, int labelId, ByteBuffer buffer )
     {
-        return new UniquenessConstraintRule( id, labelId, readPropertyKeys( buffer ), readOwnedIndexRule( buffer ) );
+        return new UniquePropertyConstraintRule( id, labelId, readPropertyKeys( buffer ), readOwnedIndexRule( buffer ) );
     }
 
-    private UniquenessConstraintRule( long id, int labelId, int[] propertyKeyIds, long ownedIndexRule )
+    private UniquePropertyConstraintRule( long id, int labelId, int[] propertyKeyIds, long ownedIndexRule )
     {
         super( id, labelId, Kind.UNIQUENESS_CONSTRAINT );
         this.ownedIndexRule = ownedIndexRule;
@@ -60,7 +61,7 @@ public class UniquenessConstraintRule extends AbstractSchemaRule
     @Override
     public boolean equals( Object obj )
     {
-        return super.equals( obj ) && Arrays.equals( propertyKeyIds, ((UniquenessConstraintRule) obj).propertyKeyIds );
+        return super.equals( obj ) && Arrays.equals( propertyKeyIds, ((UniquePropertyConstraintRule) obj).propertyKeyIds );
     }
 
     @Override
@@ -127,5 +128,11 @@ public class UniquenessConstraintRule extends AbstractSchemaRule
     public long getOwnedIndex()
     {
         return ownedIndexRule;
+    }
+
+    @Override
+    public PropertyConstraint toConstraint()
+    {
+        return new UniquenessConstraint( getLabel(), getPropertyKey() );
     }
 }

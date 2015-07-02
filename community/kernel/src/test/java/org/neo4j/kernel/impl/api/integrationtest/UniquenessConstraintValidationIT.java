@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
 
@@ -57,7 +57,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( UniqueConstraintViolationKernelException e )
+        catch ( UniquePropertyConstraintViolationKernelException e )
         {
             assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[value1]" ) );
         }
@@ -80,7 +80,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( UniqueConstraintViolationKernelException e )
+        catch ( UniquePropertyConstraintViolationKernelException e )
         {
             assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[value1]" ) );
         }
@@ -185,7 +185,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
             fail( "expected exception" );
         }
         // then
-        catch ( UniqueConstraintViolationKernelException e )
+        catch ( UniquePropertyConstraintViolationKernelException e )
         {
             assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[value2]" ) );
         }
@@ -328,7 +328,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquenessConstraintCreate( labelId, propertyKeyId );
+            statement.uniquePropertyConstraintCreate( labelId, propertyKeyId );
             commit();
         }
     }

@@ -47,6 +47,14 @@ public interface ConstraintCreator
     ConstraintCreator assertPropertyIsUnique( String propertyKey );
 
     /**
+     * Imposes an existence constraint for the given property, such that any node with the given label must have a
+     * value set for the given property key.
+     *
+     * @return a {@link ConstraintCreator} instance to be used for further interaction.
+     */
+    ConstraintCreator assertPropertyExists( String propertyKey );
+
+    /**
      * Creates a constraint with the details specified by the other methods in this interface.
      *
      * @return the created {@link ConstraintDefinition constraint}.

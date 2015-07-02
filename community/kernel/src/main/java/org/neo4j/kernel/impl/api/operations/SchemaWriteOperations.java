@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
-import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -28,6 +29,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.KernelStatement;
 
 public interface SchemaWriteOperations
 {
@@ -47,8 +49,11 @@ public interface SchemaWriteOperations
      */
     void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException;
 
-    UniquenessConstraint uniquenessConstraintCreate( KernelStatement state, int labelId, int propertyKeyId )
+    UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, int labelId, int propertyKeyId )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException;
 
-    void constraintDrop( KernelStatement state, UniquenessConstraint constraint ) throws DropConstraintFailureException;
+    MandatoryPropertyConstraint mandatoryPropertyConstraintCreate( KernelStatement state, int labelId, int propertyKeyId )
+            throws AlreadyConstrainedException, CreateConstraintFailureException;
+
+    void constraintDrop( KernelStatement state, PropertyConstraint constraint ) throws DropConstraintFailureException;
 }

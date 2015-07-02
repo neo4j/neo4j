@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException.Evidence;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -144,14 +145,16 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
         Iterator<IndexEntryConflictException> iterator = failures.iterator();
         if ( iterator.hasNext() )
         {
-            Set<ConstraintVerificationFailedKernelException.Evidence> evidence = new HashSet<>();
+            Set<Evidence> evidences = new HashSet<>();
             do
             {
-                evidence.add( new ConstraintVerificationFailedKernelException.Evidence( iterator.next() ) );
-            } while ( iterator.hasNext() );
+                evidences.add( Evidence.of( iterator.next() ) );
+            }
+            while ( iterator.hasNext() );
+
             IndexDescriptor descriptor = getDescriptor();
             throw new ConstraintVerificationFailedKernelException(
-                    new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ), evidence );
+                    new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ), evidences );
         }
     }
 

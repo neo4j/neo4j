@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.util.dbstructure;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import java.util.*;
@@ -36,7 +36,7 @@ public class DbStructureCollector implements DbStructureVisitor
     private final TokenMap relationshipTypes = new TokenMap( "relationship types" );
     private final IndexDescriptorMap regularIndices = new IndexDescriptorMap( "regular" );
     private final IndexDescriptorMap uniqueIndices = new IndexDescriptorMap( "unique" );
-    private final Set<UniquenessConstraint> uniquenessConstraint = new HashSet<>();
+    private final Set<PropertyConstraint> uniquenessConstraint = new HashSet<>();
     private final Map<Integer, Long> nodeCounts = new HashMap<>();
     private final Map<RelSpecifier, Long> relCounts = new HashMap<>();
     private long allNodesCount = -1l;
@@ -78,10 +78,10 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public Iterator<Pair<String, String>> knownUniqueConstraints()
             {
-                return Iterables.map( new Function<UniquenessConstraint, Pair<String, String>>()
+                return Iterables.map( new Function<PropertyConstraint, Pair<String, String>>()
                 {
                     @Override
-                    public Pair<String, String> apply( UniquenessConstraint uniquenessConstraint ) throws RuntimeException
+                    public Pair<String, String> apply( PropertyConstraint uniquenessConstraint ) throws RuntimeException
                     {
                         String label = labels.byIdOrFail( uniquenessConstraint.label() );
                         String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.propertyKeyId() );
@@ -154,7 +154,7 @@ public class DbStructureCollector implements DbStructureVisitor
     }
 
     @Override
-    public void visitUniqueConstraint( UniquenessConstraint constraint, String userDescription )
+    public void visitUniqueConstraint( PropertyConstraint constraint, String userDescription )
     {
         if ( !uniquenessConstraint.add( constraint ) )
         {

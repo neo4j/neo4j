@@ -26,8 +26,8 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
@@ -144,7 +144,7 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
             schemaStore.updateRecord( record );
         }
 
-        if ( command.getSchemaRule() instanceof UniquenessConstraintRule )
+        if ( command.getSchemaRule() instanceof PropertyConstraintRule )
         {
             switch ( command.getMode() )
             {

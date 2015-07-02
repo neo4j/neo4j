@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.store.record;
 import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.store.MandatoryPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 
 public interface SchemaRule extends RecordSerializable
 {
@@ -41,7 +42,7 @@ public interface SchemaRule extends RecordSerializable
      */
     Kind getKind();
 
-    public static enum Kind
+    enum Kind
     {
         INDEX_RULE( 1, IndexRule.class )
         {
@@ -59,12 +60,20 @@ public interface SchemaRule extends RecordSerializable
                 return IndexRule.readIndexRule( id, true, labelId, buffer );
             }
         },
-        UNIQUENESS_CONSTRAINT( 3, UniquenessConstraintRule.class )
+        UNIQUENESS_CONSTRAINT( 3, UniquePropertyConstraintRule.class )
         {
             @Override
             protected SchemaRule newRule( long id, int labelId, ByteBuffer buffer )
             {
-                return UniquenessConstraintRule.readUniquenessConstraintRule( id, labelId, buffer );
+                return UniquePropertyConstraintRule.readUniquenessConstraintRule( id, labelId, buffer );
+            }
+        },
+        MANDATORY_PROPERTY_CONSTRAINT( 4, MandatoryPropertyConstraintRule.class )
+        {
+            @Override
+            protected SchemaRule newRule( long id, int labelId, ByteBuffer buffer )
+            {
+                return MandatoryPropertyConstraintRule.readMandatoryPropertyConstraintRule( id, labelId, buffer );
             }
         };
 
@@ -118,6 +127,7 @@ public interface SchemaRule extends RecordSerializable
             case 1: return INDEX_RULE;
             case 2: return CONSTRAINT_INDEX_RULE;
             case 3: return UNIQUENESS_CONSTRAINT;
+            case 4: return MANDATORY_PROPERTY_CONSTRAINT;
             default:
                 throw new MalformedSchemaRuleException( null, "Unknown kind id %d", id );
             }

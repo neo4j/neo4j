@@ -19,16 +19,20 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.com.ComException;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -38,7 +42,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.ha.ClusterManager;
@@ -53,8 +57,12 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
 /**
  * This test stress tests unique constraints in a setup where writes are being issued against a slave.
  */
-public class UniqueConstraintStressIT
+@RunWith( Parameterized.class )
+public class PropertyConstraintsStressIT
 {
+    @Parameterized.Parameter
+    public ConstraintOperations constraintOps;
+
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
@@ -72,7 +80,7 @@ public class UniqueConstraintStressIT
     private final int REPETITIONS = 1;
     /** Configure how long to run the test. */
     private static long runtime =
-            Long.getLong( "neo4j.UniqueConstraintStressIT.runtime", TimeUnit.SECONDS.toMillis( 10 ) );
+            Long.getLong( "neo4j.PropertyConstraintsStressIT.runtime", TimeUnit.SECONDS.toMillis( 10 ) );
 
     /** Label to constrain for the current iteration of the test. */
     private volatile Label label = DynamicLabel.label( "User" );
@@ -82,6 +90,11 @@ public class UniqueConstraintStressIT
 
     private final AtomicInteger roundNo = new AtomicInteger( 0 );
 
+    @Parameterized.Parameters(name = "{0}")
+    public static Iterable<Object[]> params()
+    {
+        return Arrays.asList(new Object[][] {{UNIQUE_PROPERTY_CONSTRAINT_OPS}, {MANDATORY_PROPERTY_CONSTRAINT_OPS}});
+    }
 
     @Before
     public void setup() throws Exception
@@ -89,16 +102,15 @@ public class UniqueConstraintStressIT
         cluster = clusterRule.config(HaSettings.pull_interval, "0").startCluster( );
     }
 
-
     /* The different orders and delays in the below variations try to stress all known scenarios, as well as
      * of course stress for unknown concurrency issues. See the exception handling structure further below
      * for explanations. */
 
     @RepeatRule.Repeat ( times = REPETITIONS )
     @Test
-    public void shouldNotAllowUniquenessViolationsUnderStress_A() throws Exception
+    public void shouldNotAllowConstraintsViolationsUnderStress_A() throws Exception
     {
-        shouldNotAllowUniquenessViolationsUnderStress( new Operation()
+        shouldNotAllowConstraintsViolationsUnderStress( new Operation()
         {
             @Override
             void perform()
@@ -111,9 +123,9 @@ public class UniqueConstraintStressIT
 
     @RepeatRule.Repeat ( times = REPETITIONS )
     @Test
-    public void shouldNotAllowUniquenessViolationsUnderStress_B() throws Exception
+    public void shouldNotAllowConstraintsViolationsUnderStress_B() throws Exception
     {
-        shouldNotAllowUniquenessViolationsUnderStress( new Operation()
+        shouldNotAllowConstraintsViolationsUnderStress( new Operation()
         {
             @Override
             void perform()
@@ -126,9 +138,9 @@ public class UniqueConstraintStressIT
 
     @RepeatRule.Repeat ( times = REPETITIONS )
     @Test
-    public void shouldNotAllowUniquenessViolationsUnderStress_C() throws Exception
+    public void shouldNotAllowConstraintsViolationsUnderStress_C() throws Exception
     {
-        shouldNotAllowUniquenessViolationsUnderStress( new Operation()
+        shouldNotAllowConstraintsViolationsUnderStress( new Operation()
         {
             @Override
             void perform()
@@ -139,7 +151,7 @@ public class UniqueConstraintStressIT
                 {
                     Thread.sleep( 10 );
                 }
-                catch ( InterruptedException e )
+                catch ( InterruptedException ignore )
                 {
                 }
 
@@ -150,9 +162,9 @@ public class UniqueConstraintStressIT
 
     @RepeatRule.Repeat ( times = REPETITIONS )
     @Test
-    public void shouldNotAllowUniquenessViolationsUnderStress_D() throws Exception
+    public void shouldNotAllowConstraintsViolationsUnderStress_D() throws Exception
     {
-        shouldNotAllowUniquenessViolationsUnderStress( new Operation()
+        shouldNotAllowConstraintsViolationsUnderStress( new Operation()
         {
             @Override
             void perform()
@@ -163,7 +175,7 @@ public class UniqueConstraintStressIT
                 {
                     Thread.sleep( 10 );
                 }
-                catch ( InterruptedException e )
+                catch ( InterruptedException ignore )
                 {
                 }
 
@@ -174,9 +186,9 @@ public class UniqueConstraintStressIT
 
     @RepeatRule.Repeat ( times = REPETITIONS )
     @Test
-    public void shouldNotAllowUniquenessViolationsUnderStress_E() throws Exception
+    public void shouldNotAllowConstraintsViolationsUnderStress_E() throws Exception
     {
-        shouldNotAllowUniquenessViolationsUnderStress( new Operation()
+        shouldNotAllowConstraintsViolationsUnderStress( new Operation()
         {
             @Override
             void perform()
@@ -187,7 +199,7 @@ public class UniqueConstraintStressIT
                 {
                     Thread.sleep( 2000 );
                 }
-                catch ( InterruptedException e )
+                catch ( InterruptedException ignore )
                 {
                 }
 
@@ -198,9 +210,9 @@ public class UniqueConstraintStressIT
 
     @RepeatRule.Repeat ( times = REPETITIONS )
     @Test
-    public void shouldNotAllowUniquenessViolationsUnderStress_F() throws Exception
+    public void shouldNotAllowConstraintsViolationsUnderStress_F() throws Exception
     {
-        shouldNotAllowUniquenessViolationsUnderStress( new Operation()
+        shouldNotAllowConstraintsViolationsUnderStress( new Operation()
         {
             @Override
             void perform()
@@ -211,7 +223,7 @@ public class UniqueConstraintStressIT
                 {
                     Thread.sleep( 2000 );
                 }
-                catch ( InterruptedException e )
+                catch ( InterruptedException ignore )
                 {
                 }
 
@@ -220,7 +232,7 @@ public class UniqueConstraintStressIT
         } );
     }
 
-    public void shouldNotAllowUniquenessViolationsUnderStress(Operation ops) throws Exception
+    public void shouldNotAllowConstraintsViolationsUnderStress(Operation ops) throws Exception
     {
         // Given
         HighlyAvailableGraphDatabase master = cluster.getMaster();
@@ -233,10 +245,10 @@ public class UniqueConstraintStressIT
         {
             // Each round of this loop:
             //  - on a slave, creates a set of nodes with a label/property combo with all-unique values
-            //  - on the master, creates a unique constraint
+            //  - on the master, creates a property constraint
             //  - on a slave, while the master is creating the constraint, starts issuing transactions that will violate the constraint
 
-            setup :
+            //setup :
             {
                 // Set a target property for the constraint for this round
                 setLabelAndPropertyForNextRound();
@@ -258,7 +270,7 @@ public class UniqueConstraintStressIT
                 }
             }
 
-            stress :
+            //stress :
             {
                 ops.perform();
 
@@ -283,60 +295,20 @@ public class UniqueConstraintStressIT
             // Constraint creation failed, some of the violating operations should have been successful.
             assertThat( txSuccessCount, greaterThan( 0 ) );
             // And the graph should contain some duplicates.
-            assertThat( allPropertiesAreUnique( master, label, property ), equalTo( false ) );
+            assertThat( constraintOps.isValid( master, label, property ), equalTo( false ) );
         }
         else
         {
             // Constraint creation was successful, all the violating operations should have failed.
             assertThat( txSuccessCount, equalTo( 0 ) );
             // And the graph should not contain duplicates.
-            assertThat( allPropertiesAreUnique( master, label, property ), equalTo( true ) );
+            assertThat( constraintOps.isValid( master, label, property ), equalTo( true ) );
         }
     }
 
-    private boolean allPropertiesAreUnique( HighlyAvailableGraphDatabase master, Label label, String property )
+    private WorkerCommand<Object, Boolean> createConstraint( final HighlyAvailableGraphDatabase master )
     {
-        try( Transaction tx = master.beginTx() )
-        {
-            Set<Object> values = new HashSet<>();
-            for ( Node node : loop( master.findNodes( label ) ) )
-            {
-                Object value = node.getProperty( property );
-                if ( values.contains( value ) )
-                {
-                    return false;
-                }
-                values.add( value );
-            }
-
-            tx.success();
-        }
-        return true;
-    }
-
-    private OtherThreadExecutor.WorkerCommand<Object, Boolean> createConstraint( final HighlyAvailableGraphDatabase master )
-    {
-        return new OtherThreadExecutor.WorkerCommand<Object, Boolean>()
-        {
-            @Override
-            public Boolean doWork( Object state ) throws Exception
-            {
-                boolean constraintCreationFailed = false;
-
-                try( Transaction tx = master.beginTx() )
-                {
-                    master.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
-                    tx.success();
-                }
-                catch( ConstraintViolationException e )
-                {
-                    /* Unable to create constraint since it is not consistent with existing data. */
-                    constraintCreationFailed = true;
-                }
-
-                return constraintCreationFailed;
-            }
-        };
+        return constraintOps.createConstraint( master, label, property );
     }
 
     /**
@@ -344,9 +316,9 @@ public class UniqueConstraintStressIT
      * running this method twice will insert nodes with duplicate property values, assuming propertykey or label has not
      * changed.
      */
-    private OtherThreadExecutor.WorkerCommand<Object, Integer> performInsert( final HighlyAvailableGraphDatabase slave )
+    private WorkerCommand<Object, Integer> performInsert( final HighlyAvailableGraphDatabase slave )
     {
-        return new OtherThreadExecutor.WorkerCommand<Object, Integer>()
+        return new WorkerCommand<Object, Integer>()
         {
             @Override
             public Integer doWork( Object state ) throws Exception
@@ -359,7 +331,7 @@ public class UniqueConstraintStressIT
                     {
                         try( Transaction tx = slave.beginTx() )
                         {
-                            slave.createNode( label ).setProperty( property, "value-" + i );
+                            constraintOps.createNode( slave, label, property, "value" + i );
                             tx.success();
                         }
                     }
@@ -400,4 +372,142 @@ public class UniqueConstraintStressIT
 
         abstract void perform();
     }
+
+    interface ConstraintOperations
+    {
+        void createNode( HighlyAvailableGraphDatabase db, Label label, String propertyKey, Object value );
+
+        boolean isValid( HighlyAvailableGraphDatabase master, Label label, String property );
+
+        WorkerCommand<Object,Boolean> createConstraint( HighlyAvailableGraphDatabase db, Label label, String property );
+    }
+
+    private static final ConstraintOperations UNIQUE_PROPERTY_CONSTRAINT_OPS = new ConstraintOperations()
+    {
+        @Override
+        public void createNode( HighlyAvailableGraphDatabase db, Label label, String propertyKey, Object value )
+        {
+            db.createNode( label ).setProperty( propertyKey, value );
+        }
+
+        @Override
+        public boolean isValid( HighlyAvailableGraphDatabase db, Label label, String property )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                Set<Object> values = new HashSet<>();
+                for ( Node node : loop( db.findNodes( label ) ) )
+                {
+                    Object value = node.getProperty( property );
+                    if ( values.contains( value ) )
+                    {
+                        return false;
+                    }
+                    values.add( value );
+                }
+
+                tx.success();
+            }
+            return true;
+        }
+
+        @Override
+        public WorkerCommand<Object,Boolean> createConstraint(
+                final HighlyAvailableGraphDatabase db, final Label label, final String property )
+        {
+            return new WorkerCommand<Object,Boolean>()
+            {
+                @Override
+                public Boolean doWork( Object state ) throws Exception
+                {
+                    boolean constraintCreationFailed = false;
+
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+                        tx.success();
+                    }
+                    catch ( ConstraintViolationException e )
+                    {
+                    /* Unable to create constraint since it is not consistent with existing data. */
+                        constraintCreationFailed = true;
+                    }
+
+                    return constraintCreationFailed;
+                }
+            };
+        }
+
+        @Override
+        public String toString()
+        {
+            return "UNIQUE_PROPERTY_CONSTRAINT";
+        }
+    };
+
+    private static final ConstraintOperations MANDATORY_PROPERTY_CONSTRAINT_OPS = new ConstraintOperations()
+    {
+        @Override
+        public void createNode( HighlyAvailableGraphDatabase db, Label label, String propertyKey, Object value )
+        {
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            Node node = db.createNode( label );
+            //75 percent of the nodes get the property set
+            if ( random.nextDouble( 1.0 ) < 0.75 )
+            {
+                node.setProperty( propertyKey, value );
+            }
+        }
+
+        @Override
+        public boolean isValid( HighlyAvailableGraphDatabase db, Label label, String property )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                for ( Node node : loop( db.findNodes( label ) ) )
+                {
+                    if ( !node.hasProperty( property ) )
+                    {
+                        return false;
+                    }
+                }
+
+                tx.success();
+            }
+            return true;
+        }
+
+        @Override
+        public WorkerCommand<Object,Boolean> createConstraint(
+                final HighlyAvailableGraphDatabase db, final Label label, final String property )
+        {
+            return new WorkerCommand<Object,Boolean>()
+            {
+                @Override
+                public Boolean doWork( Object state ) throws Exception
+                {
+                    boolean constraintCreationFailed = false;
+
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        db.schema().constraintFor( label ).assertPropertyExists( property ).create();
+                        tx.success();
+                    }
+                    catch ( ConstraintViolationException e )
+                    {
+                    /* Unable to create constraint since it is not consistent with existing data. */
+                        constraintCreationFailed = true;
+                    }
+
+                    return constraintCreationFailed;
+                }
+            };
+        }
+
+        @Override
+        public String toString()
+        {
+            return "MANDATORY_PROPERTY_CONSTRAINT";
+        }
+    };
 }
