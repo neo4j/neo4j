@@ -26,6 +26,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Scanner;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
@@ -74,7 +79,7 @@ public class MainWindow
 
     private DatabaseStatus databaseStatus;
 
-    public MainWindow( final DatabaseActions databaseActions, DesktopModel model )
+    public MainWindow( DatabaseActions databaseActions, DesktopModel model )
     {
         this.model = model;
         this.debugWindow = new SystemOutDebugWindow();
@@ -84,7 +89,26 @@ public class MainWindow
         this.frame.setIconImages( Graphics.loadIcons() );
         this.sysTray = SysTray.install( new SysTrayActions(), frame );
 
-        this.directoryDisplay = createUnmodifiableTextField( model.getDatabaseDirectory().getAbsolutePath(), 35 );
+        String location = model.getDatabaseDirectory().getAbsolutePath();
+        File file = new File( ".dblocation" );
+
+        if( file.exists() && file.canRead() )
+        {
+            try
+            {
+                Scanner scanner = new Scanner( file );
+                if ( scanner.hasNextLine() )
+                {
+                    location = scanner.nextLine();
+                }
+            }
+            catch ( FileNotFoundException e )
+            {
+                e.printStackTrace();
+            }
+        }
+
+        this.directoryDisplay = createUnmodifiableTextField( location, 35 );
         this.browseButton = createBrowseButton();
         this.statusPanelLayout = new CardLayout();
         this.statusPanel = createStatusPanel( statusPanelLayout );
@@ -248,5 +272,11 @@ public class MainWindow
                 frame.setVisible( false );
             }
         }
+
+        @Override
+        public void exit() { shutdown(); }
+
+        @Override
+        public void open() { frame.setVisible( true ); }
     }
 }

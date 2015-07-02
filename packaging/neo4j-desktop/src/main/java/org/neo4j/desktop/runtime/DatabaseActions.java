@@ -40,6 +40,7 @@ import org.neo4j.server.configuration.ConfigurationBuilder;
  * Lifecycle actions for the Neo4j server living inside this JVM. Typically reacts to button presses
  * from {@link MainWindow}.
  */
+
 public class DatabaseActions
 {
     private final DesktopModel model;

@@ -19,12 +19,15 @@
  */
 package org.neo4j.desktop.ui;
 
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JTextField;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import javax.swing.*;
 
 import static javax.swing.JFileChooser.APPROVE_OPTION;
 import static javax.swing.JFileChooser.CUSTOM_DIALOG;
@@ -50,38 +53,94 @@ class BrowseForDatabaseActionListener implements ActionListener
     @Override
     public void actionPerformed( ActionEvent e )
     {
-        JFileChooser jFileChooser = new JFileChooser();
-        jFileChooser.setFileSelectionMode( DIRECTORIES_ONLY );
-        jFileChooser.setCurrentDirectory( new File( directoryDisplay.getText() ) );
-        jFileChooser.setDialogTitle( "Select database" );
-        jFileChooser.setDialogType( CUSTOM_DIALOG );
+        File selectedFile = null;
+        boolean cancelled = false;
+        boolean validLocation = false;
+        String os = System.getProperty( "os.name" );
 
-        while ( true )
+        while ( !validLocation && !cancelled )
         {
-            int choice = jFileChooser.showOpenDialog( frame );
-
-            if ( choice != APPROVE_OPTION )
+            if ( os.toLowerCase().contains( "mac" ) )
             {
-                return;
+                selectedFile = macFileSelection();
+            }
+            else
+            {
+                selectedFile = fileSelection();
             }
 
-            File selectedFile = jFileChooser.getSelectedFile();
             try
             {
                 model.setDatabaseDirectory( selectedFile );
                 directoryDisplay.setText( model.getDatabaseDirectory().getAbsolutePath() );
-                return;
+
+                validLocation = true;
+
+                FileWriter fileWriter = new FileWriter( new File( ".dblocation" ) );
+                fileWriter.write( selectedFile.getAbsolutePath() );
+                fileWriter.flush();
+                fileWriter.close();
             }
-            catch ( UnsuitableDirectoryException error )
+            catch ( UnsuitableDirectoryException ude )
             {
-                int result = showWrappedConfirmDialog(
-                        frame, error.getMessage() + "\nPlease choose a different folder.",
+                int choice = showWrappedConfirmDialog(
+                        frame,
+                        ude.getMessage() + "\nPlease choose a different folder.",
                         "Invalid folder selected", OK_CANCEL_OPTION, ERROR_MESSAGE );
-                if ( result == CANCEL_OPTION )
+
+                if ( choice == CANCEL_OPTION )
                 {
-                    return;
+                    cancelled = true;
                 }
+            }
+            catch ( IOException ioe )
+            {
+                System.out.println( "Error saving DB location" );
+                System.out.println( ioe );
             }
         }
     }
+
+    private File fileSelection()
+    {
+        File selectedFile = null;
+
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileSelectionMode( DIRECTORIES_ONLY );
+        fileChooser.setCurrentDirectory( new File( directoryDisplay.getText() ) );
+        fileChooser.setDialogTitle( "Select database" );
+        fileChooser.setDialogType( CUSTOM_DIALOG );
+
+        int choice = fileChooser.showOpenDialog( frame );
+
+        if ( choice == APPROVE_OPTION )
+        {
+            selectedFile = fileChooser.getSelectedFile();
+        }
+
+        return selectedFile;
+    }
+
+    private File macFileSelection()
+    {
+        File selectedFile = null;
+
+        System.setProperty( "apple.awt.fileDialogForDirectories", "true" );
+        FileDialog fileDialog = new FileDialog( frame );
+
+        fileDialog.setDirectory( directoryDisplay.getText() );
+        fileDialog.setVisible( true );
+
+        selectedFile = new File( fileDialog.getFile() );
+        System.setProperty( "apple.awt.fileDialogForDirectories", "false" );
+
+        return selectedFile;
+    }
+
+
+    public static void main( String[] args )
+    {
+        System.out.println( System.getProperty( "os.name" ) );
+    }
+
 }

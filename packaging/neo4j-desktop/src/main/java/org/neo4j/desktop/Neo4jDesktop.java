@@ -32,8 +32,9 @@ import org.neo4j.desktop.ui.PlatformUI;
 import static org.neo4j.desktop.ui.Components.alert;
 
 /**
- * The main class for starting the Neo4j desktop app window. The different components and wired up and started.
+ * The main class for starting the Neo4j desktop app window. The different components are wired up and started.
  */
+
 public final class Neo4jDesktop
 {
     public static void main( String[] args )
@@ -82,6 +83,7 @@ public final class Neo4jDesktop
             case UNIX:
                 return new UnixInstallation();
         }
+
         return new UnixInstallation(); // This is the most generic one, presumably.
     }
 
