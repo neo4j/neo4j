@@ -54,11 +54,18 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
     val arguments = qg.argumentIds.map(n => Identifier(n.name)(null))
 
     predicates.collect {
+      // n.prop IN [ ... ]
       case predicate@AsPropertySeekable(seekable)
         if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
         producePlanFor(seekable.name, seekable.propertyKey, predicate, seekable.args.asQueryExpression)
+
+      // n.prop LIKE "prefix%..."
       case predicate@AsStringRangeSeekable(seekable) =>
         producePlanFor(seekable.name, seekable.propertyKey, PartialPredicate.ifNotEqual(seekable.expr, predicate), seekable.asQueryExpression)
+
+      // n.prop <|<=|>|>= value
+      case predicate@AsValueRangeSeekable(seekable) =>
+        producePlanFor(seekable.name, seekable.propertyKeyName, predicate, seekable.asQueryExpression)
     }.flatten
   }
 
@@ -84,7 +91,7 @@ object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                               argumentIds: Set[IdName])
                              (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
     (predicates: Seq[Expression]) =>
-      context.logicalPlanProducer.planNodeIndexUniqueSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
+      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
 
   protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
     context.planContext.getUniqueIndexRule(label, property)

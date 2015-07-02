@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
 
 class TripletQueryGraphCardinalityModelTest extends RandomizedCardinalityModelTestSuite with ForumPostsCardinalityData {
 
-  test("MATCH (person:Person {id: 10})-[r1:KNOWS]-(friend:Person)<-[r2:MEMBER_IN]-(forum:Forum) WHERE r2.count>1234 AND not(person=friend)") {
+  ignore("MATCH (person:Person {id: 10})-[r1:KNOWS]-(friend:Person)<-[r2:MEMBER_IN]-(forum:Forum) WHERE r2.count>1234 AND not(person=friend)") {
     import ForumPosts._
 
     val persons = Persons * PersonIdSel

@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.SeekRange
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.HalfOpenSeekRange
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionContext, InternalException}
 
-case class StringSeekRange(range: SeekRange[String])
+case class ValueSeekRange(range: HalfOpenSeekRange[Expression])
   extends Expression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = throw new
@@ -34,7 +34,7 @@ case class StringSeekRange(range: SeekRange[String])
 
   override def arguments: Seq[Expression] = Seq.empty
 
-  override protected def calculateType(symbols: SymbolTable): CypherType = CTCollection(CTNode)
+  override protected def calculateType(symbols: SymbolTable): CypherType = CTAny
 
   override def symbolTableDependencies: Set[String] = Set.empty
 }

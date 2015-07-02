@@ -90,6 +90,16 @@ object AsStringRangeSeekable {
   }
 }
 
+object AsValueRangeSeekable {
+  def unapply(v: Any): Option[ValueRangeSeekable] = v match {
+    case ineq: InequalityExpression => ineq.lhs match {
+      case Property(ident: Identifier, key) => Some(ValueRangeSeekable(ident, key, ineq))
+      case _ => None
+    }
+    case _ => None
+  }
+}
+
 sealed trait Sargable[T <: Expression] {
   def expr: T
   def ident: Identifier
@@ -118,7 +128,23 @@ case class StringRangeSeekable(range: SeekRange[String], expr: Like, ident: Iden
 
   val args = expr.pattern
 
-  def asQueryExpression: QueryExpression[Expression] = RangeQueryExpression(StringSeekRange(range)(expr.rhs.position))
+  def asQueryExpression: QueryExpression[Expression] = RangeQueryExpression(StringSeekRangeWrapper(range)(expr.rhs.position))
+}
+
+case class ValueRangeSeekable(ident: Identifier, propertyKeyName: PropertyKeyName, expr: InequalityExpression)
+  extends Seekable[InequalityExpression, Expression] {
+
+  val args = expr.rhs
+
+  val range: HalfOpenSeekRange[Expression] = expr match {
+    case _: LessThan => RangeLessThan(ExclusiveBound(args))
+    case _: LessThanOrEqual => RangeLessThan(InclusiveBound(args))
+    case _: GreaterThan => RangeGreaterThan(ExclusiveBound(args))
+    case _: GreaterThanOrEqual => RangeGreaterThan(InclusiveBound(args))
+  }
+
+  def asQueryExpression: QueryExpression[Expression] =
+    RangeQueryExpression(ValueExpressionSeekRangeWrapper(range)(args.position))
 }
 
 sealed trait Scannable[T <: Expression] extends Sargable[T]

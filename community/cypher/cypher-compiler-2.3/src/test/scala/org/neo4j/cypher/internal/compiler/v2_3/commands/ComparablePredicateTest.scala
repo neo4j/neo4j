@@ -47,21 +47,21 @@ class ComparablePredicateTest extends CypherFunSuite {
     Double.NaN
 //    null TODO
   ).flatMap {
-    case v => if (v == null) Seq(v) else Seq(v.doubleValue(), v.floatValue(), v.longValue(), v.intValue(), v.shortValue(), v.byteValue(), v)
+    case v: Number => if (v == null) Seq(v) else Seq(v.doubleValue(), v.floatValue(), v.longValue(), v.intValue(), v.shortValue(), v.byteValue(), v)
   }
-  
+
   val textualValues = Seq(
-    "", 
-    "Hal", 
-    s"Hal${Character.MIN_VALUE}", 
-    "Hallo", 
-    "Hallo!", 
-    "Hello", 
+    "",
+    "Hal",
+    s"Hal${Character.MIN_VALUE}",
+    "Hallo",
+    "Hallo!",
+    "Hello",
     "Hullo",
 //    null, TODO
     "\uD801\uDC37"
   ).flatMap {
-    case v => if (v == null) Seq(v) else Seq(v, v.toUpperCase, v.toLowerCase, reverse(v))
+    case v: String => if (v == null) Seq(v) else Seq(v, v.toUpperCase, v.toLowerCase, reverse(v))
   }
 
   test("should compare numerical values using <") {

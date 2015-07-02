@@ -208,7 +208,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     NodeHashJoin(nodes, left, right)(solved)
   }
 
-  def planNodeIndexUniqueSeek(idName: IdName,
+  def planNodeUniqueIndexSeek(idName: IdName,
                               label: ast.LabelToken,
                               propertyKey: ast.PropertyKeyToken,
                               valueExpr: QueryExpression[Expression],

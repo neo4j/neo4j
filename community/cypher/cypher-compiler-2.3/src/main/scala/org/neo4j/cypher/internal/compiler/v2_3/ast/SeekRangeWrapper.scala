@@ -20,10 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.SeekRange
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{HalfOpenSeekRange, SeekRange}
 import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, SemanticCheck, SemanticCheckResult}
 
-case class StringSeekRange(range: SeekRange[String])(val position: InputPosition) extends Expression {
-
+case class StringSeekRangeWrapper(range: SeekRange[String])(val position: InputPosition) extends Expression {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }
+
+case class ValueExpressionSeekRangeWrapper(range: HalfOpenSeekRange[Expression])(val position: InputPosition) extends Expression {
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+}
+

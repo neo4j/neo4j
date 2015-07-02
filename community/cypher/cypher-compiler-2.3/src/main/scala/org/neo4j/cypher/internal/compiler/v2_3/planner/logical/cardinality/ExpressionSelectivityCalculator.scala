@@ -54,7 +54,11 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // WHERE x.prop LIKE ...
     case AsStringRangeSeekable(seekable@StringRangeSeekable(PrefixRange(prefix), _, _, _)) =>
-      calculateSelectivityForRangeSeekable(seekable.name, selections, seekable.propertyKey, prefix)
+      calculateSelectivityForPrefixRangeSeekable(seekable.name, selections, seekable.propertyKey, prefix)
+
+    // WHERE x.prop <, <=, >=, > on index
+    case AsValueRangeSeekable(seekable@ValueRangeSeekable(_, _, _)) =>
+      calculateSelectivityForValueRangeSeekable(seekable.name, selections, seekable.propertyKeyName)
 
     // WHERE has(x.prop)
     case AsPropertyScannable(scannable) =>
@@ -124,7 +128,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     selectivity
   }
 
-  private def calculateSelectivityForRangeSeekable(identifier: String,
+  private def calculateSelectivityForPrefixRangeSeekable(identifier: String,
                                                    selections: Selections,
                                                    propertyKey: PropertyKeyName,
                                                    prefix: String)
@@ -140,6 +144,16 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val equality = java.math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(identifier, None, selections, propertyKey).factor)
     val factor = java.math.BigDecimal.ONE.divide(java.math.BigDecimal.valueOf(prefix.length), 17, RoundingMode.HALF_UP)
       .multiply(java.math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)).stripTrailingZeros()
+    val slack = BigDecimalCombiner.negate(equality).multiply(factor)
+    Selectivity(equality.add(slack).doubleValue())
+  }
+
+  private def calculateSelectivityForValueRangeSeekable(identifier: String,
+                                                   selections: Selections,
+                                                   propertyKey: PropertyKeyName)
+                                                  (implicit semanticTable: SemanticTable): Selectivity = {
+    val equality = java.math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(identifier, None, selections, propertyKey).factor)
+    val factor = java.math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)
     val slack = BigDecimalCombiner.negate(equality).multiply(factor)
     Selectivity(equality.add(slack).doubleValue())
   }

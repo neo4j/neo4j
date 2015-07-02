@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, StringSeekRange, ValueSeekRange}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsCollection
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
@@ -58,7 +58,14 @@ object indexQuery extends GraphElementPropertyFunctions {
         case _ => throw new CypherTypeException(s"Expected the value for looking up :$labelName($propertyName) to be a collection but it was not.")
       }
 
-    case RangeQueryExpression(seekRange) =>
-      index(makeValueNeoSafe(seekRange)).toIterator
+    case RangeQueryExpression(rangeWrapper) =>
+      val range = rangeWrapper match {
+        // StringSeekRange => PrefixRange("Petra")
+        case s: StringSeekRange => s.range
+
+        // ValueSeekRange(RangeGT(InclusiveBound(n.prop + 12)) => RangeGT(InclusiveBound(15)))
+        case ValueSeekRange(halfOpen) => halfOpen.map(_(m)(state)).map(makeValueNeoSafe)
+      }
+      index(range).toIterator
   }
 }

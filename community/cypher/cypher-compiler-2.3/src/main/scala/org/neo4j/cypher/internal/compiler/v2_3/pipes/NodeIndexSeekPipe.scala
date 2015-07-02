@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, StringSeekRange}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{ValueSeekRange, Expression, StringSeekRange}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{QueryExpression, RangeQueryExpression, indexQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabel, ReadsNodeProperty, ReadsNodes}
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Index, RangeIndex}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{InequalityIndex, Index, PrefixIndex}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.{CTNode, SymbolTable}
@@ -60,8 +60,10 @@ case class NodeIndexSeekPipe(ident: String,
       case IndexSeekByRange | UniqueIndexSeekByRange =>
         valueExpr match {
           case RangeQueryExpression(StringSeekRange(PrefixRange(prefix))) =>
-            RangeIndex(label.name, propertyKey.name, prefix)
-          case _ => throw new InternalException("This should never happen.")
+            PrefixIndex(label.name, propertyKey.name, prefix)
+          case RangeQueryExpression(ValueSeekRange(range)) =>
+            InequalityIndex(label.name, propertyKey.name, range.sign, range.bound.endPoint.toString)
+          case _ => throw new InternalException("This should never happen. Missing a case?")
         }
       case IndexSeek | UniqueIndexSeek => Index(label.name, propertyKey.name)
       case _ => throw new InternalException("This should never happen. Missing a case?")

@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringSeekRange
+import org.neo4j.cypher.internal.compiler.v2_3.commands.CypherValueOrdering
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.PrefixRange
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.graphdb.DynamicRelationshipType._
@@ -134,9 +134,23 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
 
   def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
-    case StringSeekRange(PrefixRange(prefix)) =>
+    case PrefixRange(prefix) =>
       val indexedNodes = statement.readOperations().nodesGetFromIndexSeekByPrefix(index, prefix)
       JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
+    case range: HalfOpenSeekRange[Any] => {
+      val allNodesInIndex = JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
+      val readOps = statement.readOperations()
+      val propertyKeyId = index.getPropertyKeyId
+      val endPoint = range.bound.endPoint
+      allNodesInIndex.filter { (node: Node) =>
+        val nodeId = node.getId
+        readOps.nodeGetProperty(nodeId, propertyKeyId).value() match {
+          case n: Number => range.compares( CypherValueOrdering.compare(n, endPoint) )
+          case s: String => range.compares( CypherValueOrdering.compare(s, endPoint) )
+          case _ => false
+        }
+      }
+    }
     case range =>
       throw new InternalException(s"Unsupported index seek by range: $range")
   }

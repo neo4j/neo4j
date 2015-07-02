@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConverters._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression, ProjectedPath}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression, ProjectedPath, ValueSeekRange}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{Predicate => CommandPredicate, expressions => commandexpressions, values => commandvalues}
@@ -88,7 +88,8 @@ object ExpressionConverters {
       case e: ast.PathExpression => e.asCommandProjectedPath
       case e: ast.NestedPipeExpression => e.asPipeCommand
       case e: ast.GetDegree => e.asCommandGetDegree
-      case e: ast.StringSeekRange => e.asCommandStringSeekRange
+      case e: ast.StringSeekRangeWrapper => e.asCommandStringSeekRange
+      case e: ast.ValueExpressionSeekRangeWrapper => e.asCommandValueSeekRange
       case e: ast.Extremum => e.asCommandExpression
       case _ =>
         throw new ThisShouldNotHappenError("cleishm", s"Unknown expression type during transformation (${expression.getClass})")
@@ -106,10 +107,14 @@ object ExpressionConverters {
     }
   }
 
-  implicit class StringSeekRangeConverter(val original: ast.StringSeekRange) extends AnyVal {
-    def asCommandStringSeekRange = {
-      commands.expressions.StringSeekRange(original.range)
-    }
+  implicit class StringSeekRangeConverter(val original: ast.StringSeekRangeWrapper) extends AnyVal {
+    def asCommandStringSeekRange =
+      commandexpressions.StringSeekRange(original.range)
+  }
+
+  implicit class ValueSeekRangeConverter(val original: ast.ValueExpressionSeekRangeWrapper) extends AnyVal {
+    def asCommandValueSeekRange =
+      ValueSeekRange(original.range.map(_.asCommandExpression))
   }
 
   implicit class GetDegreeConverter(val original: ast.GetDegree) extends AnyVal {
