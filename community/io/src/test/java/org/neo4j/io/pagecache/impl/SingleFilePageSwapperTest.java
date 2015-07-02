@@ -54,12 +54,6 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         return factory;
     }
 
-    @Override
-    protected void ensureFileExists( File file ) throws IOException
-    {
-        fs.create( file ).close();
-    }
-
     @Test
     public void swappingInMustFillPageWithData() throws IOException
     {
