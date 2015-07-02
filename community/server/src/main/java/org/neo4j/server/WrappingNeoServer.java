@@ -22,13 +22,12 @@ package org.neo4j.server;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.ConfigurationBuilder.ConfiguratorWrappingConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
-import org.neo4j.server.preflight.PreFlightTasks;
 
 import static org.neo4j.server.database.WrappedDatabase.wrappedDatabase;
 
@@ -69,11 +68,5 @@ public class WrappingNeoServer extends CommunityNeoServer
                 ).monitors( db.getDependencyResolver().resolveDependency( Monitors.class ) ), logProvider );
         this.db = db;
         init();
-    }
-
-    @Override
-    protected PreFlightTasks createPreflightTasks()
-    {
-        return new PreFlightTasks( logProvider );
     }
 }

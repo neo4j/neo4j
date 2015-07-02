@@ -168,7 +168,7 @@ public interface ServerSettings
             BOOLEAN, FALSE );
 
     @Description( "Path to a logback configuration file for HTTP request logging." )
-    Setting<File> http_log_config_File = setting( "org.neo4j.server.http.log.config", PATH, NO_DEFAULT );
+    Setting<File> http_log_config_file = setting( "org.neo4j.server.http.log.config", new HttpLogSetting(), NO_DEFAULT );
 
     @Description( "Timeout for idle transactions." )
     Setting<Long> transaction_timeout = setting( "org.neo4j.server.transaction.timeout", DURATION, "60s" );
@@ -191,4 +191,5 @@ public interface ServerSettings
     @Internal
     @Description("Host and port for the Neo4j Data Protocol Websocket")
     Setting<HostnamePort> ndp_ws_address = setting( "dbms.ndp.ws.address", HOSTNAME_PORT, "localhost:7688" );
+
 }

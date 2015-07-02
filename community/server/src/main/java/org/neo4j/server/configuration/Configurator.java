@@ -106,7 +106,7 @@ public interface Configurator
 
     String HTTP_LOGGING = ServerSettings.http_logging_enabled.name();
     boolean DEFAULT_HTTP_LOGGING = Boolean.valueOf( ServerSettings.http_logging_enabled.getDefaultValue() );
-    String HTTP_LOG_CONFIG_LOCATION = ServerSettings.http_log_config_File.name();
+    String HTTP_LOG_CONFIG_LOCATION = ServerSettings.http_log_config_file.name();
 
     String HTTP_CONTENT_LOGGING = ServerSettings.http_content_logging_enabled.name();
     boolean DEFAULT_HTTP_CONTENT_LOGGING = Boolean.valueOf( ServerSettings.http_content_logging_enabled.getDefaultValue() );

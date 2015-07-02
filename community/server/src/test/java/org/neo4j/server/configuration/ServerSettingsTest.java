@@ -19,18 +19,41 @@
  */
 package org.neo4j.server.configuration;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
+import org.parboiled.common.FileUtils;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.Settings.TRUE;
+import static org.neo4j.helpers.Settings.osIsMacOS;
+import static org.neo4j.helpers.Settings.osIsWindows;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.configuration.ServerSettings.http_log_config_file;
+import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 import static org.neo4j.server.configuration.ServerSettings.webserver_https_cert_path;
 import static org.neo4j.server.configuration.ServerSettings.webserver_https_key_path;
 
 public class ServerSettingsTest
 {
+    @Rule
+    public TemporaryFolder dir = new TemporaryFolder();
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     @Test
     public void shouldConvertWebserverTLSToDBMSTLS() throws Throwable
     {
@@ -54,4 +77,80 @@ public class ServerSettingsTest
                 "is deprecated, please use 'dbms.security.tls_key_file' instead." );
     }
 
+    @Test
+    public void shouldAllowWritableLogFileTarget() throws Throwable
+    {
+        // Given
+        File configFile = createHttpLogConfig( dir.newFile( "logfile" ) );
+
+        Config config = new Config( stringMap(
+                http_logging_enabled.name(), TRUE,
+                http_log_config_file.name(), configFile.getAbsolutePath() ), ServerSettings.class );
+
+        // When
+        File file = config.get( http_log_config_file );
+
+        // Then
+        assertThat( file.getAbsoluteFile(), equalTo( configFile.getAbsoluteFile() ) );
+    }
+
+    @Test
+    public void shouldFailToValidateHttpLogFileWithInvalidLogFileName() throws Throwable
+    {
+        // Given
+        File logFile = new File( createUnwritableDirectory(), "logfile" );
+        File configFile = createHttpLogConfig( logFile );
+
+
+        // Expect
+        exception.expect( InvalidSettingException.class );
+
+        // When
+        Config config = new Config( stringMap(
+                http_logging_enabled.name(), TRUE,
+                http_log_config_file.name(), configFile.getAbsolutePath() ), ServerSettings.class );
+
+    }
+
+    private File createHttpLogConfig( File logFile ) throws IOException
+    {
+        File configFile = dir.newFile( "http-logging.xml" );
+        FileUtils.writeAllText(
+                "<configuration>\n" +
+                "  <appender name=\"FILE\" class=\"ch.qos.logback.core.rolling.RollingFileAppender\">\n" +
+                "    <file>" + logFile.getAbsolutePath() + "</file>\n" +
+                "    <rollingPolicy class=\"ch.qos.logback.core.rolling.TimeBasedRollingPolicy\">\n" +
+                "      <fileNamePattern>/var/log/neo4j/http.%d{yyyy-MM-dd_HH}.log</fileNamePattern>\n" +
+                "      <maxHistory>7</maxHistory>\n" +
+                "    </rollingPolicy>\n" +
+                "\n" +
+                "    <encoder>\n" +
+                "      <!-- Note the deliberate misspelling of \"referer\" in accordance with RFC1616 -->\n" +
+                "      <pattern>%h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] \"%r\" %s %b \"%i{Referer}\" \"%i{User-Agent}\" %D</pattern>\n" +
+                "    </encoder>\n" +
+                "  </appender>\n" +
+                "\n" +
+                "  <appender-ref ref=\"FILE\"/>\n" +
+                "</configuration>\n" +
+                "\n", configFile, StandardCharsets.UTF_8 );
+        return configFile;
+    }
+
+    public static File createUnwritableDirectory()
+    {
+        File file;
+        if ( osIsWindows() )
+        {
+            file = new File( "\\\\" + UUID.randomUUID().toString() + "\\" );
+        }
+        else if ( osIsMacOS() )
+        {
+            file = new File( "/Network/Servers/localhost/" + UUID.randomUUID().toString() );
+        }
+        else
+        {
+            file = new File( "/proc/" + UUID.randomUUID().toString() + "/random" );
+        }
+        return file;
+    }
 }
