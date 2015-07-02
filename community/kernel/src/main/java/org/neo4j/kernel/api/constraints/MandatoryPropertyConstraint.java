@@ -50,6 +50,6 @@ public class MandatoryPropertyConstraint extends PropertyConstraint
     @Override
     public ConstraintType type()
     {
-        return ConstraintType.MANDATORY;
+        return ConstraintType.MANDATORY_PROPERTY;
     }
 }

@@ -1167,7 +1167,7 @@ public class BatchInserterImpl implements BatchInserter
             checkSchemaCreationConstraints( labelId, propertyKeyId );
 
             createConstraintRule( new MandatoryPropertyConstraint( labelId, propertyKeyId ) );
-            return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.MANDATORY );
+            return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.MANDATORY_PROPERTY );
         }
 
         @Override

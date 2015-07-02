@@ -453,7 +453,7 @@ public class SchemaImpl implements Schema
                     int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
                     statement.schemaWriteOperations().mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
-                    return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.MANDATORY );
+                    return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.MANDATORY_PROPERTY );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException e )
                 {

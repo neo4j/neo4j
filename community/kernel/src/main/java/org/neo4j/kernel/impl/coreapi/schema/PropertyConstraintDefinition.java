@@ -49,7 +49,7 @@ public class PropertyConstraintDefinition implements ConstraintDefinition
         case UNIQUENESS:
             actions.dropPropertyUniquenessConstraint( label, propertyKey );
             break;
-        case MANDATORY:
+        case MANDATORY_PROPERTY:
             actions.dropPropertyExistenceConstraint( label, propertyKey );
 
         }
@@ -140,7 +140,7 @@ public class PropertyConstraintDefinition implements ConstraintDefinition
         {
         case UNIQUENESS:
             return "UNIQUE";
-        case MANDATORY:
+        case MANDATORY_PROPERTY:
             return "NOT NULL";
         default:
             throw new UnsupportedOperationException( "Unknown ConstraintType: " + type );

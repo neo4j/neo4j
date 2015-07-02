@@ -1593,8 +1593,8 @@ public class DatabaseActionsTest
         assertEquals( 1, serialized.size() );
         Map<?, ?> definition = (Map<?, ?>) serialized.get( 0 );
         assertEquals( labelName, definition.get( "label" ) );
-        assertEquals( asList( propertyKey ), definition.get( "property_keys" ) );
-        assertEquals( "MANDATORY", definition.get( "type" ) );
+        assertEquals( Collections.singletonList( propertyKey ), definition.get( "property_keys" ) );
+        assertEquals( "MANDATORY_PROPERTY", definition.get( "type" ) );
     }
 
     @Test

@@ -522,7 +522,7 @@ public class GraphDbHelper
                 @Override
                 public boolean test( ConstraintDefinition item )
                 {
-                    if ( item.isConstraintType( ConstraintType.MANDATORY ) )
+                    if ( item.isConstraintType( ConstraintType.MANDATORY_PROPERTY ) )
                     {
                         Iterable<String> keys = item.getPropertyKeys();
                         return single( keys ).equals( propertyKey );

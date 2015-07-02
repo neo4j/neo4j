@@ -1650,7 +1650,7 @@ public class DatabaseActions
             @Override
             public boolean test( ConstraintDefinition item )
             {
-                return item.isConstraintType( ConstraintType.MANDATORY ) &&
+                return item.isConstraintType( ConstraintType.MANDATORY_PROPERTY ) &&
                        propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
             }
         };
@@ -1677,6 +1677,6 @@ public class DatabaseActions
     public Representation getLabelExistenceConstraints( String labelName )
     {
         return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
-                filteredConstraints( labelName, ConstraintType.MANDATORY ) ) );
+                filteredConstraints( labelName, ConstraintType.MANDATORY_PROPERTY ) ) );
     }
 }
