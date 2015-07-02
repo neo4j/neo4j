@@ -89,6 +89,7 @@ object ExpressionConverters {
       case e: ast.NestedPipeExpression => e.asPipeCommand
       case e: ast.GetDegree => e.asCommandGetDegree
       case e: ast.StringSeekRange => e.asCommandStringSeekRange
+      case e: ast.Extremum => e.asCommandExpression
       case _ =>
         throw new ThisShouldNotHappenError("cleishm", s"Unknown expression type during transformation (${expression.getClass})")
     }
@@ -467,6 +468,13 @@ object ExpressionConverters {
       val dependencies = e.step.dependencies.map(_.name)
 
       ProjectedPath(dependencies, projector)
+    }
+  }
+
+  implicit class ExtremumConverter(val e: ast.Extremum) extends AnyVal {
+    def asCommandExpression = e match {
+      case ast.Minimum(expressions) => commandexpressions.Minimum(expressions.map(_.asCommandExpression))
+      case ast.Maximum(expressions) => commandexpressions.Maximum(expressions.map(_.asCommandExpression))
     }
   }
 }

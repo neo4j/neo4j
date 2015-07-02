@@ -53,7 +53,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       calculateSelectivityForPropertyEquality(seekable.name, seekable.args.sizeHint, selections, seekable.propertyKey)
 
     // WHERE x.prop LIKE ...
-    case AsStringRangeSeekable(seekable@StringRangeSeekable(LowerBounded(lower), _, _, _)) =>
+    case AsStringRangeSeekable(seekable@StringRangeSeekable(RangeGreaterThan(lower), _, _, _)) =>
       calculateSelectivityForRangeSeekable(seekable.name, selections, seekable.propertyKey, lower.endPoint)
 
     // WHERE has(x.prop)

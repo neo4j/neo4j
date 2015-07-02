@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.{QueryExpression, RangeQ
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabel, ReadsNodeProperty, ReadsNodes}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Index, RangeIndex}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LowerBounded
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.RangeGreaterThan
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.{CTNode, SymbolTable}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -59,7 +59,7 @@ case class NodeIndexSeekPipe(ident: String,
     val indexDesc = indexMode match {
       case IndexSeekByRange | UniqueIndexSeekByRange =>
         valueExpr match {
-          case RangeQueryExpression(StringSeekRange(LowerBounded(lower))) =>
+          case RangeQueryExpression(StringSeekRange(RangeGreaterThan(lower))) =>
             RangeIndex(label.name, propertyKey.name, lower.endPoint)
           case _ => throw new InternalException("This should never happen.")
         }

@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsCollection
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LowerBounded
-import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, CypherTypeException, ExecutionContext}
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
-import scala.collection.GenTraversableOnce
-import org.neo4j.graphdb.Node
-import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsCollection
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, ExecutionContext}
+import org.neo4j.graphdb.Node
+
+import scala.collection.GenTraversableOnce
 
 object indexQuery extends GraphElementPropertyFunctions {
   def apply(queryExpression: QueryExpression[Expression],

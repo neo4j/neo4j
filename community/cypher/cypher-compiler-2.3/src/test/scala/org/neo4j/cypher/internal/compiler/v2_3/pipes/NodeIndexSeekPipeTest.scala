@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Collection, Expression, Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{InclusiveBound, LowerBounded}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{InclusiveBound, RangeGreaterThan}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
@@ -67,7 +67,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
   }
 
   test("should produce the correct plan description for unique range seek based on query expression") {
-    val queryExpression: QueryExpression[Expression] = RangeQueryExpression(commands.expressions.StringSeekRange(LowerBounded(InclusiveBound("prefix")))(InputPosition.NONE))
+    val queryExpression: QueryExpression[Expression] = RangeQueryExpression(commands.expressions.StringSeekRange(RangeGreaterThan(InclusiveBound("prefix")))(InputPosition.NONE))
     val pipe = NodeIndexSeekPipe("a", label, propertyKey, queryExpression, UniqueIndexSeekByRange)()
 
     pipe.planDescriptionWithoutCardinality.toString should equal("""+-----------------------------+-------------+---------------------------------------+
@@ -83,7 +83,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
   }
 
   test("should produce the correct plan description for nonunique range seek based on query expression") {
-    val queryExpression: QueryExpression[Expression] = RangeQueryExpression(commands.expressions.StringSeekRange(LowerBounded(InclusiveBound("prefix")))(InputPosition.NONE))
+    val queryExpression: QueryExpression[Expression] = RangeQueryExpression(commands.expressions.StringSeekRange(RangeGreaterThan(InclusiveBound("prefix")))(InputPosition.NONE))
     val pipe = NodeIndexSeekPipe("a", label, propertyKey, queryExpression, IndexSeekByRange)()
 
     pipe.planDescriptionWithoutCardinality.toString should equal("""+-----------------------+-------------+---------------------------------------+

@@ -83,7 +83,7 @@ object AsStringRangeSeekable {
     val ops: List[LikePatternOp] = LikePatternParser(literal).compact.ops
     ops match {
       case MatchText(prefix) :: (_: WildcardLikePatternOp) :: tl =>
-        Some(LowerBounded(InclusiveBound(prefix)) -> s"$prefix%")
+        Some(RangeGreaterThan(InclusiveBound(prefix)) -> s"$prefix%")
       case _ =>
         None
     }
