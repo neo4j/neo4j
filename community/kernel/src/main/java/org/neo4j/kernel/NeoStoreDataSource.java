@@ -1085,42 +1085,35 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         LogFile logFile = transactionLogModule.logFile();
         synchronized ( logFile )
         {
-            // The synchronization in TransactionAppender is intricate. Some incarnations lock logFile,
-            // others logFile+writer or logFile THEN writer. In any case if both are locked by a single call
-            // stack it's always in the order of logFile THAN writer. Let's do that here as well to be as
-            // safe as we can be.
-            synchronized ( logFile.getWriter() )
+            // Under the guard of the logFile monitor do a second pass of waiting committing transactions
+            // to close. This is because there might have been transactions that were in flight and just now
+            // want to commit. We will allow committed transactions be properly closed, but no new transactions
+            // will be able to start committing at this point.
+            awaitAllTransactionsClosed();
+
+            // Force all pending store changes to disk.
+            storeFlusher.forceEverything();
+
+            //Write new checkpoint in the log only if the kernel is healthy.
+            // We cannot throw here since we need to shutdown without exceptions.
+            if ( kernelHealth.isHealthy() )
             {
-                // Under the guard of the logFile monitor do a second pass of waiting committing transactions
-                // to close. This is because there might have been transactions that were in flight and just now
-                // want to commit. We will allow committed transactions be properly closed, but no new transactions
-                // will be able to start committing at this point.
-                awaitAllTransactionsClosed();
-
-                // Force all pending store changes to disk.
-                storeFlusher.forceEverything();
-
-                //Write new checkpoint in the log only if the kernel is healthy.
-                // We cannot throw here since we need to shutdown without exceptions.
-                if ( kernelHealth.isHealthy() )
+                try
                 {
-                    try
-                    {
-                        checkPointer.forceCheckPoint();
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new UnderlyingStorageException( e );
-                    }
+                    checkPointer.forceCheckPoint();
                 }
-
-                // Shut down all services in here, effectively making the database unusable for anyone who tries.
-                life.shutdown();
-
-                // Close the NeoStore
-                neoStoreModule.neoStore().close();
-                msgLog.info( "NeoStore closed" );
+                catch ( IOException e )
+                {
+                    throw new UnderlyingStorageException( e );
+                }
             }
+
+            // Shut down all services in here, effectively making the database unusable for anyone who tries.
+            life.shutdown();
+
+            // Close the NeoStore
+            neoStoreModule.neoStore().close();
+            msgLog.info( "NeoStore closed" );
         }
         // After we've released the logFile monitor there might be transactions that wants to commit, but had
         // to wait for the logFile monitor until now. When they finally get it and try to commit they will

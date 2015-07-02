@@ -85,9 +85,9 @@ public class CheckPointerImplTest
         LogPosition logPosition = new LogPosition( 16l, 233l );
         long initialTransactionId = 2l;
         long transactionId = 42l;
-        long[] triggerCommittedTransaction = {transactionId, 0l, logPosition.getLogVersion(), logPosition.getByteOffset()};
-        when( txIdStore.getLastCommittedTransaction() ).thenReturn( triggerCommittedTransaction );
-        when( txIdStore.getLastCommittedTransactionId() ).thenReturn( initialTransactionId, transactionId, transactionId );
+        long[] triggerCommittedTransaction = {transactionId, logPosition.getLogVersion(), logPosition.getByteOffset()};
+        when( txIdStore.getLastClosedTransaction() ).thenReturn( triggerCommittedTransaction );
+        when( txIdStore.getLastClosedTransactionId() ).thenReturn( initialTransactionId, transactionId, transactionId );
 
         checkPointing.start();
 

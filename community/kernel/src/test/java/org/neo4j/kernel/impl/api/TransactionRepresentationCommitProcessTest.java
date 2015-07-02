@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
@@ -43,6 +44,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -85,20 +87,20 @@ public class TransactionRepresentationCommitProcessTest
             assertTrue( contains( e, rootCause.getMessage(), rootCause.getClass() ) );
         }
 
-        verify( transactionIdStore, times( 0 ) ).transactionCommitted( txId, 0, 0, 0 );
+        verify( transactionIdStore, times( 0 ) ).transactionCommitted( txId, 0 );
     }
 
     @Test
     public void shouldCloseTransactionRegardlessOfWhetherOrNotItAppliedCorrectly() throws Exception
     {
         // GIVEN
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = mock( TransactionAppender.class );
         long txId = 11;
-        when( appender.append(
-                any( TransactionRepresentation.class ), any( LogAppendEvent.class ) ) ).thenReturn( txId );
+        when( appender.append( any( TransactionRepresentation.class ), any( LogAppendEvent.class ) ) )
+                .thenReturn( new FakeCommitment( txId, transactionIdStore ) );
         IOException rootCause = new IOException( "Mock exception" );
         KernelHealth kernelHealth = mock( KernelHealth.class );
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
         doThrow( new IOException( rootCause ) ).when( storeApplier ).apply( any( TransactionRepresentation.class ),
                 any( ValidatedIndexUpdates.class ), any( LockGroup.class ), eq( txId ), eq( INTERNAL ) );
@@ -119,7 +121,7 @@ public class TransactionRepresentationCommitProcessTest
 
         // THEN
         // we can't verify transactionCommitted since that's part of the TransactionAppender, which we have mocked
-        verify( transactionIdStore, times( 1 ) ).transactionClosed( txId );
+        verify( transactionIdStore, times( 1 ) ).transactionClosed( eq( txId ), anyLong(), anyLong() );
         verifyNoMoreInteractions( transactionIdStore );
     }
 

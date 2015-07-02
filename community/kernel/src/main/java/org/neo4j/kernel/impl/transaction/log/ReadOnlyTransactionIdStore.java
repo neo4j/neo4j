@@ -28,19 +28,25 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
 {
     private final long transactionId;
     private final long transactionChecksum;
+    private final long logVersion;
+    private final long byteOffset;
 
     public ReadOnlyTransactionIdStore( PageCache pageCache, File storeDir )
     {
-        long id = 0, checksum = 0;
+        long id = 0, checksum = 0, logVersion = 0, byteOffset = 0;
         if ( NeoStoreUtil.neoStoreExists( pageCache, storeDir ) )
         {
             NeoStoreUtil access = new NeoStoreUtil( storeDir, pageCache );
             id = access.getLastCommittedTx();
             checksum = access.getLastCommittedTxChecksum();
+            logVersion = access.getLastCommittedTxLogVersion();
+            byteOffset = access.getLastCommittedTxLogByteOffset();
         }
 
         this.transactionId = id;
         this.transactionChecksum = checksum;
+        this.logVersion = logVersion;
+        this.byteOffset = byteOffset;
     }
 
     @Override
@@ -50,7 +56,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionCommitted( long transactionId, long checksum, long logVersion, long logByteOffset )
+    public void transactionCommitted( long transactionId, long checksum )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }
@@ -80,13 +86,19 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
+    public long[] getLastClosedTransaction()
+    {
+        return new long[]{transactionId, logVersion, byteOffset};
+    }
+
+    @Override
     public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long logVersion, long logByteOffset )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }
 
     @Override
-    public void transactionClosed( long transactionId )
+    public void transactionClosed( long transactionId, long logVersion, long logByteOffset )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }

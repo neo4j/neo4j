@@ -22,6 +22,8 @@ package org.neo4j.ha.upgrade;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.util.Random;
@@ -60,6 +62,7 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
+import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -129,11 +132,18 @@ public class MasterClientTest
 
         cleanupRule.add( newMasterServer( master ) );
 
+        final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         TransactionAppender txAppender = mock( TransactionAppender.class );
         when( txAppender.append( any( TransactionRepresentation.class ), anyLong() ) )
-                .thenReturn( mock( Commitment.class ) );
+                .thenAnswer( new Answer<Commitment>()
+                {
+                    @Override
+                    public Commitment answer( InvocationOnMock invocation ) throws Throwable
+                    {
+                        return new FakeCommitment( (Long) invocation.getArguments()[1], txIdStore );
+                    }
+                } );
         TransactionRepresentationStoreApplier txApplier = mock( TransactionRepresentationStoreApplier.class );
-        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
                 any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );
@@ -164,7 +174,7 @@ public class MasterClientTest
         verify( txApplier, times( TX_LOG_COUNT ) )
                 .apply( any( TransactionRepresentation.class ), any( ValidatedIndexUpdates.class ),
                         any( LockGroup.class ), anyLong(), any( TransactionApplicationMode.class ) );
-        verify( txIdStore, times( TX_LOG_COUNT ) ).transactionClosed( anyLong() );
+        verify( txIdStore, times( TX_LOG_COUNT ) ).transactionClosed( anyLong(), anyLong(), anyLong() );
     }
 
     private static MasterImpl.SPI mockMasterImplSpiWith( StoreId storeId )

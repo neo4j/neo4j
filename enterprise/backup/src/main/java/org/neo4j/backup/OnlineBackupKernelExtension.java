@@ -132,7 +132,8 @@ public class OnlineBackupKernelExtension implements Lifecycle
             try
             {
                 server = new BackupServer( backupProvider.newBackup(), config.get( online_backup_server ),
-                        logProvider, monitors.newMonitor( ByteCounterMonitor.class, BackupServer.class ), monitors.newMonitor( RequestMonitor.class, BackupServer.class ) );
+                        logProvider, monitors.newMonitor( ByteCounterMonitor.class, BackupServer.class ),
+                        monitors.newMonitor( RequestMonitor.class, BackupServer.class ) );
                 server.init();
                 server.start();
 

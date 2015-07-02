@@ -160,12 +160,12 @@ public class NeoStoreUtil
 
     public long getLastCommittedTxLogVersion()
     {
-        return getValue( Position.LAST_TRANSACTION_LOG_VERSION );
+        return getValue( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
     }
 
     public long getLastCommittedTxLogByteOffset()
     {
-        return getValue( Position.LAST_TRANSACTION_LOG_BYTE_OFFSET );
+        return getValue( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
     }
 
     @Override

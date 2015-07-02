@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+
 /**
  * A way to mark a transaction as committed after
  * {@link TransactionAppender#append(org.neo4j.kernel.impl.transaction.TransactionRepresentation, long) appended}
- * and manually {@link TransactionAppender#force() forced}.
+ * and manually {@link TransactionAppender#force() forced} and later closed after
+ * {@link org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier#apply(
+ * org.neo4j.kernel.impl.transaction.TransactionRepresentation, org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates,
+ *  org.neo4j.kernel.impl.locking.LockGroup, long, org.neo4j.kernel.impl.api.TransactionApplicationMode)} .
  */
 public interface Commitment
 {
@@ -30,10 +34,18 @@ public interface Commitment
      * <p>
      *     Marks the transaction as committed and makes this fact public.
      * </p>
-     * <p>
-     *     After this call the caller must see to that the transaction gets properly closed as well, i.e
-     *     {@link TransactionIdStore#transactionClosed(long)}.
-     * </p>
      */
     void publishAsCommitted();
+
+    /**
+     * <p>
+     *     Marks the transaction as closed and makes this fact public.
+     * </p>
+     */
+    void publishAsApplied();
+
+    /**
+     * @return the commitment transaction id
+     */
+    long transactionId();
 }

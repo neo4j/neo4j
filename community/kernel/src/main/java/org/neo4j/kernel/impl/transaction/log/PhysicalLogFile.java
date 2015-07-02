@@ -45,7 +45,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     {
         void opened( File logFile, long logVersion, long lastTransactionId, boolean clean );
 
-        public class Adapter implements Monitor
+        class Adapter implements Monitor
         {
             @Override
             public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
@@ -67,13 +67,14 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     private final ByteBuffer headerBuffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
     private PhysicalWritableLogChannel writer;
     private final LogVersionRepository logVersionRepository;
-    private PhysicalLogVersionedStoreChannel channel;
     private final LogVersionBridge readerLogVersionBridge;
 
+    private volatile PhysicalLogVersionedStoreChannel channel;
+
     public PhysicalLogFile( FileSystemAbstraction fileSystem, PhysicalLogFiles logFiles, long rotateAtSize,
-                            TransactionIdStore transactionIdStore,
-                            LogVersionRepository logVersionRepository, Monitor monitor,
-                            TransactionMetadataCache transactionMetadataCache )
+            TransactionIdStore transactionIdStore,
+            LogVersionRepository logVersionRepository, Monitor monitor,
+            TransactionMetadataCache transactionMetadataCache )
     {
         this.fileSystem = fileSystem;
         this.rotateAtSize = rotateAtSize;
@@ -116,18 +117,13 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public void shutdown() throws Throwable
-    {
-    }
-
-    @Override
     public boolean rotationNeeded() throws IOException
     {
         /*
          * Whereas channel.size() should be fine, we're safer calling position() due to possibility
          * of this file being memory mapped or whatever.
          */
-        return (channel.position() >= rotateAtSize);
+        return channel.position() >= rotateAtSize;
     }
 
     @Override
@@ -190,14 +186,15 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     public static PhysicalLogVersionedStoreChannel openForVersion( PhysicalLogFiles logFiles,
-                                                                   FileSystemAbstraction fileSystem,
-                                                                   long version ) throws IOException
+            FileSystemAbstraction fileSystem,
+            long version ) throws IOException
     {
         final File fileToOpen = logFiles.getLogFileForVersion( version );
 
         if ( !fileSystem.fileExists( fileToOpen ) )
         {
-            throw new FileNotFoundException( String.format( "File does not exist [%s]", fileToOpen.getCanonicalPath() ) );
+            throw new FileNotFoundException( String.format( "File does not exist [%s]",
+                    fileToOpen.getCanonicalPath() ) );
         }
 
         StoreChannel rawChannel;
@@ -207,7 +204,8 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         }
         catch ( FileNotFoundException cause )
         {
-            throw Exceptions.withCause( new FileNotFoundException( String.format( "File could not be opened [%s]", fileToOpen.getCanonicalPath() ) ), cause );
+            throw Exceptions.withCause( new FileNotFoundException( String.format( "File could not be opened [%s]",
+                    fileToOpen.getCanonicalPath() ) ), cause );
         }
 
         ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );

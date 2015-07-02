@@ -60,9 +60,9 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionCommitted( long transactionId, long checksum, long logVersion, long byteOffset )
+    public void transactionCommitted( long transactionId, long checksum )
     {
-        committedTransactionId.offer( transactionId, new long[]{checksum, logVersion, byteOffset} );
+        committedTransactionId.offer( transactionId, new long[]{checksum} );
     }
 
     @Override
@@ -90,6 +90,12 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
+    public long[] getLastClosedTransaction()
+    {
+        return closedTransactionId.get();
+    }
+
+    @Override
     public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long logVersion, long byteOffset )
     {
         committingTransactionId.set( transactionId );
@@ -98,9 +104,9 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionClosed( long transactionId )
+    public void transactionClosed( long transactionId, long logVersion, long byteOffset )
     {
-        closedTransactionId.offer( transactionId, new long[]{0} );
+        closedTransactionId.offer( transactionId, new long[]{logVersion, byteOffset} );
     }
 
     @Override

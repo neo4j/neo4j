@@ -81,7 +81,7 @@ public class LatestCheckPointFinder
                     {
                         latestCheckPoint = entry.as();
                     }
-                    if ( entry instanceof LogEntryStart && (latestStartEntry == null || version == fromVersionBackwards ) )
+                    if ( entry instanceof LogEntryStart && ( version == fromVersionBackwards ) )
                     {
                         latestStartEntry = entry.as();
                     }
@@ -91,7 +91,7 @@ public class LatestCheckPointFinder
             if ( latestCheckPoint != null )
             {
                 boolean commitsAfterCheckPoint = latestStartEntry != null &&
-                        latestStartEntry.getStartPosition().compareTo( latestCheckPoint.getLogPosition() ) > 0;
+                        latestStartEntry.getStartPosition().compareTo( latestCheckPoint.getLogPosition() ) >= 0;
                 return new LatestCheckPoint( latestCheckPoint, commitsAfterCheckPoint , oldestVersionFound );
             }
 
@@ -130,7 +130,7 @@ public class LatestCheckPointFinder
 
             return commitsAfterCheckPoint == that.commitsAfterCheckPoint &&
                    oldestLogVersionFound == that.oldestLogVersionFound &&
-                   checkPoint == null ? that.checkPoint == null : checkPoint.equals( that.checkPoint );
+                   (checkPoint == null ? that.checkPoint == null : checkPoint.equals( that.checkPoint ));
         }
 
         @Override

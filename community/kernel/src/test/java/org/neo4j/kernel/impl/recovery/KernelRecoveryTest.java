@@ -88,7 +88,7 @@ public class KernelRecoveryTest
                     commitEntry( 3 ),
 
                     // checkpoint
-                    checkPoint( new LogPosition(0, 133) )
+                    checkPoint( new LogPosition(0, 250) )
                 )
         );
     }

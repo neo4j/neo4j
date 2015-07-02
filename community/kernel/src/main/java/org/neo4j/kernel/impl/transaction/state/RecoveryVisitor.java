@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
 
-public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRepresentation,IOException>
+public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,IOException>
 {
     public interface Monitor
     {
@@ -61,10 +61,11 @@ public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRep
     }
 
     @Override
-    public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
+    public boolean visit( RecoverableTransaction transaction ) throws IOException
     {
-        long txId = transaction.getCommitEntry().getTxId();
-        TransactionRepresentation txRepresentation = transaction.getTransactionRepresentation();
+        CommittedTransactionRepresentation representation = transaction.representation();
+        long txId = representation.getCommitEntry().getTxId();
+        TransactionRepresentation txRepresentation = representation.getTransactionRepresentation();
 
         try ( LockGroup locks = new LockGroup();
               ValidatedIndexUpdates indexUpdates = prepareIndexUpdates( txRepresentation ) )
@@ -73,9 +74,8 @@ public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRep
         }
 
         lastTransactionIdApplied = txId;
-        LogEntryStart startEntry = transaction.getStartEntry();
-        lastTransactionChecksum = LogEntryStart.checksum( startEntry );
-        lastTransactionLogPosition = startEntry.getStartPosition();
+        lastTransactionChecksum = LogEntryStart.checksum( representation.getStartEntry() );
+        lastTransactionLogPosition = transaction.positionAfterTx();
         monitor.transactionRecovered( txId );
         return false;
     }

@@ -29,9 +29,10 @@ import static org.neo4j.helpers.Format.KB;
 
 public class PhysicalWritableLogChannel implements WritableLogChannel
 {
-    private LogVersionedStoreChannel channel;
     private final ByteBuffer buffer;
+
     private volatile boolean closed;
+    private LogVersionedStoreChannel channel;
 
     public PhysicalWritableLogChannel( LogVersionedStoreChannel channel )
     {
