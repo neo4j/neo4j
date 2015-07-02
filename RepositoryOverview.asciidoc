@@ -28,7 +28,7 @@ The main components are:
 
 community-build::
   The main neo4j database, which can be used under a GPL license.
-  It corresponds to the community version described http://www.neotechnology.com/price-list/[here].
+  It corresponds to the community version described http://neo4j.com/editions/[here].
   This component can be found in the `community` directory of the source repository.
 +
 If you are looking to fix a bug or add a feature to the community edition, this is the place to be.
@@ -39,7 +39,7 @@ advanced-build::
 
 enterprise-build::
   This enterprise build adds extra features to the advanced build and corresponds to the enterprise edition
-  described http://www.neotechnology.com/price-list/[here].
+  described http://neo4j.com/editions/[here].
   The source code for these extra features can be found in the `enterprise` directory of the repository.
 
 packaging-build::
