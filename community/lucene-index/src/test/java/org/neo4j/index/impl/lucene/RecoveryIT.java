@@ -54,8 +54,7 @@ public class RecoveryIT
         process.waitFor();
 
         final GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( path );
-        Transaction transaction = db.beginTx();
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
             assertTrue( db.index().existsForNodes( "myIndex" ) );
             Index<Node> index = db.index().forNodes( "myIndex" );
@@ -80,10 +79,6 @@ public class RecoveryIT
                     }
                 }
             }
-        }
-        finally
-        {
-            transaction.finish();
         }
 
         // Added due to a recovery issue where the lucene data source write wasn't released properly after recovery.

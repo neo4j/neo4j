@@ -52,10 +52,11 @@ public class PropertyCountSampleableTest
         DependencyResolver dependencyResolver = db.getGraph().getDependencyResolver();
         sampleable = new PropertyCountSampleable( dependencyResolver.resolveDependency( NeoStoreSupplier.class ) );
 
-        Transaction tx = db.getGraph().beginTx();
-        referenceNodeId = db.getGraph().createNode().getId();
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.getGraph().beginTx() )
+        {
+            referenceNodeId = db.getGraph().createNode().getId();
+            tx.success();
+        }
     }
 
     @Test
@@ -79,30 +80,32 @@ public class PropertyCountSampleableTest
 
     private void addNodeIntoGraph()
     {
-        Transaction tx = db.getGraph().beginTx();
-        Node referenceNode = db.getGraph().getNodeById( referenceNodeId );
-        Node myNewNode = db.getGraph().createNode();
-        myNewNode.setProperty( "id", UUID.randomUUID().toString() );
-        myNewNode.createRelationshipTo( referenceNode, new RelationshipType()
+        try ( Transaction tx = db.getGraph().beginTx() )
         {
-            @Override
-			public String name()
+            Node referenceNode = db.getGraph().getNodeById( referenceNodeId );
+            Node myNewNode = db.getGraph().createNode();
+            myNewNode.setProperty( "id", UUID.randomUUID().toString() );
+            myNewNode.createRelationshipTo( referenceNode, new RelationshipType()
             {
-                return "knows_about";
-            }
-        } );
+                @Override
+                public String name()
+                {
+                    return "knows_about";
+                }
+            } );
 
-        tx.success();
-        tx.finish();
+            tx.success();
+        }
     }
 
     private void addPropertyToReferenceNode()
     {
-        Transaction tx = db.getGraph().beginTx();
-        Node n = db.getGraph().getNodeById( referenceNodeId );
-        n.setProperty( "monkey", "rock!" );
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.getGraph().beginTx() )
+        {
+            Node n = db.getGraph().getNodeById( referenceNodeId );
+            n.setProperty( "monkey", "rock!" );
+            tx.success();
+        }
     }
 
     @After

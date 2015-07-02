@@ -101,18 +101,13 @@ public class GraphDescription implements GraphDefinition
     {
         Map<String, Node> nodes = new HashMap<String, Node>();
         Node node = null;
-        Transaction tx = graphdb.beginTx();
-        try
+        try ( Transaction tx = graphdb.beginTx() )
         {
             for ( RelationshipDescription rel : description )
             {
                 node = rel.create( graphdb, nodes ).getEndNode();
             }
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
         return node;
     }

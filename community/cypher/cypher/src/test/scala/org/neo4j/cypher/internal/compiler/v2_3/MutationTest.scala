@@ -66,7 +66,7 @@ class MutationTest extends ExecutionEngineFunSuite {
     createNode.createResults(createQueryState).toList
 
     tx.failure()
-    tx.finish()
+    tx.close()
 
     intercept[NotFoundException](graph.inTx(graph.getNodeById(1)))
   }
@@ -79,7 +79,7 @@ class MutationTest extends ExecutionEngineFunSuite {
     createNode.createResults(createQueryState).toList
 
     tx.success()
-    tx.finish()
+    tx.close()
 
     graph.inTx{
       graph.getNodeById(0).getProperty("name") should equal("Andres")

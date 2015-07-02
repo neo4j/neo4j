@@ -92,20 +92,21 @@ public class JavaExecutionEngineDocTest
     public void setUp() throws IOException
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
-        Transaction tx = db.beginTx();
-        michaelaNode = db.createNode();
-        andreasNode = db.createNode();
-        johanNode = db.createNode();
-        andreasNode.setProperty( "name", "Andreas" );
-        johanNode.setProperty( "name", "Johan" );
-        michaelaNode.setProperty( "name", "Michaela" );
+        try ( Transaction tx = db.beginTx() )
+        {
+            michaelaNode = db.createNode();
+            andreasNode = db.createNode();
+            johanNode = db.createNode();
+            andreasNode.setProperty( "name", "Andreas" );
+            johanNode.setProperty( "name", "Johan" );
+            michaelaNode.setProperty( "name", "Michaela" );
 
-        index( andreasNode );
-        index( johanNode );
-        index( michaelaNode );
+            index( andreasNode );
+            index( johanNode );
+            index( michaelaNode );
 
-        tx.success();
-        tx.finish();
+            tx.success();
+        }
     }
 
     @After

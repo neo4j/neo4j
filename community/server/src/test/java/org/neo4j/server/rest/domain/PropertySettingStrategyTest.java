@@ -68,7 +68,7 @@ public class PropertySettingStrategyTest
     @After
     public void rollbackTx()
     {
-        tx.finish();
+        tx.close();
     }
 
     @Test

@@ -59,8 +59,7 @@ public class ConstraintIndexFailureIT
         GraphDatabaseService db = startDatabase();
         try
         {
-            Transaction tx = db.beginTx();
-            try
+            try ( Transaction tx = db.beginTx() )
             {
                 db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
 
@@ -71,10 +70,6 @@ public class ConstraintIndexFailureIT
             {
                 assertThat( e.getCause(), instanceOf( UnableToValidateConstraintKernelException.class ) );
                 assertThat( e.getCause().getCause().getMessage(), equalTo( "The index is in a failed state: 'Injected failure'.") );
-            }
-            finally
-            {
-                tx.finish();
             }
         }
         finally
@@ -93,16 +88,11 @@ public class ConstraintIndexFailureIT
         GraphDatabaseService db = startDatabase();
         try
         {
-            Transaction tx = db.beginTx();
-            try
+            try ( Transaction tx = db.beginTx() )
             {
                 db.schema().constraintFor( label( "Label1" ) ).assertPropertyIsUnique( "key1" ).create();
 
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
         }
         finally

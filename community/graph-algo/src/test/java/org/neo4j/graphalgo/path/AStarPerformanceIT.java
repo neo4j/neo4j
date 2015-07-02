@@ -88,8 +88,7 @@ public class AStarPerformanceIT
             System.out.println( "----- " + i );
             for ( long[] p : points )
             {
-                Transaction tx = db.beginTx();
-                try
+                try ( Transaction tx = db.beginTx() )
                 {
                     Node start = db.getNodeById( p[0] );
                     Node end = db.getNodeById( p[1] );
@@ -98,10 +97,6 @@ public class AStarPerformanceIT
                     time = currentTimeMillis() - time;
                     System.out.println( "time: " + time + ", len:" + path.length() + ", weight:" + path.weight() );
                     tx.success();
-                }
-                finally
-                {
-                    tx.finish();
                 }
             }
         }

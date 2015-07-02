@@ -1595,9 +1595,10 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         t1.close();
         t2.close();
 
-        Transaction transaction = graphDb.beginTx();
-        assertEquals( node, index.get( key, value ).getSingle() );
-        transaction.finish();
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            assertEquals( node, index.get( key, value ).getSingle() );
+        }
     }
 
     @Test
@@ -1622,10 +1623,11 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         t1.close();
         t2.close();
 
-        Transaction transaction = graphDb.beginTx();
-        assertEquals( node, index.get( key, value ).getSingle() );
-        assertEquals( node, index.get( key, otherValue ).getSingle() );
-        transaction.finish();
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            assertEquals( node, index.get( key, value ).getSingle() );
+            assertEquals( node, index.get( key, otherValue ).getSingle() );
+        }
     }
 
     @Test
@@ -1649,10 +1651,11 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         t1.close();
         t2.close();
 
-        Transaction transaction = graphDb.beginTx();
-        assertEquals( node, index.get( key, value ).getSingle() );
-        assertEquals( node, index.get( otherKey, value ).getSingle() );
-        transaction.finish();
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            assertEquals( node, index.get( key, value ).getSingle() );
+            assertEquals( node, index.get( otherKey, value ).getSingle() );
+        }
     }
 
     @Test

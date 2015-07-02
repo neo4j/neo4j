@@ -98,8 +98,8 @@ public class StreamingJsonFormatPerformanceTest {
 
 
     private void createData() {
-        final Transaction tx = gdb.beginTx();
-        try {
+        try ( Transaction tx = gdb.beginTx() )
+        {
             final DynamicRelationshipType TYPE = DynamicRelationshipType.withName("TYPE");
             Node last = gdb.createNode();
             last.setProperty("id", 0);
@@ -110,8 +110,6 @@ public class StreamingJsonFormatPerformanceTest {
                 last = node;
             }
             tx.success();
-        } finally {
-            tx.finish();
         }
     }
 }

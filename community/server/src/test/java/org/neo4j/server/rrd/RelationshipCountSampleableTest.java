@@ -56,12 +56,13 @@ public class RelationshipCountSampleableTest
 
     private void createARelationship( GraphDatabaseAPI db )
     {
-        Transaction tx = db.beginTx();
-        Node node1 = db.createNode();
-        Node node2 = db.createNode();
-        node1.createRelationshipTo( node2, withName( "friend" ) );
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node1 = db.createNode();
+            Node node2 = db.createNode();
+            node1.createRelationshipTo( node2, withName( "friend" ) );
+            tx.success();
+        }
     }
 
     @Before

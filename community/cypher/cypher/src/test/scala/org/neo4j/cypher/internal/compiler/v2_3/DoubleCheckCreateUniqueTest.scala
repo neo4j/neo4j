@@ -75,7 +75,7 @@ class DoubleCheckCreateUniqueTest extends CypherFunSuite {
       tx.success()
       n
     } finally {
-      tx.finish()
+      tx.close()
     }
   }
 

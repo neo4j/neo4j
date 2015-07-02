@@ -27,7 +27,7 @@ public class RollbackCommand implements WorkerCommand<CommandState, Void>
     public Void doWork( CommandState state )
     {
         state.tx.failure();
-        state.tx.finish();
+        state.tx.close();
         state.tx = null;
         return null;
     }

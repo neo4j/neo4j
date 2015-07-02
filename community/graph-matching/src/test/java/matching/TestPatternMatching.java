@@ -105,7 +105,7 @@ public class TestPatternMatching implements GraphHolder
     @After
     public void tearDownTx()
     {
-        tx.finish();
+        tx.close();
     }
 
     @AfterClass

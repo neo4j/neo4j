@@ -49,7 +49,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest
   }
 
   override def afterEach() {
-    tx.finish()
+    tx.close()
     super.afterEach()
   }
 
