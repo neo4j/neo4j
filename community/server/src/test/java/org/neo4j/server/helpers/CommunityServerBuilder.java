@@ -477,12 +477,6 @@ public class CommunityServerBuilder
         }
 
         @Override
-        protected PreFlightTasks createPreflightTasks()
-        {
-            return preflightTasks;
-        }
-
-        @Override
         protected DatabaseActions createDatabaseActions()
         {
             return createDatabaseActionsObject( database, configurator );

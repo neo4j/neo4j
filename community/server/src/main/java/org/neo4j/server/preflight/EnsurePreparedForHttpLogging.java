@@ -19,18 +19,17 @@
  */
 package org.neo4j.server.preflight;
 
+import org.apache.commons.io.FileUtils;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+
 import java.io.File;
 import java.io.IOException;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
-
-import org.apache.commons.io.FileUtils;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 
 public class EnsurePreparedForHttpLogging implements PreflightTask
 {
@@ -52,7 +51,7 @@ public class EnsurePreparedForHttpLogging implements PreflightTask
             return true;
         }
 
-        File logLocation = extractLogLocationFromConfig( config.get( ServerSettings.http_log_config_File ).getAbsolutePath() );
+        File logLocation = extractLogLocationFromConfig( config.get( ServerSettings.http_log_config_file ).getAbsolutePath() );
 
         if ( logLocation != null )
         {
@@ -71,7 +70,6 @@ public class EnsurePreparedForHttpLogging implements PreflightTask
             return true;
         }
     }
-
 
     private boolean validateFileBasedLoggingConfig( File logLocation )
     {

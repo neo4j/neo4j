@@ -20,7 +20,9 @@
 package org.neo4j.server.web.logging;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,11 +30,11 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.ThrowingSupplier;
-import org.neo4j.kernel.impl.util.Charsets;
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.ServerStartupException;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -47,7 +49,6 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.neo4j.helpers.Settings.osIsWindows;
 import static org.neo4j.io.fs.FileUtils.readTextFile;
 import static org.neo4j.test.Assert.assertEventually;
@@ -55,6 +56,8 @@ import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 {
+    @Rule public ExpectedException exception = ExpectedException.none();
+
     @Test
     public void givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses() throws Exception
     {
@@ -197,30 +200,17 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
                 Configurator.HTTP_LOGGING, "true",
                 Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() ) );
 
+
+        // expect
+        exception.expect( InvalidSettingException.class );
+
+        // when
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withPreflightTasks( new EnsurePreparedForHttpLogging( config ) )
                 .withProperty( Configurator.HTTP_LOGGING, "true" )
                 .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
                 .usingDatabaseDir( confDir.getAbsolutePath() )
                 .build();
-
-        // when
-        try
-        {
-            server.start();
-            fail( "should have thrown exception" );
-        }
-        catch ( ServerStartupException e )
-        {
-            // then
-            assertThat( e.getMessage(),
-                    containsString( String.format( "HTTP log directory [%s]",
-                            unwritableLogDir.getAbsolutePath() ) ) );
-        }
-        finally
-        {
-            server.stop();
-        }
     }
 
     private ThrowingSupplier<String, IOException> fileContentSupplier( final File file )

@@ -28,7 +28,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.rest.web.DatabaseActions;
 
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
@@ -70,12 +69,6 @@ public class AdvancedServerBuilder extends CommunityServerBuilder
         {
             super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? COMMUNITY_FACTORY : IN_MEMORY_DB ), dependencies, logProvider );
             this.configFile = configFile;
-        }
-
-        @Override
-        protected PreFlightTasks createPreflightTasks()
-        {
-            return preflightTasks;
         }
 
         @Override

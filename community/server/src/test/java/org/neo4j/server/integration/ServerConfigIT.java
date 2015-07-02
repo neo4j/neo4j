@@ -50,7 +50,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         // Given
         String configValue = tempDir.newFile().getAbsolutePath();
         server = CommunityServerBuilder.server().withProperty(
-                ServerSettings.http_log_config_File.name(), configValue )
+                ServerSettings.http_log_config_file.name(), configValue )
                 .build();
 
         // When
@@ -58,7 +58,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
 
         // Then
         ObjectName name = getObjectName( server.getDatabase().getGraph(), ConfigurationBean.CONFIGURATION_MBEAN_NAME );
-        assertThat( getAttribute( name, ServerSettings.http_log_config_File.name() ), equalTo( (Object)configValue ) );
+        assertThat( getAttribute( name, ServerSettings.http_log_config_file.name() ), equalTo( (Object)configValue ) );
     }
 
     @After
