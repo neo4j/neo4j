@@ -40,7 +40,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         "a",
         LabelToken("Person", LabelId(0)),
         PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
-        RangeQueryExpression(StringSeekRange(RangeGreaterThan(InclusiveBound("prefix"))) _),
+        RangeQueryExpression(StringSeekRange(PrefixRange("prefix")) _),
         Set.empty)(solved)
     )
   }
@@ -69,7 +69,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                   "a",
                   LabelToken("Person", LabelId(0)),
                   PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1)),
-                  RangeQueryExpression(StringSeekRange(RangeGreaterThan(InclusiveBound("longer"))) _),
+                  RangeQueryExpression(StringSeekRange(PrefixRange("longer")) _),
                   Set.empty)(solved)
       )(solved))
   }
@@ -87,7 +87,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                   "a",
                   LabelToken("Person", LabelId(0)),
                   PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
-                  RangeQueryExpression(StringSeekRange(RangeGreaterThan(InclusiveBound("longer"))) _),
+                  RangeQueryExpression(StringSeekRange(PrefixRange("longer")) _),
                   Set.empty)(solved)
       )(solved))
   }
@@ -103,7 +103,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           "a",
           LabelToken("Person", LabelId(0)),
           PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
-          RangeQueryExpression(StringSeekRange(RangeGreaterThan(InclusiveBound("prefix"))) _),
+          RangeQueryExpression(StringSeekRange(PrefixRange("prefix")) _),
           Set.empty)(solved)
       )(solved)
     )

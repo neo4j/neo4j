@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.NodeStartPipe
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{InclusiveBound, LowerBounded}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -44,7 +44,7 @@ class StartPointBuilderTest extends BuilderTest {
   }
 
   test("plans index seek by prefix") {
-    val range = StringSeekRange(LowerBounded(InclusiveBound("prefix")))
+    val range = StringSeekRange(PrefixRange("prefix"))
     val labelName = "Label"
     val propertyName = "prop"
     val q = PartiallySolvedQuery().
@@ -55,7 +55,7 @@ class StartPointBuilderTest extends BuilderTest {
   }
 
   test("plans unique index seek by prefix") {
-    val range = StringSeekRange(LowerBounded(InclusiveBound("prefix")))
+    val range = StringSeekRange(PrefixRange("prefix"))
     val labelName = "Label"
     val propertyName = "prop"
     val q = PartiallySolvedQuery().

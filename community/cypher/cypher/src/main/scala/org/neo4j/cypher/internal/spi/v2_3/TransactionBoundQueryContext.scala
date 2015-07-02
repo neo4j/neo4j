@@ -24,7 +24,7 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringSeekRange
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{InclusiveBound, RangeGreaterThan}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.graphdb.DynamicRelationshipType._
@@ -134,7 +134,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
 
   def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
-    case StringSeekRange(RangeGreaterThan(InclusiveBound(prefix))) =>
+    case StringSeekRange(PrefixRange(prefix)) =>
       val indexedNodes = statement.readOperations().nodesGetFromIndexSeekByPrefix(index, prefix)
       JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
     case range =>

@@ -46,7 +46,7 @@ object CypherNumberOrdering extends Ordering[Number] {
   }
 
   private def areComparableOfSameType(l: Number, r: Number): Boolean =
-    l.isInstanceOf[Comparable[Number]] && l.getClass.isInstance(r)
+    l.isInstanceOf[Comparable[_]] && l.getClass.isInstance(r)
 
   private def compareValuesOfSameType(l: Number, r: Number): Int =
     l.asInstanceOf[Comparable[Number]].compareTo(r)

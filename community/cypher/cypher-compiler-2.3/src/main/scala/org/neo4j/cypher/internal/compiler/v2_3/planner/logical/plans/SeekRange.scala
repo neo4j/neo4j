@@ -26,6 +26,8 @@ final case class RangeBetween[V](lower: Bound[V], upper: Bound[V]) extends SeekR
 final case class RangeGreaterThan[V](lower: Bound[V]) extends HalfOpenSeekRange[V]
 final case class RangeLessThan[V](lower: Bound[V]) extends HalfOpenSeekRange[V]
 
+final case class PrefixRange(prefix: String) extends SeekRange[String]
+
 sealed trait Bound[V] {
   def endPoint: V
 }
