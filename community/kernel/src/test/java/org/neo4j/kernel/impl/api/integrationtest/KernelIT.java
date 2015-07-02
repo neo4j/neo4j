@@ -436,7 +436,7 @@ public class KernelIT extends KernelIntegrationTest
             statement.readOperations().nodeGetLabels( node.getId() );
             fail();
         }
-        catch ( IllegalStateException e )
+        catch ( EntityNotFoundException e )
         {
             // Ok
         }
@@ -446,7 +446,7 @@ public class KernelIT extends KernelIntegrationTest
             statement.readOperations().nodeHasLabel( node.getId(), labelId );
             fail();
         }
-        catch ( IllegalStateException e )
+        catch ( EntityNotFoundException e )
         {
             // Ok
         }

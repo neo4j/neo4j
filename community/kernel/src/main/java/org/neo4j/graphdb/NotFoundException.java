@@ -26,14 +26,12 @@ package org.neo4j.graphdb;
  * will cause this exception to be thrown.
  * {@link PropertyContainer#getProperty(String)} will also throw this exception
  * if the given key does not exist.
- * <p>
- * Another scenario when this exception will be thrown is if one or more
- * transactions keep a reference to a node or relationship that gets deleted in
- * some other transaction. If the deleting transaction commits all other
- * transactions having a reference to the deleted node or relationship will
- * throw this exception when invoking any of the methods on the node or
- * relationship.
- * 
+ * <p/>
+ * Another scenario involves multiple concurrent transactions which obtain a reference to the same node or
+ * relationship, which is then deleted by one of the transactions. If the deleting transaction commits, then invoking
+ * any node or relationship methods within any of the remaining open transactions will cause this exception to be
+ * thrown.
+ *
  * @see GraphDatabaseService
  */
 public class NotFoundException extends RuntimeException

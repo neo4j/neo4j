@@ -50,7 +50,7 @@ public class TxSingleRelationshipCursor
         if ( state.relationshipIsDeletedInThisTx( id ) )
         {
             visit( -1, -1, -1, -1 );
-            throw new IllegalStateException("Relationship " + id + " has been deleted");
+            return false;
         }
 
         this.relationshipIsAddedInThisTx = state.relationshipIsAddedInThisTx( id );

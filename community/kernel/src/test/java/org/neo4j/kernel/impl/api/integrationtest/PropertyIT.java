@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.Token;
@@ -402,10 +403,10 @@ public class PropertyIT extends KernelIntegrationTest
                 statement.nodeRemoveProperty( node, prop1 );
                 fail( "Should have failed." );
             }
-            catch ( IllegalStateException e )
+            catch ( EntityNotFoundException e )
             {
                 assertThat( e.getMessage(),
-                        equalTo( "Node " + node + " has been deleted" ) );
+                            equalTo( "Unable to load NODE with id " + node + "." ) );
             }
         }
     }
@@ -431,10 +432,10 @@ public class PropertyIT extends KernelIntegrationTest
                 statement.relationshipRemoveProperty( rel, prop1 );
                 fail( "Should have failed." );
             }
-            catch ( IllegalStateException e )
+            catch ( EntityNotFoundException e )
             {
                 assertThat( e.getMessage(),
-                        equalTo( "Relationship " + rel + " has been deleted" ) );
+                            equalTo( "Unable to load RELATIONSHIP with id " + rel + "." ) );
             }
         }
     }

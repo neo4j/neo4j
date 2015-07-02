@@ -160,7 +160,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         }
         catch ( EntityNotFoundException e )
         {
-            throw new IllegalStateException( "Unable to delete relationship[" +
+            throw new NotFoundException( "Unable to delete relationship[" +
                                              getId() + "] since it is already deleted." );
         }
     }
@@ -286,7 +286,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         }
         catch ( EntityNotFoundException e )
         {
-            throw new IllegalStateException( e );
+            throw new NotFoundException( e );
         }
     }
 
@@ -306,7 +306,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         }
         catch ( EntityNotFoundException e )
         {
-            throw new IllegalStateException( e );
+            throw new NotFoundException( e );
         }
     }
 
@@ -326,7 +326,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         }
         catch ( EntityNotFoundException e )
         {
-            throw new IllegalStateException( e );
+            throw new NotFoundException( e );
         }
         catch ( IllegalTokenNameException e )
         {
@@ -349,7 +349,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         }
         catch ( EntityNotFoundException e )
         {
-            throw new IllegalStateException( e );
+            throw new NotFoundException( e );
         }
         catch ( IllegalTokenNameException e )
         {

@@ -116,7 +116,7 @@ public class NodeProxyTest
         }
 
         // Then
-        assertThat( exceptionThrownBySecondDelete, instanceOf( IllegalStateException.class ) );
+        assertThat( exceptionThrownBySecondDelete, instanceOf( NotFoundException.class ) );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -125,7 +125,7 @@ public class NodeProxyTest
         }
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test( expected = NotFoundException.class )
     public void deletionOfAlreadyDeletedNodeShouldThrow()
     {
         // Given
@@ -144,7 +144,7 @@ public class NodeProxyTest
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            node.delete(); // should throw IllegalStateException as this node is already deleted
+            node.delete(); // should throw NotFoundException as this node is already deleted
             tx.success();
         }
     }
