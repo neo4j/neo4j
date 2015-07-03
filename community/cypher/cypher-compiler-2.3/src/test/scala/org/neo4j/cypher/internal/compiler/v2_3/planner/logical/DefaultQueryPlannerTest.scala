@@ -34,43 +34,37 @@ import org.neo4j.cypher.internal.compiler.v2_3.{ExpressionTypeInfo, Rewriter}
 class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("adds ProduceResult with a single node") {
-    val result = createProduceResultOperator(Set("a"), SemanticTable().addNode(ident("a")))
+    val result = createProduceResultOperator(Seq("a"), SemanticTable().addNode(ident("a")))
 
-    result.nodes should equal(Seq("a"))
-    result.relationships shouldBe empty
-    result.other shouldBe empty
+    result.columns should equal(Seq("a"))
   }
 
   test("adds ProduceResult with a single relationship") {
-    val result = createProduceResultOperator(Set("r"), SemanticTable().addRelationship(ident("r")))
+    val result = createProduceResultOperator(Seq("r"), SemanticTable().addRelationship(ident("r")))
 
-    result.relationships should equal(Seq("r"))
-    result.nodes shouldBe empty
-    result.other shouldBe empty
+    result.columns should equal(Seq("r"))
   }
 
   test("adds ProduceResult with a single value") {
     val expr = ident("x")
     val types = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo].updated(expr, ExpressionTypeInfo(CTFloat, None))
 
-    val result = createProduceResultOperator(Set("x"), semanticTable = SemanticTable(types = types))
+    val result = createProduceResultOperator(Seq("x"), semanticTable = SemanticTable(types = types))
 
-    result.other should equal(Seq("x"))
-    result.nodes shouldBe empty
-    result.relationships shouldBe empty
+    result.columns should equal(Seq("x"))
   }
 
-  private def createProduceResultOperator(columns: Set[String], semanticTable: SemanticTable): ProduceResult = {
+  private def createProduceResultOperator(columns: Seq[String], semanticTable: SemanticTable): ProduceResult = {
     implicit val planningContext = mockLogicalPlanningContext(semanticTable)
 
     val inputPlan = mock[LogicalPlan]
-    when(inputPlan.availableSymbols).thenReturn(columns.map(IdName.apply))
+    when(inputPlan.availableSymbols).thenReturn(columns.map(IdName.apply).toSet)
 
     val queryPlanner = DefaultQueryPlanner(identity, planSingleQuery = new FakePlanner(inputPlan))
 
     val pq = PlannerQuery(horizon = RegularQueryProjection(columns.map(c => c -> ident(c)).toMap))
 
-    val union = UnionQuery(Seq(pq), distinct = false)
+    val union = UnionQuery(Seq(pq), distinct = false, columns.map(IdName.apply))
 
     val result = queryPlanner.plan(union)
 
@@ -109,7 +103,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       planSingleQuery = PlanSingleQuery(expressionRewriterFactory = (lpc) => Rewriter.noop ))
 
     // when
-    val query = UnionQuery(Seq(plannerQuery), distinct = false)
+    val query = UnionQuery(Seq(plannerQuery), distinct = false, Seq.empty)
     queryPlanner.plan(query)(context)
 
     // then

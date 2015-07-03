@@ -88,10 +88,12 @@ object ClauseConverters {
         val projection = ri.items.
           asQueryProjection(distinct).
           withShuffle(shuffle)
-
+        val returns = ri.items.collect {
+          case AliasedReturnItem(_, identifier) => IdName.fromIdentifier(identifier)
+        }
         acc.
-          withHorizon(projection)
-
+          withHorizon(projection).
+          withReturns(returns)
       case _ =>
         throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
     }

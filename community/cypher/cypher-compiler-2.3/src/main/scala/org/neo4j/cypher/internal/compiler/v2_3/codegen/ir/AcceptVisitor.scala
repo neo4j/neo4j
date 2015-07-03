@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, MethodSt
 case class AcceptVisitor(produceResultOpName: String, projectionOpName: String, columns: Map[String, CodeGenExpression])
   extends Instruction {
 
-  override protected def columnNames = columns.keys
-
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.trace(projectionOpName) { body =>
       body.incrementRows()

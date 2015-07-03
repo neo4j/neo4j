@@ -35,7 +35,7 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     implicit val (logicalPlan, semanticTable) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a")
 
     logicalPlan should equal(
-      ProduceResult(Seq("a"), Seq.empty, Seq.empty,
+      ProduceResult(Seq("a"),
         Union(
           Projection(
             NodeByLabelScan("  a@7", LazyLabel(LabelName("A") _), Set.empty)(solved),
@@ -58,7 +58,7 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     implicit val (logicalPlan, semanticTable) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a")
 
     logicalPlan should equal(
-      ProduceResult(Seq("a"), Seq.empty, Seq.empty,
+      ProduceResult(Seq("a"),
         Aggregation(
           left = Union(
             Projection(

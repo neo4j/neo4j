@@ -164,7 +164,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private def runTest(buildInstruction: BuildProbeTable, nodes: Set[Variable]): List[Map[String, Object]] = {
     val instructions = buildProbeTableWithTwoAllNodeScans(buildInstruction, nodes)
     val ids = instructions.flatMap(_.allOperatorIds.map(id => id -> null)).toMap
-    evaluate(instructions, statement, nodeManager, Map.empty[String, Object], ids)
+    evaluate(instructions, statement, nodeManager, Seq(resultRowKey), Map.empty[String, Object], ids)
   }
 
   private def buildProbeTableWithTwoAllNodeScans(buildInstruction: BuildProbeTable, nodes: Set[Variable]): Seq[Instruction] = {

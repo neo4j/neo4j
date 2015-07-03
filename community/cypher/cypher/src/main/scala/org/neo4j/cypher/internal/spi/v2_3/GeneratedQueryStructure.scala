@@ -79,7 +79,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         success = clazz.generate(Templates.SUCCESS))
       // the "COLUMNS" static field
       clazz.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList(
-        columns.toSeq.map(key => Expression.constant(key))))
+        columns.map(key => Expression.constant(key))))
 
       // the operator id fields
       operatorIds.keys.foreach { opId =>

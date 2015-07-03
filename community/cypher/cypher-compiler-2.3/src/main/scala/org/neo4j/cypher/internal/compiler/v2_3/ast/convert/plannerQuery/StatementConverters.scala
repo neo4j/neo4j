@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery
 
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_3.{Foldable, ast}
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.ClauseConverters._
@@ -56,7 +57,7 @@ object StatementConverters {
       query match {
         case Query(None, queryPart: SingleQuery) =>
           val builder = queryPart.asPlannerQueryBuilder
-          UnionQuery(Seq(builder.build()), distinct = false)
+          UnionQuery(Seq(builder.build()), distinct = false, builder.returns)
 
         case Query(None, u: ast.Union) =>
           val queries: Seq[SingleQuery] = u.unionedQueries
@@ -65,7 +66,12 @@ object StatementConverters {
             case _: UnionDistinct => true
           }
           val plannedQueries: Seq[PlannerQueryBuilder] = queries.reverseMap(x => x.asPlannerQueryBuilder)
-          UnionQuery(plannedQueries.map(_.build()), distinct)
+          //UNION requires all queries to return the same identifiers
+          assert(plannedQueries.nonEmpty)
+          val returns = plannedQueries.head.returns
+          assert(plannedQueries.forall(_.returns == returns))
+
+          UnionQuery(plannedQueries.map(_.build()), distinct, returns)
 
         case _ =>
           throw new CantHandleQueryException

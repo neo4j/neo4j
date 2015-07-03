@@ -56,7 +56,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
         val sourceSink: SourceSink = if(getBoolean("org.neo4j.cypher.internal.codegen.IncludeSourcesInPlanDescription")) Some(
           (className:String, sourceCode:String) => { sources = sources.updated(className, sourceCode) }) else None
 
-        val query: GeneratedQuery = generateQuery(plan, semanticTable, idMap, sourceSink)
+        val query: GeneratedQuery = generateQuery(plan, semanticTable, idMap, res.columns, sourceSink)
 
         val fp = planContext.statistics match {
           case igs: InstrumentedGraphStatistics =>
@@ -80,20 +80,19 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
           }
         }
 
-        val columns = res.nodes ++ res.relationships ++ res.other
-        CompiledPlan(updating = false, None, fp, plannerName, description, columns, builder)
+        CompiledPlan(updating = false, None, fp, plannerName, description, res.columns, builder)
 
       case _ => throw new CantCompileQueryException("Can only compile plans with ProduceResult on top")
     }
   }
 
-  private def generateQuery(plan: LogicalPlan, semantics: SemanticTable, ids: Map[LogicalPlan, Id], sources: SourceSink = None): GeneratedQuery = {
+  private def generateQuery(plan: LogicalPlan, semantics: SemanticTable, ids: Map[LogicalPlan, Id], columns: Seq[String], sources: SourceSink = None): GeneratedQuery = {
     import LogicalPlanConverter._
     implicit val context = new CodeGenContext(semantics, ids)
     val (_, instructions) = plan.asCodeGenPlan.produce(context)
     generateCode(structure)(instructions, context.operatorIds.map {
       case (id: Id, field: String) => field -> id
-    }.toMap, sources)
+    }.toMap, columns, sources)
   }
 
   private def asJavaHashMap(params: scala.collection.Map[String, Any]) = {
@@ -116,8 +115,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
 object CodeGenerator {
   type SourceSink = Option[(String, String) => Unit]
 
-  def generateCode[T](structure: CodeStructure[T])(instructions: Seq[Instruction], operatorIds: Map[String, Id], sources:SourceSink=None)(implicit context: CodeGenContext): T = {
-    val columns = instructions.flatMap(_.allColumns)
+  def generateCode[T](structure: CodeStructure[T])(instructions: Seq[Instruction], operatorIds: Map[String, Id], columns: Seq[String], sources:SourceSink=None)(implicit context: CodeGenContext): T = {
     structure.generateQuery(packageName, Namer.newClassName(), columns, operatorIds, sources) { accept =>
       instructions.foreach(insn => insn.init(accept))
       instructions.foreach(insn => insn.body(accept))

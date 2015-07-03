@@ -49,7 +49,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val projectNode = expressions.NodeProjection(variable)
     val compiled = compile(Seq(WhileLoop(variable,
       ScanAllNodes("OP1"), AcceptVisitor("OP2", "X", Map("n" -> projectNode)))),
-      Map("OP1" -> id1, "OP2" -> id2, "X" -> new Id()))
+      Seq("n"), Map("OP1" -> id1, "OP2" -> id2, "X" -> new Id()))
 
     val statement = mock[Statement]
     val readOps = mock[ReadOperations]
@@ -100,7 +100,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val rhs = AllNodesScan(IdName("a"), Set.empty)(solved)
     val join = NodeHashJoin(Set(IdName("a")), lhs, rhs)(solved)
     val projection = Projection(join, Map("foo" -> SignedDecimalIntegerLiteral("1")(null)))(solved)
-    val plan = ProduceResult(List.empty, List.empty, List("foo"), projection)
+    val plan = ProduceResult(List("foo"), projection)
 
     // when
     val result = compileAndExecute(plan, graphDb, mode = ProfileMode)

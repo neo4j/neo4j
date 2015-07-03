@@ -2075,6 +2075,12 @@ return b
       Map("p" -> PathImpl(b, r2, a, r1, b)))
   }
 
+  test("columns should be in the provided order") {
+    val result = executeWithAllPlannersAndRuntimes("MATCH p,o,n,t,u,s RETURN p,o,n,t,u,s")
+
+    result.columns should equal(List("p", "o", "n", "t", "u", "s"))
+  }
+
   /**
    * Append identifier to keys and transform value arrays to lists
    */
