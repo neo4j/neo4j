@@ -110,7 +110,7 @@ public class NDPModule implements ServerModule
                     @Override
                     public SocketProtocol apply( Channel channel )
                     {
-                        return new SocketProtocolV1( logging, sessions.newSession(), channel );
+                        return new SocketProtocolV1( logging, sessions.newSession(), channel, usageData);
                     }
                 } );
 

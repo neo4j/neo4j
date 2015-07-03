@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.udc.UsageData;
 
 import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -30,23 +31,23 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class ErrorTranslatorTest
+public class ErrorReporterTest
 {
     @Test
     public void shouldReportUnknownErrors() throws Throwable
     {
         // Given
         AssertableLogProvider provider = new AssertableLogProvider();
-        ErrorTranslator translator =
-                new ErrorTranslator( provider.getLog( "userlog" ) );
+        ErrorReporter translator =
+                new ErrorReporter( provider.getLog( "userlog" ), new UsageData() );
 
         Throwable cause = new Throwable( "This is not an error we know how to handle." );
 
         // When
-        Neo4jError translated = translator.translate( cause );
+        Neo4jError error = Neo4jError.from( cause );
 
         // Then
-        assertThat( translated.status(), equalTo( (Status) Status.General.UnknownFailure ) );
+        assertThat( error.status(), equalTo( (Status) Status.General.UnknownFailure ) );
         provider.assertExactly(
                 inLog( "userlog" )
                     .error( both(containsString( "START OF REPORT" ))

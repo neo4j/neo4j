@@ -32,8 +32,12 @@ import org.neo4j.ndp.messaging.v1.MessageFormat;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.msgprocess.TransportBridge;
 import org.neo4j.ndp.runtime.Session;
-import org.neo4j.ndp.runtime.internal.ErrorTranslator;
+import org.neo4j.ndp.runtime.internal.ErrorReporter;
+import org.neo4j.ndp.runtime.internal.Neo4jError;
 import org.neo4j.packstream.PackStream;
+import org.neo4j.udc.UsageData;
+
+import static org.neo4j.ndp.messaging.v1.msgprocess.MessageProcessingCallback.publishError;
 
 /**
  * Implements version one of the Neo4j protocol when transported over a socket. This means this class will handle a
@@ -57,7 +61,7 @@ public class SocketProtocolV1 implements SocketProtocol
 
     private final Log log;
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
-    private final ErrorTranslator errorTranslator;
+    private final ErrorReporter errorReporter;
 
     public enum State
     {
@@ -70,11 +74,11 @@ public class SocketProtocolV1 implements SocketProtocol
     private State state = State.AWAITING_CHUNK;
     private int chunkSize = 0;
 
-    public SocketProtocolV1( final LogService logging, Session session, Channel channel )
+    public SocketProtocolV1( final LogService logging, Session session, Channel channel, UsageData usageData )
     {
         this.log = logging.getInternalLog( getClass() );
         this.session = session;
-        this.errorTranslator = new ErrorTranslator( logging );
+        this.errorReporter = new ErrorReporter( logging, usageData );
         this.output = new ChunkedOutput( channel, DEFAULT_BUFFER_SIZE );
         this.input = new ChunkedInput();
         this.packer = new PackStreamMessageFormatV1.Writer( new PackStream.Packer( output ), output.messageBoundaryHook() );
@@ -225,7 +229,7 @@ public class SocketProtocolV1 implements SocketProtocol
         {
             try
             {
-                packer.handleFailureMessage( errorTranslator.translate( e ) );
+                publishError( packer, Neo4jError.from( e ) );
                 packer.flush();
             }
             catch ( Throwable e1 )

@@ -198,14 +198,14 @@ public class DocSerialization
         else if ( value.equals( "FAILURE {code:\"Neo.ClientError.Statement.InvalidSyntax\", " +
                                 "message:\"Invalid syntax.\"}" ) ) // kiss..
         {
-            writer.handleFailureMessage( new Neo4jError( Status.Statement.InvalidSyntax, "Invalid syntax." ) );
+            writer.handleFailureMessage(  Status.Statement.InvalidSyntax, "Invalid syntax." );
         }
         else if ( value.equals( "FAILURE {code:\"Neo.ClientError.Statement.InvalidSyntax\"," ) ) // kiss..
         {
-            writer.handleFailureMessage( new Neo4jError( Status.Statement.InvalidSyntax,
+            writer.handleFailureMessage(  Status.Statement.InvalidSyntax,
                     "Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))\n" +
                     "\"This will cause a syntax error\"\n" +
-                    " ^" ) );
+                    " ^" );
         }
         else if( value.equals( "INITIALIZE \"MyClient/1.0\"" ))
         {

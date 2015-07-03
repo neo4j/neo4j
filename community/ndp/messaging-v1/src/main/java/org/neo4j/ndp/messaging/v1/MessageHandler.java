@@ -21,6 +21,7 @@ package org.neo4j.ndp.messaging.v1;
 
 import java.util.Map;
 
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
 import org.neo4j.ndp.runtime.spi.Record;
 
@@ -38,7 +39,7 @@ public interface MessageHandler<E extends Exception>
 
     void handleSuccessMessage( Map<String,Object> metadata ) throws E;
 
-    void handleFailureMessage( Neo4jError cause ) throws E;
+    void handleFailureMessage( Status status, String message ) throws E;
 
     void handleIgnoredMessage() throws E;
 
@@ -83,7 +84,7 @@ public interface MessageHandler<E extends Exception>
         }
 
         @Override
-        public void handleFailureMessage( Neo4jError cause ) throws E
+        public void handleFailureMessage( Status status, String message ) throws E
         {
 
         }

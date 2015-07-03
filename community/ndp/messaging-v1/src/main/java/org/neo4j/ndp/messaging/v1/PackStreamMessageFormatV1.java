@@ -166,9 +166,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             Object[] fields = item.fields();
             packer.packStructHeader( 1, MessageTypes.MSG_RECORD );
             packer.packListHeader( fields.length );
-            for ( int i = 0; i < fields.length; i++ )
+            for ( Object field : fields )
             {
-                packValue( fields[i] );
+                packValue( field );
             }
             onMessageComplete.run();
         }
@@ -183,17 +183,17 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public void handleFailureMessage( Neo4jError cause )
+        public void handleFailureMessage( Status status, String message )
                 throws IOException
         {
             packer.packStructHeader( 1, MessageTypes.MSG_FAILURE );
             packer.packMapHeader( 2 );
 
             packer.pack( "code" );
-            packer.pack( cause.status().code().serialize() );
+            packer.pack( status.code().serialize() );
 
             packer.pack( "message" );
-            packer.pack( cause.message() );
+            packer.pack( message );
             onMessageComplete.run();
         }
 
@@ -502,7 +502,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                          (String) map.get( "message" ) :
                          "<No message supplied>";
 
-            output.handleFailureMessage( new Neo4jError( codeFromString( codeStr ), msg ) );
+            output.handleFailureMessage( codeFromString( codeStr ), msg );
         }
 
         private <E extends Exception> void unpackIgnoredMessage( MessageHandler<E> output )

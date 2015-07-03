@@ -37,6 +37,7 @@ import org.neo4j.ndp.messaging.v1.message.Message;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.packstream.BufferedChannelOutput;
 import org.neo4j.packstream.PackStream;
+import org.neo4j.udc.UsageData;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.junit.Assert.assertEquals;
@@ -116,7 +117,7 @@ public class FragmentedMessageDeliveryTest
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         when(ctx.channel()).thenReturn( ch );
 
-        SocketProtocolV1 protocol = new SocketProtocolV1( NullLogService.getInstance(), sess, ch );
+        SocketProtocolV1 protocol = new SocketProtocolV1( NullLogService.getInstance(), sess, ch, new UsageData() );
 
         // When data arrives split up according to the current permutation
         for ( ByteBuf fragment : fragments )

@@ -81,7 +81,7 @@ public class Neo4jWithSocket implements TestRule
                     @Override
                     public SocketProtocol apply( Channel channel )
                     {
-                        return new SocketProtocolV1( logging, sessions.newSession(), channel );
+                        return new SocketProtocolV1( logging, sessions.newSession(), channel, usageData );
                     }
                 } );
 

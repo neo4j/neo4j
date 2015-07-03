@@ -55,6 +55,10 @@ public class CypherStatementRunner implements StatementRunner
             ctx.rollbackTransaction();
             return RecordStream.EMPTY;
         }
+        else if ( statement.equalsIgnoreCase( "foobar" ) )
+        {
+            throw new RuntimeException("Foobar occurred");
+        }
         else
         {
             if ( !ctx.hasTransaction() )

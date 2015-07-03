@@ -19,52 +19,57 @@
  */
 package org.neo4j.ndp.messaging.v1.message;
 
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.ndp.messaging.v1.MessageHandler;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
 
 public class FailureMessage implements Message
 {
-    private final Neo4jError cause;
+    private final Status status;
+    private final String message;
 
-    public FailureMessage( Neo4jError cause )
+    public FailureMessage( Status status, String message )
     {
-        this.cause = cause;
+        this.status = status;
+        this.message = message;
     }
 
-    public Neo4jError cause()
+    public Status status()
     {
-        return cause;
+        return status;
+    }
+
+    public String message()
+    {
+        return message;
     }
 
     @Override
     public <E extends Exception> void dispatch( MessageHandler<E> consumer ) throws E
     {
-        consumer.handleFailureMessage( cause );
+        consumer.handleFailureMessage( status, message );
     }
 
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
+        if ( this == o ) return true;
+        if ( !(o instanceof FailureMessage) ) return false;
 
         FailureMessage that = (FailureMessage) o;
 
-        return !(cause != null ? !cause.equals( that.cause ) : that.cause != null);
+        if ( message != null ? !message.equals( that.message ) : that.message != null )
+            return false;
+        if ( status != null ? !status.equals( that.status ) : that.status != null ) return false;
 
+        return true;
     }
 
     @Override
     public int hashCode()
     {
-        int result = 1;
-        result = 31 * result + (cause != null ? cause.hashCode() : 0);
+        int result = status != null ? status.hashCode() : 0;
+        result = 31 * result + (message != null ? message.hashCode() : 0);
         return result;
     }
 
@@ -72,7 +77,9 @@ public class FailureMessage implements Message
     public String toString()
     {
         return "FailureMessage{" +
-               ", cause=" + cause +
-               '}';
+                "status=" + status +
+                ", message='" + message + '\'' +
+                '}';
     }
+
 }

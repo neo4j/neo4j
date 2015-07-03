@@ -65,7 +65,7 @@ public class MessageFormatTest
         assertSerializes( new PullAllMessage() );
         assertSerializes( new RecordMessage( record( 1l, "b", 2l ) ) );
         assertSerializes( new SuccessMessage( new HashMap<String,Object>() ) );
-        assertSerializes( new FailureMessage( new Neo4jError( Status.General.UnknownFailure, "Err" ) ) );
+        assertSerializes( new FailureMessage( Status.General.UnknownFailure, "Err" ) );
         assertSerializes( new IgnoredMessage() );
         assertSerializes( new AcknowledgeFailureMessage() );
         assertSerializes( new InitializeMessage("MyClient/1.0") );

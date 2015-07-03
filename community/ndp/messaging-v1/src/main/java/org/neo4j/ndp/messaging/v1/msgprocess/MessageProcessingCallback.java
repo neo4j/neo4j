@@ -30,6 +30,27 @@ import org.neo4j.ndp.runtime.internal.Neo4jError;
 
 public class MessageProcessingCallback<T> extends Session.Callback.Adapter<T,Void>
 {
+
+    // TODO: move this somewhere more sane (when modules are unified)
+    public static void publishError( MessageHandler<IOException> out, Neo4jError error )
+            throws IOException
+    {
+        if ( error.status().code().classification().publishable() )
+        {
+            // If publishable, we forward the message as-is to the user.
+            out.handleFailureMessage( error.status(), error.message() );
+        }
+        else
+        {
+            // If not publishable, we only return an error reference to the user. This must
+            // be cross-referenced with the log files for full error detail. This feature
+            // exists to improve security so that sensitive information is not leaked.
+            out.handleFailureMessage( error.status(), String.format(
+                    "An unexpected failure occurred, see details in the database " +
+                    "logs, reference number %s.", error.reference() ) );
+        }
+    }
+
     protected final Log log;
 
     protected MessageHandler<IOException> out;
@@ -76,7 +97,7 @@ public class MessageProcessingCallback<T> extends Session.Callback.Adapter<T,Voi
             }
             else if ( error != null )
             {
-                out.handleFailureMessage( error );
+                publishError( out, error );
             }
             else
             {

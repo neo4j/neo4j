@@ -82,9 +82,9 @@ public class TransportErrorIT
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves(
-                msgFailure( new Neo4jError( Status.Request.InvalidFormat,
+                msgFailure( Status.Request.InvalidFormat,
                         "Unable to deserialize request, message boundary found before message ended. This indicates " +
-                        "a serialization or framing problem with your client driver." ) ) ) );
+                        "a serialization or framing problem with your client driver." ) ) );
     }
 
     @Test
@@ -109,9 +109,9 @@ public class TransportErrorIT
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves(
-                msgFailure( new Neo4jError( Status.Request.InvalidFormat,
+                msgFailure( Status.Request.InvalidFormat,
                         "Unable to read MSG_RUN message. Error was: Wrong type received. Expected MAP, received: " +
-                        "INTEGER (0xff)." ) ) ) );
+                        "INTEGER (0xff)." ) ) );
     }
 
     @Test
@@ -135,7 +135,7 @@ public class TransportErrorIT
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves(
-                msgFailure( new Neo4jError( Status.Request.Invalid, "0x66 is not a valid message type." ) ) ) );
+                msgFailure( Status.Request.Invalid, "0x66 is not a valid message type." ) ) );
     }
 
     @Test
@@ -160,9 +160,9 @@ public class TransportErrorIT
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves(
-                msgFailure( new Neo4jError( Status.Request.InvalidFormat,
+                msgFailure(  Status.Request.InvalidFormat,
                         "Unable to read MSG_RUN message. Error was: Wrong type received. Expected TEXT, received: " +
-                        "RESERVED (0xff)." ) ) ) );
+                        "RESERVED (0xff)." ) ) );
     }
 
     @Before
