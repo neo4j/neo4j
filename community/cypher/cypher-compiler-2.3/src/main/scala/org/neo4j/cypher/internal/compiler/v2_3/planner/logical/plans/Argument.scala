@@ -30,6 +30,9 @@ case class Argument(argumentIds: Set[IdName])(val solved: PlannerQuery with Card
 
   def availableSymbols = argumentIds
 
+
+  override def copyPlan(): LogicalPlan = this.copy(argumentIds)(solved)(typeInfo).asInstanceOf[this.type]
+
   override def dup(children: Seq[AnyRef]) = children.size match {
     case 1 =>
       copy(children.head.asInstanceOf[Set[IdName]])(solved)(typeInfo).asInstanceOf[this.type]

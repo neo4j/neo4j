@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryExceptio
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, PlannerName, TaskCloser}
 import org.neo4j.function.Supplier
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.NodeManager

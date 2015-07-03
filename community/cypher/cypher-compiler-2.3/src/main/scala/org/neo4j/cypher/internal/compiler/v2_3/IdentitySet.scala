@@ -17,20 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter
+package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_3.{Rewriter, repeat}
+object IdentitySet {
+  private val PRESENT = new Object
+  def empty[T] = IdentitySet(IdentityMap.empty[T, AnyRef])
+}
 
-case class LogicalPlanRewriter(rewriterSequencer: String => RewriterStepSequencer) extends Rewriter {
-  val instance: Rewriter = repeat(rewriterSequencer("LogicalPlanRewriter")(
-    fuseSelections,
-    unnestApply,
-    simplifyEquality,
-    unnestOptional,
-    predicateRemovalThroughJoins,
-    removeIdenticalPlans
-  ).rewriter)
+case class IdentitySet[T] private (idSet: IdentityMap[T, AnyRef] = IdentityMap.empty)
+  extends Set[T] with ((T) => Boolean) {
+  self =>
 
-  def apply(that: AnyRef) = instance(that)
+  override def apply(elem: T): Boolean = contains(elem)
+
+  override def contains(elem: T) = idSet.contains(elem)
+
+  override def +(elem: T) = IdentitySet(idSet + ((elem, IdentitySet.PRESENT)))
+
+  override def -(elem: T) = IdentitySet(idSet - elem)
+
+  override def iterator = idSet.iterator.map(_._1)
+
+  override def stringPrefix: String = "IdentitySet"
 }
