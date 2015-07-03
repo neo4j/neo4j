@@ -31,7 +31,9 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -95,6 +97,9 @@ public class DatabaseActionsTest
     private static Database database;
     private static GraphDatabaseAPI graph;
     private static DatabaseActions actions;
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     @BeforeClass
     public static void createDb() throws IOException
@@ -1335,20 +1340,24 @@ public class DatabaseActionsTest
                 asSet( graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey ) ).contains( index ) );
     }
 
+
     @Test
-    public void shouldDropPropertyExistencesConstraint() throws Exception
+    public void dropNonExistentConstraint() throws Exception
     {
         // GIVEN
         String labelName = "user", propertyKey = "login";
-        ConstraintDefinition index = graphdbHelper.createPropertyExistenceConstraint( labelName,
+        ConstraintDefinition constraint = graphdbHelper.createPropertyUniquenessConstraint( labelName,
                 asList( propertyKey ) );
 
-        // WHEN
-        actions.dropPropertyExistenceConstraint( labelName, asList( propertyKey ) );
+        // EXPECT
+        expectedException.expect( ConstraintViolationException.class );
 
-        // THEN
-        assertFalse( "Constraint should have been dropped",
-                asSet( graphdbHelper.getPropertyExistenceConstraints( labelName, propertyKey ) ).contains( index ) );
+        // WHEN
+        try ( Transaction tx = graph.beginTx() )
+        {
+            constraint.drop();
+            constraint.drop();
+        }
     }
 
     @Test
