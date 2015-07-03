@@ -987,16 +987,11 @@ public class RestfulGraphDatabaseTest
         Response response = service.getNodeIndexRoot();
         assertEquals( 200, response.getStatus() );
 
-        Transaction transaction = graph.beginTx();
-        try
+        try ( Transaction transaction = graph.beginTx() )
         {
             Map<String, Object> resultAsMap = output.getResultAsMap();
             assertThat( resultAsMap.size(), is( numberOfAutoIndexesWhichCouldNotBeDeletedAtTestSetup + 1 ) );
             assertThat( resultAsMap, hasKey( indexName ) );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -1015,16 +1010,11 @@ public class RestfulGraphDatabaseTest
         Response response = service.getRelationshipIndexRoot();
         assertEquals( 200, response.getStatus() );
 
-        Transaction transaction = graph.beginTx();
-        try
+        try ( Transaction transaction = graph.beginTx() )
         {
             Map<String, Object> resultAsMap = output.getResultAsMap();
             assertThat( resultAsMap.size(), is( 1 ) );
             assertThat( resultAsMap, hasKey( indexName ) );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -1745,16 +1735,11 @@ public class RestfulGraphDatabaseTest
     {
         long startNode = helper.createNode();
 
-        Transaction transaction = graph.beginTx();
-        try
+        try ( Transaction transaction = graph.beginTx() )
         {
             Response response = service.traverse( startNode, TraverserReturnType.node, "" );
             assertEquals( Status.OK.getStatusCode(), response.getStatus() );
             assertThat( output.getResultAsList().size(), is( 0 ) );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -1858,15 +1843,10 @@ public class RestfulGraphDatabaseTest
         Response response = service.singlePath( n1, payload );
 
         assertThat( response.getStatus(), is( 200 ) );
-        Transaction transaction = graph.beginTx();
-        try
+        try ( Transaction transaction = graph.beginTx() )
         {
             Map<String, Object> resultAsMap = output.getResultAsMap();
             assertThat( (Integer) resultAsMap.get( "length" ), is( 1 ) );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -1883,15 +1863,10 @@ public class RestfulGraphDatabaseTest
         Response response = service.allPaths( n1, payload );
 
         assertThat( response.getStatus(), is( 200 ) );
-        Transaction transaction = graph.beginTx();
-        try
+        try ( Transaction transaction = graph.beginTx() )
         {
             List<Object> resultAsList = output.getResultAsList();
             assertThat( resultAsList.size(), is( 1 ) );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -1991,16 +1966,11 @@ public class RestfulGraphDatabaseTest
 
         service.createNode( "{\"myAutoIndexedProperty\" : \"value\"}" );
 
-        Transaction transaction = graph.beginTx();
-        try
+        try ( Transaction transaction = graph.beginTx() )
         {
             IndexHits<Node> indexResult = database.getGraph().index().getNodeAutoIndexer().getAutoIndex().get(
                     "myAutoIndexedProperty", "value" );
             assertEquals( 1, indexResult.size() );
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 

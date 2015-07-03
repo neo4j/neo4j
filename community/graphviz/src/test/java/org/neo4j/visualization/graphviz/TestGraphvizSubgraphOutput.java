@@ -49,8 +49,7 @@ public class TestGraphvizSubgraphOutput
     public void testSimpleGraph() throws Exception
     {
         GraphDatabaseService neo = dbRule.getGraphDatabaseService();
-        Transaction tx = neo.beginTx();
-        try
+        try ( Transaction tx = neo.beginTx() )
         {
             final Node emil = neo.createNode();
             emil.setProperty( "name", "Emil Eifrém" );
@@ -99,10 +98,6 @@ public class TestGraphvizSubgraphOutput
 
             writer.emit( out, walker );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

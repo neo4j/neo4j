@@ -58,15 +58,13 @@ public class StreamingJsonFormatTest
     public void canFormatNode() throws Exception
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        Transaction transaction = db.beginTx();
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
             final Node n = db.createNode();
             json.assemble( new NodeRepresentation( n ) );
         }
         finally
         {
-            transaction.finish();
             db.shutdown();
         }
         assertTrue( stream.toString().contains( "\"self\" : \"http://localhost/node/0\"," ) );

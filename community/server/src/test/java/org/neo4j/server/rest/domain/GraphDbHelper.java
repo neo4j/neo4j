@@ -73,8 +73,7 @@ public class GraphDbHelper
 
     public Map<String, Object> getNodeProperties( long nodeId )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try (Transaction tx = database.getGraph().beginTx())
         {
             Node node = database.getGraph().getNodeById( nodeId );
             Map<String, Object> allProperties = new HashMap<>();
@@ -85,16 +84,11 @@ public class GraphDbHelper
             tx.success();
             return allProperties;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public void setNodeProperties( long nodeId, Map<String, Object> properties )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             Node node = database.getGraph().getNodeById( nodeId );
             for ( Map.Entry<String, Object> propertyEntry : properties.entrySet() )
@@ -103,31 +97,21 @@ public class GraphDbHelper
             }
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public long createNode( Label... labels )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             Node node = database.getGraph().createNode( labels );
             tx.success();
             return node.getId();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public long createNode( Map<String, Object> properties, Label... labels )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             Node node = database.getGraph().createNode( labels );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
@@ -137,31 +121,21 @@ public class GraphDbHelper
             tx.success();
             return node.getId();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public void deleteNode( long id )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try (Transaction tx = database.getGraph().beginTx())
         {
             Node node = database.getGraph().getNodeById( id );
             node.delete();
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public long createRelationship( String type, long startNodeId, long endNodeId )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try (Transaction tx = database.getGraph().beginTx())
         {
             Node startNode = database.getGraph().getNodeById( startNodeId );
             Node endNode = database.getGraph().getNodeById( endNodeId );
@@ -170,16 +144,11 @@ public class GraphDbHelper
             tx.success();
             return relationship.getId();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public long createRelationship( String type )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             Node startNode = database.getGraph().createNode();
             Node endNode = database.getGraph().createNode();
@@ -188,17 +157,12 @@ public class GraphDbHelper
             tx.success();
             return relationship.getId();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public void setRelationshipProperties( long relationshipId, Map<String, Object> properties )
 
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             Relationship relationship = database.getGraph().getRelationshipById( relationshipId );
             for ( Map.Entry<String, Object> propertyEntry : properties.entrySet() )
@@ -207,16 +171,11 @@ public class GraphDbHelper
             }
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public Map<String, Object> getRelationshipProperties( long relationshipId )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             Relationship relationship = database.getGraph().getRelationshipById( relationshipId );
             Map<String, Object> allProperties = new HashMap<>();
@@ -227,45 +186,30 @@ public class GraphDbHelper
             tx.success();
             return allProperties;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public Relationship getRelationship( long relationshipId )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try (Transaction tx = database.getGraph().beginTx())
         {
             Relationship relationship = database.getGraph().getRelationshipById( relationshipId );
             tx.success();
             return relationship;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public void addNodeToIndex( String indexName, String key, Object value, long id )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try (Transaction tx = database.getGraph().beginTx())
         {
             database.getGraph().index().forNodes( indexName ).add( database.getGraph().getNodeById( id ), key, value );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
     public Collection<Long> queryIndexedNodes( String indexName, String key, Object value )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             Collection<Long> result = new ArrayList<>();
             for ( Node node : database.getGraph().index().forNodes( indexName ).query( key, value ) )
@@ -275,16 +219,11 @@ public class GraphDbHelper
             tx.success();
             return result;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public Collection<Long> getIndexedNodes( String indexName, String key, Object value )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             Collection<Long> result = new ArrayList<>();
             for ( Node node : database.getGraph().index().forNodes( indexName ).get( key, value ) )
@@ -294,16 +233,11 @@ public class GraphDbHelper
             tx.success();
             return result;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public Collection<Long> getIndexedRelationships( String indexName, String key, Object value )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             Collection<Long> result = new ArrayList<>();
             for ( Relationship relationship : database.getGraph().index().forRelationships( indexName ).get( key, value ) )
@@ -313,89 +247,60 @@ public class GraphDbHelper
             tx.success();
             return result;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public void addRelationshipToIndex( String indexName, String key, String value, long relationshipId )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             Index<Relationship> index = database.getGraph().index().forRelationships( indexName );
             index.add( database.getGraph().getRelationshipById( relationshipId ), key, value );
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
+
     }
 
     public String[] getNodeIndexes()
     {
-        Transaction transaction = database.getGraph().beginTx();
-        try
+        try (Transaction transaction = database.getGraph().beginTx())
         {
             return database.getGraph().index().nodeIndexNames();
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
     public Index<Node> createNodeFullTextIndex( String named )
     {
-        Transaction transaction = database.getGraph().beginTx();
-        try
+        try ( Transaction transaction = database.getGraph().beginTx() )
         {
             Index<Node> index = database.getGraph().index().forNodes( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
             transaction.success();
             return index;
         }
-        finally
-        {
-            transaction.finish();
-        }
     }
 
     public Index<Node> createNodeIndex( String named )
     {
-        Transaction transaction = database.getGraph().beginTx();
-        try
+        try ( Transaction transaction = database.getGraph().beginTx() )
         {
             Index<Node> nodeIndex = database.getGraph().index()
                     .forNodes( named );
             transaction.success();
             return nodeIndex;
         }
-        finally
-        {
-            transaction.finish();
-        }
     }
 
     public String[] getRelationshipIndexes()
     {
-        Transaction transaction = database.getGraph().beginTx();
-        try
+        try (Transaction transaction = database.getGraph().beginTx())
         {
             return database.getGraph().index()
                     .relationshipIndexNames();
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
     public long getFirstNode()
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try (Transaction tx = database.getGraph().beginTx())
         {
             try
             {
@@ -411,25 +316,16 @@ public class GraphDbHelper
                 return newNode.getId();
             }
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public Index<Relationship> createRelationshipIndex( String named )
     {
-        Transaction transaction = database.getGraph().beginTx();
-        try
+        try (Transaction transaction = database.getGraph().beginTx())
         {
             RelationshipIndex relationshipIndex = database.getGraph().index()
                     .forRelationships( named );
             transaction.success();
             return relationshipIndex;
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -447,15 +343,10 @@ public class GraphDbHelper
 
     public void addLabelToNode( long node, String labelName )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             database.getGraph().getNodeById( node ).addLabel( label( labelName ) );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -466,23 +357,17 @@ public class GraphDbHelper
 
     public IndexDefinition createSchemaIndex( String labelName, String propertyKey )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             IndexDefinition index = database.getGraph().schema().indexFor( label( labelName ) ).on( propertyKey ).create();
             tx.success();
             return index;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public Iterable<ConstraintDefinition> getPropertyUniquenessConstraints( String labelName, final String propertyKey )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             Iterable<ConstraintDefinition> definitions = Iterables.filter( new Predicate<ConstraintDefinition>()
             {
@@ -505,16 +390,11 @@ public class GraphDbHelper
             tx.success();
             return definitions;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public Iterable<ConstraintDefinition> getPropertyExistenceConstraints( String labelName, final String propertyKey )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             Iterable<ConstraintDefinition> definitions = Iterables.filter( new Predicate<ConstraintDefinition>()
             {
@@ -537,16 +417,11 @@ public class GraphDbHelper
             tx.success();
             return definitions;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public ConstraintDefinition createPropertyUniquenessConstraint( String labelName, List<String> propertyKeys )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             ConstraintCreator creator = database.getGraph().schema().constraintFor( label( labelName ) );
             for ( String propertyKey : propertyKeys )
@@ -557,16 +432,11 @@ public class GraphDbHelper
             tx.success();
             return result;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public ConstraintDefinition createPropertyExistenceConstraint( String labelName, List<String> propertyKeys )
     {
-        Transaction tx = database.getGraph().beginTx();
-        try
+        try (Transaction tx = database.getGraph().beginTx())
         {
             ConstraintCreator creator = database.getGraph().schema().constraintFor( label( labelName ) );
             for ( String propertyKey : propertyKeys )
@@ -577,23 +447,13 @@ public class GraphDbHelper
             tx.success();
             return result;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public long getLabelCount( long nodeId )
     {
-        Transaction transaction = database.getGraph().beginTx();
-
-        try
+        try (Transaction transaction = database.getGraph().beginTx())
         {
             return count( database.getGraph().getNodeById( nodeId ).getLabels());
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 }

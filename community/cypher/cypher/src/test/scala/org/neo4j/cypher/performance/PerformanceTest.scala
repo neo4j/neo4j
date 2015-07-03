@@ -60,7 +60,7 @@ class PerformanceTest extends CypherFunSuite {
         })
       })
       tx.success()
-      tx.finish()
+      tx.close()
       a
     })
 

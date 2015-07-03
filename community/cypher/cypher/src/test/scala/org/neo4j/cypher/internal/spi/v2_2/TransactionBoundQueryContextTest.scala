@@ -89,7 +89,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     2 should equal (iterable.size)
 
     tx.success()
-    tx.finish()
+    tx.close()
   }
 
   private def createMiniGraph(relTypeName: String): Node = {
@@ -105,6 +105,6 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
       tx.success()
       node
     }
-    finally { tx.finish() }
+    finally { tx.close() }
   }
 }

@@ -47,8 +47,7 @@ public class Inserter
 				{
 					while ( true )
 					{
-						Transaction tx = db.beginTx();
-						try
+						try ( Transaction tx = db.beginTx() )
 						{
 							for ( int i = 0; i < 100; i++ )
 							{
@@ -61,10 +60,6 @@ public class Inserter
 							}
 							tx.success();
 						}
-						finally
-						{
-							tx.finish();
-						}
 					}
 				}
 			}.start();
@@ -74,16 +69,11 @@ public class Inserter
 
     private static Index<Node> getIndex( GraphDatabaseService db )
     {
-        Transaction transaction = db.beginTx();
-        try
-        {
+		try ( Transaction transaction = db.beginTx() )
+		{
             Index<Node> index = db.index().forNodes( "myIndex" );
             transaction.success();
             return index;
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 }

@@ -214,7 +214,7 @@ public class TestMatchingOfCircularPattern
     @After
     public void verifyCount()
     {
-        tx.finish();
+        tx.close();
         tx = null;
         assertEquals( EXPECTED_VISIBLE_MESSAGE_COUNT, count );
     }
@@ -273,15 +273,10 @@ public class TestMatchingOfCircularPattern
         String storeDir = TargetDirectory.forTest(
                 TestMatchingOfCircularPattern.class ).makeGraphDbDir().getAbsolutePath();
         graphdb = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-        Transaction tx = graphdb.beginTx();
-        try
+        try ( Transaction tx = graphdb.beginTx() )
         {
             setupGraph();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 

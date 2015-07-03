@@ -63,16 +63,11 @@ public class DummyThirdPartyWebService
     @Produces( MediaType.TEXT_PLAIN )
     public Response countNodes( @Context GraphDatabaseService db )
     {
-        Transaction transaction = db.beginTx();
-        try
+        try (Transaction transaction = db.beginTx())
         {
             return Response.ok()
                     .entity( String.valueOf( countNodesIn( db ) ) )
                     .build();
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 

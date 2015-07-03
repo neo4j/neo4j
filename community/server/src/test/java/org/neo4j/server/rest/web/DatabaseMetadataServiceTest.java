@@ -43,25 +43,27 @@ public class DatabaseMetadataServiceTest
     public void shouldAdvertiseRelationshipTypesThatCurrentlyExistInTheDatabase() throws Throwable
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        node.createRelationshipTo( db.createNode(), withName( "a" ) );
-        node.createRelationshipTo( db.createNode(), withName( "b" ) );
-        node.createRelationshipTo( db.createNode(), withName( "c" ) );
-        tx.success();
-        tx.finish();
-        
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.createRelationshipTo( db.createNode(), withName( "a" ) );
+            node.createRelationshipTo( db.createNode(), withName( "b" ) );
+            node.createRelationshipTo( db.createNode(), withName( "c" ) );
+            tx.success();
+        }
+
         Database database = new WrappedDatabase( db );
         DatabaseMetadataService service = new DatabaseMetadataService( database );
 
-        tx = db.beginTx();
-        Response response = service.getRelationshipTypes();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Response response = service.getRelationshipTypes();
 
-        assertEquals( 200, response.getStatus() );
-        List<Map<String, Object>> jsonList = JsonHelper.jsonToList( response.getEntity()
-                .toString() );
-        assertEquals( 3, jsonList.size() );
-        tx.finish();
+            assertEquals( 200, response.getStatus() );
+            List<Map<String,Object>> jsonList = JsonHelper.jsonToList( response.getEntity()
+                    .toString() );
+            assertEquals( 3, jsonList.size() );
+        }
         database.stop();
     }
 }

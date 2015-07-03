@@ -57,10 +57,11 @@ public class NodeIdsInUseSampleableTest
 
     private void createNode( GraphDatabaseAPI db )
     {
-        Transaction tx = db.beginTx();
-        db.createNode();
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
     }
 
     @Before

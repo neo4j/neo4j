@@ -193,8 +193,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
                         }
                         else
                         {
-                            Transaction tx = graphDb.beginTx();
-                            try
+                            try ( Transaction tx = graphDb.beginTx() )
                             {
                                 for ( int ii = 0; ii < 20; ii++ )
                                 {
@@ -202,10 +201,6 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
                                     index.add( node, "key", "value" + ii );
                                 }
                                 tx.success();
-                            }
-                            finally
-                            {
-                                tx.finish();
                             }
                         }
                     }
@@ -244,8 +239,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
                         for ( int i = 0; i < count; i+=group )
                         {
                             if ( halt.get() ) break;
-                            Transaction tx = graphDb.beginTx();
-                            try
+                            try ( Transaction tx = graphDb.beginTx() )
                             {
                                 for ( int ii = 0; ii < group; ii++ )
                                 {
@@ -254,10 +248,6 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
                                     index.add( node, "key", "value" + id.getAndIncrement() );
                                 }
                                 tx.success();
-                            }
-                            finally
-                            {
-                                tx.finish();
                             }
                             if ( i%100 == 0 ) System.out.println( threadId + ": " + i );
                         }

@@ -409,7 +409,7 @@ return distinct center""")
     } catch {
       case _: Throwable => tx.failure()
     }
-    finally tx.finish()
+    finally tx.close()
   }
 
   test("create_two_rels_in_one_command_should_work") {

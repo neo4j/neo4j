@@ -83,7 +83,7 @@ public abstract class Neo4jAlgoTestCase
     {
         graph.clear();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     public static void deleteFileOrDirectory( File file )
