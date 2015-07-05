@@ -165,7 +165,6 @@ public class SingleFilePageSwapper implements PageSwapper
         try
         {
             ByteBuffer bufferProxy = proxy( address, filePageSize );
-            bufferProxy.position( 0 );
             int read;
             do
             {
@@ -198,7 +197,6 @@ public class SingleFilePageSwapper implements PageSwapper
         try
         {
             ByteBuffer bufferProxy = proxy( page.address(), filePageSize );
-            bufferProxy.position( 0 );
             channel.writeAll( bufferProxy, fileOffset );
         }
         catch ( IOException e )
