@@ -26,6 +26,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.util.Charsets;
 
 import static org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
 
@@ -48,7 +49,7 @@ public class StoreVersionCheck
                 return new Result( Outcome.storeVersionNotFound, null, storeFilename );
             }
 
-            String actualVersion = readVersion( file, expectedVersion.length() );
+            String actualVersion = readVersion( file, expectedVersion );
             if ( actualVersion == null )
             {
                 return new Result( Outcome.storeVersionNotFound, null, storeFilename );
@@ -82,27 +83,53 @@ public class StoreVersionCheck
         return expectedVersion.substring( 0, spaceIndex );
     }
 
-    private String readVersion( PagedFile file, int charsToRead ) throws IOException
+    private String readVersion( PagedFile pagedFile, String expectedVersion ) throws IOException
     {
+        byte[] encodedExpectedVersion = UTF8.encode( expectedVersion );
+        int maximumNumberOfPagesVersionSpans = encodedExpectedVersion.length / pagedFile.pageSize() + 2;
         String version = null;
-        try ( PageCursor cursor = file.io( file.getLastPageId(), PagedFile.PF_SHARED_LOCK ) )
+        try ( PageCursor pageCursor = pagedFile.io(
+                Math.max( pagedFile.getLastPageId() + 1 - maximumNumberOfPagesVersionSpans, 0 ),
+                PagedFile.PF_SHARED_LOCK ) )
         {
-            if ( cursor.next() )
+            int currentPage = 0;
+            byte[] allData = new byte[pagedFile.pageSize() * maximumNumberOfPagesVersionSpans];
+            while ( pageCursor.next() )
             {
-                byte[] data = new byte[cursor.getCurrentPageSize()];
+                byte[] data = new byte[pagedFile.pageSize()];
                 do
                 {
-                    cursor.getBytes( data );
+                    pageCursor.getBytes( data );
                 }
-                while ( cursor.shouldRetry() );
-                String pageContents = UTF8.decode( data ).trim();
-                if ( pageContents.length() >= charsToRead )
-                {
-                    version = pageContents.substring( pageContents.length() - charsToRead );
-                }
+                while ( pageCursor.shouldRetry() );
+                System.arraycopy( data, 0, allData, currentPage * data.length, data.length );
+                currentPage++;
+            }
+            int offset = findPattern( allData, UTF8.encode( expectedVersion.split( " " )[0] ) );
+            if ( offset != -1 )
+            {
+                version = new String( allData, offset, encodedExpectedVersion.length, Charsets.UTF_8 );
             }
         }
         return version;
+    }
+
+    private int findPattern( byte[] src, byte[] sought )
+    {
+        for ( int i = src.length - sought.length; i >= 0; i-- )
+        {
+            int pos = 0;
+            while ( pos < sought.length && src[i + pos] == sought[pos] )
+            {
+                pos++;
+            }
+            if ( pos == sought.length )
+            {
+                return i;
+            }
+
+        }
+        return -1;
     }
 
     public static class Result
