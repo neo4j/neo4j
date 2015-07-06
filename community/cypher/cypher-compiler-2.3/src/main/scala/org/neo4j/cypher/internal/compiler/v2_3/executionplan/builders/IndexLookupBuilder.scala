@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression,
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{MatchText, ParsedLikePattern, WildcardLikePatternOp}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.PipeMonitor
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 
 class IndexLookupBuilder extends PlanBuilder {

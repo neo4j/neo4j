@@ -164,20 +164,30 @@ sealed trait InequalityExpression extends Expression with BinaryOperatorExpressi
     Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
+
+  def swap: InequalityExpression
 }
 
 final case class LessThan(lhs: Expression, rhs: Expression)(val position: InputPosition) extends InequalityExpression {
   override def canonicalOperatorSymbol = "<"
+
+  def swap: InequalityExpression = GreaterThan(rhs, lhs)(position)
 }
 
 final case class LessThanOrEqual(lhs: Expression, rhs: Expression)(val position: InputPosition) extends InequalityExpression {
   override def canonicalOperatorSymbol = "<="
+
+  def swap: InequalityExpression = GreaterThanOrEqual(rhs, lhs)(position)
 }
 
 final case class GreaterThan(lhs: Expression, rhs: Expression)(val position: InputPosition) extends InequalityExpression {
   override def canonicalOperatorSymbol = ">"
+
+  def swap: InequalityExpression = LessThan(rhs, lhs)(position)
 }
 
 final case class GreaterThanOrEqual(lhs: Expression, rhs: Expression)(val position: InputPosition) extends InequalityExpression {
   override def canonicalOperatorSymbol = ">="
+
+  def swap: InequalityExpression = LessThanOrEqual(rhs, lhs)(position)
 }

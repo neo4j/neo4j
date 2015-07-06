@@ -40,6 +40,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def size = patternRelationships.size
 
+  def mapSelections(f: Selections => Selections): QueryGraph =
+    copy(selections = f(selections), optionalMatches = optionalMatches.map(_.mapSelections(f)))
+
   def addPatternNodes(nodes: IdName*): QueryGraph = copy(patternNodes = patternNodes ++ nodes)
 
   def addPatternRelationship(rel: PatternRelationship): QueryGraph =

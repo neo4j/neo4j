@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.HalfOpenSeekRange
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionContext, InternalException}
+import org.neo4j.cypher.internal.compiler.v2_3.{InequalitySeekRange, ExecutionContext, InternalException}
 
-case class ValueSeekRange(range: HalfOpenSeekRange[Expression])
+case class ValueExpressionSeekRange(range: InequalitySeekRange[Expression])
   extends Expression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = throw new

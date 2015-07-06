@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 
-case class StringSeekRangeWrapper(range: SeekRange[String])(val position: InputPosition) extends Expression {
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+case class AndedPropertyInequalities(identifier: Identifier, property: Property, inequalities: NonEmptyList[InequalityExpression]) extends Expression {
+  def position = identifier.position
+
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    inequalities.map(_.semanticCheck(ctx)).reduceLeft(_ chain _)
 }
-
-case class ValueExpressionSeekRangeWrapper(range: InequalitySeekRange[Expression])(val position: InputPosition) extends Expression {
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
-}
-

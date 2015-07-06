@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality
 
 import java.math.RoundingMode
 
-import org.neo4j.cypher.internal.compiler.v2_3.LabelId
+import org.neo4j.cypher.internal.compiler.v2_3.{PrefixRange, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, _}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
@@ -56,9 +56,9 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case AsStringRangeSeekable(seekable@StringRangeSeekable(PrefixRange(prefix), _, _, _)) =>
       calculateSelectivityForPrefixRangeSeekable(seekable.name, selections, seekable.propertyKey, prefix)
 
-    // WHERE x.prop <, <=, >=, > on index
+    // WHERE x.prop <, <=, >=, > that could benefit from an index
     case AsValueRangeSeekable(seekable@ValueRangeSeekable(_, _, _)) =>
-      calculateSelectivityForValueRangeSeekable(seekable.name, selections, seekable.propertyKeyName)
+      calculateSelectivityForValueRangeSeekable(seekable, selections)
 
     // WHERE has(x.prop)
     case AsPropertyScannable(scannable) =>
@@ -148,11 +148,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     Selectivity(equality.add(slack).doubleValue())
   }
 
-  private def calculateSelectivityForValueRangeSeekable(identifier: String,
-                                                   selections: Selections,
-                                                   propertyKey: PropertyKeyName)
-                                                  (implicit semanticTable: SemanticTable): Selectivity = {
-    val equality = java.math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(identifier, None, selections, propertyKey).factor)
+  private def calculateSelectivityForValueRangeSeekable(seekable: ValueRangeSeekable,
+                                                        selections: Selections)
+                                                       (implicit semanticTable: SemanticTable): Selectivity = {
+    val name = seekable.ident.name
+    val propertyKeyName = seekable.expr.property.propertyKey
+    val equality = java.math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(name, None, selections, propertyKeyName).factor)
     val factor = java.math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)
     val slack = BigDecimalCombiner.negate(equality).multiply(factor)
     Selectivity(equality.add(slack).doubleValue())

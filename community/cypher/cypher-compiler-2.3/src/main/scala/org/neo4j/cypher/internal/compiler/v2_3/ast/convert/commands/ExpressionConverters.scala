@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConverters._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression, ProjectedPath, ValueSeekRange}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression, ProjectedPath, ValueExpressionSeekRange}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{Predicate => CommandPredicate, expressions => commandexpressions, values => commandvalues}
@@ -90,6 +90,7 @@ object ExpressionConverters {
       case e: ast.GetDegree => e.asCommandGetDegree
       case e: ast.StringSeekRangeWrapper => e.asCommandStringSeekRange
       case e: ast.ValueExpressionSeekRangeWrapper => e.asCommandValueSeekRange
+      case e: ast.AndedPropertyInequalities => e.asCommandAnds
       case _ =>
         throw new ThisShouldNotHappenError("cleishm", s"Unknown expression type during transformation (${expression.getClass})")
     }
@@ -113,7 +114,7 @@ object ExpressionConverters {
 
   implicit class ValueSeekRangeConverter(val original: ast.ValueExpressionSeekRangeWrapper) extends AnyVal {
     def asCommandValueSeekRange =
-      ValueSeekRange(original.range.map(_.asCommandExpression))
+      ValueExpressionSeekRange(original.range.mapBounds(_.asCommandExpression))
   }
 
   implicit class GetDegreeConverter(val original: ast.GetDegree) extends AnyVal {
@@ -473,5 +474,10 @@ object ExpressionConverters {
 
       ProjectedPath(dependencies, projector)
     }
+  }
+
+  implicit class AndedInequalitiesConverter(val e: ast.AndedPropertyInequalities) extends AnyVal {
+    def asCommandAnds: commands.Ands =
+      commands.Ands(e.inequalities.map(_.asCommandPredicate).toList)
   }
 }

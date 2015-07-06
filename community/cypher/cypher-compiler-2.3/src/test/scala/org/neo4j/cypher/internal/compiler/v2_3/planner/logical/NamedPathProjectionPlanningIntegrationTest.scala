@@ -69,13 +69,13 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
       Projection(
         Selection(
           Seq(
-            GreaterThan(
-              FunctionInvocation(FunctionName("length")_, ident("p"))_,
-              SignedDecimalIntegerLiteral("10")_
-            )_,
             Equals(
               FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, ident("p"))_)_,
               Identifier("a")_
+            )_,
+            GreaterThan(
+              FunctionInvocation(FunctionName("length")_, ident("p"))_,
+              SignedDecimalIntegerLiteral("10")_
             )_
           ),
           Projection(

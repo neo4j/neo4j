@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.compiler.v2_3.{PrefixRange, LabelId, PropertyKeyId}
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

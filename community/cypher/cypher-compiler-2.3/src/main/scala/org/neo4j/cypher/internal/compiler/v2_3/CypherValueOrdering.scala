@@ -17,16 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.ast
+package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.compiler.v2_3._
+object CypherValueOrdering extends Ordering[Any] {
 
-case class StringSeekRangeWrapper(range: SeekRange[String])(val position: InputPosition) extends Expression {
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+  override def compare(x: Any, y: Any) = (x, y) match {
+    case (null, null) => 0
+    case (null, _) => +1
+    case (_, null) => -1
+    case (l: Number, r: Number) => CypherNumberOrdering.compare(l, r)
+    case (l: String, r: String) => l.compareTo(r)
+    case (l: Character, r: String) => l.toString.compareTo(r)
+    case (l: String, r: Character) => l.compareTo(r.toString)
+    case (l: Character, r: Character) => Character.compare(l, r)
+    case _ => throw new IllegalArgumentException(s"Cannot compare '$x' with '$y'. They are incomparable.")
+  }
 }
-
-case class ValueExpressionSeekRangeWrapper(range: InequalitySeekRange[Expression])(val position: InputPosition) extends Expression {
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
-}
-

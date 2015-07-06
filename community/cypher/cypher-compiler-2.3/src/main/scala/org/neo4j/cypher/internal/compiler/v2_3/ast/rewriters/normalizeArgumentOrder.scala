@@ -22,7 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 
-case object normalizeEqualsArgumentOrder extends Rewriter {
+// TODO: Support n.prop <op> m.prop, perhaps by
+//  either killing this and just looking on both lhs and rhs all over the place or
+//  by duplicating the predicate and somehow ignoring it during cardinality calculation
+//
+case object normalizeArgumentOrder extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = topDown(instance)(that)
 
@@ -41,5 +45,14 @@ case object normalizeEqualsArgumentOrder extends Rewriter {
 
     case predicate @ Equals(lhs, rhs @ Property(_, _)) =>
       predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
+
+    case inequality: InequalityExpression =>
+      val lhsIsProperty = inequality.lhs.isInstanceOf[Property]
+      val rhsIsProperty = inequality.rhs.isInstanceOf[Property]
+      if (!lhsIsProperty && rhsIsProperty) {
+        inequality.swap
+      } else {
+        inequality
+      }
   }
 }

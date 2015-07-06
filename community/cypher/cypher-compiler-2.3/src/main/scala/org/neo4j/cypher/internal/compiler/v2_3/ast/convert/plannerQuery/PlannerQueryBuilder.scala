@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery
 
+import org.neo4j.cypher.internal.compiler.v2_3.ast.groupInequalityPredicates
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{PlannerQuery, QueryGraph, QueryHorizon}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{Selections, PlannerQuery, QueryGraph, QueryHorizon}
 
 
 case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName] = Seq.empty)
   extends CollectionSupport {
+
+  import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList._
 
   def withReturns(returns: Seq[IdName]): PlannerQueryBuilder = copy(returns = returns)
 
@@ -69,7 +72,23 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, returns: Seq[IdName]
         tail.withGraph(newTailGraph)
     }
 
-    fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
+    def groupInequalities(plannerQuery: PlannerQuery): PlannerQuery = {
+      plannerQuery
+        .updateGraph(_.mapSelections {
+          case Selections(predicates) =>
+            val optPredicates = predicates.toNonEmptyListOption
+            val newPredicates = optPredicates.map { predicates =>
+              groupInequalityPredicates(predicates).toList.toSet
+            }.getOrElse(predicates)
+            Selections(newPredicates)
+        })
+      .updateTail(groupInequalities)
+    }
+
+    val withFixedArgumentIds = fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
+    val withGroupedInequalities = groupInequalities(withFixedArgumentIds)
+
+    withGroupedInequalities
   }
 }
 

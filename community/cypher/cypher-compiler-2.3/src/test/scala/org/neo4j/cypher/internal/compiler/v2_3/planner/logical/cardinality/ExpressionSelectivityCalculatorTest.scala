@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality
 
 import org.mockito.Mockito
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Selectivity
 import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, PropertyKeyId, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
@@ -64,7 +65,30 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     result.factor should equal(0.5)
   }
 
-  test("should optimize selectivity with respect to prefix length for LIKE predicates") {
+  test("Should look at range predicates that could benefit from using an index") {
+    implicit val semanticTable = SemanticTable()
+    semanticTable.resolvedLabelIds.put("Person", LabelId(0))
+
+    val n_is_Person = Predicate(Set(IdName("n")), HasLabels(ident("n"), Seq(LabelName("Person") _)) _)
+    val n_prop: Property = Property(ident("n"), PropertyKeyName("prop")_)_
+    val n_gt_3_and_lt_4 = Predicate(Set(IdName("n")), AndedPropertyInequalities(ident("n"), n_prop, NonEmptyList(
+      GreaterThan(n_prop, SignedDecimalIntegerLiteral("3")_)_,
+      LessThan(n_prop, SignedDecimalIntegerLiteral("4")_)_
+    )))
+
+    implicit val selections = Selections(Set(n_is_Person, n_gt_3_and_lt_4))
+
+    val stats = mock[GraphStatistics]
+    Mockito.when(stats.nodesWithLabelCardinality(None)).thenReturn(2000.0)
+    Mockito.when(stats.nodesWithLabelCardinality(Some(LabelId(0)))).thenReturn(1000.0)
+    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
+
+    val result = calculator(n_gt_3_and_lt_4.expr)
+
+    result.factor should equal(0.03)
+  }
+
+  test("Should optimize selectivity with respect to prefix length for LIKE predicates") {
     implicit val semanticTable = SemanticTable()
     semanticTable.resolvedLabelIds.put("A", LabelId(0))
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(0))
