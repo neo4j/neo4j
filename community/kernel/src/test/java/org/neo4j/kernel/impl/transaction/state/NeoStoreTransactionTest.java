@@ -170,6 +170,7 @@ public class NeoStoreTransactionTest
     private LockService locks;
     private CacheAccessBackDoor cacheAccessBackDoor;
     private IndexingService mockIndexing;
+    private StoreFactory storeFactory;
 
     private static void assertRelationshipGroupDoesNotExist( NeoStoreTransactionContext txCtx, NodeRecord node,
                                                              int type )
@@ -1273,6 +1274,33 @@ public class NeoStoreTransactionTest
     }
 
     @Test
+    public void testRecordTransactionClosed() throws Exception
+    {
+        // GIVEN
+        long[] originalClosedTransaction = neoStore.getLastClosedTransaction();
+        long transactionId = originalClosedTransaction[0] + 1;
+        long version = 1l;
+        long byteOffset = 777l;
+
+        // WHEN
+        neoStore.transactionClosed( transactionId, version, byteOffset );
+        long[] closedTransactionFlags = neoStore.getLastClosedTransaction();
+
+        //EXPECT
+        assertEquals( version, closedTransactionFlags[1]);
+        assertEquals( byteOffset, closedTransactionFlags[2]);
+
+        // WHEN
+        neoStore.close();
+        neoStore = storeFactory.newNeoStore( false );
+
+        // EXPECT
+        long[] lastClosedTransactionFlags = neoStore.getLastClosedTransaction();
+        assertEquals( version, lastClosedTransactionFlags[1]);
+        assertEquals( byteOffset, lastClosedTransactionFlags[2]);
+    }
+
+    @Test
     public void shouldSortRelationshipGroups() throws Exception
     {
         // GIVEN a node with group of type 10
@@ -1403,7 +1431,7 @@ public class NeoStoreTransactionTest
 
         File storeDir = new File( "dir" );
 
-        StoreFactory storeFactory = new StoreFactory(
+        storeFactory = new StoreFactory(
                 storeDir,
                 config,
                 idGeneratorFactory,
