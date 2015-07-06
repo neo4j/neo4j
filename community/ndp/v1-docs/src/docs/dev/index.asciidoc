@@ -20,6 +20,10 @@ The diagram below illustrates a typical interaction including the order of messa
 
 image:images/typical-interaction.png[]
 
+Starting with version 1, each release of NDP is assigned a unique, integral version number.
+This number and the associated specification refers to every aspect of the protocol except for the handshake, which is unversioned.
+Driver authors should note that subsequent protocol versions are likely to be incompatible and with the exception of the handshake, there is no guarantee that any transport or serialisation code can be shared across versions.
+
 The protocol is divided into two layers - <<ndp-transport,transport>> and <<ndp-messaging,messaging>>.
 
 include::transport.asciidoc[]
