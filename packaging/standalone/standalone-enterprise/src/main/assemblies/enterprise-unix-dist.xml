@@ -68,6 +68,9 @@
       <fileMode>0755</fileMode>
       <excludes>
         <exclude>**/*.bat</exclude>
+        <exclude>**/*.psd1</exclude>
+        <exclude>**/*.psm1</exclude>
+        <exclude>**/*.ps1</exclude>
       </excludes>
       <filtered>true</filtered>
     </fileSet>
