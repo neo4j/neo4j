@@ -48,12 +48,14 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationK
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -83,7 +85,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId )
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
-        Iterator<PropertyConstraint> constraints = uniquePropertyConstraints( schemaReadOperations.constraintsGetForLabel( state, labelId ) );
+        Iterator<PropertyConstraint> constraints = uniquePropertyConstraints(
+                schemaReadOperations.constraintsGetForLabel( state, labelId ) );
         while ( constraints.hasNext() )
         {
             PropertyConstraint constraint = constraints.next();
@@ -322,11 +325,28 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public PrimitiveIntIterator nodeGetLabels( TxStateHolder txStateHolder,
+            StoreStatement storeStatement,
+            long nodeId ) throws EntityNotFoundException
+    {
+        return entityReadOperations.nodeGetLabels( txStateHolder, storeStatement, nodeId );
+    }
+
+    @Override
     public boolean nodeHasProperty( KernelStatement statement,
             long nodeId,
             int propertyKeyId ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeHasProperty( statement, nodeId, propertyKeyId );
+    }
+
+    @Override
+    public boolean nodeHasProperty( TxStateHolder txStateHolder,
+            StoreStatement storeStatement,
+            long nodeId,
+            int propertyKeyId ) throws EntityNotFoundException
+    {
+        return entityReadOperations.nodeHasProperty( txStateHolder, storeStatement, nodeId, propertyKeyId );
     }
 
     @Override
@@ -542,7 +562,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             try
             {
                 long nodeId = nodes.next();
-                if ( !nodeGetProperty( state, nodeId, propertyKeyId ).isDefined() )
+                if ( !nodeHasProperty( state, nodeId, propertyKeyId ) )
                 {
                     PropertyConstraint constraint = new MandatoryPropertyConstraint( labelId, propertyKeyId );
 

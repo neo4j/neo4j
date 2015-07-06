@@ -75,7 +75,6 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.collection.ArrayCollection;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
@@ -223,6 +222,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.startTimeMillis = clock.currentTimeMillis();
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.transactionEvent = tracer.beginTransaction();
+        this.storeStatement = storeLayer.acquireStatement();
         assert transactionEvent != null : "transactionEvent was null!";
         return this;
     }
@@ -268,11 +268,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assertTransactionOpen();
         if ( currentStatement == null )
         {
-            if (storeStatement == null)
-            {
-                storeStatement = storeLayer.acquireStatement();
-            }
-
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
                     labelScanStore, this, locks, operations, storeStatement );
         }
@@ -389,7 +384,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             PropertyConstraint constraint = constraints.next();
             if ( constraint instanceof MandatoryPropertyConstraint )
             {
-                return new MandatoryPropertyEnforcer( txStateToRecordStateVisitor, storeLayer, txState );
+                return new MandatoryPropertyEnforcer( operations.entityReadOperations(), txStateToRecordStateVisitor,
+                        this, storeLayer, storeStatement );
             }
         }
         return txStateToRecordStateVisitor;
@@ -475,6 +471,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.hooksState = null;
         this.txState = null;
         this.legacyIndexTransactionState = null;
+
+        if ( storeStatement != null )
+        {
+            this.storeStatement.close();
+            this.storeStatement = null;
+        }
     }
 
     private void commit() throws TransactionFailureException
@@ -628,7 +630,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         locks.releaseAll();
         pool.release( this );
-        if (storeStatement != null)
+        if ( storeStatement != null )
         {
             storeStatement.close();
             storeStatement = null;
@@ -924,7 +926,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throw new ThisShouldNotHappenError(
                         "Tobias Lindaaker",
                         "Constraint to be removed should exist, since its existence should " +
-                        "have been validated earlier and the schema should have been locked." );
+                                "have been validated earlier and the schema should have been locked." );
             }
         }
 

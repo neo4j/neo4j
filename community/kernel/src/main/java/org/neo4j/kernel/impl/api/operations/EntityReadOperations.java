@@ -28,9 +28,11 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 
 public interface EntityReadOperations
 {
@@ -93,7 +95,13 @@ public interface EntityReadOperations
      */
     PrimitiveIntIterator nodeGetLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException;
 
+    public PrimitiveIntIterator nodeGetLabels( TxStateHolder txStateHolder, StoreStatement storeStatement, long nodeId )
+            throws EntityNotFoundException;
+
     boolean nodeHasProperty( KernelStatement statement, long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+
+    public boolean nodeHasProperty( TxStateHolder txStateHolder, StoreStatement storeStatement,
+            long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
     Object nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 

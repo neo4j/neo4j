@@ -32,24 +32,32 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.MandatoryPropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
+import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
-import static org.neo4j.kernel.impl.api.StateHandlingStatementOperations.nodeGetProperty;
 
 public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
 {
+    private final EntityReadOperations readOperations;
     private final StoreReadLayer storeLayer;
-    private final TransactionState txState;
+    private final StoreStatement storeStatement;
+    private final TxStateHolder txStateHolder;
 
-    public MandatoryPropertyEnforcer( TxStateVisitor next, StoreReadLayer storeLayer, TransactionState txState )
+    public MandatoryPropertyEnforcer( EntityReadOperations operations,
+            TxStateVisitor next,
+            TxStateHolder txStateHolder,
+            StoreReadLayer storeLayer,
+            StoreStatement storeStatement)
     {
         super( next );
+        this.readOperations = operations;
+        this.txStateHolder = txStateHolder;
         this.storeLayer = storeLayer;
-        this.txState = txState;
+        this.storeStatement = storeStatement;
     }
 
     @Override
@@ -68,6 +76,8 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
         super.visitNodeLabelChanges( id, added, removed );
     }
 
+
+
     private void validateNode( long node ) throws ConstraintValidationKernelException
     {
         for ( PrimitiveIntIterator labels = labelsOf( node ); labels.hasNext(); )
@@ -85,9 +95,9 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
 
     private boolean hasProperty( long nodeId, int propertyKeyId )
     {
-        try ( StoreStatement statement = storeLayer.acquireStatement() )
+        try
         {
-            return nodeGetProperty( storeLayer, statement, txState, nodeId, propertyKeyId ).isDefined();
+            return readOperations.nodeHasProperty( txStateHolder, storeStatement, nodeId, propertyKeyId );
         }
         catch ( EntityNotFoundException e )
         {
@@ -97,9 +107,9 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
 
     private PrimitiveIntIterator labelsOf( long nodeId )
     {
-        try ( StoreStatement statement = storeLayer.acquireStatement() )
+        try
         {
-            return StateHandlingStatementOperations.nodeGetLabels( storeLayer, statement, txState, nodeId );
+            return readOperations.nodeGetLabels( txStateHolder, storeStatement, nodeId );
         }
         catch ( EntityNotFoundException e )
         {

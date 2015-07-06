@@ -65,6 +65,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.txstate.ReadableTxState;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -128,6 +129,19 @@ public class StateHandlingStatementOperations implements
         if ( statement.hasTxStateWithChanges() )
         {
             return statement.txState().augmentSingleNodeCursor( cursor );
+        }
+        else
+        {
+            return cursor;
+        }
+    }
+
+    public NodeCursor nodeCursor( TxStateHolder txStateHolder, StoreStatement statement, long nodeId )
+    {
+        NodeCursor cursor = statement.acquireSingleNodeCursor( nodeId );
+        if ( txStateHolder.hasTxStateWithChanges() )
+        {
+            return txStateHolder.txState().augmentSingleNodeCursor( cursor );
         }
         else
         {
@@ -358,7 +372,14 @@ public class StateHandlingStatementOperations implements
     @Override
     public PrimitiveIntIterator nodeGetLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
-        try ( NodeCursor nodeCursor = nodeCursor( state, nodeId ) )
+        return nodeGetLabels( state, state.getStoreStatement(), nodeId );
+    }
+
+    @Override
+    public PrimitiveIntIterator nodeGetLabels( TxStateHolder txStateHolder, StoreStatement storeStatement, long nodeId )
+            throws EntityNotFoundException
+    {
+        try ( NodeCursor nodeCursor = nodeCursor( txStateHolder, storeStatement, nodeId ) )
         {
 
             if ( nodeCursor.next() )
@@ -574,7 +595,7 @@ public class StateHandlingStatementOperations implements
     }
 
 
-    private Iterator<PropertyConstraint> applyConstraintsDiff( KernelStatement state,
+    private Iterator<PropertyConstraint> applyConstraintsDiff( TxStateHolder state,
                                                                  Iterator<PropertyConstraint> constraints,
                                                                  int labelId, int propertyKeyId )
     {
@@ -998,51 +1019,20 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public boolean nodeHasProperty( KernelStatement statement,
-            long nodeId,
-            int propertyKeyId ) throws EntityNotFoundException
+    public boolean nodeHasProperty( KernelStatement statement, long nodeId, int propertyKeyId )
+            throws EntityNotFoundException
     {
-        try ( NodeCursor nodeCursor = nodeCursor( statement, nodeId ) )
+        return nodeHasProperty( statement, statement.getStoreStatement(), nodeId, propertyKeyId );
+    }
+
+    @Override
+    public boolean nodeHasProperty( TxStateHolder txStateHolder, StoreStatement storeStatement,
+            long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    {
+        try ( NodeCursor nodeCursor = nodeCursor( txStateHolder, storeStatement, nodeId ) )
         {
             return hasProperty( nodeCursor, EntityType.NODE, nodeId, propertyKeyId );
         }
-    }
-
-    public static Iterator<DefinedProperty> nodeGetAllProperties(
-            StoreReadLayer storeLayer, StoreStatement statement, ReadableTxState txState,
-            long nodeId) throws EntityNotFoundException
-    {
-        if ( txState.nodeIsDeletedInThisTx( nodeId ) )
-        {
-            throw new IllegalStateException( "node has been deleted" );
-        }
-
-        if ( txState.nodeIsAddedInThisTx( nodeId ) )
-        {
-            return txState.addedAndChangedNodeProperties( nodeId );
-        }
-        else
-        {
-            return txState.augmentNodeProperties( nodeId,
-                    storeLayer.nodeGetAllProperties( statement, nodeId ) );
-        }
-    }
-
-    public static Property nodeGetProperty(
-            StoreReadLayer storeLayer, StoreStatement statement, ReadableTxState txState,
-            long nodeId, int propertyKeyId ) throws EntityNotFoundException
-    {
-        Iterator<DefinedProperty> properties = nodeGetAllProperties( storeLayer, statement, txState, nodeId );
-
-        while ( properties.hasNext() )
-        {
-            Property property = properties.next();
-            if ( property.propertyKeyId() == propertyKeyId )
-            {
-                return property;
-            }
-        }
-        return Property.noNodeProperty( nodeId, propertyKeyId );
     }
 
     @Override

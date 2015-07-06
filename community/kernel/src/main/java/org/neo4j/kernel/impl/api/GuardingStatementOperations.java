@@ -31,10 +31,12 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 
 public class GuardingStatementOperations implements
         EntityWriteOperations,
@@ -213,12 +215,31 @@ public class GuardingStatementOperations implements
     }
 
     @Override
+    public PrimitiveIntIterator nodeGetLabels( TxStateHolder txStateHolder,
+            StoreStatement storeStatement,
+            long nodeId ) throws EntityNotFoundException
+    {
+        guard.check();
+        return entityReadDelegate.nodeGetLabels( txStateHolder, storeStatement, nodeId );
+    }
+
+    @Override
     public boolean nodeHasProperty( KernelStatement statement,
             long nodeId,
             int propertyKeyId ) throws EntityNotFoundException
     {
         guard.check();
         return entityReadDelegate.nodeHasProperty( statement, nodeId, propertyKeyId );
+    }
+
+    @Override
+    public boolean nodeHasProperty( TxStateHolder txStateHolder,
+            StoreStatement storeStatement,
+            long nodeId,
+            int propertyKeyId ) throws EntityNotFoundException
+    {
+        guard.check();
+        return entityReadDelegate.nodeHasProperty( txStateHolder, storeStatement, nodeId, propertyKeyId );
     }
 
     @Override

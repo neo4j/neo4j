@@ -222,7 +222,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        return dataRead().nodeGetLabels( statement, nodeId );
+        return dataRead().nodeGetLabels( statement, statement.getStoreStatement(), nodeId );
     }
 
     @Override

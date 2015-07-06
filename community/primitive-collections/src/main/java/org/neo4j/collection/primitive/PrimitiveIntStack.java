@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive;
 
+import java.util.NoSuchElementException;
+
 import static java.util.Arrays.copyOf;
 
 /**
@@ -75,6 +77,8 @@ public class PrimitiveIntStack implements PrimitiveIntCollection
             @Override
             public int next()
             {
+                if( !hasNext() ) throw new NoSuchElementException();
+
                 return array[idx++];
             }
         };
