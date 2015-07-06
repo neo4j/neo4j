@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 'use strict'
 
-window.neo = {}
+window.neo = window.neo || {}
 
 neo.models = {}
 

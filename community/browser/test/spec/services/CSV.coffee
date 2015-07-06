@@ -62,9 +62,13 @@ describe 'Service: CSV', () ->
       serializer.columns([' column', ' column2 '])
       expect(serializer.output()).toBe(' column, column2 ')
 
-    it 'should represent null values as "null"', ->
+    it 'should represent null values as null', ->
       serializer.columns([null, 'col'])
-      expect(serializer.output()).toBe('null,col')
+      expect(serializer.output()).toBe(',col')
+
+    it 'should represent empty values as ""', ->
+      serializer.columns(['', 'col'])
+      expect(serializer.output()).toBe('"",col')
 
     it 'should represent boolean values as "true" and "false"', ->
       serializer.columns([true, false])

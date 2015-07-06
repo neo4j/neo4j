@@ -6,6 +6,7 @@ module.exports = function(config) {
 
     preprocessors: {
       'app/scripts/**/*.coffee': ['coffee'],
+      'lib/*.coffee': ['coffee'],
       'test/spec/**/*.coffee': ['coffee']
     },
 
@@ -65,6 +66,7 @@ module.exports = function(config) {
       'app/components/UUID.js/src/uuid.js',
       'app/components/angular-base64/angular-base64.min.js',
       'app/scripts/*.coffee',
+      'lib/*.coffee',
       'app/scripts/**/*.coffee',
       'test/spec/**/*.coffee'
     ],

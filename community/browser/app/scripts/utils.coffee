@@ -21,11 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 'use strict';
 
 angular.module('neo4jApp.utils', [])
-  .service('Utils', ['$timeout', ($timeout)->
-    @argv = (input) ->
-      rv = input.toLowerCase().split(' ')
-      rv or []
-    @debounce = (func, wait, immediate) ->
+  .service('Utils', ['$timeout', ($timeout) ->
+
+    utils = new neo.helpers()
+    that = utils.extend utils, this
+
+    that.debounce = (func, wait, immediate) ->
       result = undefined
       timeout = null
       ->
@@ -41,75 +42,5 @@ angular.module('neo4jApp.utils', [])
         result = func.apply(context, args) if callNow
         result
 
-    @throttle = (func, wait) ->
-      last_timestamp = null
-      limit = wait
-      ->
-        context = @
-        args = arguments
-        now = Date.now()
-        if !last_timestamp || now - last_timestamp >= limit
-          last_timestamp = now
-          func.apply(context, args)
-
-    @parseId = (resource = "") ->
-      id = resource.substr(resource.lastIndexOf("/")+1)
-      return parseInt(id, 10)
-
-    @stripComments = (input) ->
-      rows = input.split("\n")
-      rv = []
-      rv.push row for row in rows when row.indexOf('//') isnt 0
-      rv.join("\n")
-
-    @firstWord = (input) ->
-      input.split(/\n| /)[0]
-
-    @extendDeep = (dst) =>
-      that = @
-      angular.forEach(arguments, (obj) ->
-        if (obj != dst)
-          angular.forEach(obj, (value, key)  ->
-            if (dst[key] && angular.isObject(dst[key]))
-              that.extendDeep(dst[key], value)
-            else if(!angular.isFunction(dst[key]))
-              dst[key] = value
-          )
-      )
-      dst
-
-    @parseTimeMillis = ( timeWithOrWithoutUnit ) =>
-      timeWithOrWithoutUnit += '' #Cast to string
-
-      # Parses human-readable units like "12h", "2s" and returns milliseconds.
-      # This maps to TimeUtil#parseTimeMillis in the main Neo4j code base, please ensure they are kept in sync
-      unit = timeWithOrWithoutUnit.match /\D+/
-      value = parseInt timeWithOrWithoutUnit
-
-      if unit?.length is 1
-        switch unit[0]
-          when "ms" then return value
-          when "s"  then return value * 1000
-          when "m"  then return value * 1000 * 60
-          else return 0
-      else return value*1000
-
-
-    @ua2text = (ua) ->
-      s = ''
-      for i in [0..ua.length]
-        s = s + "" + String.fromCharCode ua[i]
-      s
-
-    @escapeHTML = (string) ->
-      entityMap =
-        "&": "&amp;"
-        "<": "&lt;"
-        ">": "&gt;"
-        '"': '&quot;'
-        "'": '&#39;'
-        "/": '&#x2F;'
-      String(string).replace(/[&<>"'\/]/g, (s) -> entityMap[s])
-
-    @
+    that
   ])

@@ -98,6 +98,12 @@
       <version>1.7.3</version>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-mapper-asl</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

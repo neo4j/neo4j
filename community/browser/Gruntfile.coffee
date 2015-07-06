@@ -71,8 +71,8 @@ module.exports = (grunt) ->
 
     watch:
       coffee:
-        files: ["<%= yeoman.app %>/scripts/{,*/}*.coffee", "<%= yeoman.lib %>/visualization/**/*.coffee"]
-        tasks: ["coffee:dist", "coffee:visualization"]
+        files: ["<%= yeoman.app %>/scripts/{,*/}*.coffee", "<%= yeoman.lib %>/visualization/**/*.coffee", "<%= yeoman.lib %>/*.coffee"]
+        tasks: ["coffee:dist", "coffee:visualization", "coffee:lib"]
       coffeeTest:
         files: ["test/spec/{,*/}*.coffee"]
         tasks: ["coffee:test"]
@@ -177,6 +177,14 @@ module.exports = (grunt) ->
             '<%= yeoman.lib %>/visualization/init.coffee'
           ]
         ]
+      lib:
+        files: [
+          expand: true
+          cwd: "<%= yeoman.lib %>"
+          src: "*.coffee"
+          dest: ".tmp/lib"
+          ext: ".js"
+        ]
 
     stylus:
       compile:
@@ -271,6 +279,11 @@ module.exports = (grunt) ->
             dest: "<%= yeoman.dist %>/fonts"
             src: ["components/**/*.{otf,woff,ttf,svg}"]
         }]
+    shell:
+      dirListing:
+        command: 'ls',
+        options:
+            stdout: true
 
     replace:
       dist:
@@ -278,12 +291,16 @@ module.exports = (grunt) ->
         replace: 'url(/browser/images'
         src: ["<%= yeoman.dist %>/styles/main.css"]
 
+    exec:
+      csv_test_prep:
+        command: 'mkdir -p target/test-classes/ && cat .tmp/lib/helpers.js .tmp/lib/serializer.js src/test/javascript/prepareCSVTest.js >target/test-classes/CsvExportImportRoundTripTest.js'
+
   # load all grunt tasks
   require("matchdep").filterDev("grunt-*").forEach grunt.loadNpmTasks
 
   grunt.registerTask "server", ["clean:server", "coffee", "configureProxies", "stylus", "jade", "connect:livereload", "watch"]
-  grunt.registerTask "test", ["clean:server", "coffee", "connect:test", "karma"]
-  grunt.registerTask "build", ["clean:dist", "test", "coffee", "jade", "stylus", "useminPrepare", "concat", "copy", "imagemin", "cssmin", "htmlmin", "uglify", "rev", "usemin", "replace"]
+  grunt.registerTask "test", ["clean:server", "coffee", "connect:test", "karma", "exec:csv_test_prep"]
+  grunt.registerTask "build", ["clean:dist", "coffee", "test", "jade", "stylus", "useminPrepare", "concat", "copy", "imagemin", "cssmin", "htmlmin", "uglify", "rev", "usemin", "replace"]
   grunt.registerTask "server:dist", ["build", "configureProxies", "connect:dist:keepalive"]
   grunt.registerTask "default", ["build"]
 
