@@ -26,17 +26,19 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
-class ConstraintOperationPipe(op: PropertyConstraintOperation, label: KeyToken, propertyKey: KeyToken)
+class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToken, propertyKey: KeyToken)
                              (implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val labelId = label.getOrCreateId(state.query)
+    val keyTokenId = keyToken.getOrCreateId(state.query)
     val propertyKeyId = propertyKey.getOrCreateId(state.query)
 
     op match {
-      case _: CreateUniqueConstraint => state.query.createUniqueConstraint(labelId, propertyKeyId)
-      case _: DropUniqueConstraint   => state.query.dropUniqueConstraint(labelId, propertyKeyId)
-      case _: CreateMandatoryPropertyConstraint => state.query.createMandatoryConstraint(labelId, propertyKeyId)
-      case _: DropMandatoryPropertyConstraint => state.query.dropMandatoryConstraint(labelId, propertyKeyId)
+      case _: CreateUniqueConstraint => state.query.createUniqueConstraint(keyTokenId, propertyKeyId)
+      case _: DropUniqueConstraint   => state.query.dropUniqueConstraint(keyTokenId, propertyKeyId)
+      case _: CreateNodeMandatoryPropertyConstraint => state.query.createNodeMandatoryConstraint(keyTokenId, propertyKeyId)
+      case _: DropNodeMandatoryPropertyConstraint => state.query.dropNodeMandatoryConstraint(keyTokenId, propertyKeyId)
+      case _: CreateRelationshipMandatoryPropertyConstraint => state.query.createRelationshipMandatoryConstraint(keyTokenId, propertyKeyId)
+      case _: DropRelationshipMandatoryPropertyConstraint => state.query.dropRelationshipMandatoryConstraint(keyTokenId, propertyKeyId)
     }
 
     Iterator.empty

@@ -112,11 +112,17 @@ class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends Delega
   override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
     translateException(super.dropUniqueConstraint(labelId, propertyKeyId))
 
-  override def createMandatoryConstraint(labelId: Int, propertyKeyId: Int) =
-    translateException(super.createMandatoryConstraint(labelId, propertyKeyId))
+  override def createNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) =
+    translateException(super.createNodeMandatoryConstraint(labelId, propertyKeyId))
 
-  override def dropMandatoryConstraint(labelId: Int, propertyKeyId: Int) =
-    translateException(super.dropMandatoryConstraint(labelId, propertyKeyId))
+  override def dropNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) =
+    translateException(super.dropNodeMandatoryConstraint(labelId, propertyKeyId))
+
+  override def createRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) =
+    translateException(super.createRelationshipMandatoryConstraint(relTypeId, propertyKeyId))
+
+  override def dropRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) =
+    translateException(super.dropRelationshipMandatoryConstraint(relTypeId, propertyKeyId))
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T =
     super.withAnyOpenQueryContext(qc =>
