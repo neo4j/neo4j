@@ -36,12 +36,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException.Evidence;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
+import org.neo4j.kernel.api.exceptions.schema.MandatoryNodePropertyConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -563,12 +562,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
                 long nodeId = nodes.next();
                 if ( !nodeHasProperty( state, nodeId, propertyKeyId ) )
                 {
-                    PropertyConstraint constraint = new MandatoryPropertyConstraint( labelId, propertyKeyId );
-
-                    ConstraintVerificationFailedKernelException cause = new ConstraintVerificationFailedKernelException(
-                            constraint, Evidence.ofNodeWithNullProperty( nodeId ) );
-
-                    throw new CreateConstraintFailureException( constraint, cause );
+                    MandatoryPropertyConstraint constraint = new MandatoryPropertyConstraint( labelId, propertyKeyId );
+                    throw new CreateConstraintFailureException( constraint,
+                            new MandatoryNodePropertyConstraintVerificationFailedKernelException( constraint, nodeId ) );
                 }
             }
             catch ( EntityNotFoundException e )

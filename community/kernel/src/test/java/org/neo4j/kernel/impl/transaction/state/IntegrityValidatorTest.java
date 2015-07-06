@@ -19,20 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import static junit.framework.Assert.fail;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.impl.store.UniquePropertyConstraintRule.uniquenessConstraintRule;
-
-import static org.powermock.api.mockito.PowerMockito.mock;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.store.UniquePropertyConstraintRule.uniquenessConstraintRule;
+import static org.powermock.api.mockito.PowerMockito.mock;
 
 public class IntegrityValidatorTest
 {
@@ -44,8 +43,8 @@ public class IntegrityValidatorTest
         IndexingService indexes = mock(IndexingService.class);
         IntegrityValidator validator = new IntegrityValidator(store, indexes);
 
-        doThrow( new ConstraintVerificationFailedKernelException( null, new RuntimeException() ))
-         .when( indexes ).validateIndex( 2l );
+        doThrow( new UniquenessConstraintVerificationFailedKernelException( null, new RuntimeException() ) )
+                .when( indexes ).validateIndex( 2l );
 
         UniquePropertyConstraintRule record = uniquenessConstraintRule( 1l, 1, 1, 2l );
 

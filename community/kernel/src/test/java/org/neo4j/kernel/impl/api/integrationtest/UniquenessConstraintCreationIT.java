@@ -24,20 +24,20 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException.Evidence;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.TargetDirectory;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class UniquenessConstraintCreationIT extends KernelIntegrationTest
 {
@@ -86,10 +86,20 @@ public class UniquenessConstraintCreationIT extends KernelIntegrationTest
             assertEquals( new UniquenessConstraint( foo, name ), ex.constraint() );
             Throwable cause = ex.getCause();
             assertThat( cause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
-            assertEquals(
-                    asSet( Evidence.of( new PreexistingIndexEntryConflictException( "foo", node1, node2 ) ) ),
-                    ((ConstraintVerificationFailedKernelException) cause).evidence()
-            );
+
+            String expectedMessage = format(
+                    "Multiple nodes with label `%s` have property `%s` = '%s':%n  node(%d)%n  node(%d)", "Foo",
+                    "name", "foo", node1, node2 );
+            String actualMessage = userMessage( (ConstraintVerificationFailedKernelException) cause );
+            assertEquals( expectedMessage, actualMessage );
         }
+    }
+
+    private String userMessage( ConstraintVerificationFailedKernelException cause ) throws TransactionFailureException
+    {
+        StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOperationsInNewTransaction() );
+        String actualMessage = cause.getUserMessage( lookup );
+        commit();
+        return actualMessage;
     }
 }

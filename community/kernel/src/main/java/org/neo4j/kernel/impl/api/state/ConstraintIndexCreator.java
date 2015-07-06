@@ -23,22 +23,23 @@ import org.neo4j.function.Supplier;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException.Evidence;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.store.SchemaStorage;
+
+import static java.util.Collections.singleton;
 
 public class ConstraintIndexCreator
 {
@@ -60,7 +61,7 @@ public class ConstraintIndexCreator
                    CreateConstraintFailureException, DropIndexFailureException
     {
         IndexDescriptor descriptor = createConstraintIndex( labelId, propertyKeyId );
-        PropertyConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
+        UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
 
         boolean success = false;
         try
@@ -109,7 +110,7 @@ public class ConstraintIndexCreator
         }
     }
 
-    private void awaitIndexPopulation( PropertyConstraint constraint, long indexId )
+    private void awaitIndexPopulation( UniquenessConstraint constraint, long indexId )
             throws InterruptedException, ConstraintVerificationFailedKernelException
     {
         try
@@ -126,12 +127,12 @@ public class ConstraintIndexCreator
             Throwable cause = e.getCause();
             if ( cause instanceof IndexEntryConflictException )
             {
-                Evidence evidence = Evidence.of( (IndexEntryConflictException) cause );
-                throw new ConstraintVerificationFailedKernelException( constraint, evidence );
+                throw new UniquenessConstraintVerificationFailedKernelException( constraint,
+                        singleton( (IndexEntryConflictException) cause ) );
             }
             else
             {
-                throw new ConstraintVerificationFailedKernelException( constraint, cause );
+                throw new UniquenessConstraintVerificationFailedKernelException( constraint, cause );
             }
         }
     }
