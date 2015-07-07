@@ -73,7 +73,7 @@ public class InputNodeDeserialization extends InputEntityDeserialization<InputNo
             id = value;
             break;
         case LABEL:
-            addLabels( entry, value );
+            addLabels( value );
             break;
         default:
             super.handle( entry, value );
@@ -105,17 +105,17 @@ public class InputNodeDeserialization extends InputEntityDeserialization<InputNo
         }
     }
 
-    private void addLabels( Entry entry, Object value )
+    private void addLabels( Object value )
     {
         if ( value instanceof String )
         {
-            ensureLabelsCapacity( labelsCursor+1 );
+            ensureLabelsCapacity( labelsCursor + 1 );
             labels[labelsCursor++] = (String) value;
         }
         else if ( value instanceof String[] )
         {
             String[] labelsToAdd = (String[]) value;
-            ensureLabelsCapacity( labelsCursor+labelsToAdd.length );
+            ensureLabelsCapacity( labelsCursor + labelsToAdd.length );
             for ( String label : (String[]) value )
             {
                 labels[labelsCursor++] = label;

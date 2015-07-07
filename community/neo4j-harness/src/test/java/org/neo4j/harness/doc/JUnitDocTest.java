@@ -30,14 +30,14 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 
 import static org.junit.Assert.*;
 
 public class JUnitDocTest
 {
-    @Rule public Mute mute = Mute.muteAll();
+    @Rule public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     // START SNIPPET: useJUnitRule
     @Rule

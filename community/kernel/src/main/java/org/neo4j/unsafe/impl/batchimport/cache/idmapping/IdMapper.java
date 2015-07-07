@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
-import org.neo4j.function.IntPredicate;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
@@ -40,24 +39,24 @@ public interface IdMapper extends MemoryStatsVisitor.Home
      * @param actualId the actual node id that the inputId will represent.
      * @param group {@link Group} this input id will be added to. Used for handling input ids collisions
      * where multiple equal input ids might be added, as long as all input ids within a single group is unique.
-     * Group ids are also passed into {@link #get(Object, IntPredicate)}.
+     * Group ids are also passed into {@link #get(Object, Group)}.
      * It is required that all input ids belonging to a specific group are put in sequence before putting any
      * input ids for another group.
      */
     void put( Object inputId, long actualId, Group group );
 
     /**
-     * @return whether or not a call to {@link #prepare()} needs to commence after all calls to
-     * {@link #put(Object, long)} and before any call to {@link #get(Object)}. I.e. whether or not all ids
-     * needs to be put before making any call to {@link #get(Object)}.
+     * @return whether or not a call to {@link #prepare(InputIterable, Collector, ProgressListener)} needs to commence after all calls to
+     * {@link #put(Object, long, Group)} and before any call to {@link #get(Object, Group)}. I.e. whether or not all ids
+     * needs to be put before making any call to {@link #get(Object, Group)}.
      */
     boolean needsPreparation();
 
     /**
-     * After all mappings have been {@link #put(Object, long)} call this method to prepare for
-     * {@link #get(Object) querying}.
+     * After all mappings have been {@link #put(Object, long, Group)} call this method to prepare for
+     * {@link #get(Object, Group) querying}.
      *
-     * @param all ids put earlier, in the event of difficult collisions so that more information have to be read
+     * @param allIds put earlier, in the event of difficult collisions so that more information have to be read
      * from the input data again, data that normally isn't necessary and hence discarded.
      * @param collector {@link Collector} for bad entries, such as duplicate node ids.
      * @param progress reports preparation progress.
@@ -65,14 +64,14 @@ public interface IdMapper extends MemoryStatsVisitor.Home
     void prepare( InputIterable<Object> allIds, Collector collector, ProgressListener progress );
 
     /**
-     * Returns an actual node id representing {@code inputId}. For this call to work {@link #prepare()} must have
-     * been called after all calls to {@link #put(Object, long)} have been made,
-     * iff {@link #needsPreparation()} returns {@code true}. Otherwise ids can be retrieved right after
+     * Returns an actual node id representing {@code inputId}. For this call to work {@link #prepare(InputIterable, Collector, ProgressListener)} must have
+     * been called after all calls to {@link #put(Object, long, Group)} have been made,
+     * if {@link #needsPreparation()} returns {@code true}. Otherwise ids can be retrieved right after
      * @link #put(Object, long) being put}
      *
      * @param inputId the input id to get the actual node id for.
      * @param group {@link Group} the given {@code inputId} must exist in, i.e. have been put with.
-     * @return the actual node id previously specified by {@link #put(Object, long)}, or {@code -1} if not found.
+     * @return the actual node id previously specified by {@link #put(Object, long, Group)}, or {@code -1} if not found.
      */
     long get( Object inputId, Group group );
 }

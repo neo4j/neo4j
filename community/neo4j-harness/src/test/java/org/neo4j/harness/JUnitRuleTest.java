@@ -34,7 +34,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.HTTP;
 
@@ -68,7 +68,7 @@ public class JUnitRuleTest
     @Rule
     public TargetDirectory.TestDirectory testDirectory = testDirForTest( getClass() );
 
-    @Rule public Mute mute = Mute.muteAll();
+    @Rule public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldExtensionWork() throws Exception

@@ -71,6 +71,7 @@ START_ID::
 END_ID::
   The id of the end node of the relationship to create.
 
+[[import-tool-id-spaces]]
 === ID Spaces
 
 The import tool assumes that node identifiers are unique across node files.

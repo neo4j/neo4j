@@ -25,25 +25,26 @@ import org.junit.rules.TestName;
 
 import java.util.concurrent.Callable;
 
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 
-import static org.neo4j.test.Mute.muteAll;
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class ExclusiveServerTestBase
 {
     public TargetDirectory folder = TargetDirectory.forTest( getClass() );
 
     @Rule
-    public Mute mute = muteAll();
+    public SuppressOutput suppressOutput = suppressAll();
     @Rule
     public TestName name = new TestName();
 
     @BeforeClass
     public static void ensureServerNotRunning() throws Exception
     {
+
         System.setProperty( "org.neo4j.useInsecureCertificateGeneration", "true" );
-        muteAll().call( new Callable<Void>()
+        suppressAll().call( new Callable<Void>()
         {
             @Override
             public Void call() throws Exception

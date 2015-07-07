@@ -53,6 +53,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputId
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
@@ -60,7 +61,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.nio.charset.Charset.defaultCharset;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
@@ -428,10 +428,12 @@ public class ImportTool
         };
     }
 
-    private static String manualReference( String page )
+    private static String manualReference( ManualPage page, Anchor anchor )
     {
-        return " http://neo4j.com/docs/" + Version.getKernel().getVersion() + "/" + page;
+        return " http://neo4j.com/docs/" + Version.getKernel().getVersion() + "/" + page.getReference( anchor );
     }
+
+
 
     /**
      * Method name looks strange, but look at how it's used and you'll see why it's named like that.
@@ -439,17 +441,25 @@ public class ImportTool
      */
     private static RuntimeException andPrintError( String typeOfError, Exception e, boolean stackTrace )
     {
-        if ( e.getClass().equals( DuplicateInputIdException.class ) )
+        if ( DuplicateInputIdException.class.equals( e.getClass() ) )
         {
-            System.err.println( "Duplicate input ids that would otherwise clash can be put into separate id space," +
-                    " read more about how to use id spaces in the manual:" +
-                    manualReference( "import-tool-header-format.html#_id_spaces" ) );
+            System.err.println( "Duplicate input ids that would otherwise clash can be put into separate id space, " +
+                    "read more about how to use id spaces in the manual:" +
+                    manualReference( ManualPage.IMPORT_TOOL_FORMAT, Anchor.ID_SPACES ) );
         }
-        else if ( e.getClass().equals( IllegalMultilineFieldException.class ) )
+        else if ( MissingRelationshipDataException.class.equals( e.getClass() ) )
         {
-            System.err.println( "Detected field which spanned multiple lines for an import where " +
-                    Options.MULTILINE_FIELDS.argument() + "=false. If you know that your input data include " +
-                    "fields containing new-line characters then import with this option set to true." );
+            System.err.println( String.format( "Relationship missing mandatory field '%s', " +
+                                               "read more about relationship format in the manual: %s",
+                    ((MissingRelationshipDataException) e).getFieldType(),
+                    manualReference( ManualPage.IMPORT_TOOL_FORMAT, Anchor.RELATIONSHIP) ) );
+        }
+        else if ( IllegalMultilineFieldException.class.equals( e.getClass() ) )
+        {
+            System.err.println( String.format("Detected field which spanned multiple lines for an import where " +
+                                   "%s=false. If you know that your input data include " +
+                                   "fields containing new-line characters then import with this option set to true.",
+                    Options.MULTILINE_FIELDS.argument() ) );
         }
 
         System.err.println( typeOfError + ": " + e.getMessage() );
@@ -645,4 +655,35 @@ public class ImportTool
     {
         System.err.println( warning );
     }
+
+    private enum ManualPage
+    {
+        IMPORT_TOOL_FORMAT("import-tool-header-format.html");
+
+        private String page;
+
+        ManualPage( String page )
+        {
+            this.page = page;
+        }
+
+        public String getReference(Anchor anchor)
+        {
+            return page + "#" + anchor.anchor;
+        }
+    }
+
+    private enum Anchor
+    {
+        ID_SPACES("import-tool-id-spaces"),
+        RELATIONSHIP("import-tool-header-format-rels");
+
+        private String anchor;
+
+        Anchor( String anchor )
+        {
+            this.anchor = anchor;
+        }
+    }
+
 }

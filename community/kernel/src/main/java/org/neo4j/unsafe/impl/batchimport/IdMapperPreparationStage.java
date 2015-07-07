@@ -29,7 +29,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import static org.neo4j.unsafe.impl.batchimport.Utils.idsOf;
 
 /**
- * Performs {@link IdMapper#prepare(InputIterable, org.neo4j.helpers.progress.ProgressListener)}
+ * Performs {@link IdMapper#prepare(InputIterable, Collector, org.neo4j.helpers.progress.ProgressListener)}
  * embedded in a {@link Stage} as to take advantage of statistics and monitoring provided by that framework.
  */
 public class IdMapperPreparationStage extends Stage

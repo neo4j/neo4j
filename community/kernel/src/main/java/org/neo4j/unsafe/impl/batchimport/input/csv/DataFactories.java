@@ -186,8 +186,8 @@ public class DataFactories
         CharSeeker open( CharSeeker seeker, Configuration config ) throws IOException;
 
         /**
-         * Closes the header {@link CharSeeker}. Only close if {@link #openCharSeeker(CharSeeker)} opens its own.
-         * @param seeker {@link CharSeeker} returned from {@link #openCharSeeker(CharSeeker)}.
+         * Closes the header {@link CharSeeker}. Only close if {@link #open(CharSeeker, Configuration)} opens its own.
+         * @param seeker {@link CharSeeker} returned from {@link #open(CharSeeker, Configuration)}.
          */
         void close( CharSeeker seeker );
     }

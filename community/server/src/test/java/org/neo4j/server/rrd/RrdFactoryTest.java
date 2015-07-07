@@ -40,7 +40,7 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -50,7 +50,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.test.Mute.muteAll;
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class RrdFactoryTest
 {
@@ -62,7 +62,7 @@ public class RrdFactoryTest
     @Rule
     public TargetDirectory.TestDirectory testDirectory = target.testDirectory();
     @Rule
-    public Mute mute = muteAll();
+    public SuppressOutput suppressOutput = suppressAll();
 
     @Before
     public void setUp() throws IOException

@@ -31,17 +31,17 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.test.Mute.muteAll;
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class PropertyFileConfiguratorTest
 {
     @Rule
-    public final Mute mute = muteAll();
+    public final SuppressOutput suppressOutput = suppressAll();
     @Rule
     public final TemporaryFolder folder = new TemporaryFolder();
 

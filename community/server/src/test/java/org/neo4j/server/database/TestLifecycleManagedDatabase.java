@@ -35,7 +35,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -47,12 +47,12 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
-import static org.neo4j.test.Mute.muteAll;
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class TestLifecycleManagedDatabase
 {
     @Rule
-    public Mute mute = muteAll();
+    public SuppressOutput suppressOutput = suppressAll();
 
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
