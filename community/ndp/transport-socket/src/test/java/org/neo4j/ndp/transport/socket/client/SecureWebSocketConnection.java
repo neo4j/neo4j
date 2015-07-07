@@ -43,10 +43,10 @@ public class SecureWebSocketConnection implements Connection, WebSocketListener
     // Incoming data goes on this queue
     private final LinkedBlockingQueue<byte[]> received = new LinkedBlockingQueue<>();
 
-    // Current input data being handled, poppoed off of 'recieved' queue
+    // Current input data being handled, popped off of 'received' queue
     private byte[] currentRecieveBuffer = null;
 
-    // Index into the current recieve buffer
+    // Index into the current receive buffer
     private int currentRecieveIndex = 0;
 
     @Override

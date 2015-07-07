@@ -99,17 +99,17 @@ public abstract class Bootstrapper
 
             return OK;
         }
+        catch ( ServerStartupException e )
+        {
+            e.describeTo( log );
+            return WEB_SERVER_STARTUP_ERROR_CODE;
+        }
         catch ( TransactionFailureException tfe )
         {
             String locationMsg = (server == null) ? "" : " Another process may be using database location " +
                                                          server.getDatabase().getLocation();
             log.error( format( "Failed to start Neo Server on port [%s].", serverPort ) + locationMsg, tfe );
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
-        }
-        catch ( IllegalArgumentException e )
-        {
-            log.error( format( "Failed to start Neo Server on port [%s]", serverPort ), e );
-            return WEB_SERVER_STARTUP_ERROR_CODE;
         }
         catch ( Exception e )
         {

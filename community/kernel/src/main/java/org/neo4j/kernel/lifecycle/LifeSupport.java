@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Logger;
 
@@ -70,12 +71,12 @@ public class LifeSupport
                     try
                     {
                         shutdown();
+                        throw e;
                     }
-                    catch ( LifecycleException e1 )
+                    catch ( LifecycleException shutdownErr )
                     {
-                        throw causedBy( e1, e );
+                        throw Exceptions.withSuppressed( e, shutdownErr.getCause() == null ? shutdownErr : shutdownErr.getCause() );
                     }
-                    throw e;
                 }
             }
             status = changedStatus( this, status, LifecycleStatus.STOPPED );
@@ -114,12 +115,12 @@ public class LifeSupport
                     try
                     {
                         stop();
+                        throw e;
                     }
-                    catch ( LifecycleException e1 )
+                    catch ( LifecycleException stopErr )
                     {
-                        throw causedBy( e1, e );
+                        throw Exceptions.withSuppressed( e, stopErr.getCause() == null ? stopErr : stopErr.getCause() );
                     }
-                    throw e;
                 }
             }
             status = changedStatus( this, status, LifecycleStatus.STARTED );
@@ -149,7 +150,7 @@ public class LifeSupport
                 }
                 catch ( LifecycleException e )
                 {
-                    ex = causedBy( e, ex );
+                    ex = ex == null ? e : Exceptions.withSuppressed( ex, e );
                 }
             }
 
@@ -194,7 +195,7 @@ public class LifeSupport
                 }
                 catch ( LifecycleException e )
                 {
-                    ex = causedBy( e, ex );
+                    ex = ex == null ? e : Exceptions.withSuppressed( ex, e );
                 }
             }
 
@@ -252,7 +253,7 @@ public class LifeSupport
                 }
                 catch ( LifecycleException e )
                 {
-                    ex = causedBy( e, ex );
+                    ex = ex == null ? e : Exceptions.withSuppressed( ex, e );
                 }
             }
 
@@ -267,7 +268,7 @@ public class LifeSupport
                 }
                 catch ( LifecycleException e )
                 {
-                    throw causedBy( e, ex );
+                    throw Exceptions.withSuppressed( ex, e );
                 }
             }
 
@@ -288,12 +289,12 @@ public class LifeSupport
                 try
                 {
                     stop();
-                    throw e;
                 }
                 catch ( LifecycleException e1 )
                 {
-                    throw causedBy( e1, e );
+                    throw Exceptions.withSuppressed( e, e1 );
                 }
+                throw e;
             }
         }
     }
@@ -386,13 +387,13 @@ public class LifeSupport
             @Override
             public void accept( Logger bulkLogger )
             {
-                bulkLogger.log( "Lifecycle status: %s", status.name() );
+                bulkLogger.log("Lifecycle status: %s", status.name());
                 for ( LifecycleInstance instance : instances )
                 {
-                    bulkLogger.log( instance.toString() );
+                    bulkLogger.log(instance.toString());
                 }
             }
-        } );
+        });
     }
 
     private void bringToState( LifecycleInstance instance )
@@ -409,23 +410,6 @@ public class LifeSupport
             case SHUTDOWN:
                 break;
         }
-    }
-
-    private LifecycleException causedBy( LifecycleException exception, LifecycleException chainedLifecycleException )
-    {
-        if ( chainedLifecycleException == null )
-        {
-            return exception;
-        }
-        
-        Throwable current = exception;
-        while ( current.getCause() != null )
-        {
-            current = current.getCause();
-        }
-
-        current.initCause( chainedLifecycleException );
-        return exception;
     }
 
     private LifecycleStatus changedStatus( Lifecycle instance,
@@ -506,6 +490,10 @@ public class LifeSupport
                 catch ( Throwable e )
                 {
                     currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.NONE );
+                    if( e instanceof LifecycleException )
+                    {
+                        throw (LifecycleException)e;
+                    }
                     throw new LifecycleException( instance, LifecycleStatus.NONE, LifecycleStatus.STOPPED, e );
                 }
             }
@@ -530,6 +518,10 @@ public class LifeSupport
                 catch ( Throwable e )
                 {
                     currentStatus = changedStatus( instance, currentStatus, LifecycleStatus.STOPPED );
+                    if( e instanceof LifecycleException )
+                    {
+                        throw (LifecycleException)e;
+                    }
                     throw new LifecycleException( instance, LifecycleStatus.STOPPED, LifecycleStatus.STARTED, e );
                 }
             }
@@ -545,6 +537,10 @@ public class LifeSupport
                 try
                 {
                     instance.stop();
+                }
+                catch ( LifecycleException e )
+                {
+                    throw e;
                 }
                 catch ( Throwable e )
                 {
@@ -572,6 +568,10 @@ public class LifeSupport
                 try
                 {
                     instance.shutdown();
+                }
+                catch ( LifecycleException e )
+                {
+                    throw e;
                 }
                 catch ( Throwable e )
                 {

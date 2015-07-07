@@ -94,6 +94,7 @@ import static org.neo4j.kernel.impl.util.JobScheduler.Groups.serverTransactionTi
 import static org.neo4j.server.configuration.ServerSettings.http_log_config_file;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
+import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
 
 /**
  * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
@@ -209,7 +210,7 @@ public abstract class AbstractNeoServer implements NeoServer
             // If the database has been started, attempt to cleanly shut it down to avoid unclean shutdowns.
             life.shutdown();
 
-            throw new ServerStartupException( format( "Starting Neo4j Server failed: %s", t.getMessage() ), t );
+            throw translateToServerStartupError( t );
         }
     }
 
@@ -344,7 +345,7 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
-    private void startWebServer()
+    private void startWebServer() throws Exception
     {
         try
         {
@@ -356,7 +357,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
             log.info( "Remote interface ready and available at %s", baseUri() );
         }
-        catch ( RuntimeException e )
+        catch ( Exception e )
         {
             //noinspection deprecation
             log.error( "Failed to start Neo Server on port %d: %s",

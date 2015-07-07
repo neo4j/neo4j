@@ -39,6 +39,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.BindException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -53,13 +54,14 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.PortBindException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -140,7 +142,7 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void start()
+    public void start() throws Exception
     {
         if ( jetty == null )
         {
@@ -370,15 +372,15 @@ public class Jetty9WebServer implements WebServer
         return jetty;
     }
 
-    protected void startJetty()
+    protected void startJetty() throws Exception
     {
         try
         {
             jetty.start();
         }
-        catch ( Exception e )
+        catch( BindException e )
         {
-            throw new RuntimeException( e );
+            throw new PortBindException( new HostnamePort( jettyAddr, jettyHttpPort ), e );
         }
     }
 

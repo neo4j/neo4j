@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.lifecycle;
 
+import org.junit.Test;
+
 import java.util.LinkedList;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Test;
-
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Test LifeSupport lifecycle transitions
@@ -92,7 +93,7 @@ public class LifeSupportTest
         try
         {
             lifeSupport.init();
-            Assert.fail(  );
+            fail();
         }
         catch( LifecycleException throwable )
         {
@@ -120,7 +121,7 @@ public class LifeSupportTest
         try
         {
             lifeSupport.start();
-            Assert.fail(  );
+            fail();
         }
         catch( LifecycleException throwable )
         {
@@ -149,12 +150,12 @@ public class LifeSupportTest
         try
         {
             lifeSupport.start();
-            Assert.fail(  );
+            fail();
         }
         catch( LifecycleException throwable )
         {
-            assertEquals( stopThrowable, throwable.getCause());
-            assertEquals( startThrowable, throwable.getCause().getCause().getCause() );
+            assertEquals( startThrowable, throwable.getCause() );
+            assertArrayEquals( new Throwable[]{stopThrowable}, throwable.getSuppressed() );
         }
 
         assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus() );
@@ -182,7 +183,7 @@ public class LifeSupportTest
         try
         {
             lifeSupport.stop();
-            Assert.fail(  );
+            fail();
         }
         catch( LifecycleException throwable )
         {
@@ -213,7 +214,7 @@ public class LifeSupportTest
         try
         {
             lifeSupport.shutdown();
-            Assert.fail(  );
+            fail();
         }
         catch( LifecycleException throwable )
         {

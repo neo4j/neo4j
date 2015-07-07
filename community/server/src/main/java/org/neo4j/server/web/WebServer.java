@@ -49,7 +49,7 @@ public interface WebServer
 
     void setMaxThreads( int maxThreads );
 
-    void start();
+    void start() throws Exception;
 
     void stop();
 
