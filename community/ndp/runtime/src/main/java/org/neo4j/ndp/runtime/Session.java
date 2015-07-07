@@ -22,7 +22,7 @@ package org.neo4j.ndp.runtime;
 import java.util.Map;
 
 import org.neo4j.ndp.runtime.internal.Neo4jError;
-import org.neo4j.stream.RecordStream;
+import org.neo4j.ndp.runtime.spi.RecordStream;
 
 /**
  * A user session associated with a given {@link Sessions}. The majority of methods on this

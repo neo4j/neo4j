@@ -20,6 +20,7 @@
 package org.neo4j.packstream;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * This is where {@link PackStream} writes its output to.
@@ -31,6 +32,9 @@ public interface PackOutput
 
     /** Produce a single byte */
     PackOutput writeByte( byte value ) throws IOException;
+
+    /** Produce binary data */
+    PackOutput writeBytes( ByteBuffer data ) throws IOException;
 
     /** Produce binary data */
     PackOutput writeBytes( byte[] data, int offset, int amountToWrite ) throws IOException;

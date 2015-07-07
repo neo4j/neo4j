@@ -24,7 +24,7 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.stream.Record;
+import org.neo4j.ndp.runtime.spi.Record;
 
 import static java.util.Arrays.asList;
 

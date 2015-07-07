@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.stream;
+package org.neo4j.ndp.runtime.spi;
 
 /**
  * Represents a data stream of records, this is the output cypher produces.
@@ -30,7 +30,7 @@ public interface RecordStream extends AutoCloseable
     /** Positional names for all fields in every record of this stream. */
     String[] fieldNames();
 
-    void visitAll( Visitor visitor ) throws Exception;
+    void accept( Visitor visitor ) throws Exception;
 
     @Override
     void close();
@@ -57,7 +57,7 @@ public interface RecordStream extends AutoCloseable
         }
 
         @Override
-        public void visitAll( Visitor visitor )
+        public void accept( Visitor visitor )
         {
 
         }

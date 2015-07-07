@@ -22,8 +22,8 @@ package org.neo4j.ndp.messaging.v1.msgprocess;
 import java.io.IOException;
 
 import org.neo4j.logging.Log;
-import org.neo4j.stream.Record;
-import org.neo4j.stream.RecordStream;
+import org.neo4j.ndp.runtime.spi.Record;
+import org.neo4j.ndp.runtime.spi.RecordStream;
 
 public class RecordStreamCallback extends MessageProcessingCallback<RecordStream>
 {
@@ -35,7 +35,7 @@ public class RecordStreamCallback extends MessageProcessingCallback<RecordStream
     @Override
     public void result( RecordStream stream, Void ignore ) throws Exception
     {
-        stream.visitAll( new RecordStream.Visitor()
+        stream.accept( new RecordStream.Visitor()
         {
             @Override
             public void visit( Record record ) throws IOException

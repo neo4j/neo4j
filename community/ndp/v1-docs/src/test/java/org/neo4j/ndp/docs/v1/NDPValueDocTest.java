@@ -53,7 +53,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.ndp.docs.v1.DocTable.table;
 import static org.neo4j.ndp.docs.v1.DocsRepository.docs;
 import static org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1.Writer.NO_OP;
-import static org.neo4j.stream.Records.record;
+import static org.neo4j.ndp.runtime.spi.Records.record;
 
 /** This tests that Neo4j value mappings described in the documentation work the way we say they do. */
 @RunWith( Parameterized.class )

@@ -17,10 +17,49 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.stream;
+package org.neo4j.ndp.runtime.spi;
 
-public interface Record
+import java.util.Arrays;
+
+public class ImmutableRecord implements Record
 {
-    /* Implementation note: This should use Neo4jValue, or some such interface that denotes Neo4j-specific types */
-    Object[] fields();
+    private final Object[] fields;
+
+    public ImmutableRecord( Object[] fields )
+    {
+        this.fields = fields;
+    }
+
+    @Override
+    public Object[] fields()
+    {
+        return fields;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || !(o instanceof Record) )
+        {
+            return false;
+        }
+
+        Record that = (Record) o;
+        if ( !Arrays.equals( fields, that.fields() ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Arrays.hashCode( fields );
+    }
 }

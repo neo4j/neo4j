@@ -24,7 +24,7 @@ import java.util.Map;
 import org.neo4j.function.Consumer;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.StatementMetadata;
-import org.neo4j.stream.RecordStream;
+import org.neo4j.ndp.runtime.spi.RecordStream;
 
 /**
  * A session implementation that delegates work to a worker thread.

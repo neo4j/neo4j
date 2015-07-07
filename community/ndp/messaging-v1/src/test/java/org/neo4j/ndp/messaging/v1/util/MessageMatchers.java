@@ -42,7 +42,7 @@ import org.neo4j.ndp.runtime.internal.Neo4jError;
 import org.neo4j.packstream.BufferedChannelInput;
 import org.neo4j.packstream.BufferedChannelOutput;
 import org.neo4j.packstream.PackStream;
-import org.neo4j.stream.Record;
+import org.neo4j.ndp.runtime.spi.Record;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;

@@ -53,7 +53,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1.Writer.NO_OP;
-import static org.neo4j.stream.Records.record;
+import static org.neo4j.ndp.runtime.spi.Records.record;
 
 public class MessageFormatTest
 {

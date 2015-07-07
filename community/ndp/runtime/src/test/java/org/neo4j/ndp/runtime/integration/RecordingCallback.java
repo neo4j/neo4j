@@ -30,9 +30,9 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.StatementMetadata;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
-import org.neo4j.stream.ImmutableRecord;
-import org.neo4j.stream.Record;
-import org.neo4j.stream.RecordStream;
+import org.neo4j.ndp.runtime.spi.ImmutableRecord;
+import org.neo4j.ndp.runtime.spi.Record;
+import org.neo4j.ndp.runtime.spi.RecordStream;
 
 public class RecordingCallback<V, A> implements Session.Callback<V,A>
 {
@@ -223,7 +223,7 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
     private Record[] unwind( RecordStream result ) throws Exception
     {
         final List<Record> values = new ArrayList<>();
-        result.visitAll( new RecordStream.Visitor()
+        result.accept( new RecordStream.Visitor()
         {
             @Override
             public void visit( Record record )

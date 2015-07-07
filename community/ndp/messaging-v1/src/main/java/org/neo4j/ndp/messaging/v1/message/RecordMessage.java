@@ -20,7 +20,7 @@
 package org.neo4j.ndp.messaging.v1.message;
 
 import org.neo4j.ndp.messaging.v1.MessageHandler;
-import org.neo4j.stream.Record;
+import org.neo4j.ndp.runtime.spi.Record;
 
 public class RecordMessage implements Message
 {

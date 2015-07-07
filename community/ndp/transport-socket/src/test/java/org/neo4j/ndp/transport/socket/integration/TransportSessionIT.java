@@ -43,10 +43,10 @@ import static org.neo4j.ndp.messaging.v1.message.Messages.pullAll;
 import static org.neo4j.ndp.messaging.v1.message.Messages.run;
 import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.msgRecord;
 import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.msgSuccess;
+import static org.neo4j.ndp.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.ndp.transport.socket.integration.TransportTestUtil.acceptedVersions;
 import static org.neo4j.ndp.transport.socket.integration.TransportTestUtil.chunk;
 import static org.neo4j.ndp.transport.socket.integration.TransportTestUtil.eventuallyRecieves;
-import static org.neo4j.runtime.internal.runner.StreamMatchers.eqRecord;
 
 @RunWith(Parameterized.class)
 public class TransportSessionIT
