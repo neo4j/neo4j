@@ -36,6 +36,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -74,8 +75,7 @@ public class CountsRotationTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
-                                                           new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
+            CountsTracker store = life.add( createCountsTracker( pageCache ) );
             assertEquals( BASE_TX_ID, store.txId() );
             assertEquals( INITIAL_MINOR_VERSION, store.minorVersion() );
             assertEquals( 0, store.totalEntriesStored() );
@@ -84,8 +84,7 @@ public class CountsRotationTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
-                                                           new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
+            CountsTracker store = life.add( createCountsTracker( pageCache ) );
             assertEquals( BASE_TX_ID, store.txId() );
             assertEquals( INITIAL_MINOR_VERSION, store.minorVersion() );
             assertEquals( 0, store.totalEntriesStored() );
@@ -113,8 +112,7 @@ public class CountsRotationTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
-                                                           new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
+            CountsTracker store = life.add( createCountsTracker( pageCache ) );
             // a transaction for creating the label and a transaction for the node
             assertEquals( BASE_TX_ID + 1 + 1, store.txId() );
             assertEquals( INITIAL_MINOR_VERSION, store.minorVersion() );
@@ -152,8 +150,7 @@ public class CountsRotationTest
         final PageCache pageCache = db.getDependencyResolver().resolveDependency( PageCache.class );
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
-                                                           new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
+            CountsTracker store = life.add( createCountsTracker( pageCache ) );
             // NOTE since the rotation happens before the second transaction is committed we do not see those changes
             // in the stats
             // a transaction for creating the label and a transaction for the node
@@ -173,6 +170,12 @@ public class CountsRotationTest
         assertEquals( 1, tracker.nodeCount( labelId, newDoubleLongRegister() ).readSecond() );
 
         db.shutdown();
+    }
+
+    private CountsTracker createCountsTracker(PageCache pageCache)
+    {
+        return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache, emptyConfig,
+                new File( dir.getPath(), COUNTS_STORE_BASE ) );
     }
 
     private void checkPoint( GraphDatabaseAPI db ) throws IOException
@@ -196,6 +199,7 @@ public class CountsRotationTest
     private File dir;
     private GraphDatabaseBuilder dbBuilder;
     private PageCache pageCache;
+    private Config emptyConfig;
 
     @Before
     public void setup()
@@ -204,6 +208,7 @@ public class CountsRotationTest
         dir = testDir.directory( "dir" ).getAbsoluteFile();
         dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir );
         pageCache = pcRule.getPageCache( fs );
+        emptyConfig = new Config();
     }
 
     private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;

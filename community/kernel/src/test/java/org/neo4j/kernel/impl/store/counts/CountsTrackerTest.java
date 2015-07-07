@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.neo4j.function.Function;
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.Predicate;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.CountsOracle;
@@ -201,7 +202,7 @@ public class CountsTrackerTest
         {
             final Barrier.Control barrier = new Barrier.Control();
             CountsTracker tracker = life.add( new CountsTracker(
-                    the.logProvider(), the.fileSystem(), the.pageCache(), the.testPath() )
+                    the.logProvider(), the.fileSystem(), the.pageCache(), new Config(), the.testPath() )
             {
                 @Override
                 protected boolean include( CountsKey countsKey, ReadableBuffer value )
@@ -345,8 +346,8 @@ public class CountsTrackerTest
 
     private CountsTracker newTracker()
     {
-        return new CountsTracker( the.logProvider(), the.fileSystem(), the.pageCache(), the.testPath() ).setInitializer(
-                new DataInitializer<CountsAccessor.Updater>()
+        return new CountsTracker( the.logProvider(), the.fileSystem(), the.pageCache(), new Config(), the.testPath() )
+                .setInitializer( new DataInitializer<CountsAccessor.Updater>()
                 {
                     @Override
                     public void initialize( CountsAccessor.Updater updater )

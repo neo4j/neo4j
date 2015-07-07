@@ -42,6 +42,20 @@ public @interface State
             {
                 return new ConcurrentMapState<>( store, file );
             }
-        };
+        },
+        READ_ONLY_CONCURRENT_HASH_MAP
+        {
+            @Override
+            public <Key> ActiveState<Key> open( ReadableState<Key> store, File file )
+            {
+                return new ConcurrentMapState<Key>( store, file ) {
+                    @Override
+                    protected boolean hasChanges()
+                    {
+                        return false;
+                    }
+                };
+            }
+        }
     }
 }

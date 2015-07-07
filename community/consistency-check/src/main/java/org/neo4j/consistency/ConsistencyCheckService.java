@@ -30,6 +30,9 @@ import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -97,18 +100,21 @@ public class ConsistencyCheckService
         }
     }
 
-    public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
+    public Result runFullConsistencyCheck( final File storeDir, Config tuningConfiguration,
                                            ProgressMonitorFactory progressFactory,
-                                           LogProvider logProvider,
+                                           final LogProvider logProvider,
                                            final FileSystemAbstraction fileSystem,
-                                           PageCache pageCache )
+                                           final PageCache pageCache )
             throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
         Monitors monitors = new Monitors();
+        Config consistencyCheckerConfig = tuningConfiguration.with(
+                MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
+
         StoreFactory factory = new StoreFactory(
                 storeDir,
-                tuningConfiguration,
+                consistencyCheckerConfig,
                 new DefaultIdGeneratorFactory(),
                 pageCache, fileSystem, logProvider,
                 monitors
@@ -194,13 +200,13 @@ public class ConsistencyCheckService
         return String.format( "inconsistencies-%s.report", formattedDate );
     }
 
-    public static enum Result
+    public enum Result
     {
         FAILURE( false ), SUCCESS( true );
 
         private final boolean successful;
 
-        private Result( boolean successful )
+        Result( boolean successful )
         {
             this.successful = successful;
         }
@@ -210,4 +216,5 @@ public class ConsistencyCheckService
             return this.successful;
         }
     }
+
 }

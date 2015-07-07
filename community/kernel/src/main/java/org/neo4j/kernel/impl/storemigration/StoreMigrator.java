@@ -168,7 +168,6 @@ public class StoreMigrator implements StoreMigrationParticipant
      * as part of a resumed migration, i.e. run even if
      * {@link StoreMigrationParticipant#migrate(java.io.File, java.io.File,
      * org.neo4j.kernel.api.index.SchemaIndexProvider)}
-     * hasn't been run.
      */
     private String versionToUpgradeFrom( File storeDir )
     {
@@ -372,7 +371,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 CountsComputer initializer = new CountsComputer(
                         lastTxId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId );
                 life.add( new CountsTracker(
-                        logService.getInternalLogProvider(), fileSystem, pageCache, storeFileBase )
+                        logService.getInternalLogProvider(), fileSystem, pageCache, config, storeFileBase )
                         .setInitializer( initializer ) );
             }
         }
