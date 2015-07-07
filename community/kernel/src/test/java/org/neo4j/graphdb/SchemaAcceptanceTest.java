@@ -19,11 +19,12 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -36,7 +37,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Neo4jMatchers.contains;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
@@ -323,7 +325,7 @@ public class SchemaAcceptanceTest
             tx.success();
         }
     }
-    
+
     @Test
     public void shouldListAddedConstraintsByLabel() throws Exception
     {
@@ -361,7 +363,7 @@ public class SchemaAcceptanceTest
     public void addingConstraintWhenIndexAlreadyExistsGivesNiceError() throws Exception
     {
         // GIVEN
-        createIndex( db, label , propertyKey );
+        createIndex( db, label, propertyKey );
 
         // WHEN
         try
@@ -418,8 +420,9 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( "Label 'MY_LABEL' and property 'my_property_key' already have a unique constraint defined on them.",
-                          e.getMessage() );
+            assertEquals(
+                    "Constraint already exists: CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key IS UNIQUE",
+                    e.getMessage() );
         }
     }
 

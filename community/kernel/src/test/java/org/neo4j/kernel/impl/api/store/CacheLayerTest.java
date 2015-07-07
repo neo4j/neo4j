@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.Set;
 
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 
@@ -42,8 +43,8 @@ public class CacheLayerTest
     public void shouldLoadAllConstraintsFromCache() throws Exception
     {
         // Given
-        Set<PropertyConstraint> constraints = asSet( (PropertyConstraint)new UniquenessConstraint( 0, 1 ) );
-        when(schemaCache.constraints()).thenReturn( constraints.iterator() );
+        Set<PropertyConstraint> constraints = asSet( (PropertyConstraint) new UniquenessConstraint( 0, 1 ) );
+        when( schemaCache.constraints() ).thenReturn( constraints.iterator() );
 
         // When & Then
         assertThat( asSet( context.constraintsGetAll() ), equalTo( constraints ) );
@@ -53,9 +54,9 @@ public class CacheLayerTest
     public void shouldLoadConstraintsByLabelFromCache() throws Exception
     {
         // Given
-        int labelId =  0;
-        Set<PropertyConstraint> constraints = asSet( (PropertyConstraint)new UniquenessConstraint( labelId, 1 ) );
-        when(schemaCache.constraintsForLabel(labelId)).thenReturn( constraints.iterator() );
+        int labelId = 0;
+        Set<NodePropertyConstraint> constraints = asSet( (NodePropertyConstraint) new UniquenessConstraint( labelId, 1 ) );
+        when( schemaCache.constraintsForLabel( labelId ) ).thenReturn( constraints.iterator() );
 
         // When & Then
         assertThat( asSet( context.constraintsGetForLabel( labelId ) ), equalTo( constraints ) );
@@ -66,11 +67,10 @@ public class CacheLayerTest
     {
         // Given
         int labelId = 0, propertyId = 1;
-        Set<PropertyConstraint> constraints = asSet( (PropertyConstraint)new UniquenessConstraint( labelId, propertyId ) );
-        when(schemaCache.constraintsForLabelAndProperty(labelId, propertyId)).thenReturn( constraints.iterator() );
+        Set<NodePropertyConstraint> constraints = asSet( (NodePropertyConstraint) new UniquenessConstraint( labelId, propertyId ) );
+        when( schemaCache.constraintsForLabelAndProperty( labelId, propertyId ) ).thenReturn( constraints.iterator() );
 
         // When & Then
-        assertThat( asSet( context.constraintsGetForLabelAndPropertyKey( labelId, propertyId ) ),
-                equalTo( constraints ) );
+        assertThat( asSet( context.constraintsGetForLabelAndPropertyKey( labelId, propertyId ) ), equalTo( constraints ) );
     }
 }

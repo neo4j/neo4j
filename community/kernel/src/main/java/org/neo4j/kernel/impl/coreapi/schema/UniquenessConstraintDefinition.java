@@ -17,39 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.kernel.impl.coreapi.schema;
 
-package org.neo4j.kernel.api.constraints;
-
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintType;
 
-public class MandatoryPropertyConstraint extends PropertyConstraint
+import static java.lang.String.format;
+
+public class UniquenessConstraintDefinition extends NodeConstraintDefinition
 {
-    public MandatoryPropertyConstraint( int labelId, int propertyKeyId )
+    public UniquenessConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey )
     {
-        super( labelId, propertyKeyId );
+        super( actions, label, propertyKey );
     }
 
     @Override
-    public void added( ChangeVisitor visitor )
+    public void drop()
     {
-        visitor.visitAddedMandatoryPropertyConstraint( this );
+        assertInUnterminatedTransaction();
+        actions.dropPropertyUniquenessConstraint( label, propertyKey );
     }
 
     @Override
-    public void removed( ChangeVisitor visitor )
+    public ConstraintType getConstraintType()
     {
-        visitor.visitRemovedMandatoryPropertyConstraint( this );
+        assertInUnterminatedTransaction();
+        return ConstraintType.UNIQUENESS;
     }
 
     @Override
-    String constraintString()
+    public String toString()
     {
-        return "NOT NULL";
-    }
-
-    @Override
-    public ConstraintType type()
-    {
-        return ConstraintType.MANDATORY_PROPERTY;
+        return format( "ON (%1$s:%2$s) ASSERT %1$s.%3$s IS UNIQUE",
+                label.name().toLowerCase(), label.name(), propertyKey );
     }
 }

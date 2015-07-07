@@ -97,7 +97,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> serialized = jsonToMap( result );
 
         Map<String, Object> constraint = new HashMap<>(  );
-        constraint.put( "type", ConstraintType.MANDATORY_PROPERTY.name() );
+        constraint.put( "type", ConstraintType.MANDATORY_NODE_PROPERTY.name() );
         constraint.put( "label", labelName );
         constraint.put( "property_keys", singletonList( propertyKey ) );
 
@@ -151,7 +151,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         List<Map<String, Object>> serializedList = jsonToList( result );
 
         Map<String, Object> constraint = new HashMap<>(  );
-        constraint.put( "type", ConstraintType.MANDATORY_PROPERTY.name() );
+        constraint.put( "type", ConstraintType.MANDATORY_NODE_PROPERTY.name() );
         constraint.put( "label", labelName );
         constraint.put( "property_keys", singletonList( propertyKey ) );
 
@@ -210,12 +210,12 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         List<Map<String, Object>> serializedList = jsonToList( result );
 
         Map<String, Object> constraint1 = new HashMap<>(  );
-        constraint1.put( "type", ConstraintType.MANDATORY_PROPERTY.name() );
+        constraint1.put( "type", ConstraintType.MANDATORY_NODE_PROPERTY.name() );
         constraint1.put( "label", labelName );
         constraint1.put( "property_keys", singletonList( propertyKey1 ) );
 
         Map<String, Object> constraint2 = new HashMap<>(  );
-        constraint2.put( "type", ConstraintType.MANDATORY_PROPERTY.name() );
+        constraint2.put( "type", ConstraintType.MANDATORY_NODE_PROPERTY.name() );
         constraint2.put( "label", labelName );
         constraint2.put( "property_keys", singletonList( propertyKey2 ) );
 
@@ -247,7 +247,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         constraint1.put( "property_keys", singletonList( propertyKey1 ) );
 
         Map<String, Object> constraint2 = new HashMap<>(  );
-        constraint2.put( "type", ConstraintType.MANDATORY_PROPERTY.name() );
+        constraint2.put( "type", ConstraintType.MANDATORY_NODE_PROPERTY.name() );
         constraint2.put( "label", labelName );
         constraint2.put( "property_keys", singletonList( propertyKey2 ) );
 
@@ -280,7 +280,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         constraint1.put( "property_keys", singletonList( propertyKey1 ) );
 
         Map<String, Object> constraint2 = new HashMap<>(  );
-        constraint2.put( "type", ConstraintType.MANDATORY_PROPERTY.name() );
+        constraint2.put( "type", ConstraintType.MANDATORY_NODE_PROPERTY.name() );
         constraint2.put( "label", labelName2 );
         constraint2.put( "property_keys", singletonList( propertyKey2 ) );
 

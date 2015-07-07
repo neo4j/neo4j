@@ -35,7 +35,8 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -86,7 +87,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             ReadOperations statement = readOperationsInNewTransaction();
 
             // when
-            Iterator<PropertyConstraint> constraints = statement
+            Iterator<NodePropertyConstraint> constraints = statement
                     .constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId );
 
             // then
@@ -103,7 +104,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             // when
-            constraint = statement.mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
+            constraint = statement.mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
 
             // then
             assertEquals( constraint, single( statement.constraintsGetForLabelAndPropertyKey( labelId,propertyKeyId ) ) );
@@ -116,7 +117,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             ReadOperations statement = readOperationsInNewTransaction();
 
             // when
-            Iterator<PropertyConstraint> constraints = statement
+            Iterator<NodePropertyConstraint> constraints = statement
                     .constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId );
 
             // then
@@ -140,7 +141,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             ReadOperations statement = readOperationsInNewTransaction();
 
             // then
-            Iterator<PropertyConstraint> constraints = statement.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId );
+            Iterator<NodePropertyConstraint> constraints = statement.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId );
             assertFalse( "should not have any constraints", constraints.hasNext() );
         }
     }
@@ -152,7 +153,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
-            statement.mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
+            statement.mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
 
             // when
             rollback();
@@ -161,7 +162,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             ReadOperations statement = readOperationsInNewTransaction();
 
             // then
-            Iterator<PropertyConstraint> constraints = statement.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId );
+            Iterator<NodePropertyConstraint> constraints = statement.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId );
             assertFalse( "should not have any constraints", constraints.hasNext() );
         }
     }
@@ -173,7 +174,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
-            PropertyConstraint constraint = statement.uniquePropertyConstraintCreate( labelId, propertyKeyId );
+            UniquenessConstraint constraint = statement.uniquePropertyConstraintCreate( labelId, propertyKeyId );
 
             // when
             statement.constraintDrop( constraint );
@@ -201,7 +202,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
-            PropertyConstraint constraint = statement.mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
+            MandatoryNodePropertyConstraint constraint = statement.mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
 
             // when
             statement.constraintDrop( constraint );
@@ -226,10 +227,10 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     public void shouldDropMandatoryPropertyConstraint() throws Exception
     {
         // given
-        PropertyConstraint constraint;
+        MandatoryNodePropertyConstraint constraint;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = statement.mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
+            constraint = statement.mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
             commit();
         }
 
@@ -282,7 +283,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         // given
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
+            statement.mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
             commit();
         }
 
@@ -291,7 +292,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
-            statement.mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
+            statement.mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
 
             fail( "Should not have validated" );
         }
@@ -306,7 +307,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     public void shouldNotRemoveUniquePropertyConstraintThatGetsReAdded() throws Exception
     {
         // given
-        PropertyConstraint constraint;
+        UniquenessConstraint constraint;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             constraint = statement.uniquePropertyConstraintCreate( labelId, propertyKeyId );
@@ -334,10 +335,10 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     public void shouldNotRemoveMandatoryPropertyConstraintThatGetsReAdded() throws Exception
     {
         // given
-        PropertyConstraint constraint;
+        MandatoryNodePropertyConstraint constraint;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = statement.mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
+            constraint = statement.mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
             commit();
         }
         SchemaStateCheck schemaState = new SchemaStateCheck().setUp();
@@ -346,7 +347,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
 
             // when
             statement.constraintDrop( constraint );
-            statement.mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
+            statement.mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
             commit();
         }
         {
@@ -375,7 +376,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             }
             else
             {
-                statement.mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
+                statement.mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
             }
             commit();
 
@@ -391,7 +392,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         for ( int i = 0; i < 2; i++ )
         {
             // given
-            PropertyConstraint constraint;
+            NodePropertyConstraint constraint;
             SchemaStateCheck schemaState;
             {
                 SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
@@ -401,7 +402,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
                 }
                 else
                 {
-                    constraint = statement.mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
+                    constraint = statement.mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
                 }
                 commit();
 
@@ -466,7 +467,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     public void shouldDropConstraintIndexWhenDroppingConstraint() throws Exception
     {
         // given
-        PropertyConstraint constraint;
+        UniquenessConstraint constraint;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             constraint = statement.uniquePropertyConstraintCreate( labelId, propertyKeyId );
@@ -493,9 +494,9 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
     @Test
     public void shouldNotDropConstraintThatDoesNotExist() throws Exception
     {
-        for ( PropertyConstraint constraint : new PropertyConstraint[]{
+        for ( NodePropertyConstraint constraint : new NodePropertyConstraint[]{
                 new UniquenessConstraint( labelId, propertyKeyId ),
-                new MandatoryPropertyConstraint( labelId, propertyKeyId ),
+                new MandatoryNodePropertyConstraint( labelId, propertyKeyId ),
         } )
         {
             // when
@@ -528,7 +529,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             throws Exception
     {
         // given
-        PropertyConstraint constraint;
+        UniquenessConstraint constraint;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             constraint = statement.uniquePropertyConstraintCreate( labelId, propertyKeyId );
@@ -539,7 +540,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         try
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.constraintDrop( new MandatoryPropertyConstraint( constraint.label(), constraint.propertyKeyId() ) );
+            statement.constraintDrop( new MandatoryNodePropertyConstraint( constraint.label(), constraint.propertyKey() ) );
 
             fail( "expected exception" );
         }
@@ -557,7 +558,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         {
             ReadOperations statement = readOperationsInNewTransaction();
 
-            Iterator<PropertyConstraint> constraints = statement
+            Iterator<NodePropertyConstraint> constraints = statement
                     .constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId );
 
             assertEquals( constraint, single( constraints ) );
@@ -569,10 +570,10 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
             throws Exception
     {
         // given
-        PropertyConstraint constraint;
+        MandatoryNodePropertyConstraint constraint;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            constraint = statement.mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
+            constraint = statement.mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
             commit();
         }
 
@@ -580,7 +581,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         try
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.constraintDrop( new UniquenessConstraint( constraint.label(), constraint.propertyKeyId() ) );
+            statement.constraintDrop( new UniquenessConstraint( constraint.label(), constraint.propertyKey() ) );
 
             fail( "expected exception" );
         }
@@ -598,7 +599,7 @@ public class ConstraintsCreationIT extends KernelIntegrationTest
         {
             ReadOperations statement = readOperationsInNewTransaction();
 
-            Iterator<PropertyConstraint> constraints = statement
+            Iterator<NodePropertyConstraint> constraints = statement
                     .constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId );
 
             assertEquals( constraint, single( constraints ) );

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
  * {@linkplain ReadableDiffSets#getAdded() created} or {@linkplain ReadableDiffSets#getRemoved() dropped}.</li>
  * <li>{@linkplain #constraintIndexChanges() Unique indexes} for the label that have been
  * {@linkplain ReadableDiffSets#getAdded() created} or {@linkplain ReadableDiffSets#getRemoved() dropped}.</li>
- * <li>{@linkplain #constraintsChanges() Constraints} for the label that have been
+ * <li>{@linkplain #nodeConstraintsChanges() Constraints} for the label that have been
  * {@linkplain ReadableDiffSets#getAdded() created} or {@linkplain ReadableDiffSets#getRemoved() dropped}.</li>
  * </ul>
  */
@@ -45,14 +45,14 @@ public abstract class LabelState
 
     public abstract ReadableDiffSets<IndexDescriptor> constraintIndexChanges();
 
-    public abstract ReadableDiffSets<PropertyConstraint> constraintsChanges();
+    public abstract ReadableDiffSets<NodePropertyConstraint> nodeConstraintsChanges();
 
     public static class Mutable extends LabelState
     {
         private DiffSets<Long> nodeDiffSets;
         private DiffSets<IndexDescriptor> indexChanges;
         private DiffSets<IndexDescriptor> constraintIndexChanges;
-        private DiffSets<PropertyConstraint> constraintsChanges;
+        private DiffSets<NodePropertyConstraint> nodeConstraintsChanges;
         private final int labelId;
 
         private Mutable( int labelId )
@@ -111,18 +111,18 @@ public abstract class LabelState
         }
 
         @Override
-        public ReadableDiffSets<PropertyConstraint> constraintsChanges()
+        public ReadableDiffSets<NodePropertyConstraint> nodeConstraintsChanges()
         {
-            return ReadableDiffSets.Empty.ifNull( constraintsChanges );
+            return ReadableDiffSets.Empty.ifNull( nodeConstraintsChanges );
         }
 
-        public DiffSets<PropertyConstraint> getOrCreateConstraintsChanges()
+        public DiffSets<NodePropertyConstraint> getOrCreateConstraintsChanges()
         {
-            if ( constraintsChanges == null )
+            if ( nodeConstraintsChanges == null )
             {
-                constraintsChanges = new DiffSets<>();
+                nodeConstraintsChanges = new DiffSets<>();
             }
-            return constraintsChanges;
+            return nodeConstraintsChanges;
         }
     }
 
@@ -162,7 +162,7 @@ public abstract class LabelState
         }
 
         @Override
-        public ReadableDiffSets<PropertyConstraint> constraintsChanges()
+        public ReadableDiffSets<NodePropertyConstraint> nodeConstraintsChanges()
         {
             return ReadableDiffSets.Empty.instance();
         }

@@ -32,15 +32,14 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -291,7 +290,7 @@ public class SchemaImpl implements Schema
         try ( Statement statement = statementContextSupplier.get() )
         {
             Iterator<PropertyConstraint> constraints = statement.readOperations().constraintsGetAll();
-            return asConstraintDefinitions( statement.readOperations(), constraints );
+            return asConstraintDefinitions( constraints, statement.readOperations() );
         }
     }
 
@@ -307,43 +306,24 @@ public class SchemaImpl implements Schema
             {
                 return emptyList();
             }
-            Iterator<PropertyConstraint> constraints = statement.readOperations().constraintsGetForLabel( labelId );
-            return asConstraintDefinitions( statement.readOperations(), constraints );
+            Iterator<NodePropertyConstraint> constraints = statement.readOperations().constraintsGetForLabel( labelId );
+            return asConstraintDefinitions( constraints, statement.readOperations() );
         }
     }
 
-    private Iterable<ConstraintDefinition> asConstraintDefinitions(
-            final ReadOperations readOperations, Iterator<PropertyConstraint> constraints )
+    private Iterable<ConstraintDefinition> asConstraintDefinitions( Iterator<? extends PropertyConstraint> constraints,
+            ReadOperations readOperations )
     {
-        Iterator<ConstraintDefinition> definitions =
-                map( new Function<PropertyConstraint, ConstraintDefinition>()
-                {
-                    @Override
-                    public ConstraintDefinition apply( PropertyConstraint constraint )
-                    {
-                        int labelId = constraint.label();
-                        try
-                        {
-                            Label label = label( readOperations.labelGetName( labelId ) );
-                            return new PropertyConstraintDefinition( actions, label,
-                                    readOperations.propertyKeyGetName( constraint.propertyKeyId() ), constraint.type() );
-                        }
-                        catch ( PropertyKeyIdNotFoundKernelException e )
-                        {
-                            throw new ThisShouldNotHappenError( "Mattias", "Couldn't find property name for " +
-                                                                           constraint.propertyKeyId(), e );
-                        }
-                        catch ( LabelNotFoundKernelException e )
-                        {
-                            throw new ThisShouldNotHappenError( "Stefan",
-                                                                "Couldn't find label name for label id " +
-                                                                labelId, e );
-                        }
-                    }
-                }, constraints );
+        // Intentionally create an eager list so that used statement can be closed
+        List<ConstraintDefinition> definitions = new ArrayList<>();
 
-        // Intentionally iterator over it so that we can close the statement context within this method
-        return asCollection( definitions );
+        while ( constraints.hasNext() )
+        {
+            PropertyConstraint constraint = constraints.next();
+            definitions.add( constraint.asConstraintDefinition( actions, readOperations ) );
+        }
+
+        return definitions;
     }
 
     private static class GDBSchemaActions implements InternalSchemaActions
@@ -425,7 +405,7 @@ public class SchemaImpl implements Schema
                     int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
                     statement.schemaWriteOperations().uniquePropertyConstraintCreate( labelId, propertyKeyId );
-                    return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.UNIQUENESS );
+                    return new UniquenessConstraintDefinition( this, label, propertyKey );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException e )
                 {
@@ -456,8 +436,8 @@ public class SchemaImpl implements Schema
                 {
                     int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
-                    statement.schemaWriteOperations().mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
-                    return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.MANDATORY_PROPERTY );
+                    statement.schemaWriteOperations().mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
+                    return new MandatoryNodePropertyConstraintDefinition( this, label, propertyKey );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException e )
                 {
@@ -488,7 +468,7 @@ public class SchemaImpl implements Schema
                 {
                     int labelId = statement.schemaWriteOperations().labelGetForName( label.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetForName( propertyKey );
-                    PropertyConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
+                    NodePropertyConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
                     statement.schemaWriteOperations().constraintDrop( constraint );
                 }
                 catch ( DropConstraintFailureException e )
@@ -504,7 +484,7 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public void dropPropertyExistenceConstraint( Label label, String propertyKey )
+        public void dropNodePropertyExistenceConstraint( Label label, String propertyKey )
         {
             try ( Statement statement = ctxSupplier.get() )
             {
@@ -512,7 +492,7 @@ public class SchemaImpl implements Schema
                 {
                     int labelId = statement.schemaWriteOperations().labelGetForName( label.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetForName( propertyKey );
-                    PropertyConstraint constraint = new MandatoryPropertyConstraint( labelId, propertyKeyId );
+                    NodePropertyConstraint constraint = new MandatoryNodePropertyConstraint( labelId, propertyKeyId );
                     statement.schemaWriteOperations().constraintDrop( constraint );
                 }
                 catch ( DropConstraintFailureException e )

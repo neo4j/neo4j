@@ -25,7 +25,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.helpers.Strings;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
@@ -86,12 +87,26 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             int propertyKeyId = descriptor.getPropertyKeyId();
             builder.append( format( "new IndexDescriptor( %s, %s )", labelId, propertyKeyId ) );
         }
-        else if ( arg instanceof PropertyConstraint )
+        else if ( arg instanceof UniquenessConstraint )
         {
-            PropertyConstraint constraint = (PropertyConstraint) arg;
+            UniquenessConstraint constraint = (UniquenessConstraint) arg;
             int labelId = constraint.label();
-            int propertyKeyId = constraint.propertyKeyId();
+            int propertyKeyId = constraint.propertyKey();
             builder.append( format( "new UniquenessConstraint( %s, %s )", labelId, propertyKeyId ) );
+        }
+        else if ( arg instanceof MandatoryNodePropertyConstraint )
+        {
+            MandatoryNodePropertyConstraint constraint = (MandatoryNodePropertyConstraint) arg;
+            int labelId = constraint.label();
+            int propertyKeyId = constraint.propertyKey();
+            builder.append( format( "new MandatoryNodePropertyConstraint( %s, %s )", labelId, propertyKeyId ) );
+        }
+        else if ( arg instanceof MandatoryRelationshipPropertyConstraint )
+        {
+            MandatoryRelationshipPropertyConstraint constraint = (MandatoryRelationshipPropertyConstraint) arg;
+            int relTypeId = constraint.relationshipType();
+            int propertyKeyId = constraint.propertyKey();
+            builder.append( format( "new MandatoryRelationshipPropertyConstraint( %s, %s )", relTypeId, propertyKeyId ) );
         }
         else
         {

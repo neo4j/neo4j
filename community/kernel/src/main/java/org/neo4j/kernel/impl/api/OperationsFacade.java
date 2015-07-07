@@ -32,7 +32,8 @@ import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.NodeCursor;
@@ -536,14 +537,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
     {
         statement.assertOpen();
         return schemaRead().constraintsGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetForLabel( int labelId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId )
     {
         statement.assertOpen();
         return schemaRead().constraintsGetForLabel( statement, labelId );
@@ -798,15 +799,15 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public MandatoryPropertyConstraint mandatoryPropertyConstraintCreate( int labelId, int propertyKeyId )
+    public MandatoryNodePropertyConstraint mandatoryNodePropertyConstraintCreate( int labelId, int propertyKeyId )
             throws CreateConstraintFailureException, AlreadyConstrainedException
     {
         statement.assertOpen();
-        return schemaWrite().mandatoryPropertyConstraintCreate( statement, labelId, propertyKeyId );
+        return schemaWrite().mandatoryNodePropertyConstraintCreate( statement, labelId, propertyKeyId );
     }
 
     @Override
-    public void constraintDrop( PropertyConstraint constraint ) throws DropConstraintFailureException
+    public void constraintDrop( NodePropertyConstraint constraint ) throws DropConstraintFailureException
     {
         statement.assertOpen();
         schemaWrite().constraintDrop( statement, constraint );

@@ -35,7 +35,6 @@ import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.schema.PropertyConstraintDefinition;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
@@ -63,6 +62,8 @@ public abstract class ConstraintHaIT
 
     protected abstract void assertConstraintHolds( GraphDatabaseService db, Label label, String propertyKey,
             String propertyValue );
+
+    protected abstract Class<? extends ConstraintDefinition> constraintDefinitionClass();
 
     @Test
     public void shouldCreateConstraintOnMaster() throws Exception
@@ -228,11 +229,10 @@ public abstract class ConstraintHaIT
         // Then
         try ( Transaction ignored = slave.beginTx() )
         {
-            assertThat( single( slave.schema().getConstraints() ), instanceOf( PropertyConstraintDefinition.class ) );
-            PropertyConstraintDefinition constraint =
-                    (PropertyConstraintDefinition) single( slave.schema().getConstraints() );
-            assertThat( single( constraint.getPropertyKeys() ), equalTo( PROPERTY_KEY ) );
-            assertThat( constraint.getLabel(), equalTo( LABEL ) );
+            ConstraintDefinition definition = single( slave.schema().getConstraints() );
+            assertThat( definition, instanceOf( constraintDefinitionClass() ) );
+            assertThat( single( definition.getPropertyKeys() ), equalTo( PROPERTY_KEY ) );
+            assertThat( definition.getLabel(), equalTo( LABEL ) );
         }
     }
 

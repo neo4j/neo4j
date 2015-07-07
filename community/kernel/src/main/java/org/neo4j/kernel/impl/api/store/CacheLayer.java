@@ -45,6 +45,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
@@ -212,13 +213,13 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
     {
         return schemaCache.constraintsForLabelAndProperty( labelId, propertyKeyId );
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetForLabel( int labelId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId )
     {
         return schemaCache.constraintsForLabel( labelId );
     }

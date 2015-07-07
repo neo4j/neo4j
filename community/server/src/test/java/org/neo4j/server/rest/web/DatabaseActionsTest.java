@@ -19,6 +19,13 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,13 +34,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -70,7 +70,6 @@ import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
@@ -80,7 +79,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -1400,7 +1398,7 @@ public class DatabaseActionsTest
         Map<?, ?> definition = (Map<?, ?>) serialized.get( 0 );
         assertEquals( labelName, definition.get( "label" ) );
         assertEquals( Collections.singletonList( propertyKey ), definition.get( "property_keys" ) );
-        assertEquals( "MANDATORY_PROPERTY", definition.get( "type" ) );
+        assertEquals( "MANDATORY_NODE_PROPERTY", definition.get( "type" ) );
     }
 
     @Test

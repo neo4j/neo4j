@@ -197,6 +197,8 @@ class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends Delega
       def propertyKeyGetName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)
 
       def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
+
+      def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
     }), e)
     case e : KernelConstraintViolationException => throw new ConstraintValidationException(e.getMessage, e)
   }

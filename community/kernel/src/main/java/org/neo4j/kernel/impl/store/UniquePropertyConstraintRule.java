@@ -22,12 +22,11 @@ package org.neo4j.kernel.impl.store;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
-public class UniquePropertyConstraintRule extends PropertyConstraintRule
+public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
 {
     private final int[] propertyKeyIds;
     private final long ownedIndexRule;
@@ -131,7 +130,7 @@ public class UniquePropertyConstraintRule extends PropertyConstraintRule
     }
 
     @Override
-    public PropertyConstraint toConstraint()
+    public UniquenessConstraint toConstraint()
     {
         return new UniquenessConstraint( getLabel(), getPropertyKey() );
     }

@@ -17,13 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.store;
 
-public interface TokenNameLookup
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+
+public abstract class NodePropertyConstraintRule extends PropertyConstraintRule
 {
-    String labelGetName( int labelId );
+    public NodePropertyConstraintRule( long id, int label, Kind kind )
+    {
+        super( id, label, NOT_INITIALIZED, kind );
+    }
 
-    String relationshipTypeGetName( int relTypeId );
+    @Override
+    public final int getLabel()
+    {
+        return getLabelOrRelationshipType();
+    }
 
-    String propertyKeyGetName( int propertyKeyId );
+    @Override
+    public final int getRelationshipType()
+    {
+        throw new IllegalStateException( "Constraint rule is associated with nodes" );
+    }
+
+    @Override
+    public abstract NodePropertyConstraint toConstraint();
 }

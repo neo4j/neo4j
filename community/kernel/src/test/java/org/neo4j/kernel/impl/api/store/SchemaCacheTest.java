@@ -162,24 +162,6 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldResolveIndexId() throws Exception
-    {
-        // Given
-        Collection<SchemaRule> rules = asList();
-        SchemaCache cache = new SchemaCache( rules );
-
-        cache.addSchemaRule( newIndexRule( 1l, 1, 2 ) );
-        cache.addSchemaRule( newIndexRule( 2l, 1, 3 ) );
-        cache.addSchemaRule( newIndexRule( 3l, 2, 2 ) );
-
-        // When
-        long indexId = cache.indexId( new IndexDescriptor( 1, 3 ) );
-
-        // Then
-        assertThat(indexId, equalTo(2l));
-    }
-
-    @Test
     public void shouldResolveIndexDescriptor() throws Exception
     {
         // Given

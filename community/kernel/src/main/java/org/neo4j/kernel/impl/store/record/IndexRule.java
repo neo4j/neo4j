@@ -74,7 +74,7 @@ public class IndexRule extends AbstractSchemaRule
     public IndexRule( long id, int label, int propertyKey, SchemaIndexProvider.Descriptor providerDescriptor,
                        Long owningConstraint )
     {
-        super( id, label, indexKind( owningConstraint ) );
+        super( id, label, NOT_INITIALIZED, indexKind( owningConstraint ) );
         this.owningConstraint = owningConstraint;
 
         if ( providerDescriptor == null )
@@ -139,6 +139,18 @@ public class IndexRule extends AbstractSchemaRule
             return null;
         }
         return owningConstraint;
+    }
+
+    @Override
+    public int getLabel()
+    {
+        return getLabelOrRelationshipType();
+    }
+
+    @Override
+    public int getRelationshipType()
+    {
+        throw new IllegalStateException( "Index rule is associated with nodes" );
     }
 
     @Override

@@ -23,7 +23,8 @@ import java.util.Iterator;
 
 import org.neo4j.function.Function;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -283,22 +284,22 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public MandatoryPropertyConstraint mandatoryPropertyConstraintCreate( KernelStatement state, int labelId,
+    public MandatoryNodePropertyConstraint mandatoryNodePropertyConstraintCreate( KernelStatement state, int labelId,
             int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         state.locks().acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
-        return schemaWriteDelegate.mandatoryPropertyConstraintCreate( state, labelId, propertyKeyId );
+        return schemaWriteDelegate.mandatoryNodePropertyConstraintCreate( state, labelId, propertyKeyId );
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKeyId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKeyId )
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         return schemaReadDelegate.constraintsGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         return schemaReadDelegate.constraintsGetForLabel( state, labelId );
@@ -312,7 +313,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void constraintDrop( KernelStatement state, PropertyConstraint constraint )
+    public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint )
             throws DropConstraintFailureException
     {
         state.locks().acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );

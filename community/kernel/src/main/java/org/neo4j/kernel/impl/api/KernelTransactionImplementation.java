@@ -32,7 +32,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -60,7 +60,7 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.store.MandatoryPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.MandatoryNodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
@@ -382,7 +382,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         while ( constraints.hasNext() )
         {
             PropertyConstraint constraint = constraints.next();
-            if ( constraint instanceof MandatoryPropertyConstraint )
+            if ( constraint instanceof MandatoryNodePropertyConstraint )
             {
                 return new MandatoryPropertyEnforcer( operations.entityReadOperations(), txStateToRecordStateVisitor,
                         this, storeLayer, storeStatement );
@@ -876,10 +876,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             long constraintId = schemaStorage.newRuleId();
             IndexRule indexRule = schemaStorage.indexRule(
                     element.label(),
-                    element.propertyKeyId(),
+                    element.propertyKey(),
                     SchemaStorage.IndexRuleKind.CONSTRAINT );
             recordState.createSchemaRule( UniquePropertyConstraintRule.uniquenessConstraintRule(
-                    constraintId, element.label(), element.propertyKeyId(), indexRule.getId() ) );
+                    constraintId, element.label(), element.propertyKey(), indexRule.getId() ) );
             recordState.setConstraintIndexOwner( indexRule, constraintId );
         }
 
@@ -890,7 +890,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 clearState = true;
                 UniquePropertyConstraintRule rule = schemaStorage
-                        .uniquenessConstraint( element.label(), element.propertyKeyId() );
+                        .uniquenessConstraint( element.label(), element.propertyKey() );
                 recordState.dropSchemaRule( rule );
             }
             catch ( SchemaRuleNotFoundException e )
@@ -901,25 +901,25 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                 "have been validated earlier and the schema should have been locked." );
             }
             // Remove the index for the constraint as well
-            visitRemovedIndex( new IndexDescriptor( element.label(), element.propertyKeyId() ), true );
+            visitRemovedIndex( new IndexDescriptor( element.label(), element.propertyKey() ), true );
         }
 
         @Override
-        public void visitAddedMandatoryPropertyConstraint( MandatoryPropertyConstraint element )
+        public void visitAddedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint element )
         {
             clearState = true;
-            recordState.createSchemaRule( MandatoryPropertyConstraintRule.mandatoryPropertyConstraintRule(
-                    schemaStorage.newRuleId(), element.label(), element.propertyKeyId() ) );
+            recordState.createSchemaRule( MandatoryNodePropertyConstraintRule.mandatoryPropertyConstraintRule(
+                    schemaStorage.newRuleId(), element.label(), element.propertyKey() ) );
         }
 
         @Override
-        public void visitRemovedMandatoryPropertyConstraint( MandatoryPropertyConstraint element )
+        public void visitRemovedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint element )
         {
             try
             {
                 clearState = true;
                 recordState.dropSchemaRule(
-                        schemaStorage.mandatoryPropertyConstraint( element.label(), element.propertyKeyId() ) );
+                        schemaStorage.mandatoryPropertyConstraint( element.label(), element.propertyKey() ) );
             }
             catch ( SchemaRuleNotFoundException e )
             {

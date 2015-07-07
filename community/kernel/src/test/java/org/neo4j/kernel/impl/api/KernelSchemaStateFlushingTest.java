@@ -19,24 +19,25 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.function.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.test.ImpermanentDatabaseRule;
+
+import static org.junit.Assert.assertEquals;
 
 public class KernelSchemaStateFlushingTest
 {
@@ -115,7 +116,7 @@ public class KernelSchemaStateFlushingTest
     public void shouldInvalidateSchemaStateOnDropConstraint() throws Exception
     {
         // given
-        PropertyConstraint descriptor = createConstraint();
+        UniquenessConstraint descriptor = createConstraint();
 
         commitToSchemaState( "test", "before" );
 
@@ -128,19 +129,19 @@ public class KernelSchemaStateFlushingTest
         assertEquals( "after", after );
     }
 
-    private PropertyConstraint createConstraint() throws KernelException
+    private UniquenessConstraint createConstraint() throws KernelException
     {
 
         try ( KernelTransaction transaction = kernel.newTransaction();
               Statement statement = transaction.acquireStatement() )
         {
-            PropertyConstraint descriptor = statement.schemaWriteOperations().uniquePropertyConstraintCreate( 1, 1 );
+            UniquenessConstraint descriptor = statement.schemaWriteOperations().uniquePropertyConstraintCreate( 1, 1 );
             transaction.success();
             return descriptor;
         }
     }
 
-    private void dropConstraint( PropertyConstraint descriptor ) throws KernelException
+    private void dropConstraint( UniquenessConstraint descriptor ) throws KernelException
     {
         try ( KernelTransaction transaction = kernel.newTransaction();
              Statement statement = transaction.acquireStatement() )

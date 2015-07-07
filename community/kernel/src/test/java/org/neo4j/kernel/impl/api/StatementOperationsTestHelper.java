@@ -24,10 +24,11 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -90,6 +91,7 @@ public abstract class StatementOperationsTestHelper
             }
         } );
         when( state.locks() ).thenReturn( lockHolder );
+        when( state.readOperations() ).thenReturn( mock( ReadOperations.class ) );
         return state;
     }
 

@@ -19,51 +19,54 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
 
-import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
-abstract class PropertyConstraintDefinition implements ConstraintDefinition
+abstract class NodeConstraintDefinition extends PropertyConstraintDefinition
 {
-    protected final InternalSchemaActions actions;
-    protected final String propertyKey;
+    protected final Label label;
 
-    protected PropertyConstraintDefinition( InternalSchemaActions actions, String propertyKey )
+    protected NodeConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey )
     {
-        this.actions = requireNonNull( actions );
-        this.propertyKey = requireNonNull( propertyKey );
+        super( actions, propertyKey );
+        this.label = requireNonNull( label );
     }
 
     @Override
-    public Iterable<String> getPropertyKeys()
+    public Label getLabel()
     {
         assertInUnterminatedTransaction();
-        return singleton( propertyKey );
+        return label;
     }
 
     @Override
-    public boolean isConstraintType( ConstraintType type )
+    public RelationshipType getRelationshipType()
     {
         assertInUnterminatedTransaction();
-        return getConstraintType().equals( type );
+        throw new IllegalStateException( "Constraint is associated with nodes" );
     }
 
     @Override
-    public abstract boolean equals( Object o );
-
-    @Override
-    public abstract int hashCode();
-
-    /**
-     * Returned string is used in shell's constraint listing.
-     */
-    @Override
-    public abstract String toString();
-
-    protected void assertInUnterminatedTransaction()
+    public boolean equals( Object o )
     {
-        actions.assertInUnterminatedTransaction();
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        NodeConstraintDefinition that = (NodeConstraintDefinition) o;
+        return label.name().equals( that.label.name() ) && propertyKey.equals( that.propertyKey );
+
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return 31 * label.name().hashCode() + propertyKey.hashCode();
     }
 }

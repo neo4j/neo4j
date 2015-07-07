@@ -19,8 +19,18 @@
  */
 package org.neo4j.kernel.api.constraints;
 
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 
 public abstract class PropertyConstraint
 {
@@ -30,17 +40,19 @@ public abstract class PropertyConstraint
 
         void visitRemovedUniquePropertyConstraint( UniquenessConstraint constraint );
 
-        void visitAddedMandatoryPropertyConstraint( MandatoryPropertyConstraint constraint );
+        void visitAddedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint constraint );
 
-        void visitRemovedMandatoryPropertyConstraint( MandatoryPropertyConstraint constraint );
+        void visitRemovedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint constraint );
+
+        void visitAddedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint constraint );
+
+        void visitRemovedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint constraint );
     }
 
-    private final int labelId;
-    private final int propertyKeyId;
+    protected final int propertyKeyId;
 
-    public PropertyConstraint( int labelId, int propertyKeyId )
+    public PropertyConstraint( int propertyKeyId )
     {
-        this.labelId = labelId;
         this.propertyKeyId = propertyKeyId;
     }
 
@@ -48,60 +60,62 @@ public abstract class PropertyConstraint
 
     public abstract void removed( ChangeVisitor visitor );
 
-    @Override
-    public boolean equals( Object obj )
-    {
-        if ( this == obj )
-        {
-            return true;
-        }
-        if ( obj != null && getClass() == obj.getClass() )
-        {
-            PropertyConstraint that = (PropertyConstraint) obj;
-            return this.equals( type(), that.labelId, that.propertyKeyId );
-        }
-        return false;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        int result = labelId;
-        result = 31 * result + propertyKeyId;
-        return result;
-    }
-
-    public int label()
-    {
-        return labelId;
-    }
-
-    public int propertyKeyId()
+    public int propertyKey()
     {
         return propertyKeyId;
     }
 
-    public boolean equals( ConstraintType type, int labelId, int propertyKeyId )
-    {
-        return this.labelId == labelId && this.propertyKeyId == propertyKeyId && type() == type;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format( "CONSTRAINT ON ( n:label[%s] ) ASSERT n.property[%s] IS %s",
-                labelId, propertyKeyId, constraintString() );
-    }
-
-    public String userDescription( TokenNameLookup tokenNameLookup )
-    {
-        String labelName = tokenNameLookup.labelGetName( labelId );
-        String boundIdentifier = labelName.toLowerCase();
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS %s", boundIdentifier, labelName,
-                boundIdentifier, tokenNameLookup.propertyKeyGetName( propertyKeyId ), constraintString() );
-    }
+    public abstract ConstraintType type();
 
     abstract String constraintString();
 
-    public abstract ConstraintType type();
+    public abstract String userDescription( TokenNameLookup tokenNameLookup );
+
+    public abstract ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions,
+            ReadOperations readOps );
+
+    @Override
+    public abstract boolean equals( Object o );
+
+    @Override
+    public abstract int hashCode();
+
+    @Override
+    public abstract String toString();
+
+    protected static Label labelById( int id, ReadOperations readOps )
+    {
+        try
+        {
+            return DynamicLabel.label( readOps.labelGetName( id ) );
+        }
+        catch ( LabelNotFoundKernelException e )
+        {
+            throw new IllegalStateException( "Couldn't find label name for id: " + id );
+        }
+    }
+
+    protected static String propertyKeyById( int id, ReadOperations readOps )
+    {
+        try
+        {
+            return readOps.propertyKeyGetName( id );
+        }
+        catch ( PropertyKeyIdNotFoundKernelException e )
+        {
+            throw new IllegalStateException( "Couldn't find property for id: " + id );
+        }
+    }
+
+    protected static RelationshipType relTypeById( int id, ReadOperations readOps )
+    {
+        try
+        {
+            return DynamicRelationshipType.withName( readOps.relationshipTypeGetName( id ) );
+        }
+        catch ( RelationshipTypeIdNotFoundKernelException e )
+        {
+            throw new IllegalStateException( "Couldn't find relationship type name for id: " + id );
+        }
+    }
 }

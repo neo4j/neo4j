@@ -19,25 +19,44 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.Set;
 
-import org.junit.Test;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
 public class IndexIT extends KernelIntegrationTest
 {
-    int labelId = 5, propertyKey = 8;
+    private static final String LABEL = "Label";
+    private static final String PROPERTY_KEY = "prop";
+
+    private int labelId;
+    private int propertyKeyId;
+
+    @Before
+    public void createLabelAndProperty() throws Exception
+    {
+        TokenWriteOperations tokenWrites = tokenWriteOperationsInNewTransaction();
+        labelId = tokenWrites.labelGetOrCreateForName( LABEL );
+        propertyKeyId = tokenWrites.propertyKeyGetOrCreateForName( PROPERTY_KEY );
+        commit();
+    }
 
     @Test
     public void addIndexRuleInATransaction() throws Exception
@@ -48,7 +67,7 @@ public class IndexIT extends KernelIntegrationTest
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             // WHEN
-            expectedRule = statement.indexCreate( labelId, propertyKey );
+            expectedRule = statement.indexCreate( labelId, propertyKeyId );
             commit();
         }
 
@@ -57,7 +76,7 @@ public class IndexIT extends KernelIntegrationTest
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             assertEquals( asSet( expectedRule ),
                           asSet( statement.indexesGetForLabel( labelId ) ) );
-            assertEquals( expectedRule, statement.indexesGetForLabelAndPropertyKey( labelId, propertyKey ) );
+            assertEquals( expectedRule, statement.indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) );
             commit();
         }
     }
@@ -69,7 +88,7 @@ public class IndexIT extends KernelIntegrationTest
         IndexDescriptor existingRule;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            existingRule = statement.indexCreate( labelId, propertyKey );
+            existingRule = statement.indexCreate( labelId, propertyKeyId );
             commit();
         }
 
@@ -96,7 +115,7 @@ public class IndexIT extends KernelIntegrationTest
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
 
             // WHEN
-            statement.indexCreate( labelId, propertyKey );
+            statement.indexCreate( labelId, propertyKeyId );
             // don't mark as success
             rollback();
         }
@@ -114,7 +133,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.singleton( kernel ), indexingService );
-        creator.createConstraintIndex( labelId, propertyKey );
+        creator.createConstraintIndex( labelId, propertyKeyId );
 
         // when
         restartDb();
@@ -134,7 +153,7 @@ public class IndexIT extends KernelIntegrationTest
         IndexDescriptor index;
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            index = statement.indexCreate( labelId, propertyKey );
+            index = statement.indexCreate( labelId, propertyKeyId );
             commit();
         }
         {
@@ -153,8 +172,8 @@ public class IndexIT extends KernelIntegrationTest
         // then
         catch ( SchemaKernelException e )
         {
-            assertEquals( "Unable to drop index on :label[5](property[8]): No such INDEX ON :label[5](property[8]).",
-                    e.getMessage() );
+            assertEquals( "Unable to drop index on :label[" + labelId + "](property[" + propertyKeyId + "]): " +
+                          "No such INDEX ON :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
         }
     }
 
@@ -164,7 +183,7 @@ public class IndexIT extends KernelIntegrationTest
         // given
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquePropertyConstraintCreate( labelId, propertyKey );
+            statement.uniquePropertyConstraintCreate( labelId, propertyKeyId );
             commit();
         }
 
@@ -172,7 +191,7 @@ public class IndexIT extends KernelIntegrationTest
         try
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.indexCreate( labelId, propertyKey );
+            statement.indexCreate( labelId, propertyKeyId );
             commit();
 
             fail( "expected exception" );
@@ -180,8 +199,8 @@ public class IndexIT extends KernelIntegrationTest
         // then
         catch ( SchemaKernelException e )
         {
-            assertEquals( "Label 'label[5]' and property 'key[8]' have a unique constraint defined on " +
-                          "them, so an index is already created that matches this.", e.getMessage() );
+            assertEquals( "Label '" + LABEL + "' and property '" + PROPERTY_KEY + "' have a unique constraint defined" +
+                          " on them, so an index is already created that matches this.", e.getMessage() );
         }
     }
 
@@ -232,7 +251,7 @@ public class IndexIT extends KernelIntegrationTest
         // given
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquePropertyConstraintCreate( labelId, propertyKey );
+            statement.uniquePropertyConstraintCreate( labelId, propertyKeyId );
             commit();
         }
 
@@ -250,7 +269,7 @@ public class IndexIT extends KernelIntegrationTest
         // given
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.indexCreate( labelId, propertyKey );
+            statement.indexCreate( labelId, propertyKeyId );
             commit();
         }
 

@@ -37,6 +37,15 @@ public class ConstraintDefinitionFacadeMethods
                 }
             };
 
+    private static final FacadeMethod<ConstraintDefinition> GET_RELATIONSHIP_TYPE =
+            new FacadeMethod<ConstraintDefinition>( "RelationshipType getRelationshipType()" )
+            {
+                @Override
+                public void call( ConstraintDefinition self )
+                {
+                    self.getRelationshipType();
+                }
+            };
 
     private static final FacadeMethod<ConstraintDefinition> DROP =
             new FacadeMethod<ConstraintDefinition>( "void drop()" )
@@ -71,6 +80,7 @@ public class ConstraintDefinitionFacadeMethods
     static final Iterable<FacadeMethod<ConstraintDefinition>> ALL_CONSTRAINT_DEFINITION_FACADE_METHODS =
             unmodifiableCollection( asList(
                     GET_LABEL,
+                    GET_RELATIONSHIP_TYPE,
                     GET_PROPERTY_KEYS,
                     DROP,
                     IS_CONSTRAINT_TYPE

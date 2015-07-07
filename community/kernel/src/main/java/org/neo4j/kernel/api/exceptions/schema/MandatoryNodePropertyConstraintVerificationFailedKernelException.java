@@ -20,15 +20,15 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
 
 public class MandatoryNodePropertyConstraintVerificationFailedKernelException
         extends ConstraintVerificationFailedKernelException
 {
-    private final MandatoryPropertyConstraint constraint;
+    private final MandatoryNodePropertyConstraint constraint;
     private final long nodeId;
 
-    public MandatoryNodePropertyConstraintVerificationFailedKernelException( MandatoryPropertyConstraint constraint,
+    public MandatoryNodePropertyConstraintVerificationFailedKernelException( MandatoryNodePropertyConstraint constraint,
             long nodeId )
     {
         super( constraint );
@@ -42,6 +42,6 @@ public class MandatoryNodePropertyConstraintVerificationFailedKernelException
         return String.format( "Node(%s) with label `%s` has no value for property `%s`",
                 nodeId,
                 tokenNameLookup.labelGetName( constraint.label() ),
-                tokenNameLookup.propertyKeyGetName( constraint.propertyKeyId() ) );
+                tokenNameLookup.propertyKeyGetName( constraint.propertyKey() ) );
     }
 }

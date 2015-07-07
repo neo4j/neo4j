@@ -24,10 +24,12 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.MandatoryNodePropertyConstraintDefinition;
 
 import static org.junit.Assert.assertTrue;
 
-public class MandatoryPropertyConstraintHaIT extends ConstraintHaIT
+public class MandatoryNodePropertyConstraintHaIT extends ConstraintHaIT
 {
     @Override
     protected void createConstraint( GraphDatabaseService db, Label label, String propertyKey )
@@ -56,5 +58,11 @@ public class MandatoryPropertyConstraintHaIT extends ConstraintHaIT
             }
             tx.success();
         }
+    }
+
+    @Override
+    protected Class<? extends ConstraintDefinition> constraintDefinitionClass()
+    {
+        return MandatoryNodePropertyConstraintDefinition.class;
     }
 }

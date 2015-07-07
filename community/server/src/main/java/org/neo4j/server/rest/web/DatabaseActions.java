@@ -19,14 +19,15 @@
  */
 package org.neo4j.server.rest.web;
 
+import com.sun.jersey.api.core.HttpContext;
+import org.apache.lucene.search.Sort;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.lucene.search.Sort;
 
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
@@ -100,8 +101,6 @@ import org.neo4j.server.rest.repr.ScoredRelationshipRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import com.sun.jersey.api.core.HttpContext;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -1650,7 +1649,7 @@ public class DatabaseActions
             @Override
             public boolean test( ConstraintDefinition item )
             {
-                return item.isConstraintType( ConstraintType.MANDATORY_PROPERTY ) &&
+                return item.isConstraintType( ConstraintType.MANDATORY_NODE_PROPERTY ) &&
                        propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
             }
         };
@@ -1677,6 +1676,6 @@ public class DatabaseActions
     public Representation getLabelExistenceConstraints( String labelName )
     {
         return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
-                filteredConstraints( labelName, ConstraintType.MANDATORY_PROPERTY ) ) );
+                filteredConstraints( labelName, ConstraintType.MANDATORY_NODE_PROPERTY ) ) );
     }
 }

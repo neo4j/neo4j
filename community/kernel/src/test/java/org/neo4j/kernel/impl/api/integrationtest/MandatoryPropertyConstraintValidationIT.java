@@ -203,7 +203,7 @@ public class MandatoryPropertyConstraintValidationIT extends KernelIntegrationTe
 
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
+            statement.mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
             commit();
         }
     }

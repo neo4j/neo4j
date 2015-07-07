@@ -26,7 +26,8 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.NodeCursor;
@@ -83,12 +84,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId )
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
-        Iterator<PropertyConstraint> constraints = uniquePropertyConstraints(
-                schemaReadOperations.constraintsGetForLabel( state, labelId ) );
+        Iterator<NodePropertyConstraint> allConstraints = schemaReadOperations.constraintsGetForLabel( state, labelId );
+        Iterator<NodePropertyConstraint> constraints = uniquePropertyConstraints( allConstraints );
         while ( constraints.hasNext() )
         {
             PropertyConstraint constraint = constraints.next();
-            int propertyKeyId = constraint.propertyKeyId();
+            int propertyKeyId = constraint.propertyKey();
             Object value = entityReadOperations.nodeGetProperty( state, nodeId, propertyKeyId );
             if ( value != null )
             {
@@ -108,8 +109,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         {
             int labelId = labelIds.next();
             int propertyKeyId = property.propertyKeyId();
-            Iterator<PropertyConstraint> constraintIterator =
-                    uniquePropertyConstraints( schemaReadOperations.constraintsGetForLabelAndPropertyKey( state, labelId, propertyKeyId ) );
+            Iterator<NodePropertyConstraint> allConstraints = schemaReadOperations.constraintsGetForLabelAndPropertyKey(
+                    state, labelId, propertyKeyId );
+            Iterator<NodePropertyConstraint> constraintIterator = uniquePropertyConstraints( allConstraints );
             if ( constraintIterator.hasNext() )
             {
                 validateNoExistingNodeWithLabelAndProperty( state, labelId, property, nodeId );
@@ -155,12 +157,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         }
     }
 
-    private Iterator<PropertyConstraint> uniquePropertyConstraints( Iterator<PropertyConstraint> propertyConstraintIterator)
+    private Iterator<NodePropertyConstraint> uniquePropertyConstraints( Iterator<NodePropertyConstraint> constraints )
     {
-        return new FilteringIterator<>( propertyConstraintIterator, new Predicate<PropertyConstraint>()
+        return new FilteringIterator<>( constraints, new Predicate<NodePropertyConstraint>()
         {
             @Override
-            public boolean test( PropertyConstraint constraint )
+            public boolean test( NodePropertyConstraint constraint )
             {
                 return constraint instanceof UniquenessConstraint;
             }
@@ -551,7 +553,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public MandatoryPropertyConstraint mandatoryPropertyConstraintCreate( KernelStatement state, int labelId,
+    public MandatoryNodePropertyConstraint mandatoryNodePropertyConstraintCreate( KernelStatement state, int labelId,
             int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
         PrimitiveLongIterator nodes = nodesGetForLabel( state, labelId );
@@ -562,23 +564,23 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
                 long nodeId = nodes.next();
                 if ( !nodeHasProperty( state, nodeId, propertyKeyId ) )
                 {
-                    MandatoryPropertyConstraint constraint = new MandatoryPropertyConstraint( labelId, propertyKeyId );
+                    MandatoryNodePropertyConstraint constraint = new MandatoryNodePropertyConstraint( labelId, propertyKeyId );
                     throw new CreateConstraintFailureException( constraint,
                             new MandatoryNodePropertyConstraintVerificationFailedKernelException( constraint, nodeId ) );
                 }
             }
             catch ( EntityNotFoundException e )
             {
-                PropertyConstraint constraint = new MandatoryPropertyConstraint( labelId, propertyKeyId );
+                PropertyConstraint constraint = new MandatoryNodePropertyConstraint( labelId, propertyKeyId );
                 throw new CreateConstraintFailureException( constraint, e );
             }
         }
 
-        return schemaWriteOperations.mandatoryPropertyConstraintCreate( state, labelId, propertyKeyId );
+        return schemaWriteOperations.mandatoryNodePropertyConstraintCreate( state, labelId, propertyKeyId );
     }
 
     @Override
-    public void constraintDrop( KernelStatement state, PropertyConstraint constraint )
+    public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint )
             throws DropConstraintFailureException
     {
         schemaWriteOperations.constraintDrop( state, constraint );

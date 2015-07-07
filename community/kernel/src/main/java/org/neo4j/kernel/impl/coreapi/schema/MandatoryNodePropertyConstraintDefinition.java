@@ -19,51 +19,36 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintType;
 
-import static java.util.Collections.singleton;
-import static java.util.Objects.requireNonNull;
+import static java.lang.String.format;
 
-abstract class PropertyConstraintDefinition implements ConstraintDefinition
+public class MandatoryNodePropertyConstraintDefinition extends NodeConstraintDefinition
 {
-    protected final InternalSchemaActions actions;
-    protected final String propertyKey;
-
-    protected PropertyConstraintDefinition( InternalSchemaActions actions, String propertyKey )
+    public MandatoryNodePropertyConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey )
     {
-        this.actions = requireNonNull( actions );
-        this.propertyKey = requireNonNull( propertyKey );
+        super( actions, label, propertyKey );
     }
 
     @Override
-    public Iterable<String> getPropertyKeys()
+    public void drop()
     {
         assertInUnterminatedTransaction();
-        return singleton( propertyKey );
+        actions.dropNodePropertyExistenceConstraint( label, propertyKey );
     }
 
     @Override
-    public boolean isConstraintType( ConstraintType type )
+    public ConstraintType getConstraintType()
     {
         assertInUnterminatedTransaction();
-        return getConstraintType().equals( type );
+        return ConstraintType.MANDATORY_NODE_PROPERTY;
     }
 
     @Override
-    public abstract boolean equals( Object o );
-
-    @Override
-    public abstract int hashCode();
-
-    /**
-     * Returned string is used in shell's constraint listing.
-     */
-    @Override
-    public abstract String toString();
-
-    protected void assertInUnterminatedTransaction()
+    public String toString()
     {
-        actions.assertInUnterminatedTransaction();
+        return format( "ON (%1$s:%2$s) ASSERT %1$s.%3$s IS NOT NULL",
+                label.name().toLowerCase(), label.name(), propertyKey );
     }
 }

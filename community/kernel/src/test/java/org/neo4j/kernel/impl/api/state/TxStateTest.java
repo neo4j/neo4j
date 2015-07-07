@@ -34,7 +34,7 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -274,7 +274,7 @@ public class TxStateTest
         state.constraintDoAdd( constraint, 7 );
 
         // then
-        ReadableDiffSets<PropertyConstraint> diff = state.constraintsChangesForLabel( 1 );
+        ReadableDiffSets<NodePropertyConstraint> diff = state.constraintsChangesForLabel( 1 );
 
         assertEquals( Collections.singleton( constraint ), diff.getAdded() );
         assertTrue( diff.getRemoved().isEmpty() );

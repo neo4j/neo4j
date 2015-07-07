@@ -28,7 +28,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -51,10 +52,10 @@ public class DiskLayerSchemaTest extends DiskLayerTest
         Set<PropertyConstraint> constraints = asSet( disk.constraintsGetAll() );
 
         // Then
-        Set<PropertyConstraint> expectedConstraints = asSet(
+        Set<NodePropertyConstraint> expectedConstraints = asSet(
                 new UniquenessConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ),
                 new UniquenessConstraint( labelId( label2 ), propertyKeyId( propertyKey ) ),
-                new MandatoryPropertyConstraint( labelId( label2 ), propertyKeyId( propertyKey ) ) );
+                new MandatoryNodePropertyConstraint( labelId( label2 ), propertyKeyId( propertyKey ) ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -69,12 +70,12 @@ public class DiskLayerSchemaTest extends DiskLayerTest
         createUniquenessConstraint( label1, propertyKey );
 
         // When
-        Set<PropertyConstraint> constraints = asSet( disk.constraintsGetForLabel( labelId( label1 ) ) );
+        Set<NodePropertyConstraint> constraints = asSet( disk.constraintsGetForLabel( labelId( label1 ) ) );
 
         // Then
-        Set<PropertyConstraint> expectedConstraints = asSet(
+        Set<NodePropertyConstraint> expectedConstraints = asSet(
                 new UniquenessConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ),
-                new MandatoryPropertyConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ) );
+                new MandatoryNodePropertyConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -90,13 +91,13 @@ public class DiskLayerSchemaTest extends DiskLayerTest
         createMandatoryPropertyConstraint( label2, propertyKey );
 
         // When
-        Set<PropertyConstraint> constraints = asSet(
+        Set<NodePropertyConstraint> constraints = asSet(
                 disk.constraintsGetForLabelAndPropertyKey( labelId( label1 ), propertyKeyId( propertyKey ) ) );
 
         // Then
-        Set<PropertyConstraint> expectedConstraints = asSet(
+        Set<NodePropertyConstraint> expectedConstraints = asSet(
                 new UniquenessConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ),
-                new MandatoryPropertyConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ) );
+                new MandatoryNodePropertyConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ) );
 
         assertEquals( expectedConstraints, constraints );
     }

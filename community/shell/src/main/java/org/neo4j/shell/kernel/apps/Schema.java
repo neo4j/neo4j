@@ -222,10 +222,7 @@ public class Schema extends TransactionProvidingApp
                 out.println( "Constraints" );
             }
 
-            String labelName = constraint.getLabel().name();
-
-            out.println( String.format( "  ON (%s:%s) ASSERT %s", labelName.toLowerCase(), labelName,
-                    constraint.toString() ) );
+            out.println( constraint.toString() );
             j++;
 
         }

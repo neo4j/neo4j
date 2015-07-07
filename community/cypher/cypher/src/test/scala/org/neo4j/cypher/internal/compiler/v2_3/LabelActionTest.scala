@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenT
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{LabelAction, LabelSetOp}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{IdempotentResult, LockingQueryContext, QueryContext}
 import org.neo4j.graphdb.{Direction, Node, Relationship}
-import org.neo4j.kernel.api.constraints.{MandatoryPropertyConstraint, UniquenessConstraint}
+import org.neo4j.kernel.api.constraints.{MandatoryNodePropertyConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class LabelActionTest extends GraphDatabaseFunSuite {
@@ -141,7 +141,7 @@ class SnitchingQueryContext extends QueryContext {
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) = ???
 
-  def createNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[MandatoryPropertyConstraint] = ???
+  def createNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[MandatoryNodePropertyConstraint] = ???
 
   def dropNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) = ???
 

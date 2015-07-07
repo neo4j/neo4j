@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.function.Function;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -212,7 +213,7 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaWriteLockBeforeDroppingConstraint() throws Exception
     {
         // given
-        PropertyConstraint constraint = new UniquenessConstraint( 1, 2 );
+        UniquenessConstraint constraint = new UniquenessConstraint( 1, 2 );
 
         // when
         lockingOps.constraintDrop( state, constraint );
@@ -226,11 +227,11 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty() throws Exception
     {
         // given
-        Iterator<PropertyConstraint> constraints = Collections.emptyIterator();
+        Iterator<NodePropertyConstraint> constraints = Collections.emptyIterator();
         when( schemaReadOps.constraintsGetForLabelAndPropertyKey( state, 123, 456 ) ).thenReturn( constraints );
 
         // when
-        Iterator<PropertyConstraint> result = lockingOps.constraintsGetForLabelAndPropertyKey( state, 123, 456 );
+        Iterator<NodePropertyConstraint> result = lockingOps.constraintsGetForLabelAndPropertyKey( state, 123, 456 );
 
         // then
         assertSame( constraints, result );
@@ -242,11 +243,11 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel() throws Exception
     {
         // given
-        Iterator<PropertyConstraint> constraints = Collections.emptyIterator();
+        Iterator<NodePropertyConstraint> constraints = Collections.emptyIterator();
         when( schemaReadOps.constraintsGetForLabel( state, 123 ) ).thenReturn( constraints );
 
         // when
-        Iterator<PropertyConstraint> result = lockingOps.constraintsGetForLabel( state, 123 );
+        Iterator<NodePropertyConstraint> result = lockingOps.constraintsGetForLabel( state, 123 );
 
         // then
         assertSame( constraints, result );

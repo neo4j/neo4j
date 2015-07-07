@@ -32,12 +32,12 @@ import org.neo4j.collection.primitive.PrimitiveIntStack;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.EntityCursor;
@@ -509,10 +509,10 @@ public class StateHandlingStatementOperations implements
             }
             else // *CREATE*
             { // create from scratch
-                for ( Iterator<PropertyConstraint> it = storeLayer.constraintsGetForLabelAndPropertyKey(
+                for ( Iterator<NodePropertyConstraint> it = storeLayer.constraintsGetForLabelAndPropertyKey(
                         labelId, propertyKeyId ); it.hasNext(); )
                 {
-                    if ( it.next().equals( ConstraintType.UNIQUENESS, labelId, propertyKeyId ) )
+                    if ( it.next().equals( constraint ) )
                     {
                         return constraint;
                     }
@@ -531,16 +531,16 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public MandatoryPropertyConstraint mandatoryPropertyConstraintCreate( KernelStatement state, int labelId,
+    public MandatoryNodePropertyConstraint mandatoryNodePropertyConstraintCreate( KernelStatement state, int labelId,
             int propertyKeyId ) throws CreateConstraintFailureException
     {
-        MandatoryPropertyConstraint constraint = new MandatoryPropertyConstraint( labelId, propertyKeyId );
+        MandatoryNodePropertyConstraint constraint = new MandatoryNodePropertyConstraint( labelId, propertyKeyId );
         state.txState().constraintDoAdd( constraint );
         return constraint;
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
+    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
             int labelId, int propertyKeyId )
     {
         return applyConstraintsDiff( state, storeLayer.constraintsGetForLabelAndPropertyKey(
@@ -548,7 +548,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
     {
         return applyConstraintsDiff( state, storeLayer.constraintsGetForLabel( labelId ), labelId );
     }
@@ -560,8 +560,8 @@ public class StateHandlingStatementOperations implements
     }
 
 
-    private Iterator<PropertyConstraint> applyConstraintsDiff( TxStateHolder state,
-            Iterator<PropertyConstraint> constraints,
+    private Iterator<NodePropertyConstraint> applyConstraintsDiff( KernelStatement state,
+            Iterator<NodePropertyConstraint> constraints,
             int labelId, int propertyKeyId )
     {
         if ( state.hasTxStateWithChanges() )
@@ -571,8 +571,8 @@ public class StateHandlingStatementOperations implements
         return constraints;
     }
 
-    private Iterator<PropertyConstraint> applyConstraintsDiff( KernelStatement state,
-            Iterator<PropertyConstraint> constraints,
+    private Iterator<NodePropertyConstraint> applyConstraintsDiff( KernelStatement state,
+            Iterator<NodePropertyConstraint> constraints,
             int labelId )
     {
         if ( state.hasTxStateWithChanges() )
@@ -594,7 +594,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void constraintDrop( KernelStatement state, PropertyConstraint constraint )
+    public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint )
     {
         state.txState().constraintDoDrop( constraint );
     }

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.operations;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -81,13 +82,13 @@ public interface SchemaReadOperations
      * Get all constraints applicable to label and propertyKey. There are only {@link PropertyConstraint}
      * for the time being.
      */
-    Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKeyId );
+    Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKeyId );
 
     /**
      * Get all constraints applicable to label. There are only {@link PropertyConstraint}
      * for the time being.
      */
-    Iterator<PropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId );
+    Iterator<NodePropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId );
 
     /**
      * Get all constraints. There are only {@link PropertyConstraint}

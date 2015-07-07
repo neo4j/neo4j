@@ -26,8 +26,8 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.MandatoryPropertyConstraintViolationKernelException;
@@ -82,12 +82,12 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
     {
         for ( PrimitiveIntIterator labels = labelsOf( node ); labels.hasNext(); )
         {
-            for ( PropertyConstraint constraint : loop( mandatoryPropertyConstraints( labels.next() ) ) )
+            for ( NodePropertyConstraint constraint : loop( mandatoryPropertyConstraints( labels.next() ) ) )
             {
-                if ( !hasProperty( node, constraint.propertyKeyId() ) )
+                if ( !hasProperty( node, constraint.propertyKey() ) )
                 {
                     throw new MandatoryPropertyConstraintViolationKernelException( constraint.label(),
-                            constraint.propertyKeyId(), node );
+                            constraint.propertyKey(), node );
                 }
             }
         }
@@ -117,14 +117,14 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
         }
     }
 
-    private Iterator<PropertyConstraint> mandatoryPropertyConstraints( int label )
+    private Iterator<NodePropertyConstraint> mandatoryPropertyConstraints( int label )
     {
-        return new FilteringIterator<>( storeLayer.constraintsGetForLabel( label ), new Predicate<PropertyConstraint>()
+        return new FilteringIterator<>( storeLayer.constraintsGetForLabel( label ), new Predicate<NodePropertyConstraint>()
         {
             @Override
-            public boolean test( PropertyConstraint constraint )
+            public boolean test( NodePropertyConstraint constraint )
             {
-                return constraint instanceof MandatoryPropertyConstraint;
+                return constraint instanceof MandatoryNodePropertyConstraint;
             }
         } );
     }

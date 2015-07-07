@@ -34,7 +34,9 @@ import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.LabelCursor;
@@ -400,15 +402,27 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
 
         @Override
-        public void visitAddedMandatoryPropertyConstraint( MandatoryPropertyConstraint constraint )
+        public void visitAddedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint constraint )
         {
-            visitor.visitAddedMandatoryPropertyConstraint( constraint );
+            visitor.visitAddedNodeMandatoryPropertyConstraint( constraint );
         }
 
         @Override
-        public void visitRemovedMandatoryPropertyConstraint( MandatoryPropertyConstraint constraint )
+        public void visitRemovedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint constraint )
         {
-            visitor.visitRemovedMandatoryPropertyConstraint( constraint );
+            visitor.visitRemovedNodeMandatoryPropertyConstraint( constraint );
+        }
+
+        @Override
+        public void visitAddedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint constraint )
+        {
+            visitor.visitAddedRelationshipMandatoryPropertyConstraint( constraint );
+        }
+
+        @Override
+        public void visitRemovedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint constraint )
+        {
+            visitor.visitRemovedRelationshipMandatoryPropertyConstraint( constraint );
         }
     }
 
@@ -1011,7 +1025,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void constraintDoAdd( MandatoryPropertyConstraint constraint )
+    public void constraintDoAdd( MandatoryNodePropertyConstraint constraint )
     {
         constraintsChangesDiffSets().add( constraint );
         getOrCreateLabelState( constraint.label() ).getOrCreateConstraintsChanges().add( constraint );
@@ -1019,24 +1033,24 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<PropertyConstraint> constraintsChangesForLabelAndProperty( int labelId,
+    public ReadableDiffSets<NodePropertyConstraint> constraintsChangesForLabelAndProperty( int labelId,
             final int propertyKey )
     {
-        return LABEL_STATE.get( this, labelId ).constraintsChanges().filterAdded(
-                new Predicate<PropertyConstraint>()
+        return LABEL_STATE.get( this, labelId ).nodeConstraintsChanges().filterAdded(
+                new Predicate<NodePropertyConstraint>()
                 {
                     @Override
-                    public boolean test( PropertyConstraint item )
+                    public boolean test( NodePropertyConstraint item )
                     {
-                        return item.propertyKeyId() == propertyKey;
+                        return item.propertyKey() == propertyKey;
                     }
                 } );
     }
 
     @Override
-    public ReadableDiffSets<PropertyConstraint> constraintsChangesForLabel( int labelId )
+    public ReadableDiffSets<NodePropertyConstraint> constraintsChangesForLabel( int labelId )
     {
-        return LABEL_STATE.get( this, labelId ).constraintsChanges();
+        return LABEL_STATE.get( this, labelId ).nodeConstraintsChanges();
     }
 
     @Override
@@ -1055,21 +1069,21 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void constraintDoDrop( PropertyConstraint constraint )
+    public void constraintDoDrop( NodePropertyConstraint constraint )
     {
         constraintsChangesDiffSets().remove( constraint );
 
 
         if ( constraint instanceof UniquenessConstraint )
         {
-            constraintIndexDoDrop( new IndexDescriptor( constraint.label(), constraint.propertyKeyId() ));
+            constraintIndexDoDrop( new IndexDescriptor( constraint.label(), constraint.propertyKey() ));
         }
         getOrCreateLabelState( constraint.label() ).getOrCreateConstraintsChanges().remove( constraint );
         hasChanges = true;
     }
 
     @Override
-    public boolean constraintDoUnRemove( PropertyConstraint constraint )
+    public boolean constraintDoUnRemove( NodePropertyConstraint constraint )
     {
         if ( constraintsChangesDiffSets().unRemove( constraint ) )
         {
@@ -1096,12 +1110,12 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         if ( createdConstraintIndexesByConstraint != null && !createdConstraintIndexesByConstraint.isEmpty() )
         {
 
-            return map( new Function<PropertyConstraint,IndexDescriptor>()
+            return map( new Function<UniquenessConstraint,IndexDescriptor>()
             {
                 @Override
-                public IndexDescriptor apply( PropertyConstraint constraint )
+                public IndexDescriptor apply( UniquenessConstraint constraint )
                 {
-                    return new IndexDescriptor( constraint.label(), constraint.propertyKeyId() );
+                    return new IndexDescriptor( constraint.label(), constraint.propertyKey() );
                 }
             }, createdConstraintIndexesByConstraint.keySet() );
         }

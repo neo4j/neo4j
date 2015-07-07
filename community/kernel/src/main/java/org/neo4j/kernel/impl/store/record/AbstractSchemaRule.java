@@ -23,14 +23,28 @@ import java.nio.ByteBuffer;
 
 public abstract class AbstractSchemaRule implements SchemaRule
 {
+    /**
+     * Idea to keep both label and relationship type ids in this class is definitely incorrect.
+     * This is a temporary measure to minimize amount of changes in an unrelated feature commit.
+     * Such design should be fixed when we fuse hierarchies of
+     * {@link org.neo4j.kernel.api.constraints.PropertyConstraint} and {@link SchemaRule}. This could be done because
+     * both are internal representations of indexes/constraints and it is wasteful and confusing to have two internal
+     * representations in addition to one external {@link org.neo4j.graphdb.schema.ConstraintDefinition}
+     */
+
+    protected static final int NOT_INITIALIZED = -1;
+
     private final int label;
+    private final int relationshipType;
     private final Kind kind;
     private final long id;
 
-    public AbstractSchemaRule( long id, int label, Kind kind )
+    public AbstractSchemaRule( long id, int label, int relationshipType, Kind kind )
     {
+        verifyLabelAndRelType( label, relationshipType );
         this.id = id;
         this.label = label;
+        this.relationshipType = relationshipType;
         this.kind = kind;
     }
 
@@ -40,10 +54,9 @@ public abstract class AbstractSchemaRule implements SchemaRule
         return this.id;
     }
 
-    @Override
-    public final int getLabel()
+    protected final int getLabelOrRelationshipType()
     {
-        return this.label;
+        return (label == NOT_INITIALIZED) ? relationshipType : label;
     }
 
     @Override
@@ -55,56 +68,55 @@ public abstract class AbstractSchemaRule implements SchemaRule
     @Override
     public int length()
     {
-        return 4 /*label id*/ + 1 /*kind id*/;
+        return 4 /*label or relationshipType id*/ + 1 /*kind id*/;
     }
 
     @Override
     public void serialize( ByteBuffer target )
     {
-        target.putInt( label );
+        target.putInt( getLabelOrRelationshipType() );
         target.put( kind.id() );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        AbstractSchemaRule that = (AbstractSchemaRule) o;
+        return label == that.label && relationshipType == that.relationshipType && kind == that.kind;
     }
 
     @Override
     public int hashCode()
     {
-        final int prime = 31;
-        int result = prime + kind.hashCode();
-        return prime * result + label;
-    }
-
-    @Override
-    public boolean equals( Object obj )
-    {
-        if ( this == obj )
-        {
-            return true;
-        }
-        if ( obj == null )
-        {
-            return false;
-        }
-        if ( getClass() != obj.getClass() )
-        {
-            return false;
-        }
-        AbstractSchemaRule other = (AbstractSchemaRule) obj;
-        if ( kind != other.kind )
-        {
-            return false;
-        }
-        if ( label != other.label )
-        {
-            return false;
-        }
-        return true;
+        return 31 * (31 * label + relationshipType) + kind.hashCode();
     }
 
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[id="+ id +", label="+label+", kind="+ kind + innerToString() + "]";
+        return getClass().getSimpleName() + "[id=" + id + ", label=" + label +
+               "relationshipType=" + relationshipType + ", kind=" + kind + innerToString() + "]";
     }
 
     protected abstract String innerToString();
+
+    private static void verifyLabelAndRelType( int label, int relationshipType )
+    {
+        if ( label == NOT_INITIALIZED && relationshipType == NOT_INITIALIZED )
+        {
+            throw new IllegalArgumentException( "Either label or relationshipType should be initialized" );
+        }
+        if ( label != NOT_INITIALIZED && relationshipType != NOT_INITIALIZED )
+        {
+            throw new IllegalArgumentException( "Both label and relationshipType can't be initialized" );
+        }
+    }
 }

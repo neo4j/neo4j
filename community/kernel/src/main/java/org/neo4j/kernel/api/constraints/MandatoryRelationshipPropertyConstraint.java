@@ -23,43 +23,43 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
-import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.MandatoryRelationshipPropertyConstraintDefinition;
 
-public class UniquenessConstraint extends NodePropertyConstraint
+public class MandatoryRelationshipPropertyConstraint extends RelationshipPropertyConstraint
 {
-    public UniquenessConstraint( int labelId, int propertyKeyId )
+    public MandatoryRelationshipPropertyConstraint( int relTypeId, int propertyKeyId )
     {
-        super( labelId, propertyKeyId );
+        super( relTypeId, propertyKeyId );
     }
 
     @Override
     public void added( ChangeVisitor visitor )
     {
-        visitor.visitAddedUniquePropertyConstraint( this );
+        visitor.visitAddedRelationshipMandatoryPropertyConstraint( this );
     }
 
     @Override
     public void removed( ChangeVisitor visitor )
     {
-        visitor.visitRemovedUniquePropertyConstraint( this );
-    }
-
-    @Override
-    String constraintString()
-    {
-        return "UNIQUE";
-    }
-
-    @Override
-    public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
-    {
-        return new UniquenessConstraintDefinition( schemaActions, labelById( label(), readOps ),
-                propertyKeyById( propertyKeyId, readOps ) );
+        visitor.visitRemovedRelationshipMandatoryPropertyConstraint( this );
     }
 
     @Override
     public ConstraintType type()
     {
-        return ConstraintType.UNIQUENESS;
+        return ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY;
+    }
+
+    @Override
+    String constraintString()
+    {
+        return "NOT NULL";
+    }
+
+    @Override
+    public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
+    {
+        return new MandatoryRelationshipPropertyConstraintDefinition( schemaActions,
+                relTypeById( relationshipType(), readOps ), propertyKeyById( propertyKeyId, readOps ) );
     }
 }

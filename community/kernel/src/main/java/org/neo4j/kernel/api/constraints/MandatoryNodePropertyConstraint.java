@@ -17,17 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.api.constraints;
 
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
-import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.MandatoryNodePropertyConstraintDefinition;
 
-public class UniquenessConstraint extends NodePropertyConstraint
+public class MandatoryNodePropertyConstraint extends NodePropertyConstraint
 {
-    public UniquenessConstraint( int labelId, int propertyKeyId )
+    public MandatoryNodePropertyConstraint( int labelId, int propertyKeyId )
     {
         super( labelId, propertyKeyId );
     }
@@ -35,31 +36,31 @@ public class UniquenessConstraint extends NodePropertyConstraint
     @Override
     public void added( ChangeVisitor visitor )
     {
-        visitor.visitAddedUniquePropertyConstraint( this );
+        visitor.visitAddedNodeMandatoryPropertyConstraint( this );
     }
 
     @Override
     public void removed( ChangeVisitor visitor )
     {
-        visitor.visitRemovedUniquePropertyConstraint( this );
+        visitor.visitRemovedNodeMandatoryPropertyConstraint( this );
     }
 
     @Override
     String constraintString()
     {
-        return "UNIQUE";
+        return "NOT NULL";
     }
 
     @Override
     public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
     {
-        return new UniquenessConstraintDefinition( schemaActions, labelById( label(), readOps ),
+        return new MandatoryNodePropertyConstraintDefinition( schemaActions, labelById( label(), readOps ),
                 propertyKeyById( propertyKeyId, readOps ) );
     }
 
     @Override
     public ConstraintType type()
     {
-        return ConstraintType.UNIQUENESS;
+        return ConstraintType.MANDATORY_NODE_PROPERTY;
     }
 }

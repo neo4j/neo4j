@@ -243,10 +243,10 @@ public class SchemaStorage implements SchemaRuleAccess
         return schemaStore.nextId();
     }
 
-    public MandatoryPropertyConstraintRule mandatoryPropertyConstraint( int labelId, final int propertyKeyId )
+    public MandatoryNodePropertyConstraintRule mandatoryPropertyConstraint( int labelId, final int propertyKeyId )
             throws SchemaRuleNotFoundException
     {
-        return propertyConstraint( MandatoryPropertyConstraintRule.class, labelId, propertyKeyId );
+        return propertyConstraint( MandatoryNodePropertyConstraintRule.class, labelId, propertyKeyId );
     }
 
     public UniquePropertyConstraintRule uniquenessConstraint( int labelId, final int propertyKeyId )

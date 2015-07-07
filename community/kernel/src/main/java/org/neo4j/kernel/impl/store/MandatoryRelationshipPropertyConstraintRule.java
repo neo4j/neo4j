@@ -17,32 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.impl.store;
 
 import java.nio.ByteBuffer;
 
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 
-public class MandatoryPropertyConstraintRule extends PropertyConstraintRule
+public class MandatoryRelationshipPropertyConstraintRule extends RelationshipPropertyConstraintRule
 {
     private final int propertyKeyId;
 
-    /** We currently only support uniqueness constraints on a single property. */
-    public static MandatoryPropertyConstraintRule mandatoryPropertyConstraintRule( long id, int labelId, int propertyKeyId )
+    public static MandatoryRelationshipPropertyConstraintRule mandatoryPropertyConstraintRule( long id, int relTypeId, int propertyKeyId )
     {
-        return new MandatoryPropertyConstraintRule( id, labelId, propertyKeyId );
+        return new MandatoryRelationshipPropertyConstraintRule( id, relTypeId, propertyKeyId );
     }
 
-    public static MandatoryPropertyConstraintRule readMandatoryPropertyConstraintRule( long id, int labelId, ByteBuffer buffer )
+    public static MandatoryRelationshipPropertyConstraintRule readMandatoryPropertyConstraintRule( long id, int relTypeId, ByteBuffer buffer )
     {
-        return new MandatoryPropertyConstraintRule( id, labelId, readPropertyKey( buffer ) );
+        return new MandatoryRelationshipPropertyConstraintRule( id, relTypeId, readPropertyKey( buffer ) );
     }
 
-    private MandatoryPropertyConstraintRule( long id, int labelId, int propertyKeyId )
+    private MandatoryRelationshipPropertyConstraintRule( long id, int relTypeId, int propertyKeyId )
     {
-        super( id, labelId, Kind.MANDATORY_PROPERTY_CONSTRAINT );
+        super( id, relTypeId, Kind.MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT );
         this.propertyKeyId = propertyKeyId;
     }
 
@@ -55,7 +53,7 @@ public class MandatoryPropertyConstraintRule extends PropertyConstraintRule
     @Override
     public boolean equals( Object obj )
     {
-        return super.equals( obj ) && propertyKeyId == ((MandatoryPropertyConstraintRule) obj).propertyKeyId;
+        return super.equals( obj ) && propertyKeyId == ((MandatoryRelationshipPropertyConstraintRule) obj).propertyKeyId;
     }
 
     @Override
@@ -89,9 +87,9 @@ public class MandatoryPropertyConstraintRule extends PropertyConstraintRule
     }
 
     @Override
-    public PropertyConstraint toConstraint()
+    public RelationshipPropertyConstraint toConstraint()
     {
-        return new MandatoryPropertyConstraint( getLabel(), getPropertyKey() );
+        return new MandatoryRelationshipPropertyConstraint( getRelationshipType(), getPropertyKey() );
     }
 
     @Override

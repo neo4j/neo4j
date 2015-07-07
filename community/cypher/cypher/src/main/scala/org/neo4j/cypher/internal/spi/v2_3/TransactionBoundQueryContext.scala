@@ -32,7 +32,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
-import org.neo4j.kernel.api.constraints.{MandatoryPropertyConstraint, UniquenessConstraint}
+import org.neo4j.kernel.api.constraints.{MandatoryNodePropertyConstraint, MandatoryRelationshipPropertyConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.configuration.Config
@@ -393,19 +393,19 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
 
-  def createNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[MandatoryPropertyConstraint] =
+  def createNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[MandatoryNodePropertyConstraint] =
     try {
-      IdempotentResult(statement.schemaWriteOperations().mandatoryPropertyConstraintCreate(labelId, propertyKeyId))
+      IdempotentResult(statement.schemaWriteOperations().mandatoryNodePropertyConstraintCreate(labelId, propertyKeyId))
     } catch {
       case existing: AlreadyConstrainedException =>
-        IdempotentResult(existing.constraint().asInstanceOf[MandatoryPropertyConstraint], wasCreated = false)
+        IdempotentResult(existing.constraint().asInstanceOf[MandatoryNodePropertyConstraint], wasCreated = false)
     }
 
   def dropNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) =
-    statement.schemaWriteOperations().constraintDrop(new MandatoryPropertyConstraint(labelId, propertyKeyId))
+    statement.schemaWriteOperations().constraintDrop(new MandatoryNodePropertyConstraint(labelId, propertyKeyId))
 
   //TODO implement
-  def createRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[MandatoryPropertyConstraint] = ???
+  def createRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[MandatoryRelationshipPropertyConstraint] = ???
 
   //TODO implement
   def dropRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) = ???

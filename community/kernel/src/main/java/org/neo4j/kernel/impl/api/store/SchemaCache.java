@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,15 +27,15 @@ import java.util.Map;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.NestingIterable;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.store.PropertyConstraintRule;
+import org.neo4j.kernel.impl.store.NodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 
-import static java.util.Collections.unmodifiableCollection;
 import static org.neo4j.helpers.collection.Iterables.filter;
 
 /**
@@ -50,10 +49,10 @@ import static org.neo4j.helpers.collection.Iterables.filter;
  */
 public class SchemaCache
 {
-    private final Map<Integer, Map<Long,SchemaRule>> rulesByLabelMap = new HashMap<>();
     private final Map<Long, SchemaRule> rulesByIdMap = new HashMap<>();
 
-    private final Collection<PropertyConstraint> constraints = new HashSet<>();
+    private final Collection<NodePropertyConstraint> nodeConstraints = new HashSet<>();
+    private final Collection<RelationshipPropertyConstraint> relationshipConstraints = new HashSet<>();
     private final Map<Integer, Map<Integer, CommittedIndexDescriptor>> indexDescriptors = new HashMap<>();
 
     public SchemaCache( Iterable<SchemaRule> initialRules )
@@ -69,77 +68,66 @@ public class SchemaCache
         }
     }
 
-    private Map<Long,SchemaRule> getOrCreateSchemaRulesMapForLabel( int label )
-    {
-        Map<Long,SchemaRule> rulesForLabel = rulesByLabelMap.get( label );
-        if ( rulesForLabel == null )
-        {
-            rulesForLabel = new HashMap<>();
-            rulesByLabelMap.put( label, rulesForLabel );
-        }
-        return rulesForLabel;
-    }
-
     public Iterable<SchemaRule> schemaRules()
     {
-        return new NestingIterable<SchemaRule, Map<Long,SchemaRule>>( rulesByLabelMap.values() )
-        {
-            @Override
-            protected Iterator<SchemaRule> createNestedIterator( Map<Long,SchemaRule> item )
-            {
-                return item.values().iterator();
-            }
-        };
+        return rulesByIdMap.values();
     }
 
-    public Collection<SchemaRule> schemaRulesForLabel( int label )
+    public Iterable<SchemaRule> schemaRulesForLabel( final int label )
     {
-        Map<Long,SchemaRule> rulesForLabel = rulesByLabelMap.get( label );
-        return rulesForLabel != null ? unmodifiableCollection( rulesForLabel.values() ) :
-            Collections.<SchemaRule>emptyList();
+        return filter( new Predicate<SchemaRule>()
+        {
+            @Override
+            public boolean test( SchemaRule schemaRule )
+            {
+                return schemaRule.getKind() != SchemaRule.Kind.MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT &&
+                       schemaRule.getLabel() == label;
+            }
+        }, schemaRules() );
     }
 
     public Iterator<PropertyConstraint> constraints()
     {
-        return constraints.iterator();
+        return Iterables.concat( nodeConstraints.iterator(), relationshipConstraints.iterator() );
     }
 
-    public Iterator<PropertyConstraint> constraintsForLabel( final int label )
+    public Iterator<NodePropertyConstraint> constraintsForLabel( final int label )
     {
-        return filter( new Predicate<PropertyConstraint>()
+        return filter( new Predicate<NodePropertyConstraint>()
         {
             @Override
-            public boolean test( PropertyConstraint item )
+            public boolean test( NodePropertyConstraint constraint )
             {
-                return item.label() == label;
+                return constraint.label() == label;
             }
-        }, constraints.iterator() );
+        }, nodeConstraints.iterator() );
     }
 
-    public Iterator<PropertyConstraint> constraintsForLabelAndProperty( final int label, final int property )
+    public Iterator<NodePropertyConstraint> constraintsForLabelAndProperty( final int label, final int property )
     {
-        return filter( new Predicate<PropertyConstraint>()
+        return filter( new Predicate<NodePropertyConstraint>()
         {
             @Override
-            public boolean test( PropertyConstraint item )
+            public boolean test( NodePropertyConstraint constraint )
             {
-                return item.label() == label && item.propertyKeyId() == property;
+                return constraint.label() == label && constraint.propertyKey() == property;
             }
-        }, constraints.iterator() );
+        }, nodeConstraints.iterator() );
     }
 
     public void addSchemaRule( SchemaRule rule )
     {
-        getOrCreateSchemaRulesMapForLabel( rule.getLabel() ).put( rule.getId(), rule );
         rulesByIdMap.put( rule.getId(), rule );
 
-        // Note: If you start adding more unmarshalling of other types of things here,
-        // make this into a more generic thing rather than adding more branch statement.
-        if( rule instanceof PropertyConstraintRule )
+        if ( rule instanceof NodePropertyConstraintRule )
         {
-            constraints.add( ((PropertyConstraintRule) rule).toConstraint() );
+            nodeConstraints.add( ((NodePropertyConstraintRule) rule).toConstraint() );
         }
-        else if( rule instanceof IndexRule )
+        else if ( rule instanceof RelationshipPropertyConstraintRule )
+        {
+            relationshipConstraints.add( ((RelationshipPropertyConstraintRule) rule).toConstraint() );
+        }
+        else if ( rule instanceof IndexRule )
         {
             IndexRule indexRule = (IndexRule) rule;
             Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( indexRule.getLabel() );
@@ -154,9 +142,9 @@ public class SchemaCache
 
     public void clear()
     {
-        rulesByLabelMap.clear();
         rulesByIdMap.clear();
-        constraints.clear();
+        nodeConstraints.clear();
+        relationshipConstraints.clear();
         indexDescriptors.clear();
     }
 
@@ -204,18 +192,15 @@ public class SchemaCache
             return;
         }
 
-        int labelId = rule.getLabel();
-        Map<Long, SchemaRule> rules = rulesByLabelMap.get( labelId );
-        if ( rules.remove( id ) != null && rules.isEmpty() )
+        if ( rule instanceof NodePropertyConstraintRule )
         {
-            rulesByLabelMap.remove( labelId );
+            nodeConstraints.remove( ((NodePropertyConstraintRule) rule).toConstraint() );
         }
-
-        if( rule instanceof PropertyConstraintRule )
+        else if ( rule instanceof RelationshipPropertyConstraintRule )
         {
-            constraints.remove( ((PropertyConstraintRule) rule).toConstraint() );
+            relationshipConstraints.remove( ((RelationshipPropertyConstraintRule) rule).toConstraint() );
         }
-        else if( rule instanceof IndexRule )
+        else if ( rule instanceof IndexRule )
         {
             IndexRule indexRule = (IndexRule) rule;
             Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( indexRule.getLabel() );
@@ -225,23 +210,6 @@ public class SchemaCache
                 indexDescriptors.remove( indexRule.getLabel() );
             }
         }
-    }
-
-    public long indexId( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( index.getLabelId() );
-        if ( byLabel != null )
-        {
-            CommittedIndexDescriptor committed = byLabel.get( index.getPropertyKeyId() );
-            if ( committed != null )
-            {
-                return committed.getId();
-            }
-        }
-
-        throw new IndexNotFoundKernelException(
-            "Couldn't resolve index id for " + index + " at this point. Schema rule not committed yet?"
-        );
     }
 
     public IndexDescriptor indexDescriptor( int labelId, int propertyKey )
@@ -254,16 +222,6 @@ public class SchemaCache
             {
                 return committed.getDescriptor();
             }
-        }
-        return null;
-    }
-
-    public IndexDescriptor indexDescriptor( long indexId )
-    {
-        SchemaRule rule = rulesByIdMap.get( indexId );
-        if ( rule instanceof IndexRule )
-        {
-            return indexDescriptor( rule.getLabel(), ((IndexRule) rule).getPropertyKey() );
         }
         return null;
     }

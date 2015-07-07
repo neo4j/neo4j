@@ -142,7 +142,7 @@ public class MandatoryPropertyConstraintVerificationIT
 
                 constraint = thread.executeAndAwait( db.tx( mandatoryPropertyConstraint( label( "Foo" ), "bar" ) ),
                         db.getGraphDatabaseService(),
-                        waitingWhileIn( OperationsFacade.class, "mandatoryPropertyConstraintCreate" ), 5, SECONDS );
+                        waitingWhileIn( OperationsFacade.class, "mandatoryNodePropertyConstraintCreate" ), 5, SECONDS );
 
                 tx.success();
             }

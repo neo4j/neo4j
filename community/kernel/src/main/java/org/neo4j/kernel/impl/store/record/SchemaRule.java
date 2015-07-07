@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.store.record;
 import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.store.MandatoryPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.MandatoryNodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.MandatoryRelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 
 public interface SchemaRule extends RecordSerializable
@@ -34,8 +35,16 @@ public interface SchemaRule extends RecordSerializable
 
     /**
      * @return id of label to which this schema rule has been attached
+     * @throws IllegalStateException when this rule has kind {@link Kind#MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT}
      */
     int getLabel();
+
+    /**
+     * @return id of relationship type to which this schema rule has been attached
+     * @throws IllegalStateException when this rule has kind different from
+     * {@link Kind#MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT}
+     */
+    int getRelationshipType();
 
     /**
      * @return the kind of this schema rule
@@ -68,12 +77,20 @@ public interface SchemaRule extends RecordSerializable
                 return UniquePropertyConstraintRule.readUniquenessConstraintRule( id, labelId, buffer );
             }
         },
-        MANDATORY_PROPERTY_CONSTRAINT( 4, MandatoryPropertyConstraintRule.class )
+        MANDATORY_NODE_PROPERTY_CONSTRAINT( 4, MandatoryNodePropertyConstraintRule.class )
         {
             @Override
             protected SchemaRule newRule( long id, int labelId, ByteBuffer buffer )
             {
-                return MandatoryPropertyConstraintRule.readMandatoryPropertyConstraintRule( id, labelId, buffer );
+                return MandatoryNodePropertyConstraintRule.readMandatoryPropertyConstraintRule( id, labelId, buffer );
+            }
+        },
+        MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT( 5, MandatoryRelationshipPropertyConstraintRule.class )
+        {
+            @Override
+            protected SchemaRule newRule( long id, int labelId, ByteBuffer buffer )
+            {
+                return MandatoryRelationshipPropertyConstraintRule.readMandatoryPropertyConstraintRule( id, labelId, buffer );
             }
         };
 
@@ -127,7 +144,8 @@ public interface SchemaRule extends RecordSerializable
             case 1: return INDEX_RULE;
             case 2: return CONSTRAINT_INDEX_RULE;
             case 3: return UNIQUENESS_CONSTRAINT;
-            case 4: return MANDATORY_PROPERTY_CONSTRAINT;
+            case 4: return MANDATORY_NODE_PROPERTY_CONSTRAINT;
+            case 5: return MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT;
             default:
                 throw new MalformedSchemaRuleException( null, "Unknown kind id %d", id );
             }

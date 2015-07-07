@@ -49,7 +49,7 @@ public interface InternalSchemaActions
 
     void dropPropertyUniquenessConstraint( Label label, String propertyKey );
 
-    void dropPropertyExistenceConstraint( Label label, String propertyKey );
+    void dropNodePropertyExistenceConstraint( Label label, String propertyKey );
 
     String getUserMessage( KernelException e );
 

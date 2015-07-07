@@ -40,7 +40,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -56,8 +55,8 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.StoreLocker;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
@@ -87,7 +86,8 @@ import org.neo4j.kernel.impl.coreapi.schema.BaseConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
-import org.neo4j.kernel.impl.coreapi.schema.PropertyConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.MandatoryNodePropertyConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
@@ -96,7 +96,7 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
-import org.neo4j.kernel.impl.store.MandatoryPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.MandatoryNodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -422,8 +422,8 @@ public class BatchInserterImpl implements BatchInserter
                 case UNIQUENESS_CONSTRAINT:
                     otherPropertyKeyId = ((UniquePropertyConstraintRule) rule).getPropertyKey();
                     break;
-                case MANDATORY_PROPERTY_CONSTRAINT:
-                    otherPropertyKeyId = ((MandatoryPropertyConstraintRule) rule).getPropertyKey();
+                case MANDATORY_NODE_PROPERTY_CONSTRAINT:
+                    otherPropertyKeyId = ((MandatoryNodePropertyConstraintRule) rule).getPropertyKey();
                     break;
                 default:
                     throw new IllegalStateException( "Case not handled.");
@@ -594,7 +594,7 @@ public class BatchInserterImpl implements BatchInserter
         return new BaseConstraintCreator( new BatchSchemaActions(), label );
     }
 
-    private void createConstraintRule( PropertyConstraint constraint )
+    private void createConstraintRule( NodePropertyConstraint constraint )
     {
         // TODO: Do not create duplicate index
 
@@ -604,12 +604,12 @@ public class BatchInserterImpl implements BatchInserter
         long constraintRuleId = schemaStore.nextId();
 
         IndexRule indexRule = IndexRule.constraintIndexRule(
-                indexRuleId, constraint.label(), constraint.propertyKeyId(),
+                indexRuleId, constraint.label(), constraint.propertyKey(),
                 this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
                 constraintRuleId );
         UniquePropertyConstraintRule
                 constraintRule = UniquePropertyConstraintRule.uniquenessConstraintRule(
-                constraintRuleId, constraint.label(), constraint.propertyKeyId(), indexRuleId );
+                constraintRuleId, constraint.label(), constraint.propertyKey(), indexRuleId );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( constraintRule ) )
         {
@@ -1145,7 +1145,7 @@ public class BatchInserterImpl implements BatchInserter
             checkSchemaCreationConstraints( labelId, propertyKeyId );
 
             createConstraintRule( new UniquenessConstraint( labelId, propertyKeyId ) );
-            return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.UNIQUENESS );
+            return new UniquenessConstraintDefinition( this, label, propertyKey );
         }
 
         @Override
@@ -1156,8 +1156,8 @@ public class BatchInserterImpl implements BatchInserter
 
             checkSchemaCreationConstraints( labelId, propertyKeyId );
 
-            createConstraintRule( new MandatoryPropertyConstraint( labelId, propertyKeyId ) );
-            return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.MANDATORY_PROPERTY );
+            createConstraintRule( new MandatoryNodePropertyConstraint( labelId, propertyKeyId ) );
+            return new MandatoryNodePropertyConstraintDefinition( this, label, propertyKey );
         }
 
         @Override
@@ -1167,7 +1167,7 @@ public class BatchInserterImpl implements BatchInserter
         }
 
         @Override
-        public void dropPropertyExistenceConstraint( Label label, String propertyKey )
+        public void dropNodePropertyExistenceConstraint( Label label, String propertyKey )
         {
             throw unsupportedException();
         }

@@ -22,6 +22,8 @@ package org.neo4j.kernel.api;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.toList;
@@ -50,5 +52,11 @@ public class UniquenessConstraintHaIT extends ConstraintHaIT
             assertEquals( 1, toList( db.findNodes( label, propertyKey, propertyValue ) ).size() );
             tx.success();
         }
+    }
+
+    @Override
+    protected Class<? extends ConstraintDefinition> constraintDefinitionClass()
+    {
+        return UniquenessConstraintDefinition.class;
     }
 }
