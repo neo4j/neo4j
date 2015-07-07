@@ -60,7 +60,10 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   when( inner.createUniqueConstraint(anyInt(), anyInt()) )
     .thenReturn(IdempotentResult(mock[UniquenessConstraint]))
 
-  when( inner.createMandatoryConstraint(anyInt(), anyInt()) )
+  when( inner.createNodeMandatoryConstraint(anyInt(), anyInt()) )
+    .thenReturn(IdempotentResult(mock[MandatoryPropertyConstraint]))
+
+  when( inner.createRelationshipMandatoryConstraint(anyInt(), anyInt()) )
     .thenReturn(IdempotentResult(mock[MandatoryPropertyConstraint]))
 
   when( inner.addIndexRule(anyInt(), anyInt()) )
@@ -157,14 +160,26 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     context.getStatistics should equal(InternalQueryStatistics(uniqueConstraintsRemoved = 1))
   }
 
-  test("create mandatory constraint") {
-    context.createMandatoryConstraint(0, 1)
+  test("create node mandatory constraint") {
+    context.createNodeMandatoryConstraint(0, 1)
 
     context.getStatistics should equal(InternalQueryStatistics(mandatoryConstraintsAdded = 1))
   }
 
-  test("drop mandatory constraint") {
-    context.dropMandatoryConstraint(0, 42)
+  test("drop node mandatory constraint") {
+    context.dropNodeMandatoryConstraint(0, 42)
+
+    context.getStatistics should equal(InternalQueryStatistics(mandatoryConstraintsRemoved = 1))
+  }
+
+  test("create rel mandatory constraint") {
+    context.createRelationshipMandatoryConstraint(0, 42)
+
+    context.getStatistics should equal(InternalQueryStatistics(mandatoryConstraintsAdded = 1))
+  }
+
+  test("drop rel mandatory constraint") {
+    context.dropRelationshipMandatoryConstraint(0, 1)
 
     context.getStatistics should equal(InternalQueryStatistics(mandatoryConstraintsRemoved = 1))
   }

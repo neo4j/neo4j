@@ -51,16 +51,28 @@ object StatementConverters {
           label = s.label.name,
           idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
           propertyKey = s.property.propertyKey.name)
-      case s: ast.CreateMandatoryPropertyConstraint =>
-        commands.CreateMandatoryPropertyConstraint(
+      case s: ast.CreateNodeMandatoryPropertyConstraint =>
+        commands.CreateNodeMandatoryPropertyConstraint(
           id = s.identifier.name,
           label = s.label.name,
           idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
           propertyKey = s.property.propertyKey.name)
-      case s: ast.DropMandatoryPropertyConstraint =>
-        commands.DropMandatoryPropertyConstraint(
+      case s: ast.DropNodeMandatoryPropertyConstraint =>
+        commands.DropNodeMandatoryPropertyConstraint(
           id = s.identifier.name,
           label = s.label.name,
+          idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
+          propertyKey = s.property.propertyKey.name)
+      case s: ast.CreateRelationshipMandatoryPropertyConstraint =>
+        commands.CreateRelationshipMandatoryPropertyConstraint(
+          id = s.identifier.name,
+          relType = s.relType.name,
+          idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
+          propertyKey = s.property.propertyKey.name)
+      case s: ast.DropRelationshipMandatoryPropertyConstraint =>
+        commands.DropRelationshipMandatoryPropertyConstraint(
+          id = s.identifier.name,
+          relType = s.relType.name,
           idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
           propertyKey = s.property.propertyKey.name)
       case _ =>

@@ -97,6 +97,10 @@ trait Literals extends Parser
     ((operator(":") ~~ LabelName) memoMismatches).suppressSubnodes
   }
 
+  def RelType: Rule1[ast.RelTypeName] = rule {
+    ((operator(":") ~~ RelTypeName) memoMismatches).suppressSubnodes
+  }
+
   def StringLiteral: Rule1[ast.StringLiteral] = rule("\"...string...\"") {
     (((
        ch('\'') ~ StringCharacters('\'') ~ ch('\'')

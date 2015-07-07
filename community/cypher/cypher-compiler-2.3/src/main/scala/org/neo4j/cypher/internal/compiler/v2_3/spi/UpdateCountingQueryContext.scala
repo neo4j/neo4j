@@ -105,14 +105,25 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     uniqueConstraintsRemoved.increase()
   }
 
-  override def createMandatoryConstraint(labelId: Int, propertyKeyId: Int) = {
-    val result = inner.createMandatoryConstraint(labelId, propertyKeyId)
+  override def createNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) = {
+    val result = inner.createNodeMandatoryConstraint(labelId, propertyKeyId)
     result.ifCreated { mandatoryConstraintsAdded.increase() }
     result
   }
 
-  override def dropMandatoryConstraint(labelId: Int, propertyKeyId: Int) {
-    inner.dropMandatoryConstraint(labelId, propertyKeyId)
+  override def dropNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) {
+    inner.dropNodeMandatoryConstraint(labelId, propertyKeyId)
+    mandatoryConstraintsRemoved.increase()
+  }
+
+  override def createRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) = {
+    val result = inner.createRelationshipMandatoryConstraint(relTypeId, propertyKeyId)
+    result.ifCreated { mandatoryConstraintsAdded.increase() }
+    result
+  }
+
+  override def dropRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) {
+    inner.dropRelationshipMandatoryConstraint(relTypeId, propertyKeyId)
     mandatoryConstraintsRemoved.increase()
   }
 

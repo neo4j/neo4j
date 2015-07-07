@@ -95,9 +95,13 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.dropUniqueConstraint(labelId, propertyKeyId))
 
-  def createMandatoryConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.createMandatoryConstraint(labelId, propertyKeyId))
+  def createNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.createNodeMandatoryConstraint(labelId, propertyKeyId))
 
-  def dropMandatoryConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.dropMandatoryConstraint(labelId, propertyKeyId))
+  def dropNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.dropNodeMandatoryConstraint(labelId, propertyKeyId))
+
+  def createRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) = singleDbHit(inner.createRelationshipMandatoryConstraint(relTypeId, propertyKeyId))
+
+  def dropRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) = singleDbHit(inner.dropRelationshipMandatoryConstraint(relTypeId, propertyKeyId))
 
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 sealed trait Command extends Statement
 
@@ -34,22 +34,41 @@ case class DropIndex(label: LabelName, property: PropertyKeyName)(val position: 
 
 trait PropertyConstraintCommand extends Command with SemanticChecking {
   def identifier: Identifier
-  def label: LabelName
+
   def property: Property
 
+  def entityType: CypherType
+
   def semanticCheck =
-    identifier.declare(CTNode.covariant) chain
-    property.semanticCheck(Expression.SemanticContext.Simple) chain
-    when (!property.map.isInstanceOf[ast.Identifier]) {
-      SemanticError("Cannot index nested properties", property.position)
-    }
+    identifier.declare(entityType) chain
+      property.semanticCheck(Expression.SemanticContext.Simple) chain
+      when(!property.map.isInstanceOf[ast.Identifier]) {
+        SemanticError("Cannot index nested properties", property.position)
+      }
 }
 
-case class CreateUniquePropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends PropertyConstraintCommand
+trait NodePropertyConstraintCommand extends PropertyConstraintCommand {
 
-case class DropUniquePropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends PropertyConstraintCommand
+  val entityType = symbols.CTNode
 
-case class CreateMandatoryPropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends PropertyConstraintCommand
+  def label: LabelName
+}
 
-case class DropMandatoryPropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends PropertyConstraintCommand
+trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
 
+  val entityType = symbols.CTRelationship
+
+  def relType: RelTypeName
+}
+
+case class CreateUniquePropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+
+case class DropUniquePropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+
+case class CreateNodeMandatoryPropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+
+case class DropNodeMandatoryPropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+
+case class CreateRelationshipMandatoryPropertyConstraint(identifier: Identifier, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
+
+case class DropRelationshipMandatoryPropertyConstraint(identifier: Identifier, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand

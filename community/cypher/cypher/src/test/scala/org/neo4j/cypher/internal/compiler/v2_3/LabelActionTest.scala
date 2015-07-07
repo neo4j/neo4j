@@ -139,11 +139,15 @@ class SnitchingQueryContext extends QueryContext {
 
   def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = ???
 
-  def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) {???}
+  def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) = ???
 
-  def createMandatoryConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[MandatoryPropertyConstraint] = ???
+  def createNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[MandatoryPropertyConstraint] = ???
 
-  def dropMandatoryConstraint(labelId: Int, propertyKeyId: Int) {???}
+  def dropNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) = ???
+
+  def createRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) = ???
+
+  def dropRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) = ???
 
   def getLabelId(labelName: String): Int = ???
 

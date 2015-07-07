@@ -2895,17 +2895,31 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
-  test("mandatory property constraint creation") {
+  test("node mandatory property constraint creation") {
     expectQuery(
       "CREATE CONSTRAINT ON (id:Label) ASSERT id.property IS NOT NULL",
-      CreateMandatoryPropertyConstraint("id", "Label", "id", "property")
+      CreateNodeMandatoryPropertyConstraint("id", "Label", "id", "property")
     )
   }
 
-  test("mandatory property constraint deletion") {
+  test("node mandatory property constraint deletion") {
     expectQuery(
       "DROP CONSTRAINT ON (id:Label) ASSERT id.property IS NOT NULL",
-      DropMandatoryPropertyConstraint("id", "Label", "id", "property")
+      DropNodeMandatoryPropertyConstraint("id", "Label", "id", "property")
+    )
+  }
+
+  test("relationship mandatory property constraint creation") {
+    expectQuery(
+      "CREATE CONSTRAINT ON [id:RelType] ASSERT id.property IS NOT NULL",
+      CreateRelationshipMandatoryPropertyConstraint("id", "RelType", "id", "property")
+    )
+  }
+
+  test("relationship mandatory property constraint deletion") {
+    expectQuery(
+      "DROP CONSTRAINT ON [id:RelType] ASSERT id.property IS NOT NULL",
+      DropRelationshipMandatoryPropertyConstraint("id", "RelType", "id", "property")
     )
   }
 
