@@ -218,6 +218,7 @@
               <arguments>
                 <argument>--backend=docbook</argument>
                 <argument>--attribute=neo4j-version=${project.version}</argument>
+                <argument>--attribute=upgradetext</argument>
                 <argument>--out-file=${project.build.directory}/upgrade/upgrades.xml</argument>
                 <argument>${docs.sources}/neo4j-docs-jar/ops/upgrades.asciidoc</argument>
               </arguments>
@@ -234,6 +235,20 @@
               <arguments>
                 <argument>file://${docs.resources}/docbook-schema/docbook.xsd</argument>
                 <argument>file://${project.build.directory}/neo4j-manual-html.xml</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>validate-upgrade-xml</id>
+            <phase>verify</phase>
+            <goals><goal>java</goal></goals>
+            <configuration>
+              <mainClass>org.neo4j.doc.docbook.Validate</mainClass>
+              <includePluginDependencies>true</includePluginDependencies>
+              <includeProjectDependencies>false</includeProjectDependencies>
+              <arguments>
+                <argument>file://${docs.resources}/docbook-schema/docbook.xsd</argument>
+                <argument>${project.build.directory}/upgrade/upgrades.xml</argument>
               </arguments>
             </configuration>
           </execution>
