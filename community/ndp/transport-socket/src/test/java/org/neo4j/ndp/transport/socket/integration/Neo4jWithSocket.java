@@ -111,49 +111,4 @@ public class Neo4jWithSocket implements TestRule
             }
         };
     }
-
-    /** For manual testing, runs an NDP server */
-    public static void main(String ... args) throws IOException
-    {
-        final LifeSupport life = new LifeSupport();
-        final GraphDatabaseService gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        final GraphDatabaseAPI api = ((GraphDatabaseAPI) gdb);
-        final LogService logging = api.getDependencyResolver().resolveDependency( LogService.class );
-        final UsageData usageData = api.getDependencyResolver().resolveDependency( UsageData.class );
-        final JobScheduler scheduler = api.getDependencyResolver().resolveDependency( JobScheduler.class );
-
-        final HostnamePort socketAddress = new HostnamePort( "localhost", 7687 );
-        final HostnamePort webSocketAddress = new HostnamePort( "localhost", 7688 );
-
-        final Sessions sessions = life.add( new ThreadedSessions(
-                life.add( new StandardSessions( api, usageData, logging ) ),
-                scheduler,
-                logging ) );
-
-        PrimitiveLongObjectMap<Function<Channel,SocketProtocol>> availableVersions = longObjectMap();
-        availableVersions.put( SocketProtocolV1.VERSION, new Function<Channel,SocketProtocol>()
-        {
-            @Override
-            public SocketProtocol apply( Channel channel )
-            {
-                return new SocketProtocolV1( logging, sessions.newSession(), channel );
-            }
-        } );
-
-        life.add( new NettyServer( asList(
-                new SocketTransport( socketAddress, availableVersions ),
-                new WebSocketTransport( webSocketAddress, availableVersions ) ) ) );
-
-        life.start();
-
-        try
-        {
-            System.out.printf( "NDP Server running, press any key to exit." );
-            System.in.read();
-        }
-        finally
-        {
-            life.shutdown();
-        }
-    }
 }
