@@ -19,15 +19,18 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -38,20 +41,19 @@ import org.neo4j.test.PageCacheRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreFactoryTest
 {
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
-
     private StoreFactory storeFactory;
-    private NeoStore neostore;
+    private NeoStore neoStore;
 
     @Before
-    public void setup()
+    public void setUp()
     {
         FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         Map<String, String> configParams = stringMap(
@@ -63,28 +65,50 @@ public class StoreFactoryTest
     }
 
     @After
-    public void teardown()
+    public void tearDown()
     {
-        neostore.close();
+        if ( neoStore != null )
+        {
+            neoStore.close();
+        }
     }
 
     @Test
     public void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup() throws Exception
     {
         // When
-        neostore = storeFactory.createNeoStore();
+        neoStore = storeFactory.createNeoStore();
 
         // Then
-        assertThat( neostore.getUpgradeTime(), equalTo( neostore.getCreationTime() ) );
+        assertThat( neoStore.getUpgradeTime(), equalTo( neoStore.getCreationTime() ) );
     }
 
     @Test
     public void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup() throws Exception
     {
         // When
-        neostore = storeFactory.createNeoStore();
+        neoStore = storeFactory.createNeoStore();
 
         // Then
-        assertArrayEquals( neostore.getUpgradeTransaction(), neostore.getLastCommittedTransaction() );
+        assertArrayEquals( neoStore.getUpgradeTransaction(), neoStore.getLastCommittedTransaction() );
+    }
+
+    @Test
+    public void shouldHaveSpecificCountsTrackerForReadOnlyDatabase() throws IOException
+    {
+        // when
+        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        StoreFactory readOnlyStoreFactory = new StoreFactory(
+                new Config( MapUtil.stringMap(
+                        GraphDatabaseSettings.read_only.name(), Settings.TRUE ,
+                        GraphDatabaseSettings.neo_store.name(), "/tmp/graph.db/"
+                ) ),
+                new DefaultIdGeneratorFactory(), pageCache, fs, StringLogger.DEV_NULL, new Monitors() );
+        neoStore = readOnlyStoreFactory.createNeoStore();
+        long lastClosedTransactionId = neoStore.getLastClosedTransactionId();
+
+        // then
+        assertEquals( -1, neoStore.getCounts().rotate( lastClosedTransactionId ));
     }
 }

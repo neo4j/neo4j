@@ -314,7 +314,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 CountsComputer initializer = new CountsComputer(
                         lastTxId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId );
                 life.add( new CountsTracker(
-                        logging.getMessagesLog( CountsTracker.class ), fileSystem, pageCache, storeFileBase )
+                        logging.getMessagesLog( CountsTracker.class ), fileSystem, pageCache, config, storeFileBase )
                                   .setInitializer( initializer ) );
             }
         }

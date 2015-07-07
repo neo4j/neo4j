@@ -48,13 +48,15 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
     private final Format format;
     final RotationStrategy rotationStrategy;
+    private RotationTimerFactory rotationTimerFactory;
     private volatile ProgressiveState<Key> state;
     private DataInitializer<EntryUpdater<Key>> stateInitializer;
     final int keySize;
     final int valueSize;
 
     public AbstractKeyValueStore( FileSystemAbstraction fs, PageCache pages, File base, RotationMonitor monitor,
-                                  int keySize, int valueSize, HeaderField<?>... headerFields )
+                                  RotationTimerFactory timerFactory, int keySize, int valueSize, HeaderField<?>...
+            headerFields )
     {
         this.keySize = keySize;
         this.valueSize = valueSize;
@@ -65,6 +67,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
         }
         this.format = new Format( headerFields );
         this.rotationStrategy = rotation.value().create( fs, pages, format, monitor, base, rotation.parameters() );
+        this.rotationTimerFactory = timerFactory;
         this.state = new DeadState.Stopped<>( format, getClass().getAnnotation( State.class ).value() );
     }
 
@@ -275,14 +278,15 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
         private long rotate( boolean force ) throws IOException
         {
             final long version = rotation.rotationVersion();
-            ProgressiveState<Key> next = rotation.rotate( force, rotationStrategy, new Consumer<Headers.Builder>()
-            {
-                @Override
-                public void accept( Headers.Builder value )
-                {
-                    updateHeaders( value, version );
-                }
-            } );
+            ProgressiveState<Key> next = rotation.rotate( force, rotationStrategy, rotationTimerFactory,
+                    new Consumer<Headers.Builder>()
+                    {
+                        @Override
+                        public void accept( Headers.Builder value )
+                        {
+                            updateHeaders( value, version );
+                        }
+                    } );
             try ( LockWrapper ignored = writeLock( updateLock ) )
             {
                 state = next;

@@ -19,15 +19,18 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
-
-import org.junit.Rule;
-import org.junit.Test;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.IOFunction;
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.io.fs.StoreChannel;
@@ -35,18 +38,21 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.test.ThreadingRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-
 import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.InitialLifecycle.STARTED;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
 
 public class AbstractKeyValueStoreTest
 {
-    public final @Rule Resources the = new Resources( FILE_IN_EXISTING_DIRECTORY );
-    public final @Rule ThreadingRule threading = new ThreadingRule();
+    @Rule
+    public final Resources the = new Resources( FILE_IN_EXISTING_DIRECTORY );
+    @Rule
+    public final ThreadingRule threading = new ThreadingRule();
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
     private static final HeaderField<Long> TX_ID = new HeaderField<Long>()
     {
         @Override
@@ -414,6 +420,48 @@ public class AbstractKeyValueStoreTest
         store.rotation.apply( 4l );
     }
 
+    @Test( timeout = 2000 )
+    @Resources.Life( STARTED )
+    public void shouldFailRotationAfterTimeout() throws IOException
+    {
+
+        // GIVEN
+        final Store store = the.managed( new Store( 0, TX_ID )
+        {
+            @SuppressWarnings( "unchecked" )
+            @Override
+            <Value> Value initialHeader( HeaderField<Value> field )
+            {
+                if ( field == TX_ID )
+                {
+                    return (Value) (Object) 1l;
+                }
+                else
+                {
+                    return super.initialHeader( field );
+                }
+            }
+
+            @Override
+            protected void updateHeaders( Headers.Builder headers, long version )
+            {
+                headers.put( TX_ID, version );
+            }
+
+            @Override
+            protected int compareHeaders( Headers lhs, Headers rhs )
+            {
+                return Long.compare( lhs.get( TX_ID ), rhs.get( TX_ID ) );
+            }
+        } );
+
+        // THEN
+        expectedException.expect( RotationTimeoutException.class );
+
+        // WHEN
+        store.prepareRotation( 10l ).rotate();
+    }
+
     static DataProvider data( final Entry... data )
     {
         return new DataProvider()
@@ -458,7 +506,13 @@ public class AbstractKeyValueStoreTest
 
         private Store( HeaderField<?>... headerFields )
         {
-            super( the.fileSystem(), the.pageCache(), the.testPath(), null, 16, 16, headerFields );
+            this( TimeUnit.MINUTES.toMillis( 10 ), headerFields );
+        }
+
+        private Store( long rotationTimeout, HeaderField<?>... headerFields )
+        {
+            super( the.fileSystem(), the.pageCache(), the.testPath(), null, new RotationTimerFactory( Clock.SYSTEM_CLOCK,
+                    rotationTimeout ), 16, 16, headerFields );
             this.headerFields = headerFields;
             setEntryUpdaterInitializer( new DataInitializer<EntryUpdater<String>>()
             {
