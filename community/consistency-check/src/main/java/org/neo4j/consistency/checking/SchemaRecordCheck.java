@@ -26,6 +26,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.kernel.impl.store.MandatoryPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -133,6 +134,9 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
                 case UNIQUENESS_CONSTRAINT:
                     checkUniquenessConstraintRule( (UniquePropertyConstraintRule) rule, engine, record, records );
                     break;
+                case MANDATORY_PROPERTY_CONSTRAINT:
+                    checkMandatoryPropertyConstraintRule( (MandatoryPropertyConstraintRule) rule, engine, records );
+                    break;
                 default:
                     engine.report().unsupportedSchemaRuleKind( kind );
             }
@@ -166,6 +170,15 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
                     engine.report().uniquenessConstraintNotReferencingBack( obligation );
                 }
             }
+        }
+    }
+
+    private void checkMandatoryPropertyConstraintRule( MandatoryPropertyConstraintRule rule,
+            CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine, RecordAccess records )
+    {
+        if ( phase == Phase.CHECK_RULES )
+        {
+            engine.comparativeCheck( records.propertyKey( rule.getPropertyKey() ), VALID_PROPERTY_KEY );
         }
     }
 
@@ -208,8 +221,6 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
             }
         }
     }
-
-
 
     @Override
     public void checkChange( DynamicRecord oldRecord, DynamicRecord newRecord,
