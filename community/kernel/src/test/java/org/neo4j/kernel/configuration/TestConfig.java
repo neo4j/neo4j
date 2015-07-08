@@ -191,4 +191,19 @@ public class TestConfig
         assertThat( config.get( MyMigratingSettings.newer ), equalTo( "hello!" ) );
         assertThat( config.get( MySettingsWithDefaults.hello ), equalTo( "Hello, World!" ) );
     }
+
+    @Test
+    public void shouldBeAbleToAgumentConfig() throws Exception
+    {
+        // Given
+        Config config = new Config( stringMap( "newer", "old", "non-overlapping", "huzzah" ) );
+
+        // When
+        config.augment( stringMap( "newer", "new", "unrelated", "hello" ) );
+
+        // Then
+        assertThat( config.get( setting("newer", STRING, "") ), equalTo( "new" ) );
+        assertThat( config.get( setting("non-overlapping", STRING, "") ), equalTo( "huzzah" ) );
+        assertThat( config.get( setting("unrelated", STRING, "") ), equalTo( "hello" ) );
+    }
 }

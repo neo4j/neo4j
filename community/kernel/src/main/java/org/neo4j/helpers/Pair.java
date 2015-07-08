@@ -29,13 +29,13 @@ public abstract class Pair<T1, T2>
 {
     @SuppressWarnings( "rawtypes" )
     private static final Pair EMPTY = Pair.of( null, null );
-    
+
     @SuppressWarnings( "unchecked" )
-    public static <T1, T2> Pair<T1, T2> empty()
+    public static <T1, T2> Pair<T1,T2> empty()
     {
         return EMPTY;
     }
-    
+
     /**
      * Create a new pair of objects.
      *
@@ -43,9 +43,9 @@ public abstract class Pair<T1, T2>
      * @param other the other object in the pair.
      * @return a new pair of the two parameters.
      */
-    public static <T1, T2> Pair<T1, T2> of( final T1 first, final T2 other )
+    public static <T1, T2> Pair<T1,T2> pair( final T1 first, final T2 other )
     {
-        return new Pair<T1, T2>()
+        return new Pair<T1,T2>()
         {
             @Override
             public T1 first()
@@ -59,6 +59,14 @@ public abstract class Pair<T1, T2>
                 return other;
             }
         };
+    }
+
+    /**
+     * Alias of {@link #pair(Object, Object)}.
+     */
+    public static <T1, T2> Pair<T1, T2> of( final T1 first, final T2 other )
+    {
+        return pair( first, other );
     }
 
     Pair()

@@ -34,6 +34,11 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.AnnotatedFieldHarvester;
 import org.neo4j.kernel.configuration.Config;
 
+/**
+ * This exists solely for backwards compatibility, and will be removed in the next major version of Neo4j. Please use
+ * {@link Config} instead.
+ */
+@Deprecated
 public class ConfigWrappingConfiguration extends AbstractConfiguration
 {
     private final Config config;

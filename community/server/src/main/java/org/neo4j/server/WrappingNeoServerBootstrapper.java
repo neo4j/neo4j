@@ -19,14 +19,18 @@
  */
 package org.neo4j.server;
 
+import java.io.File;
+
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ConfigurationBuilder;
+import org.neo4j.server.configuration.ConfigurationBuilder.ConfiguratorWrappingConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
-import org.neo4j.server.configuration.ConfigurationBuilder.ConfiguratorWrappingConfigurationBuilder;
 
 /**
  * A bootstrapper for the Neo4j Server that takes an already instantiated
@@ -52,6 +56,11 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
         this( db, new ServerConfigurator( db ) );
     }
 
+    public void start()
+    {
+        super.start( null );
+    }
+
     /**
      * Should use the new constructor with {@link ConfigurationBuilder}
      */
@@ -68,13 +77,15 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
     }
 
     @Override
-    protected ConfigurationBuilder createConfigurationBuilder( Log log )
+    protected NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
+            LogProvider userLogProvider )
     {
-        return configurator;
+        return new WrappingNeoServer(db, configurator );
     }
 
-	@Override
-	protected NeoServer createNeoServer( ConfigurationBuilder configurator, GraphDatabaseDependencies dependencies, LogProvider userLogProvider ) {
-		return new WrappingNeoServer(db, this.configurator );
-	}
+    @Override
+    protected Config createConfig( Log log, File file, Pair<String, String>[] configOverrides )
+    {
+        return WrappingNeoServer.toConfig( configurator );
+    }
 }

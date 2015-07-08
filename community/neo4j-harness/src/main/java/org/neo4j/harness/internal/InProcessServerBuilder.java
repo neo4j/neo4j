@@ -37,12 +37,14 @@ import org.neo4j.harness.TestServerBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.server.configuration.ConfigurationBuilder.ConfiguratorWrappingConfigurationBuilder.toStringForThirdPartyPackageProperty;
 import static org.neo4j.server.configuration.Configurator.DATABASE_LOCATION_PROPERTY_KEY;
 import static org.neo4j.server.configuration.Configurator.WEBSERVER_PORT_PROPERTY_KEY;
 import static org.neo4j.test.Digests.md5Hex;
@@ -104,10 +106,13 @@ public class InProcessServerBuilder implements TestServerBuilder
         {
             throw new RuntimeException( "Unable to create log file", e );
         }
+
+        config.put( ServerSettings.third_party_packages.name(), toStringForThirdPartyPackageProperty( extensions.toList() ) );
+
         final FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( logOutputStream );
         GraphDatabaseFacadeFactory.Dependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
         InProcessServerControls controls = new InProcessServerControls( serverFolder,
-                new CommunityNeoServer( new MapConfigurator( config, extensions.toList() ), dependencies, userLogProvider ), logOutputStream );
+                new CommunityNeoServer( new Config(config), dependencies, userLogProvider ), logOutputStream );
         controls.start();
         try
         {

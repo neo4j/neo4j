@@ -28,13 +28,13 @@ import org.neo4j.desktop.ui.MainWindow;
 import org.neo4j.desktop.ui.UnableToStartServerException;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerStartupException;
-import org.neo4j.server.configuration.ConfigurationBuilder;
 
 /**
  * Lifecycle actions for the Neo4j server living inside this JVM. Typically reacts to button presses
@@ -58,11 +58,11 @@ public class DatabaseActions
             throw new UnableToStartServerException( "Already started" );
         }
 
-        ConfigurationBuilder configurator = model.getServerConfigurator();
+        Config config = model.getConfig();
         Monitors monitors = new Monitors();
 
         LogProvider userLogProvider = FormattedLogProvider.toOutputStream( System.out );
-        server = new CommunityNeoServer( configurator, GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider ).monitors( monitors ), userLogProvider );
+        server = new CommunityNeoServer( config, GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider ).monitors( monitors ), userLogProvider );
         try
         {
             server.start();

@@ -22,26 +22,26 @@ package org.neo4j.server.advanced;
 import java.util.Arrays;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.advanced.modules.JMXManagementModule;
-import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.modules.ServerModule;
 
 public class AdvancedNeoServer extends CommunityNeoServer
 {
-    public AdvancedNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory,
+    public AdvancedNeoServer( Config config, Database.Factory dbFactory,
                               CommunityFacadeFactory.Dependencies dependencies, LogProvider logProvider )
     {
-        super( configurator, dbFactory, dependencies, logProvider );
+        super( config, dbFactory, dependencies, logProvider );
     }
 
-    public AdvancedNeoServer( ConfigurationBuilder configurator, CommunityFacadeFactory.Dependencies dependencies,
+    public AdvancedNeoServer( Config config, CommunityFacadeFactory.Dependencies dependencies,
                               LogProvider logProvider )
     {
-        super( configurator, dependencies, logProvider );
+        super( config, dependencies, logProvider );
     }
 
     @Override

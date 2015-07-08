@@ -28,45 +28,49 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.FormattedLog;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.test.SuppressOutput;
+import org.neo4j.logging.NullLog;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.SuppressOutput.suppressAll;
 
-public class PropertyFileConfiguratorTest
+import static org.junit.Assert.assertNotNull;
+import static org.neo4j.server.configuration.ServerConfigFactory.loadConfig;
+
+public class ServerConfigFactoryTest
 {
     @Rule
     public final SuppressOutput suppressOutput = suppressAll();
     @Rule
     public final TemporaryFolder folder = new TemporaryFolder();
 
-    private final Log log = FormattedLog.toOutputStream( System.out );
+    private final Log log = NullLog.getInstance();
 
     @Test
     public void whenDatabaseTuningFilePresentInDefaultLocationShouldLoadItEvenIfNotSpecified() throws IOException
     {
+        // given
         File emptyPropertyFile = PropertyFileBuilder.builder( folder.getRoot() )
                 .build();
         DatabaseTuningPropertyFileBuilder.builder( folder.getRoot() )
+                .withKernelId( "fromdefaultlocation" )
                 .build();
 
-        PropertyFileConfigurator configurator = new PropertyFileConfigurator( emptyPropertyFile, log );
+        // when
+        Config config = loadConfig( null, emptyPropertyFile, log );
 
-        assertEquals( "25M", configurator.getDatabaseTuningProperties()
-                .get( GraphDatabaseSettings.nodestore_mapped_memory_size.name() ) );
+        // then
+        assertEquals( "fromdefaultlocation", config.get( GraphDatabaseSettings.forced_kernel_id ) );
     }
 
     @Test
     public void whenDatabaseTuningFilePresentInDefaultLocationShouldNotLoadIfAnotherSpecified() throws IOException
     {
-        int unlikelyDefaultMemoryMappedValue = 8351;
+        // given
         File databaseTuningPropertyFileWeWantToUse = DatabaseTuningPropertyFileBuilder.builder( folder.getRoot() )
-                .mappedMemory( unlikelyDefaultMemoryMappedValue )
+                .withKernelId( "shouldgetloaded" )
                 .build();
         File emptyPropertyFile = PropertyFileBuilder.builder( folder.getRoot() )
                 .withDbTuningPropertyFile( databaseTuningPropertyFileWeWantToUse )
@@ -74,44 +78,31 @@ public class PropertyFileConfiguratorTest
         // The tuning properties we want to ignore, in the same dir as the neo
         // server properties
         DatabaseTuningPropertyFileBuilder.builder( folder.newFolder() )
+                .withKernelId( "shouldnotgetloaded" )
                 .build();
 
-        PropertyFileConfigurator configurator = new PropertyFileConfigurator( emptyPropertyFile, log );
+        // when
+        Config config = loadConfig( null, emptyPropertyFile, log );
 
-        assertEquals( String.valueOf( unlikelyDefaultMemoryMappedValue ) + "M",
-                configurator.getDatabaseTuningProperties()
-                        .get( GraphDatabaseSettings.nodestore_mapped_memory_size.name() ) );
-    }
-
-    @Test
-    public void shouldLogInfoWhenDefaultingToTuningPropertiesFileInTheSameDirectoryAsTheNeoServerPropertiesFile()
-            throws IOException
-    {
-        File emptyPropertyFile = PropertyFileBuilder.builder( folder.getRoot() )
-                .build();
-        File tuningPropertiesFile = DatabaseTuningPropertyFileBuilder.builder( folder.getRoot() )
-                .build();
-
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        new PropertyFileConfigurator( emptyPropertyFile, logProvider.getLog( getClass() ) );
-
-        logProvider.assertAtLeastOnce(
-                inLog( getClass() ).warn( "No database tuning file explicitly set, defaulting to [%s]", tuningPropertiesFile.getAbsolutePath() )
-        );
+        // then
+        assertEquals( "shouldgetloaded", config.get( GraphDatabaseSettings.forced_kernel_id ) );
     }
 
     @Test
     public void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages() throws IOException
     {
+        // given
         File propertyFile = PropertyFileBuilder.builder( folder.getRoot() )
                 .withNameValue( Configurator.THIRD_PARTY_PACKAGES_KEY,
                         "org.neo4j.extension.extension1=/extension1,org.neo4j.extension.extension2=/extension2," +
                         "org.neo4j.extension.extension3=/extension3" )
                 .build();
-        PropertyFileConfigurator propertyFileConfigurator = new PropertyFileConfigurator( propertyFile, log );
 
-        List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages =
-                propertyFileConfigurator.configuration().get( ServerSettings.third_party_packages );
+        // when
+        Config config = loadConfig( null, propertyFile, log );
+
+        // then
+        List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
 
         assertEquals( 3, thirdpartyJaxRsPackages.size() );
         assertEquals( "/extension1", thirdpartyJaxRsPackages.get( 0 ).getMountPoint() );
@@ -127,9 +118,9 @@ public class PropertyFileConfiguratorTest
         File nonExistentFilePropertiesFile = new File( "/tmp/" + System.currentTimeMillis() );
 
         // When
-        PropertyFileConfigurator configurator = new PropertyFileConfigurator( nonExistentFilePropertiesFile, log );
+        Config config = loadConfig( null, nonExistentFilePropertiesFile, log );
 
         // Then
-        assertTrue( configurator.getDatabaseTuningProperties().isEmpty() );
+        assertNotNull( config );
     }
 }

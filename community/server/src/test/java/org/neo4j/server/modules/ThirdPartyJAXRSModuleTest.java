@@ -19,16 +19,15 @@
  */
 package org.neo4j.server.modules;
 
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
-
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.database.Database;
@@ -46,6 +45,7 @@ public class ThirdPartyJAXRSModuleTest
     @Test
     public void shouldReportThirdPartyPackagesAtSpecifiedMount() throws Exception
     {
+        // Given
         WebServer webServer = mock( WebServer.class );
 
         CommunityNeoServer neoServer = mock( CommunityNeoServer.class );
@@ -53,19 +53,17 @@ public class ThirdPartyJAXRSModuleTest
         when( neoServer.getWebServer() ).thenReturn( webServer );
         when( neoServer.getDatabase() ).thenReturn( mock(Database.class));
         
-        ConfigurationBuilder configurator = mock( ConfigurationBuilder.class );
-        when( neoServer.getConfigurationBuilder() ).thenReturn( configurator );
-
         Config config = mock( Config.class );
         List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<ThirdPartyJaxRsPackage>();
         String path = "/third/party/package";
         jaxRsPackages.add( new ThirdPartyJaxRsPackage( "org.example.neo4j", path ) );
         when( config.get( ServerSettings.third_party_packages ) ).thenReturn( jaxRsPackages );
-        when( neoServer.getConfigurationBuilder().configuration() ).thenReturn( config );
-        
+
+        // When
         ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule(webServer, config, NullLogProvider.getInstance(), neoServer );
         module.start();
 
+        // Then
         verify( webServer ).addJAXRSPackages( any( List.class ), anyString(), anyCollection() );
     }
 }

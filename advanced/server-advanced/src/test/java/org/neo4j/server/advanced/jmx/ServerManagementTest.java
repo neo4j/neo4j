@@ -22,8 +22,6 @@ package org.neo4j.server.advanced.jmx;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Map;
-
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLog;
@@ -31,14 +29,14 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.advanced.helpers.AdvancedServerBuilder;
-import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.PropertyFileConfigurator;
+import org.neo4j.server.configuration.ServerConfigFactory;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ServerManagementTest
 {
@@ -54,7 +52,7 @@ public class ServerManagementTest
         String dbDirectory1 = baseDir.directory( "db1" ).getAbsolutePath();
         String dbDirectory2 = baseDir.directory( "db2" ).getAbsolutePath();
 
-        ConfigurationBuilder config = new PropertyFileConfigurator(
+        Config config = ServerConfigFactory.loadConfig( null,
                 AdvancedServerBuilder
                         .server()
                         .withDefaultDatabaseTuning()
@@ -69,7 +67,7 @@ public class ServerManagementTest
         assertEquals( dbDirectory1, server.getDatabase().getLocation() );
 
         // Change the database location
-        setProperty( config.configuration(), Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDirectory2 );
+        config.augment( stringMap( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDirectory2 ) );
         ServerManagement bean = new ServerManagement( server );
         bean.restartServer();
 
@@ -81,12 +79,5 @@ public class ServerManagementTest
     private static GraphDatabaseDependencies graphDbDependencies()
     {
         return GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() );
-    }
-
-    private static void setProperty( Config config, String key, String value )
-    {
-        Map<String,String> params = config.getParams();
-        params.put( key, value );
-        config.applyChanges( params );
     }
 }

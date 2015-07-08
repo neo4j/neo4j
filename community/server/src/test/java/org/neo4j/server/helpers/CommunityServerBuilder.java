@@ -33,20 +33,19 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.PropertyFileConfigurator;
+import org.neo4j.server.configuration.ServerConfigFactory;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase;
@@ -59,7 +58,6 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
@@ -126,14 +124,15 @@ public class CommunityServerBuilder
         final File configFile = buildBefore();
 
         Log log = logProvider.getLog( getClass() );
-        ConfigurationBuilder configurator = new PropertyFileConfigurator( configFile, log );
-        Monitors monitors = new Monitors();
-        return build( configFile, configurator, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider ).monitors( monitors ) );
+        Config config = ServerConfigFactory.loadConfig( null, configFile, log );
+        return build( configFile, config, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider )
+                .monitors( new Monitors() ) );
     }
 
-    protected CommunityNeoServer build( File configFile, ConfigurationBuilder configurator, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    protected CommunityNeoServer build( File configFile, Config config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        return new TestCommunityNeoServer( configurator, configFile, dependencies, logProvider );
+        return new TestCommunityNeoServer( config, configFile, dependencies, logProvider );
     }
 
     public File createPropertiesFiles() throws IOException
@@ -439,13 +438,13 @@ public class CommunityServerBuilder
         return this;
     }
 
-    protected DatabaseActions createDatabaseActionsObject( Database database, ConfigurationBuilder configurator )
+    protected DatabaseActions createDatabaseActionsObject( Database database, Config config )
     {
         Clock clockToUse = (clock != null) ? clock : SYSTEM_CLOCK;
 
         return new DatabaseActions(
                 new LeaseManager( clockToUse ),
-                configurator.configuration().get( ServerInternalSettings.script_sandboxing_enabled ), database.getGraph() );
+                config.get( ServerInternalSettings.script_sandboxing_enabled ), database.getGraph() );
     }
 
     protected File buildBefore() throws IOException
@@ -470,16 +469,18 @@ public class CommunityServerBuilder
     {
         private final File configFile;
 
-        private TestCommunityNeoServer( ConfigurationBuilder propertyFileConfigurator, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
+        private TestCommunityNeoServer( Config config, File configFile, GraphDatabaseFacadeFactory
+                .Dependencies dependencies, LogProvider logProvider )
         {
-            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? COMMUNITY_FACTORY : IN_MEMORY_DB ), dependencies, logProvider );
+            super( config, lifecycleManagingDatabase( persistent ? COMMUNITY_FACTORY : IN_MEMORY_DB ), dependencies,
+                    logProvider );
             this.configFile = configFile;
         }
 
         @Override
         protected DatabaseActions createDatabaseActions()
         {
-            return createDatabaseActionsObject( database, configurator );
+            return createDatabaseActionsObject( database, getConfig() );
         }
 
         @Override

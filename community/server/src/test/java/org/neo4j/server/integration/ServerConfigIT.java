@@ -26,10 +26,14 @@ import org.junit.rules.TemporaryFolder;
 
 import javax.management.ObjectName;
 
+import org.neo4j.helpers.Settings;
 import org.neo4j.jmx.impl.ConfigurationBean;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
+import org.neo4j.shell.ShellException;
+import org.neo4j.shell.ShellLobby;
+import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,8 +45,6 @@ public class ServerConfigIT extends ExclusiveServerTestBase
 {
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
-
-    private CommunityNeoServer server;
 
     @Test
     public void serverConfigShouldBeVisibleInJMX() throws Throwable
@@ -59,6 +61,58 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         // Then
         ObjectName name = getObjectName( server.getDatabase().getGraph(), ConfigurationBean.CONFIGURATION_MBEAN_NAME );
         assertThat( getAttribute( name, ServerSettings.http_log_config_file.name() ), equalTo( (Object)configValue ) );
+    }
+
+    private CommunityNeoServer server;
+
+    @Test
+    public void shouldBeAbleToOverrideShellConfig()  throws Throwable
+    {
+        // Given
+        final int customPort = findFreeShellPortToUse( 8881 );
+
+        server = CommunityServerBuilder.server()
+                .withProperty( ShellSettings.remote_shell_enabled.name(), Settings.TRUE )
+                .withProperty( ShellSettings.remote_shell_port.name(), "" + customPort )
+                .build();
+
+        // When
+        this.server.start();
+
+        // Then
+        // Try to connect with a shell client to that custom port.
+        // Throws exception if unable to connect
+        ShellLobby.newClient( customPort )
+                .shutdown();
+    }
+
+    @Test
+    public void connectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Throwable
+    {
+        // Given
+        server = CommunityServerBuilder.server().build();
+
+        // When
+        server.start();
+
+        // Then
+        ShellLobby.newClient().shutdown();
+    }
+
+    private int findFreeShellPortToUse( int startingPort )
+    {
+        // Make sure there's no other random stuff on that port
+        while ( true )
+        {
+            try
+            {
+                ShellLobby.newClient( startingPort++ ).shutdown();
+            }
+            catch ( ShellException e )
+            {   // Good
+                return startingPort;
+            }
+        }
     }
 
     @After

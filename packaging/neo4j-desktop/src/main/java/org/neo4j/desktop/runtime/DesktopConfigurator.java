@@ -20,89 +20,68 @@
 package org.neo4j.desktop.runtime;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.desktop.config.Installation;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLog;
-import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.PropertyFileConfigurator;
+import org.neo4j.server.configuration.ServerConfigFactory;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.web.ServerInternalSettings;
 
-import static org.neo4j.helpers.collection.MapUtil.load;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.helpers.Pair.pair;
 
-public class DesktopConfigurator implements ConfigurationBuilder
+public class DesktopConfigurator
 {
-    private final Config compositeConfig = new Config();
-
-    private final Map<String, String> map = new HashMap<>();
     private final Installation installation;
 
-    public DesktopConfigurator( Installation installation )
+    private Config config;
+    private File databaseDirectory;
+
+    public DesktopConfigurator( Installation installation, File databaseDirectory )
     {
         this.installation = installation;
+        this.databaseDirectory = databaseDirectory;
         refresh();
     }
 
     public void refresh()
     {
-        Map<String,String> newMap = new HashMap<>( map );
+        config = ServerConfigFactory.loadConfig(
+                /** Future single file, neo4j.conf or similar */
+                null,
 
-        // re-read server properties, then add to config
-        ConfigurationBuilder propertyFileConfig = new PropertyFileConfigurator(
+                /** Server config file */
                 installation.getServerConfigurationsFile(),
-                FormattedLog.toOutputStream( System.out ) );
-        newMap.putAll( propertyFileConfig.configuration().getParams() );
 
-        this.compositeConfig.applyChanges( newMap );
+                /** Database tuning file */
+                getDatabaseConfigurationFile(),
+
+                FormattedLog.toOutputStream( System.out ),
+
+                /** Desktop-specific config overrides */
+                pair( Configurator.AUTH_STORE_FILE_KEY, new File( databaseDirectory, "./dbms/auth" ).getAbsolutePath() ),
+                pair( Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) );
     }
 
-    @Override
     public Config configuration()
     {
-        return compositeConfig;
-    }
-
-    @Override
-    public Map<String, String> getDatabaseTuningProperties()
-    {
-        Map<String,String> databaseProperties = null;
-        try
-        {
-            databaseProperties = new HashMap<>( load( getDatabaseConfigurationFile() ) );
-        }
-        catch ( IOException e )
-        {
-            databaseProperties = stringMap();
-        }
-
-        String storeDir = getDatabaseDirectory();
-        databaseProperties.put( GraphDatabaseSettings.store_dir.name(), storeDir );
-        return databaseProperties;
+        return config;
     }
 
     public void setDatabaseDirectory( File directory ) {
-        File neo4jProperties = new File( directory, Installation.NEO4J_PROPERTIES_FILENAME );
-
-        map.put( Configurator.AUTH_STORE_FILE_KEY, new File( directory, "./dbms/auth" ).getAbsolutePath() );
-        map.put( Configurator.DATABASE_LOCATION_PROPERTY_KEY, directory.getAbsolutePath() );
-        map.put( Configurator.DB_TUNING_PROPERTY_FILE_KEY, neo4jProperties.getAbsolutePath() );
+        databaseDirectory = directory;
     }
 
     public String getDatabaseDirectory() {
-        return map.get( Configurator.DATABASE_LOCATION_PROPERTY_KEY );
+        return config.get( ServerInternalSettings.legacy_db_location ).getAbsolutePath();
     }
 
     public int getServerPort() {
-        return configuration().get( ServerSettings.webserver_port );
+        return config.get( ServerSettings.webserver_port );
     }
 
     public File getDatabaseConfigurationFile() {
-        return new File( map.get( Configurator.DB_TUNING_PROPERTY_FILE_KEY ) );
+        return new File( databaseDirectory, Installation.NEO4J_PROPERTIES_FILENAME );
     }
 }

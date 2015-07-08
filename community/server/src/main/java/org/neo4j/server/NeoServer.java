@@ -56,8 +56,6 @@ public interface NeoServer
 
     TransactionRegistry getTransactionRegistry();
 
-    ConfigurationBuilder getConfigurationBuilder();
-
     /**
      * Use {@link NeoServer#getConfigurationBuilder()} instead.
      */

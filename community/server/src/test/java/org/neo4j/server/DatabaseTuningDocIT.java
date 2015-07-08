@@ -19,6 +19,7 @@
  */
 package org.neo4j.server;
 
+import org.junit.After;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -32,38 +33,54 @@ import static org.junit.Assert.assertEquals;
 
 public class DatabaseTuningDocIT extends ExclusiveServerTestBase
 {
+
+    private CommunityNeoServer server;
+
     @Test
     public void shouldLoadAKnownGoodPropertyFile() throws IOException
     {
-        CommunityNeoServer server = CommunityServerBuilder.server()
+        // given
+        server = CommunityServerBuilder.server()
                 .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .withDefaultDatabaseTuning()
                 .build();
+
+        // when
         server.start();
 
-        Map<String,String> params = server.configurator.getDatabaseTuningProperties();
-
+        // then
+        Map<String,String> params = server.getConfig().getParams();
 
         for ( Map.Entry<String, String> entry : CommunityServerBuilder.good_tuning_file_properties.entrySet() )
         {
             assertEquals( entry.getValue(), params.get( entry.getKey() ) );
         }
-
-        server.stop();
     }
 
     @Test
     public void shouldLogWarningAndContinueIfTuningFilePropertyDoesNotResolve() throws IOException
     {
+        // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        NeoServer server = CommunityServerBuilder.server( logProvider )
+        server = CommunityServerBuilder.server( logProvider )
                 .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
                 .withNonResolvableTuningFile()
                 .build();
+
+        // when
         server.start();
 
-        logProvider.assertContainsMessageContaining( "The specified file for database performance tuning properties [%s] does not exist." );
-
-        server.stop();
+        // then
+        logProvider.assertContainsMessageContaining( "Config file [%s] does not exist." );
     }
+
+    @After
+    public void cleanup()
+    {
+        if( server != null )
+        {
+            server.stop();
+        }
+    }
+
 }

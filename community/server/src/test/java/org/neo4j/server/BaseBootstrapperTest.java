@@ -20,37 +20,35 @@
 package org.neo4j.server;
 
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.SuppressOutput;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.CommunityBootstrapper.start;
+import static org.neo4j.server.web.ServerInternalSettings.legacy_db_location;
 
 public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 {
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    private Bootstrapper bootstrapper;
+    @Rule
+    public TemporaryFolder tempDir = new TemporaryFolder();
 
-    @Before
-    @After
-    public void cleanUpAfterBootstrapper() throws Exception
-    {
-        if ( bootstrapper != null )
-        {
-            String baseDir = bootstrapper.getServer().getDatabase().getLocation();
-            bootstrapper.stop();
-            FileUtils.deleteRecursively( new File( baseDir ) );
-        }
-    }
+    private Bootstrapper bootstrapper;
 
     protected abstract Bootstrapper newBootstrapper();
 
@@ -61,12 +59,60 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         bootstrapper = newBootstrapper();
 
         // When
-        Integer resultCode = bootstrapper.start();
+        int resultCode = start( bootstrapper, new String[]{ "-c:" + legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() } );
 
         // Then
         assertEquals( Bootstrapper.OK, resultCode );
         assertNotNull( bootstrapper.getServer() );
+    }
 
-        bootstrapper.stop();
+    @Test
+    public void canSpecifyConfigFile() throws Throwable
+    {
+        // Given
+        bootstrapper = newBootstrapper();
+        File configFile = tempDir.newFile( "neo4j.config" );
+
+        MapUtil.store( stringMap(
+                forced_kernel_id.name(), "ourcustomvalue"
+        ), configFile );
+
+        // When
+        start( bootstrapper, new String[]{
+                "-C", configFile.getAbsolutePath(),
+                "-c:" + legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() } );
+
+        // Then
+        assertThat(bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo("ourcustomvalue") );
+    }
+
+    @Test
+    public void canOverrideConfigValues() throws Throwable
+    {
+        // Given
+        bootstrapper = newBootstrapper();
+        File configFile = tempDir.newFile( "neo4j.config" );
+
+        MapUtil.store( stringMap(
+                forced_kernel_id.name(), "thisshouldnotshowup"
+        ), configFile );
+
+        // When
+        start( bootstrapper, new String[]{
+                "-C", configFile.getAbsolutePath(),
+                "-c", forced_kernel_id.name() + "=mycustomvalue",
+                "-c", legacy_db_location.name() + "=" + tempDir.getRoot().getAbsolutePath() } );
+
+        // Then
+        assertThat(bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo("mycustomvalue") );
+    }
+
+    @After
+    public void cleanup()
+    {
+        if(bootstrapper != null )
+        {
+            bootstrapper.stop();
+        }
     }
 }

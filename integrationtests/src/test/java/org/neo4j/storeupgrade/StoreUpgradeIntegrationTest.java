@@ -185,10 +185,8 @@ public class StoreUpgradeIntegrationTest
 
             try
             {
-                System.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, configFile.getAbsolutePath() );
-
                 Bootstrapper bootstrapper = new CommunityBootstrapper();
-                bootstrapper.start();
+                bootstrapper.start( configFile );
                 try
                 {
                     NeoServer server = bootstrapper.getServer();

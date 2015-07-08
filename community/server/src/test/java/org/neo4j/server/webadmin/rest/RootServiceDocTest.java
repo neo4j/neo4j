@@ -19,26 +19,27 @@
  */
 package org.neo4j.server.webadmin.rest;
 
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.Map;
-
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.junit.Test;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.rest.management.RootService;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.server.EntityOutputFormat;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RootServiceDocTest
 {
@@ -49,10 +50,7 @@ public class RootServiceDocTest
         URI uri = new URI( "http://example.org:7474/" );
         when( uriInfo.getBaseUri() ).thenReturn( uri );
 
-        ConfigurationBuilder configBuilder = mock( ConfigurationBuilder.class );
-        when(configBuilder.configuration()).thenReturn( new Config() );
-
-        RootService svc = new RootService( new CommunityNeoServer( configBuilder,
+        RootService svc = new RootService( new CommunityNeoServer( new Config(),
                 GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() ).monitors( new Monitors() ),
                 NullLogProvider.getInstance() ) );
 

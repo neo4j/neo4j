@@ -20,8 +20,9 @@
 package org.neo4j.server;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.configuration.ConfigurationBuilder;
+
 /**
  * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
  * Please use Neo4j Server and plugins or un-managed extensions for bespoke solutions.
@@ -31,16 +32,26 @@ public class CommunityBootstrapper extends Bootstrapper
 {
     public static void main( String[] args )
     {
-        Integer exit = new CommunityBootstrapper().start();
+        int exit = start( new CommunityBootstrapper(), args );
         if ( exit != 0 )
         {
             System.exit( exit );
         }
     }
 
-    @Override
-    protected NeoServer createNeoServer( ConfigurationBuilder configurator, GraphDatabaseDependencies dependencies, LogProvider logProvider )
+    /**
+     * Start a bootstrapper with the specified command-line arguments, returns a status code indicating success or failure outcomes.
+     */
+    public static int start( Bootstrapper boot, String[] argv )
     {
-        return new CommunityNeoServer( configurator, dependencies, logProvider );
+        ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );
+        return boot.start( args.configFile(), args.configOverrides() );
+    }
+
+    @Override
+    protected NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
+                                         LogProvider logProvider )
+    {
+        return new CommunityNeoServer( config, dependencies, logProvider );
     }
 }
