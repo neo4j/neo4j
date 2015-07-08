@@ -45,6 +45,7 @@ import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.InitialBranchState;
+import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.helpers.collection.MapUtil;
 
 import common.Neo4jAlgoTestCase;
@@ -105,7 +106,7 @@ public class TestAStar extends Neo4jAlgoTestCase
      *   01234567
      *  +-------->x  A - C: 10
      * 0|A      C    A - B:  2 (x2)
-     * 1|  B         B - C:  6
+     * 1|  B         B - C:  3
      *  V
      *  y
      * </pre>
@@ -242,7 +243,23 @@ public class TestAStar extends Neo4jAlgoTestCase
     {
         // This test doesn't use the predefined finder, which only means an unnecessary instantiation
         // if such an object. And this test will be run twice (once for each finder type in data()).
-
+        /**
+         * <pre>
+         *   012345    A - B:  2
+         *  +------>y  A - B:  2
+         * 0|A         B - C:  3
+         * 1|          A - C:  10
+         * 2| B
+         * 3|
+         * 4|
+         * 5|
+         * 6|
+         * 7|C
+         *  V
+         *  x
+         *
+         * </pre>
+         */
         Node nodeA = graph.makeNode( "A", "x", 0d, "y", 0d );
         Node nodeB = graph.makeNode( "B", "x", 2d, "y", 1d );
         Node nodeC = graph.makeNode( "C", "x", 7d, "y", 0d );

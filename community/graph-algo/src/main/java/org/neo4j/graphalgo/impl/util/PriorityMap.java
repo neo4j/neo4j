@@ -130,7 +130,7 @@ public class PriorityMap<E, K, P>
     private final Comparator<P> order;
     private final boolean onlyKeepBestPriorities;
 
-    private PriorityMap( Converter<K, E> key, Comparator<P> priority, boolean onlyKeepBestPriorities )
+    public PriorityMap( Converter<K, E> key, Comparator<P> priority, boolean onlyKeepBestPriorities )
     {
         this.keyFunction = key;
         this.order = priority;
@@ -159,7 +159,7 @@ public class PriorityMap<E, K, P>
         {   // it already existed
             if ( onlyKeepBestPriorities )
             {
-                if ( priority.equals( node.head.priority ) )
+                if ( order.compare( priority, node.head.priority ) == 0 )
                 {   // ...with same priority => add as a candidate first in chain
                     node.head = new Link<E,P>( entity, priority, node.head );
                     result = true;

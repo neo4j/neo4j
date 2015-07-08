@@ -45,6 +45,8 @@ import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.impl.util.MutableBoolean;
+import org.neo4j.kernel.impl.util.MutableInteger;
 
 import static org.neo4j.kernel.StandardExpander.toPathExpander;
 
@@ -61,6 +63,7 @@ import static org.neo4j.kernel.StandardExpander.toPathExpander;
  */
 public class ShortestPath implements PathFinder<Path>
 {
+    public final int NULL = -1;
     private final int maxDepth;
     private final int maxResultCount;
     private final PathExpander expander;
@@ -126,7 +129,7 @@ public class ShortestPath implements PathFinder<Path>
         }
         Hits hits = new Hits();
         Collection<Long> sharedVisitedRels = new HashSet<Long>();
-        MutableInteger sharedFrozenDepth = new MutableInteger( MutableInteger.NULL ); // ShortestPathLengthSoFar
+        MutableInteger sharedFrozenDepth = new MutableInteger( NULL ); // ShortestPathLengthSoFar
         MutableBoolean sharedStop = new MutableBoolean();
         MutableInteger sharedCurrentDepth = new MutableInteger( 0 );
         final DirectionData startData =
@@ -194,7 +197,7 @@ public class ShortestPath implements PathFinder<Path>
             // This is a hit
             int depth = directionData.currentDepth + otherSideHit.depth;
 
-            if ( directionData.sharedFrozenDepth.value == MutableInteger.NULL )
+            if ( directionData.sharedFrozenDepth.value == NULL )
             {
                 directionData.sharedFrozenDepth.value = depth;
             }
@@ -325,7 +328,7 @@ public class ShortestPath implements PathFinder<Path>
 
         private boolean canGoDeeper()
         {
-            return this.sharedFrozenDepth.value == MutableInteger.NULL && this.sharedCurrentDepth.value < maxDepth && !finishCurrentLayerThenStop;
+            return this.sharedFrozenDepth.value == NULL && this.sharedCurrentDepth.value < maxDepth && !finishCurrentLayerThenStop;
         }
 
         private Relationship fetchNextRelOrNull()
@@ -335,7 +338,7 @@ public class ShortestPath implements PathFinder<Path>
                 return null;
             }
             boolean hasComeTooFarEmptyHanded =
-                    this.sharedFrozenDepth.value != MutableInteger.NULL
+                    this.sharedFrozenDepth.value != NULL
                             && this.sharedCurrentDepth.value > this.sharedFrozenDepth.value && !this.haveFoundSomething;
             if ( hasComeTooFarEmptyHanded )
             {
@@ -434,24 +437,6 @@ public class ShortestPath implements PathFinder<Path>
     protected Collection<Node> filterNextLevelNodes( Collection<Node> nextNodes )
     {
         return nextNodes;
-    }
-
-    // Few long-lived instances
-    protected static class MutableInteger
-    {
-        private static final int NULL = -1;
-        protected int value;
-
-        protected MutableInteger( int initialValue )
-        {
-            this.value = initialValue;
-        }
-    }
-
-    // Few long-lived instances
-    private static class MutableBoolean
-    {
-        private boolean value;
     }
 
     // Many long-lived instances

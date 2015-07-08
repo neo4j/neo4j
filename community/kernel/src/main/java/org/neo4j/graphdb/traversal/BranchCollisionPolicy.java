@@ -20,6 +20,7 @@
 package org.neo4j.graphdb.traversal;
 
 import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Path;
 
 /**
@@ -32,11 +33,20 @@ public interface BranchCollisionPolicy
 
     BranchCollisionDetector create( Evaluator evaluator, Predicate<Path> pathPredicate );
 
-    class CollisionPolicyAdapter implements BranchCollisionPolicy
+    abstract class CollisionPolicyAdapter implements BranchCollisionPolicy
+    {
+        @Override
+        public BranchCollisionDetector create( Evaluator evaluator )
+        {
+            return create( evaluator, Predicates.<Path>alwaysTrue() );
+        }
+    }
+
+    class CollisionPolicyWrapper implements BranchCollisionPolicy
     {
         private BranchCollisionPolicy policy;
 
-        public CollisionPolicyAdapter( BranchCollisionPolicy policy )
+        public CollisionPolicyWrapper( BranchCollisionPolicy policy )
         {
             this.policy = policy;
         }

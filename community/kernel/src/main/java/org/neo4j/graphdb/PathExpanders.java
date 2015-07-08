@@ -19,7 +19,12 @@
  */
 package org.neo4j.graphdb;
 
+import java.io.PrintStream;
+
+import org.neo4j.function.BiFunction;
+import org.neo4j.function.Functions;
 import org.neo4j.graphdb.traversal.BranchState;
+import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.kernel.StandardExpander;
 
 /**
@@ -120,5 +125,107 @@ public abstract class PathExpanders
     private PathExpanders()
     {
         // you should never instantiate this
+    }
+
+    /**
+     * A wrapper that uses {@link Paths.DefaultPathDescriptor} to print expanded paths.
+     * All expanded paths will be printed using System.out.
+     * @param source
+     * @return A new {@link PathExpander}.
+     */
+    public static <STATE> PathExpander<STATE> printingWrapper( final PathExpander<STATE> source )
+    {
+        return printingWrapper( source, new Paths.DefaultPathDescriptor() );
+    }
+
+
+    /**
+     * A wrapper that uses {@link Paths.DefaultPathDescriptor} to print expanded paths that fulfill
+     * {@link BiFunction} predicate.
+     * Will use System.out as {@link PrintStream}.
+     * @param source    {@link PathExpander} to wrap.
+     * @param pred      {@link BiFunction} used as predicate for printing expansion.
+     * @return          A new {@link PathExpander}.
+     */
+    public static <STATE> PathExpander<STATE> printingWrapper(
+            final PathExpander<STATE> source,
+            final BiFunction<Path, BranchState, Boolean> pred )
+    {
+        return printingWrapper( source, pred, new Paths.DefaultPathDescriptor() );
+    }
+
+    /**
+     * A wrapper that uses {@link Paths.DefaultPathDescriptor} to print expanded paths using given
+     * {@link Paths.PathDescriptor}.
+     * All expanded paths will be printed.
+     * Will use System.out as {@link PrintStream}.
+     * @param source        {@link PathExpander} to wrap.
+     * @param descriptor    {@link Paths.PathDescriptor} to use when printing paths.
+     * @return              A new {@link PathExpander}.
+     */
+    public static <STATE> PathExpander<STATE> printingWrapper(
+            final PathExpander<STATE> source,
+            final Paths.PathDescriptor descriptor )
+    {
+        return printingWrapper( source, new BiFunction<Path,BranchState,Boolean>()
+        {
+            @Override
+            public Boolean apply( Path propertyContainers, BranchState stateBranchState )
+            {
+                return true;
+            }
+        }, descriptor );
+    }
+
+    /**
+     * A wrapper that uses {@link Paths.DefaultPathDescriptor} to print expanded paths that fulfill
+     * {@link BiFunction} predicate using given {@link Paths.PathDescriptor}.
+     * Will use System.out as {@link PrintStream}.
+     * @param source    {@link PathExpander} to wrap.
+     * @param pred      {@link BiFunction} used as predicate for printing expansion.
+     * @param descriptor    {@link Paths.PathDescriptor} to use when printing paths.
+     * @return          A new {@link PathExpander}.
+     */
+    public static <STATE> PathExpander<STATE> printingWrapper(
+            final PathExpander<STATE> source,
+            final BiFunction<Path, BranchState, Boolean> pred,
+            final Paths.PathDescriptor descriptor )
+    {
+        return printingWrapper( source, pred, descriptor, System.out );
+    }
+
+    /**
+     * A wrapper that uses {@link Paths.DefaultPathDescriptor} to print expanded paths that fulfill
+     * {@link BiFunction} predicate using given {@link Paths.PathDescriptor}.
+     * @param source        {@link PathExpander} to wrap.
+     * @param pred          {@link BiFunction} used as predicate for printing expansion.
+     * @param descriptor    {@link Paths.PathDescriptor} to use when printing paths.
+     * @param out           {@link PrintStream} to use for printing expanded paths
+     * @return              A new {@link PathExpander}.
+     */
+    public static <STATE> PathExpander<STATE> printingWrapper(
+            final PathExpander<STATE> source,
+            final BiFunction<Path, BranchState, Boolean> pred,
+            final Paths.PathDescriptor descriptor,
+            final PrintStream out )
+    {
+        return new PathExpander<STATE>()
+        {
+            @Override
+            public Iterable<Relationship> expand( Path path, BranchState state )
+            {
+                if ( pred.apply( path, state ) )
+                {
+                    out.println( Paths.pathToString( path, descriptor ) );
+                }
+                return source.expand( path, state );
+            }
+
+            @Override
+            public PathExpander<STATE> reverse()
+            {
+                return printingWrapper( source.reverse(), pred, descriptor, out );
+            }
+        };
     }
 }

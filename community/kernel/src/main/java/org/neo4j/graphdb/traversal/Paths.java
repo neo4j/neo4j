@@ -19,8 +19,10 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
 /**
@@ -170,5 +172,72 @@ public class Paths
                 return relationship.getStartNode().equals( from ) ? "-->" : "<--";
             }
         } );
+    }
+
+    /**
+     * Create a new {@link Paths.PathDescriptor} that prints values of listed property keys
+     * and id of nodes and relationships if configured so.
+     * @param nodeId            true if node id should be included.
+     * @param relId             true if relationship id should be included.
+     * @param propertyKeys      all property keys that should be included.
+     * @return                  a new {@link Paths.PathDescriptor}
+     */
+    public static <T extends Path> PathDescriptor<T> descriptorForIdAndProperties( final boolean nodeId,
+    final boolean relId, final String... propertyKeys )
+    {
+        return new Paths.PathDescriptor<T>()
+        {
+            @Override
+            public String nodeRepresentation( T path, Node node )
+            {
+                String representation = representation( node );
+                return "(" + ( nodeId ? node.getId(): "" ) +
+                       ( nodeId && !representation.equals( "" ) ? "," : "" ) +
+                       representation + ")";
+            }
+
+            private String representation( PropertyContainer entity )
+            {
+                StringBuilder builder = new StringBuilder();
+                for ( String key : propertyKeys )
+                {
+                    Object value = entity.getProperty( key, null );
+                    if ( value != null )
+                    {
+                        if ( builder.length() > 0 )
+                        {
+                            builder.append( "," );
+                        }
+                        builder.append( value );
+                    }
+                }
+                return builder.toString();
+            }
+
+            @Override
+            public String relationshipRepresentation( T path, Node from, Relationship relationship )
+            {
+                Direction direction = relationship.getEndNode().equals( from ) ? Direction.INCOMING : Direction.OUTGOING;
+                StringBuilder builder = new StringBuilder();
+                if ( direction.equals( Direction.INCOMING ) )
+                {
+                    builder.append( "<" );
+                }
+                builder.append( "--[" + ( relId ? relationship.getId(): "" ) );
+                String representation = representation( relationship );
+                if ( relId && !representation.equals( "" ) )
+                {
+                    builder.append( "," );
+                }
+                builder.append( representation );
+                builder.append( "]--" );
+
+                if ( direction.equals( Direction.OUTGOING ) )
+                {
+                    builder.append( ">" );
+                }
+                return builder.toString();
+            }
+        };
     }
 }

@@ -25,7 +25,6 @@ import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
-import org.neo4j.graphdb.traversal.BranchCollisionPolicy.CollisionPolicyAdapter;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.PathEvaluator;
@@ -35,6 +34,7 @@ import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.Factory;
 
 import static org.neo4j.graphdb.traversal.BranchCollisionPolicies.STANDARD;
+import static org.neo4j.graphdb.traversal.BranchCollisionPolicy.CollisionPolicyWrapper;
 import static org.neo4j.graphdb.traversal.SideSelectorPolicies.ALTERNATING;
 import static org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription.NO_STATEMENT;
 import static org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription.addEvaluator;
@@ -118,8 +118,9 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     @Override
     public BidirectionalTraversalDescription collisionPolicy( BranchCollisionPolicy collisionPolicy )
     {
-        return new BidirectionalTraversalDescriptionImpl( this.start, this.end, new CollisionPolicyAdapter(collisionPolicy),
-                this.collisionEvaluator, this.sideSelector, statementFactory, this.maxDepth );
+        return new BidirectionalTraversalDescriptionImpl( this.start, this.end,
+                new CollisionPolicyWrapper(collisionPolicy), this.collisionEvaluator, this.sideSelector,
+                statementFactory, this.maxDepth );
     }
 
     @Override

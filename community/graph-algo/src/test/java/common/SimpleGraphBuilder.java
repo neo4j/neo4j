@@ -21,14 +21,17 @@ package common;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphalgo.impl.util.PathImpl;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
@@ -267,5 +270,28 @@ public class SimpleGraphBuilder
             }
         }
         return null;
+    }
+
+    // Syntax: makePathWithRelProperty( "weight", "a-4-b-2.3-c-3-d" )
+    public Path makePathWithRelProperty( String relPropertyName, String dashSeparatedNodeNamesAndRelationshipProperty )
+    {
+        String[] nodeNamesAndRelationshipProperties = dashSeparatedNodeNamesAndRelationshipProperty.split( "-" );
+        Node startNode = getNode( nodeNamesAndRelationshipProperties[0], true);
+        PathImpl.Builder builder = new PathImpl.Builder( startNode );
+
+        if ( nodeNamesAndRelationshipProperties.length < 1 )
+        {
+            return builder.build();
+        }
+
+        for ( int i = 0; i < nodeNamesAndRelationshipProperties.length - 2; i += 2 )
+        {
+            String from = nodeNamesAndRelationshipProperties[i];
+            String to = nodeNamesAndRelationshipProperties[i + 2];
+            String prop = nodeNamesAndRelationshipProperties[i + 1];
+            Relationship relationship = makeEdge( from, to, relPropertyName, prop );
+            builder = builder.push( relationship );
+        }
+        return builder.build();
     }
 }

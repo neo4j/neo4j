@@ -83,7 +83,7 @@ public class StandardBranchCollisionDetector implements BranchCollisionDetector
                 TraversalBranch endPath = index == 0 ? otherBranch : branch;
                 BidirectionalTraversalBranchPath path = new BidirectionalTraversalBranchPath(
                         startPath, endPath );
-                if ( isAcceptablePath( path ))
+                if ( isAcceptablePath( path ) )
                 {
                     if (returnedPaths.add( path ) && includePath( path, startPath, endPath ) )
                     {
@@ -91,7 +91,7 @@ public class StandardBranchCollisionDetector implements BranchCollisionDetector
                     }
                 }
             }
-            
+
             if ( !foundPaths.isEmpty() )
             {
                 return foundPaths;
