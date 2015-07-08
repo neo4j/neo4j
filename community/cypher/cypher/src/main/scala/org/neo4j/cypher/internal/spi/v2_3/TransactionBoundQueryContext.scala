@@ -114,10 +114,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     JavaConversionSupport.asScala(statement.readOperations().nodeGetLabels(node))
 
   def getPropertiesForNode(node: Long) =
-    JavaConversionSupport.asScala(statement.readOperations().nodeGetAllPropertiesKeys(node))
+    JavaConversionSupport.asScala(statement.readOperations().nodeGetPropertyKeys(node))
 
   def getPropertiesForRelationship(relId: Long) =
-    JavaConversionSupport.asScala(statement.readOperations().relationshipGetAllPropertiesKeys(relId))
+    JavaConversionSupport.asScala(statement.readOperations().relationshipGetPropertyKeys(relId))
 
   override def isLabelSetOnNode(label: Int, node: Long) =
     statement.readOperations().nodeHasLabel(node, label)
@@ -173,16 +173,16 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     }
 
     def propertyKeyIds(id: Long): Iterator[Int] =
-      JavaConversionSupport.asScala(statement.readOperations().nodeGetAllPropertiesKeys(id))
+      JavaConversionSupport.asScala(statement.readOperations().nodeGetPropertyKeys(id))
 
     def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      statement.readOperations().nodeGetProperty(id, propertyKeyId).value(null)
+      statement.readOperations().nodeGetProperty(id, propertyKeyId)
     } catch {
       case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null
     }
 
     def hasProperty(id: Long, propertyKey: Int) =
-      statement.readOperations().nodeGetProperty(id, propertyKey).isDefined
+      statement.readOperations().nodeHasProperty(id, propertyKey)
 
     def removeProperty(id: Long, propertyKeyId: Int) {
       statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
@@ -216,13 +216,13 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     }
 
     def propertyKeyIds(id: Long): Iterator[Int] =
-      statement.readOperations().relationshipGetAllProperties(id).asScala.map(_.propertyKeyId())
+      asScala(statement.readOperations().relationshipGetPropertyKeys(id))
 
     def getProperty(id: Long, propertyKeyId: Int): Any =
-      statement.readOperations().relationshipGetProperty(id, propertyKeyId).value(null)
+      statement.readOperations().relationshipGetProperty(id, propertyKeyId)
 
     def hasProperty(id: Long, propertyKey: Int) =
-      statement.readOperations().relationshipGetProperty(id, propertyKey).isDefined
+      statement.readOperations().relationshipHasProperty(id, propertyKey)
 
     def removeProperty(id: Long, propertyKeyId: Int) {
       statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)

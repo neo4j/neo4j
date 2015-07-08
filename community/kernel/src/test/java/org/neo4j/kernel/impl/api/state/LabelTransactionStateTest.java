@@ -28,12 +28,10 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.cursor.LabelCursor;
 import org.neo4j.kernel.api.cursor.PropertyCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
@@ -46,14 +44,11 @@ import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
-import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
@@ -242,8 +237,6 @@ public class LabelTransactionStateTest
         when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, PropertyCursor.EMPTY,
                 asLabelCursor( 12 ) ) );
 
-        when( store.nodeHasLabel( storeStatement, 1337, 12 ) ).thenReturn( true );
-
         // WHEN and THEN
         assertFalse( "Label should have been added", txContext.nodeAddLabel( state, 1337, 12 ) );
     }
@@ -291,8 +284,6 @@ public class LabelTransactionStateTest
         when( store.indexesGetForLabel( labelId2 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.nodeGetAllProperties( isA( StoreStatement.class ), anyLong() ) )
-                .thenReturn( asResourceIterator( IteratorUtil.<DefinedProperty>emptyIterator() ) );
 
         txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );

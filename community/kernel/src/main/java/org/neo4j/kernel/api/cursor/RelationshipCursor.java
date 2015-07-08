@@ -19,36 +19,40 @@
  */
 package org.neo4j.kernel.api.cursor;
 
-import org.neo4j.cursor.Cursor;
-
 /**
  * Cursor for iterating over a set of relationships.
  */
 public interface RelationshipCursor
-        extends Cursor
+        extends EntityCursor
 {
     RelationshipCursor EMPTY = new RelationshipCursor()
     {
         @Override
         public long getId()
         {
-            throw new IllegalStateException(  );
+            throw new IllegalStateException();
         }
 
         @Override
         public int getType()
         {
-            throw new IllegalStateException(  );
+            throw new IllegalStateException();
         }
 
         @Override
         public long getStartNode()
         {
-            throw new IllegalStateException(  );
+            throw new IllegalStateException();
         }
 
         @Override
         public long getEndNode()
+        {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public long getOtherNode( long nodeId )
         {
             throw new IllegalStateException(  );
         }
@@ -56,7 +60,7 @@ public interface RelationshipCursor
         @Override
         public PropertyCursor properties()
         {
-            throw new IllegalStateException(  );
+            throw new IllegalStateException();
         }
 
         @Override
@@ -72,13 +76,14 @@ public interface RelationshipCursor
         }
     };
 
-    long getId();
-
+    /**
+     * @return relationship type for current relationship
+     */
     int getType();
 
     long getStartNode();
 
     long getEndNode();
 
-    PropertyCursor properties();
+    long getOtherNode( long nodeId );
 }

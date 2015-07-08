@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -54,10 +53,6 @@ public interface StoreReadLayer
 {
     // Cursor
     StoreStatement acquireStatement();
-
-    boolean nodeHasLabel( StoreStatement statement, long nodeId, int labelId ) throws EntityNotFoundException;
-
-    boolean nodeExists( long nodeId );
 
     PrimitiveIntIterator nodeGetLabels( StoreStatement statement, long nodeId ) throws EntityNotFoundException;
 
@@ -98,27 +93,9 @@ public interface StoreReadLayer
 
     IndexRule indexRule( IndexDescriptor index, SchemaStorage.IndexRuleKind kind );
 
-    PrimitiveIntIterator nodeGetPropertyKeys( StoreStatement statement, long nodeId ) throws EntityNotFoundException;
-
-    Property nodeGetProperty( StoreStatement statement, long nodeId, int propertyKeyId ) throws EntityNotFoundException;
-
-    Iterator<DefinedProperty> nodeGetAllProperties( StoreStatement statement,
-            long nodeId ) throws EntityNotFoundException;
-
-    boolean relationshipExists( long relationshipId );
-
-    PrimitiveIntIterator relationshipGetPropertyKeys( StoreStatement statement, long relationshipId )
-            throws EntityNotFoundException;
-
-    Property relationshipGetProperty( StoreStatement statement, long relationshipId, int propertyKeyId )
-            throws EntityNotFoundException;
-
-    Iterator<DefinedProperty> relationshipGetAllProperties( StoreStatement statement, long nodeId )
-            throws EntityNotFoundException;
-
     PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state );
 
-    Property graphGetProperty( int propertyKeyId );
+    Object graphGetProperty( int propertyKeyId );
 
     Iterator<DefinedProperty> graphGetAllProperties();
 

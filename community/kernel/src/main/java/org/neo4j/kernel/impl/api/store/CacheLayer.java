@@ -59,7 +59,6 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -107,18 +106,6 @@ public class CacheLayer implements StoreReadLayer
     public StoreStatement acquireStatement()
     {
         return diskLayer.acquireStatement();
-    }
-
-    @Override
-    public boolean nodeExists( long nodeId )
-    {
-        return diskLayer.nodeExists( nodeId );
-    }
-
-    @Override
-    public boolean nodeHasLabel( StoreStatement statement, long nodeId, int labelId ) throws EntityNotFoundException
-    {
-        return diskLayer.nodeHasLabel( statement, nodeId, labelId );
     }
 
     @Override
@@ -208,56 +195,13 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveIntIterator nodeGetPropertyKeys( StoreStatement statement,
-            long nodeId ) throws EntityNotFoundException
-    {
-        return diskLayer.nodeGetPropertyKeys( statement, nodeId );
-    }
-
-    @Override
-    public Property nodeGetProperty( StoreStatement statement,
-            long nodeId,
-            int propertyKeyId ) throws EntityNotFoundException
-    {
-        return diskLayer.nodeGetProperty( statement, nodeId, propertyKeyId );
-    }
-
-    @Override
-    public Iterator<DefinedProperty> nodeGetAllProperties( StoreStatement statement,
-            long nodeId ) throws EntityNotFoundException
-    {
-        return diskLayer.nodeGetAllProperties( statement, nodeId );
-    }
-
-    @Override
-    public PrimitiveIntIterator relationshipGetPropertyKeys( StoreStatement statement, long relationshipId )
-            throws EntityNotFoundException
-    {
-        return diskLayer.relationshipGetPropertyKeys( statement, relationshipId );
-    }
-
-    @Override
-    public Property relationshipGetProperty( StoreStatement statement, long relationshipId, int propertyKeyId )
-            throws EntityNotFoundException
-    {
-        return diskLayer.relationshipGetProperty( acquireStatement(), relationshipId, propertyKeyId );
-    }
-
-    @Override
-    public Iterator<DefinedProperty> relationshipGetAllProperties( StoreStatement statement, long relationshipId )
-            throws EntityNotFoundException
-    {
-        return diskLayer.relationshipGetAllProperties( statement, relationshipId );
-    }
-
-    @Override
     public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state )
     {
         return diskLayer.graphGetPropertyKeys( state );
     }
 
     @Override
-    public Property graphGetProperty( int propertyKeyId )
+    public Object graphGetProperty( int propertyKeyId )
     {
         return diskLayer.graphGetProperty( propertyKeyId );
     }
@@ -516,12 +460,6 @@ public class CacheLayer implements StoreReadLayer
     public RelationshipIterator relationshipsGetAll()
     {
         return diskLayer.relationshipsGetAll();
-    }
-
-    @Override
-    public boolean relationshipExists( long relationshipId )
-    {
-        return diskLayer.relationshipExists( relationshipId );
     }
 
     @Override

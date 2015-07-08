@@ -710,7 +710,12 @@ public enum ShortArray
 
     public static Object decode( PropertyBlock block )
     {
-        Bits bits = Bits.bitsFromLongs(Arrays.copyOf(block.getValueBlocks(), block.getValueBlocks().length));
+        Bits bits = Bits.bitsFromLongs( Arrays.copyOf( block.getValueBlocks(), block.getValueBlocks().length) );
+        return decode( bits );
+    }
+
+    public static Object decode( Bits bits )
+    {
         // [][][    ,bbbb][bbll,llll][yyyy,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
         bits.getInt( 24 ); // Get rid of key
         bits.getByte( 4 ); // Get rid of short array type

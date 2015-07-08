@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 /**
  * Cursor over {@link PropertyRecord} instances.
  *
- * Used by {@link StorePropertyCursor} to find all properties of a node or relationship.
+ * Used by {@link LegacyStorePropertyCursor} to find all properties of a node or relationship.
  *
  */
 public class PropertyRecordCursor

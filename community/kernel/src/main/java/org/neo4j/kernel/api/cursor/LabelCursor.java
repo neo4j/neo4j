@@ -72,5 +72,8 @@ public interface LabelCursor
      */
     boolean seek( int labelId );
 
+    /**
+     * @return id of current label
+     */
     int getLabel();
 }

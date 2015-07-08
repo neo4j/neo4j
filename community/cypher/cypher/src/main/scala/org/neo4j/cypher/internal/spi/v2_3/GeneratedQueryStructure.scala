@@ -678,9 +678,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     val local = locals(propValueVar)
     Templates.handleExceptions(generator, fields.ro) { body =>
 
-      body.assign(local, Expression.invoke(
-        Expression.invoke(readOperations, Methods.nodeGetProperty, body.load(nodeIdVar), body.load(propIdVar)),
-        Methods.value, Expression.constant(null)))
+      body.assign(local, Expression.invoke(readOperations, Methods.nodeGetProperty, body.load(nodeIdVar), body.load(propIdVar)))
 
     }
   }
@@ -688,27 +686,21 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   override def nodeGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
     Templates.handleExceptions(generator, fields.ro) { body =>
-      body.assign(local, Expression.invoke(
-        Expression.invoke(readOperations, Methods.nodeGetProperty, body.load(nodeIdVar), Expression.constant(propId)),
-        Methods.value, Expression.constant(null)))
+      body.assign(local, Expression.invoke(readOperations, Methods.nodeGetProperty, body.load(nodeIdVar), Expression.constant(propId)))
     }
   }
 
   override def relationshipGetPropertyForVar(relIdVar: String, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
     Templates.handleExceptions(generator, fields.ro) { body =>
-      body.assign(local, Expression.invoke(
-        Expression.invoke(readOperations, Methods.relationshipGetProperty, body.load(relIdVar), body.load(propIdVar)),
-        Methods.value, Expression.constant(null)))
+      body.assign(local, Expression.invoke(readOperations, Methods.relationshipGetProperty, body.load(relIdVar), body.load(propIdVar)))
     }
   }
 
   override def relationshipGetPropertyById(relIdVar: String, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
     Templates.handleExceptions(generator, fields.ro) { body =>
-      body.assign(local, Expression.invoke(
-        Expression.invoke(readOperations, Methods.relationshipGetProperty, body.load(relIdVar), Expression.constant(propId)),
-        Methods.value, Expression.constant(null)))
+      body.assign(local, Expression.invoke(readOperations, Methods.relationshipGetProperty, body.load(relIdVar), Expression.constant(propId)))
     }
   }
 
@@ -803,7 +795,6 @@ private object Methods {
   val executeOperator = method[QueryExecutionTracer, QueryExecutionEvent]("executeOperator", typeRef[Id])
   val dbHit = method[QueryExecutionEvent, Unit]("dbHit")
   val row = method[QueryExecutionEvent, Unit]("row")
-  val value = method[Property, Object]("value", typeRef[Object])
 }
 
 private object Templates {

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
-import java.util.Iterator;
-
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
@@ -30,11 +28,11 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 
 public interface EntityReadOperations
 {
@@ -97,23 +95,30 @@ public interface EntityReadOperations
      */
     PrimitiveIntIterator nodeGetLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException;
 
-    Property nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId ) throws EntityNotFoundException;
-
-    Property relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId )
+    public PrimitiveIntIterator nodeGetLabels( TxStateHolder txStateHolder, StoreStatement storeStatement, long nodeId )
             throws EntityNotFoundException;
 
-    Property graphGetProperty( KernelStatement state, int propertyKeyId );
+    boolean nodeHasProperty( KernelStatement statement, long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
-    // TODO: decide if this should be replaced by nodeGetAllProperties()
+    public boolean nodeHasProperty( TxStateHolder txStateHolder, StoreStatement storeStatement,
+            long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+
+    Object nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+
+    boolean relationshipHasProperty( KernelStatement state, long relationshipId, int propertyKeyId )
+            throws EntityNotFoundException;
+
+    Object relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId )
+            throws EntityNotFoundException;
+
+    boolean graphHasProperty( KernelStatement state, int propertyKeyId );
+
+    Object graphGetProperty( KernelStatement state, int propertyKeyId );
 
     /**
      * Return all property keys associated with a node.
      */
     PrimitiveIntIterator nodeGetPropertyKeys( KernelStatement state, long nodeId ) throws EntityNotFoundException;
-
-    Iterator<DefinedProperty> nodeGetAllProperties( KernelStatement state, long nodeId ) throws EntityNotFoundException;
-
-    // TODO: decide if this should be replaced by relationshipGetAllProperties()
 
     /**
      * Return all property keys associated with a relationship.
@@ -121,17 +126,10 @@ public interface EntityReadOperations
     PrimitiveIntIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId ) throws
             EntityNotFoundException;
 
-    Iterator<DefinedProperty> relationshipGetAllProperties( KernelStatement state,
-            long relationshipId ) throws EntityNotFoundException;
-
-    // TODO: decide if this should be replaced by relationshipGetAllProperties()
-
     /**
      * Return all property keys associated with a relationship.
      */
     PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state );
-
-    Iterator<DefinedProperty> graphGetAllProperties( KernelStatement state );
 
     RelationshipIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
             int[] relTypes ) throws EntityNotFoundException;

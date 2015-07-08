@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.cursor;
 
+import java.nio.channels.WritableByteChannel;
 import java.util.Iterator;
 
 import org.neo4j.function.Consumer;
@@ -41,6 +42,7 @@ public class TxPropertyCursor implements PropertyCursor
 
     private DefinedProperty property;
     private Iterator<DefinedProperty> added;
+    private boolean seekFoundIt;
 
 
     public TxPropertyCursor( Consumer<TxPropertyCursor> instanceCache )
@@ -70,7 +72,7 @@ public class TxPropertyCursor implements PropertyCursor
             {
                 if ( changedProperties != null )
                 {
-                    Property property = changedProperties.get( cursor.getProperty().propertyKeyId() );
+                    Property property = changedProperties.get( cursor.propertyKeyId() );
 
                     if ( property != null )
                     {
@@ -79,10 +81,9 @@ public class TxPropertyCursor implements PropertyCursor
                     }
                 }
 
-                if ( removedProperties == null || !removedProperties.containsKey(
-                        cursor.getProperty().propertyKeyId() ) )
+                if ( removedProperties == null || !removedProperties.containsKey( cursor.propertyKeyId() ) )
                 {
-                    this.property = cursor.getProperty();
+                    this.property = Property.property( cursor.propertyKeyId(), cursor.value() );
                     return true;
                 }
             }
@@ -109,6 +110,7 @@ public class TxPropertyCursor implements PropertyCursor
     @Override
     public boolean seek( int keyId )
     {
+        seekFoundIt = false;
         if ( changedProperties != null )
         {
             Property property = changedProperties.get( keyId );
@@ -139,8 +141,8 @@ public class TxPropertyCursor implements PropertyCursor
 
         if ( cursor.seek( keyId ) )
         {
-            this.property = cursor.getProperty();
-            return true;
+            this.property = null;
+            return seekFoundIt = true;
         }
         else
         {
@@ -150,12 +152,47 @@ public class TxPropertyCursor implements PropertyCursor
     }
 
     @Override
-    public DefinedProperty getProperty()
+    public int propertyKeyId()
     {
-        if (property == null)
-            throw new IllegalStateException(  );
+        check();
+        return property.propertyKeyId();
+    }
 
-        return property;
+    @Override
+    public Object value()
+    {
+        check();
+        return property.value();
+    }
+
+    @Override
+    public boolean booleanValue()
+    {
+        return (Boolean) value();
+    }
+
+    @Override
+    public long longValue()
+    {
+        return ((Number) value()).longValue();
+    }
+
+    @Override
+    public double doubleValue()
+    {
+        return ((Number) value()).doubleValue();
+    }
+
+    @Override
+    public String stringValue()
+    {
+        return value().toString();
+    }
+
+    @Override
+    public void propertyData( WritableByteChannel channel )
+    {
+        throw new UnsupportedOperationException( "NYI" );
     }
 
     @Override
@@ -163,7 +200,23 @@ public class TxPropertyCursor implements PropertyCursor
     {
         cursor.close();
         cursor = null;
+        property = null;
         this.added = null;
         instanceCache.accept( this );
+    }
+
+
+    private void check()
+    {
+        if ( property == null && !seekFoundIt )
+        {
+            throw new IllegalStateException();
+        }
+
+        if ( seekFoundIt )
+        {
+            property = Property.property( cursor.propertyKeyId(), cursor.value() );
+        }
+        seekFoundIt = false;
     }
 }

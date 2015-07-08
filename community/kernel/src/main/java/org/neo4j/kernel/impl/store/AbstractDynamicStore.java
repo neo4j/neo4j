@@ -419,61 +419,26 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
     }
 
-    public GenericCursor<DynamicRecord> getRecordsCursor( final long startBlockId,
+    public DynamicRecordCursor newDynamicRecordCursor()
+    {
+        return new DynamicRecordCursor();
+    }
+
+    public DynamicRecordCursor getRecordsCursor( final long startBlockId,
             final boolean readBothHeaderAndData )
+    {
+        return getRecordsCursor( startBlockId, readBothHeaderAndData, newDynamicRecordCursor() );
+    }
+
+    public DynamicRecordCursor getRecordsCursor( final long startBlockId,
+            final boolean readBothHeaderAndData, DynamicRecordCursor dynamicRecordCursor )
     {
         try
         {
             final PageCursor cursor = storeFile.io( 0, PF_SHARED_LOCK );
 
-            return new GenericCursor<DynamicRecord>()
-            {
-                long blockId = startBlockId;
-                int noNextBlock = Record.NO_NEXT_BLOCK.intValue();
-
-                @Override
-                public boolean next()
-                {
-                    try
-                    {
-                        if ( blockId != noNextBlock && cursor.next( pageIdForRecord( blockId ) ) )
-                        {
-                            DynamicRecord record = new DynamicRecord( blockId );
-                            int headerReadResult;
-                            do
-                            {
-                                cursor.setOffset( offsetForId( blockId ) );
-                                headerReadResult = readRecordHeader( cursor, record, false );
-                                if ( headerReadResult == hasDataSignal && readBothHeaderAndData )
-                                {
-                                    readRecordData( cursor, record );
-                                }
-                            }
-                            while ( cursor.shouldRetry() );
-
-                            checkForInUse( headerReadResult, record );
-                            checkForIllegalSize( headerReadResult, record );
-                            current = record;
-                            blockId = record.getNextBlock();
-                            return true;
-                        }
-                        else
-                        {
-                            return false;
-                        }
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new UnderlyingStorageException( e );
-                    }
-                }
-
-                @Override
-                public void close()
-                {
-                    cursor.close();
-                }
-            };
+            dynamicRecordCursor.init( startBlockId, cursor, readBothHeaderAndData );
+            return dynamicRecordCursor;
         }
         catch ( IOException e )
         {
@@ -693,5 +658,68 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
 
         return readFullByteArrayFromHeavyRecords( records, propertyType );
+    }
+
+    public class DynamicRecordCursor extends GenericCursor<DynamicRecord>
+    {
+        private PageCursor cursor;
+        private boolean readBothHeaderAndData;
+        long blockId;
+        int noNextBlock;
+
+        private DynamicRecord record = new DynamicRecord( blockId );
+
+        public void init( long startBlockId, PageCursor cursor, boolean readBothHeaderAndData )
+        {
+            this.cursor = cursor;
+            this.readBothHeaderAndData = readBothHeaderAndData;
+            blockId = startBlockId;
+            noNextBlock = Record.NO_NEXT_BLOCK.intValue();
+        }
+
+        @Override
+        public boolean next()
+        {
+            try
+            {
+                if ( blockId != noNextBlock && cursor.next( pageIdForRecord( blockId ) ) )
+                {
+                    record.setId( blockId );
+
+                    int headerReadResult;
+                    do
+                    {
+                        cursor.setOffset( offsetForId( blockId ) );
+                        headerReadResult = readRecordHeader( cursor, record, false );
+                        if ( headerReadResult == hasDataSignal && readBothHeaderAndData )
+                        {
+                            readRecordData( cursor, record );
+                        }
+                    }
+                    while ( cursor.shouldRetry() );
+
+                    checkForInUse( headerReadResult, record );
+                    checkForIllegalSize( headerReadResult, record );
+                    current = record;
+                    blockId = record.getNextBlock();
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( e );
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            cursor.close();
+            cursor = null;
+        }
     }
 }

@@ -20,20 +20,20 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 
@@ -76,7 +76,7 @@ public class GraphPropertiesProxy implements GraphProperties
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
-            return statement.readOperations().graphGetProperty( propertyKeyId ).isDefined();
+            return statement.readOperations().graphHasProperty( propertyKeyId );
         }
     }
 
@@ -97,7 +97,15 @@ public class GraphPropertiesProxy implements GraphProperties
                 {
                     throw new NotFoundException( format( "No such property, '%s'.", key ) );
                 }
-                return statement.readOperations().graphGetProperty( propertyKeyId ).value();
+
+                Object value = statement.readOperations().graphGetProperty( propertyKeyId );
+
+                if (value == null)
+                {
+                    throw new PropertyNotFoundException( propertyKeyId, EntityType.GRAPH, -1 );
+                }
+
+                return value;
             }
             catch ( PropertyNotFoundException e )
             {
@@ -118,7 +126,8 @@ public class GraphPropertiesProxy implements GraphProperties
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
-            return statement.readOperations().graphGetProperty( propertyKeyId ).value( defaultValue );
+            Object value = statement.readOperations().graphGetProperty( propertyKeyId );
+            return value == null ? defaultValue : value;
         }
     }
 
@@ -173,10 +182,10 @@ public class GraphPropertiesProxy implements GraphProperties
         try ( Statement statement = actions.statement() )
         {
             List<String> keys = new ArrayList<>();
-            Iterator<DefinedProperty> properties = statement.readOperations().graphGetAllProperties();
+            PrimitiveIntIterator properties = statement.readOperations().graphGetPropertyKeys();
             while ( properties.hasNext() )
             {
-                keys.add( statement.readOperations().propertyKeyGetName( properties.next().propertyKeyId() ) );
+                keys.add( statement.readOperations().propertyKeyGetName( properties.next() ) );
             }
             return keys;
         }

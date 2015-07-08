@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.graphdb.Node;
@@ -34,11 +33,13 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.cursor.LabelCursor;
+import org.neo4j.kernel.api.cursor.PropertyCursor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.state.StubCursors;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
@@ -46,16 +47,20 @@ import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
+import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asRelationshipCursor;
 
 public class TxStateTransactionDataViewTest
 {
@@ -91,12 +96,13 @@ public class TxStateTransactionDataViewTest
         // Given
         state.nodeDoDelete( 1l );
         state.nodeDoDelete( 2l );
-        when( ops.nodeGetAllProperties( storeStatement, 1l ) ).thenReturn(
-                IteratorUtil.<DefinedProperty>emptyIterator() );
-        when( ops.nodeGetAllProperties( storeStatement, 2l ) ).thenReturn(
-                asList( Property.stringProperty( 1, "p" ) ).iterator() );
-        when( ops.nodeGetLabels( storeStatement, 1l ) ).thenReturn( PrimitiveIntCollections.emptyIterator() );
-        when( ops.nodeGetLabels( storeStatement, 2l ) ).thenReturn( PrimitiveIntCollections.iterator( 15 ) );
+
+        when( storeStatement.acquireSingleNodeCursor( 2l ) ).
+                thenReturn( asNodeCursor( 2l, asPropertyCursor( stringProperty( 1, "p" ) ), asLabelCursor( 15 ) ) );
+
+        when( storeStatement.acquireSingleNodeCursor( 1l ) ).
+                thenReturn( asNodeCursor( 1l, asPropertyCursor(), asLabelCursor() ) );
+
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
         when( ops.labelGetName( 15 ) ).thenReturn( "label" );
 
@@ -125,10 +131,11 @@ public class TxStateTransactionDataViewTest
         state.relationshipDoDelete( 1l, 1, 1l, 2l );
         state.relationshipDoDelete( 2l, 1, 1l, 1l );
 
-        when( ops.relationshipGetAllProperties( storeStatement, 1l ) ).thenReturn(
-                IteratorUtil.<DefinedProperty>emptyIterator() );
-        when( ops.relationshipGetAllProperties( storeStatement, 2l ) ).thenReturn(
-                asList( Property.stringProperty( 1, "p" ) ).iterator() );
+        when( storeStatement.acquireSingleRelationshipCursor( 1l ) ).
+                thenReturn( asRelationshipCursor( 1l, 1, 1l, 2l, asPropertyCursor() ) );
+        when( storeStatement.acquireSingleRelationshipCursor( 2l ) ).
+                thenReturn( asRelationshipCursor( 2l, 1, 1l, 1l,
+                        asPropertyCursor( Property.stringProperty( 1, "p" ) ) ) );
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "key" );
 
         // When & Then
@@ -144,8 +151,8 @@ public class TxStateTransactionDataViewTest
         state.nodeDoDelete( 1l );
         Node node = mock( Node.class );
         when( node.getId() ).thenReturn( 1l );
-        when( ops.nodeGetAllProperties( storeStatement, 1l ) ).thenReturn(
-                IteratorUtil.<DefinedProperty>emptyIterator() );
+        when( storeStatement.acquireSingleNodeCursor( 1 ) ).thenReturn( asNodeCursor( 1, PropertyCursor.EMPTY,
+                LabelCursor.EMPTY ) );
         when( ops.nodeGetLabels( storeStatement, 1l ) ).thenReturn( PrimitiveIntCollections.emptyIterator() );
 
         // When & Then
@@ -160,8 +167,7 @@ public class TxStateTransactionDataViewTest
 
         Relationship rel = mock( Relationship.class );
         when( rel.getId() ).thenReturn( 1l );
-        when( ops.relationshipGetAllProperties( storeStatement, 1l ) ).thenReturn(
-                Collections.<DefinedProperty>emptyIterator() );
+        when (storeStatement.acquireSingleRelationshipCursor( 1l )).thenReturn( asRelationshipCursor( 1l, 1, 1l, 2l, PropertyCursor.EMPTY ) );
 
         // When & Then
         assertThat( snapshot().isDeleted( rel ), equalTo( true ) );
@@ -174,7 +180,7 @@ public class TxStateTransactionDataViewTest
         DefinedProperty prevProp = stringProperty( 1, "prevValue" );
         state.nodeDoReplaceProperty( 1l, prevProp, stringProperty( 1, "newValue" ) );
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "theKey" );
-        when( ops.nodeGetProperty( storeStatement, 1, 1 ) ).thenReturn( prevProp );
+        when (storeStatement.acquireSingleNodeCursor( 1l )).thenReturn( asNodeCursor( 1l, asPropertyCursor( prevProp ), LabelCursor.EMPTY ) );
 
         // When
         Iterable<PropertyEntry<Node>> propertyEntries = snapshot().assignedNodeProperties();
@@ -194,7 +200,7 @@ public class TxStateTransactionDataViewTest
         DefinedProperty prevProp = stringProperty( 1, "prevValue" );
         state.nodeDoRemoveProperty( 1l, prevProp );
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "theKey" );
-        when( ops.nodeGetProperty( storeStatement, 1, 1 ) ).thenReturn( prevProp );
+        when (storeStatement.acquireSingleNodeCursor( 1l )).thenReturn( asNodeCursor( 1l, asPropertyCursor( prevProp ), LabelCursor.EMPTY ) );
 
         // When
         Iterable<PropertyEntry<Node>> propertyEntries = snapshot().removedNodeProperties();
@@ -213,7 +219,9 @@ public class TxStateTransactionDataViewTest
         DefinedProperty prevValue = stringProperty( 1, "prevValue" );
         state.relationshipDoRemoveProperty( 1l, prevValue );
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "theKey" );
-        when( ops.relationshipGetProperty( storeStatement, 1, 1 ) ).thenReturn( prevValue );
+        when( storeStatement.acquireSingleRelationshipCursor( 1 ) ).thenReturn(
+                StubCursors.asRelationshipCursor( 1, 0, 0, 0, asPropertyCursor(
+                        prevValue ) ) );
 
         // When
         Iterable<PropertyEntry<Relationship>> propertyEntries = snapshot().removedRelationshipProperties();
@@ -233,8 +241,9 @@ public class TxStateTransactionDataViewTest
         state.relationshipDoReplaceProperty( 1l, prevProp, stringProperty( 1, "newValue" ) );
 
         when( ops.propertyKeyGetName( 1 ) ).thenReturn( "theKey" );
-        when( ops.relationshipGetProperty( storeStatement, 1, 1 ) ).thenReturn(
-                prevProp );
+        when( storeStatement.acquireSingleRelationshipCursor( 1 ) ).thenReturn(
+                StubCursors.asRelationshipCursor( 1, 0, 0, 0, asPropertyCursor(
+                        prevProp ) ) );
 
         // When
         Iterable<PropertyEntry<Relationship>> propertyEntries = snapshot().assignedRelationshipProperties();

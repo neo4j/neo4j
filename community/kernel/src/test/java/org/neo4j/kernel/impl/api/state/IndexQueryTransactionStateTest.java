@@ -49,7 +49,6 @@ import static java.util.Arrays.asList;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -332,7 +331,6 @@ public class IndexQueryTransactionStateTest
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
         when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.<PropertyConstraint>emptyIterator() );
-        when( store.nodeExists( anyLong() ) ).thenReturn( true );
         when( store.indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) )
                 .thenReturn( new IndexDescriptor( labelId, propertyKeyId ) );
 

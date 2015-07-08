@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.nio.channels.WritableByteChannel;
 import java.util.Arrays;
 import java.util.List;
 
@@ -111,6 +112,12 @@ public class StubCursors
             public long getEndNode()
             {
                 return endNode;
+            }
+
+            @Override
+            public long getOtherNode( long nodeId )
+            {
+                return startNode == nodeId ? endNode : startNode;
             }
 
             @Override
@@ -212,9 +219,45 @@ public class StubCursors
             }
 
             @Override
-            public DefinedProperty getProperty()
+            public int propertyKeyId()
             {
-                return property;
+                return property.propertyKeyId();
+            }
+
+            @Override
+            public Object value()
+            {
+                return property.value();
+            }
+
+            @Override
+            public boolean booleanValue()
+            {
+                return ((Boolean)value());
+            }
+
+            @Override
+            public long longValue()
+            {
+                return ((Number)value()).longValue();
+            }
+
+            @Override
+            public double doubleValue()
+            {
+                return ((Number)value()).doubleValue();
+            }
+
+            @Override
+            public String stringValue()
+            {
+                return value().toString();
+            }
+
+            @Override
+            public void propertyData( WritableByteChannel channel )
+            {
+
             }
 
             @Override

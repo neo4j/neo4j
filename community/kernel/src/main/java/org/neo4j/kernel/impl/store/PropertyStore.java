@@ -301,7 +301,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
                     while ( stringRecords.next() )
                     {
                         stringRecords.get().setType( PropertyType.STRING.intValue() );
-                        block.addValueRecord( stringRecords.get() );
+                        block.addValueRecord( stringRecords.get().clone() );
                     }
                 }
             }
@@ -361,9 +361,15 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
         }
     }
 
-    public PageCursor newPageCursor( int mode ) throws IOException
+    public PageCursor newReadCursor( long recordId ) throws IOException
     {
-        return storeFile.io( 0, mode );
+        PageCursor cursor = storeFile.io( pageIdForRecord( recordId ), PF_SHARED_LOCK );
+        if ( !cursor.next() )
+        {
+            throw new IOException( "Record not found: " + recordId );
+        }
+        cursor.setOffset( (int) (recordId * RECORD_SIZE % storeFile.pageSize()) );
+        return cursor;
     }
 
     public PropertyRecord getRecord( PropertyRecord record, PageCursor cursor )

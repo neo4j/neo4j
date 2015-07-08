@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -42,6 +41,7 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -54,7 +54,6 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
@@ -344,7 +343,8 @@ public class NodeProxy implements Node
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
-            return statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ).value( defaultValue );
+            Object value =  statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
+            return value == null ? defaultValue : value;
         }
         catch ( EntityNotFoundException e )
         {
@@ -358,10 +358,10 @@ public class NodeProxy implements Node
         try ( Statement statement = actions.statement() )
         {
             List<String> keys = new ArrayList<>();
-            Iterator<DefinedProperty> properties = statement.readOperations().nodeGetAllProperties( getId() );
+            PrimitiveIntIterator properties = statement.readOperations().nodeGetPropertyKeys( getId() );
             while ( properties.hasNext() )
             {
-                keys.add( statement.readOperations().propertyKeyGetName( properties.next().propertyKeyId() ) );
+                keys.add( statement.readOperations().propertyKeyGetName( properties.next() ) );
             }
             return keys;
         }
@@ -393,7 +393,14 @@ public class NodeProxy implements Node
                 {
                     throw new NotFoundException( format( "No such property, '%s'.", key ) );
                 }
-                return statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ).value();
+
+                Object value = statement.readOperations().nodeGetProperty( nodeId, propertyKeyId );
+
+                if (value == null)
+                    throw new PropertyNotFoundException( propertyKeyId, EntityType.NODE, nodeId );
+
+                return value;
+
             }
             catch ( EntityNotFoundException | PropertyNotFoundException e )
             {
@@ -414,7 +421,7 @@ public class NodeProxy implements Node
         try ( Statement statement = actions.statement() )
         {
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
-            return statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ).isDefined();
+            return statement.readOperations().nodeHasProperty( nodeId, propertyKeyId );
         }
         catch ( EntityNotFoundException e )
         {

@@ -48,12 +48,14 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationK
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -83,15 +85,17 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId )
             throws EntityNotFoundException, ConstraintValidationKernelException
     {
-        Iterator<PropertyConstraint> constraints = uniquePropertyConstraints( schemaReadOperations.constraintsGetForLabel( state, labelId ) );
+        Iterator<PropertyConstraint> constraints = uniquePropertyConstraints(
+                schemaReadOperations.constraintsGetForLabel( state, labelId ) );
         while ( constraints.hasNext() )
         {
             PropertyConstraint constraint = constraints.next();
             int propertyKeyId = constraint.propertyKeyId();
-            Property property = entityReadOperations.nodeGetProperty( state, nodeId, propertyKeyId );
-            if ( property.isDefined() )
+            Object value = entityReadOperations.nodeGetProperty( state, nodeId, propertyKeyId );
+            if ( value != null )
             {
-                validateNoExistingNodeWithLabelAndProperty( state, labelId, (DefinedProperty) property, nodeId );
+                DefinedProperty property = Property.property( propertyKeyId, value );
+                validateNoExistingNodeWithLabelAndProperty( state, labelId, property, nodeId );
             }
         }
         return entityWriteOperations.nodeAddLabel( state, nodeId, labelId );
@@ -321,7 +325,32 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Property nodeGetProperty( KernelStatement state,
+    public PrimitiveIntIterator nodeGetLabels( TxStateHolder txStateHolder,
+            StoreStatement storeStatement,
+            long nodeId ) throws EntityNotFoundException
+    {
+        return entityReadOperations.nodeGetLabels( txStateHolder, storeStatement, nodeId );
+    }
+
+    @Override
+    public boolean nodeHasProperty( KernelStatement statement,
+            long nodeId,
+            int propertyKeyId ) throws EntityNotFoundException
+    {
+        return entityReadOperations.nodeHasProperty( statement, nodeId, propertyKeyId );
+    }
+
+    @Override
+    public boolean nodeHasProperty( TxStateHolder txStateHolder,
+            StoreStatement storeStatement,
+            long nodeId,
+            int propertyKeyId ) throws EntityNotFoundException
+    {
+        return entityReadOperations.nodeHasProperty( txStateHolder, storeStatement, nodeId, propertyKeyId );
+    }
+
+    @Override
+    public Object nodeGetProperty( KernelStatement state,
             long nodeId,
             int propertyKeyId ) throws EntityNotFoundException
     {
@@ -329,14 +358,28 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Property relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId ) throws
+    public boolean relationshipHasProperty( KernelStatement state,
+            long relationshipId,
+            int propertyKeyId ) throws EntityNotFoundException
+    {
+        return entityReadOperations.relationshipHasProperty( state, relationshipId, propertyKeyId );
+    }
+
+    @Override
+    public Object relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId ) throws
             EntityNotFoundException
     {
         return entityReadOperations.relationshipGetProperty( state, relationshipId, propertyKeyId );
     }
 
     @Override
-    public Property graphGetProperty( KernelStatement state, int propertyKeyId )
+    public boolean graphHasProperty( KernelStatement state, int propertyKeyId )
+    {
+        return entityReadOperations.graphHasProperty( state, propertyKeyId );
+    }
+
+    @Override
+    public Object graphGetProperty( KernelStatement state, int propertyKeyId )
     {
         return entityReadOperations.graphGetProperty( state, propertyKeyId );
     }
@@ -348,13 +391,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Iterator<DefinedProperty> nodeGetAllProperties( KernelStatement state,
-            long nodeId ) throws EntityNotFoundException
-    {
-        return entityReadOperations.nodeGetAllProperties( state, nodeId );
-    }
-
-    @Override
     public PrimitiveIntIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId ) throws
             EntityNotFoundException
     {
@@ -362,22 +398,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public Iterator<DefinedProperty> relationshipGetAllProperties( KernelStatement state, long relationshipId ) throws
-            EntityNotFoundException
-    {
-        return entityReadOperations.relationshipGetAllProperties( state, relationshipId );
-    }
-
-    @Override
     public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state )
     {
         return entityReadOperations.graphGetPropertyKeys( state );
-    }
-
-    @Override
-    public Iterator<DefinedProperty> graphGetAllProperties( KernelStatement state )
-    {
-        return entityReadOperations.graphGetAllProperties( state );
     }
 
     @Override
@@ -539,7 +562,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             try
             {
                 long nodeId = nodes.next();
-                if ( !nodeGetProperty( state, nodeId, propertyKeyId ).isDefined() )
+                if ( !nodeHasProperty( state, nodeId, propertyKeyId ) )
                 {
                     PropertyConstraint constraint = new MandatoryPropertyConstraint( labelId, propertyKeyId );
 

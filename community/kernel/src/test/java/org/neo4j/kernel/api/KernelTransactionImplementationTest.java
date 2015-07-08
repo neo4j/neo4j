@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.Collection;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import java.util.Collection;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.FakeClock;
@@ -35,6 +35,8 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -47,6 +49,8 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.test.DoubleLatch;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyListOf;
@@ -56,8 +60,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class KernelTransactionImplementationTest
 {
@@ -373,9 +375,12 @@ public class KernelTransactionImplementationTest
 
     private KernelTransactionImplementation newTransaction()
     {
+        StoreReadLayer readLayer = mock(StoreReadLayer.class);
+        when(readLayer.acquireStatement()).thenReturn( mock(StoreStatement.class) );
+
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
                 null, null, null, null, null, recordState, null, neoStore, new NoOpClient(),
-                hooks, null, headerInformationFactory, commitProcess, transactionMonitor, null, legacyIndexState,
+                hooks, null, headerInformationFactory, commitProcess, transactionMonitor, readLayer, legacyIndexState,
                 mock( Pool.class ), clock, TransactionTracer.NULL );
         transaction.initialize( 0 );
         return transaction;

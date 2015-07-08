@@ -25,8 +25,6 @@ import java.util.Arrays;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.util.Bits;
 
-import static java.util.Arrays.copyOf;
-
 /**
  * Supports encoding alphanumerical and <code>SP . - + , ' : / _</code>
  *
@@ -764,15 +762,19 @@ public enum LongerShortString
      */
     public static String decode( PropertyBlock block )
     {
-        Bits bits = Bits.bitsFromLongs( copyOf( block.getValueBlocks(),
-                block.getValueBlocks().length ) );
+        Bits bits = Bits.bitsFromLongs( block.getValueBlocks() );
+        return decode( bits );
+    }
+
+    public static String decode(Bits bits)
+    {
         long firstLong = bits.getLongs()[0];
         if ( ( firstLong & 0xFFFFFF0FFFFFFFFFL ) == 0 ) return "";
         bits.getInt( 24 ); // Get rid of the key
         bits.getByte( 4 ); // Get rid of the type
         int encoding = bits.getByte( 5 ); //(int) ( ( firstLong & 0xF00000000L ) >>> 32 );
         int stringLength = bits.getByte( 6 ); //(int) ( ( firstLong & 0xFC000000L ) >>> 26 );
-        if ( encoding == ENCODING_UTF8 ) return decodeUTF8( bits, stringLength );
+        if ( encoding == LongerShortString.ENCODING_UTF8 ) return decodeUTF8( bits, stringLength );
         if ( encoding == ENCODING_LATIN1 ) return decodeLatin1( bits, stringLength );
 
         LongerShortString table = getEncodingTable( encoding );
@@ -786,6 +788,7 @@ public enum LongerShortString
         }
         return String.valueOf(result);
     }
+
 
     // lookup table by encoding header
     // +2 because of ENCODING_LATIN1 gap and one based index
