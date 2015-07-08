@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -389,7 +390,19 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         synchronized ( logFile )
         {
             writer.emptyBufferIntoChannelAndClearIt();
+        }
+        // Force the writer outside of the lock.
+        // This allows multiple threads forcing at the same time to piggy-back onto one another.
+        try
+        {
             writer.force();
+        }
+        catch ( ClosedChannelException ignored )
+        {
+            // This is ok, we were already successful in emptying the buffer, so the channel being closed here means
+            // that some other thread is rotating the log and has closed the underlying channel. But since we were
+            // successful in emptying the buffer *UNDER THE LOCK* we know that the rotating thread included the changes
+            // we emptied into the channel, and thus it is already flushed by that thread.
         }
     }
 }
