@@ -981,11 +981,11 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     {
         if ( lastClosedTx.offer( transactionId, new long[]{logVersion, byteOffset} ) )
         {
-            long[] transactionData = lastClosedTx.get();
-            setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, transactionData[0] );
-            setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, transactionData[1] );
-            lastClosedTransactionLogVersion = logVersion;
-            lastClosedTransactionLogByteOffset = byteOffset;
+            long[] lastClosedTransactionData = lastClosedTx.get();
+            setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, lastClosedTransactionData[1] );
+            setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, lastClosedTransactionData[2] );
+            lastClosedTransactionLogVersion = lastClosedTransactionData[1];
+            lastClosedTransactionLogByteOffset = lastClosedTransactionData[2];
         }
     }
 
