@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,6 +37,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.cursor.LabelCursor;
+import org.neo4j.kernel.api.cursor.NodeCursor;
+import org.neo4j.kernel.api.cursor.PropertyCursor;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -548,6 +554,60 @@ public class LabelsAcceptanceTest
             }
             assertEquals( "labels on node: " + labels, NUMBER_OF_PRESERVED_LABELS, labels.size() );
         }
+    }
+
+    @Ignore("Fix this properly later")
+    @Test
+    public void shouldAllowManyLabelsAndPropertyCursor()
+    {
+        // given
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        Node node;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node = db.createNode();
+            node.setProperty( "foo", "bar" );
+            for ( int i = 0; i < 20; i++ )
+            {
+                node.addLabel( DynamicLabel.label( "label:" + i ) );
+            }
+
+            tx.success();
+        }
+
+        // when
+        try ( Transaction tx = db.beginTx() )
+        {
+            try (Statement statement = ((TopLevelTransaction)tx).getTransaction().acquireStatement())
+            {
+                try (NodeCursor nodeCursor = statement.readOperations().nodeCursor( node.getId() ))
+                {
+                    if (nodeCursor.next())
+                    {
+                        try (PropertyCursor properties = nodeCursor.properties())
+                        {
+                            while (properties.next())
+                            {
+                                try (LabelCursor labels = nodeCursor.labels())
+                                {
+                                    while (labels.next())
+                                    {
+
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            tx.success();
+        }
+
+        // then
+        // No exceptions from the above
+
+
     }
 
     @SuppressWarnings("deprecation")

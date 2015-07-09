@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntStack;
@@ -596,8 +597,8 @@ public class StateHandlingStatementOperations implements
 
 
     private Iterator<PropertyConstraint> applyConstraintsDiff( TxStateHolder state,
-                                                                 Iterator<PropertyConstraint> constraints,
-                                                                 int labelId, int propertyKeyId )
+            Iterator<PropertyConstraint> constraints,
+            int labelId, int propertyKeyId )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -607,8 +608,8 @@ public class StateHandlingStatementOperations implements
     }
 
     private Iterator<PropertyConstraint> applyConstraintsDiff( KernelStatement state,
-                                                                 Iterator<PropertyConstraint> constraints,
-                                                                 int labelId )
+            Iterator<PropertyConstraint> constraints,
+            int labelId )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -619,7 +620,7 @@ public class StateHandlingStatementOperations implements
 
 
     private Iterator<PropertyConstraint> applyConstraintsDiff( KernelStatement state,
-                                                                 Iterator<PropertyConstraint> constraints )
+            Iterator<PropertyConstraint> constraints )
     {
         if ( state.hasTxStateWithChanges() )
         {
@@ -849,7 +850,9 @@ public class StateHandlingStatementOperations implements
 
             state.txState().nodeDoReplaceProperty( nodeId, existingProperty, property );
 
-            indexesUpdateProperty( state, node, property.propertyKeyId(),
+            PrimitiveIntCollection labelIds = getLabels( node );
+
+            indexesUpdateProperty( state, node.getId(), labelIds, property.propertyKeyId(),
                     existingProperty instanceof DefinedProperty ? (DefinedProperty) existingProperty : null,
                     property );
 
@@ -913,6 +916,8 @@ public class StateHandlingStatementOperations implements
                 throw new EntityNotFoundException( EntityType.NODE, nodeId );
             }
 
+            PrimitiveIntCollection labelIds = getLabels( node );
+
             Property existingProperty;
             try ( PropertyCursor properties = node.properties() )
             {
@@ -927,7 +932,8 @@ public class StateHandlingStatementOperations implements
                     legacyPropertyTrackers.nodeRemoveStoreProperty( nodeId, (DefinedProperty) existingProperty );
                     state.txState().nodeDoRemoveProperty( nodeId, (DefinedProperty) existingProperty );
 
-                    indexesUpdateProperty( state, node, propertyKeyId, (DefinedProperty) existingProperty, null );
+                    indexesUpdateProperty( state, node.getId(), labelIds, propertyKeyId,
+                            (DefinedProperty) existingProperty, null );
                 }
             }
             return existingProperty;
@@ -981,15 +987,17 @@ public class StateHandlingStatementOperations implements
         }
     }
 
-    private void indexesUpdateProperty( KernelStatement state, NodeCursor node, int propertyKey,
-            DefinedProperty before, DefinedProperty after ) throws EntityNotFoundException
+    private void indexesUpdateProperty( KernelStatement state,
+            long nodeId,
+            PrimitiveIntCollection labels,
+            int propertyKey,
+            DefinedProperty before,
+            DefinedProperty after ) throws EntityNotFoundException
     {
-        try ( LabelCursor labels = node.labels() )
+        PrimitiveIntIterator labelIterator = labels.iterator();
+        while ( labelIterator.hasNext() )
         {
-            while ( labels.next() )
-            {
-                indexUpdateProperty( state, node.getId(), labels.getLabel(), propertyKey, before, after );
-            }
+            indexUpdateProperty( state, nodeId, labelIterator.next(), propertyKey, before, after );
         }
     }
 
@@ -1776,5 +1784,18 @@ public class StateHandlingStatementOperations implements
         }
 
         return null;
+    }
+
+    private PrimitiveIntCollection getLabels( NodeCursor node )
+    {
+        PrimitiveIntStack labelIds = new PrimitiveIntStack();
+        try ( LabelCursor labels = node.labels() )
+        {
+            while ( labels.next() )
+            {
+                labelIds.push( labels.getLabel() );
+            }
+        }
+        return labelIds;
     }
 }

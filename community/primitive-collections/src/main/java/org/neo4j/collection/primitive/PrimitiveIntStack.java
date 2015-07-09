@@ -33,6 +33,11 @@ public class PrimitiveIntStack implements PrimitiveIntCollection
     private int[] array;
     private int cursor = -1; // where the top most item lives
 
+    public PrimitiveIntStack( )
+    {
+        this(16);
+    }
+
     public PrimitiveIntStack( int initialSize )
     {
         this.array = new int[initialSize];
