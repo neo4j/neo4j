@@ -100,7 +100,6 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     val result = executeWithRulePlanner(query)
 
-    println(result.executionPlanDescription())
     result.executionPlanDescription().toString should include("SchemaIndex")
     result.executionPlanDescription().toString should include("StringSeekRange")
     result.toList should equal(List(Map("NAME" -> "LOONYBOOM")))
