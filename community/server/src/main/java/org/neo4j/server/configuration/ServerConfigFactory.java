@@ -78,7 +78,7 @@ public class ServerConfigFactory
         overrideEmbeddedDefaults( config );
         applyUserOverrides( config, configOverrides );
 
-        setServerSettingsClasses( config );
+        config.registerSettingsClasses( getDefaultSettingsClasses() );
 
         return config;
     }
@@ -114,10 +114,9 @@ public class ServerConfigFactory
         config.applyChanges( params );
     }
 
-    public static void setServerSettingsClasses( Config config )
+    public static Iterable<Class<?>> getDefaultSettingsClasses()
     {
-        config.registerSettingsClasses( asList( ServerSettings.class,
-                ServerInternalSettings.class, GraphDatabaseSettings.class ) );
+        return asList( ServerSettings.class, ServerInternalSettings.class, GraphDatabaseSettings.class );
     }
 
     private static Map<String, String> loadServerConfig( File legacyServerConfigFile, Log log )

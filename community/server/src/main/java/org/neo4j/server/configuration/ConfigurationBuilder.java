@@ -26,8 +26,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.web.ServerInternalSettings;
+
+import static java.util.Arrays.asList;
 
 /**
  * Used by the server to load server and database properties.
@@ -70,8 +74,8 @@ public interface ConfigurationBuilder
             }
             serverProperties.put( ServerSettings.third_party_packages.name(),
                     toStringForThirdPartyPackageProperty( configurator.getThirdpartyJaxRsPackages() ) );
-            this.serverConfig = new Config( serverProperties );
 
+            this.serverConfig = new Config( serverProperties, ServerConfigFactory.getDefaultSettingsClasses() );
             // use the db properties directly
             this.dbProperties = configurator.getDatabaseTuningProperties();
         }
