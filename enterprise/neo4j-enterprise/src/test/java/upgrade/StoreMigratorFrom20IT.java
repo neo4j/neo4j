@@ -147,7 +147,7 @@ public class StoreMigratorFrom20IT
     {
         assertEquals( 1317392957120L, neoStore.getCreationTime() );
         assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
-        assertEquals( 6l, neoStore.getCurrentLogVersion() );
+        assertEquals( 5l, neoStore.getCurrentLogVersion() );
         assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
         assertEquals( 1042l, neoStore.getLastCommittedTransactionId() );
     }
