@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
@@ -271,11 +272,13 @@ public class TransactionRecordStateTest
     private NeoStore newNeoStore( String... config )
     {
         File storeDir = new File( "dir" );
-        fsr.get().mkdirs( storeDir );
+        EphemeralFileSystemAbstraction fs = fsr.get();
+        fs.mkdirs( storeDir );
         Config configuration = new Config( stringMap( config ) );
-        StoreFactory storeFactory = new StoreFactory( storeDir, configuration, new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fsr.get() ),
-                fsr.get(), NullLogProvider.getInstance(), new Monitors() );
+        StoreFactory storeFactory = new StoreFactory(
+                storeDir, configuration, new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ),
+                fs, NullLogProvider.getInstance(), new Monitors() );
         return cleanup.add( storeFactory.newNeoStore( true ) );
     }
 

@@ -30,13 +30,20 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 /**
  * @deprecated This will be moved to internal packages in the next major release.
  */
+// TODO 3.0: Move to org.neo4j.kernel.impl.store.id package
 @Deprecated
 public class DefaultIdGeneratorFactory
     implements IdGeneratorFactory
 {
     private final Map<IdType, IdGenerator> generators = new HashMap<>();
+    private final FileSystemAbstraction fs;
 
-    public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
+    public DefaultIdGeneratorFactory( FileSystemAbstraction fs )
+    {
+        this.fs = fs;
+    }
+
+    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
     {
         long maxValue = idType.getMaxValue();
         boolean aggressiveReuse = idType.allowAggressiveReuse();
@@ -51,7 +58,7 @@ public class DefaultIdGeneratorFactory
         return generators.get( idType );
     }
 
-    public void create( FileSystemAbstraction fs, File fileName, long highId )
+    public void create( File fileName, long highId )
     {
         IdGeneratorImpl.createGenerator( fs, fileName, highId );
     }

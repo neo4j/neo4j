@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
@@ -37,10 +36,10 @@ public class EphemeralIdGenerator implements IdGenerator
 {
     public static class Factory implements IdGeneratorFactory
     {
-        protected final Map<IdType, IdGenerator> generators = new EnumMap<IdType, IdGenerator>( IdType.class );
+        protected final Map<IdType, IdGenerator> generators = new EnumMap<>( IdType.class );
 
         @Override
-        public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
+        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
         {
             IdGenerator generator = generators.get( idType );
             if ( generator == null )
@@ -52,7 +51,7 @@ public class EphemeralIdGenerator implements IdGenerator
         }
 
         @Override
-        public void create( FileSystemAbstraction fs, File fileName, long highId )
+        public void create( File fileName, long highId )
         {
         }
 
@@ -88,7 +87,7 @@ public class EphemeralIdGenerator implements IdGenerator
             Long id = freeList.poll();
             if ( id != null )
             {
-                return id.longValue();
+                return id;
             }
         }
         return nextId.getAndIncrement();

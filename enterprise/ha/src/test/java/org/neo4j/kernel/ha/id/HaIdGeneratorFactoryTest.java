@@ -19,20 +19,20 @@
  */
 package org.neo4j.kernel.ha.id;
 
-import java.io.File;
-
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
@@ -165,7 +165,7 @@ public class HaIdGeneratorFactoryTest
         masterDelegate = new DelegateInvocationHandler<>( Master.class );
         fs = new EphemeralFileSystemAbstraction();
         fac  = new HaIdGeneratorFactory( masterDelegate, NullLogProvider.getInstance(),
-                mock( RequestContextFactory.class ) );
+                mock( RequestContextFactory.class ), fs );
     }
     
     @SuppressWarnings( "unchecked" )
@@ -179,7 +179,7 @@ public class HaIdGeneratorFactoryTest
     private IdGenerator switchToSlave()
     {
         fac.switchToSlave();
-        IdGenerator gen = fac.open( fs, new File( "someFile" ), 10, IdType.NODE, 1 );
+        IdGenerator gen = fac.open( new File( "someFile" ), 10, IdType.NODE, 1 );
         masterDelegate.setDelegate( master );
         return gen;
     }

@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
@@ -91,7 +90,7 @@ public class BigJumpingStoreIT
                 return new CommunityEditionModule( platformModule )
                 {
                     @Override
-                    protected IdGeneratorFactory createIdGeneratorFactory()
+                    protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs )
                     {
                         return new JumpingIdGeneratorFactory( SIZE_PER_JUMP );
                     }

@@ -90,7 +90,7 @@ public class CommunityEditionModule
 
         lockManager = deps.satisfyDependency( createLockManager( config, logging ) );
 
-        idGeneratorFactory = deps.satisfyDependency( createIdGeneratorFactory() );
+        idGeneratorFactory = deps.satisfyDependency( createIdGeneratorFactory( fileSystem ) );
 
         propertyKeyTokenHolder = life.add( deps.satisfyDependency( new PropertyKeyTokenHolder(
                 createPropertyKeyCreator( config, dataSourceManager, idGeneratorFactory ) ) ) );
@@ -230,9 +230,9 @@ public class CommunityEditionModule
         return new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI );
     }
 
-    protected IdGeneratorFactory createIdGeneratorFactory()
+    protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs )
     {
-        return new DefaultIdGeneratorFactory();
+        return new DefaultIdGeneratorFactory( fs );
     }
 
     public static Locks createLockManager( Config config, LogService logging )

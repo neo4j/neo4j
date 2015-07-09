@@ -604,8 +604,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     {
         try
         {
-            return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize,
-                    getIdType(), findHighIdBackwards() );
+            return idGeneratorFactory.open( fileName, grabSize, getIdType(), findHighIdBackwards() );
         }
         catch ( IOException e )
         {
@@ -659,7 +658,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     protected void createIdGenerator( File fileName )
     {
-        idGeneratorFactory.create( fileSystemAbstraction, fileName, 0 );
+        idGeneratorFactory.create( fileName, 0 );
     }
 
     /** Closed the {@link IdGenerator} used by this store */

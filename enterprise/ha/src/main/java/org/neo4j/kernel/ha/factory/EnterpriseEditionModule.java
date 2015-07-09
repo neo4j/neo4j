@@ -336,9 +336,8 @@ public class EnterpriseEditionModule
         paxosLife.add( clusterEvents );
         paxosLife.add( localClusterMemberAvailability );
 
-        idGeneratorFactory = dependencies.satisfyDependency(
-                createIdGeneratorFactory( masterDelegateInvocationHandler, logging.getInternalLogProvider(),
-                        requestContextFactory ) );
+        idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory(
+                masterDelegateInvocationHandler, logging.getInternalLogProvider(), requestContextFactory, fs ) );
 
         // TODO There's a cyclical dependency here that should be fixed
         final AtomicReference<HighAvailabilityModeSwitcher> exceptionHandlerRef = new AtomicReference<>();
@@ -626,13 +625,14 @@ public class EnterpriseEditionModule
         };
     }
 
-    protected IdGeneratorFactory createIdGeneratorFactory( DelegateInvocationHandler<Master>
-                                                                   masterDelegateInvocationHandler,
-                                                           LogProvider logging, RequestContextFactory
-            requestContextFactory )
+    protected IdGeneratorFactory createIdGeneratorFactory(
+            DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
+            LogProvider logging,
+            RequestContextFactory requestContextFactory,
+            FileSystemAbstraction fs )
     {
-        idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
-                requestContextFactory );
+        idGeneratorFactory = new HaIdGeneratorFactory(
+                masterDelegateInvocationHandler, logging, requestContextFactory, fs );
 
         /*
          * We don't really switch to master here. We just need to initialize the idGenerator so the initial store

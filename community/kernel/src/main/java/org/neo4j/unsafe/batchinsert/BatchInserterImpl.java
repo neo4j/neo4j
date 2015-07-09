@@ -256,7 +256,7 @@ public class BatchInserterImpl implements BatchInserter
         storeLocker.checkLock( this.storeDir );
 
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
-        this.idGeneratorFactory = new DefaultIdGeneratorFactory();
+        this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
         StoreFactory sf = new StoreFactory(
                 this.storeDir,

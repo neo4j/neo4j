@@ -350,7 +350,7 @@ public class UpgradeStoreIT
                 new File( fileName.getPath() + ".names"),
                 config,
                 IdType.RELATIONSHIP_TYPE_TOKEN_NAME,
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fs ),
                 pageCache,
                 fs,
                 NullLogProvider.getInstance(),
@@ -387,7 +387,7 @@ public class UpgradeStoreIT
         {
             super( fileName,
                     config,
-                    new NoLimitIdGeneratorFactory(),
+                    new NoLimitIdGeneratorFactory( fs ),
                     pageCache,
                     fs,
                     NullLogProvider.getInstance(),
@@ -419,9 +419,15 @@ public class UpgradeStoreIT
     private static class NoLimitIdGeneratorFactory implements IdGeneratorFactory
     {
         private final Map<IdType, IdGenerator> generators = new HashMap<>();
+        private final FileSystemAbstraction fs;
+
+        public NoLimitIdGeneratorFactory( FileSystemAbstraction fs )
+        {
+            this.fs = fs;
+        }
 
         @Override
-        public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
+        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
         {
             IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, Long.MAX_VALUE, false, highId );
             generators.put( idType, generator );
@@ -435,7 +441,7 @@ public class UpgradeStoreIT
         }
 
         @Override
-        public void create( FileSystemAbstraction fs, File fileName, long highId )
+        public void create( File fileName, long highId )
         {
             IdGeneratorImpl.createGenerator( fs, fileName, highId );
         }

@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -43,6 +44,34 @@ import static org.junit.Assert.assertTrue;
 
 public class AbstractDynamicStoreTest
 {
+    @Rule
+    public final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    private final File fileName = new File( "store" );
+    private PageCache pageCache;
+    private FileSystemAbstraction fs;
+
+    @Before
+    public void before() throws IOException
+    {
+        fs = fsr.get();
+        pageCache = pageCacheRule.getPageCache( fsr.get() );
+        StoreChannel channel = fs.create( fileName );
+        try
+        {
+            ByteBuffer buffer = ByteBuffer.allocate( 4 );
+            buffer.putInt( 60 );
+            buffer.flip();
+            channel.write( buffer );
+        }
+        finally
+        {
+            channel.close();
+        }
+    }
+
     @Test
     public void shouldRecognizeDesignatedInUseBit() throws Exception
     {
@@ -74,9 +103,17 @@ public class AbstractDynamicStoreTest
 
     private AbstractDynamicStore newTestableDynamicStore()
     {
-        return new AbstractDynamicStore( fileName, new Config(), IdType.ARRAY_BLOCK, new DefaultIdGeneratorFactory(),
-                pageCache, fsr.get(), NullLogProvider.getInstance(),
-                StoreVersionMismatchHandler.ALLOW_OLD_VERSION, new Monitors() )
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+        return new AbstractDynamicStore(
+                fileName,
+                new Config(),
+                IdType.ARRAY_BLOCK,
+                idGeneratorFactory,
+                pageCache,
+                fs,
+                NullLogProvider.getInstance(),
+                StoreVersionMismatchHandler.ALLOW_OLD_VERSION,
+                new Monitors() )
         {
             @Override
             public void accept( Processor processor, DynamicRecord record )
@@ -89,28 +126,5 @@ public class AbstractDynamicStoreTest
                 return "TestDynamicStore";
             }
         };
-    }
-
-    public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
-    public final @Rule PageCacheRule pageCacheRule = new PageCacheRule();
-    private final File fileName = new File( "store" );
-    private PageCache pageCache;
-
-    @Before
-    public void before() throws IOException
-    {
-        pageCache = pageCacheRule.getPageCache( fsr.get() );
-        StoreChannel channel = fsr.get().create( fileName );
-        try
-        {
-            ByteBuffer buffer = ByteBuffer.allocate( 4 );
-            buffer.putInt( 60 );
-            buffer.flip();
-            channel.write( buffer );
-        }
-        finally
-        {
-            channel.close();
-        }
     }
 }

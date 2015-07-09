@@ -188,8 +188,9 @@ public class BatchingNeoStore implements AutoCloseable, NeoStoreSupplier
 
     private NeoStore newNeoStore( PageCache pageCache )
     {
-        StoreFactory storeFactory = new StoreFactory( storeDir, neo4jConfig, new BatchingIdGeneratorFactory(),
-                pageCache, fileSystem, logProvider, monitors );
+        BatchingIdGeneratorFactory idGeneratorFactory = new BatchingIdGeneratorFactory( fileSystem );
+        StoreFactory storeFactory = new StoreFactory(
+                storeDir, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, logProvider, monitors );
         return storeFactory.newNeoStore( true );
     }
 

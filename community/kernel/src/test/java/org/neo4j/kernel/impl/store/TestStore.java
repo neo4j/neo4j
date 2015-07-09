@@ -46,10 +46,10 @@ import static org.junit.Assert.fail;
 
 public class TestStore
 {
-    public static IdGeneratorFactory ID_GENERATOR_FACTORY =
-            new DefaultIdGeneratorFactory();
     public static FileSystemAbstraction FILE_SYSTEM =
             new DefaultFileSystemAbstraction();
+    public static IdGeneratorFactory ID_GENERATOR_FACTORY =
+            new DefaultIdGeneratorFactory( FILE_SYSTEM );
 
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();

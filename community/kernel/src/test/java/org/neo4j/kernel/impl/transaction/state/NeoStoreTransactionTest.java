@@ -156,10 +156,10 @@ public class NeoStoreTransactionTest
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     @SuppressWarnings( "deprecation" )
-    private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
     private final List<Lock> lockMocks = new ArrayList<>();
     private final CommitEvent commitEvent = CommitEvent.NULL;
     private EphemeralFileSystemAbstraction fs;
+    private DefaultIdGeneratorFactory idGeneratorFactory;
     private PageCache pageCache;
     private Config config;
     private NeoStore neoStore;
@@ -1419,6 +1419,7 @@ public class NeoStoreTransactionTest
     public void before() throws Exception
     {
         fs = new EphemeralFileSystemAbstraction();
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         pageCache = pageCacheRule.getPageCache( fs );
         instantiateNeoStore( parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) );
     }
@@ -1517,6 +1518,7 @@ public class NeoStoreTransactionTest
             neoStore.close();
         }
         fs = new EphemeralFileSystemAbstraction();
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         pageCache = pageCacheRule.getPageCache( fs );
     }
 

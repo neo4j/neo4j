@@ -21,18 +21,18 @@ package org.neo4j.kernel;
 
 import java.io.File;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 
 /**
  * @deprecated This will be moved to internal packages in the next major release.
  */
+// TODO 3.0: Move to org.neo4j.kernel.impl.store.id package
 @Deprecated
 public interface IdGeneratorFactory
 {
-    IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId );
+    IdGenerator open( File fileName, int grabSize, IdType idType, long highId );
 
-    void create( FileSystemAbstraction fs, File fileName, long highId );
+    void create( File fileName, long highId );
 
     IdGenerator get( IdType idType );
 }

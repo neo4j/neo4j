@@ -166,8 +166,8 @@ public class StoreMigrator implements StoreMigrationParticipant
      * Doing that initialization here is good because we do this check when
      * {@link #moveMigratedFiles(File, File) moving migrated files}, which might be done
      * as part of a resumed migration, i.e. run even if
-     * {@link StoreMigrationParticipant#migrate(java.io.File, java.io.File,
-     * org.neo4j.kernel.api.index.SchemaIndexProvider)}
+     * {@link StoreMigrationParticipant#migrate(File, File, SchemaIndexProvider)}
+     * hasn't been run.
      */
     private String versionToUpgradeFrom( File storeDir )
     {
@@ -530,7 +530,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         return new StoreFactory(
                 migrationDir,
                 new Config(),
-                new DefaultIdGeneratorFactory(), pageCache,
+                new DefaultIdGeneratorFactory( fileSystem ), pageCache,
                 fileSystem, NullLogProvider.getInstance(), new Monitors() );
     }
 

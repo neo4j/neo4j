@@ -56,14 +56,12 @@ public class TestDynamicStore
 {
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
-    public static IdGeneratorFactory ID_GENERATOR_FACTORY =
-            new DefaultIdGeneratorFactory();
     private static final Monitors monitors = new Monitors();
-
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private File storeDir;
     private PageCache pageCache;
+    private IdGeneratorFactory idGeneratorFactory;
 
     @Before
     public void setUp()
@@ -71,6 +69,7 @@ public class TestDynamicStore
         pageCache = pageCacheRule.getPageCache( fs.get() );
         storeDir = new File( "dynamicstore" );
         fs.get().mkdir( storeDir );
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
     }
 
     private File file( String name )
@@ -131,7 +130,7 @@ public class TestDynamicStore
         new StoreFactory(
                 storeDir,
                 config,
-                ID_GENERATOR_FACTORY,
+                idGeneratorFactory,
                 pageCache,
                 fs.get(),
                 NullLogProvider.getInstance(),
@@ -145,7 +144,7 @@ public class TestDynamicStore
                 dynamicStoreFile(),
                 config,
                 IdType.ARRAY_BLOCK,
-                ID_GENERATOR_FACTORY,
+                idGeneratorFactory,
                 pageCache,
                 fs.get(),
                 NullLogProvider.getInstance(),

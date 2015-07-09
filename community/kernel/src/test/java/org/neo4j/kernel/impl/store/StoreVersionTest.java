@@ -56,7 +56,7 @@ public class StoreVersionTest
         StoreFactory sf = new StoreFactory(
                 outputDir,
                 config,
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
                 NullLogProvider.getInstance(),
@@ -94,7 +94,7 @@ public class StoreVersionTest
             new NodeStore(
                     workingFile,
                     config,
-                    new DefaultIdGeneratorFactory(),
+                    new DefaultIdGeneratorFactory( fs.get() ),
                     pageCacheRule.getPageCache( fs.get() ),
                     fs.get(),
                     NullLogProvider.getInstance(),
@@ -117,7 +117,7 @@ public class StoreVersionTest
         StoreFactory sf = new StoreFactory(
                 outputDir,
                 config,
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fileSystemAbstraction ),
                 pageCache,
                 fileSystemAbstraction,
                 NullLogProvider.getInstance(),

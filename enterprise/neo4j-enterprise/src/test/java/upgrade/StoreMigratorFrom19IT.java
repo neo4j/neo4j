@@ -19,15 +19,15 @@
  */
 package upgrade;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,27 +43,27 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.Integer.MAX_VALUE;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -73,7 +73,6 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19Form
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-
 import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom19IT
@@ -85,7 +84,7 @@ public class StoreMigratorFrom19IT
         File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // WHEN
-        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, schemaIndexProvider, pageCache );
+        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, schemaIndexProvider );
 
         // THEN
         assertEquals( 100, monitor.eventSize() );
@@ -119,7 +118,7 @@ public class StoreMigratorFrom19IT
         File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // When
-        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, schemaIndexProvider, pageCache );
+        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, schemaIndexProvider );
 
         ClusterManager.ManagedCluster cluster = buildClusterWithMasterDirIn( fs, legacyStoreDir, life );
         cluster.await( allSeesAllAsAvailable() );
@@ -142,7 +141,7 @@ public class StoreMigratorFrom19IT
         // WHEN
         // upgrading that store, the two key tokens for "name" should be merged
 
-        newStoreUpgrader().migrateIfNeeded( storeDir.directory(), schemaIndexProvider, pageCache );
+        newStoreUpgrader().migrateIfNeeded( storeDir.directory(), schemaIndexProvider );
 
         // THEN
         // verify that the "name" property for both the involved nodes
@@ -241,31 +240,33 @@ public class StoreMigratorFrom19IT
     private StoreUpgrader newStoreUpgrader()
     {
         StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
-        upgrader.addParticipant( new StoreMigrator( monitor, fs, NullLogService.getInstance() ) );
+        upgrader.addParticipant( new StoreMigrator( monitor, fs, pageCache, upgradableDatabase, config, NullLogService.getInstance() ) );
         return upgrader;
     }
 
+    private final Config config = MigrationTestUtils.defaultConfig();
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
     private PageCache pageCache;
     private StoreFactory storeFactory;
+    private UpgradableDatabase upgradableDatabase;
     private final LifeSupport life = new LifeSupport();
 
     @Before
     public void setUp()
     {
-        Config config = MigrationTestUtils.defaultConfig();
         pageCache = pageCacheRule.getPageCache( fs );
 
         storeFactory = new StoreFactory(
                 storeDir.directory(),
                 config,
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fs ),
                 pageCache,
                 fs,
                 NullLogProvider.getInstance(),
                 new Monitors() );
+        upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
     }
 
     @After

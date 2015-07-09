@@ -294,7 +294,7 @@ public class NodeStoreTest
     {
         File storeDir = new File( "dir" );
         fs.mkdirs( storeDir );
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         Monitors monitors = new Monitors();
         StoreFactory factory = new StoreFactory(
                 storeDir,

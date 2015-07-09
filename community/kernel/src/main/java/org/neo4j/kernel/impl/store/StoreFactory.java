@@ -98,7 +98,7 @@ public class StoreFactory
                          Monitors monitors, StoreVersionMismatchHandler versionMismatchHandler )
     {
         this( storeDir, new Config(),
-                new DefaultIdGeneratorFactory(), pageCache, fileSystem,
+                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
                 logProvider, monitors, versionMismatchHandler );
     }
 
@@ -121,7 +121,6 @@ public class StoreFactory
         this.log = logProvider.getLog( getClass() );
         this.versionMismatchHandler = versionMismatchHandler;
         this.neoStoreFileName = new File( storeDir, NeoStore.DEFAULT_NAME );
-        assert neoStoreFileName != null;
         this.monitors = monitors;
         this.pageCache = pageCache;
     }
@@ -554,11 +553,10 @@ public class StoreFactory
             throw new UnderlyingStorageException( "Unable to create store "
                                                   + fileName, e );
         }
-        idGeneratorFactory.create( fileSystemAbstraction, new File( fileName.getPath() + ".id" ), 0 );
+        File idFileName = new File( fileName.getPath() + ".id" );
+        idGeneratorFactory.create( idFileName, 0 );
         // TODO highestIdInUse = 0 works now, but not when slave can create store files.
-        IdGenerator idGenerator = idGeneratorFactory.open( fileSystemAbstraction,
-                new File( fileName.getPath() + ".id" ),
-                idType.getGrabSize(), idType, 0 );
+        IdGenerator idGenerator = idGeneratorFactory.open( idFileName, idType.getGrabSize(), idType, 0 );
         idGenerator.nextId(); // reserve first for blockSize
         idGenerator.close();
     }
@@ -613,11 +611,11 @@ public class StoreFactory
         {
             throw new UnderlyingStorageException( "Unable to create store " + fileName, e );
         }
-        idGeneratorFactory.create( fileSystemAbstraction, new File( fileName.getPath() + ".id" ), 0 );
+        File idFileName = new File( fileName.getPath() + ".id" );
+        idGeneratorFactory.create( idFileName, 0 );
         if ( firstRecordData != null )
         {
-            IdGenerator idGenerator = idGeneratorFactory.open( fileSystemAbstraction,
-                    new File( fileName.getPath() + ".id" ), 1, idType, 0 );
+            IdGenerator idGenerator = idGeneratorFactory.open( idFileName, 1, idType, 0 );
             idGenerator.nextId(); // reserve first for blockSize
             idGenerator.close();
         }

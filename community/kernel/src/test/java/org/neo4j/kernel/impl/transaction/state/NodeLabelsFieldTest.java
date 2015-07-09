@@ -457,7 +457,7 @@ public class NodeLabelsFieldTest
         StoreFactory storeFactory = new StoreFactory(
                 storeDir,
                 new Config(),
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
                 NullLogProvider.getInstance(),

@@ -115,7 +115,7 @@ public class ConsistencyCheckService
         StoreFactory factory = new StoreFactory(
                 storeDir,
                 consistencyCheckerConfig,
-                new DefaultIdGeneratorFactory(),
+                new DefaultIdGeneratorFactory( fileSystem ),
                 pageCache, fileSystem, logProvider,
                 monitors
         );

@@ -54,7 +54,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         try ( PageCache pageCache = createPageCache( fs ) )
         {
-            DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
+            DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             StoreFactory storeFactory = new StoreFactory( null, new Config(), idGeneratorFactory, pageCache, fs, logProvider(), null );
 
             for ( String arg : args )
