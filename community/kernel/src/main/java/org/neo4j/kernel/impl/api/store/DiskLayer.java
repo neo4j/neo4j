@@ -648,7 +648,7 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, final int propertyKeyId )
     {
-        return schemaStorage.schemaRules( NODE_RULE_TO_CONSTRAINT, NodePropertyConstraintRule.class,
+        return schemaStorage.schemaRulesForNodes( NODE_RULE_TO_CONSTRAINT, NodePropertyConstraintRule.class,
                 labelId, new Predicate<NodePropertyConstraintRule>()
                 {
                     @Override
@@ -662,8 +662,31 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId )
     {
-        return schemaStorage.schemaRules( NODE_RULE_TO_CONSTRAINT, NodePropertyConstraintRule.class,
+        return schemaStorage.schemaRulesForNodes( NODE_RULE_TO_CONSTRAINT, NodePropertyConstraintRule.class,
                 labelId, Predicates.<NodePropertyConstraintRule>alwaysTrue() );
+    }
+
+    @Override
+    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( int typeId,
+            final int propertyKeyId )
+    {
+        return schemaStorage.schemaRulesForRelationships( REL_RULE_TO_CONSTRAINT,
+                RelationshipPropertyConstraintRule.class, typeId, new Predicate<RelationshipPropertyConstraintRule>()
+                {
+                    @Override
+                    public boolean test( RelationshipPropertyConstraintRule rule )
+                    {
+                        return rule.containsPropertyKeyId( propertyKeyId );
+                    }
+                } );
+    }
+
+    @Override
+    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( int typeId )
+    {
+        return schemaStorage.schemaRulesForRelationships( REL_RULE_TO_CONSTRAINT,
+                RelationshipPropertyConstraintRule.class, typeId,
+                Predicates.<RelationshipPropertyConstraintRule>alwaysTrue() );
     }
 
     @Override
@@ -752,7 +775,7 @@ public class DiskLayer implements StoreReadLayer
     {
         try
         {
-            return ((Token) relationshipTokenHolder.getTokenById( relationshipTypeId )).name();
+            return relationshipTokenHolder.getTokenById( relationshipTypeId ).name();
         }
         catch ( TokenNotFoundException e )
         {

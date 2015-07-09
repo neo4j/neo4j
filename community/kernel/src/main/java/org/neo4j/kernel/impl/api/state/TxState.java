@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.LabelCursor;
 import org.neo4j.kernel.api.cursor.NodeCursor;
@@ -157,6 +158,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private Map<String, Map<String, String>> createdRelationshipLegacyIndexes;
 
     private PrimitiveIntObjectMap<Map<DefinedProperty, DiffSets<Long>>> indexUpdates;
+    private PrimitiveIntObjectMap<DiffSets<RelationshipPropertyConstraint>> relationshipConstraintChanges;
 
     private InstanceCache<TxIteratorNodeCursor> iteratorNodeCursor;
     private InstanceCache<TxSingleNodeCursor> singleNodeCursor;
@@ -357,6 +359,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         {
             @Override
             protected void visitAddedRelationship( long relationshipId, int type, long startNode, long endNode )
+                    throws ConstraintValidationKernelException
             {
                 visitor.visitCreatedRelationship( relationshipId, type, startNode, endNode );
             }
@@ -481,6 +484,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             @Override
             public void visitPropertyChanges( long entityId, Iterator<DefinedProperty> added,
                     Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+                    throws ConstraintValidationKernelException
             {
                 visitor.visitRelPropertyChanges( entityId, added, changed, removed );
             }
@@ -838,15 +842,15 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public NodeCursor augmentNodesGetAllCursor( NodeCursor cursor )
     {
-        return hasChanges && !nodes.isEmpty() ? iteratorNodeCursor.get().init( cursor,
+        return hasChanges && nodes != null && !nodes.isEmpty() ? iteratorNodeCursor.get().init( cursor,
                 nodes.getAdded().iterator() ) : cursor;
     }
 
     @Override
     public RelationshipCursor augmentRelationshipsGetAllCursor( RelationshipCursor cursor )
     {
-        return hasChanges && !relationships.isEmpty() ? iteratorRelationshipCursor.get().init( cursor,
-                toPrimitiveIterator( relationships.getAdded().iterator() )) : cursor;
+        return hasChanges && relationships != null && !relationships.isEmpty() ? iteratorRelationshipCursor.get().init(
+                cursor, toPrimitiveIterator( relationships.getAdded().iterator() )) : cursor;
     }
 
     @Override
@@ -1033,6 +1037,14 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
+    public void constraintDoAdd( MandatoryRelationshipPropertyConstraint constraint )
+    {
+        constraintsChangesDiffSets().add( constraint );
+        relationshipConstraintChangesByType( constraint.relationshipType() ).add( constraint );
+        hasChanges = true;
+    }
+
+    @Override
     public ReadableDiffSets<NodePropertyConstraint> constraintsChangesForLabelAndProperty( int labelId,
             final int propertyKey )
     {
@@ -1051,6 +1063,33 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     public ReadableDiffSets<NodePropertyConstraint> constraintsChangesForLabel( int labelId )
     {
         return LABEL_STATE.get( this, labelId ).nodeConstraintsChanges();
+    }
+
+    @Override
+    public ReadableDiffSets<RelationshipPropertyConstraint> constraintsChangesForRelationshipType( int relTypeId )
+    {
+        DiffSets<RelationshipPropertyConstraint> changes = null;
+        if ( relationshipConstraintChanges != null )
+        {
+            changes = relationshipConstraintChanges.get( relTypeId );
+        }
+        return ReadableDiffSets.Empty.ifNull( changes );
+    }
+
+    @Override
+    public ReadableDiffSets<RelationshipPropertyConstraint> constraintsChangesForRelationshipTypeAndProperty(
+            int relTypeId, final int propertyKey )
+    {
+        return constraintsChangesForRelationshipType( relTypeId ).filterAdded(
+                new Predicate<RelationshipPropertyConstraint>()
+                {
+                    @Override
+                    public boolean test( RelationshipPropertyConstraint constraint )
+                    {
+                        return constraint.propertyKey() == propertyKey;
+                    }
+                }
+        );
     }
 
     @Override
@@ -1080,6 +1119,28 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
         getOrCreateLabelState( constraint.label() ).getOrCreateConstraintsChanges().remove( constraint );
         hasChanges = true;
+    }
+
+    @Override
+    public void constraintDoDrop( RelationshipPropertyConstraint constraint )
+    {
+        constraintsChangesDiffSets().remove( constraint );
+        relationshipConstraintChangesByType( constraint.relationshipType() ).remove( constraint );
+        hasChanges = true;
+    }
+
+    private DiffSets<RelationshipPropertyConstraint> relationshipConstraintChangesByType( int relTypeId )
+    {
+        if ( relationshipConstraintChanges == null )
+        {
+            relationshipConstraintChanges = Primitive.intObjectMap();
+        }
+        DiffSets<RelationshipPropertyConstraint> diffSets = relationshipConstraintChanges.get( relTypeId );
+        if ( diffSets == null )
+        {
+            relationshipConstraintChanges.put( relTypeId, diffSets = new DiffSets<>() );
+        }
+        return diffSets;
     }
 
     @Override

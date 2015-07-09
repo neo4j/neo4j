@@ -82,7 +82,7 @@ public interface SchemaRule extends RecordSerializable
             @Override
             protected SchemaRule newRule( long id, int labelId, ByteBuffer buffer )
             {
-                return MandatoryNodePropertyConstraintRule.readMandatoryPropertyConstraintRule( id, labelId, buffer );
+                return MandatoryNodePropertyConstraintRule.readMandatoryNodePropertyConstraintRule( id, labelId, buffer );
             }
         },
         MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT( 5, MandatoryRelationshipPropertyConstraintRule.class )
@@ -90,7 +90,7 @@ public interface SchemaRule extends RecordSerializable
             @Override
             protected SchemaRule newRule( long id, int labelId, ByteBuffer buffer )
             {
-                return MandatoryRelationshipPropertyConstraintRule.readMandatoryPropertyConstraintRule( id, labelId, buffer );
+                return MandatoryRelationshipPropertyConstraintRule.readMandatoryRelPropertyConstraintRule( id, labelId, buffer );
             }
         };
 

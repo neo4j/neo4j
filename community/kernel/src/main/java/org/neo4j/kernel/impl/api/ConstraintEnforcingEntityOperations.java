@@ -27,8 +27,10 @@ import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
@@ -42,6 +44,7 @@ import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.MandatoryNodePropertyConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.MandatoryRelationshipPropertyConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -358,11 +361,25 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public int relationshipGetType( TxStateHolder txStateHolder, StoreStatement storeStatement, long relationshipId )
+            throws EntityNotFoundException
+    {
+        return entityReadOperations.relationshipGetType( txStateHolder, storeStatement, relationshipId );
+    }
+
+    @Override
     public boolean relationshipHasProperty( KernelStatement state,
             long relationshipId,
             int propertyKeyId ) throws EntityNotFoundException
     {
         return entityReadOperations.relationshipHasProperty( state, relationshipId, propertyKeyId );
+    }
+
+    @Override
+    public boolean relationshipHasProperty( TxStateHolder txStateHolder, StoreStatement storeStatement,
+            long relationshipId, int propertyKeyId ) throws EntityNotFoundException
+    {
+        return entityReadOperations.relationshipHasProperty( txStateHolder, storeStatement, relationshipId, propertyKeyId );
     }
 
     @Override
@@ -580,7 +597,44 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public MandatoryRelationshipPropertyConstraint mandatoryRelationshipPropertyConstraintCreate( KernelStatement state,
+            int relTypeId, int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    {
+        PrimitiveLongIterator relationships = relationshipsGetAll( state );
+        while ( relationships.hasNext() )
+        {
+            long relationship = relationships.next();
+            try
+            {
+                if ( relationshipGetType( state, state.getStoreStatement(), relationship ) == relTypeId &&
+                     !relationshipHasProperty( state, relationship, propertyKeyId ) )
+                {
+                    MandatoryRelationshipPropertyConstraint constraint =
+                            new MandatoryRelationshipPropertyConstraint( relTypeId, propertyKeyId );
+                    throw new CreateConstraintFailureException( constraint,
+                            new MandatoryRelationshipPropertyConstraintVerificationFailedKernelException(
+                                    constraint, relationship ) );
+                }
+            }
+            catch ( EntityNotFoundException e )
+            {
+                PropertyConstraint constraint = new MandatoryRelationshipPropertyConstraint( relTypeId, propertyKeyId );
+                throw new CreateConstraintFailureException( constraint, e );
+            }
+        }
+
+        return schemaWriteOperations.mandatoryRelationshipPropertyConstraintCreate( state, relTypeId, propertyKeyId );
+    }
+
+    @Override
     public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint )
+            throws DropConstraintFailureException
+    {
+        schemaWriteOperations.constraintDrop( state, constraint );
+    }
+
+    @Override
+    public void constraintDrop( KernelStatement state, RelationshipPropertyConstraint constraint )
             throws DropConstraintFailureException
     {
         schemaWriteOperations.constraintDrop( state, constraint );

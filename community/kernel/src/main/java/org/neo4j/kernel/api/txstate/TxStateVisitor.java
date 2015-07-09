@@ -40,7 +40,8 @@ public interface TxStateVisitor
 
     void visitDeletedNode( long id );
 
-    void visitCreatedRelationship( long id, int type, long startNode, long endNode );
+    void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+            throws ConstraintValidationKernelException;
 
     void visitDeletedRelationship( long id );
 
@@ -51,7 +52,7 @@ public interface TxStateVisitor
                                        RelationshipChangesForNode removed );
 
     void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
-                                  Iterator<Integer> removed );
+                                  Iterator<Integer> removed ) throws ConstraintValidationKernelException;
 
     void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
                                     Iterator<Integer> removed );
@@ -119,6 +120,7 @@ public interface TxStateVisitor
 
         @Override
         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+                throws ConstraintValidationKernelException
         {
             if ( next != null )
             {
@@ -159,7 +161,7 @@ public interface TxStateVisitor
         @Override
         public void visitRelPropertyChanges( long id,
                 Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
-                Iterator<Integer> removed )
+                Iterator<Integer> removed ) throws ConstraintValidationKernelException
         {
             if ( next != null )
             {

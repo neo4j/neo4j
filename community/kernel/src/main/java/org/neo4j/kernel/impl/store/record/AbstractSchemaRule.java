@@ -103,7 +103,7 @@ public abstract class AbstractSchemaRule implements SchemaRule
     public String toString()
     {
         return getClass().getSimpleName() + "[id=" + id + ", label=" + label +
-               "relationshipType=" + relationshipType + ", kind=" + kind + innerToString() + "]";
+               " relationshipType=" + relationshipType + ", kind=" + kind + innerToString() + "]";
     }
 
     protected abstract String innerToString();

@@ -404,11 +404,16 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def dropNodeMandatoryConstraint(labelId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().constraintDrop(new MandatoryNodePropertyConstraint(labelId, propertyKeyId))
 
-  //TODO implement
-  def createRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[MandatoryRelationshipPropertyConstraint] = ???
+  def createRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[MandatoryRelationshipPropertyConstraint] =
+    try {
+      IdempotentResult(statement.schemaWriteOperations().mandatoryRelationshipPropertyConstraintCreate(relTypeId, propertyKeyId))
+    } catch {
+      case existing: AlreadyConstrainedException =>
+        IdempotentResult(existing.constraint().asInstanceOf[MandatoryRelationshipPropertyConstraint], wasCreated = false)
+    }
 
-  //TODO implement
-  def dropRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) = ???
+  def dropRelationshipMandatoryConstraint(relTypeId: Int, propertyKeyId: Int) =
+    statement.schemaWriteOperations().constraintDrop(new MandatoryRelationshipPropertyConstraint(relTypeId, propertyKeyId))
 
   override def hasLocalFileAccess: Boolean = graph match {
     case db: GraphDatabaseAPI => db.getDependencyResolver.resolveDependency(classOf[Config]).get(GraphDatabaseSettings.allow_file_urls)

@@ -21,22 +21,32 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.store.MandatoryNodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.MandatoryRelationshipPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
+import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.store.MandatoryNodePropertyConstraintRule.mandatoryNodePropertyConstraintRule;
+import static org.neo4j.kernel.impl.store.MandatoryRelationshipPropertyConstraintRule.mandatoryRelPropertyConstraintRule;
 import static org.neo4j.kernel.impl.store.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class SchemaCacheTest
@@ -59,9 +69,10 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void should_add_schema_rules_to_a_label() {
+    public void should_add_schema_rules_to_a_label()
+    {
         // GIVEN
-        Collection<SchemaRule> rules = asList();
+        Collection<SchemaRule> rules = Collections.emptyList();
         SchemaCache cache = new SchemaCache( rules );
 
         // WHEN
@@ -76,8 +87,7 @@ public class SchemaCacheTest
     public void should_to_retrieve_all_schema_rules()
     {
         // GIVEN
-        Collection<SchemaRule> rules = asList();
-        SchemaCache cache = new SchemaCache( rules );
+        SchemaCache cache = newSchemaCache();
 
         // WHEN
         cache.addSchemaRule( hans );
@@ -91,16 +101,19 @@ public class SchemaCacheTest
     public void should_list_constraints()
     {
         // GIVEN
-        Collection<SchemaRule> rules = asList();
-        SchemaCache cache = new SchemaCache( rules );
+        SchemaCache cache = newSchemaCache();
 
         // WHEN
         cache.addSchemaRule( uniquenessConstraintRule( 0l, 1, 2, 133l ) );
         cache.addSchemaRule( uniquenessConstraintRule( 1l, 3, 4, 133l ) );
+        cache.addSchemaRule( mandatoryRelPropertyConstraintRule( 2l, 5, 6 ) );
+        cache.addSchemaRule( mandatoryNodePropertyConstraintRule( 3l, 7, 8 ) );
 
         // THEN
         assertEquals(
-                asSet( new UniquenessConstraint( 1, 2 ), new UniquenessConstraint( 3, 4 ) ),
+                asSet( new UniquenessConstraint( 1, 2 ), new UniquenessConstraint( 3, 4 ),
+                        new MandatoryRelationshipPropertyConstraint( 5, 6 ),
+                        new MandatoryNodePropertyConstraint( 7, 8 ) ),
                 asSet( cache.constraints() ) );
 
         assertEquals(
@@ -112,16 +125,23 @@ public class SchemaCacheTest
                 asSet( cache.constraintsForLabelAndProperty( 1, 2 ) ) );
 
         assertEquals(
-                asSet( ),
+                asSet(),
                 asSet( cache.constraintsForLabelAndProperty( 1, 3 ) ) );
+
+        assertEquals(
+                asSet( new MandatoryRelationshipPropertyConstraint( 5, 6 ) ),
+                asSet( cache.constraintsForRelationshipType( 5 ) ) );
+
+        assertEquals(
+                asSet( new MandatoryRelationshipPropertyConstraint( 5, 6 ) ),
+                asSet( cache.constraintsForRelationshipTypeAndProperty( 5, 6 ) ) );
     }
 
     @Test
     public void should_remove_constraints()
     {
         // GIVEN
-        Collection<SchemaRule> rules = asList();
-        SchemaCache cache = new SchemaCache( rules );
+        SchemaCache cache = newSchemaCache();
 
         cache.addSchemaRule( uniquenessConstraintRule( 0l, 1, 2, 133l ) );
         cache.addSchemaRule( uniquenessConstraintRule( 1l, 3, 4, 133l ) );
@@ -135,11 +155,11 @@ public class SchemaCacheTest
                 asSet( cache.constraints() ) );
 
         assertEquals(
-                asSet(  ),
-                asSet( cache.constraintsForLabel( 1 )) );
+                asSet(),
+                asSet( cache.constraintsForLabel( 1 ) ) );
 
         assertEquals(
-                asSet(  ),
+                asSet(),
                 asSet( cache.constraintsForLabelAndProperty( 1, 2 ) ) );
     }
 
@@ -147,8 +167,7 @@ public class SchemaCacheTest
     public void adding_constraints_should_be_idempotent() throws Exception
     {
         // given
-        Collection<SchemaRule> rules = asList();
-        SchemaCache cache = new SchemaCache( rules );
+        SchemaCache cache = newSchemaCache();
 
         cache.addSchemaRule( uniquenessConstraintRule( 0l, 1, 2, 133l ) );
 
@@ -165,8 +184,7 @@ public class SchemaCacheTest
     public void shouldResolveIndexDescriptor() throws Exception
     {
         // Given
-        Collection<SchemaRule> rules = asList();
-        SchemaCache cache = new SchemaCache( rules );
+        SchemaCache cache = newSchemaCache();
 
         cache.addSchemaRule( newIndexRule( 1l, 1, 2 ) );
         cache.addSchemaRule( newIndexRule( 2l, 1, 3 ) );
@@ -184,7 +202,7 @@ public class SchemaCacheTest
     public void shouldReturnNullWhenNoIndexExists()
     {
         // Given
-        SchemaCache schemaCache = new SchemaCache( Iterables.<SchemaRule>empty() );
+        SchemaCache schemaCache = newSchemaCache();
 
         // When
         IndexDescriptor indexDescriptor = schemaCache.indexDescriptor( 1, 1 );
@@ -193,8 +211,84 @@ public class SchemaCacheTest
         assertNull( indexDescriptor );
     }
 
+    @Test
+    public void shouldListConstraintsForLabel()
+    {
+        // Given
+        UniquePropertyConstraintRule rule1 = uniquenessConstraintRule( 0, 1, 1, 0 );
+        UniquePropertyConstraintRule rule2 = uniquenessConstraintRule( 1, 2, 1, 0 );
+        MandatoryNodePropertyConstraintRule rule3 = mandatoryNodePropertyConstraintRule( 2, 1, 2 );
+
+        SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
+
+        // When
+        Set<NodePropertyConstraint> listed = asSet( cache.constraintsForLabel( 1 ) );
+
+        // Then
+        Set<NodePropertyConstraint> expected = asSet( rule1.toConstraint(), rule3.toConstraint() );
+        assertEquals( expected, listed );
+    }
+
+    @Test
+    public void shouldListConstraintsForLabelAndProperty()
+    {
+        // Given
+        UniquePropertyConstraintRule rule1 = uniquenessConstraintRule( 0, 1, 1, 0 );
+        UniquePropertyConstraintRule rule2 = uniquenessConstraintRule( 1, 2, 1, 0 );
+        MandatoryNodePropertyConstraintRule rule3 = mandatoryNodePropertyConstraintRule( 2, 1, 2 );
+
+        SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
+
+        // When
+        Set<NodePropertyConstraint> listed = asSet( cache.constraintsForLabelAndProperty( 1, 2 ) );
+
+        // Then
+        assertEquals( singleton( rule3.toConstraint() ), listed );
+    }
+
+    @Test
+    public void shouldListConstraintsForRelationshipType()
+    {
+        // Given
+        MandatoryRelationshipPropertyConstraintRule rule1 = mandatoryRelPropertyConstraintRule( 0, 1, 1 );
+        MandatoryRelationshipPropertyConstraintRule rule2 = mandatoryRelPropertyConstraintRule( 0, 2, 1 );
+        MandatoryRelationshipPropertyConstraintRule rule3 = mandatoryRelPropertyConstraintRule( 0, 1, 2 );
+
+        SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
+
+        // When
+        Set<RelationshipPropertyConstraint> listed = asSet( cache.constraintsForRelationshipType( 1 ) );
+
+        // Then
+        Set<RelationshipPropertyConstraint> expected = asSet( rule1.toConstraint(), rule3.toConstraint() );
+        assertEquals( expected, listed );
+    }
+
+    @Test
+    public void shouldListConstraintsForRelationshipTypeAndProperty()
+    {
+        // Given
+        MandatoryRelationshipPropertyConstraintRule rule1 = mandatoryRelPropertyConstraintRule( 0, 1, 1 );
+        MandatoryRelationshipPropertyConstraintRule rule2 = mandatoryRelPropertyConstraintRule( 0, 2, 1 );
+        MandatoryRelationshipPropertyConstraintRule rule3 = mandatoryRelPropertyConstraintRule( 0, 1, 2 );
+
+        SchemaCache cache = newSchemaCache( rule1, rule2, rule3 );
+
+        // When
+        Set<RelationshipPropertyConstraint> listed = asSet( cache.constraintsForRelationshipTypeAndProperty( 2, 1 ) );
+
+        // Then
+        assertEquals( singleton( rule2.toConstraint() ), listed );
+    }
+
     private IndexRule newIndexRule( long id, int label, int propertyKey )
     {
         return IndexRule.indexRule( id, label, propertyKey, PROVIDER_DESCRIPTOR );
+    }
+
+    private static SchemaCache newSchemaCache( SchemaRule... rules )
+    {
+        return new SchemaCache( (rules == null || rules.length == 0)
+                                ? Collections.<SchemaRule>emptyList() : Arrays.asList( rules ) );
     }
 }

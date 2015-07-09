@@ -20,7 +20,9 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -47,7 +49,12 @@ interface SchemaWrite
     MandatoryNodePropertyConstraint mandatoryNodePropertyConstraintCreate( int labelId, int propertyKeyId )
             throws CreateConstraintFailureException, AlreadyConstrainedException;
 
+    MandatoryRelationshipPropertyConstraint mandatoryRelationshipPropertyConstraintCreate( int relationshipTypeId,
+            int propertyKeyId ) throws CreateConstraintFailureException, AlreadyConstrainedException;
+
     void constraintDrop( NodePropertyConstraint constraint ) throws DropConstraintFailureException;
+
+    void constraintDrop( RelationshipPropertyConstraint constraint ) throws DropConstraintFailureException;
 
     /**
      * This should not be used, it is exposed to allow an external job to clean up constraint indexes.

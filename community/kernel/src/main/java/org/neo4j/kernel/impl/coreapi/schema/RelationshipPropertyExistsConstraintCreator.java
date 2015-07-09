@@ -20,31 +20,27 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.schema.ConstraintCreator;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.RelationshipConstraintCreator;
 import org.neo4j.kernel.api.exceptions.KernelException;
 
-public class PropertyExistsConstraintCreator extends BaseConstraintCreator
+public class RelationshipPropertyExistsConstraintCreator extends BaseRelationshipConstraintCreator
 {
     protected final String propertyKey;
 
-    PropertyExistsConstraintCreator( InternalSchemaActions internalCreator, Label label, String propertyKeyOrNull )
+    RelationshipPropertyExistsConstraintCreator( InternalSchemaActions internalCreator, RelationshipType type,
+            String propertyKey )
     {
-        super( internalCreator, label );
-        this.propertyKey = propertyKeyOrNull;
+        super( internalCreator, type );
+        this.propertyKey = propertyKey;
     }
 
     @Override
-    public final ConstraintCreator assertPropertyIsUnique( String propertyKey )
+    public final RelationshipConstraintCreator assertPropertyExists( String propertyKey )
     {
-        throw new UnsupportedOperationException( "You are already creating a mandatory property constraint." );
-    }
-
-    @Override
-    public ConstraintCreator assertPropertyExists( String propertyKey )
-    {
-        throw new UnsupportedOperationException( "You can only create one mandatory property constraint at a time." );
+        throw new UnsupportedOperationException(
+                "You can only create one mandatory relationship property constraint at a time." );
     }
 
     @Override
@@ -54,7 +50,7 @@ public class PropertyExistsConstraintCreator extends BaseConstraintCreator
 
         try
         {
-            return actions.createPropertyExistenceConstraint( label, propertyKey );
+            return actions.createPropertyExistenceConstraint( type, propertyKey );
         }
         catch ( KernelException e )
         {

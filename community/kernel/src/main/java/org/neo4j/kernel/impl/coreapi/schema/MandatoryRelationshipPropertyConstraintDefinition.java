@@ -36,7 +36,7 @@ public class MandatoryRelationshipPropertyConstraintDefinition extends Relations
     public void drop()
     {
         assertInUnterminatedTransaction();
-        // actions.dropRelationshipPropertyExistenceConstraint( relationshipType, propertyKey );
+        actions.dropRelationshipPropertyExistenceConstraint( relationshipType, propertyKey );
     }
 
     @Override
@@ -48,7 +48,7 @@ public class MandatoryRelationshipPropertyConstraintDefinition extends Relations
     @Override
     public String toString()
     {
-        return format( "ON [%1$s:%2$s] ASSERT %1$s.%3$s IS UNIQUE",
+        return format( "ON [%1$s:%2$s] ASSERT %1$s.%3$s IS NOT NULL",
                 relationshipType.name().toLowerCase(), relationshipType.name(), propertyKey );
     }
 }

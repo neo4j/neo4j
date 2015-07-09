@@ -23,13 +23,13 @@ import org.neo4j.kernel.api.TokenNameLookup;
 
 import static java.lang.String.format;
 
-public class MandatoryPropertyConstraintViolationKernelException extends ConstraintViolationKernelException
+public class MandatoryNodePropertyConstraintViolationKernelException extends ConstraintViolationKernelException
 {
     private final int labelId;
     private final int propertyKeyId;
     private final long nodeId;
 
-    public MandatoryPropertyConstraintViolationKernelException( int labelId, int propertyKeyId, long nodeId )
+    public MandatoryNodePropertyConstraintViolationKernelException( int labelId, int propertyKeyId, long nodeId )
     {
         super( "Node %d with label %d does not have the property %d", nodeId, labelId, propertyKeyId);
         this.labelId = labelId;

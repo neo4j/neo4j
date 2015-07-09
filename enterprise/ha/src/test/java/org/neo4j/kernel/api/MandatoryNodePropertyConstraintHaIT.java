@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
@@ -28,29 +27,40 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.MandatoryNodePropertyConstraintDefinition;
 
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class MandatoryNodePropertyConstraintHaIT extends ConstraintHaIT
 {
     @Override
-    protected void createConstraint( GraphDatabaseService db, Label label, String propertyKey )
+    protected void createConstraint( GraphDatabaseService db, String type, String propertyKey )
     {
-        db.schema().constraintFor( label ).assertPropertyExists( propertyKey ).create();
+        db.schema().constraintFor( label( type ) ).assertPropertyExists( propertyKey ).create();
     }
 
     @Override
-    protected void createConstraintOffendingNode( GraphDatabaseService db, Label label, String propertyKey,
+    protected void createEntityInTx( GraphDatabaseService db, String type, String propertyKey, String propertyValue )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode( label( type ) ).setProperty( propertyKey, propertyValue );
+            tx.success();
+        }
+    }
+
+    @Override
+    protected void createConstraintViolation( GraphDatabaseService db, String type, String propertyKey,
             String propertyValue )
     {
-        db.createNode( label );
+        db.createNode( label( type ) );
     }
 
     @Override
-    protected void assertConstraintHolds( GraphDatabaseService db, Label label, String propertyKey,
+    protected void assertConstraintHolds( GraphDatabaseService db, String type, String propertyKey,
             String propertyValue )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            ResourceIterator<Node> nodes = db.findNodes( label );
+            ResourceIterator<Node> nodes = db.findNodes( label( type ) );
             while ( nodes.hasNext() )
             {
                 Node node = nodes.next();

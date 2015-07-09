@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import sun.reflect.FieldAccessor;
@@ -55,6 +56,18 @@ public class ReflectionUtil
         }
         field.setAccessible( true );
         return fieldType.cast( field.get( target ) );
+    }
+
+    public static String verifyMethodExists( Class<?> owner, String methodName )
+    {
+        for ( Method method : owner.getDeclaredMethods() )
+        {
+            if ( method.getName().equals( methodName ) )
+            {
+                return methodName;
+            }
+        }
+        throw new IllegalArgumentException( "Method '" + methodName + "' does not exist in class " + owner );
     }
 
     private static Field getField( String fieldName, Class<? extends Object> type ) throws NoSuchFieldException

@@ -26,24 +26,58 @@ import static java.lang.String.format;
 
 public class SchemaRuleNotFoundException extends SchemaKernelException
 {
-    private static final String RULE_NOT_FOUND_MESSAGE_TEMPLATE ="Index rule(s) for label '%s' and property '%s': %s.";
+    private static final String NODE_RULE_NOT_FOUND_MESSAGE_TEMPLATE =
+            "Index rule(s) for label '%s' and property '%s': %s.";
+
+    private static final String RELATIONSHIP_RULE_NOT_FOUND_MESSAGE_TEMPLATE =
+            "Index rule(s) for relationship type '%s' and property '%s': %s.";
+
+    private static final int UNINITIALIZED = -1;
 
     private final int labelId;
+    private final int relationshipTypeId;
     private final int propertyKeyId;
     private final String reason;
 
-    public SchemaRuleNotFoundException( int labelId, int propertyKeyId, String reason )
+    private SchemaRuleNotFoundException( String messageTemplate, int labelId, int relationshipTypeId,
+            int propertyKeyId, String reason )
     {
-        super( Status.Schema.NoSuchSchemaRule, format( RULE_NOT_FOUND_MESSAGE_TEMPLATE, labelId, propertyKeyId, reason ) );
+        super( Status.Schema.NoSuchSchemaRule, format( messageTemplate,
+                (labelId != UNINITIALIZED) ? labelId : relationshipTypeId, propertyKeyId, reason ) );
+
         this.labelId = labelId;
+        this.relationshipTypeId = relationshipTypeId;
         this.propertyKeyId = propertyKeyId;
         this.reason = reason;
+    }
+
+    public static SchemaRuleNotFoundException forNode( int label, int propertyKey, String message )
+    {
+        return new SchemaRuleNotFoundException( NODE_RULE_NOT_FOUND_MESSAGE_TEMPLATE, label, UNINITIALIZED, propertyKey,
+                message );
+    }
+
+    public static SchemaRuleNotFoundException forRelationship( int type, int propertyKey, String message )
+    {
+        return new SchemaRuleNotFoundException( RELATIONSHIP_RULE_NOT_FOUND_MESSAGE_TEMPLATE, UNINITIALIZED, type,
+                propertyKey, message );
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( RULE_NOT_FOUND_MESSAGE_TEMPLATE, tokenNameLookup.labelGetName( labelId ),
-                tokenNameLookup.propertyKeyGetName( propertyKeyId ), reason );
+        String messageTemplate;
+        String labelOrType;
+        if ( labelId != UNINITIALIZED )
+        {
+            messageTemplate = NODE_RULE_NOT_FOUND_MESSAGE_TEMPLATE;
+            labelOrType = tokenNameLookup.labelGetName( labelId );
+        }
+        else
+        {
+            messageTemplate = RELATIONSHIP_RULE_NOT_FOUND_MESSAGE_TEMPLATE;
+            labelOrType = tokenNameLookup.relationshipTypeGetName( relationshipTypeId );
+        }
+        return format( messageTemplate, labelOrType, tokenNameLookup.propertyKeyGetName( propertyKeyId ), reason );
     }
 }

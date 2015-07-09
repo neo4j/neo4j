@@ -35,7 +35,9 @@ import org.neo4j.consistency.checking.OwningRecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.kernel.impl.store.MandatoryPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.MandatoryNodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.MandatoryRelationshipPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -50,27 +52,43 @@ import static org.neo4j.consistency.checking.full.NodeLabelReader.getListOfLabel
 
 public class MandatoryPropertyChecker extends CheckDecorator.Adapter
 {
+    private static final Class<PropertyConstraintRule> BASE_RULE = PropertyConstraintRule.class;
+
     private final PrimitiveIntObjectMap<int[]> nodes = Primitive.intObjectMap();
     private final PrimitiveIntObjectMap<int[]> relationships = Primitive.intObjectMap();
 
     public MandatoryPropertyChecker( RecordStore<DynamicRecord> schemaStore )
     {
-        for ( Iterator<MandatoryPropertyConstraintRule> rules =
-              new SchemaStorage( schemaStore ).schemaRules( MandatoryPropertyConstraintRule.class );
-              safeHasNext( rules ); )
+        SchemaStorage schemaStorage = new SchemaStorage( schemaStore );
+        for ( Iterator<PropertyConstraintRule> rules = schemaStorage.schemaRules( BASE_RULE ); safeHasNext( rules ); )
         {
-            MandatoryPropertyConstraintRule rule = rules.next();
-            int[] keys = nodes.get( rule.getLabel() );
-            if ( keys == null )
+            PropertyConstraintRule rule = rules.next();
+
+            PrimitiveIntObjectMap<int[]> storage;
+            int labelOrRelType;
+            int propertyKey;
+
+            switch ( rule.getKind() )
             {
-                keys = new int[]{rule.getPropertyKey()};
+            case MANDATORY_NODE_PROPERTY_CONSTRAINT:
+                storage = nodes;
+                MandatoryNodePropertyConstraintRule nodeRule = (MandatoryNodePropertyConstraintRule) rule;
+                labelOrRelType = nodeRule.getLabel();
+                propertyKey = nodeRule.getPropertyKey();
+                break;
+
+            case MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT:
+                storage = relationships;
+                MandatoryRelationshipPropertyConstraintRule relRule = (MandatoryRelationshipPropertyConstraintRule) rule;
+                labelOrRelType = relRule.getRelationshipType();
+                propertyKey = relRule.getPropertyKey();
+                break;
+
+            default:
+                continue;
             }
-            else
-            {
-                keys = Arrays.copyOf( keys, keys.length + 1 );
-                keys[keys.length - 1] = rule.getPropertyKey();
-            }
-            nodes.put( rule.getLabel(), keys );
+
+            recordConstraint( labelOrRelType, propertyKey, storage );
         }
     }
 
@@ -87,6 +105,21 @@ public class MandatoryPropertyChecker extends CheckDecorator.Adapter
                 // ignore
             }
         }
+    }
+
+    private static void recordConstraint( int labelOrRelType, int propertyKey, PrimitiveIntObjectMap<int[]> storage )
+    {
+        int[] propertyKeys = storage.get( labelOrRelType );
+        if ( propertyKeys == null )
+        {
+            propertyKeys = new int[]{propertyKey};
+        }
+        else
+        {
+            propertyKeys = Arrays.copyOf( propertyKeys, propertyKeys.length + 1 );
+            propertyKeys[propertyKeys.length - 1] = propertyKey;
+        }
+        storage.put( labelOrRelType, propertyKeys );
     }
 
     @Override

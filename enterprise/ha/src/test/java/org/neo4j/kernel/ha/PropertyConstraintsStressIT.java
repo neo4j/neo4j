@@ -36,9 +36,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.com.ComException;
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Exceptions;
@@ -47,10 +46,13 @@ import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 /**
@@ -81,31 +83,35 @@ public class PropertyConstraintsStressIT
     private static long runtime =
             Long.getLong( "neo4j.PropertyConstraintsStressIT.runtime", TimeUnit.SECONDS.toMillis( 10 ) );
 
-    /** Label to constrain for the current iteration of the test. */
-    private volatile Label label = DynamicLabel.label( "User" );
+    /** Label or relationship type to constrain for the current iteration of the test. */
+    private volatile String labelOrRelType = "Foo";
 
     /** Property key to constrain for the current iteration of the test. */
     private volatile String property;
 
     private final AtomicInteger roundNo = new AtomicInteger( 0 );
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Iterable<Object[]> params()
     {
-        return Arrays.asList(new Object[][] {{UNIQUE_PROPERTY_CONSTRAINT_OPS}, {MANDATORY_PROPERTY_CONSTRAINT_OPS}});
+        return Arrays.asList( new Object[][]{
+                {UNIQUE_PROPERTY_CONSTRAINT_OPS},
+                {MANDATORY_NODE_PROPERTY_CONSTRAINT_OPS},
+                {MANDATORY_REL_PROPERTY_CONSTRAINT_OPS},
+        } );
     }
 
     @Before
     public void setup() throws Exception
     {
-        cluster = clusterRule.config(HaSettings.pull_interval, "0").startCluster( );
+        cluster = clusterRule.config( HaSettings.pull_interval, "0" ).startCluster();
     }
 
     /* The different orders and delays in the below variations try to stress all known scenarios, as well as
      * of course stress for unknown concurrency issues. See the exception handling structure further below
      * for explanations. */
 
-    @RepeatRule.Repeat ( times = REPETITIONS )
+    @RepeatRule.Repeat( times = REPETITIONS )
     @Test
     public void shouldNotAllowConstraintsViolationsUnderStress_A() throws Exception
     {
@@ -120,7 +126,7 @@ public class PropertyConstraintsStressIT
         } );
     }
 
-    @RepeatRule.Repeat ( times = REPETITIONS )
+    @RepeatRule.Repeat( times = REPETITIONS )
     @Test
     public void shouldNotAllowConstraintsViolationsUnderStress_B() throws Exception
     {
@@ -135,7 +141,7 @@ public class PropertyConstraintsStressIT
         } );
     }
 
-    @RepeatRule.Repeat ( times = REPETITIONS )
+    @RepeatRule.Repeat( times = REPETITIONS )
     @Test
     public void shouldNotAllowConstraintsViolationsUnderStress_C() throws Exception
     {
@@ -159,7 +165,7 @@ public class PropertyConstraintsStressIT
         } );
     }
 
-    @RepeatRule.Repeat ( times = REPETITIONS )
+    @RepeatRule.Repeat( times = REPETITIONS )
     @Test
     public void shouldNotAllowConstraintsViolationsUnderStress_D() throws Exception
     {
@@ -183,7 +189,7 @@ public class PropertyConstraintsStressIT
         } );
     }
 
-    @RepeatRule.Repeat ( times = REPETITIONS )
+    @RepeatRule.Repeat( times = REPETITIONS )
     @Test
     public void shouldNotAllowConstraintsViolationsUnderStress_E() throws Exception
     {
@@ -207,7 +213,7 @@ public class PropertyConstraintsStressIT
         } );
     }
 
-    @RepeatRule.Repeat ( times = REPETITIONS )
+    @RepeatRule.Repeat( times = REPETITIONS )
     @Test
     public void shouldNotAllowConstraintsViolationsUnderStress_F() throws Exception
     {
@@ -231,7 +237,7 @@ public class PropertyConstraintsStressIT
         } );
     }
 
-    public void shouldNotAllowConstraintsViolationsUnderStress(Operation ops) throws Exception
+    public void shouldNotAllowConstraintsViolationsUnderStress( Operation ops ) throws Exception
     {
         // Given
         HighlyAvailableGraphDatabase master = cluster.getMaster();
@@ -283,7 +289,7 @@ public class PropertyConstraintsStressIT
     }
 
     private void assertConstraintsNotViolated( Future<Boolean> constraintCreation, Future<Integer> constraintViolation,
-                                               HighlyAvailableGraphDatabase master ) throws InterruptedException, ExecutionException
+            HighlyAvailableGraphDatabase master ) throws InterruptedException, ExecutionException
     {
         boolean constraintCreationFailed = constraintCreation.get();
 
@@ -294,20 +300,20 @@ public class PropertyConstraintsStressIT
             // Constraint creation failed, some of the violating operations should have been successful.
             assertThat( txSuccessCount, greaterThan( 0 ) );
             // And the graph should contain some duplicates.
-            assertThat( constraintOps.isValid( master, label, property ), equalTo( false ) );
+            assertThat( constraintOps.isValid( master, labelOrRelType, property ), equalTo( false ) );
         }
         else
         {
             // Constraint creation was successful, all the violating operations should have failed.
             assertThat( txSuccessCount, equalTo( 0 ) );
             // And the graph should not contain duplicates.
-            assertThat( constraintOps.isValid( master, label, property ), equalTo( true ) );
+            assertThat( constraintOps.isValid( master, labelOrRelType, property ), equalTo( true ) );
         }
     }
 
-    private WorkerCommand<Object, Boolean> createConstraint( final HighlyAvailableGraphDatabase master )
+    private WorkerCommand<Object,Boolean> createConstraint( final HighlyAvailableGraphDatabase master )
     {
-        return constraintOps.createConstraint( master, label, property );
+        return constraintOps.createConstraint( master, labelOrRelType, property );
     }
 
     /**
@@ -315,9 +321,9 @@ public class PropertyConstraintsStressIT
      * running this method twice will insert nodes with duplicate property values, assuming propertykey or label has not
      * changed.
      */
-    private WorkerCommand<Object, Integer> performInsert( final HighlyAvailableGraphDatabase slave )
+    private WorkerCommand<Object,Integer> performInsert( final HighlyAvailableGraphDatabase slave )
     {
-        return new WorkerCommand<Object, Integer>()
+        return new WorkerCommand<Object,Integer>()
         {
             @Override
             public Integer doWork( Object state ) throws Exception
@@ -326,11 +332,11 @@ public class PropertyConstraintsStressIT
 
                 try
                 {
-                    for ( ; i < 100; i++ )
+                    for (; i < 100; i++ )
                     {
-                        try( Transaction tx = slave.beginTx() )
+                        try ( Transaction tx = slave.beginTx() )
                         {
-                            constraintOps.createNode( slave, label, property, "value" + i );
+                            constraintOps.createEntity( slave, labelOrRelType, property, "value" + i );
                             tx.success();
                         }
                     }
@@ -358,7 +364,7 @@ public class PropertyConstraintsStressIT
     private void setLabelAndPropertyForNextRound()
     {
         property = "Key-" + roundNo.incrementAndGet();
-        label = DynamicLabel.label("Label-" + roundNo.get());
+        labelOrRelType = "Foo-" + roundNo.get();
     }
 
     private abstract class Operation
@@ -374,28 +380,28 @@ public class PropertyConstraintsStressIT
 
     interface ConstraintOperations
     {
-        void createNode( HighlyAvailableGraphDatabase db, Label label, String propertyKey, Object value );
+        void createEntity( HighlyAvailableGraphDatabase db, String type, String propertyKey, Object value );
 
-        boolean isValid( HighlyAvailableGraphDatabase master, Label label, String property );
+        boolean isValid( HighlyAvailableGraphDatabase master, String type, String property );
 
-        WorkerCommand<Object,Boolean> createConstraint( HighlyAvailableGraphDatabase db, Label label, String property );
+        WorkerCommand<Object,Boolean> createConstraint( HighlyAvailableGraphDatabase db, String type, String property );
     }
 
     private static final ConstraintOperations UNIQUE_PROPERTY_CONSTRAINT_OPS = new ConstraintOperations()
     {
         @Override
-        public void createNode( HighlyAvailableGraphDatabase db, Label label, String propertyKey, Object value )
+        public void createEntity( HighlyAvailableGraphDatabase db, String type, String propertyKey, Object value )
         {
-            db.createNode( label ).setProperty( propertyKey, value );
+            db.createNode( label( type ) ).setProperty( propertyKey, value );
         }
 
         @Override
-        public boolean isValid( HighlyAvailableGraphDatabase db, Label label, String property )
+        public boolean isValid( HighlyAvailableGraphDatabase db, String type, String property )
         {
             try ( Transaction tx = db.beginTx() )
             {
                 Set<Object> values = new HashSet<>();
-                for ( Node node : loop( db.findNodes( label ) ) )
+                for ( Node node : loop( db.findNodes( label( type ) ) ) )
                 {
                     Object value = node.getProperty( property );
                     if ( values.contains( value ) )
@@ -411,8 +417,8 @@ public class PropertyConstraintsStressIT
         }
 
         @Override
-        public WorkerCommand<Object,Boolean> createConstraint(
-                final HighlyAvailableGraphDatabase db, final Label label, final String property )
+        public WorkerCommand<Object,Boolean> createConstraint( final HighlyAvailableGraphDatabase db, final String type,
+                final String property )
         {
             return new WorkerCommand<Object,Boolean>()
             {
@@ -423,7 +429,7 @@ public class PropertyConstraintsStressIT
 
                     try ( Transaction tx = db.beginTx() )
                     {
-                        db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+                        db.schema().constraintFor( label( type ) ).assertPropertyIsUnique( property ).create();
                         tx.success();
                     }
                     catch ( ConstraintViolationException e )
@@ -444,26 +450,25 @@ public class PropertyConstraintsStressIT
         }
     };
 
-    private static final ConstraintOperations MANDATORY_PROPERTY_CONSTRAINT_OPS = new ConstraintOperations()
+    private static final ConstraintOperations MANDATORY_NODE_PROPERTY_CONSTRAINT_OPS = new ConstraintOperations()
     {
         @Override
-        public void createNode( HighlyAvailableGraphDatabase db, Label label, String propertyKey, Object value )
+        public void createEntity( HighlyAvailableGraphDatabase db, String type, String propertyKey, Object value )
         {
-            ThreadLocalRandom random = ThreadLocalRandom.current();
-            Node node = db.createNode( label );
-            //75 percent of the nodes get the property set
-            if ( random.nextDouble( 1.0 ) < 0.75 )
+            Node node = db.createNode( label( type ) );
+            // 75 percent of nodes get the property set
+            if ( ThreadLocalRandom.current().nextDouble( 1.0 ) < 0.75 )
             {
                 node.setProperty( propertyKey, value );
             }
         }
 
         @Override
-        public boolean isValid( HighlyAvailableGraphDatabase db, Label label, String property )
+        public boolean isValid( HighlyAvailableGraphDatabase db, String type, String property )
         {
             try ( Transaction tx = db.beginTx() )
             {
-                for ( Node node : loop( db.findNodes( label ) ) )
+                for ( Node node : loop( db.findNodes( label( type ) ) ) )
                 {
                     if ( !node.hasProperty( property ) )
                     {
@@ -477,8 +482,8 @@ public class PropertyConstraintsStressIT
         }
 
         @Override
-        public WorkerCommand<Object,Boolean> createConstraint(
-                final HighlyAvailableGraphDatabase db, final Label label, final String property )
+        public WorkerCommand<Object,Boolean> createConstraint( final HighlyAvailableGraphDatabase db, final String type,
+                final String property )
         {
             return new WorkerCommand<Object,Boolean>()
             {
@@ -489,7 +494,7 @@ public class PropertyConstraintsStressIT
 
                     try ( Transaction tx = db.beginTx() )
                     {
-                        db.schema().constraintFor( label ).assertPropertyExists( property ).create();
+                        db.schema().constraintFor( label( type ) ).assertPropertyExists( property ).create();
                         tx.success();
                     }
                     catch ( ConstraintViolationException e )
@@ -507,6 +512,76 @@ public class PropertyConstraintsStressIT
         public String toString()
         {
             return "MANDATORY_NODE_PROPERTY_CONSTRAINT";
+        }
+    };
+
+    private static final ConstraintOperations MANDATORY_REL_PROPERTY_CONSTRAINT_OPS = new ConstraintOperations()
+    {
+        @Override
+        public void createEntity( HighlyAvailableGraphDatabase db, String type, String propertyKey, Object value )
+        {
+            Node start = db.createNode();
+            Node end = db.createNode();
+            Relationship relationship = start.createRelationshipTo( end, withName( type ) );
+
+            // 75 percent of relationships get the property set
+            if ( ThreadLocalRandom.current().nextDouble( 1.0 ) < 0.75 )
+            {
+                relationship.setProperty( propertyKey, value );
+            }
+        }
+
+        @Override
+        public boolean isValid( HighlyAvailableGraphDatabase db, String type, String property )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+                {
+                    if ( relationship.getType().name().equals( type ) )
+                    {
+                        if ( !relationship.hasProperty( property ) )
+                        {
+                            return false;
+                        }
+                    }
+                }
+                tx.success();
+            }
+            return true;
+        }
+
+        @Override
+        public WorkerCommand<Object,Boolean> createConstraint( final HighlyAvailableGraphDatabase db, final String type,
+                final String property )
+        {
+            return new WorkerCommand<Object,Boolean>()
+            {
+                @Override
+                public Boolean doWork( Object state ) throws Exception
+                {
+                    boolean constraintCreationFailed = false;
+
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        db.schema().constraintFor( withName( type ) ).assertPropertyExists( property ).create();
+                        tx.success();
+                    }
+                    catch ( ConstraintViolationException e )
+                    {
+                    /* Unable to create constraint since it is not consistent with existing data. */
+                        constraintCreationFailed = true;
+                    }
+
+                    return constraintCreationFailed;
+                }
+            };
+        }
+
+        @Override
+        public String toString()
+        {
+            return "MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT";
         }
     };
 }

@@ -27,12 +27,14 @@ import java.util.Set;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -61,10 +63,12 @@ import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.MandatoryNodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.MandatoryRelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -382,7 +386,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         while ( constraints.hasNext() )
         {
             PropertyConstraint constraint = constraints.next();
-            if ( constraint instanceof MandatoryNodePropertyConstraint )
+            if ( constraint.type() == ConstraintType.MANDATORY_NODE_PROPERTY ||
+                 constraint.type() == ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY )
             {
                 return new MandatoryPropertyEnforcer( operations.entityReadOperations(), txStateToRecordStateVisitor,
                         this, storeLayer, storeStatement );
@@ -908,7 +913,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void visitAddedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint element )
         {
             clearState = true;
-            recordState.createSchemaRule( MandatoryNodePropertyConstraintRule.mandatoryPropertyConstraintRule(
+            recordState.createSchemaRule( MandatoryNodePropertyConstraintRule.mandatoryNodePropertyConstraintRule(
                     schemaStorage.newRuleId(), element.label(), element.propertyKey() ) );
         }
 
@@ -919,14 +924,39 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 clearState = true;
                 recordState.dropSchemaRule(
-                        schemaStorage.mandatoryPropertyConstraint( element.label(), element.propertyKey() ) );
+                        schemaStorage.mandatoryNodePropertyConstraint( element.label(), element.propertyKey() ) );
             }
             catch ( SchemaRuleNotFoundException e )
             {
-                throw new ThisShouldNotHappenError(
-                        "Tobias Lindaaker",
-                        "Constraint to be removed should exist, since its existence should " +
-                                "have been validated earlier and the schema should have been locked." );
+                throw new IllegalStateException(
+                        "Mandatory node property constraint to be removed should exist, since its existence should " +
+                        "have been validated earlier and the schema should have been locked." );
+            }
+        }
+
+        @Override
+        public void visitAddedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint element )
+        {
+            clearState = true;
+            recordState.createSchemaRule( MandatoryRelationshipPropertyConstraintRule.mandatoryRelPropertyConstraintRule(
+                    schemaStorage.newRuleId(), element.relationshipType(), element.propertyKey() ) );
+        }
+
+        @Override
+        public void visitRemovedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint element )
+        {
+            try
+            {
+                clearState = true;
+                SchemaRule rule = schemaStorage.mandatoryRelationshipPropertyConstraint( element.relationshipType(),
+                        element.propertyKey() );
+                recordState.dropSchemaRule( rule );
+            }
+            catch ( SchemaRuleNotFoundException e )
+            {
+                throw new IllegalStateException(
+                        "Mandatory relationship property constraint to be removed should exist, since its existence " +
+                        "should have been validated earlier and the schema should have been locked." );
             }
         }
 

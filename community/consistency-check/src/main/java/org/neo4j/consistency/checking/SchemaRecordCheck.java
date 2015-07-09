@@ -26,7 +26,8 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.store.MandatoryPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.MandatoryNodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.MandatoryRelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -134,8 +135,13 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
                 case UNIQUENESS_CONSTRAINT:
                     checkUniquenessConstraintRule( (UniquePropertyConstraintRule) rule, engine, record, records );
                     break;
-                case MANDATORY_PROPERTY_CONSTRAINT:
-                    checkMandatoryPropertyConstraintRule( (MandatoryPropertyConstraintRule) rule, engine, records );
+                case MANDATORY_NODE_PROPERTY_CONSTRAINT:
+                    checkMandatoryProperty( ((MandatoryNodePropertyConstraintRule) rule).getPropertyKey(),
+                            records, engine );
+                    break;
+                case MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT:
+                    checkMandatoryProperty( ((MandatoryRelationshipPropertyConstraintRule) rule).getPropertyKey(),
+                            records, engine );
                     break;
                 default:
                     engine.report().unsupportedSchemaRuleKind( kind );
@@ -173,12 +179,12 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         }
     }
 
-    private void checkMandatoryPropertyConstraintRule( MandatoryPropertyConstraintRule rule,
-            CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine, RecordAccess records )
+    private void checkMandatoryProperty( int propertyKey, RecordAccess records,
+            CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
     {
         if ( phase == Phase.CHECK_RULES )
         {
-            engine.comparativeCheck( records.propertyKey( rule.getPropertyKey() ), VALID_PROPERTY_KEY );
+            engine.comparativeCheck( records.propertyKey( propertyKey ), VALID_PROPERTY_KEY );
         }
     }
 

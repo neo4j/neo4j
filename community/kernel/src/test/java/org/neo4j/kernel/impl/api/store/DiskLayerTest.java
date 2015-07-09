@@ -25,9 +25,11 @@ import org.junit.Before;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -53,8 +55,12 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 public class DiskLayerTest
 {
     @SuppressWarnings("deprecation") protected GraphDatabaseAPI db;
-    protected final Label label1 = label( "first-label" ), label2 = label( "second-label" );
+    protected final Label label1 = label( "first-label" );
+    protected final Label label2 = label( "second-label" );
+    protected final RelationshipType relType1 = DynamicRelationshipType.withName( "type1" );
+    protected final RelationshipType relType2 = DynamicRelationshipType.withName( "type2" );
     protected final String propertyKey = "name";
+    protected final String otherPropertyKey = "age";
     protected KernelStatement state;
     protected DiskLayer disk;
 

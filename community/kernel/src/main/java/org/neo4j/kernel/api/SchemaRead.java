@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -63,17 +64,28 @@ interface SchemaRead
     String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * Get all constraints applicable to label and propertyKey. There are only {@link
-     * PropertyConstraint}
+     * Get all constraints applicable to label and propertyKey. There are only {@link NodePropertyConstraint}
      * for the time being.
      */
     Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId );
 
     /**
-     * Get all constraints applicable to label. There are only {@link PropertyConstraint}
+     * Get all constraints applicable to label. There are only {@link NodePropertyConstraint}
      * for the time being.
      */
     Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId );
+
+    /**
+     * Get all constraints applicable to relationship type. There are only {@link RelationshipPropertyConstraint}
+     * for the time being.
+     */
+    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( int typeId );
+
+    /**
+     * Get all constraints applicable to relationship type and propertyKey.
+     * There are only {@link RelationshipPropertyConstraint} for the time being.
+     */
+    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( int typeId, int propertyKeyId );
 
     /**
      * Get all constraints. There are only {@link PropertyConstraint}

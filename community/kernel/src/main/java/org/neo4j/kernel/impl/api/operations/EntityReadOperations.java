@@ -105,8 +105,14 @@ public interface EntityReadOperations
 
     Object nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
+    int relationshipGetType( TxStateHolder txStateHolder, StoreStatement storeStatement, long relationshipId )
+            throws EntityNotFoundException;
+
     boolean relationshipHasProperty( KernelStatement state, long relationshipId, int propertyKeyId )
             throws EntityNotFoundException;
+
+    boolean relationshipHasProperty( TxStateHolder txStateHolder, StoreStatement storeStatement,
+            long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
 
     Object relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId )
             throws EntityNotFoundException;

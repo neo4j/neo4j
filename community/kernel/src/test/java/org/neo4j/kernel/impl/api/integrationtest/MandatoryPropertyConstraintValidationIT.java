@@ -21,12 +21,12 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 
 import static org.hamcrest.core.Is.is;
@@ -34,18 +34,36 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-public class MandatoryPropertyConstraintValidationIT extends KernelIntegrationTest
+public abstract class MandatoryPropertyConstraintValidationIT extends KernelIntegrationTest
 {
+    abstract void createConstraint( String key, String property ) throws KernelException;
+
+    abstract long createEntity( DataWriteOperations writeOps, String type ) throws Exception;
+
+    abstract long createEntity( DataWriteOperations writeOps, String property, String value ) throws Exception;
+
+    abstract long createEntity( DataWriteOperations writeOps, String type, String property, String value )
+            throws Exception;
+
+    abstract long createConstraintAndEntity( String type, String property, String value ) throws Exception;
+
+    abstract void setProperty( DataWriteOperations writeOps, long entityId, DefinedProperty property )
+            throws Exception;
+
+    abstract void removeProperty( DataWriteOperations writeOps, long entityId, int propertyKey ) throws Exception;
+
+    abstract int entityCount() throws TransactionFailureException;
+
     @Test
-    public void shouldEnforceMandatoryConstraintWhenCreatingNodeWithoutProperty() throws Exception
+    public void shouldEnforceMandatoryConstraintWhenCreatingEntityWithoutProperty() throws Exception
     {
         // given
-        createConstraint( "Label1", "key1" );
+        createConstraint( "Type1", "key1" );
 
         DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
-       createLabeledNode( statement, "Label1" );
+        createEntity( statement, "Type1" );
         try
         {
             commit();
@@ -63,12 +81,12 @@ public class MandatoryPropertyConstraintValidationIT extends KernelIntegrationTe
     public void shouldEnforceConstraintWhenRemoving() throws Exception
     {
         // given
-        long node = constrainedNode( "Label1", "key1", "value1" );
+        long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
         DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
         int key = statement.propertyKeyGetOrCreateForName( "key1" );
-        statement.nodeRemoveProperty( node, key );
+        removeProperty( statement, entity, key );
         try
         {
             commit();
@@ -86,43 +104,29 @@ public class MandatoryPropertyConstraintValidationIT extends KernelIntegrationTe
     public void shouldAllowTemporaryViolationsWithinTransactions() throws Exception
     {
         // given
-        long node = constrainedNode( "Label1", "key1", "value1" );
+        long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
         DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
         int key = statement.propertyKeyGetOrCreateForName( "key1" );
         //remove and put back
-        statement.nodeRemoveProperty( node, key );
-        statement.nodeSetProperty( node, Property.property( key, "value2" ) );
+        removeProperty( statement, entity, key );
+        setProperty( statement, entity, Property.property( key, "value2" ) );
 
         commit();
     }
 
     @Test
-    public void shouldAllowNoopPropertyUpdate() throws KernelException
+    public void shouldAllowNoopPropertyUpdate() throws Exception
     {
         // given
-        long node = constrainedNode( "Label1", "key1", "value1" );
+        long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
 
         DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
-        statement.nodeSetProperty( node, Property.property(
-                statement.propertyKeyGetOrCreateForName( "key1" ), "value1" ) );
-
-        // then should not throw exception
-    }
-
-    @Test
-    public void shouldAllowNoopLabelUpdate() throws KernelException
-    {
-        // given
-        long node = constrainedNode( "Label1", "key1", "value1" );
-
-        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-
-        // when
-        statement.nodeAddLabel( node, statement.labelGetOrCreateForName( "Label1" ) );
+        int key = statement.propertyKeyGetOrCreateForName( "key1" );
+        setProperty( statement, entity, Property.property( key, "value1" ) );
 
         // then should not throw exception
     }
@@ -131,80 +135,19 @@ public class MandatoryPropertyConstraintValidationIT extends KernelIntegrationTe
     public void shouldAllowCreationOfNonConflictingData() throws Exception
     {
         // given
-        constrainedNode( "Label1", "key1", "value1" );
+        createConstraintAndEntity( "Type1", "key1", "value1" );
 
         DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
-        createNode( statement, "key1", "value1" );
-        createLabeledNode( statement, "Label2");
-        createLabeledNode( statement, "Label1", "key1", "value2" );
-        createLabeledNode( statement, "Label1", "key1", "value1" );
+        createEntity( statement, "key1", "value1" );
+        createEntity( statement, "Type2" );
+        createEntity( statement, "Type1", "key1", "value2" );
+        createEntity( statement, "Type1", "key1", "value1" );
 
         commit();
 
         // then
-        statement = dataWriteOperationsInNewTransaction();
-        assertEquals( "number of nodes", 5, PrimitiveLongCollections.count( statement.nodesGetAll() ) );
-        rollback();
-    }
-
-    private long createNode( DataWriteOperations statement, String key, Object value ) throws KernelException
-    {
-        long node = statement.nodeCreate();
-        statement.nodeSetProperty( node, Property.property(
-                statement.propertyKeyGetOrCreateForName( key ), value ) );
-        return node;
-    }
-
-    private long createLabeledNode( DataWriteOperations statement, String label )
-            throws KernelException
-    {
-        long node = statement.nodeCreate();
-        statement.nodeAddLabel( node, statement.labelGetOrCreateForName( label ) );
-        return node;
-    }
-
-    private long createLabeledNode( DataWriteOperations statement, String label, String key, Object value )
-            throws KernelException
-    {
-        long node = createLabeledNode( statement, label );
-        statement.nodeSetProperty( node, Property.property(
-                statement.propertyKeyGetOrCreateForName( key ), value ) );
-        return node;
-    }
-
-    private long constrainedNode( String labelName, String propertyKey, Object propertyValue )
-            throws KernelException
-    {
-        long node;
-        {
-            DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
-            int label = dataStatement.labelGetOrCreateForName( labelName );
-            node = dataStatement.nodeCreate();
-            dataStatement.nodeAddLabel( node, label );
-            int key = dataStatement.propertyKeyGetOrCreateForName( propertyKey );
-            dataStatement.nodeSetProperty( node, Property.property( key, propertyValue ) );
-            commit();
-        }
-        createConstraint( labelName, propertyKey );
-        return node;
-    }
-
-    private void createConstraint( String label, String propertyKey ) throws KernelException
-    {
-        int labelId, propertyKeyId;
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            labelId = statement.labelGetOrCreateForName( label );
-            propertyKeyId = statement.propertyKeyGetOrCreateForName( propertyKey );
-            commit();
-        }
-
-        {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
-            commit();
-        }
+        assertEquals( 5, entityCount() );
     }
 }

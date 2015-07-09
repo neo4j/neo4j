@@ -37,8 +37,10 @@ import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.EntityCursor;
 import org.neo4j.kernel.api.cursor.LabelCursor;
@@ -52,8 +54,10 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
@@ -154,6 +158,20 @@ public class StateHandlingStatementOperations implements
             return statement.txState().augmentSingleRelationshipCursor( cursor );
         }
         return cursor;
+    }
+
+    public RelationshipCursor relationshipCursor( TxStateHolder txStateHolder, StoreStatement statement,
+            long relationshipId )
+    {
+        RelationshipCursor cursor = statement.acquireSingleRelationshipCursor( relationshipId );
+        if ( txStateHolder.hasTxStateWithChanges() )
+        {
+            return txStateHolder.txState().augmentSingleRelationshipCursor( cursor );
+        }
+        else
+        {
+            return cursor;
+        }
     }
 
     @Override
@@ -540,30 +558,21 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public MandatoryRelationshipPropertyConstraint mandatoryRelationshipPropertyConstraintCreate( KernelStatement state,
+            int relTypeId, int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    {
+        MandatoryRelationshipPropertyConstraint constraint =
+                new MandatoryRelationshipPropertyConstraint( relTypeId, propertyKeyId );
+        state.txState().constraintDoAdd( constraint );
+        return constraint;
+    }
+
+    @Override
     public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
             int labelId, int propertyKeyId )
     {
-        return applyConstraintsDiff( state, storeLayer.constraintsGetForLabelAndPropertyKey(
-                labelId, propertyKeyId ), labelId, propertyKeyId );
-    }
-
-    @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
-    {
-        return applyConstraintsDiff( state, storeLayer.constraintsGetForLabel( labelId ), labelId );
-    }
-
-    @Override
-    public Iterator<PropertyConstraint> constraintsGetAll( KernelStatement state )
-    {
-        return applyConstraintsDiff( state, storeLayer.constraintsGetAll() );
-    }
-
-
-    private Iterator<NodePropertyConstraint> applyConstraintsDiff( KernelStatement state,
-            Iterator<NodePropertyConstraint> constraints,
-            int labelId, int propertyKeyId )
-    {
+        Iterator<NodePropertyConstraint> constraints =
+                storeLayer.constraintsGetForLabelAndPropertyKey( labelId, propertyKeyId );
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().constraintsChangesForLabelAndProperty( labelId, propertyKeyId ).apply( constraints );
@@ -571,10 +580,10 @@ public class StateHandlingStatementOperations implements
         return constraints;
     }
 
-    private Iterator<NodePropertyConstraint> applyConstraintsDiff( KernelStatement state,
-            Iterator<NodePropertyConstraint> constraints,
-            int labelId )
+    @Override
+    public Iterator<NodePropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId )
     {
+        Iterator<NodePropertyConstraint> constraints = storeLayer.constraintsGetForLabel( labelId );
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().constraintsChangesForLabel( labelId ).apply( constraints );
@@ -582,10 +591,36 @@ public class StateHandlingStatementOperations implements
         return constraints;
     }
 
-
-    private Iterator<PropertyConstraint> applyConstraintsDiff( KernelStatement state,
-            Iterator<PropertyConstraint> constraints )
+    @Override
+    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey(
+            KernelStatement state, int relTypeId, int propertyKeyId )
     {
+        Iterator<RelationshipPropertyConstraint> constraints =
+                storeLayer.constraintsGetForRelationshipTypeAndPropertyKey( relTypeId, propertyKeyId );
+        if ( state.hasTxStateWithChanges() )
+        {
+            return state.txState()
+                    .constraintsChangesForRelationshipTypeAndProperty( relTypeId, propertyKeyId )
+                    .apply( constraints );
+        }
+        return constraints;
+    }
+
+    @Override
+    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( KernelStatement state, int typeId )
+    {
+        Iterator<RelationshipPropertyConstraint> constraints = storeLayer.constraintsGetForRelationshipType( typeId );
+        if ( state.hasTxStateWithChanges() )
+        {
+            return state.txState().constraintsChangesForRelationshipType( typeId ).apply( constraints );
+        }
+        return constraints;
+    }
+
+    @Override
+    public Iterator<PropertyConstraint> constraintsGetAll( KernelStatement state )
+    {
+        Iterator<PropertyConstraint> constraints = storeLayer.constraintsGetAll();
         if ( state.hasTxStateWithChanges() )
         {
             return state.txState().constraintsChanges().apply( constraints );
@@ -593,8 +628,16 @@ public class StateHandlingStatementOperations implements
         return constraints;
     }
 
+
     @Override
     public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint )
+    {
+        state.txState().constraintDoDrop( constraint );
+    }
+
+    @Override
+    public void constraintDrop( KernelStatement state, RelationshipPropertyConstraint constraint )
+            throws DropConstraintFailureException
     {
         state.txState().constraintDoDrop( constraint );
     }
@@ -1018,6 +1061,20 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public int relationshipGetType( TxStateHolder txStateHolder, StoreStatement storeStatement, long relationshipId )
+            throws EntityNotFoundException
+    {
+        try ( RelationshipCursor cursor = relationshipCursor( txStateHolder, storeStatement, relationshipId ) )
+        {
+            if ( cursor.next() )
+            {
+                return cursor.getType();
+            }
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
+        }
+    }
+
+    @Override
     public PrimitiveIntIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId )
             throws EntityNotFoundException
     {
@@ -1040,6 +1097,16 @@ public class StateHandlingStatementOperations implements
         try ( RelationshipCursor relationshipCursor = relationshipCursor( state, relationshipId ) )
         {
             return hasProperty( relationshipCursor, EntityType.RELATIONSHIP, relationshipId, propertyKeyId );
+        }
+    }
+
+    @Override
+    public boolean relationshipHasProperty( TxStateHolder txStateHolder, StoreStatement storeStatement,
+            long relationshipId, int propertyKeyId ) throws EntityNotFoundException
+    {
+        try ( RelationshipCursor cursor = relationshipCursor( txStateHolder, storeStatement, relationshipId ) )
+        {
+            return hasProperty( cursor, EntityType.RELATIONSHIP, relationshipId, propertyKeyId );
         }
     }
 

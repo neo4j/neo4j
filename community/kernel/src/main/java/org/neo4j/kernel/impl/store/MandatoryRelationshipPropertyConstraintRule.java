@@ -28,12 +28,12 @@ public class MandatoryRelationshipPropertyConstraintRule extends RelationshipPro
 {
     private final int propertyKeyId;
 
-    public static MandatoryRelationshipPropertyConstraintRule mandatoryPropertyConstraintRule( long id, int relTypeId, int propertyKeyId )
+    public static MandatoryRelationshipPropertyConstraintRule mandatoryRelPropertyConstraintRule( long id, int relTypeId, int propertyKeyId )
     {
         return new MandatoryRelationshipPropertyConstraintRule( id, relTypeId, propertyKeyId );
     }
 
-    public static MandatoryRelationshipPropertyConstraintRule readMandatoryPropertyConstraintRule( long id, int relTypeId, ByteBuffer buffer )
+    public static MandatoryRelationshipPropertyConstraintRule readMandatoryRelPropertyConstraintRule( long id, int relTypeId, ByteBuffer buffer )
     {
         return new MandatoryRelationshipPropertyConstraintRule( id, relTypeId, readPropertyKey( buffer ) );
     }

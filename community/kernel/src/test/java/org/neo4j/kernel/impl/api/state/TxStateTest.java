@@ -27,13 +27,13 @@ import org.junit.rules.TestRule;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -47,6 +47,8 @@ import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 import org.neo4j.test.RandomizedTestRule;
 import org.neo4j.test.RepeatRule;
 
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -276,7 +278,7 @@ public class TxStateTest
         // then
         ReadableDiffSets<NodePropertyConstraint> diff = state.constraintsChangesForLabel( 1 );
 
-        assertEquals( Collections.singleton( constraint ), diff.getAdded() );
+        assertEquals( singleton( constraint ), diff.getAdded() );
         assertTrue( diff.getRemoved().isEmpty() );
     }
 
@@ -293,7 +295,7 @@ public class TxStateTest
 
         // then
         assertEquals( constraint1, constraint2 );
-        assertEquals( Collections.singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );
+        assertEquals( singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );
     }
 
     @Test
@@ -306,8 +308,75 @@ public class TxStateTest
         state.constraintDoAdd( constraint2, 19 );
 
         // then
-        assertEquals( Collections.singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );
-        assertEquals( Collections.singleton( constraint2 ), state.constraintsChangesForLabel( 2 ).getAdded() );
+        assertEquals( singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );
+        assertEquals( singleton( constraint2 ), state.constraintsChangesForLabel( 2 ).getAdded() );
+    }
+
+    @Test
+    public void shouldAddMandatoryRelationshipPropertyConstraint()
+    {
+        // Given
+        MandatoryRelationshipPropertyConstraint constraint = new MandatoryRelationshipPropertyConstraint( 1, 42 );
+
+        // When
+        state.constraintDoAdd( constraint );
+
+        // Then
+        assertEquals( singleton( constraint ), state.constraintsChangesForRelationshipType( 1 ).getAdded() );
+    }
+
+    @Test
+    public void addingMandatoryRelPropertyConstraintConstraintShouldBeIdempotent()
+    {
+        // Given
+        MandatoryRelationshipPropertyConstraint constraint1 = new MandatoryRelationshipPropertyConstraint( 1, 42 );
+        MandatoryRelationshipPropertyConstraint constraint2 = new MandatoryRelationshipPropertyConstraint( 1, 42 );
+
+        // When
+        state.constraintDoAdd( constraint1 );
+        state.constraintDoAdd( constraint2 );
+
+        // Then
+        assertEquals( constraint1, constraint2 );
+        assertEquals( singleton( constraint1 ), state.constraintsChangesForRelationshipType( 1 ).getAdded() );
+    }
+
+    @Test
+    public void shouldDropMandatoryRelationshipPropertyConstraint()
+    {
+        // Given
+        MandatoryRelationshipPropertyConstraint constraint = new MandatoryRelationshipPropertyConstraint( 1, 42 );
+        state.constraintDoAdd( constraint );
+
+        // When
+        state.constraintDoDrop( constraint );
+
+        // Then
+        assertTrue( state.constraintsChangesForRelationshipType( 1 ).isEmpty() );
+    }
+
+    @Test
+    public void shouldDifferentiateMandatoryRelationshipPropertyConstraints() throws Exception
+    {
+        // Given
+        MandatoryRelationshipPropertyConstraint constraint1 = new MandatoryRelationshipPropertyConstraint( 1, 11 );
+        MandatoryRelationshipPropertyConstraint constraint2 = new MandatoryRelationshipPropertyConstraint( 1, 22 );
+        MandatoryRelationshipPropertyConstraint constraint3 = new MandatoryRelationshipPropertyConstraint( 3, 33 );
+
+        // When
+        state.constraintDoAdd( constraint1 );
+        state.constraintDoAdd( constraint2 );
+        state.constraintDoAdd( constraint3 );
+
+        // Then
+        assertEquals( asSet( constraint1, constraint2 ), state.constraintsChangesForRelationshipType( 1 ).getAdded() );
+        assertEquals( singleton( constraint1 ),
+                state.constraintsChangesForRelationshipTypeAndProperty( 1, 11 ).getAdded() );
+        assertEquals( singleton( constraint2 ),
+                state.constraintsChangesForRelationshipTypeAndProperty( 1, 22 ).getAdded() );
+        assertEquals( singleton( constraint3 ), state.constraintsChangesForRelationshipType( 3 ).getAdded() );
+        assertEquals( singleton( constraint3 ),
+                state.constraintsChangesForRelationshipTypeAndProperty( 3, 33 ).getAdded() );
     }
 
     @Test
@@ -657,7 +726,7 @@ public class TxStateTest
     }
 
     private TransactionState state;
-    private final Set<Long> emptySet = Collections.emptySet();
+    private final Set<Long> emptySet = emptySet();
 
     @Before
     public void before() throws Exception

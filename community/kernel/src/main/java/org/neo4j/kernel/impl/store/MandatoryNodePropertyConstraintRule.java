@@ -29,12 +29,12 @@ public class MandatoryNodePropertyConstraintRule extends NodePropertyConstraintR
 {
     private final int propertyKeyId;
 
-    public static MandatoryNodePropertyConstraintRule mandatoryPropertyConstraintRule( long id, int labelId, int propertyKeyId )
+    public static MandatoryNodePropertyConstraintRule mandatoryNodePropertyConstraintRule( long id, int labelId, int propertyKeyId )
     {
         return new MandatoryNodePropertyConstraintRule( id, labelId, propertyKeyId );
     }
 
-    public static MandatoryNodePropertyConstraintRule readMandatoryPropertyConstraintRule( long id, int labelId, ByteBuffer buffer )
+    public static MandatoryNodePropertyConstraintRule readMandatoryNodePropertyConstraintRule( long id, int labelId, ByteBuffer buffer )
     {
         return new MandatoryNodePropertyConstraintRule( id, labelId, readPropertyKey( buffer ) );
     }

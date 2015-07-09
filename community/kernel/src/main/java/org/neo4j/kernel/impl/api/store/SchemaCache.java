@@ -86,6 +86,19 @@ public class SchemaCache
         }, schemaRules() );
     }
 
+    public Iterable<SchemaRule> schemaRulesForRelationshipType( final int typeId )
+    {
+        return filter( new Predicate<SchemaRule>()
+        {
+            @Override
+            public boolean test( SchemaRule schemaRule )
+            {
+                return schemaRule.getKind() == SchemaRule.Kind.MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT &&
+                       schemaRule.getRelationshipType() == typeId;
+            }
+        }, schemaRules() );
+    }
+
     public Iterator<PropertyConstraint> constraints()
     {
         return Iterables.concat( nodeConstraints.iterator(), relationshipConstraints.iterator() );
@@ -113,6 +126,31 @@ public class SchemaCache
                 return constraint.label() == label && constraint.propertyKey() == property;
             }
         }, nodeConstraints.iterator() );
+    }
+
+    public Iterator<RelationshipPropertyConstraint> constraintsForRelationshipType( final int typeId )
+    {
+        return filter( new Predicate<RelationshipPropertyConstraint>()
+        {
+            @Override
+            public boolean test( RelationshipPropertyConstraint constraint )
+            {
+                return constraint.relationshipType() == typeId;
+            }
+        }, relationshipConstraints.iterator() );
+    }
+
+    public Iterator<RelationshipPropertyConstraint> constraintsForRelationshipTypeAndProperty( final int typeId,
+            final int propertyKeyId )
+    {
+        return filter( new Predicate<RelationshipPropertyConstraint>()
+        {
+            @Override
+            public boolean test( RelationshipPropertyConstraint constraint )
+            {
+                return constraint.relationshipType() == typeId && constraint.propertyKey() == propertyKeyId;
+            }
+        }, relationshipConstraints.iterator() );
     }
 
     public void addSchemaRule( SchemaRule rule )

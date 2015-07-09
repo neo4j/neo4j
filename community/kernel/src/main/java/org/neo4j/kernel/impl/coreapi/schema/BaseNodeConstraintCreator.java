@@ -21,16 +21,14 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
 
-public class BaseConstraintCreator implements ConstraintCreator
+public class BaseNodeConstraintCreator extends AbstractConstraintCreator implements ConstraintCreator
 {
-    protected final InternalSchemaActions actions;
     protected final Label label;
 
-    public BaseConstraintCreator( InternalSchemaActions actions, Label label )
+    public BaseNodeConstraintCreator( InternalSchemaActions actions, Label label )
     {
-        this.actions = actions;
+        super( actions );
         this.label = label;
 
         assertInUnterminatedTransaction();
@@ -39,24 +37,12 @@ public class BaseConstraintCreator implements ConstraintCreator
     @Override
     public ConstraintCreator assertPropertyIsUnique( String propertyKey )
     {
-        return new PropertyUniqueConstraintCreator( actions, label, propertyKey );
+        return new NodePropertyUniqueConstraintCreator( actions, label, propertyKey );
     }
 
     @Override
     public ConstraintCreator assertPropertyExists( String propertyKey )
     {
-        return new PropertyExistsConstraintCreator( actions, label, propertyKey );
-    }
-
-    @Override
-    public ConstraintDefinition create()
-    {
-        assertInUnterminatedTransaction();
-        throw new IllegalStateException( "No constraint assertions specified" );
-    }
-
-    protected final void assertInUnterminatedTransaction()
-    {
-        actions.assertInUnterminatedTransaction();
+        return new NodePropertyExistsConstraintCreator( actions, label, propertyKey );
     }
 }
