@@ -39,6 +39,7 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.RelationshipConstraintCreator;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
@@ -392,28 +393,28 @@ public class GraphDbHelper
         }
     }
 
-    public Iterable<ConstraintDefinition> getPropertyExistenceConstraints( String labelName, final String propertyKey )
+    public Iterable<ConstraintDefinition> getNodePropertyExistenceConstraints( String labelName,
+            final String propertyKey )
     {
         try ( Transaction tx = database.getGraph().beginTx() )
         {
-            Iterable<ConstraintDefinition> definitions = Iterables.filter( new Predicate<ConstraintDefinition>()
-            {
+            Iterable<ConstraintDefinition> definitions = filterByConstraintTypeAndPropertyKey(
+                    database.getGraph().schema().getConstraints( label( labelName ) ),
+                    ConstraintType.MANDATORY_NODE_PROPERTY, propertyKey );
+            tx.success();
+            return definitions;
+        }
+    }
 
-                @Override
-                public boolean test( ConstraintDefinition item )
-                {
-                    if ( item.isConstraintType( ConstraintType.MANDATORY_NODE_PROPERTY ) )
-                    {
-                        Iterable<String> keys = item.getPropertyKeys();
-                        return single( keys ).equals( propertyKey );
-                    }
-                    else
-                    {
-                        return false;
-                    }
-
-                }
-            }, database.getGraph().schema().getConstraints( label( labelName ) ) );
+    public Iterable<ConstraintDefinition> getRelationshipPropertyExistenceConstraints( String typeName,
+            final String propertyKey )
+    {
+        try ( Transaction tx = database.getGraph().beginTx() )
+        {
+            DynamicRelationshipType type = DynamicRelationshipType.withName( typeName );
+            Iterable<ConstraintDefinition> definitions = filterByConstraintTypeAndPropertyKey(
+                    database.getGraph().schema().getConstraints( type ),
+                    ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY, propertyKey );
             tx.success();
             return definitions;
         }
@@ -434,11 +435,28 @@ public class GraphDbHelper
         }
     }
 
-    public ConstraintDefinition createPropertyExistenceConstraint( String labelName, List<String> propertyKeys )
+    public ConstraintDefinition createNodePropertyExistenceConstraint( String labelName, List<String> propertyKeys )
     {
-        try (Transaction tx = database.getGraph().beginTx())
+        try ( Transaction tx = database.getGraph().beginTx() )
         {
             ConstraintCreator creator = database.getGraph().schema().constraintFor( label( labelName ) );
+            for ( String propertyKey : propertyKeys )
+            {
+                creator = creator.assertPropertyExists( propertyKey );
+            }
+            ConstraintDefinition result = creator.create();
+            tx.success();
+            return result;
+        }
+    }
+
+    public ConstraintDefinition createRelationshipPropertyExistenceConstraint( String typeName,
+            List<String> propertyKeys )
+    {
+        try ( Transaction tx = database.getGraph().beginTx() )
+        {
+            DynamicRelationshipType type = DynamicRelationshipType.withName( typeName );
+            RelationshipConstraintCreator creator = database.getGraph().schema().constraintFor( type );
             for ( String propertyKey : propertyKeys )
             {
                 creator = creator.assertPropertyExists( propertyKey );
@@ -455,5 +473,23 @@ public class GraphDbHelper
         {
             return count( database.getGraph().getNodeById( nodeId ).getLabels());
         }
+    }
+
+    private static Iterable<ConstraintDefinition> filterByConstraintTypeAndPropertyKey(
+            Iterable<ConstraintDefinition> definitions, final ConstraintType type, final String propertyKey )
+    {
+        return Iterables.filter( new Predicate<ConstraintDefinition>()
+        {
+            @Override
+            public boolean test( ConstraintDefinition definition )
+            {
+                if ( definition.isConstraintType( type ) )
+                {
+                    Iterable<String> keys = definition.getPropertyKeys();
+                    return single( keys ).equals( propertyKey );
+                }
+                return false;
+            }
+        }, definitions );
     }
 }

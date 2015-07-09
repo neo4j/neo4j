@@ -366,24 +366,48 @@ public class TransactionWrappedDatabaseActions extends DatabaseActions
     }
 
     @Override
-    public ConstraintDefinitionRepresentation createPropertyExistenceConstraint( String labelName,
+    public ConstraintDefinitionRepresentation createNodePropertyExistenceConstraint( String labelName,
             Iterable<String> propertyKeys )
     {
         try ( Transaction transaction = graph.beginTx() )
         {
-            ConstraintDefinitionRepresentation constraintDefinitionRepresentation = super
-                    .createPropertyExistenceConstraint( labelName, propertyKeys );
+            ConstraintDefinitionRepresentation constraintDefinitionRepresentation =
+                    super.createNodePropertyExistenceConstraint( labelName, propertyKeys );
             transaction.success();
             return constraintDefinitionRepresentation;
         }
     }
 
     @Override
-    public boolean dropPropertyExistenceConstraint( String labelName, Iterable<String> propertyKeys )
+    public ConstraintDefinitionRepresentation createRelationshipPropertyExistenceConstraint( String typeName,
+            Iterable<String> propertyKeys )
     {
         try ( Transaction transaction = graph.beginTx() )
         {
-            boolean result = super.dropPropertyExistenceConstraint( labelName, propertyKeys );
+            ConstraintDefinitionRepresentation constraintDefinitionRepresentation =
+                    super.createRelationshipPropertyExistenceConstraint( typeName, propertyKeys );
+            transaction.success();
+            return constraintDefinitionRepresentation;
+        }
+    }
+
+    @Override
+    public boolean dropNodePropertyExistenceConstraint( String labelName, Iterable<String> propertyKeys )
+    {
+        try ( Transaction transaction = graph.beginTx() )
+        {
+            boolean result = super.dropNodePropertyExistenceConstraint( labelName, propertyKeys );
+            transaction.success();
+            return result;
+        }
+    }
+
+    @Override
+    public boolean dropRelationshipPropertyExistenceConstraint( String typeName, Iterable<String> propertyKeys )
+    {
+        try ( Transaction transaction = graph.beginTx() )
+        {
+            boolean result = super.dropRelationshipPropertyExistenceConstraint( typeName, propertyKeys );
             transaction.success();
             return result;
         }

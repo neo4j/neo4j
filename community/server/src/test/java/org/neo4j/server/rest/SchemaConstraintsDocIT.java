@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.function.Factory;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
@@ -78,13 +79,13 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Create mandatory property constraint.
-     * Create a mandatory property constraint on a property.
+     * Create mandatory node property constraint.
+     * Create a mandatory node property constraint for a label and a property.
      */
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void createMandatoryPropertyConstraint() throws JsonParseException
+    public void createNodeMandatoryPropertyConstraint() throws JsonParseException
     {
         data.get();
 
@@ -99,6 +100,33 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> constraint = new HashMap<>(  );
         constraint.put( "type", ConstraintType.MANDATORY_NODE_PROPERTY.name() );
         constraint.put( "label", labelName );
+        constraint.put( "property_keys", singletonList( propertyKey ) );
+
+        assertThat( serialized, equalTo( constraint ) );
+    }
+
+    /**
+     * Create mandatory relationship property constraint.
+     * Create a mandatory relationship property constraint for a relationship type and a property.
+     */
+    @Documented
+    @Test
+    @GraphDescription.Graph( nodes = {} )
+    public void createRelationshipMandatoryPropertyConstraint() throws JsonParseException
+    {
+        data.get();
+
+        String relationshipTypeName = relationshipTypes.newInstance(), propertyKey = properties.newInstance();
+        Map<String, Object> definition = map( "property_keys", singletonList( propertyKey ) );
+
+        String result = gen.get().noGraph().expectedStatus( 200 ).payload( createJsonFrom( definition ) ).post(
+                getSchemaRelationshipConstraintTypeExistenceUri( relationshipTypeName ) ).entity();
+
+        Map<String, Object> serialized = jsonToMap( result );
+
+        Map<String, Object> constraint = new HashMap<>(  );
+        constraint.put( "type", ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY.name() );
+        constraint.put( "relationshipType", relationshipTypeName );
         constraint.put( "property_keys", singletonList( propertyKey ) );
 
         assertThat( serialized, equalTo( constraint ) );
@@ -132,8 +160,8 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Get a specific mandatory property constraint.
-     * Get a specific mandatory property constraint for a label and a property.
+     * Get a specific mandatory node property constraint.
+     * Get a specific mandatory node property constraint for a label and a property.
      */
     @Documented
     @Test
@@ -153,6 +181,33 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> constraint = new HashMap<>(  );
         constraint.put( "type", ConstraintType.MANDATORY_NODE_PROPERTY.name() );
         constraint.put( "label", labelName );
+        constraint.put( "property_keys", singletonList( propertyKey ) );
+
+        assertThat( serializedList, hasItem( constraint ) );
+    }
+
+    /**
+     * Get a specific mandatory relationship property constraint.
+     * Get a specific mandatory relationship property constraint for a label and a property.
+     */
+    @Documented
+    @Test
+    @GraphDescription.Graph( nodes = {} )
+    public void getRelationshipTypeMandatoryPropertyConstraint() throws JsonParseException
+    {
+        data.get();
+
+        String typeName = relationshipTypes.newInstance(), propertyKey = properties.newInstance();
+        createRelationshipTypeMandatoryPropertyConstraint( typeName, propertyKey );
+
+        String result = gen.get().noGraph().expectedStatus( 200 ).get(
+                getSchemaRelationshipConstraintTypeExistencePropertyUri( typeName, propertyKey ) ).entity();
+
+        List<Map<String, Object>> serializedList = jsonToList( result );
+
+        Map<String, Object> constraint = new HashMap<>(  );
+        constraint.put( "type", ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY.name() );
+        constraint.put( "relationshipType", typeName );
         constraint.put( "property_keys", singletonList( propertyKey ) );
 
         assertThat( serializedList, hasItem( constraint ) );
@@ -217,6 +272,40 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> constraint2 = new HashMap<>(  );
         constraint2.put( "type", ConstraintType.MANDATORY_NODE_PROPERTY.name() );
         constraint2.put( "label", labelName );
+        constraint2.put( "property_keys", singletonList( propertyKey2 ) );
+
+        assertThat( serializedList, hasItems( constraint1, constraint2 ) );
+    }
+
+    /**
+     * Get all mandatory property constraints for a relationship type.
+     */
+    @SuppressWarnings( "unchecked" )
+    @Documented
+    @Test
+    @GraphDescription.Graph( nodes = {} )
+    public void getRelationshipTypeMandatoryPropertyConstraints() throws JsonParseException
+    {
+        data.get();
+
+        String typeName = relationshipTypes.newInstance(), propertyKey1 = properties.newInstance(),
+                propertyKey2 = properties.newInstance();
+        createRelationshipTypeMandatoryPropertyConstraint( typeName, propertyKey1 );
+        createRelationshipTypeMandatoryPropertyConstraint( typeName, propertyKey2 );
+
+        String result = gen.get().noGraph().expectedStatus( 200 )
+                .get( getSchemaRelationshipConstraintTypeExistenceUri( typeName ) ).entity();
+
+        List<Map<String, Object>> serializedList = jsonToList( result );
+
+        Map<String, Object> constraint1 = new HashMap<>(  );
+        constraint1.put( "type", ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY.name() );
+        constraint1.put( "relationshipType", typeName );
+        constraint1.put( "property_keys", singletonList( propertyKey1 ) );
+
+        Map<String, Object> constraint2 = new HashMap<>(  );
+        constraint2.put( "type", ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY.name() );
+        constraint2.put( "relationshipType", typeName );
         constraint2.put( "property_keys", singletonList( propertyKey2 ) );
 
         assertThat( serializedList, hasItems( constraint1, constraint2 ) );
@@ -308,13 +397,13 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Drop mandatory property constraint.
-     * Drop mandatory property constraint for a label and a property.
+     * Drop mandatory node property constraint.
+     * Drop mandatory node property constraint for a label and a property.
      */
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void drop_mandatory_property_constraint() throws Exception
+    public void drop_mandatory_node_property_constraint() throws Exception
     {
         data.get();
 
@@ -325,6 +414,29 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         gen.get().noGraph().expectedStatus( 204 ).delete( getSchemaConstraintLabelExistencePropertyUri( labelName, propertyKey ) ).entity();
 
         assertThat( getConstraints( graphdb(), label( labelName ) ), isEmpty() );
+    }
+
+    /**
+     * Drop mandatory relationship property constraint.
+     * Drop mandatory relationship property constraint for a relationship type and a property.
+     */
+    @Documented
+    @Test
+    @GraphDescription.Graph( nodes = {} )
+    public void drop_mandatory_relationship_property_constraint() throws Exception
+    {
+        data.get();
+
+        String typeName = relationshipTypes.newInstance(), propertyKey = properties.newInstance();
+        DynamicRelationshipType type = DynamicRelationshipType.withName( typeName );
+        ConstraintDefinition constraintDefinition = createRelationshipTypeMandatoryPropertyConstraint( typeName,
+                propertyKey );
+        assertThat( getConstraints( graphdb(), type ), containsOnly( constraintDefinition ) );
+
+        gen.get().noGraph().expectedStatus( 204 ).delete(
+                getSchemaRelationshipConstraintTypeExistencePropertyUri( typeName, propertyKey ) ).entity();
+
+        assertThat( getConstraints( graphdb(), label( typeName ) ), isEmpty() );
     }
 
     /**
@@ -385,6 +497,20 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         }
     }
 
+    private ConstraintDefinition createRelationshipTypeMandatoryPropertyConstraint( String typeName,
+            String propertyKey )
+    {
+        try ( Transaction tx = graphdb().beginTx() )
+        {
+            DynamicRelationshipType type = DynamicRelationshipType.withName( typeName );
+            ConstraintDefinition constraintDefinition = graphdb().schema().constraintFor( type )
+                    .assertPropertyExists( propertyKey ).create();
+            tx.success();
+            return constraintDefinition;
+        }
+    }
+
     private final Factory<String> labels =  UniqueStrings.withPrefix( "label" );
     private final Factory<String> properties =  UniqueStrings.withPrefix( "property" );
+    private final Factory<String> relationshipTypes =  UniqueStrings.withPrefix( "relationshipType" );
 }

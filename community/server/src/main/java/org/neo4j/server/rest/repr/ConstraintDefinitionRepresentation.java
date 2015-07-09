@@ -39,7 +39,18 @@ public class ConstraintDefinitionRepresentation extends MappingRepresentation
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        serializer.putString( "label", constraintDefinition.getLabel().name() );
+        switch ( constraintDefinition.getConstraintType() )
+        {
+        case UNIQUENESS:
+        case MANDATORY_NODE_PROPERTY:
+            serializer.putString( "label", constraintDefinition.getLabel().name() );
+            break;
+        case MANDATORY_RELATIONSHIP_PROPERTY:
+            serializer.putString( "relationshipType", constraintDefinition.getRelationshipType().name() );
+            break;
+        default:
+            throw new IllegalStateException( "Unknown constraint type:" + constraintDefinition.getConstraintType() );
+        }
 
         ConstraintType type = constraintDefinition.getConstraintType();
         serializer.putString( "type", type.name() );
