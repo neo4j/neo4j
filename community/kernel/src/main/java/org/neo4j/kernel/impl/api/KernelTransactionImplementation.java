@@ -985,12 +985,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private PrimitiveIntIterator labelsOf( long nodeId ) throws EntityNotFoundException
+    private PrimitiveIntIterator labelsOf( long nodeId )
     {
         try ( StoreStatement statement = storeLayer.acquireStatement() )
         {
             return StateHandlingStatementOperations.nodeGetLabels( storeLayer, statement,
                     txState, nodeId );
+        }
+        catch ( EntityNotFoundException ex )
+        {
+            return PrimitiveIntCollections.emptyIterator();
         }
     }
 }

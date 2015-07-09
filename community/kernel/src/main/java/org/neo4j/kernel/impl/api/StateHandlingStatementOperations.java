@@ -322,15 +322,7 @@ public class StateHandlingStatementOperations implements
     {
         try ( NodeCursor cursor = nodeCursor( state, nodeId ) )
         {
-            try
-            {
-                return cursor.next();
-            }
-            catch ( IllegalStateException e )
-            {
-                // Deleted in this transaction
-                return false;
-            }
+            return cursor.next();
         }
     }
 
@@ -339,15 +331,7 @@ public class StateHandlingStatementOperations implements
     {
         try ( RelationshipCursor cursor = relationshipCursor( state, relId ) )
         {
-            try
-            {
-                return cursor.next();
-            }
-            catch ( IllegalStateException e )
-            {
-                // Deleted in this transaction
-                return false;
-            }
+            return cursor.next();
         }
     }
 
@@ -389,7 +373,7 @@ public class StateHandlingStatementOperations implements
             }
             else
             {
-                return PrimitiveIntCollections.emptyIterator();
+                throw new EntityNotFoundException( EntityType.NODE, nodeId );
             }
         }
     }
@@ -402,7 +386,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( txState.nodeIsDeletedInThisTx( nodeId ) )
         {
-            return PrimitiveIntCollections.emptyIterator();
+            throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
         if ( txState.nodeIsAddedInThisTx( nodeId ) )
         {

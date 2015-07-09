@@ -416,7 +416,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             node1.getProperty( "key1" );
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         try
@@ -424,7 +424,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             node1.setProperty( "key1", "value2" );
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         try
@@ -432,7 +432,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             node1.removeProperty( "key1" );
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         node2.delete();
@@ -441,7 +441,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             node2.delete();
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         try
@@ -449,7 +449,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             node1.getProperty( "key1" );
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         try
@@ -457,7 +457,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             node1.setProperty( "key1", "value2" );
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         try
@@ -465,7 +465,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             node1.removeProperty( "key1" );
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         assertEquals( "value1", rel1.getProperty( "key1" ) );
@@ -475,7 +475,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             rel1.delete();
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         try
@@ -483,7 +483,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             rel1.getProperty( "key1" );
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         try
@@ -491,7 +491,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             rel1.setProperty( "key1", "value2" );
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         try
@@ -499,7 +499,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             rel1.removeProperty( "key1" );
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         try
@@ -507,7 +507,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             rel1.getProperty( "key1" );
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         try
@@ -515,7 +515,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             rel1.setProperty( "key1", "value2" );
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         try
@@ -523,7 +523,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             rel1.removeProperty( "key1" );
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         try
@@ -531,7 +531,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             node2.createRelationshipTo( node1, MyRelTypes.TEST );
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
         try
@@ -539,7 +539,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             node2.createRelationshipTo( node1, MyRelTypes.TEST );
             fail( "Should throw exception" );
         }
-        catch ( IllegalStateException e )
+        catch ( NotFoundException e )
         { // good
         }
 

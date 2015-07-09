@@ -49,14 +49,8 @@ public class TxSingleNodeCursor
 
         if ( state.nodeIsDeletedInThisTx( id ) )
         {
-            try
-            {
-                throw new IllegalStateException("Node " + id + " has been deleted");
-            }
-            finally
-            {
-                this.id = 0;
-            }
+            this.id = -1;
+            return false;
         }
 
         this.nodeIsAddedInThisTx = state.nodeIsAddedInThisTx( id );

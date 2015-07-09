@@ -76,7 +76,7 @@ public interface Node extends PropertyContainer
      * <code>delete()</code> is invoked on a node with relationships, an
      * unchecked exception will be raised when the transaction is committing.
      * Invoking any methods on this node after <code>delete()</code> has
-     * returned is invalid and will lead to unspecified behavior.
+     * returned is invalid and will lead to {@link NotFoundException} being thrown.
      */
     void delete();
 
