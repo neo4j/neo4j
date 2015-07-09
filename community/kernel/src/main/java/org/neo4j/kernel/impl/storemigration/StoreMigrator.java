@@ -59,7 +59,6 @@ import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -168,7 +167,7 @@ public class StoreMigrator implements StoreMigrationParticipant
      * {@link #moveMigratedFiles(File, File) moving migrated files}, which might be done
      * as part of a resumed migration, i.e. run even if
      * {@link StoreMigrationParticipant#migrate(java.io.File, java.io.File,
-     * org.neo4j.kernel.api.index.SchemaIndexProvider, org.neo4j.io.pagecache.PageCache)}
+     * org.neo4j.kernel.api.index.SchemaIndexProvider)}
      * hasn't been run.
      */
     private String versionToUpgradeFrom( File storeDir )
@@ -187,10 +186,10 @@ public class StoreMigrator implements StoreMigrationParticipant
         progressMonitor.started();
 
         // Extract information about the last transaction from legacy neostore
-        NeoStoreUtil neoStoreAccess = new NeoStoreUtil( storeDir, pageCache );
-        long lastTxId = neoStoreAccess.getLastCommittedTx();
-        long lastTxChecksum = extractTransactionChecksum( neoStoreAccess, storeDir, lastTxId );
-        LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStoreAccess, lastTxId );
+        File neoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
+        long lastTxId = NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
+        long lastTxChecksum = extractTransactionChecksum( neoStore, storeDir, lastTxId );
+        LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, lastTxId );
         // Write the tx checksum to file in migrationDir, because we need it later when moving files into storeDir
         writeLastTxChecksum( migrationDir, lastTxChecksum );
         writeLastTxLogPosition( migrationDir, lastTxLogPosition );
@@ -273,11 +272,11 @@ public class StoreMigrator implements StoreMigrationParticipant
         return new File( migrationDir, "lastxlogposition" );
     }
 
-    private long extractTransactionChecksum( NeoStoreUtil neoStoreAccess, File storeDir, long txId )
+    private long extractTransactionChecksum( File neoStore, File storeDir, long txId )
     {
         try
         {
-            return neoStoreAccess.getLastCommittedTxChecksum();
+            return NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
         }
         catch ( IllegalStateException e )
         {
@@ -299,21 +298,23 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
     }
 
-    private LogPosition extractTransactionLogPosition( NeoStoreUtil neoStoreAccess, long lastTxId )
+    private LogPosition extractTransactionLogPosition( File neoStore, long lastTxId )
     {
         try
         {
-            long lastCommittedTxLogVersion = neoStoreAccess.getLastCommittedTxLogVersion();
-            long lastCommittedTxLogByteOffset = neoStoreAccess.getLastCommittedTxLogByteOffset();
-            return new LogPosition( lastCommittedTxLogVersion, lastCommittedTxLogByteOffset );
+            long lastClosedTxLogVersion =
+                    NeoStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
+            long lastClosedTxLogByteOffset =
+                    NeoStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
+            return new LogPosition( lastClosedTxLogVersion, lastClosedTxLogByteOffset );
         }
         catch ( IllegalStateException e )
         {
             // The legacy store we're migrating doesn't have this record in neostore so try to extract it from tx log
             return lastTxId == TransactionIdStore.BASE_TX_ID
-                   ? new LogPosition(
-                    TransactionIdStore.BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )
-                   : new LogPosition( neoStoreAccess.getLogVersion(), BASE_TX_LOG_BYTE_OFFSET);
+                   ? new LogPosition(TransactionIdStore.BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )
+                   : new LogPosition( NeoStore.getRecord( pageCache, neoStore, Position.LOG_VERSION ),
+                           BASE_TX_LOG_BYTE_OFFSET );
         }
     }
 
@@ -398,7 +399,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         Configuration importConfig = new Configuration.Overridden( config );
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
                 importConfig, logService, withDynamicProcessorAssignment( migrationBatchImporterMonitor(
-                legacyStore, progressMonitor ), importConfig ),
+                legacyStore ), importConfig ),
                 parallel(), readAdditionalIds( storeDir, lastTxId, lastTxChecksum, lastTxLogVersion,
                 lastTxLogByteOffset ) );
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
@@ -512,8 +513,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
     }
 
-    private ExecutionMonitor migrationBatchImporterMonitor( LegacyStore legacyStore,
-            MigrationProgressMonitor progressMonitor2 )
+    private ExecutionMonitor migrationBatchImporterMonitor( LegacyStore legacyStore )
     {
         return new CoarseBoundedProgressExecutionMonitor(
                 legacyStore.getNodeStoreReader().getMaxId(), legacyStore.getRelStoreReader().getMaxId() )
@@ -813,9 +813,9 @@ public class StoreMigrator implements StoreMigrationParticipant
         ensureStoreVersions( storeDir );
 
 
-        NeoStoreUtil neoStoreUtil = new NeoStoreUtil( storeDir, pageCache );
-        long logVersion = neoStoreUtil.getLogVersion();
-        long lastCommittedTx = neoStoreUtil.getLastCommittedTx();
+        File neoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
+        long logVersion = NeoStore.getRecord( pageCache, neoStore, Position.LOG_VERSION );
+        long lastCommittedTx = NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
 
         // update or add upgrade id and time and other necessary neostore records
         updateOrAddNeoStoreFieldsAsPartOfMigration( migrationDir, storeDir );
@@ -838,7 +838,7 @@ public class StoreMigrator implements StoreMigrationParticipant
     {
         final File storeDirNeoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
         NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.UPGRADE_TRANSACTION_ID,
-                NeoStore.getRecord( fileSystem, storeDirNeoStore, Position.LAST_TRANSACTION_ID ) );
+                NeoStore.getRecord( pageCache, storeDirNeoStore, Position.LAST_TRANSACTION_ID ) );
         NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.UPGRADE_TIME, System.currentTimeMillis() );
 
         // Store the checksum of the transaction id the upgrade is at right now. Store it both as

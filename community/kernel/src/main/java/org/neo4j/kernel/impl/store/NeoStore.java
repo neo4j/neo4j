@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -118,10 +119,22 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public static final int META_DATA_RECORD_COUNT = Position.values().length;
 
-    public static boolean isStorePresent( FileSystemAbstraction fs, File storeDir )
+    public static boolean isStorePresent( PageCache pageCache, File storeDir )
     {
         File neoStore = new File( storeDir, DEFAULT_NAME );
-        return fs.fileExists( neoStore );
+        try ( PagedFile file = pageCache.map( neoStore, getPageSize( pageCache ) ) )
+        {
+            if ( file.getLastPageId() == -1 )
+            {
+                return false;
+            }
+        }
+        catch ( IOException e )
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private NodeStore nodeStore;
@@ -242,7 +255,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                  * in garbage.
                  * Yes, this has to be fixed to be prettier.
                  */
-                String foundVersion = versionLongToString( getRecord( fileSystemAbstraction,
+                String foundVersion = versionLongToString( getRecord( pageCache,
                         storageFileName, Position.STORE_VERSION ) );
                 if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
                 {
@@ -413,34 +426,48 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     /**
      * Reads a record from a neostore file.
      *
-     * @param fs {@link FileSystemAbstraction} the {@code neoStore} file lives in.
+     * @param pageCache {@link PageCache} the {@code neoStore} file lives in.
      * @param neoStore {@link File} pointing to the neostore.
      * @param recordPosition record {@link Position}.
      * @return the read record value specified by {@link Position}.
      */
-    public static long getRecord( FileSystemAbstraction fs, File neoStore, Position recordPosition )
+    public static long getRecord( PageCache pageCache, File neoStore, Position recordPosition )
     {
-        try ( StoreChannel channel = fs.open( neoStore, "r" ) )
+        try ( PagedFile pagedFile = pageCache.map( neoStore, getPageSize( pageCache ) ) )
         {
-            /*
-             * We have to check size, because the store version
-             * field was introduced with 1.5, so if there is a non-clean
-             * shutdown we may have a buffer underflow.
-             */
-            if ( recordPosition.id >= Position.STORE_VERSION.id && channel.size() < RECORD_SIZE * 5 )
+            if ( pagedFile.getLastPageId() != -1 )
             {
-                return -1;
+                try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_LOCK ) )
+                {
+                    if ( cursor.next() )
+                    {
+                        byte recordByte;
+                        long record;
+                        do
+                        {
+                            cursor.setOffset( RECORD_SIZE * recordPosition.id );
+                            recordByte = cursor.getByte();
+                            record = cursor.getLong();
+                        }
+                        while ( cursor.shouldRetry() );
+                        if ( recordByte == Record.IN_USE.byteValue() )
+                        {
+                            return record;
+                        }
+                    }
+                }
             }
-            channel.position( RECORD_SIZE * recordPosition.id + 1/*inUse*/ );
-            ByteBuffer buffer = ByteBuffer.allocate( 8 );
-            channel.read( buffer );
-            buffer.flip();
-            return buffer.getLong();
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
+        return -1;
+    }
+
+    private static int getPageSize( PageCache pageCache )
+    {
+        return pageCache.pageSize() - pageCache.pageSize() % RECORD_SIZE;
     }
 
     public StoreId getStoreId()

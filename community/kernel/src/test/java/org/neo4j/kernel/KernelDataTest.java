@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import java.io.File;
 import java.util.Collection;
@@ -31,16 +31,49 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.PageCacheRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class KernelDataTest
 {
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    @Rule
+    public final TestRule shutDownRemainingKernels = new TestRule()
+    {
+        @Override
+        public Statement apply( final Statement base, Description description )
+        {
+            return new Statement()
+            {
+                @Override
+                public void evaluate() throws Throwable
+                {
+                    try
+                    {
+                        base.evaluate();
+                    }
+                    finally
+                    {
+                        for ( Kernel kernel : kernels.toArray( new Kernel[kernels.size()] ) )
+                        {
+                            kernel.shutdown();
+                        }
+                        kernels.clear();
+                    }
+                }
+            };
+        }
+    };
+
     @Test
     public void shouldGenerateUniqueInstanceIdentifiers() throws Exception
     {
@@ -139,7 +172,8 @@ public class KernelDataTest
     {
         Kernel( String desiredId )
         {
-            super( new DefaultFileSystemAbstraction(), new File( "graph.db" ), new Config( config( desiredId ) ) );
+            super( new DefaultFileSystemAbstraction(), pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() ),
+                    new File( "graph.db" ), new Config( config( desiredId ) ) );
             kernels.add( this );
         }
 
@@ -165,9 +199,9 @@ public class KernelDataTest
 
     private final Collection<Kernel> kernels = new HashSet<Kernel>();
 
-    private static Map<String, String> config( String desiredId )
+    private static Map<String,String> config( String desiredId )
     {
-        HashMap<String, String> config = new HashMap<String, String>();
+        HashMap<String,String> config = new HashMap<String,String>();
         if ( desiredId != null )
         {
             config.put( KernelData.forced_id.name(), desiredId );
@@ -175,31 +209,4 @@ public class KernelDataTest
         return config;
     }
 
-    @Rule
-    public final TestRule shutDownRemainingKernels = new TestRule()
-    {
-        @Override
-        public Statement apply( final Statement base, Description description )
-        {
-            return new Statement()
-            {
-                @Override
-                public void evaluate() throws Throwable
-                {
-                    try
-                    {
-                        base.evaluate();
-                    }
-                    finally
-                    {
-                        for ( Kernel kernel : kernels.toArray( new Kernel[kernels.size()] ) )
-                        {
-                            kernel.shutdown();
-                        }
-                        kernels.clear();
-                    }
-                }
-            };
-        }
-    };
 }

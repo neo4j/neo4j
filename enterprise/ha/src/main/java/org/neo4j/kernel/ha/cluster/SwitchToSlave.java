@@ -263,7 +263,7 @@ public class SwitchToSlave
 
     private void copyStoreFromMasterIfNeeded( URI masterUri, CancellationRequest cancellationRequest ) throws Throwable
     {
-        if ( !isStorePresent( fileSystemAbstraction, storeDir ) )
+        if ( !isStorePresent( pageCache, storeDir ) )
         {
             boolean success = false;
             monitor.storeCopyStarted();

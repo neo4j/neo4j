@@ -25,6 +25,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -81,6 +82,7 @@ public class CommunityEditionModule
         Config config = platformModule.config;
         LogService logging = platformModule.logging;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
+        PageCache pageCache = platformModule.pageCache;
         File storeDir = platformModule.storeDir;
         DataSourceManager dataSourceManager = platformModule.dataSourceManager;
         LifeSupport life = platformModule.life;
@@ -97,7 +99,8 @@ public class CommunityEditionModule
         relationshipTypeTokenHolder = life.add( deps.satisfyDependency(new RelationshipTypeTokenHolder(
                 createRelationshipTypeCreator( config, dataSourceManager, idGeneratorFactory ) ) ));
 
-        life.add( deps.satisfyDependency(createKernelData( fileSystem, storeDir, config, graphDatabaseFacade ) ));
+        life.add( deps.satisfyDependency(
+                createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
 
         commitProcessFactory = createCommitProcessFactory();
 
@@ -221,9 +224,10 @@ public class CommunityEditionModule
         }
     }
 
-    protected KernelData createKernelData( FileSystemAbstraction fileSystem, File storeDir, Config config, GraphDatabaseAPI graphAPI )
+    protected KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config,
+            GraphDatabaseAPI graphAPI )
     {
-        return new DefaultKernelData( fileSystem, storeDir, config, graphAPI );
+        return new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI );
     }
 
     protected IdGeneratorFactory createIdGeneratorFactory()
@@ -297,9 +301,10 @@ public class CommunityEditionModule
     {
         private final GraphDatabaseAPI graphDb;
 
-        public DefaultKernelData( FileSystemAbstraction fileSystem, File storeDir, Config config, GraphDatabaseAPI graphDb )
+        public DefaultKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config,
+                GraphDatabaseAPI graphDb )
         {
-            super( fileSystem, storeDir, config );
+            super( fileSystem, pageCache, storeDir, config );
             this.graphDb = graphDb;
         }
 
