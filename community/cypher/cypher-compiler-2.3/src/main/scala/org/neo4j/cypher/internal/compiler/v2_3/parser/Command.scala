@@ -76,6 +76,12 @@ trait Command extends Parser
   private def NodeMandatoryConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~
     optional(keyword("ASSERT")) ~~ PropertyExpression ~~ keyword("IS NOT NULL")
 
-  private def RelationshipMandatoryConstraintSyntax = keyword("CONSTRAINT ON") ~~ "[" ~~ Identifier ~~ RelType ~~ "]" ~~
+  private def RelationshipMandatoryConstraintSyntax = keyword("CONSTRAINT ON") ~~ RelationshipPatternSyntax ~~
     optional(keyword("ASSERT")) ~~ PropertyExpression ~~ keyword("IS NOT NULL")
+
+  private def RelationshipPatternSyntax = rule(
+    ("()-[" ~~ Identifier ~~ RelType ~~ "]-()")
+      | ("()-[" ~~ Identifier ~~ RelType ~~ "]->()")
+      | ("()<-[" ~~ Identifier ~~ RelType ~~ "]-()")
+  )
 }
