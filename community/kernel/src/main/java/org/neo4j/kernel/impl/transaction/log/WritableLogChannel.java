@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.Closeable;
+import java.io.Flushable;
 import java.io.IOException;
 
 public interface WritableLogChannel extends PositionAwareChannel, Closeable
@@ -27,13 +28,7 @@ public interface WritableLogChannel extends PositionAwareChannel, Closeable
     /**
     * Writes any changes not present in the channel yet and clears the buffer.
     */
-    void emptyBufferIntoChannelAndClearIt() throws IOException;
-
-    /**
-     * Forces the data that has already been written to the underlying channel, down to disk.
-     * Must not write any data to the channel.
-     */
-    void force() throws IOException;
+    Flushable emptyBufferIntoChannelAndClearIt() throws IOException;
 
     WritableLogChannel put( byte value ) throws IOException;
 

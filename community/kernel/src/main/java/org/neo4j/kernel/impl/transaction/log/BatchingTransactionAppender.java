@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import java.io.Flushable;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
@@ -387,15 +388,16 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         // don't append while we're doing that. The way rotation is coordinated we can't synchronize
         // on logFile because it would cause deadlocks. Synchronizing on writer assumes that appenders
         // also synchronize on writer.
+        Flushable flushable;
         synchronized ( logFile )
         {
-            writer.emptyBufferIntoChannelAndClearIt();
+            flushable = writer.emptyBufferIntoChannelAndClearIt();
         }
         // Force the writer outside of the lock.
-        // This allows multiple threads forcing at the same time to piggy-back onto one another.
+        // This allows other threads access to the buffer while the writer is being forced.
         try
         {
-            writer.force();
+            flushable.flush();
         }
         catch ( ClosedChannelException ignored )
         {

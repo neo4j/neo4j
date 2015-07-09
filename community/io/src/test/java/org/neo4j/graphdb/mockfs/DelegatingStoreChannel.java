@@ -125,4 +125,10 @@ public class DelegatingStoreChannel implements StoreChannel
         delegate.position( newPosition );
         return this;
     }
+
+    @Override
+    public void flush() throws IOException
+    {
+        delegate.flush();
+    }
 }

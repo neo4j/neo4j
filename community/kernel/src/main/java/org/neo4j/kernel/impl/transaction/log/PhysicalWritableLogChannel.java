@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
@@ -45,19 +46,6 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
         this.buffer = ByteBuffer.allocate( bufferSize );
     }
 
-    @Override
-    public void force() throws IOException
-    {
-        try
-        {
-            channel.force( false );
-        }
-        catch ( ClosedChannelException e )
-        {
-            handleClosedChannelException( e );
-        }
-    }
-
     void setChannel( LogVersionedStoreChannel channel )
     {
         this.channel = channel;
@@ -68,9 +56,10 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
      * Currently that's done by acquiring the PhysicalLogFile monitor.
      */
     @Override
-    public void emptyBufferIntoChannelAndClearIt() throws IOException
+    public Flushable emptyBufferIntoChannelAndClearIt() throws IOException
     {
         buffer.flip();
+        LogVersionedStoreChannel channel = this.channel;
         try
         {
             channel.write( buffer );
@@ -80,6 +69,7 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
             handleClosedChannelException( e );
         }
         buffer.clear();
+        return channel;
     }
 
     private void handleClosedChannelException( ClosedChannelException e ) throws ClosedChannelException

@@ -197,4 +197,10 @@ public class AdversarialFileChannel implements StoreChannel
         adversary.injectFailure( IOException.class );
         return delegate.size();
     }
+
+    @Override
+    public void flush() throws IOException
+    {
+        force( false );
+    }
 }

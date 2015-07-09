@@ -140,8 +140,7 @@ public class PhysicalWritableLogChannelTest
         channel.putShort( shortValue );
         channel.putInt( intValue );
         channel.putLong( longValue );
-        channel.emptyBufferIntoChannelAndClearIt();
-        channel.force();
+        channel.emptyBufferIntoChannelAndClearIt().flush();
 
         // "Rotate" and continue
         storeChannel = fs.open( secondFile, "rw" );
@@ -207,16 +206,6 @@ public class PhysicalWritableLogChannelTest
         try
         {
             channel.emptyBufferIntoChannelAndClearIt();
-            fail( "Should have thrown exception" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // THEN we should get an IllegalStateException, not a ClosedChannelException
-        }
-
-        try
-        {
-            channel.force();
             fail( "Should have thrown exception" );
         }
         catch ( IllegalStateException e )
