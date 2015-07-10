@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,12 +33,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
@@ -83,7 +83,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestNeoStore
@@ -95,10 +94,13 @@ public class TestNeoStore
 
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTestWithEphemeralFS( fs.get(),
-            getClass() );
-    @Rule public NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTestWithEphemeralFS( fs.get(), getClass() );
+    @Rule
+    public NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
+
     private PageCache pageCache;
 
     @Before

@@ -30,13 +30,15 @@ import java.net.URL;
 import java.util.HashMap;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
@@ -110,12 +112,14 @@ public class StoreVersionTest
     @Test
     public void neoStoreHasCorrectStoreVersionField()
     {
+        FileSystemAbstraction fileSystemAbstraction = this.fs.get();
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
         StoreFactory sf = new StoreFactory(
                 outputDir,
                 config,
                 new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fs.get() ),
-                fs.get(),
+                pageCache,
+                fileSystemAbstraction,
                 NullLogProvider.getInstance(),
                 monitors );
         NeoStore neoStore = sf.newNeoStore( true );
@@ -123,10 +127,10 @@ public class StoreVersionTest
         // The first checks the instance method, the other the public one
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
                 NeoStore.versionLongToString( neoStore.getStoreVersion() ) );
-        assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
-                NeoStore.versionLongToString( NeoStore.getRecord( fs.get(),
-                        new File( outputDir, NeoStore.DEFAULT_NAME ), Position.STORE_VERSION ) ) );
         neoStore.close();
+        assertEquals( CommonAbstractStore.ALL_STORES_VERSION, NeoStore.versionLongToString(
+                NeoStore.getRecord( pageCache, new File( outputDir, NeoStore.DEFAULT_NAME ),
+                        Position.STORE_VERSION ) ) );
     }
 
     @Test

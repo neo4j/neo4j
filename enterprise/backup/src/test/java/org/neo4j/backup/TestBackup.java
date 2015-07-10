@@ -49,8 +49,8 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
-import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.PageCacheRule;
@@ -345,7 +345,8 @@ public class TestBackup
 
     private long getLastCommittedTx( String path, PageCache pageCache )
     {
-        return new NeoStoreUtil( new File( path ), pageCache ).getLastCommittedTx();
+        File neoStore = new File( path, NeoStore.DEFAULT_NAME );
+        return NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
     }
 
     @Test
@@ -525,8 +526,8 @@ public class TestBackup
 
     private long lastTxChecksumOf( File storeDir, PageCache pageCache )
     {
-        NeoStoreUtil neoStore = new NeoStoreUtil( storeDir, pageCache );
-        return neoStore.getValue( Position.LAST_TRANSACTION_CHECKSUM );
+        File neoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
+        return NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
     }
 
     private ServerInterface startServer( File path ) throws Exception

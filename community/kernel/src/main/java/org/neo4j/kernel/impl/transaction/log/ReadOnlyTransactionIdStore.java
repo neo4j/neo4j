@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
+import org.neo4j.kernel.impl.store.NeoStore;
+
+import static org.neo4j.kernel.impl.store.NeoStore.Position;
 
 public class ReadOnlyTransactionIdStore implements TransactionIdStore
 {
@@ -34,13 +36,13 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     public ReadOnlyTransactionIdStore( PageCache pageCache, File storeDir )
     {
         long id = 0, checksum = 0, logVersion = 0, byteOffset = 0;
-        if ( NeoStoreUtil.neoStoreExists( pageCache, storeDir ) )
+        if ( NeoStore.isStorePresent( pageCache, storeDir ) )
         {
-            NeoStoreUtil access = new NeoStoreUtil( storeDir, pageCache );
-            id = access.getLastCommittedTx();
-            checksum = access.getLastCommittedTxChecksum();
-            logVersion = access.getLastCommittedTxLogVersion();
-            byteOffset = access.getLastCommittedTxLogByteOffset();
+            File neoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
+            id = NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
+            checksum = NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
+            logVersion = NeoStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
+            byteOffset = NeoStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
         }
 
         this.transactionId = id;

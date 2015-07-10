@@ -28,7 +28,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
@@ -55,8 +54,9 @@ public class StoreRecoverer
 
     public boolean recoveryNeededAt( File dataDir ) throws IOException
     {
-        long logVersion = fs.fileExists( new File( dataDir, NeoStore.DEFAULT_NAME ) )
-                          ? new NeoStoreUtil( dataDir, pageCache ).getLogVersion()
+        File neoStore = new File( dataDir, NeoStore.DEFAULT_NAME );
+        long logVersion = NeoStore.isStorePresent( pageCache, dataDir )
+                          ? NeoStore.getRecord( pageCache, neoStore, NeoStore.Position.LOG_VERSION )
                           : 0;
         return recoveryNeededAt( dataDir, logVersion );
     }
@@ -64,8 +64,7 @@ public class StoreRecoverer
     public boolean recoveryNeededAt( File dataDir, long currentLogVersion ) throws IOException
     {
         // We need config to determine where the logical log files are
-        File neoStorePath = new File( dataDir, NeoStore.DEFAULT_NAME );
-        if ( !fs.fileExists( neoStorePath ) )
+        if ( !NeoStore.isStorePresent( pageCache, dataDir ) )
         {
             // No database in the specified directory.
             return false;

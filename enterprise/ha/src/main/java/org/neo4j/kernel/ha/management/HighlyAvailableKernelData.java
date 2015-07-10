@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.neo4j.helpers.Functions;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.Version;
@@ -45,9 +46,10 @@ public class HighlyAvailableKernelData extends KernelData implements Lifecycle
     private final ClusterDatabaseInfoProvider memberInfoProvider;
 
     public HighlyAvailableKernelData( GraphDatabaseAPI db, ClusterMembers memberInfo,
-            ClusterDatabaseInfoProvider databaseInfo, FileSystemAbstraction fileSystem, File storeDir, Config config )
+            ClusterDatabaseInfoProvider databaseInfo, FileSystemAbstraction fileSystem, PageCache pageCache,
+            File storeDir, Config config )
     {
-        super( fileSystem, storeDir, config );
+        super( fileSystem, pageCache, storeDir, config );
         this.db = db;
         this.memberInfo = memberInfo;
         this.memberInfoProvider = databaseInfo;

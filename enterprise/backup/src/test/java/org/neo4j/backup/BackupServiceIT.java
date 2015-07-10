@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -680,13 +679,14 @@ public class BackupServiceIT
         }
 
         // Assert last committed transaction is correct in neostore
-        NeoStoreUtil store = new NeoStoreUtil( backupDir, pageCache );
-        assertEquals( txId, store.getLastCommittedTx() );
+        File neoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
+        assertEquals( txId, NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID ) );
     }
 
-    private long getLastTxChecksum(PageCache pageCache)
+    private long getLastTxChecksum( PageCache pageCache )
     {
-        return new NeoStoreUtil( backupDir, pageCache ).getValue( Position.LAST_TRANSACTION_CHECKSUM );
+        File neoStore = new File( backupDir, NeoStore.DEFAULT_NAME );
+        return NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
     }
 
     private void deleteAllBackedUpTransactionLogs()

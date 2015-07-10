@@ -54,6 +54,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -520,8 +521,9 @@ public class EnterpriseEditionModule
                 createRelationshipTypeCreator( config, memberStateMachine, masterDelegateInvocationHandler,
                         requestContextFactory, kernelProvider ) ) ) );
 
-        life.add( dependencies.satisfyDependency( createKernelData( config, platformModule.graphDatabaseFacade,
-                members, fs, storeDir, lastUpdateTime, dependencies.provideDependency( NeoStore.class ) ) ) );
+        life.add( dependencies.satisfyDependency(
+                createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,
+                        storeDir, lastUpdateTime, dependencies.provideDependency( NeoStore.class ) ) ) );
 
         commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, life,
                 clusterClient, members, platformModule.jobScheduler, master, requestContextFactory,
@@ -732,14 +734,14 @@ public class EnterpriseEditionModule
     }
 
     protected KernelData createKernelData( Config config, GraphDatabaseAPI graphDb, ClusterMembers members,
-                                           FileSystemAbstraction fs, File storeDir,
+                                           FileSystemAbstraction fs, PageCache pageCache, File storeDir,
                                            LastUpdateTime lastUpdateTime, Supplier<NeoStore> neoStoreSupplier )
     {
         OnDiskLastTxIdGetter txIdGetter = new OnDiskLastTxIdGetter( neoStoreSupplier );
         ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider( members,
                 txIdGetter,
                 lastUpdateTime );
-        return new HighlyAvailableKernelData( graphDb, members, databaseInfo, fs, storeDir, config );
+        return new HighlyAvailableKernelData( graphDb, members, databaseInfo, fs, pageCache, storeDir, config );
     }
 
     protected void registerRecovery( final String editionName, final DependencyResolver dependencyResolver,

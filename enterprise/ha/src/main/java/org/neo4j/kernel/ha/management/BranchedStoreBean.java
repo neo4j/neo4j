@@ -26,10 +26,10 @@ import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
@@ -77,12 +77,14 @@ public final class BranchedStoreBean extends ManagementBeanProvider
     {
         private final FileSystemAbstraction fileSystem;
         private final File storePath;
+        private final PageCache pageCache;
 
         protected BranchedStoreImpl( final ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
             fileSystem = getFilesystem( management );
             storePath = getStorePath( management );
+            pageCache = getPageCache( management );
         }
 
         protected BranchedStoreImpl( final ManagementData management, boolean isMXBean )
@@ -90,6 +92,7 @@ public final class BranchedStoreBean extends ManagementBeanProvider
             super( management, isMXBean );
             fileSystem = getFilesystem( management );
             storePath = getStorePath( management );
+            pageCache = getPageCache( management );
         }
 
         @Override
@@ -115,9 +118,14 @@ public final class BranchedStoreBean extends ManagementBeanProvider
         private BranchedStoreInfo parseBranchedStore( File branchDirectory )
         {
             final File neoStoreFile = new File( branchDirectory, NeoStore.DEFAULT_NAME );
-            long txId = NeoStore.getRecord( new DefaultFileSystemAbstraction(), neoStoreFile, Position.LAST_TRANSACTION_ID );
+            long txId = NeoStore.getRecord( pageCache, neoStoreFile, Position.LAST_TRANSACTION_ID );
             long timestamp = Long.parseLong( branchDirectory.getName() );
             return new BranchedStoreInfo( branchDirectory.getName(), txId, timestamp );
+        }
+
+        private PageCache getPageCache( ManagementData management)
+        {
+            return management.getKernelData().getPageCache();
         }
 
         private FileSystemAbstraction getFilesystem( ManagementData management )
