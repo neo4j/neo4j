@@ -25,6 +25,7 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -34,10 +35,10 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.kernel.api.cursor.LabelCursor;
-import org.neo4j.kernel.api.cursor.NodeCursor;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -170,26 +171,26 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             for ( Long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
-                try ( NodeCursor node = storeStatement.acquireSingleNodeCursor( nodeId ) )
+                try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId ) )
                 {
                     if ( node.next() )
                     {
-                        try ( PropertyCursor properties = node.properties() )
+                        try ( Cursor<PropertyItem> properties = node.get().properties() )
                         {
                             while ( properties.next() )
                             {
                                 removedNodeProperties.add( new NodePropertyEntryView( nodeId,
-                                        store.propertyKeyGetName( properties.propertyKeyId() ), null,
-                                        properties.value() ) );
+                                        store.propertyKeyGetName( properties.get().propertyKeyId() ), null,
+                                        properties.get().value() ) );
                             }
                         }
 
-                        try ( LabelCursor labels = node.labels() )
+                        try ( Cursor<LabelItem> labels = node.get().labels() )
                         {
                             while ( labels.next() )
                             {
                                 removedLabels.add( new LabelEntryView( nodeId,
-                                        store.labelGetName( labels.getLabel() ) ) );
+                                        store.labelGetName( labels.get().getAsInt() ) ) );
                             }
                         }
                     }
@@ -198,17 +199,17 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             for ( Long relId : state.addedAndRemovedRelationships().getRemoved() )
             {
                 Relationship relationshipProxy = relationship( relId );
-                try ( RelationshipCursor relationship = storeStatement.acquireSingleRelationshipCursor( relId ) )
+                try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor( relId ) )
                 {
                     if ( relationship.next() )
                     {
-                        try ( PropertyCursor properties = relationship.properties() )
+                        try ( Cursor<PropertyItem> properties = relationship.get().properties() )
                         {
                             while ( properties.next() )
                             {
                                 removedRelationshipProperties.add( new RelationshipPropertyEntryView( relationshipProxy,
-                                        store.propertyKeyGetName( properties.propertyKeyId() ), null,
-                                        properties.value() ) );
+                                        store.propertyKeyGetName( properties.get().propertyKeyId() ), null,
+                                        properties.get().value() ) );
                             }
                         }
 
@@ -326,18 +327,18 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try ( NodeCursor node = storeStatement.acquireSingleNodeCursor( nodeState.getId() ) )
+        try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeState.getId() ) )
         {
             if ( !node.next() )
             {
                 return null;
             }
 
-            try ( PropertyCursor properties = node.properties() )
+            try ( Cursor<PropertyItem> properties = node.get().property( property ) )
             {
-                if ( properties.seek( property ) )
+                if ( properties.next() )
                 {
-                    return properties.value();
+                    return properties.get().value();
                 }
             }
         }
@@ -352,18 +353,19 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             return null;
         }
 
-        try ( RelationshipCursor relationship = storeStatement.acquireSingleRelationshipCursor( relState.getId() ) )
+        try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor(
+                relState.getId() ) )
         {
             if ( !relationship.next() )
             {
                 return null;
             }
 
-            try ( PropertyCursor properties = relationship.properties() )
+            try ( Cursor<PropertyItem> properties = relationship.get().property( property ) )
             {
-                if ( properties.seek( property ) )
+                if ( properties.next() )
                 {
-                    return properties.value();
+                    return properties.get().value();
                 }
             }
         }

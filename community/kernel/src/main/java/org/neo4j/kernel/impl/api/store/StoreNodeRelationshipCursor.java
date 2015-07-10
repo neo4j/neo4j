@@ -86,8 +86,15 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
 
         if ( isDense && firstRelId != Record.NO_NEXT_RELATIONSHIP.intValue())
         {
-            groupRecord = groupStore.getRecord( firstRelId, groupRecordInstance );
-            relationshipId = nextChainStart();
+            try
+            {
+                groupRecord = groupStore.getRecord( firstRelId, groupRecordInstance );
+                relationshipId = nextChainStart();
+            }
+            catch ( InvalidRecordException e )
+            {
+                relationshipId = Record.NO_NEXT_RELATIONSHIP.intValue();
+            }
 
         }
         else
@@ -105,8 +112,16 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         {
             relationshipRecord.setId( relationshipId );
 
-            if ( !relationshipStore.fillRecord( relationshipId, relationshipRecord, RecordLoad.CHECK ) )
+            try
             {
+                if ( !relationshipStore.fillRecord( relationshipId, relationshipRecord, RecordLoad.CHECK ) )
+                {
+                    return false;
+                }
+            }
+            catch ( InvalidRecordException e )
+            {
+                relationshipId = Record.NO_NEXT_RELATIONSHIP.intValue();
                 return false;
             }
 
@@ -185,27 +200,34 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
 
     private long nextChainStart()
     {
-        while ( groupRecord != null )
+        try
         {
-            if ( checkType( groupRecord.getType() ) )
+            while ( groupRecord != null )
             {
-                // Go to the next chain (direction) within this group
-                while ( groupChainIndex < GROUP_CHAINS.length )
+                if ( checkType( groupRecord.getType() ) )
                 {
-                    GroupChain groupChain = GROUP_CHAINS[groupChainIndex++];
-                    long chainStart = groupChain.chainStart( groupRecord );
-                    if ( chainStart != Record.NO_NEXT_RELATIONSHIP.intValue() &&
-                            (direction == Direction.BOTH || groupChain.matchesDirection( direction )) )
+                    // Go to the next chain (direction) within this group
+                    while ( groupChainIndex < GROUP_CHAINS.length )
                     {
-                        return chainStart;
+                        GroupChain groupChain = GROUP_CHAINS[groupChainIndex++];
+                        long chainStart = groupChain.chainStart( groupRecord );
+                        if ( chainStart != Record.NO_NEXT_RELATIONSHIP.intValue() &&
+                                (direction == Direction.BOTH || groupChain.matchesDirection( direction )) )
+                        {
+                            return chainStart;
+                        }
                     }
                 }
-            }
 
-            // Go to the next group
-            groupRecord = groupRecord.getNext() != Record.NO_NEXT_RELATIONSHIP.intValue() ?
-                    groupStore.getRecord( groupRecord.getNext() ) : null;
-            groupChainIndex = 0;
+                // Go to the next group
+                groupRecord = groupRecord.getNext() != Record.NO_NEXT_RELATIONSHIP.intValue() ?
+                        groupStore.getRecord( groupRecord.getNext() ) : null;
+                groupChainIndex = 0;
+            }
+        }
+        catch ( InvalidRecordException e )
+        {
+            // Ignore - next line will ensure we're finished anyway
         }
         return Record.NO_NEXT_RELATIONSHIP.intValue();
     }

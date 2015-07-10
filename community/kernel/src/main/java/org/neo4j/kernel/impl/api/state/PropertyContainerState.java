@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Iterator;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.ResourceIterator;
@@ -28,10 +29,11 @@ import org.neo4j.helpers.collection.CombiningIterator;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.EntityType;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
+import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.api.cursor.TxPropertyCursor;
+import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
+import org.neo4j.kernel.impl.api.cursor.TxSinglePropertyCursor;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
@@ -58,14 +60,17 @@ public interface PropertyContainerState
 
     void accept( Visitor visitor ) throws ConstraintValidationKernelException;
 
-    PropertyCursor augmentPropertyCursor( Supplier<TxPropertyCursor> propertyCursor, PropertyCursor cursor );
+    Cursor<PropertyItem> augmentPropertyCursor( Supplier<TxAllPropertyCursor> propertyCursor,
+            Cursor<PropertyItem> cursor );
+
+    Cursor<PropertyItem> augmentSinglePropertyCursor( Supplier<TxSinglePropertyCursor> propertyCursor,
+            Cursor<PropertyItem> cursor, int propertyKeyId );
 
     interface Visitor
     {
         void visitPropertyChanges( long entityId, Iterator<DefinedProperty> added,
-
-                                   Iterator<DefinedProperty> changed,
-                                   Iterator<Integer> removed ) throws ConstraintValidationKernelException;
+                Iterator<DefinedProperty> changed,
+                Iterator<Integer> removed ) throws ConstraintValidationKernelException;
     }
 
     class Mutable implements PropertyContainerState
@@ -221,12 +226,27 @@ public interface PropertyContainerState
         }
 
         @Override
-        public PropertyCursor augmentPropertyCursor( Supplier<TxPropertyCursor> propertyCursorCache,
-                PropertyCursor cursor )
+        public Cursor<PropertyItem> augmentPropertyCursor( Supplier<TxAllPropertyCursor> propertyCursorCache,
+                Cursor<PropertyItem> cursor )
         {
             if ( removedProperties != null || addedProperties != null || changedProperties != null )
             {
                 return propertyCursorCache.get().init( cursor, addedProperties, changedProperties, removedProperties );
+            }
+            else
+            {
+                return cursor;
+            }
+        }
+
+        @Override
+        public Cursor<PropertyItem> augmentSinglePropertyCursor( Supplier<TxSinglePropertyCursor> propertyCursorCache,
+                Cursor<PropertyItem> cursor, int propertyKeyId )
+        {
+            if ( removedProperties != null || addedProperties != null || changedProperties != null )
+            {
+                return propertyCursorCache.get().init( cursor, addedProperties, changedProperties, removedProperties,
+                        propertyKeyId );
             }
             else
             {

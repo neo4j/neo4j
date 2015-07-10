@@ -21,16 +21,17 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.NoSuchElementException;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 
 /**
- * Convert a {@link RelationshipCursor} into a {@link RelationshipIterator} that implements {@link Resource).
+ * Convert a {@link RelationshipItem} cursor into a {@link RelationshipIterator} that implements {@link Resource).
  */
 public class CursorRelationshipIterator implements RelationshipIterator, Resource
 {
-    private RelationshipCursor cursor;
+    private Cursor<RelationshipItem> cursor;
     private boolean hasNext;
 
     private long id;
@@ -38,7 +39,7 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
     private long startNode;
     private long endNode;
 
-    public CursorRelationshipIterator( RelationshipCursor resourceCursor )
+    public CursorRelationshipIterator( Cursor<RelationshipItem> resourceCursor )
     {
         cursor = resourceCursor;
         hasNext = nextCursor();
@@ -71,12 +72,14 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
         {
             try
             {
-                id = cursor.getId();
-                type = cursor.getType();
-                startNode = cursor.getStartNode();
-                endNode = cursor.getEndNode();
+                // Copy is necessary here as the nextCursor() in finally will change contents of it
+                RelationshipItem item = cursor.get();
+                id = item.id();
+                type = item.type();
+                startNode = item.startNode();
+                endNode = item.endNode();
 
-                return id;
+                return item.id();
             }
             finally
             {

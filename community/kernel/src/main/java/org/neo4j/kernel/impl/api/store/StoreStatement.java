@@ -20,11 +20,12 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.cursor.LabelCursor;
-import org.neo4j.kernel.api.cursor.NodeCursor;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -44,8 +45,10 @@ public class StoreStatement
 {
     private InstanceCache<StoreSingleNodeCursor> singleNodeCursor;
     private InstanceCache<StoreIteratorNodeCursor> iteratorNodeCursor;
-    private InstanceCache<StorePropertyCursor> propertyCursor;
+    private InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
+    private InstanceCache<StorePropertyCursor> allPropertyCursor;
     private InstanceCache<StoreLabelCursor> labelCursor;
+    private InstanceCache<StoreSingleLabelCursor> singleLabelCursor;
     private InstanceCache<StoreSingleRelationshipCursor> singleRelationshipCursor;
     private InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipCursor;
     private InstanceCache<StoreIteratorRelationshipCursor> iteratorRelationshipCursor;
@@ -74,7 +77,15 @@ public class StoreStatement
                         StoreStatement.this, this );
             }
         };
-        propertyCursor = new InstanceCache<StorePropertyCursor>()
+        singlePropertyCursor = new InstanceCache<StoreSinglePropertyCursor>()
+        {
+            @Override
+            protected StoreSinglePropertyCursor create()
+            {
+                return new StoreSinglePropertyCursor( StoreStatement.this.neoStore.getPropertyStore(), this );
+            }
+        };
+        allPropertyCursor = new InstanceCache<StorePropertyCursor>()
         {
             @Override
             protected StorePropertyCursor create()
@@ -88,6 +99,14 @@ public class StoreStatement
             protected StoreLabelCursor create()
             {
                 return new StoreLabelCursor( this );
+            }
+        };
+        singleLabelCursor = new InstanceCache<StoreSingleLabelCursor>()
+        {
+            @Override
+            protected StoreSingleLabelCursor create()
+            {
+                return new StoreSingleLabelCursor( this );
             }
         };
         singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
@@ -122,31 +141,43 @@ public class StoreStatement
         };
     }
 
-    public NodeCursor acquireSingleNodeCursor( long nodeId )
+    public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId )
     {
         neoStore.assertOpen();
         return singleNodeCursor.get().init( nodeId );
     }
 
-    public NodeCursor acquireIteratorNodeCursor( PrimitiveLongIterator nodeIdIterator )
+    public Cursor<NodeItem> acquireIteratorNodeCursor( PrimitiveLongIterator nodeIdIterator )
     {
         neoStore.assertOpen();
         return iteratorNodeCursor.get().init( nodeIdIterator );
     }
 
-    public PropertyCursor acquirePropertyCursor( long firstPropertyRecordId )
+    public Cursor<PropertyItem> acquirePropertyCursor( long firstPropertyRecordId )
     {
         neoStore.assertOpen();
-        return propertyCursor.get().init( firstPropertyRecordId );
+        return allPropertyCursor.get().init( firstPropertyRecordId );
     }
 
-    public LabelCursor acquireLabelCursor( long[] labels )
+    public Cursor<PropertyItem> acquireSinglePropertyCursor( long firstPropertyRecordId, int propertyKeyId )
+    {
+        neoStore.assertOpen();
+        return singlePropertyCursor.get().init( firstPropertyRecordId, propertyKeyId );
+    }
+
+    public Cursor<LabelItem> acquireLabelCursor( long[] labels )
     {
         neoStore.assertOpen();
         return labelCursor.get().init( labels );
     }
 
-    public RelationshipCursor acquireNodeRelationshipCursor( boolean dense,
+    public Cursor<LabelItem> acquireSingleLabelCursor( long[] labels, int labelId )
+    {
+        neoStore.assertOpen();
+        return singleLabelCursor.get().init( labels, labelId );
+    }
+
+    public Cursor<RelationshipItem> acquireNodeRelationshipCursor( boolean dense,
             long nextRel,
             long id,
             Direction direction,
@@ -156,13 +187,13 @@ public class StoreStatement
         return nodeRelationshipCursor.get().init( dense, nextRel, id, direction, relTypes );
     }
 
-    public RelationshipCursor acquireSingleRelationshipCursor( long relId )
+    public Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relId )
     {
         neoStore.assertOpen();
         return singleRelationshipCursor.get().init( relId );
     }
 
-    public RelationshipCursor acquireIteratorRelationshipCursor( PrimitiveLongIterator iterator )
+    public Cursor<RelationshipItem> acquireIteratorRelationshipCursor( PrimitiveLongIterator iterator )
     {
         neoStore.assertOpen();
         return iteratorRelationshipCursor.get().init( iterator );

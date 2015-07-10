@@ -19,19 +19,17 @@
  */
 package org.neo4j.cursor;
 
-import org.neo4j.function.Supplier;
-
 /**
  * Generic base class for cursor where clients
  * can access the current state through the get method.
- * <p/>
+ * <p>
  * Subclasses must implement the {@link #next()} method and
  * set the current field to the next item.
  *
  * @param <T> the type of instances being iterated
  */
 public abstract class GenericCursor<T>
-        implements Cursor, Supplier<T>
+        implements Cursor<T>
 {
     protected T current;
 

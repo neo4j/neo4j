@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.util;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -35,106 +36,128 @@ import org.neo4j.kernel.impl.transaction.log.IOCursor;
 
 public class Cursors
 {
-    public static <T> ResourceIterable<T> iterable(final IOCursor<T> cursor)
+    private static Cursor<Object> EMPTY = new Cursor<Object>()
     {
-        return new ResourceIterable<T>()
+        @Override
+        public boolean next()
         {
+            return false;
+        }
+
+        @Override
+        public Object get()
+        {
+            return null;
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+    };
+
+    @SuppressWarnings("unchecked")
+    public static <T> Cursor<T> empty()
+    {
+        return (Cursor<T>) EMPTY;
+    }
+
+    public static <T> Cursor<T> cursor( final T... items )
+    {
+        return new Cursor<T>()
+        {
+            int idx = 0;
+            T current;
+
             @Override
-            public ResourceIterator<T> iterator()
+            public boolean next()
             {
-                try
+                if ( idx < items.length )
                 {
-                    if (cursor.next())
-                    {
-                        final T first = cursor.get();
-
-                        return new ResourceIterator<T>()
-                        {
-                            T instance = first;
-
-                            @Override
-                            public boolean hasNext()
-                            {
-                                return instance != null;
-                            }
-
-                            @Override
-                            public T next()
-                            {
-                                try
-                                {
-                                    return instance;
-                                }
-                                finally
-                                {
-                                    try
-                                    {
-                                        if (cursor.next())
-                                        {
-                                            instance = cursor.get();
-                                        } else
-                                        {
-                                            cursor.close();
-                                            instance = null;
-                                        }
-                                    }
-                                    catch ( IOException e )
-                                    {
-                                        instance = null;
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void remove()
-                            {
-                                throw new UnsupportedOperationException(  );
-                            }
-
-                            @Override
-                            public void close()
-                            {
-                                try
-                                {
-                                    cursor.close();
-                                }
-                                catch ( IOException e )
-                                {
-                                    // Ignore
-                                }
-                            }
-                        };
-                    } else
-                    {
-                        cursor.close();
-                        return IteratorUtil.<T>asResourceIterator( Collections.<T>emptyIterator());
-                    }
+                    current = items[idx++];
+                    return true;
                 }
-                catch ( IOException e )
+                else
                 {
-                    return IteratorUtil.<T>asResourceIterator( Collections.<T>emptyIterator());
+                    return false;
                 }
+            }
+
+            @Override
+            public void close()
+            {
+                idx = 0;
+                current = null;
+            }
+
+            @Override
+            public T get()
+            {
+                if ( current == null )
+                {
+                    throw new IllegalStateException();
+                }
+
+                return current;
             }
         };
     }
 
-    public static <T,C extends Cursor> ResourceIterator<T> iterator( final C resourceCursor, final Function<C, T> map)
+    public static <T> Cursor<T> cursor( final Iterable<T> items )
     {
-        return new CursorResourceIterator<>( resourceCursor, map );
+        return new Cursor<T>()
+        {
+            Iterator<T> iterator = items.iterator();
+
+            T current;
+
+            @Override
+            public boolean next()
+            {
+                if ( iterator.hasNext() )
+                {
+                    current = iterator.next();
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                iterator = items.iterator();
+                current = null;
+            }
+
+            @Override
+            public T get()
+            {
+                if ( current == null )
+                {
+                    throw new IllegalStateException();
+                }
+
+                return current;
+            }
+        };
     }
 
-    public static <C extends Cursor> PrimitiveIntIterator intIterator( final C resourceCursor, final ToIntFunction<C> map)
+    public static <T> PrimitiveIntIterator intIterator( final Cursor<T> resourceCursor, final ToIntFunction<T> map )
     {
         return new CursorPrimitiveIntIterator<>( resourceCursor, map );
     }
 
-    private static class CursorPrimitiveIntIterator<C extends Cursor> implements PrimitiveIntIterator, Resource
+    private static class CursorPrimitiveIntIterator<T> implements PrimitiveIntIterator, Resource
     {
-        private final ToIntFunction<C> map;
-        private C cursor;
+        private final ToIntFunction<T> map;
+        private Cursor<T> cursor;
         private boolean hasNext;
 
-        public CursorPrimitiveIntIterator( C resourceCursor, ToIntFunction<C> map )
+        public CursorPrimitiveIntIterator( Cursor<T> resourceCursor, ToIntFunction<T> map )
         {
             this.map = map;
             cursor = resourceCursor;
@@ -143,7 +166,7 @@ public class Cursors
 
         private boolean nextCursor()
         {
-            if (cursor != null)
+            if ( cursor != null )
             {
                 boolean hasNext = cursor.next();
                 if ( !hasNext )
@@ -151,7 +174,8 @@ public class Cursors
                     close();
                 }
                 return hasNext;
-            } else
+            }
+            else
             {
                 return false;
             }
@@ -170,7 +194,7 @@ public class Cursors
             {
                 try
                 {
-                    return map.apply( cursor );
+                    return map.apply( cursor.get() );
                 }
                 finally
                 {
@@ -186,7 +210,7 @@ public class Cursors
         @Override
         public void close()
         {
-            if (cursor != null )
+            if ( cursor != null )
             {
                 cursor.close();
                 cursor = null;
@@ -194,75 +218,5 @@ public class Cursors
         }
     }
 
-    private static class CursorResourceIterator<T, C extends Cursor> implements ResourceIterator<T>
-    {
-        private final Function<C, T> map;
-        private C cursor;
-        private boolean hasNext;
 
-        public CursorResourceIterator( C resourceCursor, Function<C, T> map )
-        {
-            this.map = map;
-            cursor = resourceCursor;
-            hasNext = nextCursor();
-        }
-
-        private boolean nextCursor()
-        {
-            if (cursor != null)
-            {
-                boolean hasNext = cursor.next();
-                if ( !hasNext )
-                {
-                    close();
-                }
-                return hasNext;
-            } else
-            {
-                return false;
-            }
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return hasNext;
-        }
-
-        @Override
-        public T next()
-        {
-            if ( hasNext )
-            {
-                try
-                {
-                    return map.apply( cursor );
-                }
-                finally
-                {
-                    hasNext = nextCursor();
-                }
-            }
-            else
-            {
-                throw new NoSuchElementException();
-            }
-        }
-
-        @Override
-        public void remove()
-        {
-            throw new UnsupportedOperationException(  );
-        }
-
-        @Override
-        public void close()
-        {
-            if (cursor != null )
-            {
-                cursor.close();
-                cursor = null;
-            }
-        }
-    }
 }

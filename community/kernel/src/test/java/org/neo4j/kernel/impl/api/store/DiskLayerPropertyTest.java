@@ -23,8 +23,9 @@ import java.lang.reflect.Array;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.cursor.NodeCursor;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
+import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 
@@ -94,15 +95,15 @@ public class DiskLayerPropertyTest extends DiskLayerTest
             long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label1 ).getId();
 
             // when
-            try ( NodeCursor node = statement.acquireSingleNodeCursor( nodeId ) )
+            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( nodeId ) )
             {
                 node.next();
 
-                try ( PropertyCursor props = node.properties() )
+                try ( Cursor<PropertyItem> props = node.get().property( propKey ) )
                 {
-                    if ( props.seek( propKey ) )
+                    if ( props.next() )
                     {
-                        Object propVal = props.value();
+                        Object propVal = props.get().value();
 
                         //then
                         assertTrue( propVal + ".valueEquals(" + value + ")",

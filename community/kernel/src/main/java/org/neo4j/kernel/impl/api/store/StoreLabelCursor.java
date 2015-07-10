@@ -19,22 +19,23 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.kernel.api.cursor.LabelCursor;
-import org.neo4j.kernel.impl.util.InstanceCache;
+import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Consumer;
+import org.neo4j.kernel.api.cursor.LabelItem;
 
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 /**
  * Cursor over all labels on a node.
  */
-public class StoreLabelCursor implements LabelCursor
+public class StoreLabelCursor implements Cursor<LabelItem>, LabelItem
 {
     private long[] labels;
     private int index;
     private int currentLabel;
-    private InstanceCache<StoreLabelCursor> instanceCache;
+    private Consumer<StoreLabelCursor> instanceCache;
 
-    public StoreLabelCursor( InstanceCache<StoreLabelCursor> instanceCache )
+    public StoreLabelCursor( Consumer<StoreLabelCursor> instanceCache )
     {
         this.instanceCache = instanceCache;
     }
@@ -61,21 +62,13 @@ public class StoreLabelCursor implements LabelCursor
     }
 
     @Override
-    public boolean seek( int labelId )
+    public LabelItem get()
     {
-        while ( next() )
-        {
-            if ( currentLabel == labelId )
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return this;
     }
 
     @Override
-    public int getLabel()
+    public int getAsInt()
     {
         return currentLabel;
     }

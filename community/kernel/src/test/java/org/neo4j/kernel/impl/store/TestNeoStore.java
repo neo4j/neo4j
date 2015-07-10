@@ -35,6 +35,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -48,8 +49,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.cursor.NodeCursor;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -546,7 +547,7 @@ public class TestNeoStore
     {
         try (StoreStatement statement = storeLayer.acquireStatement())
         {
-            try (NodeCursor node = statement.acquireSingleNodeCursor( nodeId ))
+            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( nodeId ) )
             {
                 return node.next();
             }
@@ -906,7 +907,7 @@ public class TestNeoStore
         {
             for ( long relId : relIds )
             {
-                try (RelationshipCursor relationship = statement.acquireSingleRelationshipCursor( relId ))
+                try ( Cursor<RelationshipItem> relationship = statement.acquireSingleRelationshipCursor( relId ) )
                 {
                     assertFalse( relationship.next() );
                 }

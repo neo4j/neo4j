@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.cursor.LabelCursor;
-import org.neo4j.kernel.api.cursor.NodeCursor;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
@@ -32,7 +33,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 /**
  * Base cursor for nodes.
  */
-public abstract class StoreAbstractNodeCursor implements NodeCursor
+public abstract class StoreAbstractNodeCursor implements Cursor<NodeItem>, NodeItem
 {
     protected final NodeRecord nodeRecord;
     protected final NodeStore nodeStore;
@@ -46,32 +47,50 @@ public abstract class StoreAbstractNodeCursor implements NodeCursor
     }
 
     @Override
-    public long getId()
+    public NodeItem get()
+    {
+        return this;
+    }
+
+    @Override
+    public long id()
     {
         return nodeRecord.getId();
     }
 
     @Override
-    public LabelCursor labels()
+    public Cursor<LabelItem> labels()
     {
         return storeStatement.acquireLabelCursor( parseLabelsField( nodeRecord ).get( nodeStore ) );
     }
 
     @Override
-    public PropertyCursor properties()
+    public Cursor<LabelItem> label( int labelId )
+    {
+        return storeStatement.acquireSingleLabelCursor( parseLabelsField( nodeRecord ).get( nodeStore ), labelId );
+    }
+
+    @Override
+    public Cursor<PropertyItem> properties()
     {
         return storeStatement.acquirePropertyCursor( nodeRecord.getNextProp() );
     }
 
     @Override
-    public RelationshipCursor relationships( Direction direction )
+    public Cursor<PropertyItem> property( int propertyKeyId )
+    {
+        return storeStatement.acquireSinglePropertyCursor( nodeRecord.getNextProp(), propertyKeyId );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> relationships( Direction direction )
     {
         return storeStatement.acquireNodeRelationshipCursor( nodeRecord.isDense(), nodeRecord.getNextRel(),
                 nodeRecord.getId(), direction, null );
     }
 
     @Override
-    public RelationshipCursor relationships( Direction direction, int... relTypes )
+    public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
     {
         return storeStatement.acquireNodeRelationshipCursor( nodeRecord.isDense(), nodeRecord.getNextRel(),
                 nodeRecord.getId(), direction, relTypes );

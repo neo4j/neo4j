@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.internal.dragons;
 
-import sun.misc.Unsafe;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -32,10 +30,12 @@ import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
 
+import sun.misc.Unsafe;
+
 /**
  * Always check that the Unsafe utilities are available with the {@link UnsafeUtil#assertHasUnsafe} method, before
  * calling any of the other methods.
- *
+ * <p>
  * Avoid `import static` for these individual methods. Always qualify method usages with `UnsafeUtil` so use sites
  * show up in code greps.
  */
@@ -44,6 +44,7 @@ public final class UnsafeUtil
     private static final Unsafe unsafe;
     private static final MethodHandle getAndAddInt;
     private static final MethodHandle getAndSetObject;
+    private static final MethodHandle sharedStringConstructor;
     private static final String allowUnalignedMemoryAccessProperty =
             "org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allowUnalignedMemoryAccess";
 
@@ -67,6 +68,7 @@ public final class UnsafeUtil
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         getAndAddInt = getGetAndAddIntMethodHandle( lookup );
         getAndSetObject = getGetAndSetObjectMethodHandle( lookup );
+        sharedStringConstructor = getSharedStringConstructorMethodHandle( lookup );
 
         Class<?> dbbClass = null;
         Constructor<?> ctor = null;
@@ -126,7 +128,7 @@ public final class UnsafeUtil
             String arch = System.getProperty( "os.arch", "?" );
             allowUnalignedMemoryAccess =
                     arch.equals( "x86_64" ) || arch.equals( "i386" )
-                    || arch.equals( "x86" ) || arch.equals( "amd64" );
+                            || arch.equals( "x86" ) || arch.equals( "amd64" );
         }
         storeByteOrderIsNative = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
     }
@@ -151,7 +153,7 @@ public final class UnsafeUtil
                         for ( Field field : fields )
                         {
                             if ( Modifier.isStatic( field.getModifiers() )
-                                 && type.isAssignableFrom( field.getType() ) )
+                                    && type.isAssignableFrom( field.getType() ) )
                             {
                                 field.setAccessible( true );
                                 return type.cast( field.get( null ) );
@@ -211,6 +213,21 @@ public final class UnsafeUtil
         }
     }
 
+    private static MethodHandle getSharedStringConstructorMethodHandle(
+            MethodHandles.Lookup lookup )
+    {
+        try
+        {
+            Constructor<String> constructor = String.class.getDeclaredConstructor( char[].class, Boolean.TYPE );
+            constructor.setAccessible( true );
+            return lookup.unreflectConstructor( constructor );
+        }
+        catch ( Exception e )
+        {
+            return null;
+        }
+    }
+
     /**
      * Get the object-relative field offset.
      */
@@ -229,7 +246,7 @@ public final class UnsafeUtil
 
     /**
      * Atomically add the given delta to the int field, and return its previous value.
-     *
+     * <p>
      * This has the memory visibility semantics of a volatile read followed by a volatile write.
      */
     public static int getAndAddInt( Object obj, long offset, int delta )
@@ -268,7 +285,7 @@ public final class UnsafeUtil
     /**
      * Atomically compare the current value of the given long field with the expected value, and if they are the
      * equal, set the field to the updated value and return true. Otherwise return false.
-     *
+     * <p>
      * If this method returns true, then it has the memory visibility semantics of a volatile read followed by a
      * volatile write.
      */
@@ -324,8 +341,33 @@ public final class UnsafeUtil
     }
 
     /**
-     * Allocate a slab of memory of the given size in bytes, and return a pointer to that memory.
+     * Create a string with a char[] that you know is not going to be modified, so avoid the copy constructor.
      *
+     * @param chars array that will back the new string
+     * @return the created string
+     */
+    public static String newSharedArrayString( char[] chars )
+    {
+        if ( sharedStringConstructor != null )
+        {
+            try
+            {
+                return (String) sharedStringConstructor.invokeExact( chars, true );
+            }
+            catch ( Throwable throwable )
+            {
+                throw new LinkageError( "Unexpected 'String constructor' intrinsic failure", throwable );
+            }
+        }
+        else
+        {
+            return new String( chars );
+        }
+    }
+
+    /**
+     * Allocate a slab of memory of the given size in bytes, and return a pointer to that memory.
+     * <p>
      * The memory is aligned such that it can be used for any data type. The memory is cleared, so all bytes are zero.
      */
     public static long allocateMemory( long sizeInBytes )
@@ -699,7 +741,7 @@ public final class UnsafeUtil
 
     /**
      * Create a new DirectByteBuffer that wraps the given address and has the given capacity.
-     *
+     * <p>
      * The ByteBuffer does NOT create a Cleaner, or otherwise register the pointer for freeing.
      */
     public static ByteBuffer newDirectByteBuffer( long addr, int cap ) throws Exception

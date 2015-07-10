@@ -29,6 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
@@ -39,9 +40,9 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.cursor.LabelCursor;
-import org.neo4j.kernel.api.cursor.NodeCursor;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -99,8 +100,8 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
  */
 public class DiskLayer implements StoreReadLayer
 {
-    private static final Function<PropertyConstraintRule,PropertyConstraint> RULE_TO_CONSTRAINT =
-            new Function<PropertyConstraintRule,PropertyConstraint>()
+    private static final Function<PropertyConstraintRule, PropertyConstraint> RULE_TO_CONSTRAINT =
+            new Function<PropertyConstraintRule, PropertyConstraint>()
             {
                 @Override
                 public PropertyConstraint apply( PropertyConstraintRule rule )
@@ -201,11 +202,11 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public PrimitiveIntIterator nodeGetLabels( StoreStatement statement, long nodeId ) throws EntityNotFoundException
     {
-        try ( NodeCursor nodeCursor = statement.acquireSingleNodeCursor( nodeId ) )
+        try ( Cursor<NodeItem> nodeCursor = statement.acquireSingleNodeCursor( nodeId ) )
         {
             if ( nodeCursor.next() )
             {
-                return Cursors.intIterator( nodeCursor.labels(), LabelCursor.GET_LABEL );
+                return Cursors.intIterator( nodeCursor.get().labels(), LabelItem.GET_LABEL );
             }
             throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
@@ -227,11 +228,11 @@ public class DiskLayer implements StoreReadLayer
             int[] relTypes )
             throws EntityNotFoundException
     {
-        try ( final NodeCursor nodeCursor = statement.acquireSingleNodeCursor( nodeId ) )
+        try ( final Cursor<NodeItem> nodeCursor = statement.acquireSingleNodeCursor( nodeId ) )
         {
             if ( nodeCursor.next() )
             {
-                return new CursorRelationshipIterator( nodeCursor.relationships( direction, relTypes ) );
+                return new CursorRelationshipIterator( nodeCursor.get().relationships( direction, relTypes ) );
             }
             throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
@@ -716,7 +717,7 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public Iterator<PropertyConstraint> constraintsGetAll()
     {
-        return schemaStorage.schemaRules( RULE_TO_CONSTRAINT, PropertyConstraintRule.class);
+        return schemaStorage.schemaRules( RULE_TO_CONSTRAINT, PropertyConstraintRule.class );
     }
 
     @Override
@@ -761,7 +762,7 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state )
     {
-        return new PropertyKeyIdIterator(propertyLoader.graphLoadProperties( new IteratingPropertyReceiver() ));
+        return new PropertyKeyIdIterator( propertyLoader.graphLoadProperties( new IteratingPropertyReceiver() ) );
     }
 
     @Override
@@ -883,7 +884,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public NodeCursor nodesGetAllCursor( StoreStatement statement )
+    public Cursor<NodeItem> nodesGetAllCursor( StoreStatement statement )
     {
         return statement.acquireIteratorNodeCursor( new AllStoreIdIterator( neoStore.getNodeStore() ) );
     }
@@ -943,7 +944,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public RelationshipCursor relationshipsGetAllCursor( StoreStatement storeStatement )
+    public Cursor<RelationshipItem> relationshipsGetAllCursor( StoreStatement storeStatement )
     {
         return storeStatement.acquireIteratorRelationshipCursor(
                 new AllStoreIdIterator( neoStore.getRelationshipStore() ) );

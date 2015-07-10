@@ -19,25 +19,28 @@
  */
 package org.neo4j.kernel.impl.api.cursor;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.cursor.LabelCursor;
-import org.neo4j.kernel.api.cursor.NodeCursor;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.state.NodeState;
+import org.neo4j.kernel.impl.util.Cursors;
 
 /**
- * Overlays transaction state on a {@link NodeCursor}.
+ * Overlays transaction state on a {@link NodeItem} cursor.
  */
 public abstract class TxAbstractNodeCursor
-        implements NodeCursor
+        implements Cursor<NodeItem>, NodeItem
 {
     protected final TransactionState state;
     private final Consumer<TxAbstractNodeCursor> cache;
 
-    protected NodeCursor cursor;
+    protected Cursor<NodeItem> cursor;
 
     protected long id;
 
@@ -50,9 +53,20 @@ public abstract class TxAbstractNodeCursor
         this.cache = cache;
     }
 
-    public TxAbstractNodeCursor init( NodeCursor nodeCursor )
+    public TxAbstractNodeCursor init( Cursor<NodeItem> nodeCursor )
     {
         this.cursor = nodeCursor;
+        return this;
+    }
+
+    @Override
+    public NodeItem get()
+    {
+        if ( id == StatementConstants.NO_SUCH_NODE )
+        {
+            throw new IllegalStateException();
+        }
+
         return this;
     }
 
@@ -65,52 +79,57 @@ public abstract class TxAbstractNodeCursor
     }
 
     @Override
-    public long getId()
+    public long id()
     {
-        if (id == -1)
-            throw new IllegalStateException(  );
-
         return id;
     }
 
     @Override
-    public LabelCursor labels()
+    public Cursor<LabelItem> labels()
     {
-        if (id == -1)
-            throw new IllegalStateException(  );
-
-        return state.augmentLabelCursor( nodeIsAddedInThisTx ? LabelCursor.EMPTY : cursor.labels(), nodeState );
-    }
-
-    @Override
-    public PropertyCursor properties()
-    {
-        if (id == -1)
-            throw new IllegalStateException(  );
-
-        return state.augmentPropertyCursor( nodeIsAddedInThisTx ? PropertyCursor.EMPTY : cursor.properties(),
+        return state.augmentLabelCursor( nodeIsAddedInThisTx ? Cursors.<LabelItem>empty() : cursor.get().labels(),
                 nodeState );
     }
 
     @Override
-    public RelationshipCursor relationships( Direction direction, int... relTypes )
+    public Cursor<LabelItem> label( int labelId )
     {
-        if (id == -1)
-            throw new IllegalStateException(  );
+        return state.augmentSingleLabelCursor(
+                nodeIsAddedInThisTx ? Cursors.<LabelItem>empty() : cursor.get().label( labelId ),
+                nodeState, labelId );
+    }
 
+    @Override
+    public Cursor<PropertyItem> properties()
+    {
+        return state.augmentPropertyCursor(
+                nodeIsAddedInThisTx ? Cursors.<PropertyItem>empty() : cursor.get().properties(),
+                nodeState );
+    }
+
+    @Override
+    public Cursor<PropertyItem> property( int propertyKeyId )
+    {
+        return state.augmentSinglePropertyCursor(
+                nodeIsAddedInThisTx ? Cursors.<PropertyItem>empty() : cursor.get().property( propertyKeyId ),
+                nodeState, propertyKeyId );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
+    {
         return state.augmentNodeRelationshipCursor(
-                nodeIsAddedInThisTx ? RelationshipCursor.EMPTY : cursor.relationships( direction, relTypes ), nodeState,
+                nodeIsAddedInThisTx ? Cursors.<RelationshipItem>empty() : cursor.get().relationships( direction,
+                        relTypes ), nodeState,
                 direction, relTypes );
     }
 
     @Override
-    public RelationshipCursor relationships( Direction direction )
+    public Cursor<RelationshipItem> relationships( Direction direction )
     {
-        if (id == -1)
-            throw new IllegalStateException(  );
-
         return state.augmentNodeRelationshipCursor(
-                nodeIsAddedInThisTx ? RelationshipCursor.EMPTY : cursor.relationships( direction ), nodeState,
+                nodeIsAddedInThisTx ? Cursors.<RelationshipItem>empty() : cursor.get().relationships( direction ),
+                nodeState,
                 direction, null );
     }
 }

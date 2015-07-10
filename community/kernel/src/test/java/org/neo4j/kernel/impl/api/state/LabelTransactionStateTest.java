@@ -28,8 +28,8 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.cursor.LabelCursor;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
+import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -51,230 +51,12 @@ import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asLabelCursor;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asNode;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
+import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
 
 public class LabelTransactionStateTest
 {
-    @Test
-    public void addOnlyLabelShouldBeVisibleInTx() throws Exception
-    {
-        // GIVEN
-        commitNoLabels();
-
-        // WHEN
-        txContext.nodeAddLabel( state, nodeId, labelId1 );
-
-        // THEN
-        assertLabels( labelId1 );
-    }
-
-    @Test
-    public void addAdditionalLabelShouldBeReflectedWithinTx() throws Exception
-    {
-        // GIVEN
-        commitLabels( labelId1 );
-
-        // WHEN
-        txContext.nodeAddLabel( state, nodeId, labelId2 );
-
-        // THEN
-        assertLabels( labelId1, labelId2 );
-    }
-
-    @Test
-    public void addAlreadyExistingLabelShouldBeReflectedWithinTx() throws Exception
-    {
-        // GIVEN
-        commitLabels( labelId1 );
-
-        // WHEN
-        txContext.nodeAddLabel( state, nodeId, labelId1 );
-
-        // THEN
-        assertLabels( labelId1 );
-    }
-
-    @Test
-    public void removeCommittedLabelShouldBeReflectedWithinTx() throws Exception
-    {
-        // GIVEN
-        commitLabels( labelId1, labelId2 );
-
-        // WHEN
-        txContext.nodeRemoveLabel( state, nodeId, labelId1 );
-
-        // THEN
-        assertLabels( labelId2 );
-    }
-
-    @Test
-    public void removeAddedLabelInTxShouldBeReflectedWithinTx() throws Exception
-    {
-        // GIVEN
-        commitLabels( labelId1 );
-
-        // WHEN
-        txContext.nodeAddLabel( state, nodeId, labelId2 );
-        txContext.nodeRemoveLabel( state, nodeId, labelId2 );
-
-        // THEN
-        assertLabels( labelId1 );
-    }
-
-    @Test
-    public void addRemovedLabelInTxShouldBeReflectedWithinTx() throws Exception
-    {
-        // GIVEN
-        commitLabels( labelId1 );
-
-        // WHEN
-        txContext.nodeRemoveLabel( state, nodeId, labelId1 );
-        txContext.nodeAddLabel( state, nodeId, labelId1 );
-
-        // THEN
-        assertLabels( labelId1 );
-    }
-
-    @Test
-    public void addedLabelsShouldBeReflectedWhenGettingNodesForLabel() throws Exception
-    {
-        // GIVEN
-        commitLabels(
-                labels( 0, 1, 2 ),
-                labels( 1, 2, 3 ),
-                labels( 2, 1, 3 ) );
-
-        // WHEN
-        txContext.nodeAddLabel( state, 2, 2 );
-
-        // THEN
-        assertEquals( asSet( 0L, 1L, 2L ), asSet( txContext.nodesGetForLabel( state, 2 ) ) );
-    }
-
-    @Test
-    public void removedLabelsShouldBeReflectedWhenGettingNodesForLabel() throws Exception
-    {
-        // GIVEN
-        commitLabels(
-                labels( 0, 1, 2 ),
-                labels( 1, 2, 3 ),
-                labels( 2, 1, 3 ) );
-
-        // WHEN
-        txContext.nodeRemoveLabel( state, 1, 2 );
-
-        // THEN
-        assertEquals( asSet( 0L ), asSet( txContext.nodesGetForLabel( state, 2 ) ) );
-    }
-
-    @Test
-    public void addingNewLabelToNodeShouldRespondTrue() throws Exception
-    {
-        // GIVEN
-        commitNoLabels();
-
-        // WHEN
-        boolean added = txContext.nodeAddLabel( state, nodeId, labelId1 );
-
-        // THEN
-        assertTrue( "Should have been added now", added );
-    }
-
-    @Test
-    public void addingExistingLabelToNodeShouldRespondFalse() throws Exception
-    {
-        // GIVEN
-        commitLabels( labelId1 );
-
-        // WHEN
-        boolean added = txContext.nodeAddLabel( state, nodeId, labelId1 );
-
-        // THEN
-        assertFalse( "Shouldn't have been added now", added );
-    }
-
-    @Test
-    public void removingExistingLabelFromNodeShouldRespondTrue() throws Exception
-    {
-        // GIVEN
-        commitLabels( labelId1 );
-
-        // WHEN
-        boolean removed = txContext.nodeRemoveLabel( state, nodeId, labelId1 );
-
-        // THEN
-        assertTrue( "Should have been removed now", removed );
-    }
-
-    @Test
-    public void removingNonExistentLabelFromNodeShouldRespondFalse() throws Exception
-    {
-        // GIVEN
-        commitNoLabels();
-
-        // WHEN
-        txContext.nodeAddLabel( state, nodeId, labelId1 );
-
-        // THEN
-        assertLabels( labelId1 );
-    }
-
-    @Test
-    public void should_return_true_when_adding_new_label() throws Exception
-    {
-        // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, PropertyCursor.EMPTY,
-                LabelCursor.EMPTY ) );
-
-        // WHEN and THEN
-        assertTrue( "Label should have been added", txContext.nodeAddLabel( state, 1337, 12 ) );
-    }
-
-    @Test
-    public void should_return_false_when_adding_existing_label() throws Exception
-    {
-        // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, PropertyCursor.EMPTY,
-                asLabelCursor( 12 ) ) );
-
-        // WHEN and THEN
-        assertFalse( "Label should have been added", txContext.nodeAddLabel( state, 1337, 12 ) );
-    }
-
-    @Test
-    public void should_return_true_when_removing_existing_label() throws Exception
-    {
-        // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, PropertyCursor.EMPTY,
-                asLabelCursor( 12 ) ) );
-
-        // WHEN and THEN
-        assertTrue( "Label should have been removed", txContext.nodeRemoveLabel( state, 1337, 12 ) );
-    }
-
-    @Test
-    public void should_return_true_when_removing_non_existant_label() throws Exception
-    {
-        // GIVEN
-        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, PropertyCursor.EMPTY,
-                LabelCursor.EMPTY ) );
-
-        // WHEN and THEN
-        assertFalse( "Label should have been removed", txContext.nodeRemoveLabel( state, 1337, 12 ) );
-    }
-
-    // exists
-
-    private final int labelId1 = 10, labelId2 = 12;
-    private final long nodeId = 20;
-
-    private StoreReadLayer store;
-    private TransactionState txState;
-    private StateHandlingStatementOperations txContext;
-
-    private KernelStatement state;
-    private StoreStatement storeStatement;
-
     @Before
     public void before() throws Exception
     {
@@ -293,6 +75,329 @@ public class LabelTransactionStateTest
         storeStatement = mock( StoreStatement.class );
         when( state.getStoreStatement() ).thenReturn( storeStatement );
     }
+
+    @Test
+    public void addOnlyLabelShouldBeVisibleInTx() throws Exception
+    {
+        // GIVEN
+        commitNoLabels();
+
+        // WHEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+        {
+            if ( cursor.next() )
+            {
+                txContext.nodeAddLabel( state, cursor.get(), labelId1 );
+            }
+        }
+
+        // THEN
+        assertLabels( labelId1 );
+    }
+
+    @Test
+    public void addAdditionalLabelShouldBeReflectedWithinTx() throws Exception
+    {
+        // GIVEN
+        commitLabels( labelId1 );
+
+        // WHEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+        {
+            if ( cursor.next() )
+            {
+                txContext.nodeAddLabel( state, cursor.get(), labelId2 );
+            }
+        }
+
+        // THEN
+        assertLabels( labelId1, labelId2 );
+    }
+
+    @Test
+    public void addAlreadyExistingLabelShouldBeReflectedWithinTx() throws Exception
+    {
+        // GIVEN
+        commitLabels( labelId1 );
+
+        // WHEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+        {
+            if ( cursor.next() )
+            {
+                txContext.nodeAddLabel( state, cursor.get(), labelId1 );
+            }
+        }
+
+        // THEN
+        assertLabels( labelId1 );
+    }
+
+    @Test
+    public void removeCommittedLabelShouldBeReflectedWithinTx() throws Exception
+    {
+        // GIVEN
+        commitLabels( labelId1, labelId2 );
+
+        // WHEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+        {
+            if ( cursor.next() )
+            {
+                txContext.nodeRemoveLabel( state, cursor.get(), labelId1 );
+            }
+        }
+        // THEN
+        assertLabels( labelId2 );
+    }
+
+    @Test
+    public void removeAddedLabelInTxShouldBeReflectedWithinTx() throws Exception
+    {
+        // GIVEN
+        commitLabels( labelId1 );
+
+        // WHEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+        {
+            if ( cursor.next() )
+            {
+                txContext.nodeAddLabel( state, cursor.get(), labelId2 );
+            }
+        }
+
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+        {
+            if ( cursor.next() )
+            {
+                txContext.nodeRemoveLabel( state, cursor.get(), labelId2 );
+            }
+        }
+
+        // THEN
+        assertLabels( labelId1 );
+    }
+
+    @Test
+    public void addRemovedLabelInTxShouldBeReflectedWithinTx() throws Exception
+    {
+        // GIVEN
+        commitLabels( labelId1 );
+
+        // WHEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+        {
+            if ( cursor.next() )
+            {
+                txContext.nodeRemoveLabel( state, cursor.get(), labelId1 );
+            }
+        }
+
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+        {
+            if ( cursor.next() )
+            {
+                txContext.nodeAddLabel( state, cursor.get(), labelId1 );
+            }
+        }
+
+        // THEN
+        assertLabels( labelId1 );
+    }
+
+    @Test
+    public void addedLabelsShouldBeReflectedWhenGettingNodesForLabel() throws Exception
+    {
+        // GIVEN
+        commitLabels(
+                labels( 0, 1, 2 ),
+                labels( 1, 2, 3 ),
+                labels( 2, 1, 3 ) );
+
+        // WHEN
+        txContext.nodeAddLabel( state, asNode( 2 ), 2 );
+
+        // THEN
+        assertEquals( asSet( 0L, 1L, 2L ), asSet( txContext.nodesGetForLabel( state, 2 ) ) );
+    }
+
+    @Test
+    public void removedLabelsShouldBeReflectedWhenGettingNodesForLabel() throws Exception
+    {
+        // GIVEN
+        commitLabels(
+                labels( 0, 1, 2 ),
+                labels( 1, 2, 3 ),
+                labels( 2, 1, 3 ) );
+
+        // WHEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, 1 ) )
+        {
+            if ( cursor.next() )
+            {
+                txContext.nodeRemoveLabel( state, cursor.get(), 2 );
+            }
+        }
+
+        // THEN
+        assertEquals( asSet( 0L ), asSet( txContext.nodesGetForLabel( state, 2 ) ) );
+    }
+
+    @Test
+    public void addingNewLabelToNodeShouldRespondTrue() throws Exception
+    {
+        // GIVEN
+        commitNoLabels();
+
+        // WHEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+        {
+            if ( cursor.next() )
+            {
+                boolean added = txContext.nodeAddLabel( state, cursor.get(), labelId1 );
+
+                // THEN
+                assertTrue( "Should have been added now", added );
+            }
+        }
+    }
+
+    @Test
+    public void addingExistingLabelToNodeShouldRespondFalse() throws Exception
+    {
+        // GIVEN
+        commitLabels( labelId1 );
+
+        // WHEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+        {
+            if ( cursor.next() )
+            {
+                boolean added = txContext.nodeAddLabel( state, cursor.get(), labelId1 );
+
+                // THEN
+                assertFalse( "Shouldn't have been added now", added );
+            }
+        }
+    }
+
+    @Test
+    public void removingExistingLabelFromNodeShouldRespondTrue() throws Exception
+    {
+        // GIVEN
+        commitLabels( labelId1 );
+
+        // WHEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+        {
+            if ( cursor.next() )
+            {
+                boolean removed = txContext.nodeRemoveLabel( state, cursor.get(), labelId1 );
+
+                // THEN
+                assertTrue( "Should have been removed now", removed );
+            }
+
+        }
+    }
+
+    @Test
+    public void removingNonExistentLabelFromNodeShouldRespondFalse() throws Exception
+    {
+        // GIVEN
+        commitNoLabels();
+
+        // WHEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+        {
+            if ( cursor.next() )
+            {
+                txContext.nodeAddLabel( state, cursor.get(), labelId1 );
+            }
+        }
+
+        // THEN
+        assertLabels( labelId1 );
+    }
+
+    @Test
+    public void should_return_true_when_adding_new_label() throws Exception
+    {
+        // GIVEN
+        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337 ) );
+
+        // WHEN and THEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, 1337 ) )
+        {
+            if ( cursor.next() )
+            {
+                assertTrue( "Label should have been added", txContext.nodeAddLabel( state, cursor.get(), 12 ) );
+            }
+        }
+    }
+
+    @Test
+    public void should_return_false_when_adding_existing_label() throws Exception
+    {
+        // GIVEN
+        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, asPropertyCursor(),
+                asLabelCursor( 12 ) ) );
+
+        // WHEN and THEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, 1337 ) )
+        {
+            if ( cursor.next() )
+            {
+                assertFalse( "Label should have been added", txContext.nodeAddLabel( state, cursor.get(), 12 ) );
+            }
+        }
+    }
+
+    @Test
+    public void should_return_true_when_removing_existing_label() throws Exception
+    {
+        // GIVEN
+        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337, asPropertyCursor(),
+                asLabelCursor( 12 ) ) );
+
+        // WHEN and THEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, 1337 ) )
+        {
+            if ( cursor.next() )
+            {
+                assertTrue( "Label should have been removed", txContext.nodeRemoveLabel( state, cursor.get(), 12 ) );
+            }
+        }
+    }
+
+    @Test
+    public void should_return_true_when_removing_non_existant_label() throws Exception
+    {
+        // GIVEN
+        when( storeStatement.acquireSingleNodeCursor( 1337 ) ).thenReturn( asNodeCursor( 1337 ) );
+
+        // WHEN and THEN
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, 1337 ) )
+        {
+            if ( cursor.next() )
+            {
+                assertFalse( "Label should have been removed",
+                        txContext.nodeRemoveLabel( state, cursor.get(), 12 ) );
+            }
+        }
+    }
+
+    // exists
+
+    private final int labelId1 = 10, labelId2 = 12;
+    private final long nodeId = 20;
+
+    private StoreReadLayer store;
+    private TransactionState txState;
+    private StateHandlingStatementOperations txContext;
+
+    private KernelStatement state;
+    private StoreStatement storeStatement;
 
     private static class Labels
     {
@@ -317,7 +422,7 @@ public class LabelTransactionStateTest
         for ( Labels nodeLabels : labels )
         {
             when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) ).thenReturn( StubCursors.asNodeCursor(
-                    nodeLabels.nodeId, PropertyCursor.EMPTY, asLabelCursor( nodeLabels.labelIds ) ) );
+                    nodeLabels.nodeId, asPropertyCursor(), asLabelCursor( nodeLabels.labelIds ) ) );
 
             for ( int label : nodeLabels.labelIds )
             {
@@ -350,10 +455,24 @@ public class LabelTransactionStateTest
 
     private void assertLabels( Integer... labels ) throws EntityNotFoundException
     {
-        assertEquals( asSet( labels ), asSet( txContext.nodeGetLabels( state, nodeId ) ) );
+        try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+        {
+            if ( cursor.next() )
+            {
+                assertEquals( asSet( labels ), asSet( txContext.nodeGetLabels( state, cursor.get() ) ) );
+            }
+        }
+
         for ( int label : labels )
         {
-            assertTrue( "Expected labels not found on node", txContext.nodeHasLabel( state, nodeId, label ) );
+            try ( Cursor<NodeItem> cursor = txContext.nodeCursor( state, nodeId ) )
+            {
+                if ( cursor.next() )
+                {
+                    assertTrue( "Expected labels not found on node",
+                            txContext.nodeHasLabel( state, cursor.get(), label ) );
+                }
+            }
         }
     }
 }

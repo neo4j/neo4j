@@ -21,55 +21,58 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.PropertyStore;
 
 /**
- * Cursor for a single node.
+ * Cursor for a specific property on a node or relationship.
  */
-public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
+public class StoreSinglePropertyCursor extends StorePropertyCursor
 {
-    private long nodeId;
-    private Consumer<StoreSingleNodeCursor> instanceCache;
+    private int propertyKeyId;
+    private Consumer<StoreSinglePropertyCursor> instanceCache;
 
-    public StoreSingleNodeCursor( NodeRecord nodeRecord,
-            NodeStore nodeStore,
-            StoreStatement storeStatement,
-            Consumer<StoreSingleNodeCursor> instanceCache )
+    public StoreSinglePropertyCursor( PropertyStore propertyStore,
+            Consumer<StoreSinglePropertyCursor> instanceCache )
     {
-        super( nodeRecord, nodeStore, storeStatement );
+        super( propertyStore, (Consumer) instanceCache );
         this.instanceCache = instanceCache;
     }
 
-    public StoreSingleNodeCursor init( long nodeId )
+    public StoreSinglePropertyCursor init( long firstPropertyId, int propertyKeyId )
     {
-        this.nodeId = nodeId;
+        super.init( firstPropertyId );
+        this.propertyKeyId = propertyKeyId;
         return this;
     }
 
     @Override
     public boolean next()
     {
-        if ( nodeId != StatementConstants.NO_SUCH_NODE )
+        try
         {
-            try
+            if ( propertyKeyId != StatementConstants.NO_SUCH_PROPERTY_KEY )
             {
-                nodeRecord.setId( nodeId );
-                NodeRecord record = nodeStore.loadRecord( nodeId, this.nodeRecord );
-                return record != null && record.inUse();
+                while ( super.next() )
+                {
+                    if ( get().propertyKeyId() == this.propertyKeyId )
+                    {
+                        return true;
+                    }
+                }
             }
-            finally
-            {
-                nodeId = StatementConstants.NO_SUCH_NODE;
-            }
-        }
 
-        return false;
+            return false;
+        }
+        finally
+        {
+            this.propertyKeyId = StatementConstants.NO_SUCH_PROPERTY_KEY;
+        }
     }
 
     @Override
     public void close()
     {
+        super.close();
         instanceCache.accept( this );
     }
 }

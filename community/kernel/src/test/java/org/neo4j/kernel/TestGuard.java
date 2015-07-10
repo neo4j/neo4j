@@ -104,7 +104,7 @@ public class TestGuard
                 ignore( position );
             }
             Guard.OperationsCount ops4 = getGuard( db ).stop();
-            assertEquals( 4, ops4.getOpsCount() );
+            assertEquals( 6, ops4.getOpsCount() );
         }
 
         db.shutdown();

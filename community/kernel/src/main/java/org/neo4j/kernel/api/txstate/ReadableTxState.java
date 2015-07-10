@@ -23,15 +23,16 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.cursor.LabelCursor;
-import org.neo4j.kernel.api.cursor.NodeCursor;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -45,7 +46,7 @@ import org.neo4j.kernel.impl.util.diffsets.ReadableRelationshipDiffSets;
 
 /**
  * Kernel transaction state.
- * <p/>
+ * <p>
  * This interface contains the methods for reading the state from the transaction state. The implementation of these
  * methods should be free of any side effects (such as initialising lazy state). Modifying methods are found in the
  * {@link TransactionState} interface.
@@ -155,22 +156,32 @@ public interface ReadableTxState
 
     RelationshipState getRelationshipState( long id );
 
-    NodeCursor augmentSingleNodeCursor( NodeCursor cursor );
+    Cursor<NodeItem> augmentSingleNodeCursor( Cursor<NodeItem> cursor, long nodeId );
 
-    PropertyCursor augmentPropertyCursor( PropertyCursor cursor, PropertyContainerState propertyContainerState );
+    Cursor<PropertyItem> augmentPropertyCursor( Cursor<PropertyItem> cursor,
+            PropertyContainerState propertyContainerState );
 
-    LabelCursor augmentLabelCursor( LabelCursor cursor, NodeState nodeState );
+    Cursor<PropertyItem> augmentSinglePropertyCursor( Cursor<PropertyItem> cursor,
+            PropertyContainerState propertyContainerState,
+            int propertyKeyId );
 
-    RelationshipCursor augmentSingleRelationshipCursor( RelationshipCursor cursor );
+    Cursor<LabelItem> augmentLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState );
 
-    RelationshipCursor augmentNodeRelationshipCursor( RelationshipCursor cursor,
+    public Cursor<LabelItem> augmentSingleLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState, int labelId );
+
+    Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor, long relationshipId );
+
+    Cursor<RelationshipItem> augmentIteratorRelationshipCursor( Cursor<RelationshipItem> cursor,
+            RelationshipIterator iterator );
+
+    Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
             NodeState nodeState,
             Direction direction,
             int[] relTypes );
 
-    NodeCursor augmentNodesGetAllCursor( NodeCursor cursor );
+    Cursor<NodeItem> augmentNodesGetAllCursor( Cursor<NodeItem> cursor );
 
-    RelationshipCursor augmentRelationshipsGetAllCursor( RelationshipCursor cursor );
+    Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor );
 
     /**
      * The way tokens are created is that the first time a token is needed it gets created in its own little

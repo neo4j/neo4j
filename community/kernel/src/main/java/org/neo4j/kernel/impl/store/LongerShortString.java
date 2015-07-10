@@ -24,6 +24,7 @@ import java.util.Arrays;
 
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /**
  * Supports encoding alphanumerical and <code>SP . - + , ' : / _</code>
@@ -786,7 +787,9 @@ public enum LongerShortString
             byte codePoint = bits.getByte( table.step );
             result[i] = table.decTranslate( codePoint );
         }
-        return String.valueOf(result);
+
+        // We know the char array is unshared, so use sharing constructor explicitly
+        return UnsafeUtil.newSharedArrayString( result );
     }
 
 

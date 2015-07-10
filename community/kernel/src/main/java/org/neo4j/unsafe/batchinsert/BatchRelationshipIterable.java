@@ -72,8 +72,8 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
                     return null;
                 }
 
-                return nextFrom( relationshipCursor.getId(), relationshipCursor.getType(),
-                        relationshipCursor.getStartNode(), relationshipCursor.getEndNode() );
+                return nextFrom( relationshipCursor.id(), relationshipCursor.type(),
+                        relationshipCursor.startNode(), relationshipCursor.endNode() );
             }
         };
     }

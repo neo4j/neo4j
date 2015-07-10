@@ -30,6 +30,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -39,9 +40,9 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.cursor.LabelCursor;
-import org.neo4j.kernel.api.cursor.NodeCursor;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -580,15 +581,15 @@ public class LabelsAcceptanceTest
         {
             try (Statement statement = ((TopLevelTransaction)tx).getTransaction().acquireStatement())
             {
-                try (NodeCursor nodeCursor = statement.readOperations().nodeCursor( node.getId() ))
+                try ( Cursor<NodeItem> nodeCursor = statement.readOperations().nodeCursor( node.getId() ) )
                 {
                     if (nodeCursor.next())
                     {
-                        try (PropertyCursor properties = nodeCursor.properties())
+                        try ( Cursor<PropertyItem> properties = nodeCursor.get().properties() )
                         {
                             while (properties.next())
                             {
-                                try (LabelCursor labels = nodeCursor.labels())
+                                try ( Cursor<LabelItem> labels = nodeCursor.get().labels() )
                                 {
                                     while (labels.next())
                                     {

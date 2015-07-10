@@ -19,23 +19,28 @@
  */
 package org.neo4j.kernel.impl.api.cursor;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
-import org.neo4j.kernel.api.cursor.RelationshipCursor;
+import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.txstate.TransactionState;
 
 /**
- * Overlays transaction state on a {@link RelationshipCursor}.
+ * Overlays transaction state on a {@link RelationshipItem} item.
  */
 public class TxSingleRelationshipCursor
         extends TxAbstractRelationshipCursor
 {
+    private long nextId;
+
     public TxSingleRelationshipCursor( TransactionState state, Consumer<TxSingleRelationshipCursor> instanceCache )
     {
         super( state, (Consumer) instanceCache );
     }
 
-    public TxSingleRelationshipCursor init( RelationshipCursor cursor )
+    public TxSingleRelationshipCursor init( Cursor<RelationshipItem> cursor, long id )
     {
+        this.nextId = id;
         super.init( cursor );
         return this;
     }
@@ -43,33 +48,34 @@ public class TxSingleRelationshipCursor
     @Override
     public boolean next()
     {
-        boolean exists = cursor.next();
-
-        long id = cursor.getId();
-
-        if ( state.relationshipIsDeletedInThisTx( id ) )
+        if ( state.relationshipIsDeletedInThisTx( nextId ) )
         {
-            visit( -1, -1, -1, -1 );
+            visit( StatementConstants.NO_SUCH_RELATIONSHIP, StatementConstants.NO_SUCH_RELATIONSHIP_TYPE,
+                    StatementConstants.NO_SUCH_NODE, StatementConstants.NO_SUCH_NODE );
             return false;
         }
 
-        this.relationshipIsAddedInThisTx = state.relationshipIsAddedInThisTx( id );
+        boolean exists = cursor.next();
+
+        this.relationshipIsAddedInThisTx = state.relationshipIsAddedInThisTx( nextId );
         if ( exists || relationshipIsAddedInThisTx )
         {
             if ( relationshipIsAddedInThisTx )
             {
-                state.relationshipVisit( id, this );
+                state.relationshipVisit( nextId, this );
             }
             else
             {
-                visit( id, cursor.getType(), cursor.getStartNode(), cursor.getEndNode() );
+                RelationshipItem relationshipItem = cursor.get();
+                visit( nextId, relationshipItem.type(), relationshipItem.startNode(), relationshipItem.endNode() );
             }
-            relationshipState = state.getRelationshipState( cursor.getId() );
+            relationshipState = state.getRelationshipState( nextId );
             return true;
         }
         else
         {
-            visit( -1, -1, -1, -1 );
+            visit( StatementConstants.NO_SUCH_RELATIONSHIP, StatementConstants.NO_SUCH_RELATIONSHIP_TYPE,
+                    StatementConstants.NO_SUCH_NODE, StatementConstants.NO_SUCH_NODE );
             this.relationshipState = null;
             return false;
         }

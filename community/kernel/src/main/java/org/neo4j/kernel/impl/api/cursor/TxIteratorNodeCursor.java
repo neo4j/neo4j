@@ -21,12 +21,13 @@ package org.neo4j.kernel.impl.api.cursor;
 
 import java.util.Iterator;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
-import org.neo4j.kernel.api.cursor.NodeCursor;
+import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.txstate.TransactionState;
 
 /**
- * Overlays transaction state on a {@link NodeCursor}.
+ * Overlays transaction state on a {@link NodeItem} cursor.
  */
 public class TxIteratorNodeCursor
         extends TxAbstractNodeCursor
@@ -39,7 +40,7 @@ public class TxIteratorNodeCursor
         super( state, (Consumer) cache );
     }
 
-    public TxIteratorNodeCursor init( NodeCursor nodeCursor, Iterator<Long> addedNodeIterator )
+    public TxIteratorNodeCursor init( Cursor<NodeItem> nodeCursor, Iterator<Long> addedNodeIterator )
     {
         super.init( nodeCursor );
 
@@ -58,7 +59,7 @@ public class TxIteratorNodeCursor
         {
             while ( cursor.next() )
             {
-                id = cursor.getId();
+                id = cursor.get().id();
 
 
                 if ( state.nodeIsDeletedInThisTx( id ) )
@@ -67,7 +68,7 @@ public class TxIteratorNodeCursor
                     continue;
                 }
 
-                this.nodeState = state.getNodeState( cursor.getId() );
+                this.nodeState = state.getNodeState( cursor.get().id() );
                 return true;
             }
 

@@ -17,18 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.cursor;
 
-public final class StatementConstants
+/**
+ * Represents a single relationship from a cursor.
+ */
+public interface RelationshipItem
+        extends EntityItem
 {
-    public static final int NO_SUCH_RELATIONSHIP_TYPE = -1;
-    public static final int NO_SUCH_LABEL = -1;
-    public static final int NO_SUCH_PROPERTY_KEY = -1;
-    public static final long NO_SUCH_NODE = -1;
-    public static final long NO_SUCH_RELATIONSHIP = -1;
+    /**
+     * @return relationship type for current relationship
+     */
+    int type();
 
-    private StatementConstants()
-    {
-        throw new UnsupportedOperationException();
-    }
+    /**
+     * @return start node of this relationship
+     */
+    long startNode();
+
+    /**
+     * @return end node of this relationship
+     */
+    long endNode();
+
+    /**
+     *
+     * @param nodeId of the node you are not interested in
+     * @return end node if start node is passed in, start node if end node is passed
+     */
+    long otherNode( long nodeId );
 }

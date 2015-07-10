@@ -17,18 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api.store;
 
-public final class StatementConstants
+import org.neo4j.function.Consumer;
+import org.neo4j.kernel.impl.util.InstanceCache;
+
+/**
+ * Cursor over a specific label on a node.
+ */
+public class StoreSingleLabelCursor extends StoreLabelCursor
 {
-    public static final int NO_SUCH_RELATIONSHIP_TYPE = -1;
-    public static final int NO_SUCH_LABEL = -1;
-    public static final int NO_SUCH_PROPERTY_KEY = -1;
-    public static final long NO_SUCH_NODE = -1;
-    public static final long NO_SUCH_RELATIONSHIP = -1;
+    private int labelId;
 
-    private StatementConstants()
+    public StoreSingleLabelCursor( InstanceCache<StoreSingleLabelCursor> instanceCache )
     {
-        throw new UnsupportedOperationException();
+        super( (Consumer) instanceCache );
+    }
+
+    public StoreSingleLabelCursor init( long[] labels, int labelId )
+    {
+        super.init( labels );
+        this.labelId = labelId;
+        return this;
+    }
+
+    @Override
+    public boolean next()
+    {
+        while ( super.next() )
+        {
+            if ( get().getAsInt() == labelId )
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

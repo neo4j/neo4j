@@ -19,29 +19,29 @@
  */
 package org.neo4j.kernel.api.cursor;
 
-import org.neo4j.graphdb.Direction;
+import org.neo4j.cursor.Cursor;
 
 /**
- * Cursor for iterating over a set of nodes.
+ * Represents a single node or relationship cursor item.
  */
-public interface NodeCursor
-    extends EntityCursor
+public interface EntityItem
 {
     /**
-     * @return label cursor for current node
-     * @throws IllegalStateException if no current node is selected
+     * @return id of current entity
+     * @throws IllegalStateException if no current entity is selected
      */
-    LabelCursor labels();
+    long id();
 
     /**
-     * @return relationship cursor for current node
-     * @throws IllegalStateException if no current node is selected
+     * @return cursor for properties of current entity
+     * @throws IllegalStateException if no current entity is selected
      */
-    RelationshipCursor relationships( Direction direction, int... relTypes );
+    Cursor<PropertyItem> properties();
 
     /**
-     * @return relationship cursor for current node
-     * @throws IllegalStateException if no current node is selected
+     * @param propertyKeyId of property to find
+     * @return cursor for specific property of current entity
+     * @throws IllegalStateException if no current entity is selected
      */
-    RelationshipCursor relationships( Direction direction );
+    Cursor<PropertyItem> property( int propertyKeyId );
 }

@@ -25,10 +25,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.WritableByteChannel;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.cursor.GenericCursor;
+import org.neo4j.function.Consumer;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.cursor.PropertyCursor;
+import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -41,21 +43,20 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.Bits;
-import org.neo4j.kernel.impl.util.InstanceCache;
 
 /**
  * Cursor for all properties on a node or relationship.
  */
-public class StorePropertyCursor implements PropertyCursor
+public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
 {
     private static final long KEY_BITMASK = 0xFFFFFFL;
     private static final int BITS_BYTE_SIZE = 32;
     private static final int INTERNAL_BYTE_ARRAY_SIZE = 4096;
 
     private final PropertyStore propertyStore;
+    private Consumer<StorePropertyCursor> instanceCache;
     private final DynamicStringStore stringStore;
     private final DynamicArrayStore arrayStore;
-    private final InstanceCache<StorePropertyCursor> instanceCache;
 
     private long nextPropertyRecordId;
     private PageCursor cursor;
@@ -75,13 +76,12 @@ public class StorePropertyCursor implements PropertyCursor
     private long currentRecordId;
     private long originalHeader;
 
-    public StorePropertyCursor( PropertyStore propertyStore,
-            InstanceCache<StorePropertyCursor> instanceCache )
+    public StorePropertyCursor( PropertyStore propertyStore, Consumer<StorePropertyCursor> instanceCache )
     {
         this.propertyStore = propertyStore;
+        this.instanceCache = instanceCache;
         this.stringStore = propertyStore.getStringStore();
         this.arrayStore = propertyStore.getArrayStore();
-        this.instanceCache = instanceCache;
     }
 
     public StorePropertyCursor init( long firstPropertyId )
@@ -113,250 +113,9 @@ public class StorePropertyCursor implements PropertyCursor
     }
 
     @Override
-    public boolean seek( int keyId )
+    public PropertyItem get()
     {
-        while ( next() )
-        {
-            if ( propertyKeyId() == keyId )
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public int propertyKeyId()
-    {
-        return keyId;
-    }
-
-    @Override
-    public Object value()
-    {
-        if ( type == null )
-        {
-            throw new IllegalStateException();
-        }
-
-        switch ( type )
-        {
-            case BOOL:
-            {
-                return header == 1;
-            }
-
-            case BYTE:
-            {
-                return (byte) header;
-            }
-
-            case SHORT:
-            {
-                return (short) header;
-            }
-
-            case CHAR:
-            {
-                return (char) header;
-            }
-
-            case INT:
-            {
-                return (int) header;
-            }
-
-            case LONG:
-            {
-                if ( (header & 0x1L) > 0 )
-                {
-                    return header >>> 1;
-                }
-                else
-                {
-                    remainingBlocksToRead--;
-                    return cursor.getLong();
-                }
-            }
-
-            case FLOAT:
-            {
-                return Float.intBitsToFloat( (int) header );
-            }
-
-            case DOUBLE:
-            {
-                remainingBlocksToRead--;
-                return Double.longBitsToDouble( cursor.getLong() );
-            }
-
-            case STRING:
-            {
-                try
-                {
-                    readPropertyData();
-                    return UTF8.decode( bytes, 0, buffer.limit() );
-                }
-                catch ( IOException e )
-                {
-                    throw new UnderlyingStorageException( e );
-                }
-            }
-
-            case ARRAY:
-            {
-                try
-                {
-                    readPropertyData();
-                    return getRightArray();
-                }
-                catch ( IOException e )
-                {
-                    throw new UnderlyingStorageException( e );
-                }
-            }
-
-            case SHORT_STRING:
-            {
-                try
-                {
-                    readPropertyData();
-                    bits.clear( true );
-                    bits.put( bytes, 0, buffer.limit() );
-                    return LongerShortString.decode( bits );
-                }
-                catch ( IOException e )
-                {
-                    throw new UnderlyingStorageException( e );
-                }
-            }
-
-            case SHORT_ARRAY:
-            {
-                try
-                {
-                    readPropertyData();
-                    bits.clear( true );
-                    bits.put( bytes, 0, buffer.limit() );
-                    return ShortArray.decode( bits );
-                }
-                catch ( IOException e )
-                {
-                    throw new UnderlyingStorageException( e );
-                }
-            }
-
-            default:
-            {
-                throw new IllegalStateException( "No such type:" + type );
-            }
-        }
-    }
-
-    @Override
-    public boolean booleanValue()
-    {
-        if ( type == null )
-        {
-            throw new IllegalStateException();
-        }
-
-        if ( type == PropertyType.BOOL )
-        {
-            return header == 1;
-        }
-        else
-        {
-            throw new IllegalStateException( "Not a boolean type:" + type );
-        }
-    }
-
-    @Override
-    public long longValue()
-    {
-        if ( type == null )
-        {
-            throw new IllegalStateException();
-        }
-
-        switch ( type )
-        {
-            case BOOL:
-            case BYTE:
-            case SHORT:
-            case CHAR:
-            case INT:
-            {
-                return header;
-            }
-
-            case LONG:
-            {
-                if ( (header & 0x1L) > 0 )
-                {
-                    return header >>> 1;
-                }
-                else
-                {
-                    remainingBlocksToRead--;
-                    return cursor.getLong();
-                }
-            }
-
-
-            default:
-            {
-                throw new IllegalStateException( "Not an integral type:" + type );
-            }
-        }
-    }
-
-    @Override
-    public double doubleValue()
-    {
-        if ( type == null )
-        {
-            throw new IllegalStateException();
-        }
-
-        switch ( type )
-        {
-            case FLOAT:
-            {
-                return Float.intBitsToFloat( (int) header );
-            }
-
-            case DOUBLE:
-            {
-                remainingBlocksToRead--;
-                return Double.longBitsToDouble( cursor.getLong() );
-            }
-
-            default:
-            {
-                throw new IllegalStateException( "Not a real number type:" + type );
-            }
-        }
-    }
-
-    @Override
-    public String stringValue()
-    {
-        return value().toString();
-    }
-
-    public void propertyData( WritableByteChannel channel )
-    {
-        try
-        {
-            readPropertyData();
-
-            channel.write( buffer );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
+        return this;
     }
 
     private void readPropertyData() throws IOException
@@ -659,6 +418,239 @@ public class StorePropertyCursor implements PropertyCursor
         finally
         {
             buffer.order( ByteOrder.LITTLE_ENDIAN );
+        }
+    }
+
+    public int propertyKeyId()
+    {
+        return keyId;
+    }
+
+    @Override
+    public Object value()
+    {
+        if ( type == null )
+        {
+            throw new IllegalStateException();
+        }
+
+        switch ( type )
+        {
+            case BOOL:
+            {
+                return header == 1;
+            }
+
+            case BYTE:
+            {
+                return (byte) header;
+            }
+
+            case SHORT:
+            {
+                return (short) header;
+            }
+
+            case CHAR:
+            {
+                return (char) header;
+            }
+
+            case INT:
+            {
+                return (int) header;
+            }
+
+            case LONG:
+            {
+                if ( (header & 0x1L) > 0 )
+                {
+                    return header >>> 1;
+                }
+                else
+                {
+                    remainingBlocksToRead--;
+                    return cursor.getLong();
+                }
+            }
+
+            case FLOAT:
+            {
+                return Float.intBitsToFloat( (int) header );
+            }
+
+            case DOUBLE:
+            {
+                remainingBlocksToRead--;
+                return Double.longBitsToDouble( cursor.getLong() );
+            }
+
+            case STRING:
+            {
+                try
+                {
+                    readPropertyData();
+                    return UTF8.decode( bytes, 0, buffer.limit() );
+                }
+                catch ( IOException e )
+                {
+                    throw new UnderlyingStorageException( e );
+                }
+            }
+
+            case ARRAY:
+            {
+                try
+                {
+                    readPropertyData();
+                    return getRightArray();
+                }
+                catch ( IOException e )
+                {
+                    throw new UnderlyingStorageException( e );
+                }
+            }
+
+            case SHORT_STRING:
+            {
+                try
+                {
+                    readPropertyData();
+                    bits.clear( true );
+                    bits.put( bytes, 0, buffer.limit() );
+                    return LongerShortString.decode( bits );
+                }
+                catch ( IOException e )
+                {
+                    throw new UnderlyingStorageException( e );
+                }
+            }
+
+            case SHORT_ARRAY:
+            {
+                try
+                {
+                    readPropertyData();
+                    bits.clear( true );
+                    bits.put( bytes, 0, buffer.limit() );
+                    return ShortArray.decode( bits );
+                }
+                catch ( IOException e )
+                {
+                    throw new UnderlyingStorageException( e );
+                }
+            }
+
+            default:
+            {
+                throw new IllegalStateException( "No such type:" + type );
+            }
+        }
+    }
+
+    @Override
+    public boolean booleanValue()
+    {
+        if ( type == null )
+        {
+            throw new IllegalStateException();
+        }
+
+        if ( type == PropertyType.BOOL )
+        {
+            return header == 1;
+        }
+        else
+        {
+            throw new IllegalStateException( "Not a boolean type:" + type );
+        }
+    }
+
+    @Override
+    public long longValue()
+    {
+        if ( type == null )
+        {
+            throw new IllegalStateException();
+        }
+
+        switch ( type )
+        {
+            case BOOL:
+            case BYTE:
+            case SHORT:
+            case CHAR:
+            case INT:
+            {
+                return header;
+            }
+
+            case LONG:
+            {
+                if ( (header & 0x1L) > 0 )
+                {
+                    return header >>> 1;
+                }
+                else
+                {
+                    remainingBlocksToRead--;
+                    return cursor.getLong();
+                }
+            }
+
+
+            default:
+            {
+                throw new IllegalStateException( "Not an integral type:" + type );
+            }
+        }
+    }
+
+    @Override
+    public double doubleValue()
+    {
+        if ( type == null )
+        {
+            throw new IllegalStateException();
+        }
+
+        switch ( type )
+        {
+            case FLOAT:
+            {
+                return Float.intBitsToFloat( (int) header );
+            }
+
+            case DOUBLE:
+            {
+                remainingBlocksToRead--;
+                return Double.longBitsToDouble( cursor.getLong() );
+            }
+
+            default:
+            {
+                throw new IllegalStateException( "Not a real number type:" + type );
+            }
+        }
+    }
+
+    @Override
+    public String stringValue()
+    {
+        return value().toString();
+    }
+
+    public void byteArray( WritableByteChannel channel )
+    {
+        try
+        {
+            readPropertyData();
+
+            channel.write( buffer );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
         }
     }
 }

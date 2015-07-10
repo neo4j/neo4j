@@ -29,6 +29,8 @@ import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -55,11 +57,11 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
 public class LockingStatementOperations implements
-    EntityWriteOperations,
-    SchemaReadOperations,
-    SchemaWriteOperations,
-    SchemaStateOperations,
-    LockOperations
+        EntityWriteOperations,
+        SchemaReadOperations,
+        SchemaWriteOperations,
+        SchemaStateOperations,
+        LockOperations
 {
     private final EntityReadOperations entityReadDelegate;
     private final EntityWriteOperations entityWriteDelegate;
@@ -82,8 +84,8 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public boolean nodeAddLabel( KernelStatement state, long nodeId, int labelId )
-            throws EntityNotFoundException, ConstraintValidationKernelException
+    public boolean nodeAddLabel( KernelStatement state, NodeItem node, int labelId )
+            throws ConstraintValidationKernelException
     {
         // TODO (BBC, 22/11/13):
         // In order to enforce constraints we need to check whether this change violates constraints; we therefore need
@@ -98,15 +100,15 @@ public class LockingStatementOperations implements
         // by ConstraintEnforcingEntityOperations included the full cake, with locking included.
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
 
-        state.locks().acquireExclusive( ResourceTypes.NODE, nodeId );
-        return entityWriteDelegate.nodeAddLabel( state, nodeId, labelId );
+        state.locks().acquireExclusive( ResourceTypes.NODE, node.id() );
+        return entityWriteDelegate.nodeAddLabel( state, node, labelId );
     }
 
     @Override
-    public boolean nodeRemoveLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( KernelStatement state, NodeItem node, int labelId )
     {
-        state.locks().acquireExclusive( ResourceTypes.NODE, nodeId );
-        return entityWriteDelegate.nodeRemoveLabel( state, nodeId, labelId );
+        state.locks().acquireExclusive( ResourceTypes.NODE, node.id() );
+        return entityWriteDelegate.nodeRemoveLabel( state, node, labelId );
     }
 
     @Override
@@ -174,7 +176,8 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( KernelStatement state,
+            IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         return schemaReadDelegate.indexGetState( state, descriptor );
@@ -188,14 +191,16 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public double indexUniqueValuesPercentage( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesPercentage( KernelStatement state,
+            IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         return schemaReadDelegate.indexUniqueValuesPercentage( state, descriptor );
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( KernelStatement state,
+            IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, index );
@@ -224,10 +229,10 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
+    public void nodeDelete( KernelStatement state, NodeItem node )
     {
-        state.locks().acquireExclusive( ResourceTypes.NODE, nodeId );
-        entityWriteDelegate.nodeDelete( state, nodeId );
+        state.locks().acquireExclusive( ResourceTypes.NODE, node.id() );
+        entityWriteDelegate.nodeDelete( state, node );
     }
 
     @Override
@@ -243,7 +248,7 @@ public class LockingStatementOperations implements
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
 
         // Order the locks to lower the risk of deadlocks with other threads adding rels concurrently
-        if(startNodeId < endNodeId)
+        if ( startNodeId < endNodeId )
         {
             state.locks().acquireExclusive( ResourceTypes.NODE, startNodeId );
             state.locks().acquireExclusive( ResourceTypes.NODE, endNodeId );
@@ -257,26 +262,28 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void relationshipDelete( final KernelStatement state, long relationshipId ) throws EntityNotFoundException
+    public void relationshipDelete( final KernelStatement state, RelationshipItem relationship )
     {
         try
         {
-            entityReadDelegate.relationshipVisit( state, relationshipId, new RelationshipVisitor<RuntimeException>()
-            {
-                @Override
-                public void visit( long relId, int type, long startNode, long endNode )
-                {
-                    state.locks().acquireExclusive( ResourceTypes.NODE, startNode );
-                    state.locks().acquireExclusive( ResourceTypes.NODE, endNode );
-                }
-            });
+            entityReadDelegate.relationshipVisit( state, relationship.id(),
+                    new RelationshipVisitor<RuntimeException>()
+                    {
+                        @Override
+                        public void visit( long relId, int type, long startNode, long endNode )
+                        {
+                            state.locks().acquireExclusive( ResourceTypes.NODE, startNode );
+                            state.locks().acquireExclusive( ResourceTypes.NODE, endNode );
+                        }
+                    } );
         }
         catch ( EntityNotFoundException e )
         {
-            throw new IllegalStateException( "Unable to delete relationship[" + relationshipId+ "] since it is already deleted." );
+            throw new IllegalStateException(
+                    "Unable to delete relationship[" + relationship.id() + "] since it is already deleted." );
         }
-        state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
-        entityWriteDelegate.relationshipDelete( state, relationshipId );
+        state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationship.id() );
+        entityWriteDelegate.relationshipDelete( state, relationship );
     }
 
     @Override
@@ -304,7 +311,9 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKeyId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
+            int labelId,
+            int propertyKeyId )
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         return schemaReadDelegate.constraintsGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
@@ -327,7 +336,8 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( KernelStatement state, int typeId )
+    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( KernelStatement state,
+            int typeId )
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         return schemaReadDelegate.constraintsGetForRelationshipType( state, typeId );
@@ -357,8 +367,8 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Property nodeSetProperty( KernelStatement state, long nodeId, DefinedProperty property )
-            throws EntityNotFoundException, ConstraintValidationKernelException
+    public Property nodeSetProperty( KernelStatement state, NodeItem node, DefinedProperty property )
+            throws ConstraintValidationKernelException
     {
         // TODO (BBC, 22/11/13):
         // In order to enforce constraints we need to check whether this change violates constraints; we therefore need
@@ -373,32 +383,33 @@ public class LockingStatementOperations implements
         // by ConstraintEnforcingEntityOperations included the full cake, with locking included.
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
 
-        state.locks().acquireExclusive( ResourceTypes.NODE, nodeId );
-        return entityWriteDelegate.nodeSetProperty( state, nodeId, property );
+        state.locks().acquireExclusive( ResourceTypes.NODE, node.id() );
+        return entityWriteDelegate.nodeSetProperty( state, node, property );
     }
 
     @Override
-    public Property nodeRemoveProperty( KernelStatement state, long nodeId, int propertyKeyId )
-            throws EntityNotFoundException
+    public Property nodeRemoveProperty( KernelStatement state, NodeItem node, int propertyKeyId )
     {
-        state.locks().acquireExclusive( ResourceTypes.NODE, nodeId );
-        return entityWriteDelegate.nodeRemoveProperty( state, nodeId, propertyKeyId );
+        state.locks().acquireExclusive( ResourceTypes.NODE, node.id() );
+        return entityWriteDelegate.nodeRemoveProperty( state, node, propertyKeyId );
     }
 
     @Override
-    public Property relationshipSetProperty( KernelStatement state, long relationshipId, DefinedProperty property )
-            throws EntityNotFoundException
+    public Property relationshipSetProperty( KernelStatement state,
+            RelationshipItem relationship,
+            DefinedProperty property )
     {
-        state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
-        return entityWriteDelegate.relationshipSetProperty( state, relationshipId, property );
+        state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationship.id() );
+        return entityWriteDelegate.relationshipSetProperty( state, relationship, property );
     }
 
     @Override
-    public Property relationshipRemoveProperty( KernelStatement state, long relationshipId, int propertyKeyId )
-            throws EntityNotFoundException
+    public Property relationshipRemoveProperty( KernelStatement state,
+            RelationshipItem relationship,
+            int propertyKeyId )
     {
-        state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
-        return entityWriteDelegate.relationshipRemoveProperty( state, relationshipId, propertyKeyId );
+        state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationship.id() );
+        return entityWriteDelegate.relationshipRemoveProperty( state, relationship, propertyKeyId );
     }
 
     @Override
@@ -422,7 +433,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void acquireShared(KernelStatement state, Locks.ResourceType resourceType, long resourceId )
+    public void acquireShared( KernelStatement state, Locks.ResourceType resourceType, long resourceId )
     {
         state.locks().acquireShared( resourceType, resourceId );
     }
