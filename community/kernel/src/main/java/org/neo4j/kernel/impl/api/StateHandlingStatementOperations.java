@@ -331,22 +331,7 @@ public class StateHandlingStatementOperations implements
         }
         else
         {
-            try
-            {
-                storeLayer.relationshipVisit( relationship.id(), new RelationshipVisitor<RuntimeException>()
-                {
-                    @Override
-                    public void visit( long relId, int type, long startNode, long endNode )
-                    {
-                        txState.relationshipDoDelete( relId, type, startNode, endNode );
-                    }
-                } );
-            }
-            catch ( EntityNotFoundException e )
-            {
-                // If it doesn't exist, it doesn't exist, and the user got what she wanted.
-                return;
-            }
+            txState.relationshipDoDelete( relationship.id(), relationship.type(), relationship.startNode(), relationship.endNode() );
         }
     }
 

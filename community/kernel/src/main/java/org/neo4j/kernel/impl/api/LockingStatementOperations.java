@@ -301,7 +301,7 @@ public class LockingStatementOperations implements
         state.locks().acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
         return schemaWriteDelegate.mandatoryNodePropertyConstraintCreate( state, labelId, propertyKeyId );
     }
-
+    
     @Override
     public MandatoryRelationshipPropertyConstraint mandatoryRelationshipPropertyConstraintCreate( KernelStatement state,
             int relTypeId, int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
@@ -309,7 +309,7 @@ public class LockingStatementOperations implements
         state.locks().acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
         return schemaWriteDelegate.mandatoryRelationshipPropertyConstraintCreate( state, relTypeId, propertyKeyId );
     }
-
+    
     @Override
     public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state,
             int labelId,

@@ -650,6 +650,15 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
                                         nodeId ) );
                     }
                 }
+
+                if ( !nodeHasProperty( state, node.get(), propertyKeyId ) )
+                {
+                    MandatoryNodePropertyConstraint constraint = new MandatoryNodePropertyConstraint( labelId,
+                            propertyKeyId );
+                    throw new CreateConstraintFailureException( constraint,
+                            new MandatoryNodePropertyConstraintVerificationFailedKernelException( constraint,
+                                    nodeId ) );
+                }
             }
         }
                     
