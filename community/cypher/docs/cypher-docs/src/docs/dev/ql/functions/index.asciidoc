@@ -126,6 +126,8 @@ include::atan.asciidoc[]
 
 include::atan2.asciidoc[]
 
+include::ceil.asciidoc[]
+
 include::cos.asciidoc[]
 
 include::cot.asciidoc[]
