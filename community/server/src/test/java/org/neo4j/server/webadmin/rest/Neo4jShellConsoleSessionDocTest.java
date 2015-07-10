@@ -19,18 +19,18 @@
  */
 package org.neo4j.server.webadmin.rest;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import javax.ws.rs.core.Response;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.Database;
@@ -44,7 +44,6 @@ import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.shell.ShellSettings;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -60,10 +59,9 @@ public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
     @Before
     public void setUp() throws Exception
     {
-        this.database = new WrappedDatabase( (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-                newImpermanentDatabaseBuilder().
-                setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE ).
-                newGraphDatabase() );
+        this.database = new WrappedDatabase( CommunityTestGraphDatabase.buildEphemeral()
+                .withSetting( ShellSettings.remote_shell_enabled, Settings.TRUE )
+                .open().getGraphDatabaseAPI() );
         this.consoleService = new ConsoleService(
                 this,
                 database,

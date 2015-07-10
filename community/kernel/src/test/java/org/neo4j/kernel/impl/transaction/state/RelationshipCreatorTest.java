@@ -27,10 +27,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -46,8 +47,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
 
 import static org.junit.Assert.assertEquals;
@@ -78,13 +78,13 @@ public class RelationshipCreatorTest
 
     private NeoStore flipToNeoStore()
     {
-        return dbRule.getGraphDatabaseAPI().getDependencyResolver().resolveDependency(
+        return dbRule.get().getDependencyResolver().resolveDependency(
                 NeoStoreSupplier.class ).get();
     }
 
     private long createNodeWithRelationships( int count )
     {
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
@@ -185,20 +185,21 @@ public class RelationshipCreatorTest
     }
 
     private static final int DENSE_NODE_THRESHOLD = 5;
-    public final @Rule DatabaseRule dbRule = new ImpermanentDatabaseRule()
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral( new Consumer<TestGraphDatabase.EphemeralBuilder>()
     {
         @Override
-        protected void configure( GraphDatabaseBuilder builder )
+        public void accept( TestGraphDatabase.EphemeralBuilder builder )
         {
-            builder.setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( DENSE_NODE_THRESHOLD ) );
+            builder.withSetting( GraphDatabaseSettings.dense_node_threshold, String.valueOf( DENSE_NODE_THRESHOLD ) );
         }
-    };
+    } );
     private IdGeneratorFactory idGeneratorFactory;
 
     @Before
     public void before()
     {
-        idGeneratorFactory = dbRule.getGraphDatabaseAPI().getDependencyResolver().resolveDependency(
+        idGeneratorFactory = dbRule.get().getDependencyResolver().resolveDependency(
                 IdGeneratorFactory.class );
     }
 }

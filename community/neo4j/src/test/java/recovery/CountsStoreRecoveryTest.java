@@ -27,11 +27,11 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.ReflectionUtil;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.DynamicLabel.label;
@@ -83,29 +82,31 @@ public class CountsStoreRecoveryTest
 
     private void flushNeoStoreOnly() throws Exception
     {
-        NeoStore neoStore = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStore.class );
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStore.class );
         PagedFile storeFile = ReflectionUtil.getPrivateField( neoStore, "storeFile", PagedFile.class );
         storeFile.flushAndForce();
     }
 
     private CountsTracker counts()
     {
-        return ((GraphDatabaseAPI) db).getDependencyResolver()
-                                      .resolveDependency( NeoStore.class )
-                                      .getCounts();
+        return db.getDependencyResolver()
+                .resolveDependency( NeoStore.class )
+                .getCounts();
     }
 
     @SuppressWarnings( "deprecated" )
     private void checkPoint() throws IOException
     {
-        ((GraphDatabaseAPI) db).getDependencyResolver()
-                               .resolveDependency( CheckPointer.class ).forceCheckPoint();
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint();
     }
 
     private void crashAndRestart()
     {
         FileSystemAbstraction uncleanFs = fsRule.snapshot( shutdownDbAction( db ) );
-        db = databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();
+        db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( uncleanFs )
+                .addKernelExtension( indexProviderFactory )
+                .open();
     }
 
     private void createNode( String label )
@@ -120,19 +121,16 @@ public class CountsStoreRecoveryTest
 
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private GraphDatabaseService db;
-    private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
+    private TestGraphDatabase db;
+    private final InMemoryIndexProviderFactory indexProviderFactory = new InMemoryIndexProviderFactory( new InMemoryIndexProvider( 100 ) );
 
     @Before
     public void before()
     {
-        db = databaseFactory( fsRule.get(), indexProvider ).newImpermanentDatabase();
-    }
-
-    private TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs, InMemoryIndexProvider indexProvider )
-    {
-        return new TestGraphDatabaseFactory()
-                .setFileSystem( fs ).addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) );
+        db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fsRule.get() )
+                .addKernelExtension( indexProviderFactory )
+                .open();
     }
 
     @After

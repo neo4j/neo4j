@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -32,14 +32,14 @@ import static org.neo4j.helpers.collection.Iterables.toList;
 
 public class GlobalGraphOperationsIT
 {
-
-    @Rule public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     @Test
     public void shouldListAllPropertyKeys() throws Exception
     {
         // Given
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        GraphDatabaseService db = dbRule.get();
         try( Transaction tx = db.beginTx() )
         {
             db.createNode().setProperty( "myProperty", 12);

@@ -26,13 +26,13 @@ import org.junit.runners.model.Statement;
 import java.io.File;
 import java.util.Collection;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
@@ -64,7 +64,6 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -337,15 +336,13 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         return -1;
     }
 
-    @SuppressWarnings("deprecation")
     protected void applyTransaction( Transaction transaction ) throws TransactionFailureException
     {
         // TODO you know... we could have just appended the transaction representation to the log
         // and the next startup of the store would do recovery where the transaction would have been
         // applied and all would have been well.
 
-        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory );
-        GraphDatabaseAPI database = (GraphDatabaseAPI) builder.newGraphDatabase();
+        TestGraphDatabase database = CommunityTestGraphDatabase.open( directory );
         try ( LockGroup locks = new LockGroup() )
         {
             DependencyResolver dependencyResolver = database.getDependencyResolver();
@@ -385,12 +382,11 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
     private void generateInitialData()
     {
-        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory );
-        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) builder.newGraphDatabase();
+        TestGraphDatabase graphDb = CommunityTestGraphDatabase.open( directory );
         try
         {
             generateInitialData( graphDb );
-            StoreAccess stores = new StoreAccess( graphDb );
+            StoreAccess stores = new StoreAccess( graphDb.getGraphDatabaseAPI() );
             schemaId = stores.getSchemaStore().getHighId();
             nodeId = stores.getNodeStore().getHighId();
             labelId = (int) stores.getLabelTokenStore().getHighId();

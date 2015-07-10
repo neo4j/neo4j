@@ -27,10 +27,10 @@ import org.junit.rules.TemporaryFolder;
 import java.net.ConnectException;
 import java.util.Arrays;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.ndp.transport.socket.client.SecureSocketConnection;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class NDPExtensionIT
 {
@@ -42,10 +42,9 @@ public class NDPExtensionIT
     public void shouldLaunchNDP() throws Throwable
     {
         // When I run Neo4j with the ndp extension on the class path, and experimental ndp config on
-        db = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( tmpDir.getRoot().getAbsolutePath() )
-                .setConfig( NDPKernelExtension.Settings.ndp_enabled, "true" )
-                .newGraphDatabase();
+        db = CommunityTestGraphDatabase.build()
+                .withSetting( NDPKernelExtension.Settings.ndp_enabled, "true" )
+                .open( tmpDir.getRoot() );
 
         // Then
         assertEventuallyServerResponds( "localhost", 7687 );
@@ -55,11 +54,10 @@ public class NDPExtensionIT
     public void shouldBeAbleToSpecifyHostAndPort() throws Throwable
     {
         // When I run Neo4j with the ndp extension on the class path
-        db = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( tmpDir.getRoot().getAbsolutePath() )
-                .setConfig( NDPKernelExtension.Settings.ndp_enabled, "true" )
-                .setConfig( NDPKernelExtension.Settings.ndp_socket_address, "localhost:8776" )
-                .newGraphDatabase();
+        db = CommunityTestGraphDatabase.build()
+                .withSetting( NDPKernelExtension.Settings.ndp_enabled, "true" )
+                .withSetting( NDPKernelExtension.Settings.ndp_socket_address, "localhost:8776" )
+                .open( tmpDir.getRoot() );
 
         // Then
         assertEventuallyServerResponds( "localhost", 8776 );

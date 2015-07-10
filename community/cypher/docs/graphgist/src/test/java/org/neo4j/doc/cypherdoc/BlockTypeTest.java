@@ -36,11 +36,11 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult;
 import org.neo4j.cypher.javacompat.internal.DocsExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -82,7 +82,7 @@ public class BlockTypeTest
     @Before
     public void setup() throws SQLException
     {
-        database = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        database = CommunityTestGraphDatabase.openEphemeral();
         engine = new DocsExecutionEngine( database );
         Connection conn = DriverManager.getConnection( "jdbc:hsqldb:mem:graphgisttests;shutdown=true" );
         conn.setAutoCommit( true );

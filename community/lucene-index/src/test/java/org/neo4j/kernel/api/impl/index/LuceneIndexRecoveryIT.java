@@ -27,17 +27,17 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipOutputStream;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -48,7 +48,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -206,7 +205,7 @@ public class LuceneIndexRecoveryIT
         directoryFactory.close();
     }
 
-    private GraphDatabaseAPI db;
+    private TestGraphDatabase db;
     private DirectoryFactory directoryFactory;
     private final DirectoryFactory ignoreCloseDirectoryFactory = new DirectoryFactory()
     {
@@ -240,10 +239,10 @@ public class LuceneIndexRecoveryIT
         db.shutdown();
     }
 
-       TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-       factory.setFileSystem( fs.get() );
-       factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( indexProviderFactory ) );
-       db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs.get() )
+                .addKernelExtension( indexProviderFactory )
+                .open();
     }
 
     private void killDb()

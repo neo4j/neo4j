@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.embedded.HighAvailabilityGraphDatabase;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -94,7 +95,7 @@ public class SchemaIndexHaIT
     {
         // GIVEN
         ManagedCluster cluster = clusterRule.startCluster();
-        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        HighAvailabilityGraphDatabase master = cluster.getMaster();
         Map<Object, Node> data = createSomeData( master );
 
         // WHEN
@@ -110,7 +111,7 @@ public class SchemaIndexHaIT
     {
         // GIVEN
         ManagedCluster cluster = clusterRule.startCluster();
-        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+        HighAvailabilityGraphDatabase slave = cluster.getAnySlave();
 
         // WHEN
         try
@@ -193,7 +194,7 @@ public class SchemaIndexHaIT
             ClusterManager.RepairKit slaveDown = bringSlaveOfflineAndRemoveStoreFiles( cluster, slave );
 
             // And I create an index on the master, and wait for population to start
-            HighlyAvailableGraphDatabase master = cluster.getMaster();
+            HighAvailabilityGraphDatabase master = cluster.getMaster();
             Map<Object, Node> data = createSomeData(master);
             createIndex( master );
             dbFactory.awaitPopulationStarted( master );
@@ -226,7 +227,7 @@ public class SchemaIndexHaIT
         }
         finally
         {
-            for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+            for ( HighAvailabilityGraphDatabase db : cluster.getAllMembers() )
             {
                 dbFactory.triggerFinish( db );
             }
@@ -317,7 +318,7 @@ public class SchemaIndexHaIT
         @Override
         public boolean test( GraphDatabaseService item )
         {
-            return item instanceof HighlyAvailableGraphDatabase && ((HighlyAvailableGraphDatabase) item).isMaster();
+            return item instanceof HighAvailabilityGraphDatabase && ((HighAvailabilityGraphDatabase) item).isMaster();
         }
     };
 

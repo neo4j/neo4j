@@ -21,20 +21,35 @@ package org.neo4j.index;
 
 import static org.junit.Assert.fail;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
+
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TestSingleTransactionLegacyIndexConstraints
 {
+    private GraphDatabase db;
+
+    @Before
+    public void before()
+    {
+        db = CommunityTestGraphDatabase.openEphemeral();
+    }
+
+    @After
+    public void after()
+    {
+        db.shutdown();
+    }
+
     @Test
     public void alteringMoreThan63IndexesInASingleTransactionShouldLeadToIllegalStateException() throws Exception
     {
         // Given
         // A database with at least 64 indexes
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
-
         try ( Transaction tx = db.beginTx() )
         {
             for ( int i = 0; i < 64; i++ )

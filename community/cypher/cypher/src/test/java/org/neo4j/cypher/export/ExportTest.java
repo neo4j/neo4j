@@ -31,6 +31,7 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphalgo.impl.util.PathImpl;
 import org.neo4j.graphdb.DynamicLabel;
@@ -42,7 +43,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
@@ -59,7 +59,7 @@ public class ExportTest
     @Before
     public void setUp() throws Exception
     {
-        gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        gdb = CommunityTestGraphDatabase.openEphemeral();
         tx = gdb.beginTx();
     }
 

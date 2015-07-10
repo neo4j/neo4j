@@ -25,13 +25,13 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -57,7 +56,7 @@ public class TestLogPruning
         int extract( File from ) throws IOException;
     }
 
-    private GraphDatabaseAPI db;
+    private TestGraphDatabase db;
     private FileSystemAbstraction fs;
     private PhysicalLogFiles files;
     private int rotateEveryNTransactions, performedTransactions;
@@ -144,16 +143,15 @@ public class TestLogPruning
                 transactionCount <= (transactionsToKeep + transactionsPerLog) );
     }
 
-    private GraphDatabaseAPI newDb( String logPruning, int rotateEveryNTransactions )
+    private TestGraphDatabase newDb( String logPruning, int rotateEveryNTransactions )
     {
         this.rotateEveryNTransactions = rotateEveryNTransactions;
         fs = new EphemeralFileSystemAbstraction();
-        TestGraphDatabaseFactory gdf = new TestGraphDatabaseFactory();
-        gdf.setFileSystem( fs );
-        GraphDatabaseBuilder builder = gdf.newImpermanentDatabaseBuilder();
-        builder.setConfig( keep_logical_logs, logPruning );
-        this.db = (GraphDatabaseAPI) builder.newGraphDatabase();
-        files = new PhysicalLogFiles( new File( db.getStoreDir() ), PhysicalLogFile.DEFAULT_NAME, fs );
+        this.db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs )
+                .withSetting( keep_logical_logs, logPruning )
+                .open();
+        files = new PhysicalLogFiles( db.storeDir(), PhysicalLogFile.DEFAULT_NAME, fs );
         return db;
     }
 

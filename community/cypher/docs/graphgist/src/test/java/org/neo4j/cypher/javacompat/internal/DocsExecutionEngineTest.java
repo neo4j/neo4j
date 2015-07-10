@@ -23,10 +23,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -40,8 +39,7 @@ public class DocsExecutionEngineTest
     @Before
     public void setup()
     {
-        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        database = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();
+        database = CommunityTestGraphDatabase.openEphemeral();
         engine = new DocsExecutionEngine( database );
     }
 

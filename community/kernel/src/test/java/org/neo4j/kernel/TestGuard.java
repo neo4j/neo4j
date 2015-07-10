@@ -21,6 +21,8 @@ package org.neo4j.kernel;
 
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Transaction;
@@ -29,7 +31,6 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.guard.GuardOperationsCountException;
 import org.neo4j.kernel.guard.GuardTimeoutException;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Thread.sleep;
@@ -47,7 +48,7 @@ public class TestGuard
     @Test( expected = IllegalArgumentException.class )
     public void testGuardNotInsertedByDefault()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
         try
         {
             getGuard( db );
@@ -61,10 +62,9 @@ public class TestGuard
     @Test
     public void testGuardInsertedByDefault()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
-            newGraphDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withSetting( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE )
+                .open();
         assertNotNull( getGuard( db ) );
         db.shutdown();
     }
@@ -72,10 +72,9 @@ public class TestGuard
     @Test
     public void testGuardOnDifferentGraphOps()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
-            newGraphDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withSetting( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE )
+                .open();
 
         try ( Transaction ignored = db.beginTx() )
         {
@@ -113,10 +112,9 @@ public class TestGuard
     @Test
     public void testOpsCountGuardFail()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
-            newGraphDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withSetting( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE )
+                .open();
 
         Guard guard = getGuard( db );
         guard.startOperationsCount( 2 );
@@ -141,10 +139,9 @@ public class TestGuard
     @Test
     public void testTimeoutGuardFail() throws InterruptedException
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-                newImpermanentDatabaseBuilder().
-                setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
-                newGraphDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withSetting( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE )
+                .open();
 
         db.getDependencyResolver().resolveDependency( Guard.class ).startTimeout( 50 );
 
@@ -169,10 +166,9 @@ public class TestGuard
     @Test
     public void testTimeoutGuardPass()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-                newImpermanentDatabaseBuilder().
-                setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
-                newGraphDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withSetting( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE )
+                .open();
 
         int timeout = 1000;
         getGuard( db ).startTimeout( timeout );
@@ -185,7 +181,7 @@ public class TestGuard
         db.shutdown();
     }
 
-    private Guard getGuard( GraphDatabaseAPI db )
+    private Guard getGuard( TestGraphDatabase db )
     {
         return db.getDependencyResolver().resolveDependency( Guard.class );
     }

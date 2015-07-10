@@ -24,13 +24,14 @@ import org.junit.Before;
 
 import java.util.Map;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
@@ -42,7 +43,6 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.graphdb.DynamicLabel.label;
@@ -52,7 +52,7 @@ import static org.neo4j.graphdb.DynamicLabel.label;
  */
 public class DiskLayerTest
 {
-    @SuppressWarnings("deprecation") protected GraphDatabaseAPI db;
+    protected TestGraphDatabase db;
     protected final Label label1 = label( "first-label" ), label2 = label( "second-label" );
     protected final String propertyKey = "name";
     protected KernelStatement state;
@@ -62,7 +62,7 @@ public class DiskLayerTest
     @Before
     public void before()
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = CommunityTestGraphDatabase.openEphemeral();
         DependencyResolver resolver = db.getDependencyResolver();
         IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
         NeoStore neoStore = resolver.resolveDependency( NeoStoreSupplier.class ).get();

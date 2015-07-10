@@ -22,13 +22,12 @@ package org.neo4j.graphdb;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 public class CreateAndDeleteNodesIT
 {
-
-    public @Rule ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public @Rule TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     enum RelTypes implements RelationshipType
     {
@@ -39,7 +38,7 @@ public class CreateAndDeleteNodesIT
     public void addingALabelUsingAValidIdentifierShouldSucceed() throws Exception
     {
         // Given
-        GraphDatabaseService dataBase = dbRule.getGraphDatabaseService();
+        GraphDatabaseService dataBase = dbRule.get();
         Node myNode;
 
         // When

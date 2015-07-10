@@ -34,12 +34,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanStoreExtension;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -48,7 +49,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -110,7 +110,7 @@ public class UniqueIndexRecoveryTests
     private void restart( File newStore )
     {
         db.shutdown();
-        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( newStore.getAbsolutePath() );
+        db = CommunityTestGraphDatabase.open( newStore );
     }
 
     private File snapshot( final String path ) throws IOException
@@ -224,8 +224,7 @@ public class UniqueIndexRecoveryTests
     private static final String PROPERTY_VALUE = "value";
     private static final Label LABEL = label( "label" );
 
-    private final TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-    private GraphDatabaseAPI db;
+    private TestGraphDatabase db;
 
     @Before
     public void before()
@@ -233,8 +232,9 @@ public class UniqueIndexRecoveryTests
         List<KernelExtensionFactory<?>> extensionFactories = new ArrayList<>();
         extensionFactories.add( kernelExtensionFactory );
         extensionFactories.add(new LuceneLabelScanStoreExtension());
-        factory.setKernelExtensions( extensionFactories );
-        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( storeDir.absolutePath() );
+        db = CommunityTestGraphDatabase.build()
+                .addKernelExtensions( extensionFactories )
+                .open( storeDir.directory() );
     }
 
     @After

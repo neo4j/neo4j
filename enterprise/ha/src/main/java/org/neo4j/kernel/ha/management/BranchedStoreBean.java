@@ -24,13 +24,13 @@ import java.util.LinkedList;
 import java.util.List;
 import javax.management.NotCompliantMBeanException;
 
+import org.neo4j.embedded.HighAvailabilityGraphDatabase;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.management.BranchedStore;
@@ -70,7 +70,7 @@ public final class BranchedStoreBean extends ManagementBeanProvider
 
     private static boolean isHA( ManagementData management )
     {
-        return management.getKernelData().graphDatabase() instanceof HighlyAvailableGraphDatabase;
+        return management.getKernelData().graphDatabase() instanceof HighAvailabilityGraphDatabase;
     }
 
     private static class BranchedStoreImpl extends Neo4jMBean implements BranchedStore

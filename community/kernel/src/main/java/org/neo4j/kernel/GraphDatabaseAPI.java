@@ -35,9 +35,11 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
      * Look up database components for direct access.
      * Usage of this method is generally an indication of architectural error.
      */
+    @Deprecated
     DependencyResolver getDependencyResolver();
 
     /** Provides the unique id assigned to this database. */
+    @Deprecated
     StoreId storeId();
 
     @Deprecated

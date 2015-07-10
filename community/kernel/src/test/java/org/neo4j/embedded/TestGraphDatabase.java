@@ -17,21 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.transactional;
+package org.neo4j.embedded;
 
-import org.neo4j.graphdb.Transaction;
+import java.io.File;
 
-public class TransactionTerminator
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.GraphDatabaseAPI;
+
+/**
+ * A running Neo4j graph database, with additional methods exposed for test purposes.
+ */
+public interface TestGraphDatabase extends GraphDatabase
 {
-    private final Transaction transaction;
-
-    public TransactionTerminator( Transaction transaction )
+    abstract class Builder extends TestGraphDatabaseBuilder<Builder>
     {
-        this.transaction = transaction;
     }
 
-    public void terminate()
+    abstract class EphemeralBuilder extends TestGraphDatabaseBuilder<EphemeralBuilder>
     {
-        transaction.terminate();
+        public abstract TestGraphDatabase open();
     }
+
+    FileSystemAbstraction fileSystem();
+
+    File storeDir();
+
+    DependencyResolver getDependencyResolver();
+
+    /**
+     * @deprecated Method included for transitional purpose only - prefer not using this method
+     */
+    @Deprecated
+    GraphDatabaseAPI getGraphDatabaseAPI();
 }

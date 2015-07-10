@@ -23,19 +23,18 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.test.ImpermanentDatabaseRule;
+
+import org.neo4j.test.TestGraphDatabaseRule;
 
 public class DenseNodeIT
 {
-    @Rule
-    public ImpermanentDatabaseRule databaseRule = new ImpermanentDatabaseRule();
+    @Rule public TestGraphDatabaseRule databaseRule = TestGraphDatabaseRule.ephemeral();
 
     @Test
     public void testBringingNodeOverDenseThresholdIsConsistent() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = databaseRule.getGraphDatabaseService();
-
+        GraphDatabaseService db = databaseRule.get();
 
         Node root;
         try( Transaction tx = db.beginTx() )
@@ -78,7 +77,7 @@ public class DenseNodeIT
     public void deletingRelationshipsFromDenseNodeIsConsistent() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = databaseRule.getGraphDatabaseService();
+        GraphDatabaseService db = databaseRule.get();
 
         Node root;
         try( Transaction tx = db.beginTx() )
@@ -112,7 +111,7 @@ public class DenseNodeIT
     public void movingBilaterallyOfTheDenseNodeThresholdIsConsistent() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = databaseRule.getGraphDatabaseService();
+        GraphDatabaseService db = databaseRule.get();
 
         Node root;
         // WHEN
@@ -143,7 +142,7 @@ public class DenseNodeIT
     public void testBringingTwoConnectedNodesOverDenseThresholdIsConsistent() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = databaseRule.getGraphDatabaseService();
+        GraphDatabaseService db = databaseRule.get();
 
         Node source;
         Node sink;

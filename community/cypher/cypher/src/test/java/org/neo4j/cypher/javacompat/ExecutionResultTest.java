@@ -21,14 +21,15 @@ package org.neo4j.cypher.javacompat;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.cypher.ArithmeticException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import java.util.Map;
 
@@ -39,14 +40,13 @@ import static org.hamcrest.core.IsNull.nullValue;
 
 public class ExecutionResultTest
 {
-    private GraphDatabaseAPI db;
+    private TestGraphDatabase db;
     private ExecutionEngine engine;
 
     @Before
     public void setUp() throws Exception
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .newGraphDatabase();
+        db = CommunityTestGraphDatabase.openEphemeral();
         engine = new ExecutionEngine( db );
     }
 

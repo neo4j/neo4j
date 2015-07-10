@@ -21,6 +21,7 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.embedded.{CommunityTestGraphDatabase, GraphDatabase}
 import org.neo4j.graphdb.index.Index
 import org.junit.Test
 import scala.collection.JavaConverters._
@@ -30,11 +31,10 @@ import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher._
 import export.{DatabaseSubGraph, SubGraphExporter}
-import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
+import org.neo4j.test.GraphDescription
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 
@@ -43,7 +43,7 @@ Use this base class for tests that are more flowing text with queries intersecte
  */
 abstract class ArticleTest extends Assertions with DocumentationHelper {
 
-  var db: GraphDatabaseAPI = null
+  var db: GraphDatabase = null
   implicit var engine: ExecutionEngine = null
   var nodes: Map[String, Long] = null
   var nodeIndex: Index[Node] = null
@@ -121,9 +121,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
     }
 
     if (emptyGraph) {
-      val db = new TestGraphDatabaseFactory().
-        newImpermanentDatabaseBuilder().
-        newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
+      val db = CommunityTestGraphDatabase.openEphemeral()
       try {
         val engine = new ExecutionEngine(db)
         val result = executeQuery(query)(engine)
@@ -220,9 +218,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
   private def init() = {
     dir = createDir(section)
-    db = new TestGraphDatabaseFactory().
-      newImpermanentDatabaseBuilder().
-      newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
+    db = CommunityTestGraphDatabase.openEphemeral()
 
     cleanDatabaseContent( db.asInstanceOf[GraphDatabaseService] )
 

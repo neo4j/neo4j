@@ -28,8 +28,9 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -38,18 +39,17 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 public abstract class AbstractLuceneIndexTest
 {
-    protected static GraphDatabaseService graphDb;
+    protected static GraphDatabase graphDb;
     protected Transaction tx;
     public final @Rule TestName testname = new TestName();
 
     @BeforeClass
     public static void setUpStuff()
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graphDb = CommunityTestGraphDatabase.openEphemeral();
     }
 
     @AfterClass

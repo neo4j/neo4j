@@ -30,20 +30,20 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class TestConcurrentIteratorModification {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     @Test
     public void shouldNotThrowConcurrentModificationExceptionWhenUpdatingWhileIterating()
     {
         // given
-        GraphDatabaseService graph = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graph = dbRule.get();
         Label label = DynamicLabel.label( "Bird" );
 
         Node node1, node2, node3;

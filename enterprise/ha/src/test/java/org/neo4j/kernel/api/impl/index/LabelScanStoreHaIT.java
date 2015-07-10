@@ -28,6 +28,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -36,7 +38,6 @@ import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
@@ -121,8 +122,7 @@ public class LabelScanStoreHaIT
             {
                 if ( serverId == 1 )
                 {
-                    GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase(
-                            storeDir.getAbsolutePath() );
+                    GraphDatabase db = CommunityTestGraphDatabase.open( storeDir );
                     try
                     {
                         createSomeLabeledNodes( db,

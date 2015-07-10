@@ -22,10 +22,11 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -36,16 +37,13 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.register.Register;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
-import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_ALL;
 
 public class IndexSamplingIntegrationTest
@@ -88,21 +86,17 @@ public class IndexSamplingIntegrationTest
             };
         }
     };
+
     @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule()
+    public final TestGraphDatabaseRule db = TestGraphDatabaseRule.ephemeral( new Consumer<TestGraphDatabase.EphemeralBuilder>()
     {
         @Override
-        protected void configure( GraphDatabaseFactory factory )
+        public void accept( TestGraphDatabase.EphemeralBuilder builder )
         {
-            factory.addKernelExtension( new InMemoryIndexProviderFactory( index ) );
+            builder.withSetting( GraphDatabaseSettings.index_background_sampling_enabled, "false" );
+            builder.addKernelExtension( new InMemoryIndexProviderFactory( index ) );
         }
-
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            builder.setConfig( index_background_sampling_enabled, FALSE );
-        }
-    };
+    } );
 
     @Test
     public void shouldStopSamplingWhenIndexIsDropped() throws Exception

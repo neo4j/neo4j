@@ -34,7 +34,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -59,7 +59,7 @@ public class ConcurrentCreateAndGetRelationshipsIT
     public void tryToReproduceTheIssue() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         CountDownLatch startSignal = new CountDownLatch( 1 );
         AtomicBoolean stopSignal = new AtomicBoolean();
         AtomicReference<Exception> failure = new AtomicReference<Exception>();
@@ -116,7 +116,8 @@ public class ConcurrentCreateAndGetRelationshipsIT
         }
     }
 
-    public final @Rule ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
     private static final RelationshipType RELTYPE = MyRelTypes.TEST;
 
     private static class Worker extends Thread

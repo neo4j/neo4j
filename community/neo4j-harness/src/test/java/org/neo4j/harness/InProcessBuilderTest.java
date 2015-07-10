@@ -40,7 +40,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
@@ -52,7 +53,6 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -165,7 +165,7 @@ public class InProcessBuilderTest
         try
         {
 
-            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.toString() );
+            GraphDatabase db = CommunityTestGraphDatabase.open( dir.toFile() );
             try
             {
                 db.execute( "create ()" );
@@ -193,7 +193,7 @@ public class InProcessBuilderTest
             }
 
             // Then: we still only have one node since the server is supposed to work on a copy
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.toString() );
+            db = CommunityTestGraphDatabase.open( dir.toFile() );
             try
             {
                 try ( Transaction tx = db.beginTx() )

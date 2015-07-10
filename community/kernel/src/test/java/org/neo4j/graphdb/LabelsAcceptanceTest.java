@@ -23,19 +23,16 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -50,10 +47,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
-import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.TestGraphDatabaseFactoryState;
+import org.neo4j.test.TestGraphDatabaseRule;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -79,7 +73,8 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class LabelsAcceptanceTest
 {
-    public @Rule ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     private enum Labels implements Label
     {
@@ -91,7 +86,7 @@ public class LabelsAcceptanceTest
     @Test
     public void shouldInsertLabelsWithoutDuplicatingThem() throws Exception
     {
-        final Node node = dbRule.executeAndCommit( new Function<GraphDatabaseService, Node>()
+        final Node node = dbRule.executeAndCommit( new Function<GraphDatabaseService,Node>()
         {
             @Override
             public Node apply( GraphDatabaseService db )
@@ -152,7 +147,7 @@ public class LabelsAcceptanceTest
     public void addingALabelUsingAValidIdentifierShouldSucceed() throws Exception
     {
         // Given
-        GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabase = dbRule.get();
         Node myNode = null;
 
         // When
@@ -172,7 +167,7 @@ public class LabelsAcceptanceTest
     public void addingALabelUsingAnInvalidIdentifierShouldFail() throws Exception
     {
         // Given
-        GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabase = dbRule.get();
 
         // When I set an empty label
         try ( Transaction tx = graphDatabase.beginTx() )
@@ -199,7 +194,7 @@ public class LabelsAcceptanceTest
     public void addingALabelThatAlreadyExistsBehavesAsNoOp() throws Exception
     {
         // Given
-        GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabase = dbRule.get();
         Node myNode = null;
 
         // When
@@ -241,7 +236,7 @@ public class LabelsAcceptanceTest
     public void removingCommittedLabel() throws Exception
     {
         // Given
-        GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabase = dbRule.get();
         Label label = Labels.MY_LABEL;
         Node myNode = createNode( graphDatabase, label );
 
@@ -260,7 +255,7 @@ public class LabelsAcceptanceTest
     public void createNodeWithLabels() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
 
         // WHEN
         Node node = null;
@@ -278,7 +273,7 @@ public class LabelsAcceptanceTest
     public void removingNonExistentLabel() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.get();
         Label label = Labels.MY_LABEL;
 
         // When
@@ -298,7 +293,7 @@ public class LabelsAcceptanceTest
     public void removingExistingLabelFromUnlabeledNode() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.get();
         Label label = Labels.MY_LABEL;
         createNode( beansAPI, label );
         Node myNode = createNode( beansAPI );
@@ -318,7 +313,7 @@ public class LabelsAcceptanceTest
     public void removingUncommittedLabel() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.get();
         Label label = Labels.MY_LABEL;
 
         // When
@@ -340,7 +335,7 @@ public class LabelsAcceptanceTest
     public void shouldBeAbleToListLabelsForANode() throws Exception
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.get();
         Node node = null;
         Set<String> expected = asSet( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() );
         try (Transaction tx = beansAPI.beginTx())
@@ -360,7 +355,7 @@ public class LabelsAcceptanceTest
     public void shouldReturnEmptyListIfNoLabels() throws Exception
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.get();
         Node node = createNode( beansAPI );
 
         // WHEN THEN
@@ -371,7 +366,7 @@ public class LabelsAcceptanceTest
     public void getNodesWithLabelCommitted() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.get();
 
         // When
         Node node = null;
@@ -391,7 +386,7 @@ public class LabelsAcceptanceTest
     public void getNodesWithLabelsWithTxAddsAndRemoves() throws Exception
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.get();
         Node node1 = createNode( beansAPI, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
         Node node2 = createNode( beansAPI, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
 
@@ -417,7 +412,7 @@ public class LabelsAcceptanceTest
     public void shouldListLabels() throws Exception
     {
         // Given
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         GlobalGraphOperations globalOps = GlobalGraphOperations.at( db );
         createNode( db, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
         List<Label> labels = null;
@@ -444,7 +439,7 @@ public class LabelsAcceptanceTest
     public void deleteAllNodesAndTheirLabels() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         final Label label = DynamicLabel.label( "A" );
         try ( Transaction tx = db.beginTx() )
         {
@@ -476,7 +471,7 @@ public class LabelsAcceptanceTest
     public void removingLabelDoesNotBreakPreviouslyCreatedLabelsIterator()
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         Label label1 = DynamicLabel.label( "A" );
         Label label2 = DynamicLabel.label( "B" );
 
@@ -496,7 +491,7 @@ public class LabelsAcceptanceTest
     public void removingPropertyDoesNotBreakPreviouslyCreatedNodePropertyKeysIterator()
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -520,7 +515,7 @@ public class LabelsAcceptanceTest
     {
         // given
         final int TOTAL_NUMBER_OF_LABELS = 200, NUMBER_OF_PRESERVED_LABELS = 20;
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
@@ -561,7 +556,7 @@ public class LabelsAcceptanceTest
     public void shouldAllowManyLabelsAndPropertyCursor()
     {
         // given
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
@@ -646,53 +641,9 @@ public class LabelsAcceptanceTest
             }
         };
 
-        TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory()
-        {
-            @Override
-            protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator(
-                    final File storeDir, final TestGraphDatabaseFactoryState state )
-            {
-                return new GraphDatabaseBuilder.DatabaseCreator()
-                {
-                    @Override
-                    public GraphDatabaseService newDatabase( Map<String,String> config )
-                    {
-                        return new ImpermanentGraphDatabase( storeDir, config, GraphDatabaseDependencies.newDependencies(state.databaseDependencies() ))
-                        {
-                            @Override
-                            protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory
-                                    .Dependencies dependencies )
-                            {
-                                new CommunityFacadeFactory()
-                                {
-                                    @Override
-                                    protected EditionModule createEdition( PlatformModule platformModule )
-                                    {
-                                        return new CommunityEditionModule( platformModule )
-                                        {
-                                            @Override
-                                            protected IdGeneratorFactory createIdGeneratorFactory()
-                                            {
-                                                return idFactory;
-                                            }
-                                        };
-                                    }
-
-                                    @Override
-                                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
-                                    {
-                                        return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
-                                    }
-                                }.newFacade( storeDir, params, dependencies, this );
-                            }
-
-                        };
-                    }
-                };
-            }
-        };
-
-        return dbFactory.newImpermanentDatabase();
+        return CommunityTestGraphDatabase.buildEphemeral()
+                .withIdGeneratorFactory( idFactory )
+                .open();
     }
 
     private Node createNode( GraphDatabaseService db, Label... labels )

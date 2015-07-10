@@ -25,10 +25,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -43,7 +45,6 @@ import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -270,9 +271,9 @@ public class TestMatchingOfCircularPattern
     @BeforeClass
     public static void setUpDb()
     {
-        String storeDir = TargetDirectory.forTest(
-                TestMatchingOfCircularPattern.class ).makeGraphDbDir().getAbsolutePath();
-        graphdb = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        File storeDir = TargetDirectory.forTest(
+                TestMatchingOfCircularPattern.class ).makeGraphDbDir();
+        graphdb = CommunityTestGraphDatabase.open( storeDir );
         try ( Transaction tx = graphdb.beginTx() )
         {
             setupGraph();

@@ -21,14 +21,14 @@ package examples;
 
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,7 +42,7 @@ public class RelatedNodesQuestionTest
     @Test
     public void question5346011()
     {
-        GraphDatabaseService service = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        GraphDatabase service = CommunityTestGraphDatabase.openEphemeral();
         try ( Transaction tx = service.beginTx() )
         {
             RelationshipIndex index = service.index().forRelationships( "exact" );

@@ -22,8 +22,8 @@ package org.neo4j.server.modules;
 import java.util.Collection;
 import java.util.HashSet;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ConfigWrappingConfiguration;
@@ -47,7 +47,7 @@ public class ExtensionInitializer
 
     public Collection<Injectable<?>> initializePackages( Iterable<String> packageNames )
     {
-        GraphDatabaseAPI graphDatabaseService = neoServer.getDatabase().getGraph();
+        GraphDatabaseService graphDatabaseService = neoServer.getDatabase().getGraph();
         Config configuration = neoServer.getConfig();
 
         Collection<Injectable<?>> injectables = new HashSet<>();

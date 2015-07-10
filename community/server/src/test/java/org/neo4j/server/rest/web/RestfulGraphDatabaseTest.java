@@ -38,13 +38,14 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ConfigWrappingConfiguration;
 import org.neo4j.server.configuration.ServerSettings;
@@ -61,7 +62,6 @@ import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollection;
 import org.neo4j.server.web.ServerInternalSettings;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
 
 import static java.lang.Long.parseLong;
@@ -94,13 +94,13 @@ public class RestfulGraphDatabaseTest
     private static GraphDbHelper helper;
     private static EntityOutputFormat output;
     private static LeaseManager leaseManager;
-    private static GraphDatabaseAPI graph;
+    private static TestGraphDatabase graph;
 
     @BeforeClass
     public static void doBefore() throws IOException
     {
-        graph = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        database = new WrappedDatabase(graph);
+        graph = CommunityTestGraphDatabase.openEphemeral();
+        database = new WrappedDatabase(graph.getGraphDatabaseAPI());
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );

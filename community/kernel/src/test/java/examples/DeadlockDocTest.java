@@ -30,12 +30,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.TransactionTemplate;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 public class DeadlockDocTest
 {
     @Rule
-    public EmbeddedDatabaseRule rule = new EmbeddedDatabaseRule(  );
+    public TestGraphDatabaseRule rule = TestGraphDatabaseRule.ephemeral();
 
     @Test
     public void transactionWithRetries() throws InterruptedException
@@ -46,7 +46,7 @@ public class DeadlockDocTest
     @Test
     public void transactionWithTemplate() throws InterruptedException
     {
-        GraphDatabaseService graphDatabaseService = rule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabaseService = rule.get();
 
         // START SNIPPET: template
         TransactionTemplate template = new TransactionTemplate(  ).retries( 5 ).backoff( 3, TimeUnit.SECONDS );
@@ -67,7 +67,7 @@ public class DeadlockDocTest
 
     private Object transactionWithRetry()
     {
-        GraphDatabaseService graphDatabaseService = rule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabaseService = rule.get();
 
         // START SNIPPET: retry
         Throwable txEx = null;

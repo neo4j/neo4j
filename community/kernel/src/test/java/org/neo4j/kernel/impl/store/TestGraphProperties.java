@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,14 +27,14 @@ import java.io.File;
 import java.util.Collections;
 import java.util.concurrent.Future;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.logging.NullLogProvider;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -61,18 +59,13 @@ import static org.neo4j.test.TargetDirectory.forTest;
 public class TestGraphProperties
 {
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private TestGraphDatabaseFactory factory;
-
-    @Before
-    public void before() throws Exception
-    {
-        factory = new TestGraphDatabaseFactory().setFileSystem( fs.get() );
-    }
 
     @Test
     public void basicProperties() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs.get() )
+                .open();
         PropertyContainer graphProperties = properties( db );
         assertThat( graphProperties, inTx( db, not( hasProperty( "test" ) ) ) );
 
@@ -106,8 +99,9 @@ public class TestGraphProperties
     @Test
     public void setManyGraphProperties() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
-
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs.get() )
+                .open();
         Transaction tx = db.beginTx();
         Object[] values = new Object[]{10, "A string value", new float[]{1234.567F, 7654.321F},
                 "A rather longer string which wouldn't fit inlined #!)(&¤"};
@@ -133,7 +127,9 @@ public class TestGraphProperties
     @Test
     public void setBigArrayGraphProperty() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs.get() )
+                .open();
         long[] array = new long[1000];
         for ( int i = 0; i < 10; i++ )
         {
@@ -151,7 +147,7 @@ public class TestGraphProperties
         db.shutdown();
     }
 
-    private static PropertyContainer properties( GraphDatabaseAPI db )
+    private static PropertyContainer properties( TestGraphDatabase db )
     {
         return db.getDependencyResolver().resolveDependency( NodeManager.class ).newGraphProperties();
     }
@@ -160,7 +156,9 @@ public class TestGraphProperties
     public void firstRecordOtherThanZeroIfNotFirst() throws Exception
     {
         File storeDir = forTest( getClass()).cleanDirectory( "zero" );
-        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs.get() )
+                .open( storeDir );
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "name", "Yo" );
@@ -168,7 +166,9 @@ public class TestGraphProperties
         tx.close();
         db.shutdown();
 
-        db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
+        db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs.get() )
+                .open( storeDir );
         tx = db.beginTx();
         properties( db ).setProperty( "test", "something" );
         tx.success();
@@ -194,7 +194,9 @@ public class TestGraphProperties
     @Test
     public void graphPropertiesAreLockedPerTx() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs.get() )
+                .open();
 
         Worker worker1 = new Worker( "W1", new State( db ) );
         Worker worker2 = new Worker( "W2", new State( db ) );
@@ -244,7 +246,9 @@ public class TestGraphProperties
         snapshot = produceUncleanStore( snapshot, storeDir );
         snapshot = produceUncleanStore( snapshot, storeDir );
 
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir );
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( snapshot )
+                .open( storeDir );
         assertThat( properties( db ), inTx( db, hasProperty( "prop" ).withValue( "Some value" ) ) );
         db.shutdown();
     }
@@ -252,7 +256,9 @@ public class TestGraphProperties
     @Test
     public void testEquals()
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs.get() )
+                .open();
         PropertyContainer graphProperties = properties( db );
         try ( Transaction tx = db.beginTx() )
         {
@@ -262,18 +268,20 @@ public class TestGraphProperties
 
         assertEquals( graphProperties, properties( db ) );
         db.shutdown();
-        db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs.get() )
+                .open();
         assertFalse( graphProperties.equals( properties( db ) ) );
         db.shutdown();
     }
 
     private static class State
     {
-        private final GraphDatabaseAPI db;
+        private final TestGraphDatabase db;
         private final PropertyContainer properties;
         private Transaction tx;
 
-        State( GraphDatabaseAPI db )
+        State( TestGraphDatabase db )
         {
             this.db = db;
             this.properties = properties( db );
@@ -343,11 +351,13 @@ public class TestGraphProperties
     private EphemeralFileSystemAbstraction produceUncleanStore( EphemeralFileSystemAbstraction fileSystem,
             File storeDir )
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir );
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs.get() )
+                .open( storeDir );
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "name", "Something" );
-        properties( (GraphDatabaseAPI) db ).setProperty( "prop", "Some value" );
+        properties( db ).setProperty( "prop", "Some value" );
         tx.success();
         tx.close();
         EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();

@@ -23,12 +23,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -37,7 +38,7 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class RelationshipCountSampleableTest
 {
-    public GraphDatabaseAPI db;
+    public TestGraphDatabase db;
     public RelationshipCountSampleable sampleable;
 
     @Test
@@ -54,7 +55,7 @@ public class RelationshipCountSampleableTest
         assertThat( sampleable.getValue(), is( 1d ) );
     }
 
-    private void createARelationship( GraphDatabaseAPI db )
+    private void createARelationship( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -68,7 +69,7 @@ public class RelationshipCountSampleableTest
     @Before
     public void setUp() throws Exception
     {
-        db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = CommunityTestGraphDatabase.openEphemeral();
         sampleable = new RelationshipCountSampleable( db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ) );
     }
 

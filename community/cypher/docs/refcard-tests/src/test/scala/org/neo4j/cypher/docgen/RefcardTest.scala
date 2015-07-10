@@ -22,17 +22,16 @@ package org.neo4j.cypher.docgen
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
+import org.neo4j.embedded.{CommunityTestGraphDatabase, TestGraphDatabase}
 import org.neo4j.graphdb.index.Index
 import org.junit.Test
 import scala.collection.JavaConverters._
 import java.io.{ File, FileOutputStream, OutputStreamWriter, PrintWriter, Writer }
 import org.neo4j.graphdb._
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher._
-import org.neo4j.test.{GraphDatabaseServiceCleaner, ImpermanentGraphDatabase, TestGraphDatabaseFactory,
-GraphDescription}
+import org.neo4j.test.{GraphDatabaseServiceCleaner, GraphDescription}
 import org.scalatest.Assertions
 import org.junit.Before
 import org.junit.After
@@ -43,7 +42,7 @@ Use this base class for refcard tests
  */
 abstract class RefcardTest extends Assertions with DocumentationHelper with GraphIcing {
 
-  var db: GraphDatabaseAPI = null
+  var db: TestGraphDatabase = null
   implicit var engine: ExecutionEngine = null
   var nodes: Map[String, Long] = null
   var nodeIndex: Index[Node] = null
@@ -220,7 +219,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   def init() {
     dir = createDir(section)
     allQueriesWriter = new OutputStreamWriter(new FileOutputStream(new File("target/all-queries.asciidoc"), true), "UTF-8")
-    db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
+    db = CommunityTestGraphDatabase.openEphemeral()
 
     GraphDatabaseServiceCleaner.cleanDatabaseContent(db);
 

@@ -24,16 +24,16 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -43,13 +43,13 @@ public class ConstraintCreationIT
 {
     private static final Label LABEL = DynamicLabel.label( "label1" );
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( ConstraintCreationIT.class );
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     @Test
     public void shouldNotLeaveLuceneIndexFilesHangingAroundIfConstraintCreationFails()
     {
         // given
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        TestGraphDatabase db = dbRule.get();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -78,7 +78,7 @@ public class ConstraintCreationIT
         }
 
         File schemaStorePath = SchemaIndexProvider
-                .getRootDirectory( new File( db.getStoreDir() ), LuceneSchemaIndexProviderFactory.KEY );
+                .getRootDirectory( db.storeDir(), LuceneSchemaIndexProviderFactory.KEY );
 
         String indexId = "1";
         File[] files = new File(schemaStorePath, indexId ).listFiles();

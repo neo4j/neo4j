@@ -25,13 +25,13 @@ import javax.ws.rs.core.Response;
 
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,7 +42,7 @@ public class DatabaseMetadataServiceTest
     @Test
     public void shouldAdvertiseRelationshipTypesThatCurrentlyExistInTheDatabase() throws Throwable
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
@@ -52,7 +52,7 @@ public class DatabaseMetadataServiceTest
             tx.success();
         }
 
-        Database database = new WrappedDatabase( db );
+        Database database = new WrappedDatabase( db.getGraphDatabaseAPI() );
         DatabaseMetadataService service = new DatabaseMetadataService( database );
 
         try ( Transaction tx = db.beginTx() )

@@ -25,16 +25,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -48,7 +47,7 @@ public class PropertyCountSampleableTest
     @Before
     public void setupReferenceNode()
     {
-        db = new WrappedDatabase( (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase() );
+        db = new WrappedDatabase( CommunityTestGraphDatabase.openEphemeral().getGraphDatabaseAPI() );
         DependencyResolver dependencyResolver = db.getGraph().getDependencyResolver();
         sampleable = new PropertyCountSampleable( dependencyResolver.resolveDependency( NeoStoreSupplier.class ) );
 

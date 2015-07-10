@@ -25,6 +25,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -40,7 +41,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -92,7 +92,7 @@ public class PathExplosionIT
             for ( int pathLength = MIN_PATH_LENGTH; pathLength <= MAX_PATH_LENGTH; pathLength++ )
             {
                 FileUtils.deleteRecursively( testDir.directory() );
-                GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+                GraphDatabaseService db = CommunityTestGraphDatabase.openEphemeral();
                 try
                 {
                     long[] startEndNodeIds = createPathGraphAndReturnStartAndEnd( pathLength, pathWidth, db );

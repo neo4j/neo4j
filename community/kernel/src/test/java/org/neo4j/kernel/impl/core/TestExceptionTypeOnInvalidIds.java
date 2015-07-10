@@ -25,18 +25,17 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.UUID;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.Settings.TRUE;
 
 public class TestExceptionTypeOnInvalidIds
 {
@@ -48,24 +47,24 @@ public class TestExceptionTypeOnInvalidIds
     private static final long SMALL_NEGATIVE_LONG = -((long) Integer.MIN_VALUE) - 1;
     private static final long BIG_POSSITIVE_LONG = Long.MAX_VALUE;
     private static final long BIG_NEGATIVE_LONG = Long.MIN_VALUE;
-    private static GraphDatabaseService graphdb;
-    private static GraphDatabaseService graphDbReadOnly;
+    private static GraphDatabase graphdb;
+    private static GraphDatabase graphDbReadOnly;
     private Transaction tx;
 
     @BeforeClass
     public static void createDatabase()
     {
-        graphdb = new TestGraphDatabaseFactory().newEmbeddedDatabase( getRandomStoreDir() );
-        String storeDir = getRandomStoreDir();
-        new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
-        graphDbReadOnly = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).
-            setConfig( GraphDatabaseSettings.read_only, TRUE ).
-            newGraphDatabase();
+        graphdb = CommunityTestGraphDatabase.open( getRandomStoreDir() );
+        File storeDir = getRandomStoreDir();
+        CommunityTestGraphDatabase.open( storeDir ).shutdown();
+        graphDbReadOnly = CommunityTestGraphDatabase.build()
+                .readOnly()
+                .open( storeDir );
     }
 
-    private static String getRandomStoreDir()
+    private static File getRandomStoreDir()
     {
-        return "target/var/id_test/" + UUID.randomUUID();
+        return new File( "target/var/id_test/" + UUID.randomUUID() );
     }
 
     @AfterClass

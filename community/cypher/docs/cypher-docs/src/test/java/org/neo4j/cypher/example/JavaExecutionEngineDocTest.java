@@ -37,6 +37,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -46,7 +47,6 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.test.AsciiDocGenerator;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import static java.util.Arrays.asList;
@@ -91,7 +91,7 @@ public class JavaExecutionEngineDocTest
     @Before
     public void setUp() throws IOException
     {
-        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
+        db = CommunityTestGraphDatabase.openEphemeral();
         try ( Transaction tx = db.beginTx() )
         {
             michaelaNode = db.createNode();

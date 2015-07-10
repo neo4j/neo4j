@@ -24,8 +24,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.embedded.HighAvailabilityGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -45,14 +45,14 @@ public class MasterInfoService implements AdvertisableService
     public static final String IS_AVAILABLE_PATH = "/available";
 
     private final OutputFormat output;
-    private final HighlyAvailableGraphDatabase haDb;
+    private final HighAvailabilityGraphDatabase haDb;
 
     public MasterInfoService( @Context OutputFormat output, @Context GraphDatabaseService db )
     {
         this.output = output;
-        if ( db instanceof HighlyAvailableGraphDatabase )
+        if ( db instanceof HighAvailabilityGraphDatabase )
         {
-            this.haDb = (HighlyAvailableGraphDatabase) db;
+            this.haDb = (HighAvailabilityGraphDatabase) db;
         }
         else
         {
@@ -84,18 +84,15 @@ public class MasterInfoService implements AdvertisableService
             return status( FORBIDDEN ).build();
         }
 
-        String role = haDb.role().toLowerCase();
-        if ( role.equals( "master" ))
+        switch ( haDb.haClusterRole() )
         {
+        case MASTER:
             return positiveResponse();
-        }
-
-        if ( role.equals( "slave" ))
-        {
+        case SLAVE:
             return negativeResponse();
+        default:
+            return unknownResponse();
         }
-
-        return unknownResponse();
     }
 
     @GET
@@ -107,18 +104,15 @@ public class MasterInfoService implements AdvertisableService
             return status( FORBIDDEN ).build();
         }
 
-        String role = haDb.role().toLowerCase();
-        if ( role.equals( "slave" ))
+        switch ( haDb.haClusterRole() )
         {
+        case SLAVE:
             return positiveResponse();
-        }
-
-        if ( role.equals( "master" ))
-        {
+        case MASTER:
             return negativeResponse();
+        default:
+            return unknownResponse();
         }
-
-        return unknownResponse();
     }
 
     @GET
@@ -130,13 +124,15 @@ public class MasterInfoService implements AdvertisableService
             return status( FORBIDDEN ).build();
         }
 
-        String role = haDb.role().toLowerCase();
-        if ( "slave".equals( role ) || "master".equals( role ))
+        switch ( haDb.haClusterRole() )
         {
-            return plainTextResponse( OK, role );
+        case MASTER:
+            return plainTextResponse( OK, "master" );
+        case SLAVE:
+            return plainTextResponse( OK, "slave" );
+        default:
+            return unknownResponse();
         }
-
-        return unknownResponse();
     }
 
     private Response negativeResponse()

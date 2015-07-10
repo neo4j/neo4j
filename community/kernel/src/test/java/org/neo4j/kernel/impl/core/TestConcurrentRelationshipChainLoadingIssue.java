@@ -28,11 +28,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -69,10 +70,10 @@ public class TestConcurrentRelationshipChainLoadingIssue
 
     private void tryToTriggerRelationshipLoadingStoppingMidWay( int denseNodeThreshold ) throws Throwable
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( relationship_grab_size, "" + relCount/2 )
-                .setConfig( dense_node_threshold, "" + denseNodeThreshold )
-                .newGraphDatabase();
+        GraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withSetting( relationship_grab_size, "" + relCount / 2 )
+                .withSetting( dense_node_threshold, "" + denseNodeThreshold )
+                .open();
         Node node = createNodeWithRelationships( db );
 
         checkStateToHelpDiagnoseFlakeyTest( db, node );
@@ -87,14 +88,14 @@ public class TestConcurrentRelationshipChainLoadingIssue
         db.shutdown();
     }
 
-    private void checkStateToHelpDiagnoseFlakeyTest( GraphDatabaseAPI db, Node node )
+    private void checkStateToHelpDiagnoseFlakeyTest( GraphDatabaseService db, Node node )
     {
         loadNode( db, node );
         // TODO clear cache here
         loadNode( db, node );
     }
 
-    private void loadNode( GraphDatabaseAPI db, Node node )
+    private void loadNode( GraphDatabaseService db, Node node )
     {
         try (Transaction ignored = db.beginTx()) {
             count( node.getRelationships() );
@@ -114,7 +115,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
         }
     }
 
-    private void tryOnce( final GraphDatabaseAPI db, final Node node, int iterations ) throws Throwable
+    private void tryOnce( final GraphDatabaseService db, final Node node, int iterations ) throws Throwable
     {
         ExecutorService executor = newCachedThreadPool();
         final CountDownLatch startSignal = new CountDownLatch( 1 );
@@ -166,7 +167,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
         return i.get();
     }
 
-    private Node createNodeWithRelationships( GraphDatabaseAPI db )
+    private Node createNodeWithRelationships( GraphDatabaseService db )
     {
         Node node;
         try ( Transaction tx = db.beginTx() )

@@ -29,10 +29,12 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -45,7 +47,6 @@ import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -219,8 +220,7 @@ public class ConsistencyCheckToolTest
     private EphemeralFileSystemAbstraction createDataBaseWithStateThatNeedsRecovery( File storeDir )
     {
         EphemeralFileSystemAbstraction fileSystem = fs.get();
-        final GraphDatabaseService db =
-                new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir );
+        final GraphDatabase db = CommunityTestGraphDatabase.build().withFileSystem( fileSystem ).open( storeDir );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -235,10 +235,9 @@ public class ConsistencyCheckToolTest
 
     private void createGraphDbAndKillIt()
     {
-        final GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .setFileSystem( fs.get() )
-                .newImpermanentDatabaseBuilder( storeDirectory.graphDbDir() )
-                .newGraphDatabase();
+        final GraphDatabaseService db = CommunityTestGraphDatabase.build()
+                .withFileSystem( fs.get() )
+                .open( storeDirectory.graphDbDir() );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -250,26 +249,34 @@ public class ConsistencyCheckToolTest
         fs.snapshot( shutdownDbAction( db ) );
     }
 
-    private ConsistencyCheckTool newConsistencyCheckToolWith( Monitors monitors,
+    private ConsistencyCheckTool newConsistencyCheckToolWith( final Monitors monitors,
             ConsistencyCheckTool.ExitHandle exitHandle, FileSystemAbstraction fileSystem ) throws IOException
     {
-        GraphDatabaseFactory graphDbFactory = new TestGraphDatabaseFactory()
+        Function<File,GraphDatabase> dbFactory = new Function<File,GraphDatabase>()
         {
             @Override
-            public GraphDatabaseService newEmbeddedDatabase( File storeDir )
+            public GraphDatabase apply( File storeDir )
             {
-                return newImpermanentDatabase( storeDir );
+                return CommunityTestGraphDatabase.buildEphemeral().withFileSystem( fs.get() ).withMonitors( monitors ).open( storeDir );
             }
-        }.setFileSystem( fileSystem ).setMonitors( monitors );
+        };
 
         return new ConsistencyCheckTool( mock( ConsistencyCheckService.class ),
-                graphDbFactory, fileSystem, mock( PrintStream.class ), exitHandle );
+                dbFactory, fileSystem, mock( PrintStream.class ), exitHandle );
     }
 
-    private ConsistencyCheckTool newConsistencyCheckToolWith ( ConsistencyCheckService
-        consistencyCheckService, PrintStream systemError )
+    private ConsistencyCheckTool newConsistencyCheckToolWith( ConsistencyCheckService consistencyCheckService, PrintStream systemError )
     {
-        return new ConsistencyCheckTool( consistencyCheckService, new GraphDatabaseFactory(),
+        Function<File,GraphDatabase> dbFactory = new Function<File,GraphDatabase>()
+        {
+            @Override
+            public GraphDatabase apply( File storeDir )
+            {
+                return CommunityTestGraphDatabase.open( storeDir );
+            }
+        };
+
+        return new ConsistencyCheckTool( consistencyCheckService, dbFactory,
                 new DefaultFileSystemAbstraction(), systemError, ConsistencyCheckTool.ExitHandle.SYSTEM_EXIT );
     }
 

@@ -26,8 +26,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -36,17 +35,15 @@ import static org.junit.Assert.fail;
 
 public class NodeProxyTest
 {
-    public final
     @Rule
-    DatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
     private final String PROPERTY_KEY = "PROPERTY_KEY";
     private GraphDatabaseService db;
 
     @Before
     public void init()
     {
-        db = dbRule.getGraphDatabaseService();
-
+        db = dbRule.get();
     }
 
     @Test

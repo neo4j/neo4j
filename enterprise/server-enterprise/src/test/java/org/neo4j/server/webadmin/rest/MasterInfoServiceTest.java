@@ -23,7 +23,7 @@ import javax.ws.rs.core.Response;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.embedded.HighAvailabilityGraphDatabase;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -35,8 +35,8 @@ public class MasterInfoServiceTest
     public void masterShouldRespond200AndTrueWhenMaster() throws Exception
     {
         // given
-        HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
-        when( database.role() ).thenReturn( "master" );
+        HighAvailabilityGraphDatabase database = mock( HighAvailabilityGraphDatabase.class );
+        when( database.haClusterRole() ).thenReturn( HighAvailabilityGraphDatabase.Role.MASTER );
 
         MasterInfoService service = new MasterInfoService( null, database );
 
@@ -52,8 +52,8 @@ public class MasterInfoServiceTest
     public void masterShouldRespond404AndFalseWhenSlave() throws Exception
     {
         // given
-        HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
-        when( database.role() ).thenReturn( "slave" );
+        HighAvailabilityGraphDatabase database = mock( HighAvailabilityGraphDatabase.class );
+        when( database.haClusterRole() ).thenReturn( HighAvailabilityGraphDatabase.Role.SLAVE );
 
         MasterInfoService service = new MasterInfoService( null, database );
 
@@ -69,8 +69,8 @@ public class MasterInfoServiceTest
     public void masterShouldRespond404AndUNKNOWNWhenUnknown() throws Exception
     {
         // given
-        HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
-        when( database.role() ).thenReturn( "unknown" );
+        HighAvailabilityGraphDatabase database = mock( HighAvailabilityGraphDatabase.class );
+        when( database.haClusterRole() ).thenReturn( HighAvailabilityGraphDatabase.Role.UNKNOWN );
 
         MasterInfoService service = new MasterInfoService( null, database );
 
@@ -86,8 +86,8 @@ public class MasterInfoServiceTest
     public void slaveShouldRespond200AndTrueWhenSlave() throws Exception
     {
         // given
-        HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
-        when( database.role() ).thenReturn( "slave" );
+        HighAvailabilityGraphDatabase database = mock( HighAvailabilityGraphDatabase.class );
+        when( database.haClusterRole() ).thenReturn( HighAvailabilityGraphDatabase.Role.SLAVE );
 
         MasterInfoService service = new MasterInfoService( null, database );
 
@@ -103,8 +103,8 @@ public class MasterInfoServiceTest
     public void slaveShouldRespond404AndFalseWhenMaster() throws Exception
     {
         // given
-        HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
-        when( database.role() ).thenReturn( "master" );
+        HighAvailabilityGraphDatabase database = mock( HighAvailabilityGraphDatabase.class );
+        when( database.haClusterRole() ).thenReturn( HighAvailabilityGraphDatabase.Role.MASTER );
 
         MasterInfoService service = new MasterInfoService( null, database );
 
@@ -120,8 +120,8 @@ public class MasterInfoServiceTest
     public void slaveShouldRespond404AndUNKNOWNWhenUnknown() throws Exception
     {
         // given
-        HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
-        when( database.role() ).thenReturn( "unknown" );
+        HighAvailabilityGraphDatabase database = mock( HighAvailabilityGraphDatabase.class );
+        when( database.haClusterRole() ).thenReturn( HighAvailabilityGraphDatabase.Role.UNKNOWN );
 
         MasterInfoService service = new MasterInfoService( null, database );
 
@@ -137,8 +137,8 @@ public class MasterInfoServiceTest
     public void shouldReportMasterAsGenerallyAvailableForTransactionProcessing() throws Exception
     {
         // given
-        HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
-        when( database.role() ).thenReturn( "master" );
+        HighAvailabilityGraphDatabase database = mock( HighAvailabilityGraphDatabase.class );
+        when( database.haClusterRole() ).thenReturn( HighAvailabilityGraphDatabase.Role.MASTER );
 
         MasterInfoService service = new MasterInfoService( null, database );
 
@@ -154,8 +154,8 @@ public class MasterInfoServiceTest
     public void shouldReportSlaveAsGenerallyAvailableForTransactionProcessing() throws Exception
     {
         // given
-        HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
-        when( database.role() ).thenReturn( "slave" );
+        HighAvailabilityGraphDatabase database = mock( HighAvailabilityGraphDatabase.class );
+        when( database.haClusterRole() ).thenReturn( HighAvailabilityGraphDatabase.Role.SLAVE );
 
         MasterInfoService service = new MasterInfoService( null, database );
 
@@ -171,8 +171,8 @@ public class MasterInfoServiceTest
     public void shouldReportNonMasterOrSlaveAsUnavailableForTransactionProcessing() throws Exception
     {
         // given
-        HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
-        when( database.role() ).thenReturn( "unknown" );
+        HighAvailabilityGraphDatabase database = mock( HighAvailabilityGraphDatabase.class );
+        when( database.haClusterRole() ).thenReturn( HighAvailabilityGraphDatabase.Role.UNKNOWN );
 
         MasterInfoService service = new MasterInfoService( null, database );
 

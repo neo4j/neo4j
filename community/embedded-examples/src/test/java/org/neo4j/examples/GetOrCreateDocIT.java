@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -36,7 +37,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.UniqueFactory;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
@@ -47,9 +47,9 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
     @BeforeClass
     public static void init()
     {
-        db = new TestGraphDatabaseFactory().newEmbeddedDatabase(
-                TargetDirectory.forTest( GetOrCreateDocIT.class ).makeGraphDbDir().getAbsolutePath()
-             );
+        db = CommunityTestGraphDatabase.open(
+                TargetDirectory.forTest( GetOrCreateDocIT.class ).makeGraphDbDir()
+        );
     }
 
     abstract class GetOrCreate<D>

@@ -21,9 +21,9 @@ package org.neo4j.ext.udc;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -34,11 +34,9 @@ public class UdcSettingsIT
     @Test
     public void testUdcHostSettingIsUnchanged() throws Exception
     {
-        //noinspection deprecation
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .newImpermanentDatabaseBuilder()
-                .setConfig( UdcSettings.udc_host, TEST_HOST_AND_PORT )
-                .newGraphDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withSetting( UdcSettings.udc_host, TEST_HOST_AND_PORT )
+                .open();
 
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
 

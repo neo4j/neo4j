@@ -33,15 +33,15 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.embedded.EnterpriseHighAvailabilityTestGraphDatabase;
+import org.neo4j.embedded.HighAvailabilityGraphDatabase;
+import org.neo4j.embedded.HighAvailabilityTestGraphDatabase;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.TargetDirectory;
@@ -64,7 +64,7 @@ import static org.neo4j.test.TargetDirectory.forTest;
  */
 public class TestPullUpdatesApplied
 {
-    private final HighlyAvailableGraphDatabase[] dbs = new HighlyAvailableGraphDatabase[3];
+    private final HighAvailabilityTestGraphDatabase[] dbs = new HighAvailabilityTestGraphDatabase[3];
     private final TargetDirectory dir = forTest( getClass() );
 
     @Before
@@ -76,7 +76,7 @@ public class TestPullUpdatesApplied
         }
 
         // Wait for all db's to become available
-        for ( HighlyAvailableGraphDatabase db : dbs )
+        for ( HighAvailabilityGraphDatabase db : dbs )
         {
             db.isAvailable( 5000 );
         }
@@ -85,7 +85,7 @@ public class TestPullUpdatesApplied
     @After
     public void doAfter() throws Exception
     {
-        for ( HighlyAvailableGraphDatabase db : dbs )
+        for ( HighAvailabilityGraphDatabase db : dbs )
         {
             if ( db != null )
             {
@@ -100,11 +100,11 @@ public class TestPullUpdatesApplied
         int master = getCurrentMaster();
         addNode( master );
         int toKill = (master + 1) % dbs.length;
-        HighlyAvailableGraphDatabase dbToKill = dbs[toKill];
+        HighAvailabilityGraphDatabase dbToKill = dbs[toKill];
 
         final CountDownLatch latch1 = new CountDownLatch( 1 );
 
-        final HighlyAvailableGraphDatabase masterDb = dbs[master];
+        final HighAvailabilityTestGraphDatabase masterDb = dbs[master];
         masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).addClusterListener(
                 new ClusterListener.Adapter()
                 {
@@ -163,7 +163,7 @@ public class TestPullUpdatesApplied
     // For executing in a different process than the one running the test case.
     public static void main( String[] args ) throws Exception
     {
-        String storePath = args[0];
+        File storePath = new File( args[0] );
         int serverId = Integer.parseInt( args[1] );
 
         database( serverId, storePath ).getDependencyResolver().resolveDependency( UpdatePullerClient.class ).pullUpdates();
@@ -171,26 +171,24 @@ public class TestPullUpdatesApplied
         // no shutdown, emulates a crash.
     }
 
-    private HighlyAvailableGraphDatabase newDb( int serverId )
+    private HighAvailabilityTestGraphDatabase newDb( int serverId )
     {
-        return database( serverId, dir.cleanDirectory( Integer.toString( serverId ) ).getAbsolutePath() );
+        return database( serverId, dir.cleanDirectory( Integer.toString( serverId ) ) );
     }
 
     private void restart( int serverId )
     {
-        dbs[serverId] = database( serverId, dir.existingDirectory( Integer.toString( serverId ) ).getAbsolutePath() );
+        dbs[serverId] = database( serverId, dir.existingDirectory( Integer.toString( serverId ) ) );
     }
 
-    private static HighlyAvailableGraphDatabase database( int serverId, String path )
+    private static HighAvailabilityTestGraphDatabase database( int serverId, File path )
     {
-        return (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( path )
-                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
-                .setConfig( ClusterSettings.server_id, Integer.toString( serverId ) )
-                .setConfig( HaSettings.ha_server, "localhost:" + (6666 + serverId) )
-                .setConfig( HaSettings.pull_interval, "0ms" )
-                .newGraphDatabase();
+        return EnterpriseHighAvailabilityTestGraphDatabase.withMemberId( serverId )
+                .bindClusterListenerTo( "127.0.0.1:" + (5001 + serverId) )
+                .bindTransactionListenerTo( "127.0.0.1:" + (6666 + serverId) )
+                .withInitialHostAddresses( "127.0.0.1:5001" )
+                .withSetting( HaSettings.pull_interval, "0ms" )
+                .open( path );
     }
 
     private static int runInOtherJvmToGetExitCode( String... args ) throws Exception
@@ -229,7 +227,7 @@ public class TestPullUpdatesApplied
 
     private long addNode( int dbId )
     {
-        HighlyAvailableGraphDatabase db = dbs[dbId];
+        HighAvailabilityGraphDatabase db = dbs[dbId];
         long result = -1;
         try ( Transaction tx = db.beginTx() )
         {
@@ -243,7 +241,7 @@ public class TestPullUpdatesApplied
     {
         for ( int i = 0; i < dbs.length; i++ )
         {
-            HighlyAvailableGraphDatabase db = dbs[i];
+            HighAvailabilityGraphDatabase db = dbs[i];
             if ( db.isMaster() )
             {
                 return i;

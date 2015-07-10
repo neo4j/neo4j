@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
@@ -34,12 +36,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
@@ -51,7 +51,7 @@ public class ConstraintRecoveryIT
     private static final Label LABEL = DynamicLabel.label( "label1" );
     @Rule
     public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
-    private GraphDatabaseAPI db;
+    private TestGraphDatabase db;
 
     @Test
     public void shouldNotHaveAnIndexIfUniqueConstraintCreationOnRecoveryFails() throws IOException
@@ -60,9 +60,6 @@ public class ConstraintRecoveryIT
         final EphemeralFileSystemAbstraction fs = fileSystemRule.get();
         fs.mkdir( new File("/tmp") );
         File pathToDb = new File( "/tmp/bar2" );
-
-        TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
-        dbFactory.setFileSystem( fs );
 
         final EphemeralFileSystemAbstraction[] storeInNeedOfRecovery = new EphemeralFileSystemAbstraction[1];
         final AtomicBoolean monitorCalled = new AtomicBoolean( false );
@@ -78,10 +75,11 @@ public class ConstraintRecoveryIT
                 storeInNeedOfRecovery[0] = fs.snapshot();
             }
         } );
-        dbFactory.setMonitors( monitors );
 
-
-        db = (GraphDatabaseAPI) dbFactory.newImpermanentDatabase( pathToDb );
+        db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs )
+                .withMonitors( monitors )
+                .open( pathToDb );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -107,9 +105,9 @@ public class ConstraintRecoveryIT
         assertTrue( monitorCalled.get() );
 
         // when
-        dbFactory = new TestGraphDatabaseFactory();
-        dbFactory.setFileSystem( storeInNeedOfRecovery[0] );
-        db = (GraphDatabaseAPI) dbFactory.newImpermanentDatabase( pathToDb );
+        db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( storeInNeedOfRecovery[0] )
+                .open( pathToDb );
 
         // then
         try(Transaction tx = db.beginTx())

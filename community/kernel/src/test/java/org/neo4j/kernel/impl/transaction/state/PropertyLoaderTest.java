@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static java.util.Arrays.asList;
 
@@ -56,7 +56,7 @@ public class PropertyLoaderTest
     private static final int PROP_KEY_ID = 42;
 
     @Rule
-    public final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule();
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     private final IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
 
@@ -143,7 +143,7 @@ public class PropertyLoaderTest
 
     private NeoStore neoStore()
     {
-        return db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
+        return dbRule.get().getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
     }
 
     private void setUpNode( long id, int... propertyValues )

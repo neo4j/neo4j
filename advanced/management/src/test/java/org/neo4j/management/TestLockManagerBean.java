@@ -24,12 +24,13 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.jmx.impl.JmxKernelExtension;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.info.LockInfo;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.*;
 
@@ -38,14 +39,13 @@ public class TestLockManagerBean
     private LockManager lockManager;
 
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
-    @SuppressWarnings("deprecation")
-    private GraphDatabaseAPI graphDb;
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
+    private TestGraphDatabase graphDb;
 
     @Before
     public void setup()
     {
-        graphDb = dbRule.getGraphDatabaseAPI();
+        graphDb = dbRule.get();
         lockManager = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( LockManager.class );
     }

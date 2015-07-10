@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
@@ -64,7 +65,6 @@ import org.neo4j.register.Registers;
 import org.neo4j.test.RandomRule;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
@@ -181,7 +181,7 @@ public class ParallelBatchImporterTest
                     RELATIONSHIP_COUNT/*insanely high bad tolerance, but it will actually never be that many*/ ) );
 
             // THEN
-            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.graphDbDir() );
+            GraphDatabaseService db = CommunityTestGraphDatabase.open( directory.graphDbDir() );
             try ( Transaction tx = db.beginTx() )
             {
                 inputIdGenerator.reset();

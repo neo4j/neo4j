@@ -28,10 +28,9 @@ import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -42,7 +41,8 @@ import static org.neo4j.test.OtherThreadRule.isWaiting;
 
 public class UniquenessConstraintValidationConcurrencyIT
 {
-    public final @Rule DatabaseRule database = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestGraphDatabaseRule database = TestGraphDatabaseRule.ephemeral();
     public final @Rule OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     @Test

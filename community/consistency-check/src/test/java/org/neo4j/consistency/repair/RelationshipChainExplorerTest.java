@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -38,7 +39,6 @@ import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -113,7 +113,7 @@ public class RelationshipChainExplorerTest
     private StoreAccess createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( int nDegreeTwoNodes )
     {
         File storeDirectory = storeLocation.graphDbDir();
-        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDirectory );
+        GraphDatabaseService database = CommunityTestGraphDatabase.open( storeDirectory );
 
         try ( Transaction transaction = database.beginTx() )
         {

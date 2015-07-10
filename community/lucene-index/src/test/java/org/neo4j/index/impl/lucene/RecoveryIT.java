@@ -24,12 +24,12 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertTrue;
@@ -40,11 +40,11 @@ public class RecoveryIT
     @Test
     public void testHardCoreRecovery() throws Exception
     {
-        String path = "target/hcdb";
-        FileUtils.deleteRecursively( new File( path ) );
+        File path = new File( "target/hcdb" );
+        FileUtils.deleteRecursively( path );
         Process process = Runtime.getRuntime().exec( new String[]{
                 "java", "-cp", System.getProperty( "java.class.path" ),
-                Inserter.class.getName(), path
+                Inserter.class.getName(), path.getAbsolutePath()
         } );
 
         // Let it run for a while and then kill it, and wait for it to die
@@ -53,7 +53,7 @@ public class RecoveryIT
         process.destroy();
         process.waitFor();
 
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( path );
+        final GraphDatabase db = CommunityTestGraphDatabase.open( path );
         try ( Transaction transaction = db.beginTx() )
         {
             assertTrue( db.index().existsForNodes( "myIndex" ) );

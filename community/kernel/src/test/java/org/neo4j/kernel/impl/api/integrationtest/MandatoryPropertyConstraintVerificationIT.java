@@ -39,8 +39,7 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernel
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.api.OperationsFacade;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 import org.neo4j.test.ThreadingRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -57,7 +56,7 @@ import static org.neo4j.test.ThreadingRule.waitingWhileIn;
 public class MandatoryPropertyConstraintVerificationIT
 {
     @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    public final TestGraphDatabaseRule db = TestGraphDatabaseRule.ephemeral();
     @Rule
     public final ThreadingRule thread = new ThreadingRule();
 
@@ -108,7 +107,7 @@ public class MandatoryPropertyConstraintVerificationIT
                 db.schema().constraintFor( label( "Foo" ) ).assertPropertyExists( "bar" ).create();
 
                 node = thread.executeAndAwait( db.tx( createNode().then( addLabel( label( "Foo" ) ) ) ),
-                        db.getGraphDatabaseService(),
+                        db.get(),
                         waitingWhileIn( OperationsFacade.class, "nodeAddLabel" ), 5, SECONDS );
 
                 tx.success();
@@ -141,7 +140,7 @@ public class MandatoryPropertyConstraintVerificationIT
                 db.createNode( label( "Foo" ) );
 
                 constraint = thread.executeAndAwait( db.tx( mandatoryPropertyConstraint( label( "Foo" ), "bar" ) ),
-                        db.getGraphDatabaseService(),
+                        db.get(),
                         waitingWhileIn( OperationsFacade.class, "mandatoryPropertyConstraintCreate" ), 5, SECONDS );
 
                 tx.success();
@@ -166,7 +165,7 @@ public class MandatoryPropertyConstraintVerificationIT
     {
         try ( Transaction ignored = db.beginTx() )
         {
-            DependencyResolver dependencyResolver = db.getGraphDatabaseAPI().getDependencyResolver();
+            DependencyResolver dependencyResolver = db.get().getDependencyResolver();
             Statement statement = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();
             TokenNameLookup tokenNameLookup = new StatementTokenNameLookup( statement.readOperations() );
             return exception.getUserMessage( tokenNameLookup );

@@ -28,11 +28,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -41,35 +41,21 @@ import static org.junit.Assert.assertThat;
 public class ErrorsAndWarningsTest
 {
     @Rule
-    public ImpermanentDatabaseRule db = null;
+    public TestGraphDatabaseRule db = null;
 
     public void startDatabase( final Boolean presentError )
     {
-        db = new ImpermanentDatabaseRule()
+        db = TestGraphDatabaseRule.ephemeral( new Consumer<TestGraphDatabase.EphemeralBuilder>()
         {
             @Override
-            protected void configure( GraphDatabaseBuilder builder )
+            public void accept( TestGraphDatabase.EphemeralBuilder builder )
             {
-                builder.setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE );
-                builder.setConfig( GraphDatabaseSettings.cypher_hints_error, presentError.toString() );
+                builder.withSetting( ShellSettings.remote_shell_enabled, Settings.TRUE );
+                builder.withSetting( GraphDatabaseSettings.cypher_hints_error, presentError.toString() );
             }
+        } );
 
-            @Override
-            public GraphDatabaseService getGraphDatabaseService()
-            {
-                try
-                {
-                    before();
-                }
-                catch ( Throwable throwable )
-                {
-                    throwable.printStackTrace();
-                }
-                return super.getGraphDatabaseService();
-            }
-        };
-
-        db.getGraphDatabaseService();
+        db.get();
     }
 
     @Test

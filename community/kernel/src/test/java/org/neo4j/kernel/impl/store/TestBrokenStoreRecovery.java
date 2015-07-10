@@ -26,10 +26,10 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -72,6 +72,6 @@ public class TestBrokenStoreRecovery
         trimFileToSize( new File( storeDir, "neostore.propertystore.db" ), 42 );
         File log = new File( storeDir, PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0" );
         trimFileToSize( log, 78 );
-        new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() ).shutdown();
+        CommunityTestGraphDatabase.open( storeDir ).shutdown();
     }
 }

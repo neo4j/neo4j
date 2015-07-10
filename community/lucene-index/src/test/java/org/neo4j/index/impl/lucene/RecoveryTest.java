@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,6 +27,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -34,14 +37,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -53,31 +54,39 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
  */
 public class RecoveryTest
 {
-    private static final File path = new File( "target/var/recovery" );
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( path );
+    public TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+
+    private static File storeDir;
     private GraphDatabaseService graphDb;
 
     @Before
     public void setup()
     {
-        Neo4jTestCase.deleteFileOrDirectory( path );
+        storeDir = directory.graphDbDir();
         startDB();
-    }
-
-    private void shutdownDB()
-    {
-        dbRule.stopAndKeepFiles();
     }
 
     private void startDB()
     {
-        graphDb = dbRule.getGraphDatabaseService();
+        graphDb = CommunityTestGraphDatabase.open( storeDir );
     }
 
-    private void forceRecover() throws IOException
+    private void shutdownDB()
     {
-        graphDb = dbRule.restartDatabase();
+        graphDb.shutdown();
+    }
+
+    private void restartDB() throws IOException
+    {
+        shutdownDB();
+        startDB();
+    }
+
+    @After
+    public void after()
+    {
+        graphDb.shutdown();
     }
 
     @Test
@@ -95,7 +104,7 @@ public class RecoveryTest
             tx.success();
         }
 
-        forceRecover();
+        restartDB();
     }
 
     @Test
@@ -107,7 +116,7 @@ public class RecoveryTest
             tx.success();
         }
 
-        forceRecover();
+        restartDB();
     }
 
     @Test
@@ -126,7 +135,7 @@ public class RecoveryTest
                 "java",
                 "-cp", System.getProperty( "java.class.path" ),
                 AddDeleteQuit.class.getName(),
-                path.getPath()
+                storeDir.getPath()
         } );
 
         int result = new ProcessStreamHandler( process, true ).waitForResult();
@@ -135,7 +144,7 @@ public class RecoveryTest
 
         startDB();
 
-        forceRecover();
+        restartDB();
     }
 
     @Test
@@ -148,13 +157,13 @@ public class RecoveryTest
         Process process = Runtime.getRuntime().exec( new String[]{
                 "java", "-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005", "-cp",
                 System.getProperty( "java.class.path" ),
-                AddRelToIndex.class.getName(), path.getPath()
+                AddRelToIndex.class.getName(), storeDir.getPath()
         } );
         assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Config config = new Config( MapUtil.stringMap(), GraphDatabaseSettings.class );
-        LuceneDataSource ds = new LuceneDataSource( path, config, new IndexConfigStore( path, fileSystem ), fileSystem );
+        LuceneDataSource ds = new LuceneDataSource( storeDir, config, new IndexConfigStore( storeDir, fileSystem ), fileSystem );
         ds.start();
         ds.stop();
     }
@@ -176,7 +185,7 @@ public class RecoveryTest
                 "java",
                 "-cp", System.getProperty( "java.class.path" ),
                 AddThenDeleteInAnotherTxAndQuit.class.getName(),
-                path.getPath()
+                storeDir.getPath()
         } );
         assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );
 
@@ -196,7 +205,7 @@ public class RecoveryTest
     {
         public static void main( String[] args )
         {
-            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( args[0] );
+            GraphDatabase db = CommunityTestGraphDatabase.open( new File( args[0] ) );
             try ( Transaction tx = db.beginTx() )
             {
                 Index<Node> index = db.index().forNodes( "index" );
@@ -214,7 +223,7 @@ public class RecoveryTest
     {
         public static void main( String[] args )
         {
-            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( args[0] );
+            GraphDatabase db = CommunityTestGraphDatabase.open( new File( args[0] ) );
             try ( Transaction tx = db.beginTx() )
             {
                 Index<Relationship> index = db.index().forRelationships( "myIndex" );
@@ -235,7 +244,7 @@ public class RecoveryTest
     {
         public static void main( String[] args )
         {
-            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( args[0] );
+            GraphDatabase db = CommunityTestGraphDatabase.open( new File( args[0] ) );
 
             Index<Node> index;
             Index<Node> index2;

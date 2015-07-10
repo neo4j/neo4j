@@ -19,28 +19,24 @@
  */
 package org.neo4j.kernel.ha.lock.forseti;
 
-import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
-import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
 public class ForsetiServiceLoadingTest
 {
-    @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
-
     @Test
     public void shouldUseForsetiAsDefaultLockManager() throws Exception
     {
         // When
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        TestGraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
 
         // Then
         assertThat( db.getDependencyResolver().resolveDependency( Locks.class ), instanceOf( ForsetiLockManager.class ) );
@@ -50,8 +46,9 @@ public class ForsetiServiceLoadingTest
     public void shouldAllowUsingCommunityLockManager() throws Exception
     {
         // When
-        dbRule.setConfig( GraphDatabaseFacadeFactory.Configuration.lock_manager, "community" );
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        TestGraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withSetting( GraphDatabaseFacadeFactory.Configuration.lock_manager, "community" )
+                .open();
 
         // Then
         assertThat( db.getDependencyResolver().resolveDependency( Locks.class ), instanceOf( CommunityLockManger.class ) );

@@ -30,15 +30,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -52,12 +52,12 @@ public class IndexConstraintsTest
     private static final Label LABEL = DynamicLabel.label( "Label" );
     private static final String PROPERTY_KEY = "x";
 
-    private GraphDatabaseService graphDb;
+    private GraphDatabase graphDb;
 
     @Before
     public void setup() throws IOException
     {
-        this.graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        this.graphDb = CommunityTestGraphDatabase.openEphemeral();
     }
 
     @After

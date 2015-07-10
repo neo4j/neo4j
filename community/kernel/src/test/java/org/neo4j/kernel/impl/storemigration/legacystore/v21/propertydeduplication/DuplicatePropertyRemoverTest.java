@@ -30,14 +30,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
@@ -48,7 +47,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -63,7 +61,7 @@ public class DuplicatePropertyRemoverTest
     public static TargetDirectory.TestDirectory storePath = TargetDirectory.testDirForTest( IndexLookupTest.class );
 
     private static int PROPERTY_COUNT = 1_000;
-    private static GraphDatabaseAPI api;
+    private static TestGraphDatabase db;
     private static Node node;
     private static long nodeId;
     private static NodeStore nodeStore;
@@ -75,9 +73,7 @@ public class DuplicatePropertyRemoverTest
     @BeforeClass
     public static void setUp()
     {
-        GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        GraphDatabaseService db = factory.newEmbeddedDatabase( storePath.absolutePath() );
-        api = (GraphDatabaseAPI) db;
+        db = CommunityTestGraphDatabase.open( storePath.graphDbDir() );
 
         Label nodeLabel = DynamicLabel.label( "Label" );
         propertyNames = new ArrayList<>();
@@ -108,7 +104,7 @@ public class DuplicatePropertyRemoverTest
         }
         Collections.shuffle( propertyNames );
 
-        DependencyResolver resolver = api.getDependencyResolver();
+        DependencyResolver resolver = db.getDependencyResolver();
         NeoStoreSupplier neoStoreSupplier = resolver.resolveDependency( NeoStoreSupplier.class );
         NeoStore neoStore = neoStoreSupplier.get();
         nodeStore = neoStore.getNodeStore();
@@ -122,7 +118,7 @@ public class DuplicatePropertyRemoverTest
     @AfterClass
     public static void tearDown()
     {
-        api.shutdown();
+        db.shutdown();
     }
 
     @Test

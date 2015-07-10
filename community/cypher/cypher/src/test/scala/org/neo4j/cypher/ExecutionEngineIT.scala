@@ -21,19 +21,19 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v2_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.embedded.CommunityTestGraphDatabase
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.test.TestGraphDatabaseFactory
 
 class ExecutionEngineIT extends CypherFunSuite {
 
   test("by default when using cypher 2.2 some queries should default to COST") {
     //given
-    val db = new TestGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
+    val db = CommunityTestGraphDatabase.buildEphemeral()
+      .withSetting(GraphDatabaseSettings.cypher_parser_version, "2.2")
+      .open()
 
     //when
     val plan1 = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
@@ -46,9 +46,9 @@ class ExecutionEngineIT extends CypherFunSuite {
 
   test("by default when using cypher 2.3 some queries should default to COST") {
     //given
-    val db = new TestGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
+    val db = CommunityTestGraphDatabase.buildEphemeral()
+      .withSetting(GraphDatabaseSettings.cypher_parser_version, "2.3")
+      .open()
 
     //when
     val plan1 = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
@@ -63,10 +63,10 @@ class ExecutionEngineIT extends CypherFunSuite {
 
   test("should be able to set RULE as default when using cypher 2.2") {
     //given
-    val db = new TestGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
+    val db = CommunityTestGraphDatabase.buildEphemeral()
+      .withSetting(GraphDatabaseSettings.cypher_planner, "RULE")
+      .withSetting(GraphDatabaseSettings.cypher_parser_version, "2.2")
+      .open()
 
     //when
     val plan = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
@@ -77,10 +77,10 @@ class ExecutionEngineIT extends CypherFunSuite {
 
   test("should be able to set RULE as default when using cypher 2.3") {
     //given
-    val db = new TestGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
+    val db = CommunityTestGraphDatabase.buildEphemeral()
+      .withSetting(GraphDatabaseSettings.cypher_planner, "RULE")
+      .withSetting(GraphDatabaseSettings.cypher_parser_version, "2.3")
+      .open()
 
     //when
     val plan = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
@@ -92,10 +92,10 @@ class ExecutionEngineIT extends CypherFunSuite {
 
   test("should be able to force COST as default when using cypher 2.2") {
     //given
-    val db = new TestGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
+    val db = CommunityTestGraphDatabase.buildEphemeral()
+      .withSetting(GraphDatabaseSettings.cypher_planner, "COST")
+      .withSetting(GraphDatabaseSettings.cypher_parser_version, "2.2")
+      .open()
 
     //when
     val plan = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
@@ -107,10 +107,10 @@ class ExecutionEngineIT extends CypherFunSuite {
 
   test("should be able to force COST as default when using cypher 2.3") {
     //given
-    val db = new TestGraphDatabaseFactory()
-      .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
+    val db = CommunityTestGraphDatabase.buildEphemeral()
+      .withSetting(GraphDatabaseSettings.cypher_planner, "COST")
+      .withSetting(GraphDatabaseSettings.cypher_parser_version, "2.3")
+      .open()
 
     //when
     val plan = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
@@ -123,10 +123,10 @@ class ExecutionEngineIT extends CypherFunSuite {
   test("should throw error if using COST for older versions") {
     //given
     intercept[Exception] {
-      val db = new TestGraphDatabaseFactory()
-        .newImpermanentDatabaseBuilder()
-        .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-        .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.0").newGraphDatabase()
+      val db = CommunityTestGraphDatabase.buildEphemeral()
+        .withSetting(GraphDatabaseSettings.cypher_planner, "COST")
+        .withSetting(GraphDatabaseSettings.cypher_parser_version, "2.0")
+        .open()
 
       db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
     }
@@ -134,7 +134,7 @@ class ExecutionEngineIT extends CypherFunSuite {
 
   test("should not leak transaction when closing the result for a query") {
     //given
-    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val db = CommunityTestGraphDatabase.openEphemeral()
     val engine = new ExecutionEngine(db)
 
     // when
@@ -155,7 +155,7 @@ class ExecutionEngineIT extends CypherFunSuite {
 
   test("should not leak transaction when closing the result for a profile query") {
     //given
-    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val db = CommunityTestGraphDatabase.openEphemeral()
     val engine = new ExecutionEngine(db)
 
     // when
@@ -186,7 +186,7 @@ class ExecutionEngineIT extends CypherFunSuite {
 
   test("should not leak transaction when closing the result for an explain query") {
     //given
-    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val db = CommunityTestGraphDatabase.openEphemeral()
     val engine = new ExecutionEngine(db)
 
     // when

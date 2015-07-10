@@ -24,23 +24,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.getStorePath;
 
 public class TestShutdownSequence
 {
-    private GraphDatabaseService graphDb;
+    private GraphDatabase graphDb;
     
     @Before
     public void createGraphDb()
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graphDb = CommunityTestGraphDatabase.openEphemeral();
     }
 
     @Test

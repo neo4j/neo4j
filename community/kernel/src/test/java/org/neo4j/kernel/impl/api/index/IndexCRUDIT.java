@@ -21,23 +21,22 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -55,8 +54,6 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.register.Register;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -138,8 +135,7 @@ public class IndexCRUDIT
         }
     }
 
-    @SuppressWarnings("deprecation") private GraphDatabaseAPI db;
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private TestGraphDatabase db;
     private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
             singleInstanceSchemaIndexProviderFactory( "none", mockedIndexProvider );
@@ -160,17 +156,15 @@ public class IndexCRUDIT
         }
     }
 
-    @SuppressWarnings("deprecation")
     @Before
     public void before() throws Exception
     {
         when( mockedIndexProvider.storeMigrationParticipant(
                 any( FileSystemAbstraction.class ), any( PageCache.class ), any( UpgradableDatabase.class )
         ) ).thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
-        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fs.get() );
-        factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( mockedIndexProviderFactory ) );
-        db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        db = CommunityTestGraphDatabase.buildEphemeral()
+                .addKernelExtension( mockedIndexProviderFactory )
+                .open();
         ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 

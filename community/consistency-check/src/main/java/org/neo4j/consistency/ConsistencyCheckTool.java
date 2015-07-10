@@ -25,8 +25,10 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.embedded.CommunityGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
@@ -64,7 +66,7 @@ public class ConsistencyCheckTool
 
     public static void main( String[] args ) throws IOException
     {
-        ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(), new GraphDatabaseFactory(),
+        ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(), DEFAULT_FACTORY,
                 new DefaultFileSystemAbstraction(), System.err, ExitHandle.SYSTEM_EXIT );
         try
         {
@@ -77,14 +79,23 @@ public class ConsistencyCheckTool
     }
 
     private final ConsistencyCheckService consistencyCheckService;
-    private final GraphDatabaseFactory dbFactory;
+    private final Function<File, GraphDatabase> dbFactory;
     private final PrintStream systemError;
     private final ExitHandle exitHandle;
     private StoreRecoverer recoveryChecker;
     private FileSystemAbstraction fs;
 
+    private static final Function<File, GraphDatabase> DEFAULT_FACTORY = new Function<File,GraphDatabase>()
+    {
+        @Override
+        public GraphDatabase apply( File storeDir )
+        {
+            return CommunityGraphDatabase.open( storeDir );
+        }
+    };
+
     ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService,
-            GraphDatabaseFactory dbFactory, FileSystemAbstraction fs, PrintStream systemError, ExitHandle exitHandle )
+            Function<File, GraphDatabase> dbFactory, FileSystemAbstraction fs, PrintStream systemError, ExitHandle exitHandle )
     {
         this.consistencyCheckService = consistencyCheckService;
         this.dbFactory = dbFactory;
@@ -121,7 +132,7 @@ public class ConsistencyCheckTool
     {
         if ( arguments.getBoolean( RECOVERY, false, true ) )
         {
-            dbFactory.newEmbeddedDatabase( storeDir ).shutdown();
+            dbFactory.apply( storeDir ).shutdown();
         }
         else
         {

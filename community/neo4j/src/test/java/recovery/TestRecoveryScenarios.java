@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -39,7 +41,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -48,7 +49,6 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -56,7 +56,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
-
 
 /**
  * Arbitrary recovery scenarios boiled down to as small tests as possible
@@ -257,7 +256,7 @@ public class TestRecoveryScenarios
         FORCE_EVERYTHING
                 {
                     @Override
-                    void flush( GraphDatabaseAPI db )
+                    void flush( TestGraphDatabase db )
                     {
                         db.getDependencyResolver().resolveDependency( StoreFlusher.class ).forceEverything();
                     }
@@ -265,19 +264,19 @@ public class TestRecoveryScenarios
         FLUSH_PAGE_CACHE
                 {
                     @Override
-                    void flush( GraphDatabaseAPI db ) throws IOException
+                    void flush( TestGraphDatabase db ) throws IOException
                     {
                         db.getDependencyResolver().resolveDependency( PageCache.class ).flushAndForce();
                     }
                 };
         final Object[] parameters = new Object[]{this};
 
-        abstract void flush( GraphDatabaseAPI db ) throws IOException;
+        abstract void flush( TestGraphDatabase db ) throws IOException;
     }
 
     public final @Rule EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final Label label = label( "label" );
-    @SuppressWarnings("deprecation") private GraphDatabaseAPI db;
+    private TestGraphDatabase db;
     private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
 
     private final FlushStrategy flush;
@@ -287,17 +286,13 @@ public class TestRecoveryScenarios
         this.flush = flush;
     }
 
-    @SuppressWarnings("deprecation")
     @Before
     public void before()
     {
-        db = (GraphDatabaseAPI) databaseFactory( fsRule.get(), indexProvider ).newImpermanentDatabase();
-    }
-
-    private TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs, InMemoryIndexProvider indexProvider )
-    {
-        return new TestGraphDatabaseFactory()
-            .setFileSystem( fs ).addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) );
+        db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( fsRule.get() )
+                .addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) )
+                .open();
     }
 
     @After
@@ -333,6 +328,9 @@ public class TestRecoveryScenarios
     private void crashAndRestart( InMemoryIndexProvider indexProvider )
     {
         FileSystemAbstraction uncleanFs = fsRule.snapshot( shutdownDbAction( db ) );
-        db = (GraphDatabaseAPI) databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();
+        db = CommunityTestGraphDatabase.buildEphemeral()
+                .withFileSystem( uncleanFs )
+                .addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) )
+                .open();
     }
 }

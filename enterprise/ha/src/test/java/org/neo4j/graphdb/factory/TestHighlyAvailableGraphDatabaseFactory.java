@@ -19,6 +19,12 @@
  */
 package org.neo4j.graphdb.factory;
 
+import org.neo4j.embedded.HighAvailabilityTestGraphDatabase;
+
+/**
+ * @deprecated use {@link HighAvailabilityTestGraphDatabase} instead
+ */
+@Deprecated
 public class TestHighlyAvailableGraphDatabaseFactory extends HighlyAvailableGraphDatabaseFactory
 {
     @Override

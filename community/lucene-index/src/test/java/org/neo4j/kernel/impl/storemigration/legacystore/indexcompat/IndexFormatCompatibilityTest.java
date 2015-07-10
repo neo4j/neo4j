@@ -30,12 +30,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
 
 import static org.junit.Assert.assertEquals;
@@ -48,14 +48,14 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
 @Ignore( "This test is for an index format change between 2.0.0 and 2.0.x so not applicable for later versions" )
 public class IndexFormatCompatibilityTest
 {
-    private GraphDatabaseService db;
+    private GraphDatabase db;
 
     @Before
     public void startDatabase() throws IOException
     {
         File storeDir = Unzip.unzip( getClass(), "db.zip" );
 
-        db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
+        db = CommunityTestGraphDatabase.open( storeDir );
     }
 
     @After

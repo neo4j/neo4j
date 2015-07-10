@@ -19,9 +19,8 @@
  */
 package org.neo4j.backup;
 
-import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -30,13 +29,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Settings;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.ProcessStreamHandler;
 
 import static org.junit.Assert.assertEquals;
@@ -45,11 +45,9 @@ import static org.neo4j.test.TargetDirectory.forTest;
 
 public class BackupEmbeddedIT
 {
-    public static final File PATH = forTest( BackupEmbeddedIT.class ).cleanDirectory( "db" );
-    public static final File BACKUP_PATH = forTest( BackupEmbeddedIT.class ).cleanDirectory( "backup-db" );
+    public final File PATH = forTest( BackupEmbeddedIT.class ).cleanDirectory( "db" );
+    public final File BACKUP_PATH = forTest( BackupEmbeddedIT.class ).cleanDirectory( "backup-db" );
 
-    @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( PATH );
     private GraphDatabaseService db;
     private String ip;
 
@@ -57,8 +55,18 @@ public class BackupEmbeddedIT
     public void before() throws Exception
     {
         if ( osIsWindows() ) return;
-        FileUtils.deleteDirectory( BACKUP_PATH  );
         ip = InetAddress.getLocalHost().getHostAddress();
+    }
+
+    @After
+    public void after() throws Exception
+    {
+        if ( db != null )
+        {
+            db.shutdown();
+        }
+        FileUtils.deleteRecursively( PATH );
+        FileUtils.deleteRecursively( BACKUP_PATH );
     }
 
     @SuppressWarnings("deprecation")
@@ -121,12 +129,13 @@ public class BackupEmbeddedIT
 
     private void startDb( String backupPort )
     {
-        dbRule.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
-        if(backupPort != null)
+        TestGraphDatabase.Builder graphDbBuilder = CommunityTestGraphDatabase.build();
+        graphDbBuilder.withSetting( OnlineBackupSettings.online_backup_enabled, "true" );
+        if ( backupPort != null )
         {
-            dbRule.setConfig( OnlineBackupSettings.online_backup_server, ip +":" + backupPort );
+            graphDbBuilder.withSetting( OnlineBackupSettings.online_backup_server, ip + ":" + backupPort );
         }
-        db = dbRule.getGraphDatabaseService();
+        db = graphDbBuilder.open( PATH );
         createSomeData( db );
     }
 

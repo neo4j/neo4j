@@ -24,14 +24,15 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Thread.interrupted;
@@ -73,7 +74,7 @@ public class ConcurrentPropertyAccessIT
         }
     }
 
-    private GraphDatabaseService db;
+    private GraphDatabase db;
     private Node[] nodes;
 
     protected Pair<Integer, Node> getNode( Random random, boolean takeOut )
@@ -194,8 +195,8 @@ public class ConcurrentPropertyAccessIT
     @Before
     public void before() throws Exception
     {
-        String storeDir = forTest( getClass() ).makeGraphDbDir().getAbsolutePath();
-        db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        File storeDir = forTest( getClass() ).makeGraphDbDir();
+        db = CommunityTestGraphDatabase.open( storeDir );
         nodes = createInitialNodes();
     }
 

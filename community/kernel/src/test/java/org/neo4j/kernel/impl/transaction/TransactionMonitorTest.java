@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.transaction;
 
 import org.junit.Test;
 
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -32,7 +32,7 @@ public class TransactionMonitorTest
     @Test
     public void shouldCountCommittedTransactions() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
         try
         {
             TransactionCounters monitor = db.getDependencyResolver().resolveDependency( TransactionCounters.class );
@@ -57,7 +57,7 @@ public class TransactionMonitorTest
     @Test
     public void shouldNotCountRolledBackTransactions() throws Exception
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        TestGraphDatabase db = CommunityTestGraphDatabase.openEphemeral();
         try
         {
             TransactionCounters monitor = db.getDependencyResolver().resolveDependency( TransactionCounters.class );

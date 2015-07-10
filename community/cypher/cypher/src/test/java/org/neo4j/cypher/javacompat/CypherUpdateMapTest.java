@@ -22,10 +22,11 @@ package org.neo4j.cypher.javacompat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.embedded.CommunityTestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
@@ -79,7 +80,7 @@ public class CypherUpdateMapTest
     @Before
     public void setup()
     {
-        gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        gdb = CommunityTestGraphDatabase.openEphemeral();
         engine = new ExecutionEngine(gdb);
     }
 

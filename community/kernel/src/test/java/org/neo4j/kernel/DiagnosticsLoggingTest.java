@@ -21,11 +21,11 @@ package org.neo4j.kernel;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.CommunityTestGraphDatabase;
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class DiagnosticsLoggingTest
 {
@@ -33,8 +33,9 @@ public class DiagnosticsLoggingTest
     public void shouldSeeHelloWorld()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        GraphDatabaseService db =
-                new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newImpermanentDatabase();
+        GraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withInternalLogProvider( logProvider )
+                .open();
 
         logProvider.assertContainsMessageContaining( "Network information" );
         logProvider.assertContainsMessageContaining( "Disk space on partition" );
@@ -46,12 +47,11 @@ public class DiagnosticsLoggingTest
     public void shouldSeePageCacheConfigurationWithDumpConfigurationEnabled()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().
-                setInternalLogProvider( logProvider ).
-                newImpermanentDatabaseBuilder().
-                setConfig( GraphDatabaseSettings.dump_configuration, Settings.TRUE ).
-                setConfig( GraphDatabaseSettings.pagecache_memory, "4M" ).
-                newGraphDatabase();
+        GraphDatabase db = CommunityTestGraphDatabase.buildEphemeral()
+                .withInternalLogProvider( logProvider )
+                .withSetting( GraphDatabaseSettings.pagecache_memory, "4M" )
+                .withSetting( GraphDatabaseSettings.dump_configuration, Settings.TRUE )
+                .open();
 
         logProvider.assertContainsMessageContaining( "Page cache size: 4 MiB" );
         db.shutdown();
