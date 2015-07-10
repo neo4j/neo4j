@@ -19,23 +19,23 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Test;
-
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+
+import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.Exceptions.rootCause;
@@ -132,7 +132,7 @@ public class GraphDatabaseShutdownTest
         }
         catch ( Exception e )
         {
-            assertThat( rootCause( e ), instanceOf( IllegalStateException.class ) );
+            assertThat( rootCause( e ), instanceOf( TransactionTerminatedException.class ) );
         }
     }
 

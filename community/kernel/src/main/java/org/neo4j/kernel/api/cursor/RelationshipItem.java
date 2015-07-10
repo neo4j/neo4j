@@ -25,6 +25,13 @@ package org.neo4j.kernel.api.cursor;
 public interface RelationshipItem
         extends EntityItem
 {
+    public abstract class RelationshipItemHelper
+            extends EntityItemHelper
+            implements RelationshipItem
+    {
+
+    }
+
     /**
      * @return relationship type for current relationship
      */

@@ -25,8 +25,10 @@ import java.util.List;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Function;
+import org.neo4j.function.IntSupplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.cursor.DegreeItem;
 import org.neo4j.kernel.api.cursor.LabelItem;
 import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
@@ -60,7 +62,7 @@ public class StubCursors
             final Cursor<PropertyItem> propertyCursor,
             final Cursor<LabelItem> labelCursor )
     {
-        return new NodeItem()
+        return new NodeItem.NodeItemHelper()
         {
             @Override
             public long id()
@@ -161,13 +163,37 @@ public class StubCursors
             {
                 throw new UnsupportedOperationException();
             }
+
+            @Override
+            public Cursor<IntSupplier> relationshipTypes()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public int degree( Direction direction )
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public int degree( Direction direction, int relType )
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Cursor<DegreeItem> degrees()
+            {
+                throw new UnsupportedOperationException();
+            }
         };
     }
 
     public static RelationshipItem asRelationship( final long relId, final int type,
             final long startNode, final long endNode, final Cursor<PropertyItem> propertyCursor )
     {
-        return new RelationshipItem()
+        return new RelationshipItem.RelationshipItemHelper()
         {
             @Override
             public long id()
@@ -246,7 +272,7 @@ public class StubCursors
     public static Cursor<RelationshipItem> asRelationshipCursor( final long relId, final int type,
             final long startNode, final long endNode, final Cursor<PropertyItem> propertyCursor )
     {
-        return Cursors.<RelationshipItem>cursor( new RelationshipItem()
+        return Cursors.<RelationshipItem>cursor( new RelationshipItem.RelationshipItemHelper()
         {
             @Override
             public long id()

@@ -41,8 +41,8 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
         RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
         RelationshipGroupRecord relationshipGroupRecord = new RelationshipGroupRecord( -1, -1 );
         this.relationshipCursor = new StoreNodeRelationshipCursor(
-                relationshipRecord, neoStore.getRelationshipStore(),
-                relationshipGroupRecord, neoStore.getRelationshipGroupStore(), null,
+                relationshipRecord, neoStore,
+                relationshipGroupRecord, null,
                 Consumers.<StoreNodeRelationshipCursor>noop() );
 
         // TODO There's an opportunity to reuse lots of instances created here, but this isn't a

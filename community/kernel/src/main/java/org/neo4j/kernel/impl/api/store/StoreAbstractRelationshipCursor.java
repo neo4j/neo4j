@@ -20,28 +20,55 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.cursor.EntityItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.util.InstanceCache;
 
 /**
  * Base cursor for relationships.
  */
-public abstract class StoreAbstractRelationshipCursor implements Cursor<RelationshipItem>, RelationshipItem
+public abstract class StoreAbstractRelationshipCursor extends EntityItem.EntityItemHelper
+        implements Cursor<RelationshipItem>, RelationshipItem
 {
     protected final RelationshipRecord relationshipRecord;
 
     protected final RelationshipStore relationshipStore;
     protected StoreStatement storeStatement;
+    protected NeoStore neoStore;
 
-    public StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, RelationshipStore relationshipStore,
+    private InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
+    private InstanceCache<StorePropertyCursor> allPropertyCursor;
+
+
+    public StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, final NeoStore neoStore,
             StoreStatement storeStatement )
     {
-        this.relationshipStore = relationshipStore;
+        this.neoStore = neoStore;
+        this.relationshipStore = neoStore.getRelationshipStore();
         this.relationshipRecord = relationshipRecord;
 
         this.storeStatement = storeStatement;
+
+        singlePropertyCursor = new InstanceCache<StoreSinglePropertyCursor>()
+        {
+            @Override
+            protected StoreSinglePropertyCursor create()
+            {
+                return new StoreSinglePropertyCursor( neoStore.getPropertyStore(), this );
+            }
+        };
+        allPropertyCursor = new InstanceCache<StorePropertyCursor>()
+        {
+            @Override
+            protected StorePropertyCursor create()
+            {
+                return new StorePropertyCursor( neoStore.getPropertyStore(), this );
+            }
+        };
     }
 
     @Override
@@ -84,12 +111,12 @@ public abstract class StoreAbstractRelationshipCursor implements Cursor<Relation
     @Override
     public Cursor<PropertyItem> properties()
     {
-        return storeStatement.acquirePropertyCursor( relationshipRecord.getNextProp() );
+        return allPropertyCursor.get().init( relationshipRecord.getNextProp() );
     }
 
     @Override
     public Cursor<PropertyItem> property( int propertyKeyId )
     {
-        return storeStatement.acquireSinglePropertyCursor( relationshipRecord.getNextProp(), propertyKeyId );
+        return singlePropertyCursor.get().init( relationshipRecord.getNextProp(), propertyKeyId );
     }
 }

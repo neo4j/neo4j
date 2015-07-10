@@ -459,7 +459,7 @@ public class LabelTransactionStateTest
         {
             if ( cursor.next() )
             {
-                assertEquals( asSet( labels ), asSet( txContext.nodeGetLabels( state, cursor.get() ) ) );
+                assertEquals( asSet( labels ), asSet( cursor.get().getLabels() ) );
             }
         }
 
@@ -469,8 +469,7 @@ public class LabelTransactionStateTest
             {
                 if ( cursor.next() )
                 {
-                    assertTrue( "Expected labels not found on node",
-                            txContext.nodeHasLabel( state, cursor.get(), label ) );
+                    assertTrue( "Expected labels not found on node", cursor.get().hasLabel( label ) );
                 }
             }
         }
