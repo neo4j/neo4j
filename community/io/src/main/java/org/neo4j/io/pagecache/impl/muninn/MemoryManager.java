@@ -107,7 +107,7 @@ final class MemoryManager
         public Slab( Slab next, long size, long alignment )
         {
             this.next = next;
-            this.address = UnsafeUtil.malloc( size );
+            this.address = UnsafeUtil.allocateMemory( size );
             this.limit = address + size;
             this.alignMask = alignment - 1;
 

@@ -328,13 +328,13 @@ public final class UnsafeUtil
      *
      * The memory is aligned such that it can be used for any data type. The memory is cleared, so all bytes are zero.
      */
-    public static long malloc( long sizeInBytes )
+    public static long allocateMemory( long sizeInBytes )
     {
         return unsafe.allocateMemory( sizeInBytes );
     }
 
     /**
-     * Free the memory that was allocated with {@link #malloc}.
+     * Free the memory that was allocated with {@link #allocateMemory}.
      */
     public static void free( long pointer )
     {

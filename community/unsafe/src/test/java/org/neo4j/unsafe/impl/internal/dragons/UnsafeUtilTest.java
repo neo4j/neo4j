@@ -207,7 +207,7 @@ public class UnsafeUtilTest
     @Test
     public void mustSupportReadingAndWritingOfPrimitivesToMemory() throws Exception
     {
-        long address = malloc( 8 );
+        long address = allocateMemory( 8 );
         try
         {
             putByte( address, (byte) 1 );
@@ -413,7 +413,7 @@ public class UnsafeUtilTest
     @Test
     public void directByteBufferCreationAndInitialisation() throws Exception
     {
-        long address = malloc( 313 );
+        long address = allocateMemory( 313 );
         try
         {
             setMemory( address, 313, (byte) 0 );
@@ -433,7 +433,7 @@ public class UnsafeUtilTest
             a.mark();
             a.limit( 202 );
 
-            long address2 = malloc( 424 );
+            long address2 = allocateMemory( 424 );
             try
             {
                 setMemory( address2, 424, (byte) 0 );
