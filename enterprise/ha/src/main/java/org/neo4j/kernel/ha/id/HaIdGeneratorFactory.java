@@ -86,9 +86,9 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public void create( File fileName, long highId )
+    public void create( File fileName, long highId, boolean throwIfFileExists )
     {
-        localFactory.create( fileName, highId );
+        localFactory.create( fileName, highId, false );
     }
 
     @Override
@@ -176,7 +176,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                     fs.deleteFile( fileName );
                 }
 
-                localFactory.create( fileName, highId );
+                localFactory.create( fileName, highId, false );
                 delegate = localFactory.open( fileName, grabSize, idType, highId );
                 log.debug( "Instantiated master delegate " + delegate + " of type " + idType + " with highid " + highId );
             }

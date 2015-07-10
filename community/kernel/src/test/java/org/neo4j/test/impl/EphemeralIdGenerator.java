@@ -51,7 +51,7 @@ public class EphemeralIdGenerator implements IdGenerator
         }
 
         @Override
-        public void create( File fileName, long highId )
+        public void create( File fileName, long highId, boolean throwIfFileExists )
         {
         }
 

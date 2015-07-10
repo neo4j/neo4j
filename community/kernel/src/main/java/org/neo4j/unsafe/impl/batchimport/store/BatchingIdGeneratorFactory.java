@@ -57,7 +57,7 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public void create( File fileName, long highId )
+    public void create( File fileName, long highId, boolean throwIfFileExists )
     {
     }
 
@@ -119,8 +119,7 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
         @Override
         public void close()
         {
-            fs.deleteFile( fileName );
-            createGenerator( fs, fileName, highId );
+            createGenerator( fs, fileName, highId, false );
         }
 
         @Override

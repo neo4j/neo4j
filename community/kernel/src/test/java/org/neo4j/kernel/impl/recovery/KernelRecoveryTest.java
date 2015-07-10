@@ -132,8 +132,7 @@ public class KernelRecoveryTest
 
     private void repairIdGenerator( FileSystemAbstraction fs, File file )
     {
-        fs.deleteFile( file );
-        IdGeneratorImpl.createGenerator( fs, file, 1 );
+        IdGeneratorImpl.createGenerator( fs, file, 1, false );
     }
 
     private GraphDatabaseService newDB( EphemeralFileSystemAbstraction fs )

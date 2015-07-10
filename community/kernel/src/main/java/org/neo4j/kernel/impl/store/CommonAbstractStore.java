@@ -351,13 +351,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
         log.debug( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
         closeIdGenerator();
-        File idFile = new File( getStorageFileName().getPath() + ".id" );
-        if ( fileSystemAbstraction.fileExists( idFile ) )
-        {
-            boolean success = fileSystemAbstraction.deleteFile( idFile );
-            assert success : "Couldn't delete " + idFile.getPath() + ", still open?";
-        }
-        createIdGenerator( idFile );
+        createIdGenerator( getIdFileName() );
         openIdGenerator();
 
         long defraggedCount = 0;
@@ -579,6 +573,11 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         return storageFileName;
     }
 
+    private File getIdFileName()
+    {
+        return new File( getStorageFileName().getPath() + ".id" );
+    }
+
     /**
      * Opens the {@link IdGenerator} used by this store.
      * <p>
@@ -589,7 +588,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      */
     protected void openIdGenerator()
     {
-        idGenerator = openIdGenerator( new File( storageFileName.getPath() + ".id" ), idType.getGrabSize() );
+        idGenerator = openIdGenerator( getIdFileName(), idType.getGrabSize() );
     }
 
     /**
@@ -658,7 +657,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 
     protected void createIdGenerator( File fileName )
     {
-        idGeneratorFactory.create( fileName, 0 );
+        idGeneratorFactory.create( fileName, 0, false );
     }
 
     /** Closed the {@link IdGenerator} used by this store */

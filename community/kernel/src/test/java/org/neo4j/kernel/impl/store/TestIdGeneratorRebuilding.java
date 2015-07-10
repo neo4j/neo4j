@@ -79,7 +79,7 @@ public class TestIdGeneratorRebuilding
                 GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
         File storeFile = file( "nodes" );
         fs.create( storeFile );
-        IdGeneratorImpl.createGenerator( fs, file( "nodes.id" ) );
+        IdGeneratorImpl.createGenerator( fs, file( "nodes.id" ), 0, false );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore(
@@ -200,7 +200,7 @@ public class TestIdGeneratorRebuilding
                 GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
         File storeFile = file( "nodes" );
         fs.create( storeFile );
-        IdGeneratorImpl.createGenerator( fs, file( "nodes.id" ) );
+        IdGeneratorImpl.createGenerator( fs, file( "nodes.id" ), 0, false );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore(

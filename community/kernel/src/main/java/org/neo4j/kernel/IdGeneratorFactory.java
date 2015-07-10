@@ -30,9 +30,9 @@ import org.neo4j.kernel.impl.store.id.IdGenerator;
 @Deprecated
 public interface IdGeneratorFactory
 {
-    IdGenerator open( File fileName, int grabSize, IdType idType, long highId );
+    IdGenerator open( File filename, int grabSize, IdType idType, long highId );
 
-    void create( File fileName, long highId );
+    void create( File filename, long highId, boolean throwIfFileExists );
 
     IdGenerator get( IdType idType );
 }

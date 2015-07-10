@@ -441,9 +441,9 @@ public class UpgradeStoreIT
         }
 
         @Override
-        public void create( File fileName, long highId )
+        public void create( File fileName, long highId, boolean throwIfFileExists )
         {
-            IdGeneratorImpl.createGenerator( fs, fileName, highId );
+            IdGeneratorImpl.createGenerator( fs, fileName, highId, throwIfFileExists );
         }
     }
 }

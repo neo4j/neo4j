@@ -32,8 +32,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
  */
 // TODO 3.0: Move to org.neo4j.kernel.impl.store.id package
 @Deprecated
-public class DefaultIdGeneratorFactory
-    implements IdGeneratorFactory
+public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 {
     private final Map<IdType, IdGenerator> generators = new HashMap<>();
     private final FileSystemAbstraction fs;
@@ -58,8 +57,8 @@ public class DefaultIdGeneratorFactory
         return generators.get( idType );
     }
 
-    public void create( File fileName, long highId )
+    public void create( File fileName, long highId, boolean throwIfFileExists )
     {
-        IdGeneratorImpl.createGenerator( fs, fileName, highId );
+        IdGeneratorImpl.createGenerator( fs, fileName, highId, throwIfFileExists );
     }
 }
