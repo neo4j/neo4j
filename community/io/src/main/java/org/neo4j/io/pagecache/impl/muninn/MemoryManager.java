@@ -66,6 +66,15 @@ final class MemoryManager
             long slabGrab = Math.min( GRAB_SIZE, memoryReserve );
             if ( slabGrab < bytes )
             {
+                slabGrab = bytes;
+                Slab slab = new Slab( slabs, slabGrab, alignment );
+                if ( slab.canAllocate( bytes ) )
+                {
+                    memoryReserve -= slabGrab;
+                    slabs = slab;
+                    return slabs.allocate( bytes );
+                }
+                slab.free();
                 slabGrab = bytes + alignment;
             }
             memoryReserve -= slabGrab;
