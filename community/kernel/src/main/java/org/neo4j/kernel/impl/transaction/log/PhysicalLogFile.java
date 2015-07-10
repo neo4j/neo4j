@@ -140,6 +140,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
          * current log file and replay everything. That's unnecessary but totally ok.
          */
         long newLogVersion = logVersionRepository.incrementAndGetVersion();
+        currentLog.flush();
         /*
          * The log version is now in the store, flushed and persistent. If we crash
          * now, on recovery we'll attempt to open the version we're about to create
