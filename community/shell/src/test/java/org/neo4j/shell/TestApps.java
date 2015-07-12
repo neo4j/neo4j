@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -869,7 +870,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListMandatoryPropertyConstraints() throws Exception
+    public void canListMandatoryNodePropertyConstraints() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -879,6 +880,19 @@ public class TestApps extends AbstractShellTest
 
         // WHEN / THEN
         executeCommand( "schema ls", "ON \\(person:Person\\) ASSERT person.name IS NOT NULL" );
+    }
+
+    @Test
+    public void canListMandatoryRelationshipPropertyConstraints() throws Exception
+    {
+        // GIVEN
+        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
+        beginTx();
+        db.schema().constraintFor( relType ).assertPropertyExists( "since" ).create();
+        finishTx();
+
+        // WHEN / THEN
+        executeCommand( "schema ls", "ON \\[knows:KNOWS\\] ASSERT knows.since IS NOT NULL" );
     }
 
     @Test
@@ -895,7 +909,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListMandatoryPropertyConstraintsByLabel() throws Exception
+    public void canListMandatoryNodePropertyConstraintsByLabel() throws Exception
     {
         // GIVEN
         Label label1 = label( "Person" );
@@ -905,6 +919,76 @@ public class TestApps extends AbstractShellTest
 
         // WHEN / THEN
         executeCommand( "schema ls -l :Person", "ON \\(person:Person\\) ASSERT person.name IS NOT NULL" );
+    }
+
+    @Test
+    public void canListMandatoryRelationshipPropertyConstraintsByType() throws Exception
+    {
+        // GIVEN
+        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
+        beginTx();
+        db.schema().constraintFor( relType ).assertPropertyExists( "since" ).create();
+        finishTx();
+
+        // WHEN / THEN
+        executeCommand( "schema ls -r :KNOWS", "ON \\[knows:KNOWS\\] ASSERT knows.since IS NOT NULL" );
+    }
+
+    @Test
+    public void canListMandatoryRelationshipPropertyConstraintsByTypeAndProperty() throws Exception
+    {
+        // GIVEN
+        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
+        beginTx();
+        db.schema().constraintFor( relType ).assertPropertyExists( "since" ).create();
+        finishTx();
+
+        // WHEN / THEN
+        executeCommand( "schema ls -r :KNOWS -p since", "ON \\[knows:KNOWS\\] ASSERT knows.since IS NOT NULL" );
+    }
+
+    @Test
+    public void canListBothNodeAndRelationshipMandatoryPropertyConstraints() throws Exception
+    {
+        // GIVEN
+        Label label = DynamicLabel.label( "Person" );
+        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
+
+        // WHEN
+        beginTx();
+        db.schema().constraintFor( label ).assertPropertyExists( "name" ).create();
+        finishTx();
+
+        beginTx();
+        db.schema().constraintFor( relType ).assertPropertyExists( "since" ).create();
+        finishTx();
+
+        // THEN
+        executeCommand( "schema ls",
+                "ON \\(person:Person\\) ASSERT person.name IS NOT NULL",
+                "ON \\[knows:KNOWS\\] ASSERT knows.since IS NOT NULL" );
+    }
+
+    @Test
+    public void canListBothNodeAndRelationshipMandatoryPropertyConstraintsByLabelAndType() throws Exception
+    {
+        // GIVEN
+        Label label = DynamicLabel.label( "Person" );
+        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
+
+        // WHEN
+        beginTx();
+        db.schema().constraintFor( label ).assertPropertyExists( "name" ).create();
+        finishTx();
+
+        beginTx();
+        db.schema().constraintFor( relType ).assertPropertyExists( "since" ).create();
+        finishTx();
+
+        // THEN
+        executeCommand( "schema ls -l :Person -r :KNOWS",
+                "ON \\(person:Person\\) ASSERT person.name IS NOT NULL",
+                "ON \\[knows:KNOWS\\] ASSERT knows.since IS NOT NULL" );
     }
 
     @Test
@@ -921,7 +1005,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListMandatoryPropertyConstraintsByLabelAndProperty() throws Exception
+    public void canListMandatoryNodePropertyConstraintsByLabelAndProperty() throws Exception
     {
         // GIVEN
         Label label1 = label( "Person" );

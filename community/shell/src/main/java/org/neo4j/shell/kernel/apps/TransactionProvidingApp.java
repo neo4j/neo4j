@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -72,6 +73,35 @@ import static org.neo4j.shell.ShellException.stackTraceAsString;
 public abstract class TransactionProvidingApp extends AbstractApp
 {
     private static final Label[] EMPTY_LABELS = new Label[0];
+    private static final RelationshipType[] EMPTY_REL_TYPES = new RelationshipType[0];
+
+    private static final Function<String[],Label[]> CREATE_LABELS = new Function<String[],Label[]>()
+    {
+        @Override
+        public Label[] apply( String[] values )
+        {
+            Label[] labels = new Label[values.length];
+            for ( int i = 0; i < values.length; i++ )
+            {
+                labels[i] = DynamicLabel.label( values[i] );
+            }
+            return labels;
+        }
+    };
+
+    private static final Function<String[],RelationshipType[]> CREATE_REL_TYPES = new Function<String[],RelationshipType[]>()
+    {
+        @Override
+        public RelationshipType[] apply( String[] values )
+        {
+            RelationshipType[] types = new RelationshipType[values.length];
+            for ( int i = 0; i < values.length; i++ )
+            {
+                types[i] = DynamicRelationshipType.withName( values[i] );
+            }
+            return types;
+        }
+    };
 
     protected static final String[] STANDARD_EVAL_IMPORTS = new String[] {
         "org.neo4j.graphdb",
@@ -787,32 +817,42 @@ public abstract class TransactionProvidingApp extends AbstractApp
 
     protected Label[] parseLabels( AppCommandParser parser )
     {
-        String labelValue = parser.option( "l", null );
-        if ( labelValue == null )
-        {
-            return EMPTY_LABELS;
-        }
+        return parseValues( parser, "l", EMPTY_LABELS, CREATE_LABELS );
+    }
 
-        labelValue = labelValue.trim();
-        if ( labelValue.startsWith( "[" ) )
+    protected RelationshipType[] parseRelTypes( AppCommandParser parser )
+    {
+        return parseValues( parser, "r", EMPTY_REL_TYPES, CREATE_REL_TYPES );
+    }
+
+    protected <T> T[] parseValues( AppCommandParser parser, String opt, T[] emptyValue, Function<String[],T[]> factory )
+    {
+        String typeValue = parser.option( opt, null );
+        if ( typeValue == null )
         {
-            Object[] items = parseArray( labelValue );
-            Label[] labels = new Label[items.length];
+            return emptyValue;
+        }
+        typeValue = typeValue.trim();
+
+        String[] stringItems;
+        if ( typeValue.startsWith( "[" ) )
+        {
+            Object[] items = parseArray( typeValue );
+            stringItems = new String[items.length];
             for ( int i = 0; i < items.length; i++ )
             {
-                labels[i] = labelWithOrWithoutColon( items[i].toString() );
+                stringItems[i] = withOrWithoutColon( items[i].toString() );
             }
-            return labels;
         }
         else
         {
-            return new Label[] { labelWithOrWithoutColon( labelValue ) };
+            stringItems = new String[]{withOrWithoutColon( typeValue )};
         }
+        return factory.apply( stringItems );
     }
 
-    private Label labelWithOrWithoutColon( String label )
+    private String withOrWithoutColon( String item )
     {
-        String labelName = label.startsWith( ":" ) ? label.substring( 1 ) : label;
-        return DynamicLabel.label( labelName );
+        return item.startsWith( ":" ) ? item.substring( 1 ) : item;
     }
 }
