@@ -41,9 +41,9 @@ final class MuninnPage extends StampedLock implements Page
     // The other 7 bits are used as an exponent for computing the cache page size (as a power of two).
     private byte cachePageHeader;
 
-    // We keep this reference to prevent the MemoryReleaser from becoming
+    // We keep this reference to prevent the MemoryManager from becoming
     // finalizable until all our pages are finalizable or collected.
-    private final MemoryReleaser memoryReleaser;
+    private final MemoryManager memoryManager;
 
     private long pointer;
 
@@ -60,10 +60,10 @@ final class MuninnPage extends StampedLock implements Page
     private PageSwapper swapper;
     private long filePageId = PageCursor.UNBOUND_PAGE_ID;
 
-    public MuninnPage( int cachePageSize, MemoryReleaser memoryReleaser )
+    public MuninnPage( int cachePageSize, MemoryManager memoryManager )
     {
         this.cachePageHeader = (byte) (31 - Integer.numberOfLeadingZeros( cachePageSize ));
-        this.memoryReleaser = memoryReleaser;
+        this.memoryManager = memoryManager;
         getCachePageId(); // initialize our identity hashCode
     }
 
@@ -430,8 +430,7 @@ final class MuninnPage extends StampedLock implements Page
         assert isWriteLocked(): "Cannot initBuffer without write-lock";
         if ( pointer == 0 )
         {
-            pointer = UnsafeUtil.malloc( size() );
-            memoryReleaser.registerPointer( pointer );
+            pointer = memoryManager.allocateAligned( size() );
             UnsafeUtil.setMemory( pointer, size(), MuninnPageCache.ZERO_BYTE );
         }
     }

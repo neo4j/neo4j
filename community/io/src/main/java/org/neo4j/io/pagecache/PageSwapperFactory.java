@@ -57,6 +57,14 @@ public interface PageSwapperFactory
     boolean isCachePageSizeHintStrict();
 
     /**
+     * Get the unit of alignment that the swappers require of the memory buffers. For instance, if page alignment is
+     * required for doing direct IO, then {@link org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil#pageSize()} can be
+     * returned.
+     * @return The required buffer alignment byte multiple.
+     */
+    long getRequiredBufferAlignment();
+
+    /**
      * Create a PageSwapper for the given file.
      * @param file The file that the PageSwapper will move file pages in and
      *             out of.

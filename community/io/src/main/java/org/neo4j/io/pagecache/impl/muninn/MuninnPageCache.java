@@ -235,12 +235,13 @@ public class MuninnPageCache implements PageCache
         this.backgroundFlushPauseRequests = new AtomicInteger();
         this.printExceptionsOnClose = true;
 
-        MemoryReleaser memoryReleaser = new MemoryReleaser( maxPages );
+        long alignment = swapperFactory.getRequiredBufferAlignment();
+        MemoryManager memoryManager = new MemoryManager( maxPages * cachePageSize, alignment );
         Object pageList = null;
         int pageIndex = maxPages;
         while ( pageIndex --> 0 )
         {
-            MuninnPage page = new MuninnPage( cachePageSize, memoryReleaser );
+            MuninnPage page = new MuninnPage( cachePageSize, memoryManager );
             pages[pageIndex] = page;
 
             if ( pageList == null )

@@ -87,4 +87,10 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     {
         return false;
     }
+
+    @Override
+    public long getRequiredBufferAlignment()
+    {
+        return 1;
+    }
 }
