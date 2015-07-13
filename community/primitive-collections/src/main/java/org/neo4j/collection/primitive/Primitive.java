@@ -52,7 +52,7 @@ public class Primitive
      * the correct semantics to the algorithm.
      */
     public static final Object VALUE_MARKER = new Object();
-    public static final int DEFAULT_HEAP_CAPACITY = 1 << 8;
+    public static final int DEFAULT_HEAP_CAPACITY = 1 << 4;
     public static final int DEFAULT_OFFHEAP_CAPACITY = 1 << 20;
 
     // Some example would be...
