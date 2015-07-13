@@ -140,7 +140,7 @@ class BackupService
             StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory, tuningConfiguration, loadKernelExtensions(),
                     logProvider,
                     new DefaultFileSystemAbstraction(), pageCache,
-                    monitors.newMonitor( StoreCopyClient.Monitor.class, getClass() ) );
+                    monitors.newMonitor( StoreCopyClient.Monitor.class, getClass() ), forensics );
             storeCopier.copyStore( new StoreCopyClient.StoreCopyRequester()
             {
                 private BackupClient client;

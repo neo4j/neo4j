@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -42,7 +43,9 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -102,7 +105,8 @@ public class StoreCopyClientTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreCopyClient copier =
-                new StoreCopyClient( copyDir, new Config(), loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache, storeCopyMonitor );
+                new StoreCopyClient( copyDir, new Config(), loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache, storeCopyMonitor,
+                        false );
 
         final GraphDatabaseAPI original =
                 (GraphDatabaseAPI) startDatabase( originalDir );
@@ -143,11 +147,6 @@ public class StoreCopyClientTest
         verify( storeCopyRequest, times( 1 ) ).done();
     }
 
-    private GraphDatabaseService startDatabase( File storeDir )
-    {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-    }
-
     @Test
     public void shouldEndUpWithAnEmptyStoreIfCancellationRequestIssuedJustBeforeRecoveryTakesPlace()
             throws IOException
@@ -178,10 +177,10 @@ public class StoreCopyClientTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreCopyClient copier =
-                new StoreCopyClient( copyDir, new Config(), loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache, storeCopyMonitor );
+                new StoreCopyClient( copyDir, new Config(), loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache, storeCopyMonitor,
+                        false );
 
-        final GraphDatabaseAPI original =
-                (GraphDatabaseAPI) startDatabase( originalDir );
+        final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir );
 
         try ( Transaction tx = original.beginTx() )
         {
@@ -214,6 +213,69 @@ public class StoreCopyClientTest
         }
 
         verify( storeCopyRequest, times( 1 ) ).done();
+    }
+
+    @Test
+    public void shouldResetNeoStoreLastTransactionOffsetForNonForensicCopy() throws Exception
+    {
+        // GIVEN
+        File initialStore = testDir.directory( "initialStore" );
+        File backupStore = testDir.directory( "backupStore" );
+
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        GraphDatabaseService initialDatabase = null;
+        try
+        {
+            initialDatabase = startDatabase( initialStore );
+            for ( int i = 0; i < 10; i++ )
+            try ( Transaction tx = initialDatabase.beginTx() )
+            {
+                initialDatabase.createNode( label( "Neo" + i ) );
+                tx.success();
+            }
+            initialDatabase.shutdown();
+
+            initialDatabase = startDatabase( initialStore );
+            long originalTransactionOffset =
+                    NeoStore.getRecord( pageCache, new File( initialStore, NeoStore.DEFAULT_NAME ),
+                            NeoStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
+
+            StoreCopyClient copier =
+                    new StoreCopyClient( backupStore, new Config(), loadKernelExtensions(), NullLogProvider
+                            .getInstance(), fs, pageCache, new StoreCopyClient.Monitor.Adapter(), false );
+            CancellationRequest falseCancellationRequest = new CancellationRequest()
+            {
+                @Override
+                public boolean cancellationRequested()
+                {
+                    return false;
+                }
+            };
+            StoreCopyClient.StoreCopyRequester storeCopyRequest = storeCopyRequest( initialStore, (GraphDatabaseAPI)
+                    initialDatabase );
+
+            // WHEN
+            copier.copyStore( storeCopyRequest, falseCancellationRequest );
+
+            // THEN
+            long updatedTransactionOffset =
+                    NeoStore.getRecord( pageCache, new File( backupStore, NeoStore.DEFAULT_NAME ), NeoStore.Position
+                            .LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
+            Assert.assertNotEquals( originalTransactionOffset, updatedTransactionOffset );
+            Assert.assertEquals( LogHeader.LOG_HEADER_SIZE, updatedTransactionOffset );
+        }
+        finally
+        {
+            if (initialDatabase != null)
+            {
+                initialDatabase.shutdown();
+            }
+        }
+    }
+
+    private GraphDatabaseService startDatabase( File storeDir )
+    {
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
 
     private StoreCopyClient.StoreCopyRequester storeCopyRequest( final File originalDir,
