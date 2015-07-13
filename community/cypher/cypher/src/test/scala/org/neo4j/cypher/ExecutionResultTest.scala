@@ -160,7 +160,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
   }
 
   test("correct statistics for mandatory relationship property constraint added") {
-    val result = execute("create constraint on [r:KNOWS] assert r.since is not null")
+    val result = execute("create constraint on ()-[r:KNOWS]-() assert r.since is not null")
     val stats  = result.queryStatistics()
 
     assert(stats.mandatoryConstraintsAdded === 1)
@@ -168,8 +168,8 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
   }
 
   test("correct statistics for mandatory relationship property constraint added twice") {
-    execute("create constraint on [r:KNOWS] assert r.since is not null")
-    val result = execute("create constraint on [r:KNOWS] assert r.since is not null")
+    execute("create constraint on ()-[r:KNOWS]-() assert r.since is not null")
+    val result = execute("create constraint on ()-[r:KNOWS]-() assert r.since is not null")
     val stats  = result.queryStatistics()
 
     assert(stats.mandatoryConstraintsAdded === 0)
@@ -177,8 +177,8 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
   }
 
   test("correct statistics for mandatory relationship property constraint dropped") {
-    execute("create constraint on [r:KNOWS] assert r.since is not null")
-    val result = execute("drop constraint on [r:KNOWS] assert r.since is not null")
+    execute("create constraint on ()-[r:KNOWS]-() assert r.since is not null")
+    val result = execute("drop constraint on ()-[r:KNOWS]-() assert r.since is not null")
     val stats  = result.queryStatistics()
 
     assert(stats.mandatoryConstraintsAdded === 0)

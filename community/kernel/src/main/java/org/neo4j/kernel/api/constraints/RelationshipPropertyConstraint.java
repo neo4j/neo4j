@@ -41,7 +41,7 @@ public abstract class RelationshipPropertyConstraint extends PropertyConstraint
     {
         String typeName = tokenNameLookup.relationshipTypeGetName( relationshipTypeId );
         String boundIdentifier = typeName.toLowerCase();
-        return String.format( "CONSTRAINT ON [ %s:%s ] ASSERT %s.%s IS %s", boundIdentifier, typeName,
+        return String.format( "CONSTRAINT ON ()-[ %s:%s ]-() ASSERT %s.%s IS %s", boundIdentifier, typeName,
                 boundIdentifier, tokenNameLookup.propertyKeyGetName( propertyKeyId ), constraintString() );
     }
 
@@ -70,7 +70,7 @@ public abstract class RelationshipPropertyConstraint extends PropertyConstraint
     @Override
     public String toString()
     {
-        return String.format( "CONSTRAINT ON [ n:relationshipType[%s] ] ASSERT n.property[%s] IS %s",
+        return String.format( "CONSTRAINT ON ()-[ n:relationshipType[%s] ]-() ASSERT n.property[%s] IS %s",
                 relationshipTypeId, propertyKeyId, constraintString() );
     }
 }

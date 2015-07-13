@@ -892,7 +892,7 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         // WHEN / THEN
-        executeCommand( "schema ls", "ON \\[knows:KNOWS\\] ASSERT knows.since IS NOT NULL" );
+        executeCommand( "schema ls", "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT knows.since IS NOT NULL" );
     }
 
     @Test
@@ -931,7 +931,7 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         // WHEN / THEN
-        executeCommand( "schema ls -r :KNOWS", "ON \\[knows:KNOWS\\] ASSERT knows.since IS NOT NULL" );
+        executeCommand( "schema ls -r :KNOWS", "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT knows.since IS NOT NULL" );
     }
 
     @Test
@@ -944,7 +944,7 @@ public class TestApps extends AbstractShellTest
         finishTx();
 
         // WHEN / THEN
-        executeCommand( "schema ls -r :KNOWS -p since", "ON \\[knows:KNOWS\\] ASSERT knows.since IS NOT NULL" );
+        executeCommand( "schema ls -r :KNOWS -p since", "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT knows.since IS NOT NULL" );
     }
 
     @Test
@@ -966,7 +966,7 @@ public class TestApps extends AbstractShellTest
         // THEN
         executeCommand( "schema ls",
                 "ON \\(person:Person\\) ASSERT person.name IS NOT NULL",
-                "ON \\[knows:KNOWS\\] ASSERT knows.since IS NOT NULL" );
+                "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT knows.since IS NOT NULL" );
     }
 
     @Test
@@ -988,7 +988,7 @@ public class TestApps extends AbstractShellTest
         // THEN
         executeCommand( "schema ls -l :Person -r :KNOWS",
                 "ON \\(person:Person\\) ASSERT person.name IS NOT NULL",
-                "ON \\[knows:KNOWS\\] ASSERT knows.since IS NOT NULL" );
+                "ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT knows.since IS NOT NULL" );
     }
 
     @Test

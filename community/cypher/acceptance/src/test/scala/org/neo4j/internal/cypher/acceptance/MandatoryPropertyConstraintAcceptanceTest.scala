@@ -38,7 +38,7 @@ class MandatoryPropertyConstraintAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("relationship: should enforce constraints on creation") {
     // GIVEN
-    execute("create constraint on [rel:KNOWS] assert rel.since is not null")
+    execute("create constraint on ()-[rel:KNOWS]-() assert rel.since is not null")
 
     // WHEN
     val e = intercept[ConstraintValidationException](execute("create (p1:Person)-[:KNOWS]->(p2:Person)"))
@@ -60,7 +60,7 @@ class MandatoryPropertyConstraintAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("relationship: should enforce on removing property") {
     // GIVEN
-    execute("create constraint on [rel:KNOWS] assert rel.since is not null")
+    execute("create constraint on ()-[rel:KNOWS]-() assert rel.since is not null")
 
     // WHEN
     execute("create (p1:Person)-[:KNOWS {since: 'yesterday'}]->(p2:Person)")
@@ -82,7 +82,7 @@ class MandatoryPropertyConstraintAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("relationship: should enforce on setting property to null") {
     // GIVEN
-    execute("create constraint on [rel:KNOWS] assert rel.since is not null")
+    execute("create constraint on ()-[rel:KNOWS]-() assert rel.since is not null")
 
     // WHEN
     execute("create (p1:Person)-[:KNOWS {since: 'yesterday'}]->(p2:Person)")
@@ -104,7 +104,7 @@ class MandatoryPropertyConstraintAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("relationship: should allow to break constraint within statement") {
     // GIVEN
-    execute("create constraint on [rel:KNOWS] assert rel.since is not null")
+    execute("create constraint on ()-[rel:KNOWS]-() assert rel.since is not null")
 
     // WHEN
     val res = execute("create (p1:Person)-[r:KNOWS]->(p2:Person) set r.since = 'yesterday' return r")
@@ -129,7 +129,7 @@ class MandatoryPropertyConstraintAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("relationship: should allow creation of non-conflicting data") {
     // GIVEN
-    execute("create constraint on [rel:KNOWS] assert rel.since is not null")
+    execute("create constraint on ()-[rel:KNOWS]-() assert rel.since is not null")
 
     // WHEN
     execute("create (p1:Person {name: 'foo'})-[r:KNOWS {since: 'today'}]->(p2:Person {name: 'bar'})")
@@ -156,7 +156,7 @@ class MandatoryPropertyConstraintAcceptanceTest extends ExecutionEngineFunSuite 
     execute("create (p1:Person)-[:KNOWS]->(p2:Person)")
 
     // WHEN
-    val e = intercept[CypherExecutionException](execute("create constraint on [rel:KNOWS] assert rel.since is not null"))
+    val e = intercept[CypherExecutionException](execute("create constraint on ()-[rel:KNOWS]-() assert rel.since is not null"))
 
     //THEN
     e.status should equal(Status.Schema.ConstraintCreationFailure)
@@ -179,13 +179,13 @@ class MandatoryPropertyConstraintAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("relationship: should drop constraint") {
     // GIVEN
-    execute("create constraint on [rel:KNOWS] assert rel.since is not null")
+    execute("create constraint on ()-[rel:KNOWS]-() assert rel.since is not null")
 
     intercept[ConstraintValidationException](execute("create (p1:Person)-[:KNOWS]->(p2:Person)"))
     numberOfRelationships shouldBe 0
 
     // WHEN
-    execute("drop constraint on [rel:KNOWS] assert rel.since is not null")
+    execute("drop constraint on ()-[rel:KNOWS]-() assert rel.since is not null")
     execute("create (p1:Person)-[:KNOWS]->(p2:Person)")
 
     // THEN

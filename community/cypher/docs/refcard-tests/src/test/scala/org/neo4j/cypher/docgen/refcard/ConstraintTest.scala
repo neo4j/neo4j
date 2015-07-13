@@ -112,7 +112,7 @@ Drop the mandatory node property constraint on the label `Person` and property `
 ###assertion=create-mandatory-relationship-property-constraint
 //
 
-CREATE CONSTRAINT ON [l:LIKED]
+CREATE CONSTRAINT ON ()-[l:LIKED]-()
        ASSERT l.when IS NOT NULL
 ###
 
@@ -123,7 +123,7 @@ removed from an existing relationship with the `LIKED` type, the write operation
 ###assertion=drop-mandatory-relationship-property-constraint
 //
 
-DROP CONSTRAINT ON [l:LIKED]
+DROP CONSTRAINT ON ()-[l:LIKED]-()
      ASSERT l.when IS NOT NULL
 ###
 

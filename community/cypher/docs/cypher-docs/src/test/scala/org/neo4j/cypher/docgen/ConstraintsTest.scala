@@ -172,7 +172,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     testQuery(
       title = "Create mandatory relationship property constraint",
       text = "To create a constraint that makes sure that all relationships with a certain type have a certain property, use the +IS+ +NOT+ +NULL+ syntax.",
-      queryText = "CREATE CONSTRAINT ON [like:LIKED] ASSERT like.day IS NOT NULL",
+      queryText = "CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT like.day IS NOT NULL",
       optionalResultExplanation = "",
       assertions = (p) => assertRelationshipConstraintExist("LIKED", "day")
     )
@@ -184,9 +184,9 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
     prepareAndTestQuery(
       title = "Drop mandatory relationship property constraint",
       text = "By using +DROP+ +CONSTRAINT+, you remove a constraint from the database.",
-      queryText = "DROP CONSTRAINT ON [like:LIKED] ASSERT like.day IS NOT NULL",
+      queryText = "DROP CONSTRAINT ON ()-[like:LIKED]-() ASSERT like.day IS NOT NULL",
       optionalResultExplanation = "",
-      prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON [like:LIKED] ASSERT like.day IS NOT NULL")),
+      prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT like.day IS NOT NULL")),
       assertions = (p) => assertRelationshipConstraintDoesNotExist("LIKED", "day")
     )
   }
@@ -199,14 +199,14 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
       text = "Create a `LIKED` relationship with an existing `day` property.",
       queryText = "CREATE (user:User)-[like:LIKED {day: 'yesterday'}]->(book:Book)",
       optionalResultExplanation = "",
-      prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON [like:LIKED] ASSERT like.day IS NOT NULL")),
+      prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT like.day IS NOT NULL")),
       assertions = (p) => assertRelationshipConstraintExist("LIKED", "day")
     )
   }
 
   @Test def break_mandatory_relationship_property_constraint() {
     generateConsole = false
-    engine.execute("CREATE CONSTRAINT ON [like:LIKED] ASSERT like.day IS NOT NULL")
+    engine.execute("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT like.day IS NOT NULL")
     testFailingQuery[ConstraintValidationException](
       title = "Create a relationship that breaks a mandatory property constraint",
       text = "Create a `LIKED` relationship without an existing `day` property.",
@@ -217,7 +217,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
 
   @Test def break_mandatory_relationship_property_constraint_by_removing_property() {
     generateConsole = false
-    engine.execute("CREATE CONSTRAINT ON [like:LIKED] ASSERT like.day IS NOT NULL")
+    engine.execute("CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT like.day IS NOT NULL")
     engine.execute("CREATE (user:User)-[like:LIKED {day: 'today'}]->(book:Book)")
     testFailingQuery[ConstraintValidationException](
       title = "Removing a mandatory relationship property",
@@ -235,7 +235,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
       title = "Failure to create a mandatory relationship property constraint due to existing relationship",
       text = "Create a constraint on the property `day` on relationships with the `LIKED` type when there already " +
         "exists a relationship without an `day`.",
-      queryText = "CREATE CONSTRAINT ON [like:LIKED] ASSERT like.day IS NOT NULL",
+      queryText = "CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT like.day IS NOT NULL",
       optionalResultExplanation = "In this case the constraint can't be created because it is violated by existing " +
         "data. We may choose to remove the offending relationships and then re-apply the constraint."
     )
