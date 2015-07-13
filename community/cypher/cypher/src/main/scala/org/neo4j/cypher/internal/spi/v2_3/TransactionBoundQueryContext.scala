@@ -192,7 +192,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   def indexSeekByPrefixRange(index: IndexDescriptor, prefix: String): scala.Iterator[Node] = {
-    val indexedNodes = statement.readOperations().nodesGetFromIndexSeekByPrefix(index, prefix)
+    val indexedNodes = statement.readOperations().nodesGetFromIndexRangeSeekByPrefix(index, prefix)
     JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
   }
 

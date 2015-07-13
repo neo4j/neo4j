@@ -91,7 +91,7 @@ public class NodeCorrectlyIndexedCheck implements RecordCheck<NodeRecord, Consis
             CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexRule indexRule,
             IndexReader reader )
     {
-        PrimitiveLongIterator indexedNodeIds = reader.indexSeek( propertyValue );
+        PrimitiveLongIterator indexedNodeIds = reader.seek( propertyValue );
 
         // For verifying node indexed uniquely in offline CC, if one match found in the first stage match,
         // then there is no need to filter the result. The result is a exact match.
@@ -139,7 +139,7 @@ public class NodeCorrectlyIndexedCheck implements RecordCheck<NodeRecord, Consis
             IndexRule indexRule,
             IndexReader reader )
     {
-        int count = reader.getIndexedCount( nodeId, propertyValue );
+        int count = reader.countIndexedNodes( nodeId, propertyValue );
         if ( count == 0 )
         {
             engine.report().notIndexed( indexRule, propertyValue );

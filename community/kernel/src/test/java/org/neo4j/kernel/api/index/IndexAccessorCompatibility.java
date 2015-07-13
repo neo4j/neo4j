@@ -99,7 +99,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         try ( IndexReader reader = accessor.newReader() )
         {
             List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.indexSeek( propertyValue ); iterator.hasNext(); )
+            for ( PrimitiveLongIterator iterator = reader.seek( propertyValue ); iterator.hasNext(); )
             {
                 list.add( iterator.next() );
             }
@@ -113,7 +113,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         try ( IndexReader reader = accessor.newReader() )
         {
             List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.indexSeekByPrefix( prefix ); iterator.hasNext(); )
+            for ( PrimitiveLongIterator iterator = reader.rangeSeekByPrefix( prefix ); iterator.hasNext(); )
             {
                 list.add( iterator.next() );
             }

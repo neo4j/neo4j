@@ -183,11 +183,11 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( IndexDescriptor index, String prefix )
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
-        return dataRead().nodesGetFromIndexSeekByPrefix( statement, index, prefix );
+        return dataRead().nodesGetFromIndexRangeSeekByPrefix( statement, index, prefix );
     }
 
     @Override
@@ -431,11 +431,11 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexByPrefixSearch( IndexDescriptor index, String prefix )
+    public NodeCursor nodeCursorGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexSeekByPrefix( statement, index, prefix );
+        return dataRead().nodeCursorGetFromIndexRangeSeekByPrefix( statement, index, prefix );
     }
 
     @Override

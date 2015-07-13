@@ -50,7 +50,7 @@ interface DataRead
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( IndexDescriptor index, String prefix )
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException;
 
     /**

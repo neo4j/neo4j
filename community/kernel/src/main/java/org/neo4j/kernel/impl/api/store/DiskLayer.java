@@ -485,7 +485,7 @@ public class DiskLayer implements StoreReadLayer
             Object value ) throws IndexNotFoundKernelException
     {
         IndexReader reader = state.getIndexReader( index );
-        return reader.indexSeek( value );
+        return reader.seek( value );
     }
 
     @Override
@@ -501,13 +501,13 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state,
-            IndexDescriptor index,
-            String prefix )
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
+                                                                     IndexDescriptor index,
+                                                                     String prefix )
             throws IndexNotFoundKernelException
     {
         IndexReader reader = state.getIndexReader( index );
-        return reader.indexSeekByPrefix( prefix );
+        return reader.rangeSeekByPrefix( prefix );
     }
 
     @Override
@@ -717,7 +717,7 @@ public class DiskLayer implements StoreReadLayer
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
         IndexReader reader = state.getFreshIndexReader( descriptor );
-        return resourceIterator( reader.indexSeek( value ), reader );
+        return resourceIterator( reader.seek( value ), reader );
     }
 
     @Override

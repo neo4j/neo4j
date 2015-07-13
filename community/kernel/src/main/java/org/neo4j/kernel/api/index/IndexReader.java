@@ -39,12 +39,12 @@ public interface IndexReader extends Resource
     /**
      * Index seek by value
      */
-    PrimitiveLongIterator indexSeek( Object value );
+    PrimitiveLongIterator seek( Object value );
 
     /**
      * Index seek by prefix search
      */
-    PrimitiveLongIterator indexSeekByPrefix( String prefix );
+    PrimitiveLongIterator rangeSeekByPrefix( String prefix );
 
     /**
      * Index scan for all objects
@@ -54,7 +54,7 @@ public interface IndexReader extends Resource
     /**
      * Number of nodes indexed by the given property
      */
-    int getIndexedCount( long nodeId, Object propertyValue );
+    int countIndexedNodes( long nodeId, Object propertyValue );
 
     /**
      *
@@ -80,15 +80,15 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public PrimitiveLongIterator indexSeek( Object value )
+        public PrimitiveLongIterator seek( Object value )
         {
-            return delegate.indexSeek( value );
+            return delegate.seek( value );
         }
 
         @Override
-        public PrimitiveLongIterator indexSeekByPrefix( String prefix )
+        public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
         {
-            return delegate.indexSeekByPrefix( prefix );
+            return delegate.rangeSeekByPrefix( prefix );
         }
 
         @Override
@@ -98,9 +98,9 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public int getIndexedCount( long nodeId, Object propertyValue )
+        public int countIndexedNodes( long nodeId, Object propertyValue )
         {
-            return delegate.getIndexedCount( nodeId, propertyValue );
+            return delegate.countIndexedNodes( nodeId, propertyValue );
         }
 
         @Override
@@ -131,13 +131,13 @@ public interface IndexReader extends Resource
     IndexReader EMPTY = new IndexReader()
     {
         @Override
-        public PrimitiveLongIterator indexSeek( Object value )
+        public PrimitiveLongIterator seek( Object value )
         {
             return PrimitiveLongCollections.emptyIterator();
         }
 
         @Override
-        public PrimitiveLongIterator indexSeekByPrefix( String prefix )
+        public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
         {
             return PrimitiveLongCollections.emptyIterator();
         }
@@ -150,7 +150,7 @@ public interface IndexReader extends Resource
 
         // Used for checking index correctness
         @Override
-        public int getIndexedCount( long nodeId, Object propertyValue )
+        public int countIndexedNodes( long nodeId, Object propertyValue )
         {
             return 0;
         }

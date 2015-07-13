@@ -68,7 +68,7 @@ public interface EntityReadOperations
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, IndexDescriptor index, String prefix )
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state, IndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException;
 
     /**
@@ -186,7 +186,7 @@ public interface EntityReadOperations
     NodeCursor nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement, IndexDescriptor index, Number lower, boolean lowerInclusive, Number upper, boolean upperInclusive )
             throws IndexNotFoundKernelException;
 
-    NodeCursor nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement, IndexDescriptor index, String prefix ) throws IndexNotFoundKernelException;
+    NodeCursor nodeCursorGetFromIndexRangeSeekByPrefix( KernelStatement statement, IndexDescriptor index, String prefix ) throws IndexNotFoundKernelException;
 
     NodeCursor nodeCursorGetFromUniqueIndexSeek( KernelStatement statement, IndexDescriptor index, Object value ) throws IndexBrokenKernelException, IndexNotFoundKernelException;
 

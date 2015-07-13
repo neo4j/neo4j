@@ -75,7 +75,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public PrimitiveLongIterator indexSeekByPrefix( String prefix )
+    public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
         Set<Long> nodeIds = new HashSet<>();
         for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
@@ -174,7 +174,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public int getIndexedCount( long nodeId, Object propertyValue )
+    public int countIndexedNodes( long nodeId, Object propertyValue )
     {
         Set<Long> candidates = data().get( propertyValue );
         return candidates != null && candidates.contains( nodeId ) ? 1 : 0;

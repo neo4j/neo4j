@@ -281,12 +281,12 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state,
-            IndexDescriptor index,
-            String prefix )
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
+                                                                     IndexDescriptor index,
+                                                                     String prefix )
             throws IndexNotFoundKernelException
     {
-        return diskLayer.nodesGetFromIndexSeekByPrefix( state, index, prefix );
+        return diskLayer.nodesGetFromIndexRangeSeekByPrefix( state, index, prefix );
     }
 
     @Override

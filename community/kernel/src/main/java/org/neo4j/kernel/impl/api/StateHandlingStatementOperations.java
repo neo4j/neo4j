@@ -232,17 +232,18 @@ public class StateHandlingStatementOperations implements
     {
         // TODO Filter this properly
         return statement.getStoreStatement().acquireIteratorNodeCursor(
-                storeLayer.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, lowerInclusive, upper, upperInclusive ) );
+                storeLayer.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, lowerInclusive, upper,
+                        upperInclusive ) );
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement, IndexDescriptor index,
-            String prefix )
+    public NodeCursor nodeCursorGetFromIndexRangeSeekByPrefix( KernelStatement statement, IndexDescriptor index,
+                                                               String prefix )
             throws IndexNotFoundKernelException
     {
         // TODO Filter this properly
         return statement.getStoreStatement().acquireIteratorNodeCursor(
-                storeLayer.nodesGetFromIndexSeekByPrefix( statement, index, prefix ) );
+                storeLayer.nodesGetFromIndexRangeSeekByPrefix( statement, index, prefix ) );
     }
 
     @Override
@@ -802,10 +803,10 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, IndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state, IndexDescriptor index,
+                                                                     String prefix ) throws IndexNotFoundKernelException
     {
-        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexSeekByPrefix( state, index, prefix );
+        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexRangeSeekByPrefix( state, index, prefix );
         return filterIndexStateChangesForPrefix( state, index, prefix, committed );
     }
 

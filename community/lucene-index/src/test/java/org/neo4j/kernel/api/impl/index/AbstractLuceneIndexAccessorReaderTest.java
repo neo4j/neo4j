@@ -51,7 +51,7 @@ public abstract class AbstractLuceneIndexAccessorReaderTest<R extends LuceneInde
         when( documentLogic.newValueQuery( "foo" ) ).thenReturn( mock( Query.class) );
 
         // When
-        accessor.indexSeek( "foo" );
+        accessor.seek( "foo" );
 
         // Then
         verify( documentLogic ).newValueQuery( "foo" );
@@ -65,7 +65,7 @@ public abstract class AbstractLuceneIndexAccessorReaderTest<R extends LuceneInde
         when( documentLogic.newPrefixQuery( "foo" ) ).thenReturn( mock( Query.class) );
 
         // When
-        accessor.indexSeekByPrefix( "foo" );
+        accessor.rangeSeekByPrefix( "foo" );
 
         // Then
         verify( documentLogic ).newPrefixQuery( "foo" );

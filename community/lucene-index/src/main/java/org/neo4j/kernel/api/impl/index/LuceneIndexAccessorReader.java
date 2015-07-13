@@ -88,13 +88,13 @@ class LuceneIndexAccessorReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator indexSeek( Object value )
+    public PrimitiveLongIterator seek( Object value )
     {
         return query( documentLogic.newValueQuery( value ) );
     }
 
     @Override
-    public PrimitiveLongIterator indexSeekByPrefix( String prefix )
+    public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
         return query( documentLogic.newPrefixQuery( prefix ) );
     }
@@ -106,7 +106,7 @@ class LuceneIndexAccessorReader implements IndexReader
     }
 
     @Override
-    public int getIndexedCount( long nodeId, Object propertyValue )
+    public int countIndexedNodes( long nodeId, Object propertyValue )
     {
         Query nodeIdQuery = new TermQuery( documentLogic.newTermForChangeOrRemove( nodeId ) );
         Query valueQuery = documentLogic.newValueQuery( propertyValue );
