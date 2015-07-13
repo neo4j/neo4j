@@ -246,8 +246,18 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, IndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement statement,
+                                                                     IndexDescriptor index,
+                                                                     Number lower, boolean lowerInclusive,
+                                                                     Number upper, boolean upperInclusive )
+            throws IndexNotFoundKernelException {
+        return entityReadOperations.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, lowerInclusive, upper, upperInclusive );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state,
+                                                                IndexDescriptor index, String prefix )
+            throws IndexNotFoundKernelException
     {
         return entityReadOperations.nodesGetFromIndexSeekByPrefix( state, index, prefix );
     }
@@ -522,6 +532,17 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             throws IndexNotFoundKernelException
     {
         return entityReadOperations.nodeCursorGetFromIndexScan( statement, index );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
+                                                               IndexDescriptor index,
+                                                               Number lower, boolean lowerInclusive,
+                                                               Number upper, boolean upperInclusive )
+            throws IndexNotFoundKernelException
+
+    {
+        return entityReadOperations.nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, lowerInclusive, upper, upperInclusive );
     }
 
     @Override

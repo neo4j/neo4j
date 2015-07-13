@@ -176,6 +176,13 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber(IndexDescriptor index, Number lower, boolean lowerInclusive, Number upper, boolean upperInclusive)
+            throws IndexNotFoundKernelException {
+        statement.assertOpen();
+        return dataRead().nodesGetFromIndexRangeSeekByNumber(statement, index, lower, lowerInclusive, upper, upperInclusive);
+    }
+
+    @Override
     public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( IndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException
     {
@@ -412,17 +419,28 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         return dataRead().nodeCursorGetFromIndexScan( statement, index );
     }
 
+
     @Override
-    public NodeCursor nodeCursorGetFromIndexByPrefixSearch( IndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException
+    public NodeCursor nodeCursorGetFromIndexRangeSeekByNumber( IndexDescriptor index,
+                                                               Number lower, boolean lowerInclusive,
+                                                               Number upper, boolean upperInclusive )
+            throws IndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return dataRead().nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, lowerInclusive, upper, upperInclusive );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexByPrefixSearch( IndexDescriptor index, String prefix )
+            throws IndexNotFoundKernelException
     {
         statement.assertOpen();
         return dataRead().nodeCursorGetFromIndexSeekByPrefix( statement, index, prefix );
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromUniqueIndexSeek( IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
+    public NodeCursor nodeCursorGetFromUniqueIndexSeek( IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         statement.assertOpen();
         return dataRead().nodeCursorGetFromUniqueIndexSeek( statement, index, value );

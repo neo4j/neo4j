@@ -177,6 +177,18 @@ public class GuardingStatementOperations implements
     }
 
     @Override
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state,
+                                                                     IndexDescriptor index,
+                                                                     Number lower, boolean lowerInclusive,
+                                                                     Number upper, boolean upperInclusive )
+            throws IndexNotFoundKernelException
+
+    {
+        guard.check();
+        return entityReadDelegate.nodesGetFromIndexRangeSeekByNumber( state, index, lower, lowerInclusive, upper, upperInclusive );
+    }
+
+    @Override
     public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, IndexDescriptor index,
             String prefix ) throws IndexNotFoundKernelException
     {
@@ -434,6 +446,18 @@ public class GuardingStatementOperations implements
     {
         guard.check();
         return entityReadDelegate.nodeCursorGetFromIndexScan( statement, index );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
+                                                               IndexDescriptor index,
+                                                               Number lower, boolean lowerInclusive,
+                                                               Number upper, boolean upperInclusive )
+            throws IndexNotFoundKernelException
+
+    {
+        guard.check();
+        return entityReadDelegate.nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, lowerInclusive, upper, upperInclusive );
     }
 
     @Override

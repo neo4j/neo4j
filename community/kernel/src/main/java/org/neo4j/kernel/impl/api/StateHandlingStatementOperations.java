@@ -223,6 +223,19 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public NodeCursor nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
+                                                               IndexDescriptor index,
+                                                               Number lower, boolean lowerInclusive,
+                                                               Number upper, boolean upperInclusive )
+            throws IndexNotFoundKernelException
+
+    {
+        // TODO Filter this properly
+        return statement.getStoreStatement().acquireIteratorNodeCursor(
+                storeLayer.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, lowerInclusive, upper, upperInclusive ) );
+    }
+
+    @Override
     public NodeCursor nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement, IndexDescriptor index,
             String prefix )
             throws IndexNotFoundKernelException
@@ -775,6 +788,17 @@ public class StateHandlingStatementOperations implements
         PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexSeek( state, index, value );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
         return filterIndexStateChanges( state, index, value, exactMatches );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state, IndexDescriptor index, Number lower, boolean lowerInclusive, Number upper, boolean upperInclusive ) throws IndexNotFoundKernelException
+
+    {
+        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexRangeSeekByNumber( state, index, lower, lowerInclusive, upper, upperInclusive );
+        if ( state.txState().hasChanges() ) {
+            throw new UnsupportedOperationException( "BOOM" );
+        }
+        return committed;
     }
 
     @Override
