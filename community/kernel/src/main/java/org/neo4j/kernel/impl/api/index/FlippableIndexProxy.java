@@ -23,7 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -46,7 +47,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 public class FlippableIndexProxy implements IndexProxy
 {
     private volatile boolean closed;
-    private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
     private volatile IndexProxyFactory flipTarget;
     // This variable below is volatile because it can be changed in flip or flipTo
     // and even though it may look like acquiring the read lock, when using this variable
@@ -110,10 +111,21 @@ public class FlippableIndexProxy implements IndexProxy
         }
     }
 
+    /**
+     * The {@code force()}-method is called during log rotation. At this time we do not want to wait for locks held by
+     * {@link LockingIndexUpdater}. Waiting on such locks would cause a serious risk of deadlocks, since very likely
+     * the reader we would be waiting on would be waiting on the log rotation lock held by the thread calling this
+     * method. The reason we would wait for a read lock while trying to acquire a read lock is if there is a third
+     * thread waiting on the write lock, probably an index populator wanting to
+     * {@linkplain #flip(Callable, FailedIndexProxyFactory) flip the index into active state}.
+     * <p/>
+     * We avoid this deadlock situation by "barging" on the read lock, i.e. acquire it in an <i>unfair</i> way, where
+     * we don't care about waiting threads, only about whether the exclusive lock is held or not.
+     */
     @Override
     public void force() throws IOException
     {
-        lock.readLock().lock();
+        barge( lock.readLock() ); // see javadoc of this method (above) for rationale on why we use barge(...) here
         try
         {
             delegate.force();
@@ -121,6 +133,64 @@ public class FlippableIndexProxy implements IndexProxy
         finally
         {
             lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Acquire the {@code ReadLock} in an <i>unfair</i> way, without waiting for queued up writers.
+     * <p/>
+     * The {@link ReentrantReadWriteLock.ReadLock#tryLock() tryLock}-method of the {@code ReadLock} implementation of
+     * {@code ReentrantReadWriteLock} implements a <i>barging</i> behaviour, where if an exclusive lock is not held,
+     * the shared lock will be acquired, even if there are other threads waiting for the lock. This behaviour is
+     * regardless of whether the lock is fair or not.
+     * <p/>
+     * This allows us to avoid deadlocks where readers would wait for writers that wait for readers in critical
+     * methods.
+     * <p/>
+     * The naive way to implement this method would be:
+     * <pre><code>
+     *     if ( !lock.tryLock() ) // try to barge
+     *         lock.lock(); // fall back to normal blocking lock call
+     * </code></pre>
+     * This would however not implement the appropriate barging behaviour in a scenario like the following: Say the
+     * exclusive lock is held, and there is a queue waiting containing first a reader and then a writer, in this case
+     * the {@code tryLock()} method will return false. If the writer then finishes between the naive implementation
+     * exiting {@code tryLock()} and before entering {@code lock()} the {@code barge(...)} method would now block in
+     * the exact way we don't want it to block, with a read lock held and a writer waiting.<br/>
+     * In order to get around this situation, the implementation of this method uses a
+     * {@linkplain Lock#tryLock(long, TimeUnit) timed wait} in a retry-loop in order to ensure that we make another
+     * attempt to barge the lock at a later point.
+     * <p/>
+     * This method is written to be compatible with the signature of {@link Lock#lock()}, which is not interruptible,
+     * but implemented based on the interruptible {@link Lock#tryLock(long, TimeUnit)}, so the implementation needs to
+     * remember being interrupted, and reset the flag before exiting, so that later invocations of interruptible
+     * methods detect the interruption.
+     *
+     * @param lock a {@link java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock}
+     */
+    private static void barge( ReentrantReadWriteLock.ReadLock lock )
+    {
+        boolean interrupted = false;
+        // exponential retry back-off, no more than 1 second
+        for ( long timeout = 10; !lock.tryLock(); timeout = Math.min( 1000, timeout * 2 ) )
+        {
+            try
+            {
+                if ( lock.tryLock( timeout, TimeUnit.MILLISECONDS ) )
+                {
+                    return;
+                }
+            }
+            // the barge()-method is uninterruptable, but implemented based on the interruptible tryLock()-method
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted(); // ensure the interrupt flag is cleared
+                interrupted = true; // remember to set interrupt flag before we exit
+            }
+        }
+        if ( interrupted )
+        {
+            Thread.currentThread().interrupt(); // reset the interrupt flag
         }
     }
 
