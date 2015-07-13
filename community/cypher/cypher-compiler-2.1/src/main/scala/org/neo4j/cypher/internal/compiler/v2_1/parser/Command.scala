@@ -51,5 +51,5 @@ trait Command extends Parser
   }
 
   private def ConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~
-    optional(keyword("ASSERT")) ~~ PropertyExpression ~~ keyword("IS UNIQUE")
+    keyword("ASSERT") ~~ PropertyExpression ~~ keyword("IS UNIQUE")
 }
