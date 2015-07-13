@@ -25,8 +25,6 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import javax.swing.*;
 
 import static javax.swing.JFileChooser.APPROVE_OPTION;

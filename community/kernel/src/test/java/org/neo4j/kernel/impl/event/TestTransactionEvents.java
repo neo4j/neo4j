@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -45,6 +46,7 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.DatabaseRule;
@@ -830,10 +832,10 @@ public class TestTransactionEvents
             // when
             try ( Transaction tx = db.beginTx() )
             {
-                labels.remove(node1, "Foo");
-                labels.remove(node2, "Bar");
-                labels.remove(node3, "Baz");
-                labels.remove(node3, "Bar");
+                labels.remove( node1, "Foo" );
+                labels.remove( node2, "Bar" );
+                labels.remove( node3, "Baz" );
+                labels.remove( node3, "Bar" );
 
                 labels.activate();
                 tx.success();
@@ -853,6 +855,7 @@ public class TestTransactionEvents
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
         final AtomicInteger accessCount = new AtomicInteger();
+        final Map<Long,Triplet<Node,String,Node>> expectedRelationshipData = new HashMap<>();
         TransactionEventHandler<Void> handler = new TransactionEventHandler.Adapter<Void>()
         {
             @Override
@@ -876,9 +879,11 @@ public class TestTransactionEvents
             private void accessData( Relationship relationship )
             {
                 accessCount.incrementAndGet();
-                relationship.getStartNode();
-                relationship.getEndNode();
-                relationship.getType();
+                Triplet<Node,String,Node> expectancy = expectedRelationshipData.get( relationship.getId() );
+                assertNotNull( expectancy );
+                assertEquals( expectancy.first(), relationship.getStartNode() );
+                assertEquals( expectancy.second(), relationship.getType().name() );
+                assertEquals( expectancy.third(), relationship.getEndNode() );
             }
         };
         db.registerTransactionEventHandler( handler );
@@ -890,6 +895,8 @@ public class TestTransactionEvents
             try ( Transaction tx = db.beginTx() )
             {
                 relationship = db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+                expectedRelationshipData.put( relationship.getId(), Triplet.of(
+                        relationship.getStartNode(), relationship.getType().name(), relationship.getEndNode() ) );
                 tx.success();
             }
             // THEN
@@ -899,7 +906,11 @@ public class TestTransactionEvents
             try ( Transaction tx = db.beginTx() )
             {
                 relationship.setProperty( "name", "Smith" );
-                db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+                Relationship otherRelationship =
+                        db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
+                expectedRelationshipData.put( otherRelationship.getId(), Triplet.of(
+                        otherRelationship.getStartNode(), otherRelationship.getType().name(),
+                        otherRelationship.getEndNode() ) );
                 tx.success();
             }
             // THEN
@@ -918,6 +929,60 @@ public class TestTransactionEvents
         {
             db.unregisterTransactionEventHandler( handler );
         }
+    }
+
+    @Test
+    public void shouldProvideTheCorrectRelationshipData()
+    {
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+
+        // create a rel type so the next type id is non zero
+        try( Transaction tx = db.beginTx() )
+        {
+            db.createNode().createRelationshipTo( db.createNode(), DynamicRelationshipType.withName( "TYPE" ) );
+        }
+
+        RelationshipType livesIn = DynamicRelationshipType.withName( "LIVES_IN" );
+        long relId;
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node person = db.createNode( DynamicLabel.label( "Person" ) );
+
+            Node city = db.createNode( DynamicLabel.label( "City" ) );
+
+            Relationship rel = person.createRelationshipTo( city, livesIn );
+            rel.setProperty( "since", 2009 );
+            relId = rel.getId();
+            tx.success();
+        }
+
+        final Set<String> changedRelationships = new HashSet<>();
+
+        db.registerTransactionEventHandler( new TransactionEventHandler.Adapter<Void>()
+        {
+            @Override
+            public Void beforeCommit( TransactionData data ) throws Exception
+            {
+                for ( PropertyEntry<Relationship> entry : data.assignedRelationshipProperties() )
+                {
+                    changedRelationships.add( entry.entity().getType().name() );
+                }
+
+                return null;
+            }
+        } );
+
+        try( Transaction tx = db.beginTx() )
+        {
+            Relationship rel = db.getRelationshipById( relId );
+            rel.setProperty( "since", 2010 );
+            tx.success();
+        }
+
+        assertEquals( 1, changedRelationships.size() );
+        assertTrue( livesIn + " not in " + changedRelationships.toString(),
+                changedRelationships.contains( livesIn.name() ) );
     }
 
     private static final class ChangedLabels extends TransactionEventHandler.Adapter<Void>

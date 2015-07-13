@@ -23,6 +23,10 @@ o Replaced use of logback for internal logging with neo4j-logging API
 o Allow GraphDatabaseFactory to accept a LogProvider for user logging, allowing
   programatic customization of user log output.
 
+2.2.4
+-----
+o Fixes #4910 - TransactionData incorrect when modifying/deleting relationships.
+
 2.2.3
 -----
 o Fixes an issue where a shutdown of a database that had a panic might mark the database as cleanly shut down

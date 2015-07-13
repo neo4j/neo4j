@@ -45,7 +45,6 @@ import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.InitialBranchState;
-import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.helpers.collection.MapUtil;
 
 import common.Neo4jAlgoTestCase;

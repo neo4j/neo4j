@@ -21,9 +21,6 @@ package org.neo4j.server;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Pair;

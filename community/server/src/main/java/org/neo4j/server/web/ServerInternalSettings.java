@@ -30,7 +30,6 @@ import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.helpers.Settings.PATH;
-import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.helpers.Settings.URI;
 import static org.neo4j.helpers.Settings.setting;

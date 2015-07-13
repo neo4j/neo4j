@@ -28,8 +28,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.JFrame;
 
-import org.neo4j.desktop.runtime.DatabaseActions;
-
 import static javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE;
 
 import static org.neo4j.desktop.ui.DatabaseStatus.STOPPED;

@@ -26,12 +26,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.web.ServerInternalSettings;
-
-import static java.util.Arrays.asList;
 
 /**
  * Used by the server to load server and database properties.

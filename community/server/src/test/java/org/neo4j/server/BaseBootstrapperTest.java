@@ -26,7 +26,6 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.server.ExclusiveServerTestBase;

@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.traversal;
 
 import org.neo4j.function.Predicate;
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Path;
 import org.neo4j.kernel.ShortestPathsBranchCollisionDetector;
 import org.neo4j.kernel.StandardBranchCollisionDetector;
