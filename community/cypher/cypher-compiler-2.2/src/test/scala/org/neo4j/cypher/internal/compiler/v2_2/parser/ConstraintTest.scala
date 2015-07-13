@@ -23,14 +23,12 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementCon
 import StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.{commands => legacyCommands, _}
 import org.parboiled.scala._
-import org.parboiled.scala.rules.Rule1
 
 class ConstraintTest extends ParserTest[ast.Command, legacyCommands.AbstractQuery] with Command {
   implicit val parserToTest = Command ~ EOI
 
   test("create_uniqueness_constraint") {
     parsing("CREATE CONSTRAINT ON (foo:Foo) ASSERT foo.name IS UNIQUE") or
-      parsing("CREATE CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE") or
       parsing("create constraint on (foo:Foo) assert foo.name is unique") shouldGive
       legacyCommands.CreateUniqueConstraint("foo", "Foo", "foo", "name")
 
@@ -40,12 +38,16 @@ class ConstraintTest extends ParserTest[ast.Command, legacyCommands.AbstractQuer
 
   test("drop_uniqueness_constraint") {
     parsing("DROP CONSTRAINT ON (foo:Foo) ASSERT foo.name IS UNIQUE") or
-      parsing("DROP CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE") or
       parsing("drop constraint on (foo:Foo) assert foo.name is unique") shouldGive
       legacyCommands.DropUniqueConstraint("foo", "Foo", "foo", "name")
 
     parsing("DROP CONSTRAINT ON (foo:Foo) ASSERT bar.name IS UNIQUE") shouldGive
       legacyCommands.DropUniqueConstraint("foo", "Foo", "bar", "name")
+  }
+
+  test("ASSERT is a required part of the constraint syntax") {
+    assertFails("CREATE CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE")
+    assertFails("DROP CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE")
   }
 
   def convert(astNode: ast.Command): legacyCommands.AbstractQuery = astNode.asQuery
