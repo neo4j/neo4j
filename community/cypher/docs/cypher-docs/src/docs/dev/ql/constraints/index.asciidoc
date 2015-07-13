@@ -3,13 +3,14 @@
 
 [abstract]
 Neo4j helps enforce data integrity with the use of constraints.
-There are two types of constraints, unique property constraints and mandatory property constraints.
+Constraints can be applied to either nodes or relationships.
+There exits unique node property constraints, mandatory node  relationship property constraints.
 
 You can use unique property constraints to ensure that property values are unique for all nodes with a specific label.
 Unique constraints do not mean that all nodes have to have a unique value for the properties -- nodes without the property are not subject to this rule.
 
-You can use mandatory property constraints to ensure that a property exists for all nodes with a specific label.
-All queries that try to create new nodes without the property, or queries that try to remove the mandatory property will now fail.
+You can use mandatory property constraints to ensure that a property exists for all nodes with a specific label or relationship with specific type.
+All queries that try to create new nodes or relationships without the property, or queries that try to remove the mandatory property will now fail.
 
 
 You can have multiple constraints for a given label and you can also combine unique and mandatory property constraints on the same property.
@@ -30,16 +31,28 @@ include::create-a-node-that-breaks-a-unique-property-constraint.asciidoc[]
 
 include::failure-to-create-a-unique-property-constraint-due-to-conflicting-nodes.asciidoc[]
 
-include::create-mandatory-property-constraint.asciidoc[]
+include::create-mandatory-node-property-constraint.asciidoc[]
 
-include::drop-mandatory-property-constraint.asciidoc[]
+include::drop-mandatory-node-property-constraint.asciidoc[]
 
 include::create-a-node-that-complies-with-mandatory-property-constraints.asciidoc[]
 
 include::create-a-node-that-breaks-a-mandatory-property-constraint.asciidoc[]
 
-include::removing-a-mandatory-property.asciidoc[]
+include::removing-a-mandatory-node-property.asciidoc[]
 
-include::failure-to-create-a-mandatory-property-constraint-due-to-existing-node.asciidoc[]
+include::failure-to-create-a-mandatory-node-property-constraint-due-to-existing-node.asciidoc[]
+
+include::create-mandatory-relationship-property-constraint.asciidoc[]
+
+include::drop-mandatory-relationship-property-constraint.asciidoc[]
+
+include::create-a-relationship-that-complies-with-mandatory-property-constraints.asciidoc[]
+
+include::create-a-relationship-that-breaks-a-mandatory-property-constraint.asciidoc[]
+
+include::removing-a-mandatory-relationship-property.asciidoc[]
+
+include::failure-to-create-a-mandatory-relationship-property-constraint-due-to-existing-relationship.asciidoc[]
 
 

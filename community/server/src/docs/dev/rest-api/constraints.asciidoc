@@ -9,15 +9,23 @@ include::get-all-uniqueness-constraints-for-a-label.asciidoc[]
 
 include::drop-uniqueness-constraint.asciidoc[]
 
-include::create-mandatory-property-constraint.asciidoc[]
+include::create-mandatory-node-property-constraint.asciidoc[]
 
-include::get-a-specific-mandatory-property-constraint.asciidoc[]
+include::get-a-specific-mandatory-node-property-constraint.asciidoc[]
 
-include::get-all-mandatory-property-constraints-for-a-label.asciidoc[]
+include::get-all-mandatory-node-property-constraints-for-a-label.asciidoc[]
 
-include::drop-mandatory-property-constraint.asciidoc[]
+include::drop-mandatory-node-property-constraint.asciidoc[]
 
 include::get-all-constraints-for-a-label.asciidoc[]
+
+include::create-mandatory-relationship-property-constraint.asciidoc[]
+
+include::get-a-specific-mandatory-relationship-property-constraint.asciidoc[]
+
+include::get-all-mandatory-relationship-property-constraints-for-a-type.asciidoc[]
+
+include::drop-mandatory-relationship-property-constraint.asciidoc[]
 
 include::get-all-constraints.asciidoc[]
 

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.docgen.refcard
 
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 
 class ConstraintTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("A:Person KNOWS B:Person")
@@ -37,10 +37,16 @@ class ConstraintTest extends RefcardTest with QueryStatisticsTestSupport {
       case "drop-unique-property-constraint" =>
         assertStats(result, constraintsRemoved = 1)
         assert(result.toList.size === 0)
-      case "create-mandatory-property-constraint" =>
+      case "create-mandatory-node-property-constraint" =>
         assertStats(result, constraintsAdded = 1)
         assert(result.toList.size === 0)
-      case "drop-mandatory-property-constraint" =>
+      case "drop-mandatory-node-property-constraint" =>
+        assertStats(result, constraintsRemoved = 1)
+        assert(result.toList.size === 0)
+      case "create-mandatory-relationship-property-constraint" =>
+        assertStats(result, constraintsAdded = 1)
+        assert(result.toList.size === 0)
+      case "drop-mandatory-relationship-property-constraint" =>
         assertStats(result, constraintsRemoved = 1)
         assert(result.toList.size === 0)
       case "match" =>
@@ -83,24 +89,44 @@ DROP CONSTRAINT ON (p:Person)
 
 Drop the unique constraint and index on the label `Person` and property `name`.
 
-###assertion=create-mandatory-property-constraint
+###assertion=create-mandatory-node-property-constraint
 //
 
 CREATE CONSTRAINT ON (p:Person)
        ASSERT p.name IS NOT NULL
 ###
 
-Create a mandatory property constraint on the label `Person` and property `name`.
-If a node with that label is created without a `name`, or if the name property is
+Create a mandatory node property constraint on the label `Person` and property `name`.
+If a node with that label is created without a `name`, or if the `name` property is
 removed from an existing node with the `Person` label, the write operation will fail.
 
-###assertion=drop-mandatory-property-constraint
+###assertion=drop-mandatory-node-property-constraint
 //
 
 DROP CONSTRAINT ON (p:Person)
      ASSERT p.name IS NOT NULL
 ###
 
-Drop the mandatory property constraint on the label `Person` and property `name`.
+Drop the mandatory node property constraint on the label `Person` and property `name`.
+
+###assertion=create-mandatory-relationship-property-constraint
+//
+
+CREATE CONSTRAINT ON [l:LIKED]
+       ASSERT l.when IS NOT NULL
+###
+
+Create a mandatory relationship property constraint on the type `LIKED` and property `when`.
+If a relationship with that type is created without a `when`, or if the `when` property is
+removed from an existing relationship with the `LIKED` type, the write operation will fail.
+
+###assertion=drop-mandatory-relationship-property-constraint
+//
+
+DROP CONSTRAINT ON [l:LIKED]
+     ASSERT l.when IS NOT NULL
+###
+
+Drop the mandatory relationship property constraint on the type `LIKED` and property `when`.
 """
 }

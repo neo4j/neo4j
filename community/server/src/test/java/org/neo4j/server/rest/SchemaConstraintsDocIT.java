@@ -246,7 +246,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Get all mandatory property constraints for a label.
+     * Get all mandatory node property constraints for a label.
      */
     @SuppressWarnings( "unchecked" )
     @Documented
@@ -278,7 +278,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Get all mandatory property constraints for a relationship type.
+     * Get all mandatory relationship property constraints for a type.
      */
     @SuppressWarnings( "unchecked" )
     @Documented
@@ -468,7 +468,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_compound_schema_index()
     {
-        Map<String, Object> definition = map( "property_keys",
+        Map<String,Object> definition = map( "property_keys",
                 asList( properties.newInstance(), properties.newInstance() ) );
 
         gen.get().noGraph().expectedStatus( 400 )
