@@ -214,7 +214,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
             return new Rotation<Key, NeedsCreation<Key>>( this )
             {
                 @Override
-                ProgressiveState<Key> rotate( boolean force, RotationStrategy strategy,
+                ProgressiveState<Key> rotate( boolean force, RotationStrategy strategy, RotationTimerFactory timerFactory,
                                               Consumer<Headers.Builder> headers )
                         throws IOException
                 {
@@ -278,10 +278,10 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
             return new Rotation<Key, RotationState.Rotation<Key>>( state.prepareRotation( version ) )
             {
                 @Override
-                ProgressiveState<Key> rotate( boolean force, RotationStrategy strategy,
+                ProgressiveState<Key> rotate( boolean force, RotationStrategy strategy, RotationTimerFactory timerFactory,
                                               Consumer<Headers.Builder> headers ) throws IOException
                 {
-                    return new Prepared<>( state.rotate( force, strategy, headers ) );
+                    return new Prepared<>( state.rotate( force, strategy, timerFactory, headers ) );
                 }
 
                 @Override

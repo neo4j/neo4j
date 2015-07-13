@@ -22,8 +22,11 @@ package org.neo4j.kernel.impl.store.counts;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -38,6 +41,7 @@ import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.Rotation;
 import org.neo4j.kernel.impl.store.kvstore.RotationMonitor;
+import org.neo4j.kernel.impl.store.kvstore.RotationTimerFactory;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
 import org.neo4j.kernel.impl.util.function.Optional;
@@ -80,7 +84,8 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     public static final String LEFT = ".a", RIGHT = ".b";
     public static final String TYPE_DESCRIPTOR = "CountsStore";
 
-    public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, File baseFile )
+    public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
+            File baseFile )
     {
         super( fs, pages, baseFile, new RotationMonitor()
         {
@@ -112,7 +117,8 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
                 log.error( format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
                         headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
             }
-        }, 16, 16, HEADER_FIELDS );
+        }, new RotationTimerFactory( Clock.SYSTEM_CLOCK, config.get( GraphDatabaseSettings
+                .store_interval_log_rotation_wait_time ) ), 16, 16, HEADER_FIELDS );
     }
 
     public CountsTracker setInitializer( final DataInitializer<Updater> initializer )

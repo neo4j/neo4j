@@ -143,6 +143,11 @@ public abstract class GraphDatabaseSettings
     @Description( "Threshold for rotation of the internal log." )
     public static final Setting<Long> store_internal_log_rotation_threshold = setting("store.internal_log.rotation_threshold", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
 
+    @Description( "Maximum time interval for log rotation to wait for active transaction completion" )
+    @Internal
+    public static final Setting<Long> store_interval_log_rotation_wait_time =
+            setting( "store.interval.log.rotation", DURATION, "10m" );
+
     @Description( "Minimum time (in seconds) after last rotation of the internal log before it may be rotated again." )
     public static final Setting<Integer> store_internal_log_rotation_delay = setting("store.internal_log.rotation_threshold", INTEGER, "300", min(0), max( Integer.MAX_VALUE ) );
 

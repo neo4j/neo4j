@@ -27,6 +27,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -64,7 +65,8 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             }
             else
             {
-                CountsTracker tracker = new CountsTracker( NullLogProvider.getInstance(), fs, pages, path );
+                CountsTracker tracker = new CountsTracker( NullLogProvider.getInstance(), fs, pages, new Config(),
+                        path );
                 if ( fs.fileExists( path ) )
                 {
                     tracker.visitFile( path, new DumpCountsStore( out ) );
