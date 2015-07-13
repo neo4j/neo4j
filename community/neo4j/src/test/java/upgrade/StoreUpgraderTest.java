@@ -126,15 +126,15 @@ public class StoreUpgraderTest
     @Test
     public void shouldUpgradeAnOldFormatStore() throws IOException, ConsistencyCheckIncompleteException
     {
-        // Given
-        assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, version ) );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        // Given
+        assertTrue( allStoreFilesHaveVersion( pageCache, dbDirectory, version ) );
 
         // When
         newUpgrader( ALLOW_UPGRADE, pageCache ).migrateIfNeeded( dbDirectory, schemaIndexProvider );
 
         // Then
-        assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, ALL_STORES_VERSION ) );
+        assertTrue( allStoreFilesHaveVersion( pageCache, dbDirectory, ALL_STORES_VERSION ) );
 
         // We leave logical logs in place since the new version can read the old
 

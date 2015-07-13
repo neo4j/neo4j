@@ -117,26 +117,6 @@ public class TestStore
     }
 
     @Test
-    public void testStickyStore() throws IOException
-    {
-        try
-        {
-            Store.createStore( storeFile(), pageCache ).close();
-            java.nio.channels.FileChannel fileChannel = new java.io.RandomAccessFile(
-                    storeFile(), "rw" ).getChannel();
-            fileChannel.truncate( fileChannel.size() - 2 );
-            fileChannel.close();
-            Store store = new Store( storeFile(), pageCache );
-            store.makeStoreOk();
-            store.close();
-        }
-        finally
-        {
-            deleteBothFiles();
-        }
-    }
-
-    @Test
     public void testClose() throws IOException
     {
         try

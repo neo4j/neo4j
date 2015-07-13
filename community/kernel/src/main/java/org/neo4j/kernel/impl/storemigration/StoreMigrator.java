@@ -441,7 +441,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, storeFiles,
                 true, // OK if it's not there (1.9)
                 false, StoreFileType.values() );
-        StoreFile.ensureStoreVersion( fileSystem, migrationDir, storeFiles );
+        StoreFile.ensureStoreVersion( fileSystem, pageCache, migrationDir, storeFiles );
     }
 
     private AdditionalInitialIds readAdditionalIds( File storeDir, final long lastTxId, final long lastTxChecksum,
@@ -830,15 +830,15 @@ public class StoreMigrator implements StoreMigrationParticipant
     private void ensureStoreVersions( File dir ) throws IOException
     {
         final Iterable<StoreFile> versionedStores = iterable( allExcept() );
-        StoreFile.ensureStoreVersion( fileSystem, dir, versionedStores );
+        StoreFile.ensureStoreVersion( fileSystem, pageCache, dir, versionedStores );
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( File migrationDir, File storeDir ) throws IOException
     {
         final File storeDirNeoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
-        NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.UPGRADE_TRANSACTION_ID,
+        NeoStore.setRecord( pageCache, storeDirNeoStore, Position.UPGRADE_TRANSACTION_ID,
                 NeoStore.getRecord( pageCache, storeDirNeoStore, Position.LAST_TRANSACTION_ID ) );
-        NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.UPGRADE_TIME, System.currentTimeMillis() );
+        NeoStore.setRecord( pageCache, storeDirNeoStore, Position.UPGRADE_TIME, System.currentTimeMillis() );
 
         // Store the checksum of the transaction id the upgrade is at right now. Store it both as
         // LAST_TRANSACTION_CHECKSUM and UPGRADE_TRANSACTION_CHECKSUM. Initially the last transaction and the
@@ -853,13 +853,15 @@ public class StoreMigrator implements StoreMigrationParticipant
         //    but T needs to be stored in neostore to be accessible. Obvioously this scenario is only
         //    problematic as long as we don't migrate and translate old logs.
         long lastTxChecksum = readLastTxChecksum( migrationDir );
-        NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.LAST_TRANSACTION_CHECKSUM, lastTxChecksum );
-        NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.UPGRADE_TRANSACTION_CHECKSUM, lastTxChecksum );
+        NeoStore.setRecord( pageCache, storeDirNeoStore, Position.LAST_TRANSACTION_CHECKSUM, lastTxChecksum );
+        NeoStore.setRecord( pageCache, storeDirNeoStore, Position.UPGRADE_TRANSACTION_CHECKSUM, lastTxChecksum );
 
         // add LAST_CLOSED_TRANSACTION_LOG_VERSION and LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET to the migated NeoStore
         LogPosition logPosition = readLastTxLogPosition( migrationDir );
-        NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logPosition.getLogVersion() );
-        NeoStore.setRecord( fileSystem, storeDirNeoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, logPosition.getByteOffset() );
+        NeoStore.setRecord( pageCache, storeDirNeoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logPosition
+                .getLogVersion() );
+        NeoStore.setRecord( pageCache, storeDirNeoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
+                logPosition.getByteOffset() );
     }
 
     @Override

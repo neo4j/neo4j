@@ -37,12 +37,14 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -61,8 +63,11 @@ public class StoreUpgradeOnStartupTest
 {
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public PageCacheRule pageCacheRule = new PageCacheRule();
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     private final String version;
+    private PageCache pageCache;
     private File workingDirectory;
 
     public StoreUpgradeOnStartupTest( String version )
@@ -84,10 +89,11 @@ public class StoreUpgradeOnStartupTest
     @Before
     public void setup() throws IOException
     {
+        pageCache = pageCacheRule.getPageCache( fileSystem );
         workingDirectory = testDir.directory( "working_" + version );
         File prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDirectory, prepareDirectory );
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
+        assertTrue( allStoreFilesHaveVersion( pageCache, workingDirectory, version ) );
     }
 
     @Test
@@ -99,7 +105,7 @@ public class StoreUpgradeOnStartupTest
 
         // then
         assertTrue( "Some store files did not have the correct version",
-                allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
+                allStoreFilesHaveVersion( pageCache, workingDirectory, ALL_STORES_VERSION ) );
         assertConsistentStore( workingDirectory );
     }
 

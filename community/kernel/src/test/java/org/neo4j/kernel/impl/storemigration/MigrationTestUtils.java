@@ -33,6 +33,8 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
@@ -183,7 +185,7 @@ public class MigrationTestUtils
         return Unzip.unzip( Legacy19Store.class, "upgradeTest19Db.zip", targetDir );
     }
 
-    public static boolean allStoreFilesHaveVersion( FileSystemAbstraction fileSystem, File workingDirectory,
+    public static boolean allStoreFilesHaveVersion( PageCache pageCache, File workingDirectory,
             String version ) throws IOException
     {
         final Iterable<StoreFile> storeFilesWithGivenVersions =
@@ -191,15 +193,12 @@ public class MigrationTestUtils
         boolean success = true;
         for ( StoreFile storeFile : storeFilesWithGivenVersions )
         {
-            StoreChannel channel = fileSystem.open( new File( workingDirectory, storeFile.storeFileName() ), "r" );
-            int length = UTF8.encode( version ).length;
-            byte[] bytes = new byte[length];
-            ByteBuffer buffer = ByteBuffer.wrap( bytes );
-            channel.position( channel.size() - length );
-            channel.read( buffer );
-            channel.close();
-
-            String foundVersion = UTF8.decode( bytes );
+            String foundVersion;
+            try ( PagedFile pagedFile = pageCache
+                    .map( new File( workingDirectory, storeFile.storeFileName() ), pageCache.pageSize() ) )
+            {
+                foundVersion = StoreVersionCheck.readVersion( pagedFile, version );
+            }
             if ( !version.equals( foundVersion ) )
             {
                 success = false;

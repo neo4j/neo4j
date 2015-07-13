@@ -26,7 +26,6 @@ import java.nio.channels.OverlappingFileLockException;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileLock;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -42,12 +41,12 @@ import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
 import static java.nio.ByteBuffer.wrap;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
@@ -309,23 +308,16 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     protected void verifyCorrectTypeDescriptorAndVersion() throws IOException
     {
         String expectedTypeDescriptorAndVersion = getTypeAndVersionDescriptor();
-        int length = UTF8.encode( expectedTypeDescriptorAndVersion ).length;
-        byte bytes[] = new byte[length];
-        ByteBuffer buffer = ByteBuffer.wrap( bytes );
-        long fileSize = getFileChannel().size();
-        if ( fileSize >= length )
+        try ( PagedFile pagedFile = pageCache.map( storageFileName, pageCache.pageSize() ) )
         {
-            getFileChannel().position( fileSize - length );
+            readTypeDescriptorAndVersion = StoreVersionCheck.readVersion( pagedFile, expectedTypeDescriptorAndVersion );
         }
-        else
+        if ( readTypeDescriptorAndVersion == null )
         {
             setStoreNotOk( new IllegalStateException(
-                    "Invalid file size " + fileSize + " for " + this + ". Expected " + length + " or bigger" ) );
+                    "No trailer present in store, expected " + expectedTypeDescriptorAndVersion ) );
             return;
         }
-        getFileChannel().read( buffer );
-        readTypeDescriptorAndVersion = UTF8.decode( bytes );
-
         if ( !expectedTypeDescriptorAndVersion.equals( readTypeDescriptorAndVersion ) )
         {
             if ( readTypeDescriptorAndVersion.startsWith( getTypeDescriptor() ) )

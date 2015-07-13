@@ -110,7 +110,7 @@ public class StoreUpgraderInterruptionTestIT
             }
         };
 
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
+        assertTrue( allStoreFilesHaveVersion( pageCache, workingDirectory, version ) );
 
         try
         {
@@ -119,18 +119,17 @@ public class StoreUpgraderInterruptionTestIT
         }
         catch ( RuntimeException e )
         {
-            e.printStackTrace();
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
+        assertTrue( allStoreFilesHaveVersion( pageCache, workingDirectory, version ) );
         upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
         progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator =
                 new StoreMigrator( progressMonitor, fileSystem, pageCache, upgradableDatabase, config, logService );
         newUpgrader( migrator ).migrateIfNeeded( workingDirectory, schemaIndexProvider );
 
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
+        assertTrue( allStoreFilesHaveVersion( pageCache, workingDirectory, ALL_STORES_VERSION ) );
         assertConsistentStore( workingDirectory );
     }
 
