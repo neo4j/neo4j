@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{UniqueIndexSeekByRange, IndexSeekByRange, IndexSeek}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{Node, ResourceIterator}
 
@@ -100,7 +100,6 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
     val result = executeWithRulePlanner(query)
 
-    println(result.executionPlanDescription())
     result.executionPlanDescription().toString should include("SchemaIndex")
     result.executionPlanDescription().toString should include("StringSeekRange")
     result.toList should equal(List(Map("NAME" -> "LOONYBOOM")))
