@@ -99,6 +99,7 @@ public class GuardingStatementOperations implements
     @Override
     public boolean nodeRemoveLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
     {
+        guard.check();
         return entityWriteDelegate.nodeRemoveLabel( state, nodeId, labelId );
     }
 
@@ -121,6 +122,7 @@ public class GuardingStatementOperations implements
     @Override
     public Property graphSetProperty( KernelStatement state, DefinedProperty property )
     {
+        guard.check();
         return entityWriteDelegate.graphSetProperty( state, property );
     }
 
@@ -179,13 +181,13 @@ public class GuardingStatementOperations implements
     @Override
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state,
                                                                      IndexDescriptor index,
-                                                                     Number lower, boolean lowerInclusive,
-                                                                     Number upper, boolean upperInclusive )
+                                                                     Number lower, boolean includeLower,
+                                                                     Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException
 
     {
         guard.check();
-        return entityReadDelegate.nodesGetFromIndexRangeSeekByNumber( state, index, lower, lowerInclusive, upper, upperInclusive );
+        return entityReadDelegate.nodesGetFromIndexRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper );
     }
 
     @Override
@@ -451,13 +453,12 @@ public class GuardingStatementOperations implements
     @Override
     public NodeCursor nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
                                                                IndexDescriptor index,
-                                                               Number lower, boolean lowerInclusive,
-                                                               Number upper, boolean upperInclusive )
+                                                               Number lower, boolean includeLower,
+                                                               Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException
-
     {
         guard.check();
-        return entityReadDelegate.nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, lowerInclusive, upper, upperInclusive );
+        return entityReadDelegate.nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper, includeUpper );
     }
 
     @Override

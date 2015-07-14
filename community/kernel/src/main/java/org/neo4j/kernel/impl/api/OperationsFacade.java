@@ -176,10 +176,10 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber(IndexDescriptor index, Number lower, boolean lowerInclusive, Number upper, boolean upperInclusive)
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber(IndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException {
         statement.assertOpen();
-        return dataRead().nodesGetFromIndexRangeSeekByNumber(statement, index, lower, lowerInclusive, upper, upperInclusive);
+        return dataRead().nodesGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper, includeUpper );
     }
 
     @Override
@@ -422,12 +422,12 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     @Override
     public NodeCursor nodeCursorGetFromIndexRangeSeekByNumber( IndexDescriptor index,
-                                                               Number lower, boolean lowerInclusive,
-                                                               Number upper, boolean upperInclusive )
+                                                               Number lower, boolean includeLower,
+                                                               Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, lowerInclusive, upper, upperInclusive );
+        return dataRead().nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper, includeUpper );
     }
 
     @Override

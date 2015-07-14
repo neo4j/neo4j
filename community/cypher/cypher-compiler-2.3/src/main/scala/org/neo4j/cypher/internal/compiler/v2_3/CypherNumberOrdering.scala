@@ -19,32 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import java.lang
+import org.neo4j.kernel.impl.NumberPropertyValueComparator
 
 object CypherNumberOrdering extends Ordering[Number] {
 
-  override def compare(x: Number, y: Number) = {
-    if (areComparableOfSameType(x, y))
-      compareValuesOfSameType(x, y)
-    else
-      compareValuesOfDifferentType(x, y)
-  }
-
-  private def areComparableOfSameType(l: Number, r: Number): Boolean =
-    l.isInstanceOf[Comparable[_]] && l.getClass.isInstance(r)
-
-  private def compareValuesOfSameType(l: Number, r: Number): Int =
-    l.asInstanceOf[Comparable[Number]].compareTo(r)
-
-  private def compareValuesOfDifferentType(x: Number, y: Number): Int = {
-    (x, y) match {
-      case (l: lang.Double, r: Number) => java.lang.Double.compare(l.doubleValue(), r.doubleValue())
-      case (l: Number, r: lang.Double) => java.lang.Double.compare(l.doubleValue(), r.doubleValue())
-
-      case (l: lang.Float, r: Number) => java.lang.Float.compare(l.floatValue(), r.floatValue())
-      case (l: Number, r: lang.Float) => java.lang.Float.compare(l.floatValue(), r.floatValue())
-
-      case (l, r) => java.lang.Long.compare(l.longValue(), r.longValue())
-    }
-  }
+  override def compare(x: Number, y: Number) =
+    NumberPropertyValueComparator.INSTANCE.compare(x, y)
 }

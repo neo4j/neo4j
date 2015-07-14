@@ -225,15 +225,15 @@ public class StateHandlingStatementOperations implements
     @Override
     public NodeCursor nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
                                                                IndexDescriptor index,
-                                                               Number lower, boolean lowerInclusive,
-                                                               Number upper, boolean upperInclusive )
+                                                               Number lower, boolean includeLower,
+                                                               Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException
 
     {
         // TODO Filter this properly
         return statement.getStoreStatement().acquireIteratorNodeCursor(
-                storeLayer.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, lowerInclusive, upper,
-                        upperInclusive ) );
+                storeLayer.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper,
+                        includeUpper ) );
     }
 
     @Override
@@ -792,10 +792,12 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state, IndexDescriptor index, Number lower, boolean lowerInclusive, Number upper, boolean upperInclusive ) throws IndexNotFoundKernelException
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state, IndexDescriptor index,
+                                                                     Number lower, boolean includeLower,
+                                                                     Number upper, boolean includeUpper ) throws IndexNotFoundKernelException
 
     {
-        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexRangeSeekByNumber( state, index, lower, lowerInclusive, upper, upperInclusive );
+        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper );
         if ( state.txState().hasChanges() ) {
             throw new UnsupportedOperationException( "BOOM" );
         }

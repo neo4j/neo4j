@@ -90,26 +90,33 @@ class LuceneIndexAccessorReader implements IndexReader
     @Override
     public PrimitiveLongIterator seek( Object value )
     {
-        return query( documentLogic.newValueQuery( value ) );
+        return query( documentLogic.newSeekQuery( value ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator rangeSeekByNumber( Number lower, boolean includeLower,
+                                                    Number upper, boolean includeUpper )
+    {
+        return query( documentLogic.newRangeSeekByNumberQuery( lower, includeLower, upper, includeUpper ) );
     }
 
     @Override
     public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
-        return query( documentLogic.newPrefixQuery( prefix ) );
+        return query( documentLogic.newRangeSeekByPrefixQuery( prefix ) );
     }
 
     @Override
     public PrimitiveLongIterator scan()
     {
-        return query( documentLogic.newAllQuery() );
+        return query( documentLogic.newScanQuery() );
     }
 
     @Override
     public int countIndexedNodes( long nodeId, Object propertyValue )
     {
         Query nodeIdQuery = new TermQuery( documentLogic.newTermForChangeOrRemove( nodeId ) );
-        Query valueQuery = documentLogic.newValueQuery( propertyValue );
+        Query valueQuery = documentLogic.newSeekQuery( propertyValue );
         BooleanQuery nodeIdAndValueQuery = new BooleanQuery( true );
         nodeIdAndValueQuery.add( nodeIdQuery, BooleanClause.Occur.MUST );
         nodeIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );

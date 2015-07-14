@@ -42,7 +42,7 @@ public interface DataReadCursors
     NodeCursor nodeCursorGetFromIndexSeek( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
 
-    NodeCursor nodeCursorGetFromIndexRangeSeekByNumber( IndexDescriptor index, Number lower, boolean lowerInclusive, Number upper, boolean upperInclusive )
+    NodeCursor nodeCursorGetFromIndexRangeSeekByNumber( IndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException;
 
     NodeCursor nodeCursorGetFromIndexRangeSeekByPrefix( IndexDescriptor index, String prefix )

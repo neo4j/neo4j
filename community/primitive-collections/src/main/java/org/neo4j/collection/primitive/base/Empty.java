@@ -75,6 +75,8 @@ public class Empty
         }
     }
 
+    public static final PrimitiveLongCollection EMPTY_PRIMITIVE_LONG_COLLECTION = new EmptyPrimitiveLongCollection();
+
     public static class EmptyPrimitiveLongSet extends EmptyPrimitiveLongCollection implements PrimitiveLongSet
     {
         @Override

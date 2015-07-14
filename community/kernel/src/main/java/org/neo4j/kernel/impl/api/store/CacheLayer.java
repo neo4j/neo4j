@@ -272,12 +272,12 @@ public class CacheLayer implements StoreReadLayer
     @Override
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state,
                                                                      IndexDescriptor index,
-                                                                     Number lower, boolean lowerInclusive,
-                                                                     Number upper, boolean upperInclusive )
+                                                                     Number lower, boolean includeLower,
+                                                                     Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException
 
     {
-        return diskLayer.nodesGetFromIndexRangeSeekByNumber( state, index, lower, lowerInclusive, upper, upperInclusive );
+        return diskLayer.nodesGetFromIndexRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper );
     }
 
     @Override

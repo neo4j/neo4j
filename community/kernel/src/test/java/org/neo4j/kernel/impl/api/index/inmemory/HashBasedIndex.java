@@ -32,6 +32,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.register.Register.DoubleLong;
@@ -72,6 +73,51 @@ class HashBasedIndex extends InMemoryIndexImplementation
     {
         Set<Long> nodes = data().get( propertyValue );
         return nodes == null ? PrimitiveLongCollections.emptyIterator() : toPrimitiveIterator( nodes.iterator() );
+    }
+
+    @Override
+    public PrimitiveLongIterator rangeSeekByNumber( Number lower, boolean includeLower,
+                                                    Number upper, boolean includeUpper )
+    {
+        Set<Long> nodeIds = new HashSet<>();
+        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        {
+            Object key = entry.getKey();
+            if ( key instanceof Number )
+            {
+                DefinedProperty keyNumber = DefinedProperty.numberProperty( 1, ((Number) key) );
+                boolean lowerFilter = false;
+                boolean upperFilter = false;
+
+                if ( lower == null )
+                {
+                    lowerFilter = true;
+                }
+                else
+                {
+                    DefinedProperty lowerNumber = DefinedProperty.numberProperty( 1, lower );
+                    int cmp = keyNumber.compareTo( lowerNumber );
+                    lowerFilter = (includeLower && cmp >= 0) || (cmp > 0);
+                }
+
+                if ( upper == null )
+                {
+                    upperFilter = true;
+                }
+                else
+                {
+                    DefinedProperty upperNumber = DefinedProperty.numberProperty( 1, upper );
+                    int cmp = keyNumber.compareTo( upperNumber );
+                    upperFilter = (includeUpper && cmp <= 0) || (cmp < 0);
+                }
+
+                if ( lowerFilter && upperFilter )
+                {
+                    nodeIds.addAll( entry.getValue() );
+                }
+            }
+        }
+        return toPrimitiveIterator( nodeIds.iterator() );
     }
 
     @Override

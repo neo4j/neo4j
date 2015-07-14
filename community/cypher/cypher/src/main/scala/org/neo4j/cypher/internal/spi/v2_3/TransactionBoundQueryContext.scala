@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.neo4j.collection.primitive.base.Empty
 import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
-import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -197,24 +197,37 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   def indexSeekByNumericalRange(index: IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = {
-    val allNodesInIndex = JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
     val readOps = statement.readOperations()
     val propertyKeyId = index.getPropertyKeyId
-    range.inclusionTest[Any](CypherValueOrdering).map {
-      case test =>
-        allNodesInIndex.filter { (node: Node) =>
-          val nodeId = node.getId
-          readOps.nodeGetProperty(nodeId, propertyKeyId) match {
-            case n: Number => test(n)
-            case _ => false
+    val matchingNodes: PrimitiveLongIterator = range match {
+
+      case rangeLessThan: RangeLessThan[Number] =>
+        rangeLessThan.limit[Number](CypherNumberOrdering).map { limit =>
+          readOps.nodesGetFromIndexRangeSeekByNumber( index, null, false, limit.endPoint, limit.isInclusive )
+        }.getOrElse(Empty.EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+
+      case rangeGreaterThan: RangeGreaterThan[Number] =>
+        rangeGreaterThan.limit[Number](CypherNumberOrdering).map { limit =>
+          readOps.nodesGetFromIndexRangeSeekByNumber( index, limit.endPoint, limit.isInclusive, null, false )
+        }.getOrElse(Empty.EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+
+      case RangeBetween(rangeGreaterThan, rangeLessThan) =>
+        rangeGreaterThan.limit[Number](CypherNumberOrdering).flatMap { greaterThanLimit =>
+          rangeLessThan.limit[Number](CypherNumberOrdering).map { lessThanLimit =>
+            readOps.nodesGetFromIndexRangeSeekByNumber(
+              index,
+              greaterThanLimit.endPoint, greaterThanLimit.isInclusive,
+              lessThanLimit.endPoint, lessThanLimit.isInclusive )
           }
-        }
-    }.getOrElse(Iterator.empty)
+        }.getOrElse(Empty.EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+    }
+
+    JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
   }
 
   def indexSeekByStringRange(index: IndexDescriptor, range: InequalitySeekRange[String]): scala.Iterator[Node] = {
-    val allNodesInIndex = JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
     val readOps = statement.readOperations()
+    val allNodesInIndex = JavaConversionSupport.mapToScalaENFXSafe(readOps.nodesGetFromIndexScan(index))(nodeOps.getById)
     val propertyKeyId = index.getPropertyKeyId
     range.inclusionTest[Any](CypherValueOrdering).map {
       case test =>

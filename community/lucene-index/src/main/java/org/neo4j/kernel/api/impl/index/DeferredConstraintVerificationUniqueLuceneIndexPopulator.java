@@ -216,7 +216,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                     for ( Object propertyValue : updatedPropertyValues )
                     {
                         collector.reset();
-                        Query query = documentStructure.newValueQuery( propertyValue );
+                        Query query = documentStructure.newSeekQuery( propertyValue );
                         searcher.search( query, collector );
                     }
                 }

@@ -24,7 +24,11 @@ import java.io.Closeable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.junit.Test;
 
 import static org.mockito.Mockito.mock;
@@ -45,44 +49,58 @@ public abstract class AbstractLuceneIndexAccessorReaderTest<R extends LuceneInde
 
 
     @Test
-    public void shouldUseCorrectLuceneQueryForEqualityQuery() throws Exception
+    public void shouldUseCorrectLuceneQueryForSeekQuery() throws Exception
     {
         // Given
-        when( documentLogic.newValueQuery( "foo" ) ).thenReturn( mock( Query.class) );
+        when( documentLogic.newSeekQuery( "foo" ) ).thenReturn( mock( TermQuery.class) );
 
         // When
         accessor.seek( "foo" );
 
         // Then
-        verify( documentLogic ).newValueQuery( "foo" );
+        verify( documentLogic ).newSeekQuery( "foo" );
         verifyNoMoreInteractions( documentLogic );
     }
 
     @Test
-    public void shouldUseCorrectLuceneQueryForPrefixQuery() throws Exception
+    public void shouldUseCorrectLuceneQueryForRangeSeekByNumberQuery() throws Exception
     {
         // Given
-        when( documentLogic.newPrefixQuery( "foo" ) ).thenReturn( mock( Query.class) );
+        when( documentLogic.newRangeSeekByNumberQuery( 12, true, null, false ) ).thenReturn( mock( TermRangeQuery.class) );
+
+        // When
+        accessor.rangeSeekByNumber( 12, true, null, false );
+
+        // Then
+        verify( documentLogic ).newRangeSeekByNumberQuery( 12, true, null, false );
+        verifyNoMoreInteractions( documentLogic );
+    }
+
+    @Test
+    public void shouldUseCorrectLuceneQueryForRangeSeekByPrefixQuery() throws Exception
+    {
+        // Given
+        when( documentLogic.newRangeSeekByPrefixQuery( "foo" ) ).thenReturn( mock( PrefixQuery.class) );
 
         // When
         accessor.rangeSeekByPrefix( "foo" );
 
         // Then
-        verify( documentLogic ).newPrefixQuery( "foo" );
+        verify( documentLogic ).newRangeSeekByPrefixQuery( "foo" );
         verifyNoMoreInteractions( documentLogic );
     }
 
     @Test
-    public void shouldUseCorrectLuceneQueryForMatchAllQuery() throws Exception
+    public void shouldUseCorrectLuceneQueryForScanQuery() throws Exception
     {
         // Given
-        when( documentLogic.newAllQuery() ).thenReturn( mock( Query.class) );
+        when( documentLogic.newScanQuery() ).thenReturn( mock( MatchAllDocsQuery.class) );
 
         // When
         accessor.scan();
 
         // Then
-        verify( documentLogic ).newAllQuery();
+        verify( documentLogic ).newScanQuery();
         verifyNoMoreInteractions( documentLogic );
     }
 }

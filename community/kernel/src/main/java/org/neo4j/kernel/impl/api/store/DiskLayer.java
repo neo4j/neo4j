@@ -491,13 +491,13 @@ public class DiskLayer implements StoreReadLayer
     @Override
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement statement,
                                                                      IndexDescriptor index,
-                                                                     Number lower, boolean lowerInclusive,
-                                                                     Number upper, boolean upperInclusive )
+                                                                     Number lower, boolean includeLower,
+                                                                     Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException
 
     {
         IndexReader reader = statement.getIndexReader( index );
-        throw new UnsupportedOperationException( "BOOM" );
+        return reader.rangeSeekByNumber( lower, includeLower, upper, includeUpper );
     }
 
     @Override

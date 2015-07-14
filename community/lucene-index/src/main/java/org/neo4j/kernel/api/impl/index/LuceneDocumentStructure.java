@@ -28,6 +28,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.NumericUtils;
 
 import org.neo4j.kernel.api.index.ArrayEncoder;
@@ -72,7 +73,7 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Query encodeQuery( Object value )
+            TermQuery encodeQuery( Object value )
             {
                 String encodedString = NumericUtils.doubleToPrefixCoded( ((Number)value).doubleValue() );
                 return new TermQuery( new Term( key(), encodedString ) );
@@ -99,7 +100,7 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Query encodeQuery( Object value )
+            TermQuery encodeQuery( Object value )
             {
                 return new TermQuery( new Term( key(), ArrayEncoder.encode( value ) ) );
             }
@@ -125,7 +126,7 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Query encodeQuery( Object value )
+            TermQuery encodeQuery( Object value )
             {
                 return new TermQuery( new Term( key(), value.toString() ) );
             }
@@ -152,7 +153,7 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Query encodeQuery( Object value )
+            TermQuery encodeQuery( Object value )
             {
                 return new TermQuery( new Term( key(), value.toString() ) );
             }
@@ -162,7 +163,7 @@ public class LuceneDocumentStructure
 
         abstract boolean canEncode( Object value );
         abstract Fieldable encodeField( Object value );
-        abstract Query encodeQuery( Object value );
+        abstract TermQuery encodeQuery( Object value );
 
         public static ValueEncoding fromKey( String key )
         {
@@ -214,12 +215,12 @@ public class LuceneDocumentStructure
         return result;
     }
 
-    public Query newAllQuery()
+    public MatchAllDocsQuery newScanQuery()
     {
         return new MatchAllDocsQuery();
     }
 
-    public Query newValueQuery( Object value )
+    public TermQuery newSeekQuery( Object value )
     {
         for ( ValueEncoding encoding : ValueEncoding.values() )
         {
@@ -231,7 +232,42 @@ public class LuceneDocumentStructure
         throw new IllegalArgumentException( format( "Unable to create query for %s", value ) );
     }
 
-    public Query newPrefixQuery( String prefix )
+    public TermRangeQuery newRangeSeekByNumberQuery( Number lower, boolean includeLower,
+                                                     Number upper, boolean upperInclusive )
+    {
+        String chosenLower, chosenUpper;
+        boolean includeChosenLower, includeChosenUpper;
+
+        if ( lower == null )
+        {
+            chosenLower = null;
+            includeChosenLower = true;
+        }
+        else
+        {
+            chosenLower = NumericUtils.doubleToPrefixCoded( lower.doubleValue() );
+            includeChosenLower = includeLower;
+        }
+
+        if ( upper == null )
+        {
+            chosenUpper = null;
+            includeChosenUpper = true;
+        }
+        else
+        {
+            chosenUpper = NumericUtils.doubleToPrefixCoded( upper.doubleValue() );
+            includeChosenUpper = upperInclusive;
+        }
+
+        return new TermRangeQuery(
+            ValueEncoding.Number.key(),
+            chosenLower, chosenUpper,
+            includeChosenLower, includeChosenUpper
+        );
+    }
+
+    public PrefixQuery newRangeSeekByPrefixQuery( String prefix )
     {
         return new PrefixQuery( new Term( ValueEncoding.String.key(), prefix ) );
     }

@@ -248,10 +248,10 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     @Override
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement statement,
                                                                      IndexDescriptor index,
-                                                                     Number lower, boolean lowerInclusive,
-                                                                     Number upper, boolean upperInclusive )
+                                                                     Number lower, boolean includeLower,
+                                                                     Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException {
-        return entityReadOperations.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, lowerInclusive, upper, upperInclusive );
+        return entityReadOperations.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper, includeUpper );
     }
 
     @Override
@@ -537,12 +537,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     @Override
     public NodeCursor nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
                                                                IndexDescriptor index,
-                                                               Number lower, boolean lowerInclusive,
-                                                               Number upper, boolean upperInclusive )
+                                                               Number lower, boolean includeLower,
+                                                               Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException
 
     {
-        return entityReadOperations.nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, lowerInclusive, upper, upperInclusive );
+        return entityReadOperations.nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper, includeUpper );
     }
 
     @Override

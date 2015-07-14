@@ -221,6 +221,13 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
+                public PrimitiveLongIterator rangeSeekByNumber( Number lower, boolean includeLower,
+                                                                Number upper, boolean includeUpper )
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
                 public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
                 {
                     throw new UnsupportedOperationException();
