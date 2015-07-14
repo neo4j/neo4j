@@ -56,7 +56,6 @@ import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestGraphProperties
 {
@@ -159,7 +158,7 @@ public class TestGraphProperties
     @Test
     public void firstRecordOtherThanZeroIfNotFirst() throws Exception
     {
-        File storeDir = forTest( getClass()).cleanDirectory( "zero" );
+        File storeDir = new File( "/store/dir" );
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
         Transaction tx = db.beginTx();
         Node node = db.createNode();

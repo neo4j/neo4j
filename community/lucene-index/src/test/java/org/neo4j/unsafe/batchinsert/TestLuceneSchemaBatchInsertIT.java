@@ -19,7 +19,10 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
@@ -30,9 +33,8 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import java.io.File;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -40,7 +42,6 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestLuceneSchemaBatchInsertIT
 {
@@ -48,7 +49,7 @@ public class TestLuceneSchemaBatchInsertIT
     public void shouldLoadAndUseLuceneProvider() throws Exception
     {
         // GIVEN
-        File storeDir = forTest( getClass() ).makeGraphDbDir().getAbsoluteFile();
+        File storeDir = testDirectory.graphDbDir();
         BatchInserter inserter = BatchInserters.inserter( storeDir );
         inserter.createDeferredSchemaIndex( LABEL ).on( "name" ).create();
 
@@ -75,6 +76,9 @@ public class TestLuceneSchemaBatchInsertIT
         // CLEANUP
         db.shutdown();
     }
-    
+
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     private static final Label LABEL = label( "Person" );
 }

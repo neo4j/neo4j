@@ -19,19 +19,35 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-@RunWith(ParameterizedSuiteRunner.class)
-@Suite.SuiteClasses({
+import java.io.File;
+
+import org.neo4j.test.TargetDirectory;
+
+@RunWith( ParameterizedSuiteRunner.class )
+@Suite.SuiteClasses( {
         NonUniqueIndexPopulatorCompatibility.class,
         UniqueIndexPopulatorCompatibility.class,
         NonUniqueIndexAccessorCompatibility.class,
         UniqueIndexAccessorCompatibility.class,
         UniqueConstraintCompatibility.class
-})
+} )
 public abstract class IndexProviderCompatibilityTestSuite
 {
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    protected File graphDbDir;
+
+    @Before
+    public void setup()
+    {
+        graphDbDir = testDir.graphDbDir();
+    }
+
     protected abstract SchemaIndexProvider createIndexProvider();
 
     public static abstract class Compatibility

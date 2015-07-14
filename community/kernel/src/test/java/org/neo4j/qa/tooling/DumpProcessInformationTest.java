@@ -19,6 +19,7 @@
  */
 package org.neo4j.qa.tooling;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.BufferedReader;
@@ -50,6 +51,7 @@ public class DumpProcessInformationTest
     public void shouldDumpProcessInformation() throws Exception
     {
         // GIVEN
+        File directory = testDirectory.directory( "dump" );
         // a process spawned from this test which pauses at a specific point of execution
         Process process = getRuntime().exec( new String[] { "java", "-cp", getProperty( "java.class.path" ),
                 DumpableProcess.class.getName(), SIGNAL } );
@@ -73,6 +75,9 @@ public class DumpProcessInformationTest
         assertTrue( fileContains( threaddumpFile, "traceableMethod", DumpableProcess.class.getName() ) );
     }
 
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     private boolean fileContains( File file, String... expectedStrings )
     {
         Set<String> expectedStringSet = asSet( expectedStrings );
@@ -92,7 +97,6 @@ public class DumpProcessInformationTest
 
     private static final String SIGNAL = "here";
 
-    private final File directory = TargetDirectory.forTest( getClass() ).cleanDirectory( "dump" );
 
     private void awaitSignal( Process process ) throws IOException
     {

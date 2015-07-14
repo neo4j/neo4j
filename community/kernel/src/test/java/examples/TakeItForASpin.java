@@ -24,14 +24,15 @@ import java.io.File;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.test.TargetDirectory;
+
+import static java.lang.System.getProperty;
 
 public class TakeItForASpin
 {
     public static void main( String[] args )
     {
-        File dir = TargetDirectory.forTest( TakeItForASpin.class ).makeGraphDbDir();
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dir.getAbsolutePath() );
+        File dir = new File( getProperty( "java.io.tmpdir" ), "graph-db");
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dir );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();

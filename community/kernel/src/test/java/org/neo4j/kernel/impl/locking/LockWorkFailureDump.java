@@ -26,21 +26,17 @@ import java.io.IOException;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 
-import static java.lang.System.currentTimeMillis;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 public class LockWorkFailureDump
 {
-    private final Class<?> testClass;
+    private final File file;
 
-    public LockWorkFailureDump( Class<?> testClass )
+    public LockWorkFailureDump( File file )
     {
-        this.testClass = testClass;
+        this.file = file;
     }
-    
+
     public File dumpState( Locks lm, LockWorker... workers ) throws IOException
     {
-        File file = forTest( testClass ).file( "failure-dump-" + currentTimeMillis() );
         FileOutputStream out = new FileOutputStream( file, false );
         FormattedLogProvider logProvider = FormattedLogProvider.withoutAutoFlush().toOutputStream( out );
 

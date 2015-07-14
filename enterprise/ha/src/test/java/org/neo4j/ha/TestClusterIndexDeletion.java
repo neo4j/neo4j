@@ -19,6 +19,7 @@
  */
 package org.neo4j.ha;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
@@ -41,7 +42,7 @@ public class TestClusterIndexDeletion
     {
         ClusterManager clusterManager =
             new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
+                    testDirectory.directory( "testCluster" ),
                 MapUtil.stringMap( HaSettings.ha_server.name(), ":6001-6005",
                         HaSettings.tx_push_factor.name(), "2" ));
         try
@@ -86,4 +87,6 @@ public class TestClusterIndexDeletion
         }
     }
 
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 }

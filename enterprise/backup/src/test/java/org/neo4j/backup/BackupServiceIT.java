@@ -113,19 +113,20 @@ public class BackupServiceIT
         }
     }
 
-    private static final TargetDirectory target = TargetDirectory.forTest( BackupServiceIT.class );
+    @Rule
+    public final TargetDirectory.TestDirectory target = TargetDirectory.testDirForTest( BackupServiceIT.class );
     private static final String NODE_STORE = StoreFactory.NODE_STORE_NAME;
     private static final String RELATIONSHIP_STORE = StoreFactory.RELATIONSHIP_STORE_NAME;
     private static final String BACKUP_HOST = "localhost";
 
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     private final Monitors monitors = new Monitors();
-    private final File storeDir = target.cleanDirectory( "store_dir" ) ;
-    private final File backupDir = target.cleanDirectory( "backup_dir" );
+    private File storeDir;
+    private File backupDir;
     public int backupPort = 8200;
 
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( storeDir );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
@@ -135,6 +136,8 @@ public class BackupServiceIT
     public void setup()
     {
         backupPort = backupPort + 1;
+        storeDir = dbRule.getStoreDir();
+        backupDir = target.directory( "backup_dir" );
     }
 
     private BackupService backupService()

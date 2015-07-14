@@ -55,7 +55,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         final int NON_DEFAULT_PORT = 4321;
 
         server = server().onPort( NON_DEFAULT_PORT )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 
@@ -74,7 +74,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         String webAdminManagementUri = "/a/different/webadmin/management/uri/";
 
         server = server().withRelativeWebDataAdminUriPath( webAdminDataUri )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .withRelativeWebAdminUriPath( webAdminManagementUri )
                 .build();
         server.start();
@@ -92,7 +92,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     public void shouldGenerateWADLWhenExplicitlyEnabledInConfig() throws IOException
     {
         server = server().withProperty( Configurator.WADL_ENABLED, "true" )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
@@ -108,7 +108,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     public void shouldNotGenerateWADLWhenNotExplicitlyEnabledInConfig() throws IOException
     {
         server = server()
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
@@ -121,7 +121,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     public void shouldNotGenerateWADLWhenExplicitlyDisabledInConfig() throws IOException
     {
         server = server().withProperty( Configurator.WADL_ENABLED, "false" )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
@@ -135,7 +135,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     {
         // Given
         server = server().withProperty( ServerInternalSettings.webadmin_enabled.name(), "false" )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 
@@ -149,7 +149,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     {
         // Given
         server = server()
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         String node = POST( server.baseUri().toASCIIString() + "db/data/node" ).location();
@@ -195,7 +195,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
 
         server = server().withProperty( Configurator.SCRIPT_SANDBOXING_ENABLED_KEY, "false" )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
 
         // When

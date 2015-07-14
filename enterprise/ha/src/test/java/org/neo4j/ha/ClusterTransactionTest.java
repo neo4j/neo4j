@@ -19,10 +19,11 @@
  */
 package org.neo4j.ha;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -30,13 +31,12 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.TargetDirectory.forTest;
 import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 public class ClusterTransactionTest
@@ -47,7 +47,7 @@ public class ClusterTransactionTest
         // Given
         ClusterManager clusterManager = new ClusterManager(
                 fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                forTest( getClass() ).cleanDirectory( "testCluster" ),
+                testDirectory.directory( "testCluster" ),
                 stringMap( HaSettings.ha_server.name(), ":6001-6005", HaSettings.tx_push_factor.name(), "2" ) );
         try
         {
@@ -102,4 +102,7 @@ public class ClusterTransactionTest
             clusterManager.stop();
         }
     }
+
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 }

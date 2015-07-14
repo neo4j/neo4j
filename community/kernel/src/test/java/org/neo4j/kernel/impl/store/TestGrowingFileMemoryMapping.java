@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -29,8 +29,8 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
@@ -55,7 +55,7 @@ public class TestGrowingFileMemoryMapping
         // given
         int NUMBER_OF_RECORDS = 1000000;
 
-        File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+        File storeDir = testDirectory.graphDbDir();
         Config config = new Config( stringMap(
                 pagecache_memory.name(), mmapSize( NUMBER_OF_RECORDS, NodeStore.RECORD_SIZE ) ), NodeStore.Configuration.class );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
@@ -122,6 +122,9 @@ public class TestGrowingFileMemoryMapping
         return bytes / MEGA + "M";
     }
 
-    @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
 }

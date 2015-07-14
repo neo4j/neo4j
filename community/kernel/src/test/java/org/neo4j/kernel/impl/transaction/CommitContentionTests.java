@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -40,20 +39,17 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.TargetDirectory.forTest;
 
 public class CommitContentionTests
 {
-    private static final TargetDirectory target = forTest( CommitContentionTests.class );
+    @Rule
+    public final TargetDirectory.TestDirectory storeLocation =
+            TargetDirectory.testDirForTest( CommitContentionTests.class );
 
     final Semaphore semaphore1 = new Semaphore( 1 );
     final Semaphore semaphore2 = new Semaphore( 1 );
     final AtomicReference<Exception> reference = new AtomicReference<>();
-
-    @Rule
-    public TargetDirectory.TestDirectory storeLocation = target.testDirectory();
 
     private GraphDatabaseService db;
 

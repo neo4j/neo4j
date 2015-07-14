@@ -47,13 +47,15 @@ public class IncrementalBackupTests
 
     @Rule
     public TestName testName = new TestName();
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
     private ServerInterface server;
     private GraphDatabaseService db;
 
     @Before
     public void before() throws Exception
     {
-        File base = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
+        File base = testDirectory.directory( testName.getMethodName() );
         serverPath = new File( base, "server" );
         backupPath = new File( base, "backup" );
     }

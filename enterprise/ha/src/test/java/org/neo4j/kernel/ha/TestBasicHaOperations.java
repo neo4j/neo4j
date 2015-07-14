@@ -23,18 +23,17 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.logging.Level;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
-import java.util.logging.Level;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
@@ -44,8 +43,8 @@ public class TestBasicHaOperations
 {
     @Rule
     public LoggerRule logger = new LoggerRule( Level.OFF );
-
-    public TargetDirectory dir = TargetDirectory.forTest( getClass() );
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
     private ClusterManager clusterManager;
 
     @After
@@ -62,7 +61,7 @@ public class TestBasicHaOperations
     public void testBasicFailover() throws Throwable
     {
         // given
-        clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.cleanDirectory( "failover" ), stringMap() );
+        clusterManager = new ClusterManager( clusterOfSize( 3 ), testDirectory.directory( "failover" ), stringMap() );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
@@ -101,7 +100,7 @@ public class TestBasicHaOperations
     {
         // given
         // a cluster of 2
-        clusterManager = new ClusterManager( clusterOfSize( 2 ), dir.cleanDirectory( "propagation" ),
+        clusterManager = new ClusterManager( clusterOfSize( 2 ), testDirectory.directory( "propagation" ),
                 stringMap(HaSettings.tx_push_factor.name(), "1" ) );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
@@ -152,7 +151,7 @@ public class TestBasicHaOperations
     public void testBasicPropagationFromMasterToSlave() throws Throwable
     {
         // given
-        clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.cleanDirectory( "propagation" ),
+        clusterManager = new ClusterManager( clusterOfSize( 3 ), testDirectory.directory( "propagation" ),
                 stringMap( tx_push_factor.name(), "2" ) );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();

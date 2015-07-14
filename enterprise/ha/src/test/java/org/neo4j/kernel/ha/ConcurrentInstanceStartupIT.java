@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -38,13 +39,14 @@ import static org.junit.Assert.assertTrue;
 public class ConcurrentInstanceStartupIT
 {
     public static final int INSTANCE_COUNT = 3;
-    public static TargetDirectory testDirectory = TargetDirectory.forTest( ConcurrentInstanceStartupIT.class );
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void concurrentStartupShouldWork() throws Exception
     {
         // Ensures that the instances don't race to create the test's base directory and only care about their own.
-        testDirectory.cleanDirectory( "nothingToSeeHereMoveAlong" );
+        testDirectory.directory( "nothingToSeeHereMoveAlong" );
         StringBuffer initialHostsBuffer = new StringBuffer( "127.0.0.1:5001" );
         for ( int i = 2; i <= INSTANCE_COUNT; i++ )
         {
@@ -125,6 +127,6 @@ public class ConcurrentInstanceStartupIT
 
     private File path( int i )
     {
-        return testDirectory.cleanDirectory( i + "" );
+        return testDirectory.directory( i + "" );
     }
 }

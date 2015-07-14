@@ -44,13 +44,12 @@ import static org.junit.Assert.assertEquals;
 
 public class RelationshipChainExplorerTest
 {
-    private static final TargetDirectory target = TargetDirectory.forTest( RelationshipChainExplorerTest.class );
     private static final int NDegreeTwoNodes = 10;
 
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
-    public TargetDirectory.TestDirectory storeLocation = target.testDirectory();
+    public TargetDirectory.TestDirectory storeLocation = TargetDirectory.testDirForTest( getClass() );
     private StoreAccess store;
 
     @Before

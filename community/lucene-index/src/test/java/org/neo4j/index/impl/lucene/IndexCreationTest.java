@@ -21,6 +21,7 @@ package org.neo4j.index.impl.lucene;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -68,13 +69,15 @@ import static org.junit.Assert.assertTrue;
  */
 public class IndexCreationTest
 {
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     private GraphDatabaseAPI db;
 
     @Before
     public void before() throws Exception
     {
-        final String dir = TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath();
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( dir );
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
     }
 
     @After

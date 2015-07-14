@@ -88,8 +88,9 @@ public class StoreUpgraderInterruptionTestIT
     public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMigration()
             throws IOException, ConsistencyCheckIncompleteException
     {
-        File workingDirectory = directory.directory();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, workingDirectory );
+        File workingDirectory = directory.directory( "working" );
+        File prepareDirectory = directory.directory( "prepare" );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, workingDirectory, prepareDirectory );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ) );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();

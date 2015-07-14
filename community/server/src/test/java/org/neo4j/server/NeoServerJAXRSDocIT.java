@@ -19,15 +19,13 @@
  */
 package org.neo4j.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
-
-import java.net.URI;
-
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.net.URI;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -40,6 +38,9 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
 public class NeoServerJAXRSDocIT extends ExclusiveServerTestBase
 {
@@ -77,7 +78,7 @@ public class NeoServerJAXRSDocIT extends ExclusiveServerTestBase
         server = CommunityServerBuilder.server()
                 .withThirdPartyJaxRsPackage( "org.dummy.web.service",
                         DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 

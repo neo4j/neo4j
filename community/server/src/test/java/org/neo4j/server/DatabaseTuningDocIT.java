@@ -33,7 +33,6 @@ import static org.junit.Assert.assertEquals;
 
 public class DatabaseTuningDocIT extends ExclusiveServerTestBase
 {
-
     private CommunityNeoServer server;
 
     @Test
@@ -41,7 +40,7 @@ public class DatabaseTuningDocIT extends ExclusiveServerTestBase
     {
         // given
         server = CommunityServerBuilder.server()
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .withDefaultDatabaseTuning()
                 .build();
 
@@ -63,7 +62,7 @@ public class DatabaseTuningDocIT extends ExclusiveServerTestBase
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         server = CommunityServerBuilder.server( logProvider )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .withNonResolvableTuningFile()
                 .build();
 
@@ -82,5 +81,4 @@ public class DatabaseTuningDocIT extends ExclusiveServerTestBase
             server.stop();
         }
     }
-
 }

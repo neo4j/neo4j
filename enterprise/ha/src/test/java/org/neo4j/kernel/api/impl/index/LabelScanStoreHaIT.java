@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -94,14 +95,14 @@ public class LabelScanStoreHaIT
         }
     }
 
-    private static enum Labels implements Label
+    private enum Labels implements Label
     {
         First,
         Second;
     }
 
-    private final File rootDirectory = TargetDirectory.forTest( getClass() ).cleanDirectory( "root" );
-    private ClusterManager clusterManager;
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
     private final LifeSupport life = new LifeSupport();
     private ManagedCluster cluster;
     private final TestMonitor monitor = new TestMonitor();
@@ -112,7 +113,7 @@ public class LabelScanStoreHaIT
         KernelExtensionFactory<?> testExtension = new LuceneLabelScanStoreExtension( 100, monitor );
         HighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
         factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( testExtension ) );
-        clusterManager = new ClusterManager.Builder( rootDirectory )
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "root" ) )
                 .withDbFactory( factory )
                 .withStoreDirInitializer( new ClusterManager.StoreDirInitializer()
         {

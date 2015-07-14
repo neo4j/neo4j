@@ -19,54 +19,58 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.Before;
-import org.junit.Test;
-
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.TargetDirectory;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class TestFileUtils
 {
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     private File path;
-    
+
     @Before
     public void doBefore() throws Exception
     {
-        path = TargetDirectory.forTest( getClass() ).cleanDirectory( "path" );
+        path = testDirectory.directory( "path" );
     }
-    
+
     @Test
     public void moveFileToDirectory() throws Exception
     {
         File file = touchFile( "source" );
         File targetDir = directory( "dir" );
-        
+
         File newLocationOfFile = FileUtils.moveFileToDirectory( file, targetDir );
         assertTrue( newLocationOfFile.exists() );
         assertFalse( file.exists() );
         assertEquals( newLocationOfFile, targetDir.listFiles()[0] );
     }
-    
+
     @Test
     public void moveFile() throws Exception
     {
         File file = touchFile( "source" );
         File targetDir = directory( "dir" );
-        
+
         File newLocationOfFile = new File( targetDir, "new-name" );
         FileUtils.moveFile( file, newLocationOfFile );
         assertTrue( newLocationOfFile.exists() );
         assertFalse( file.exists() );
         assertEquals( newLocationOfFile, targetDir.listFiles()[0] );
     }
-    
+
     private File directory( String name ) throws IOException
     {
         File dir = new File( path, name );

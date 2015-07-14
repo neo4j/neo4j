@@ -19,7 +19,9 @@
  */
 package org.neo4j.graphalgo.path;
 
+import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -30,30 +32,25 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.test.TargetDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.graphalgo.CommonEvaluators.doubleCostEvaluator;
 import static org.neo4j.graphalgo.GraphAlgoFactory.aStar;
 import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
-import static org.neo4j.test.TargetDirectory.forTest;
 
 @Ignore( "Not a test, just nice to have" )
 public class AStarPerformanceIT
 {
-    private static final boolean REBUILD = true;
+    private File directory;
 
-    private final File directory;
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
-    public AStarPerformanceIT()
+    @Before
+    public void setup()
     {
-        if (REBUILD)
-        {
-            directory = forTest( getClass() ).cleanDirectory( "graph-db" );
-        }
-        else
-        {
-            directory = forTest( getClass() ).existingDirectory( "graph-db" );
-        }
+        directory = testDirectory.directory( "graph-db" );
     }
 
     @Test
@@ -61,24 +58,21 @@ public class AStarPerformanceIT
     {
         // GIVEN
         int numberOfNodes = 200000;
-        if ( REBUILD )
-        {
-            GeoDataGenerator generator = new GeoDataGenerator( numberOfNodes, 5d, 1000, 1000 );
-            generator.generate( directory );
-        }
+        GeoDataGenerator generator = new GeoDataGenerator( numberOfNodes, 5d, 1000, 1000 );
+        generator.generate( directory );
 
         // WHEN
-        long[][] points = new long[][] {
-                new long[] {9415, 158154},
-                new long[] {89237, 192863},
-                new long[] {68072, 150484},
-                new long[] {186309, 194495},
-                new long[] {152097, 99289},
-                new long[] {92150, 161182},
-                new long[] {188446, 115873},
-                new long[] {85033, 7772},
-                new long[] {291, 86707},
-                new long[] {188345, 158468}
+        long[][] points = new long[][]{
+                new long[]{9415, 158154},
+                new long[]{89237, 192863},
+                new long[]{68072, 150484},
+                new long[]{186309, 194495},
+                new long[]{152097, 99289},
+                new long[]{92150, 161182},
+                new long[]{188446, 115873},
+                new long[]{85033, 7772},
+                new long[]{291, 86707},
+                new long[]{188345, 158468}
         };
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.getAbsolutePath() );
         PathFinder<WeightedPath> algo = aStar( allTypesAndDirections(),

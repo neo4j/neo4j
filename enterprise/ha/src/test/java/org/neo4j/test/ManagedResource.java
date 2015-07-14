@@ -44,7 +44,7 @@ public abstract class ManagedResource<R> implements TestRule
     @Override
     public final Statement apply( final Statement base, Description description )
     {
-        final TargetDirectory.TestDirectory dir = TargetDirectory.forTest( description.getTestClass() ).testDirectory();
+        final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( description.getTestClass() );
         return dir.apply( new Statement()
         {
             @Override

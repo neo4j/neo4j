@@ -26,13 +26,12 @@ import java.io.File;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -48,19 +47,19 @@ public class TestDenseNodeRelChainPositionIT
     @Test
     public void givenDenseNodeWhenAskForWrongDirectionThenIncorrectNrOfRelsReturned() throws Exception
     {
+        // Given
         final int denseNodeThreshold =
                 Integer.parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() )
                 + 1 // We must be over the dense node threshold for the bug to manifest
                 ;
 
-        File dbPath = TargetDirectory.forTest( getClass() )
-                .cleanDirectory( "givenDenseNodeWhenAskForWrongDirectionThenIncorrectNrOfRelsReturned" );
-        // Given
-        GraphDatabaseAPI db = cleanup.add( (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder(
-                dbPath.getAbsolutePath() ).newGraphDatabase() );
+        File dbPath = testDir.graphDbDir();
+
+        GraphDatabaseService db =
+                new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dbPath ).newGraphDatabase();
 
         Node node1;
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             node1 = db.createNode();
             Node node2 = db.createNode();
@@ -80,10 +79,11 @@ public class TestDenseNodeRelChainPositionIT
             Iterable<Relationship> rels = node1b.getRelationships( Direction.INCOMING );
             assertEquals( 0, Iterables.count( rels ) );
 
-            Iterable<Relationship> rels2 = node1b.getRelationships( Direction.OUTGOING);
-            assertEquals(denseNodeThreshold, Iterables.count( rels2 ) );
+            Iterable<Relationship> rels2 = node1b.getRelationships( Direction.OUTGOING );
+            assertEquals( denseNodeThreshold, Iterables.count( rels2 ) );
         }
     }
 
-    public final @Rule CleanupRule cleanup = new CleanupRule();
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 }

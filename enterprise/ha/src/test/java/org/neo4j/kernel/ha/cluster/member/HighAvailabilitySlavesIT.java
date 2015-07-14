@@ -19,14 +19,10 @@
  */
 package org.neo4j.kernel.ha.cluster.member;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -35,22 +31,29 @@ import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+
 public class HighAvailabilitySlavesIT
 {
-    private final TargetDirectory DIR = TargetDirectory.forTest( getClass() );
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
     private ClusterManager clusterManager;
-    
+
     @After
     public void after() throws Throwable
     {
         clusterManager.stop();
     }
-    
+
     @Test
     public void transactionsGetsPushedToSlaves() throws Throwable
     {
         // given
-        clusterManager = new ClusterManager( clusterOfSize( 3 ), DIR.cleanDirectory( "dbs" ),
+        clusterManager = new ClusterManager( clusterOfSize( 3 ), testDirectory.directory( "dbs" ),
                 stringMap( tx_push_factor.name(), "2" ) );
         clusterManager.start();
         ManagedCluster cluster = clusterManager.getDefaultCluster();

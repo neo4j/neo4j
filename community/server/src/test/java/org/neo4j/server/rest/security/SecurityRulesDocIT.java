@@ -19,19 +19,14 @@
  */
 package org.neo4j.server.rest.security;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-import java.net.URI;
-
-import javax.ws.rs.core.MediaType;
-
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.net.URI;
+import javax.ws.rs.core.MediaType;
+
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
@@ -41,6 +36,11 @@ import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class SecurityRulesDocIT extends ExclusiveServerTestBase
 {
@@ -69,9 +69,9 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
      * @@config
      *
      * with the rule source code of:
-     * 
+     *
      * @@failingRule
-     * 
+     *
      * With this rule registered, any access to the server will be
      * denied. In a production-quality implementation the rule
      * will likely lookup credentials/claims in a 3rd-party
@@ -86,7 +86,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     {
         server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyFailingSecurityRule.class.getCanonicalName() )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         gen.get().addSnippet(
@@ -112,7 +112,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyFailingSecurityRule.class.getCanonicalName(),
                 PermanentlyPassingSecurityRule.class.getCanonicalName() )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
@@ -132,7 +132,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 NoAccessToDatabaseSecurityRule.class.getCanonicalName(),
                 NoAccessToWebAdminSecurityRule.class.getCanonicalName() )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
@@ -153,7 +153,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     {
         server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
                 PermanentlyPassingSecurityRule.class.getCanonicalName() )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
@@ -174,11 +174,11 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
      * URIs like `/users/fred/type/premium`.
      *
      * @@config
-     * 
+     *
      * with the rule source code of:
-     * 
+     *
      * @@failingRuleWithWildcardPath
-     * 
+     *
      * With this rule registered, any access to URIs under /protected/ will be
      * denied by the server. Using wildcards allows flexible targeting of security rules to
      * arbitrary parts of the server's API, including any unmanaged extensions or managed
@@ -196,7 +196,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
                         mountPoint )
                 .withSecurityRules(
                         PermanentlyFailingSecurityRuleWithWildcardPath.class.getCanonicalName() )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 
@@ -230,9 +230,9 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
      * The config looks like this:
      *
      * @@config
-     * 
+     *
      * with the rule source code of:
-     * 
+     *
      * @@failingRuleWithComplexWildcardPath
      */
     @Test
@@ -248,7 +248,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
                         mountPoint )
                 .withSecurityRules(
                         PermanentlyFailingSecurityRuleWithComplexWildcardPath.class.getCanonicalName() )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         gen.get().addSnippet(

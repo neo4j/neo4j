@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.rrd;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,6 +27,10 @@ import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.RrdDef;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -44,11 +44,11 @@ import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.lang.Double.NaN;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
+import static java.lang.Double.NaN;
 
 import static org.neo4j.test.SuppressOutput.suppressAll;
 
@@ -57,18 +57,15 @@ public class RrdFactoryTest
     private Config config;
     private Database db;
 
-    TargetDirectory target = TargetDirectory.forTest( RrdFactoryTest.class );
-
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = target.testDirectory();
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
     @Rule
     public SuppressOutput suppressOutput = suppressAll();
 
     @Before
     public void setUp() throws IOException
     {
-        db = new WrappedDatabase( new ImpermanentGraphDatabase(
-                TargetDirectory.forTest( getClass() ).cleanDirectory( "rrd" ) ) );
+        db = new WrappedDatabase( new ImpermanentGraphDatabase( testDirectory.directory( "rrd" ) ) );
         config = new Config();
     }
 

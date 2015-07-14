@@ -107,7 +107,7 @@ public class ConsistencyCheckToolTest
     {
         // given
         File storeDir = storeDirectory.directory();
-        File propertyFile = TargetDirectory.forTest( getClass() ).file( "neo4j.properties" );
+        File propertyFile = storeDirectory.file( "neo4j.properties" );
         Properties properties = new Properties();
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         properties.store( new FileWriter( propertyFile ), null );
@@ -151,7 +151,7 @@ public class ConsistencyCheckToolTest
     public void exitWithFailureIfConfigSpecifiedButPropertiesFileDoesNotExist() throws Exception
     {
         // given
-        File propertyFile = TargetDirectory.forTest( getClass() ).file( "nonexistent_file" );
+        File propertyFile = storeDirectory.file( "nonexistent_file" );
         String[] args = {storeDirectory.directory().getPath(), "-config", propertyFile.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
         PrintStream systemOut = mock( PrintStream.class );

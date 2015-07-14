@@ -58,7 +58,7 @@ public class LegacyIndexIT extends ExclusiveServerTestBase
         server = server().withHttpsEnabled()
                 .withProperty( "remote_shell_enabled", "false" )
                 .withProperty( "dbms.security.auth_enabled", "false" )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
     }
 

@@ -35,10 +35,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.BatchTransaction;
 import org.neo4j.test.EmbeddedDatabaseRule;
-import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -78,8 +76,7 @@ public class CreateAndLoadDenseNodeIT
     }
 
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule(
-            TargetDirectory.forTest( getClass() ).makeGraphDbDir() );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
     private GraphDatabaseService db;
 
     @Before
