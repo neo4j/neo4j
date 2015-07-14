@@ -158,7 +158,7 @@ public class TestGraphProperties
     @Test
     public void firstRecordOtherThanZeroIfNotFirst() throws Exception
     {
-        File storeDir = new File( "/store/dir" );
+        File storeDir = new File( "/store/dir" ).getAbsoluteFile();
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
         Transaction tx = db.beginTx();
         Node node = db.createNode();
