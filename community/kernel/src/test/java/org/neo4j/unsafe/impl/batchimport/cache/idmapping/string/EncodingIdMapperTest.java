@@ -47,6 +47,7 @@ import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.Monitor;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.Comparator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
@@ -548,9 +549,19 @@ public class EncodingIdMapperTest
         }
     }
 
+    private List<Object> ids( Object... ids )
+    {
+        return Arrays.asList( ids );
+    }
+
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, Monitor monitor )
     {
-        return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, 1_000, processors );
+        return mapper( encoder, radix, monitor, ParallelSort.DEFAULT );
+    }
+
+    private IdMapper mapper( Encoder encoder, Factory<Radix> radix, Monitor monitor, Comparator comparator )
+    {
+        return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, 1_000, processors, comparator );
     }
 
     private class ValueGenerator implements InputIterable<Object>
@@ -733,6 +744,6 @@ public class EncodingIdMapperTest
         abstract Factory<Object> data( Random random );
     }
 
-    public final @Rule RandomRule random = new RandomRule();
+    public final @Rule RandomRule random = new RandomRule().withSeed( 1436724681847L );
     public final @Rule RepeatRule repeater = new RepeatRule();
 }
