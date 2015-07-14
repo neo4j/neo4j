@@ -17,21 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3
+package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.{InequalitySeekRange, ExecutionContext, InternalException}
 
-/**
- * Comparer is a trait that enables it's subclasses to compare to AnyRef with each other.
- */
-trait Comparer extends StringHelper {
+case class ValueExpressionSeekRange(range: InequalitySeekRange[Expression])
+  extends Expression {
 
-  def compare(l: Any, r: Any)(implicit qtx: QueryState): Int =
-    try {
-      CypherValueOrdering.compare(l, r)
-    } catch {
-      case _: IllegalArgumentException =>
-        throw new IncomparableValuesException(textWithType(l), textWithType(r))
-    }
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = throw new
+      InternalException("This should never be called")
+
+  override def rewrite(f: (Expression) => Expression): Expression = f(this)
+
+  override def arguments: Seq[Expression] = Seq.empty
+
+  override protected def calculateType(symbols: SymbolTable): CypherType = CTAny
+
+  override def symbolTableDependencies: Set[String] = Set.empty
 }

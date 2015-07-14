@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringSeekRange
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{InclusiveBound, LowerBounded}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
-import org.neo4j.cypher.internal.compiler.v2_3.{EntityNotFoundException, FailedIndexException}
+import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{MandatoryPropertyConstraint, UniquenessConstraint}
@@ -134,11 +134,99 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
 
   def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
-    case StringSeekRange(LowerBounded(InclusiveBound(prefix))) =>
-      val indexedNodes = statement.readOperations().nodesGetFromIndexSeekByPrefix(index, prefix)
-      JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
+
+    case PrefixRange(prefix) =>
+      indexSeekByPrefixRange(index, prefix)
+
+    case range: InequalitySeekRange[Any] =>
+      val groupedRanges = range.groupBy { (bound: Bound[Any]) =>
+        bound.endPoint match {
+          case n: Number => classOf[Number]
+          case s: String => classOf[String]
+          case c: Character => classOf[String]
+          case _ => classOf[Any]
+        }
+      }
+
+      val optNumericRange = groupedRanges.get(classOf[Number]).map(_.asInstanceOf[InequalitySeekRange[Number]])
+      val optStringRange = groupedRanges.get(classOf[String]).map(_.mapBounds(_.toString))
+      val anyRange = groupedRanges.get(classOf[Any])
+
+      if (anyRange.nonEmpty) {
+        // If we get back an exclusion test, the range could return values otherwise it is empty
+        anyRange.get.inclusionTest[Any](CypherValueOrdering).map { test =>
+          throw new IllegalArgumentException("Cannot compare a property against values that are neither strings nor numbers.")
+        }.getOrElse(Iterator.empty)
+      } else {
+        (optNumericRange, optStringRange) match {
+          case (Some(numericRange), None) => indexSeekByNumericalRange(index, numericRange)
+          case (None, Some(stringRange)) => indexSeekByStringRange(index, stringRange)
+
+          case (Some(numericRange), Some(stringRange)) =>
+            val numericResults = indexSeekByNumericalRange(index, numericRange)
+            val stringResults = indexSeekByStringRange(index, stringRange)
+
+            // Consider MATCH (n:Person) WHERE n.prop < 1 AND n.prop > "London":
+            // The order of predicate evaluation is unspecified, i.e.
+            // LabelScan fby Filter(n.prop < 1) fby Filter(n.prop > "London) is a valid plan
+            // If the first filter returns no results, the plan returns no results.
+            // If the first filter returns any result, the following filter will fail since
+            // comparing string against numbers throws an exception. Same for the reverse case.
+            //
+            // Below we simulate this behaviour:
+            //
+            if (numericResults.isEmpty || stringResults.isEmpty) {
+              Iterator.empty
+            } else {
+              throw throw new IllegalArgumentException(s"Cannot compare a property against both numbers and strings. They are incomparable.")
+            }
+
+          case (None, None) =>
+            // If we get here, the non-empty list of range bounds was partitioned into two empty ones
+            throw new ThisShouldNotHappenError("Stefan", "Failed to partition range bounds")
+        }
+      }
+
     case range =>
       throw new InternalException(s"Unsupported index seek by range: $range")
+  }
+
+  def indexSeekByPrefixRange(index: IndexDescriptor, prefix: String): scala.Iterator[Node] = {
+    val indexedNodes = statement.readOperations().nodesGetFromIndexSeekByPrefix(index, prefix)
+    JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
+  }
+
+  def indexSeekByNumericalRange(index: IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = {
+    val allNodesInIndex = JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
+    val readOps = statement.readOperations()
+    val propertyKeyId = index.getPropertyKeyId
+    range.inclusionTest[Any](CypherValueOrdering).map {
+      case test =>
+        allNodesInIndex.filter { (node: Node) =>
+          val nodeId = node.getId
+          readOps.nodeGetProperty(nodeId, propertyKeyId) match {
+            case n: Number => test(n)
+            case _ => false
+          }
+        }
+    }.getOrElse(Iterator.empty)
+  }
+
+  def indexSeekByStringRange(index: IndexDescriptor, range: InequalitySeekRange[String]): scala.Iterator[Node] = {
+    val allNodesInIndex = JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
+    val readOps = statement.readOperations()
+    val propertyKeyId = index.getPropertyKeyId
+    range.inclusionTest[Any](CypherValueOrdering).map {
+      case test =>
+        allNodesInIndex.filter { (node: Node) =>
+          val nodeId = node.getId
+          readOps.nodeGetProperty(nodeId, propertyKeyId) match {
+            case s: String => test(s)
+            case c: Character => test(c)
+            case _ => false
+          }
+        }
+    }.getOrElse(Iterator.empty)
   }
 
   def indexScan(index: IndexDescriptor) =

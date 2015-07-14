@@ -19,19 +19,37 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+// Tested by SeekRangeTest
+sealed trait BoundOrdering[T] extends Ordering[Bound[T]] {
+  def inner: Ordering[T]
 
-/**
- * Comparer is a trait that enables it's subclasses to compare to AnyRef with each other.
- */
-trait Comparer extends StringHelper {
+  override def compare(x: Bound[T], y: Bound[T]): Int = {
+    val lhs = x.endPoint
+    val rhs = y.endPoint
 
-  def compare(l: Any, r: Any)(implicit qtx: QueryState): Int =
-    try {
-      CypherValueOrdering.compare(l, r)
-    } catch {
-      case _: IllegalArgumentException =>
-        throw new IncomparableValuesException(textWithType(l), textWithType(r))
-    }
+    val cmp =
+      if (lhs == null) {
+        if (rhs == null) 0 else flip(-1)
+      } else if (rhs == null) {
+        flip(+1)
+      } else {
+        inner.compare(lhs, rhs)
+      }
+
+    if (cmp == 0)
+      flip(Ordering.Boolean.compare(x.isInclusive, y.isInclusive))
+    else
+      cmp
+  }
+
+  def flip(cmp: Int): Int
 }
+
+final case class MinBoundOrdering[T](inner: Ordering[T]) extends BoundOrdering[T] {
+  def flip(cmp: Int): Int = cmp
+}
+
+final case class MaxBoundOrdering[T](inner: Ordering[T]) extends BoundOrdering[T] {
+  def flip(cmp: Int): Int = -cmp
+}
+

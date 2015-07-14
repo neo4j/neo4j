@@ -17,19 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_3.ast
 
-sealed trait SeekRange[V]
-final case class LowerBounded[V](lower: Bound[V]) extends SeekRange[V]
-final case class Between[V](lower: Bound[V], upper: Bound[V]) extends SeekRange[V]
+import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_3._
 
-sealed trait Bound[V] {
-  def endPoint: V
+case class StringSeekRangeWrapper(range: SeekRange[String])(val position: InputPosition) extends Expression {
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }
 
-final case class InclusiveBound[V](endPoint: V) extends Bound[V]
-final case class ExclusiveBound[V](endPoint: V) extends Bound[V]
-
-
-
+case class ValueExpressionSeekRangeWrapper(range: InequalitySeekRange[Expression])(val position: InputPosition) extends Expression {
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+}
 

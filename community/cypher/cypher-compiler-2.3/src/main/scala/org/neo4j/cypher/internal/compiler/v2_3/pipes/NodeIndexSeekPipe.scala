@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{StringSeekRange, Expression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{ValueExpressionSeekRange, Expression, StringSeekRange}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{QueryExpression, RangeQueryExpression, indexQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabel, ReadsNodeProperty, ReadsNodes}
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Index, RangeIndex}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{InequalityIndex, Index, PrefixIndex}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LowerBounded
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.{CTNode, SymbolTable}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -59,9 +58,22 @@ case class NodeIndexSeekPipe(ident: String,
     val indexDesc = indexMode match {
       case IndexSeekByRange | UniqueIndexSeekByRange =>
         valueExpr match {
-          case RangeQueryExpression(StringSeekRange(LowerBounded(lower))) =>
-            RangeIndex(label.name, propertyKey.name, lower.endPoint)
-          case _ => throw new InternalException("This should never happen.")
+          case RangeQueryExpression(StringSeekRange(PrefixRange(prefix))) =>
+            PrefixIndex(label.name, propertyKey.name, prefix)
+
+          case RangeQueryExpression(ValueExpressionSeekRange(RangeLessThan(bounds))) =>
+            InequalityIndex(label.name, propertyKey.name, bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toSeq)
+
+          case RangeQueryExpression(ValueExpressionSeekRange(RangeGreaterThan(bounds))) =>
+            InequalityIndex(label.name, propertyKey.name, bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toSeq)
+
+          case RangeQueryExpression(ValueExpressionSeekRange(RangeBetween(greaterThanBounds, lessThanBounds))) =>
+            val greaterThanBoundsText = greaterThanBounds.bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toSeq
+            val lessThanBoundsText = lessThanBounds.bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toSeq
+            InequalityIndex(label.name, propertyKey.name, greaterThanBoundsText ++ lessThanBoundsText)
+
+          case _ =>
+            throw new InternalException("This should never happen. Missing a case?")
         }
       case IndexSeek | UniqueIndexSeek => Index(label.name, propertyKey.name)
       case _ => throw new InternalException("This should never happen. Missing a case?")

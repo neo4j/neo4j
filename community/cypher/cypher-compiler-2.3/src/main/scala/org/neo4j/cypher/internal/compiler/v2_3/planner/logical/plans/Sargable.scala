@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Equals, _}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
-import org.neo4j.cypher.internal.compiler.v2_3.functions
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{Many, One, Zero, ZeroOneOrMany}
+import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.helpers._
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{LikePatternOp, LikePatternParser, MatchText, WildcardLikePatternOp}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
 
@@ -83,10 +83,19 @@ object AsStringRangeSeekable {
     val ops: List[LikePatternOp] = LikePatternParser(literal).compact.ops
     ops match {
       case MatchText(prefix) :: (_: WildcardLikePatternOp) :: tl =>
-        Some(LowerBounded(InclusiveBound(prefix)) -> s"$prefix%")
+        Some(PrefixRange(prefix) -> s"$prefix%")
       case _ =>
         None
     }
+  }
+}
+
+object AsValueRangeSeekable {
+  def unapply(v: Any): Option[ValueRangeSeekable] = v match {
+    case inequalities@AndedPropertyInequalities(ident, prop, _) =>
+      Some(ValueRangeSeekable(ident, prop.propertyKey, inequalities))
+    case _ =>
+      None
   }
 }
 
@@ -97,28 +106,54 @@ sealed trait Sargable[T <: Expression] {
   def name = ident.name
 }
 
-sealed trait Seekable[T <: Expression, A] extends Sargable[T] {
-
-  def args: A
+sealed trait Seekable[T <: Expression] extends Sargable[T] {
+  def dependencies: Set[Identifier]
 }
 
-sealed trait EqualitySeekable[T <: Expression] extends Seekable[T, SeekableArgs]
+sealed trait EqualitySeekable[T <: Expression] extends Seekable[T] {
+  def args: SeekableArgs
+}
 
 case class IdSeekable(expr: FunctionInvocation, ident: Identifier, args: SeekableArgs)
-  extends EqualitySeekable[FunctionInvocation]
+  extends EqualitySeekable[FunctionInvocation] {
+
+  def dependencies = args.dependencies
+}
 
 case class PropertySeekable(expr: Property, ident: Identifier, args: SeekableArgs)
   extends EqualitySeekable[Property] {
 
   def propertyKey = expr.propertyKey
+  def dependencies = args.dependencies
 }
 
-case class StringRangeSeekable(range: SeekRange[String], expr: Like, ident: Identifier, propertyKey: PropertyKeyName)
-  extends Seekable[Like, LikePattern] {
+sealed trait RangeSeekable[T <: Expression, V] extends Seekable[T] {
+  def range: SeekRange[V]
+}
 
-  val args = expr.pattern
+case class StringRangeSeekable(override val range: SeekRange[String], expr: Like, ident: Identifier, propertyKey: PropertyKeyName)
+  extends RangeSeekable[Like, String] {
 
-  def asQueryExpression: QueryExpression[Expression] = RangeQueryExpression(StringSeekRange(range)(expr.rhs.position))
+  def dependencies = Set.empty
+
+  def asQueryExpression: QueryExpression[Expression] = RangeQueryExpression(StringSeekRangeWrapper(range)(expr.rhs.position))
+}
+
+case class ValueRangeSeekable(ident: Identifier, propertyKeyName: PropertyKeyName, expr: AndedPropertyInequalities)
+  extends RangeSeekable[AndedPropertyInequalities, Expression] {
+
+  def dependencies = expr.inequalities.map(_.dependencies).toSet.flatten
+
+  def range: InequalitySeekRange[Expression] =
+    InequalitySeekRange.fromPartitionedBounds(expr.inequalities.partition {
+      case GreaterThan(_, value) => Left(ExclusiveBound(value))
+      case GreaterThanOrEqual(_, value) => Left(InclusiveBound(value))
+      case LessThan(_, value) => Right(ExclusiveBound(value))
+      case LessThanOrEqual(_, value) => Right(InclusiveBound(value))
+    })
+
+  def asQueryExpression: QueryExpression[Expression] =
+    RangeQueryExpression(ValueExpressionSeekRangeWrapper(range)(ident.position))
 }
 
 sealed trait Scannable[T <: Expression] extends Sargable[T]

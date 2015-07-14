@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.compiler.v2_3.{PrefixRange, LabelId, PropertyKeyId}
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -40,7 +40,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         "a",
         LabelToken("Person", LabelId(0)),
         PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
-        RangeQueryExpression(StringSeekRange(LowerBounded(InclusiveBound("prefix"))) _),
+        RangeQueryExpression(StringSeekRangeWrapper(PrefixRange("prefix")) _),
         Set.empty)(solved)
     )
   }
@@ -69,7 +69,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                   "a",
                   LabelToken("Person", LabelId(0)),
                   PropertyKeyToken(PropertyKeyName("lastname") _, PropertyKeyId(1)),
-                  RangeQueryExpression(StringSeekRange(LowerBounded(InclusiveBound("longer"))) _),
+                  RangeQueryExpression(StringSeekRangeWrapper(PrefixRange("longer")) _),
                   Set.empty)(solved)
       )(solved))
   }
@@ -87,7 +87,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                   "a",
                   LabelToken("Person", LabelId(0)),
                   PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
-                  RangeQueryExpression(StringSeekRange(LowerBounded(InclusiveBound("longer"))) _),
+                  RangeQueryExpression(StringSeekRangeWrapper(PrefixRange("longer")) _),
                   Set.empty)(solved)
       )(solved))
   }
@@ -103,7 +103,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           "a",
           LabelToken("Person", LabelId(0)),
           PropertyKeyToken(PropertyKeyName("name") _, PropertyKeyId(0)),
-          RangeQueryExpression(StringSeekRange(LowerBounded(InclusiveBound("prefix"))) _),
+          RangeQueryExpression(StringSeekRangeWrapper(PrefixRange("prefix")) _),
           Set.empty)(solved)
       )(solved)
     )

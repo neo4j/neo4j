@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabe
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CastSupport, CollectionSupport, IsCollection}
 import org.neo4j.cypher.internal.compiler.v2_3.parser.ParsedLikePattern
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.SeekRange
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.graphdb._
 

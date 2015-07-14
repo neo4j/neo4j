@@ -17,13 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.ast
+package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.SeekRange
-import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, SemanticCheck, SemanticCheckResult}
+sealed trait Bound[+V] {
+  def endPoint: V
+  def inequalitySignSuffix: String
 
-case class StringSeekRange(range: SeekRange[String])(val position: InputPosition) extends Expression {
+  def map[P](f: V => P): Bound[P]
 
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+  def isInclusive: Boolean
+}
+
+final case class InclusiveBound[+V](endPoint: V) extends Bound[V] {
+  val inequalitySignSuffix = "="
+
+  override def map[P](f: V => P): InclusiveBound[P] = copy(endPoint = f(endPoint))
+
+  def isInclusive: Boolean = true
+}
+
+final case class ExclusiveBound[+V](endPoint: V) extends Bound[V] {
+  val inequalitySignSuffix = ""
+
+  override def map[P](f: V => P): ExclusiveBound[P] = copy(endPoint = f(endPoint))
+
+  def isInclusive: Boolean = false
 }

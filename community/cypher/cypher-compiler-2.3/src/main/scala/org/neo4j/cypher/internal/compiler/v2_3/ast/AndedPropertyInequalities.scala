@@ -17,21 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3
+package org.neo4j.cypher.internal.compiler.v2_3.ast
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 
-/**
- * Comparer is a trait that enables it's subclasses to compare to AnyRef with each other.
- */
-trait Comparer extends StringHelper {
+case class AndedPropertyInequalities(identifier: Identifier, property: Property, inequalities: NonEmptyList[InequalityExpression]) extends Expression {
+  def position = identifier.position
 
-  def compare(l: Any, r: Any)(implicit qtx: QueryState): Int =
-    try {
-      CypherValueOrdering.compare(l, r)
-    } catch {
-      case _: IllegalArgumentException =>
-        throw new IncomparableValuesException(textWithType(l), textWithType(r))
-    }
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    inequalities.map(_.semanticCheck(ctx)).reduceLeft(_ chain _)
 }

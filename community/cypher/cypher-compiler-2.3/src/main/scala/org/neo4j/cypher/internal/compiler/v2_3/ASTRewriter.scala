@@ -48,7 +48,7 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, shouldEx
       normalizeMatchPredicates,
       normalizeNotEquals,
       enableCondition(containsNoNodesOfType[NotEquals]),
-      normalizeEqualsArgumentOrder,
+      normalizeArgumentOrder,
       enableCondition(normalizedEqualsArguments),
       addUniquenessPredicates,
       isolateAggregation,

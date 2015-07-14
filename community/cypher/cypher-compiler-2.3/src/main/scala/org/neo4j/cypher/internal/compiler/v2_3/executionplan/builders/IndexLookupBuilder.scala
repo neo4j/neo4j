@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import commands._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{StringSeekRange, Expression, Identifier, Property}
-import executionplan._
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{ParsedLikePattern, WildcardLikePatternOp, MatchText}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{InclusiveBound, LowerBounded}
-import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_3.commands._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Identifier, Property, StringSeekRange}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
+import org.neo4j.cypher.internal.compiler.v2_3.parser.{MatchText, ParsedLikePattern, WildcardLikePatternOp}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.PipeMonitor
+import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 
 class IndexLookupBuilder extends PlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) =
@@ -84,7 +83,7 @@ class IndexLookupBuilder extends PlanBuilder {
         ParsedLikePattern(MatchText(prefix) :: (_: WildcardLikePatternOp) :: tl),
         caseInsensitive)
       ) if !caseInsensitive && id == hint.identifier && prop.name == hint.property =>
-        val range = StringSeekRange(LowerBounded(InclusiveBound(prefix)))
+        val range = StringSeekRange(PrefixRange(prefix))
         (predicate, RangeQueryExpression(range))
     }
 

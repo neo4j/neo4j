@@ -19,19 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+object CypherValueOrdering extends Ordering[Any] {
 
-/**
- * Comparer is a trait that enables it's subclasses to compare to AnyRef with each other.
- */
-trait Comparer extends StringHelper {
-
-  def compare(l: Any, r: Any)(implicit qtx: QueryState): Int =
-    try {
-      CypherValueOrdering.compare(l, r)
-    } catch {
-      case _: IllegalArgumentException =>
-        throw new IncomparableValuesException(textWithType(l), textWithType(r))
-    }
+  override def compare(x: Any, y: Any) = (x, y) match {
+    case (null, null) => 0
+    case (null, _) => +1
+    case (_, null) => -1
+    case (l: Number, r: Number) => CypherNumberOrdering.compare(l, r)
+    case (l: String, r: String) => l.compareTo(r)
+    case (l: Character, r: String) => l.toString.compareTo(r)
+    case (l: String, r: Character) => l.compareTo(r.toString)
+    case (l: Character, r: Character) => Character.compare(l, r)
+    case _ => throw new IllegalArgumentException(s"Cannot compare '$x' with '$y'. They are incomparable.")
+  }
 }
