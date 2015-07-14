@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -72,10 +71,5 @@ public class CurrentDatabase
             }
         }
         return true;
-    }
-
-    public static Collection<String> fileNames()
-    {
-        return fileNamesToTypeDescriptors.keySet();
     }
 }

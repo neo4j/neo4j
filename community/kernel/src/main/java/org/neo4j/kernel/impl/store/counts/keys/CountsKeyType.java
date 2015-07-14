@@ -29,19 +29,4 @@ public enum CountsKeyType
     {
         this.code = (byte) code;
     }
-
-    public static CountsKeyType fromCode( byte code )
-    {
-        switch ( code )
-        {
-            case 0: return EMPTY;
-            case 2: return ENTITY_NODE;
-            case 3: return ENTITY_RELATIONSHIP;
-            case 4: return INDEX_STATISTICS;
-            case 5: return INDEX_SAMPLE;
-
-            default:
-                throw new IllegalArgumentException( "Invalid counts record type code: " + code );
-        }
-    }
 }

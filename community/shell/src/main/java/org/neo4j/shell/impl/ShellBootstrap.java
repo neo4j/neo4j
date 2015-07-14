@@ -19,15 +19,11 @@
  */
 package org.neo4j.shell.impl;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.rmi.server.RemoteObject;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -75,35 +71,6 @@ public class ShellBootstrap implements Serializable
         return new sun.misc.BASE64Encoder().encode( os.toByteArray() );
     }
 
-    static String serializeStub( Remote obj )
-    {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        try
-        {
-            ObjectOutputStream oos = new ObjectOutputStream( os );
-            oos.writeObject( RemoteObject.toStub( obj ) );
-            oos.close();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Broken implementation!", e );
-        }
-        return new sun.misc.BASE64Encoder().encode( os.toByteArray() );
-    }
-
-    static ShellBootstrap deserialize( String data )
-    {
-        try
-        {
-            return (ShellBootstrap) new ObjectInputStream( new ByteArrayInputStream(
-                    new sun.misc.BASE64Decoder().decodeBuffer( data ) ) ).readObject();
-        }
-        catch ( Exception e )
-        {
-            return null;
-        }
-    }
-
     @SuppressWarnings("boxing")
     GraphDatabaseShellServer load( GraphDatabaseAPI graphDb ) throws RemoteException
     {
@@ -112,11 +79,6 @@ public class ShellBootstrap implements Serializable
             return null;
         }
         return enable( new GraphDatabaseShellServer( graphDb, read_only ) );
-    }
-
-    void visit( GraphDatabaseShellServer state )
-    {
-        // TODO: use for Registry-less connection
     }
 
     public GraphDatabaseShellServer enable( GraphDatabaseShellServer server ) throws RemoteException

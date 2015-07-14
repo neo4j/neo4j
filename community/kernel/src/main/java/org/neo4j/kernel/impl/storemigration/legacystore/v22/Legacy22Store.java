@@ -21,12 +21,10 @@ package org.neo4j.kernel.impl.storemigration.legacystore.v22;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 
 /**
@@ -68,16 +66,6 @@ public class Legacy22Store implements LegacyStore
     public File getStorageFileName()
     {
         return storageFileName;
-    }
-
-    public static long getUnsignedInt( ByteBuffer buf )
-    {
-        return buf.getInt() & 0xFFFFFFFFL;
-    }
-
-    protected static long longFromIntAndMod( long base, long modifier )
-    {
-        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
     }
 
     @Override

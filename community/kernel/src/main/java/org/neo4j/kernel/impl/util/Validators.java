@@ -32,18 +32,6 @@ import org.neo4j.kernel.impl.storemigration.StoreFileType;
 
 public class Validators
 {
-    public static final Validator<File> FILE_EXISTS = new Validator<File>()
-    {
-        @Override
-        public void validate( File file )
-        {
-            if ( !file.exists() )
-            {
-                throw new IllegalArgumentException( "File '" + file + "' doesn't exist" );
-            }
-        }
-    };
-
     public static final Validator<File> REGEX_FILE_EXISTS = new Validator<File>()
     {
         @Override

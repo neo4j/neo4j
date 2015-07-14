@@ -64,7 +64,7 @@ public class StoreAccess
     private final CountsAccessor counts;
     // internal state
     private boolean closeable;
-    private NeoStore neoStore;
+    private final NeoStore neoStore;
 
     public StoreAccess( GraphDatabaseAPI graphdb )
     {
@@ -192,15 +192,6 @@ public class StoreAccess
     public CountsAccessor getCounts()
     {
         return counts;
-    }
-
-    public final <F extends Exception, P extends RecordStore.Processor<F>> P applyToAll( P processor ) throws F
-    {
-        for ( RecordStore<?> store : allStores() )
-        {
-            apply( processor, store );
-        }
-        return processor;
     }
 
     protected RecordStore<?>[] allStores()

@@ -31,6 +31,5 @@ public enum RelationshipDirection
     private RelationshipDirection( Direction internal )
     {
         this.internal = internal;
-
     }
 }

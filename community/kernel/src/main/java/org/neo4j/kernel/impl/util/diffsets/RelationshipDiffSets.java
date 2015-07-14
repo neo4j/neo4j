@@ -20,11 +20,9 @@
 package org.neo4j.kernel.impl.util.diffsets;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -47,12 +45,6 @@ public class RelationshipDiffSets<T> extends SuperDiffSets<T,RelationshipIterato
         implements ReadableRelationshipDiffSets<T>
 {
     private Home txStateRelationshipHome;
-
-    @SuppressWarnings("unchecked")
-    public static <T> RelationshipDiffSets<T> emptyDiffSets()
-    {
-        return EMPTY;
-    }
 
     public RelationshipDiffSets( RelationshipVisitor.Home txStateRelationshipHome )
     {
@@ -85,71 +77,10 @@ public class RelationshipDiffSets<T> extends SuperDiffSets<T,RelationshipIterato
     }
 
     @Override
-    public RelationshipIterator augmentWithAdditions( final RelationshipIterator source )
-    {
-        return new DiffApplyingRelationshipIterator( source, added( false ), Collections.emptySet(), txStateRelationshipHome );
-    }
-
-    @Override
     public RelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter )
     {
         return new RelationshipDiffSets<>( txStateRelationshipHome,
                 asSet( Iterables.filter( addedFilter, added( false ) ) ),
                 asSet( removed( false ) ) );
     }
-
-    @Override
-    public RelationshipDiffSets<T> filter( Predicate<T> filter )
-    {
-        return new RelationshipDiffSets<>( txStateRelationshipHome,
-                asSet( Iterables.filter( filter, added( false ) ) ),
-                asSet( Iterables.filter( filter, removed( false ) ) ) );
-    }
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private static final RelationshipDiffSets EMPTY = new RelationshipDiffSets( null,
-            Collections.emptySet(), Collections.emptySet() )
-    {
-        @Override
-        public Iterator apply( Iterator source )
-        {
-            return source;
-        }
-
-        @Override
-        public PrimitiveLongIterator augment( PrimitiveLongIterator source )
-        {
-            return source;
-        }
-
-        @Override
-        public PrimitiveIntIterator augment( PrimitiveIntIterator source )
-        {
-            return source;
-        }
-
-        @Override
-        public PrimitiveLongIterator augmentWithRemovals( PrimitiveLongIterator source )
-        {
-            return source;
-        }
-
-        @Override
-        public PrimitiveLongIterator augmentWithAdditions( PrimitiveLongIterator source )
-        {
-            return source;
-        }
-
-        @Override
-        public RelationshipDiffSets filterAdded( Predicate addedFilter )
-        {
-            return this;
-        }
-
-        @Override
-        public RelationshipDiffSets filter( Predicate filter )
-        {
-            return this;
-        }
-    };
 }

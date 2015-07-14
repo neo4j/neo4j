@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
 public enum DirectionWrapper
 {
-    OUTGOING( Direction.OUTGOING )
+    OUTGOING()
     {
         @Override
         public long getNextRel( RelationshipGroupRecord group )
@@ -38,7 +37,7 @@ public enum DirectionWrapper
             group.setFirstOut( firstNextRel );
         }
     },
-    INCOMING( Direction.INCOMING )
+    INCOMING()
     {
         @Override
         public long getNextRel( RelationshipGroupRecord group )
@@ -52,7 +51,7 @@ public enum DirectionWrapper
             group.setFirstIn( firstNextRel );
         }
     },
-    BOTH( Direction.BOTH )
+    BOTH()
     {
         @Override
         public long getNextRel( RelationshipGroupRecord group )
@@ -67,30 +66,7 @@ public enum DirectionWrapper
         }
     };
 
-    private final Direction direction;
-
-    private DirectionWrapper( Direction direction )
-    {
-        this.direction = direction;
-    }
-
-    public Direction direction()
-    {
-        return this.direction;
-    }
-
     public abstract long getNextRel( RelationshipGroupRecord group );
 
     public abstract void setNextRel( RelationshipGroupRecord group, long firstNextRel );
-
-    public static DirectionWrapper wrap( Direction direction )
-    {
-        switch ( direction )
-        {
-            case OUTGOING: return DirectionWrapper.OUTGOING;
-            case INCOMING: return DirectionWrapper.INCOMING;
-            case BOTH: return DirectionWrapper.BOTH;
-            default: throw new IllegalArgumentException( "" + direction );
-        }
-    }
 }

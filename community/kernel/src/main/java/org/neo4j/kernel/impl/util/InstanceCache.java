@@ -33,6 +33,7 @@ public abstract class InstanceCache<T> implements Supplier<T>, Consumer<T>
 {
     private T instance;
 
+    @Override
     public T get()
     {
         if ( instance == null )
@@ -48,9 +49,9 @@ public abstract class InstanceCache<T> implements Supplier<T>, Consumer<T>
         {
             instance = null;
         }
-
     }
 
+    @Override
     public void accept( T instance )
     {
         this.instance = instance;

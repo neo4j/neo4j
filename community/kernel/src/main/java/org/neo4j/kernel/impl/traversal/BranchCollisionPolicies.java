@@ -46,5 +46,4 @@ public enum BranchCollisionPolicies implements BranchCollisionPolicy
     {
         return org.neo4j.graphdb.traversal.BranchCollisionPolicies.STANDARD.create( evaluator, pathPredicate );
     }
-
 }

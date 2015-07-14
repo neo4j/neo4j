@@ -42,7 +42,7 @@ public class SessionFactoryImpl implements ConsoleSessionFactory
 
     private final HttpSession httpSession;
     private final CypherExecutor cypherExecutor;
-    private final Map<String, ConsoleSessionCreator> engineCreators = new HashMap<String, ConsoleSessionCreator>();
+    private final Map<String, ConsoleSessionCreator> engineCreators = new HashMap<>();
     private final HttpServletRequest request;
 
     public SessionFactoryImpl( HttpServletRequest request, List<String> supportedEngines, CypherExecutor cypherExecutor )

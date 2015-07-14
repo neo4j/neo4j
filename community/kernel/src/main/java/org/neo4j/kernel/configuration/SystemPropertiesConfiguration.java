@@ -34,11 +34,11 @@ import org.neo4j.helpers.Functions;
  */
 public class SystemPropertiesConfiguration
 {
-    private Iterable<Class<?>> settingsClasses;
+    private final Iterable<Class<?>> settingsClasses;
 
-    public SystemPropertiesConfiguration(Class<?>... settingsClasses)
+    public SystemPropertiesConfiguration( Class<?>... settingsClasses )
     {
-        this( Arrays.asList( settingsClasses ));
+        this( Arrays.asList( settingsClasses ) );
     }
 
     public SystemPropertiesConfiguration( Iterable<Class<?>> settingsClasses )
@@ -46,38 +46,36 @@ public class SystemPropertiesConfiguration
         this.settingsClasses = settingsClasses;
     }
 
-    public Map<String,String> apply(Map<String,String> config )
+    public Map<String,String> apply( Map<String,String> config )
     {
         // Create test config with base plus system props on top
-        Map<String,String> systemProperties = new HashMap<String, String>( config );
-        for ( Map.Entry<Object, Object> prop : System.getProperties().entrySet() )
+        Map<String,String> systemProperties = new HashMap<>( config );
+        for ( Map.Entry<Object,Object> prop : System.getProperties().entrySet() )
         {
             systemProperties.put( prop.getKey().toString(), prop.getValue().toString() );
         }
-
         // For each system property, see if it passes validation
         // If so, add it to result set
-        Map<String, String> result = new HashMap<String, String>( config );
-        Function<String, String> systemPropertiesFunction = Functions.map(systemProperties);
-        for( Map.Entry<Object, Object> prop : System.getProperties().entrySet() )
+        Map<String,String> result = new HashMap<String,String>( config );
+        Function<String,String> systemPropertiesFunction = Functions.map( systemProperties );
+        for ( Map.Entry<Object,Object> prop : System.getProperties().entrySet() )
         {
             String key = (String) prop.getKey();
-            for( Class<?> settingsClass : settingsClasses )
+            for ( Class<?> settingsClass : settingsClasses )
             {
-                for( Field field : settingsClass.getFields() )
+                for ( Field field : settingsClass.getFields() )
                 {
                     try
                     {
                         Setting<Object> setting = (Setting<Object>) field.get( null );
-                        if (setting.name().equals( key ))
+                        if ( setting.name().equals( key ) )
                         {
                             setting.apply( systemPropertiesFunction );
-
                             // Valid setting, copy it from system properties
                             result.put( key, (String) prop.getValue() );
                         }
                     }
-                    catch( Throwable e )
+                    catch ( Throwable e )
                     {
                         continue;
                     }

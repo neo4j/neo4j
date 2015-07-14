@@ -80,7 +80,6 @@ import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
@@ -892,9 +891,9 @@ public class BatchInserterImpl implements BatchInserter
         return new BatchRelationshipIterable<Long>( neoStore, nodeId )
         {
             @Override
-            protected Long nextFrom( long relationshipId, RelationshipIterator storeIterator )
+            protected Long nextFrom( long relId, int type, long startNode, long endNode )
             {
-                return relationshipId;
+                return relId;
             }
         };
     }
@@ -905,19 +904,10 @@ public class BatchInserterImpl implements BatchInserter
         flushStrategy.forceFlush();
         return new BatchRelationshipIterable<BatchRelationship>( neoStore, nodeId )
         {
-            private BatchRelationship batchRelationship;
-
             @Override
-            protected BatchRelationship nextFrom( long relationshipId, RelationshipIterator storeIterator )
+            protected BatchRelationship nextFrom( long relId, int type, long startNode, long endNode )
             {
-                storeIterator.relationshipVisit( relationshipId, this );
-                return batchRelationship;
-            }
-
-            @Override
-            public void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
-            {
-                batchRelationship = new BatchRelationship( relId, startNode, endNode,
+                return new BatchRelationship( relId, startNode, endNode,
                         (RelationshipType) relationshipTypeTokens.byId( type ) );
             }
         };

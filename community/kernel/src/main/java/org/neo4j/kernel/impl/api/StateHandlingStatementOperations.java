@@ -124,6 +124,7 @@ public class StateHandlingStatementOperations implements
     }
 
     // <Cursors>
+    @Override
     public NodeCursor nodeCursor( KernelStatement statement, long nodeId )
     {
         NodeCursor cursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId );
@@ -131,10 +132,7 @@ public class StateHandlingStatementOperations implements
         {
             return statement.txState().augmentSingleNodeCursor( cursor );
         }
-        else
-        {
-            return cursor;
-        }
+        return cursor;
     }
 
     public NodeCursor nodeCursor( TxStateHolder txStateHolder, StoreStatement statement, long nodeId )
@@ -144,12 +142,10 @@ public class StateHandlingStatementOperations implements
         {
             return txStateHolder.txState().augmentSingleNodeCursor( cursor );
         }
-        else
-        {
-            return cursor;
-        }
+        return cursor;
     }
 
+    @Override
     public RelationshipCursor relationshipCursor( KernelStatement statement, long relationshipId )
     {
         RelationshipCursor cursor = statement.getStoreStatement().acquireSingleRelationshipCursor( relationshipId );
@@ -157,10 +153,7 @@ public class StateHandlingStatementOperations implements
         {
             return statement.txState().augmentSingleRelationshipCursor( cursor );
         }
-        else
-        {
-            return cursor;
-        }
+        return cursor;
     }
 
     @Override
@@ -171,10 +164,7 @@ public class StateHandlingStatementOperations implements
         {
             return statement.txState().augmentNodesGetAllCursor( cursor );
         }
-        else
-        {
-            return cursor;
-        }
+        return cursor;
     }
 
     @Override
@@ -185,10 +175,7 @@ public class StateHandlingStatementOperations implements
         {
             return statement.txState().augmentRelationshipsGetAllCursor( cursor );
         }
-        else
-        {
-            return cursor;
-        }
+        return cursor;
     }
 
     @Override
@@ -347,10 +334,7 @@ public class StateHandlingStatementOperations implements
                     return labelCursor.seek( labelId );
                 }
             }
-            else
-            {
-                throw new EntityNotFoundException( EntityType.NODE, nodeId );
-            }
+            throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
     }
 
@@ -366,15 +350,11 @@ public class StateHandlingStatementOperations implements
     {
         try ( NodeCursor nodeCursor = nodeCursor( txStateHolder, storeStatement, nodeId ) )
         {
-
             if ( nodeCursor.next() )
             {
                 return Cursors.intIterator( nodeCursor.labels(), LabelCursor.GET_LABEL );
             }
-            else
-            {
-                throw new EntityNotFoundException( EntityType.NODE, nodeId );
-            }
+            throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
     }
 
@@ -1153,10 +1133,7 @@ public class StateHandlingStatementOperations implements
             {
                 return new CursorRelationshipIterator( nodeCursor.relationships( direction, relTypes ) );
             }
-            else
-            {
-                throw new EntityNotFoundException( EntityType.NODE, nodeId );
-            }
+            throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
     }
 
@@ -1171,10 +1148,7 @@ public class StateHandlingStatementOperations implements
             {
                 return new CursorRelationshipIterator( nodeCursor.relationships( direction ) );
             }
-            else
-            {
-                throw new EntityNotFoundException( EntityType.NODE, nodeId );
-            }
+            throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
     }
 
@@ -1200,10 +1174,7 @@ public class StateHandlingStatementOperations implements
 
             return state.txState().augmentNodeDegree( nodeId, degree, direction, relType );
         }
-        else
-        {
-            return storeLayer.nodeGetDegree( state.getStoreStatement(), nodeId, direction, relType );
-        }
+        return storeLayer.nodeGetDegree( state.getStoreStatement(), nodeId, direction, relType );
     }
 
     @Override
@@ -1223,10 +1194,7 @@ public class StateHandlingStatementOperations implements
             }
             return state.txState().augmentNodeDegree( nodeId, degree, direction );
         }
-        else
-        {
-            return storeLayer.nodeGetDegree( state.getStoreStatement(), nodeId, direction );
-        }
+        return storeLayer.nodeGetDegree( state.getStoreStatement(), nodeId, direction );
     }
 
     @Override
@@ -1270,10 +1238,7 @@ public class StateHandlingStatementOperations implements
 
             return PrimitiveIntCollections.toPrimitiveIterator( types.iterator() );
         }
-        else
-        {
-            return storeLayer.nodeGetRelationshipTypes( state.getStoreStatement(), nodeId );
-        }
+        return storeLayer.nodeGetRelationshipTypes( state.getStoreStatement(), nodeId );
     }
 
     //

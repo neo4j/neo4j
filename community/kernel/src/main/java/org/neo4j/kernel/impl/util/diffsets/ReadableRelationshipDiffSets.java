@@ -32,17 +32,8 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
     @Override
     ReadableRelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter );
 
-    @Override
-    ReadableRelationshipDiffSets<T> filter( Predicate<T> filter );
-
     static final class Empty<T> implements ReadableRelationshipDiffSets<T>
     {
-        @SuppressWarnings( "unchecked" )
-        public static <T> ReadableRelationshipDiffSets<T> instance()
-        {
-            return INSTANCE;
-        }
-
         @SuppressWarnings( "unchecked" )
         public static <T> ReadableRelationshipDiffSets<T> ifNull( ReadableRelationshipDiffSets<T> diffSets )
         {
@@ -118,19 +109,7 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
         }
 
         @Override
-        public RelationshipIterator augmentWithAdditions( RelationshipIterator source )
-        {
-            return source;
-        }
-
-        @Override
         public ReadableRelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter )
-        {
-            return this;
-        }
-
-        @Override
-        public ReadableRelationshipDiffSets<T> filter( Predicate<T> filter )
         {
             return this;
         }

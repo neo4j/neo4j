@@ -49,7 +49,6 @@ import org.neo4j.kernel.api.txstate.ReadableTxState;
 import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
-import org.neo4j.kernel.api.txstate.UpdateTriState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.cursor.TxIteratorNodeCursor;
 import org.neo4j.kernel.impl.api.cursor.TxIteratorRelationshipCursor;
@@ -516,18 +515,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public Iterator<DefinedProperty> augmentNodeProperties( long nodeId, Iterator<DefinedProperty> original )
-    {
-        return NODE_STATE.get( this, nodeId ).augmentProperties( original );
-    }
-
-    @Override
-    public Iterator<DefinedProperty> augmentRelationshipProperties( long relId, Iterator<DefinedProperty> original )
-    {
-        return RELATIONSHIP_STATE.get( this, relId ).augmentProperties( original );
-    }
-
-    @Override
     public Iterator<DefinedProperty> augmentGraphProperties( Iterator<DefinedProperty> original )
     {
         if ( graphState != null )
@@ -535,18 +522,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             return graphState.augmentProperties( original );
         }
         return original;
-    }
-
-    @Override
-    public Iterator<DefinedProperty> addedAndChangedNodeProperties( long nodeId )
-    {
-        return NODE_STATE.get( this, nodeId ).addedAndChangedProperties();
-    }
-
-    @Override
-    public Iterator<DefinedProperty> addedAndChangedRelationshipProperties( long relId )
-    {
-        return RELATIONSHIP_STATE.get( this, relId ).addedAndChangedProperties();
     }
 
     @Override
@@ -802,12 +777,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public UpdateTriState labelState( long nodeId, int labelId )
-    {
-        return NODE_STATE.get( this, nodeId ).labelState( labelId );
-    }
-
-    @Override
     public NodeState getNodeState( long id )
     {
         return NODE_STATE.get( this, id );
@@ -819,33 +788,31 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return RELATIONSHIP_STATE.get( this, id );
     }
 
+    @Override
     public NodeCursor augmentSingleNodeCursor( NodeCursor cursor )
     {
         return hasChanges ? singleNodeCursor.get().init( cursor ) : cursor;
     }
 
+    @Override
     public PropertyCursor augmentPropertyCursor( PropertyCursor cursor, PropertyContainerState propertyContainerState )
     {
         return propertyContainerState.augmentPropertyCursor( propertyCursor, cursor );
     }
 
+    @Override
     public LabelCursor augmentLabelCursor( LabelCursor cursor, NodeState nodeState )
     {
         return nodeState.augmentLabelCursor( labelCursor, cursor );
     }
 
+    @Override
     public RelationshipCursor augmentSingleRelationshipCursor( RelationshipCursor cursor )
     {
         return hasChanges ? singleRelationshipCursor.get().init( cursor ) : cursor;
     }
 
     @Override
-    public RelationshipCursor augmentIteratorRelationshipCursor( RelationshipCursor cursor,
-            RelationshipIterator iterator )
-    {
-        return hasChanges ? iteratorRelationshipCursor.get().init( cursor, iterator ) : cursor;
-    }
-
     public RelationshipCursor augmentNodeRelationshipCursor( RelationshipCursor cursor,
             NodeState nodeState,
             Direction direction,
@@ -957,14 +924,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<Long> nodesWithChangedProperty( int propertyKeyId, Object value )
-    {
-        return propertyChangesForNodes != null
-                ? propertyChangesForNodes.changesForProperty( propertyKeyId, value )
-                : ReadableDiffSets.Empty.<Long>instance();
-    }
-
-    @Override
     public ReadableDiffSets<Long> addedAndRemovedNodes()
     {
         return ReadableDiffSets.Empty.ifNull( nodes );
@@ -977,41 +936,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             nodes = new DiffSets<>();
         }
         return nodes;
-    }
-
-    @Override
-    public RelationshipIterator augmentRelationships( long nodeId, Direction direction, RelationshipIterator rels )
-    {
-        NodeState state;
-        if ( nodeStatesMap != null && (state = nodeStatesMap.get( nodeId )) != null )
-        {
-            rels = state.augmentRelationships( direction, rels );
-            // TODO: This should be handled by the augment call above
-            rels = addedAndRemovedRelationships().augmentWithRemovals( rels );
-        }
-        return rels;
-    }
-
-    @Override
-    public RelationshipIterator augmentRelationships( long nodeId,
-            Direction direction,
-            int[] types,
-            RelationshipIterator rels )
-    {
-        NodeState state;
-        if ( nodeStatesMap != null && (state = nodeStatesMap.get( nodeId )) != null )
-        {
-            rels = state.augmentRelationships( direction, types, rels );
-            // TODO: This should be handled by the augment call above
-            rels = addedAndRemovedRelationships().augmentWithRemovals( rels );
-        }
-        return rels;
-    }
-
-    @Override
-    public PrimitiveLongIterator addedRelationships( long nodeId, int[] types, Direction direction )
-    {
-        return NODE_STATE.get( this, nodeId ).addedRelationships( direction, types );
     }
 
     @Override
@@ -1228,8 +1152,8 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             sortedUpdates.putAll( updates );
             indexUpdates.put( descriptor.getLabelId(), sortedUpdates );
         }
-        DiffSets<Long> diffs = new DiffSets<Long>();
-        DefinedProperty floor = DefinedProperty.stringProperty( descriptor.getPropertyKeyId(), prefix );
+        DiffSets<Long> diffs = new DiffSets<>();
+        DefinedProperty floor = Property.stringProperty( descriptor.getPropertyKeyId(), prefix );
         for ( Map.Entry<DefinedProperty,DiffSets<Long>> entry : sortedUpdates.tailMap( floor ).entrySet() )
         {
             if ( entry.getKey().value().toString().startsWith( prefix ) )

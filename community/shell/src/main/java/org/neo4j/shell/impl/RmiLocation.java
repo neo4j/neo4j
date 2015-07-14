@@ -27,8 +27,6 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
-import java.util.Map;
 
 /**
  * Class for specifying a location of an RMI object
@@ -36,13 +34,9 @@ import java.util.Map;
  */
 public class RmiLocation
 {
-	private String host;
-	private int port;
-	private String name;
-	
-	private RmiLocation()
-	{
-	}
+	private final String host;
+	private final int port;
+	private final String name;
 
 	private RmiLocation( String host, int port, String name )
 	{
@@ -50,24 +44,7 @@ public class RmiLocation
 		this.port = port;
 		this.name = name;
 	}
-	
-	/**
-	 * Creates a new RMI location instance.
-	 * @param url the RMI URL.
-	 * @return the {@link RmiLocation} instance for {@code url}.
-	 */
-	public static RmiLocation location( String url )
-	{
-		int protocolIndex = url.indexOf( "://" );
-		int portIndex = url.lastIndexOf( ':' );
-		int nameIndex = url.indexOf( "/", portIndex );
-		String host = url.substring( protocolIndex + 3, portIndex );
-		int port = Integer.parseInt( url.substring( portIndex + 1,
-			nameIndex ) );
-		String name = url.substring( nameIndex + 1 );
-		return location( host, port, name );
-	}
-	
+
 	/**
 	 * Creates a new RMI location instance.
 	 * @param host the RMI host, f.ex. "localhost".
@@ -79,21 +56,7 @@ public class RmiLocation
 	{
 		return new RmiLocation( host, port, name );
 	}
-	
-	/**
-	 * Creates a new RMI location instance.
-	 * @param data a map with data, should contain "host", "port" and "name".
-	 * See {@link #location(String, int, String)}.
-	 * @return a new {@link RmiLocation} instance.
-	 */
-	public static RmiLocation location( Map<String, Object> data )
-	{
-		String host = ( String ) data.get( "host" );
-		Integer port = ( Integer ) data.get( "port" );
-		String name = ( String ) data.get( "name" );
-		return location( host, port, name );
-	}
-	
+
 	/**
 	 * @return the host of this RMI location.
 	 */
@@ -101,7 +64,7 @@ public class RmiLocation
 	{
 		return this.host;
 	}
-	
+
 	/**
 	 * @return the port of this RMI location.
 	 */
@@ -109,7 +72,7 @@ public class RmiLocation
 	{
 		return this.port;
 	}
-	
+
 	/**
 	 * @return the name of this RMI location.
 	 */
@@ -117,12 +80,12 @@ public class RmiLocation
 	{
 		return this.name;
 	}
-	
+
 	private static String getProtocol()
 	{
 		return "rmi://";
 	}
-	
+
 	/**
 	 * @return "short" URL, consisting of protocol, host and port, f.ex.
 	 * "rmi://localhost:8080".
@@ -131,7 +94,7 @@ public class RmiLocation
 	{
 		return getProtocol() + getHost() + ":" + getPort();
 	}
-	
+
 	/**
 	 * @return the full RMI URL, f.ex.
 	 * "rmi://localhost:8080/the/shellname".
@@ -140,32 +103,11 @@ public class RmiLocation
 	{
 		return getProtocol() + getHost() + ":" + getPort() + "/" + getName();
 	}
-	
-	/**
-	 * @return whether or not the RMI registry is created in this JVM for the
-	 * given port, see {@link #getPort()}.
-	 */
-	public boolean hasRegistry()
-	{
-		try
-		{
-			Naming.list( toShortUrl() );
-			return true;
-		}
-		catch ( RemoteException e )
-		{
-			return false;
-		}
-		catch ( java.net.MalformedURLException e )
-		{
-			return false;
-		}
-	}
-	
+
 	/**
 	 * Ensures that the RMI registry is created for this JVM instance and port,
 	 * see {@link #getPort()}.
-	 * @return the registry for the port. 
+	 * @return the registry for the port.
 	 * @throws RemoteException RMI error.
 	 */
 	public Registry ensureRegistryCreated()
@@ -192,7 +134,7 @@ public class RmiLocation
 			throw new RemoteException( "Malformed URL", e );
 		}
 	}
-	
+
 	/**
 	 * Binds an object to the RMI location defined by this instance.
 	 * @param object the object to bind.
@@ -210,29 +152,7 @@ public class RmiLocation
 			throw new RemoteException( "Malformed URL", e );
 		}
 	}
-	
-	/**
-	 * Unbinds an object from the RMI location defined by this instance.
-	 * @param object the object to bind.
-	 * @throws RemoteException RMI error.
-	 */
-	public void unbind( Remote object ) throws RemoteException
-	{
-		try
-		{
-			Naming.unbind( toUrl() );
-			UnicastRemoteObject.unexportObject( object, true );
-		}
-		catch ( NotBoundException e )
-		{
-			throw new RemoteException( "Not bound", e );
-		}
-		catch ( MalformedURLException e )
-		{
-			throw new RemoteException( "Malformed URL", e );
-		}
-	}
-	
+
 	/**
 	 * @return whether or not there's an object bound to the RMI location
 	 * defined by this instance.
@@ -249,7 +169,7 @@ public class RmiLocation
 			return false;
 		}
 	}
-	
+
 	/**
 	 * @return the bound object for the RMI location defined by this instance.
 	 * @throws RemoteException if there's no object bound for the RMI location.

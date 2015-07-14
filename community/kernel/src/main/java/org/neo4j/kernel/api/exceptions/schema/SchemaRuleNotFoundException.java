@@ -30,11 +30,6 @@ public class SchemaRuleNotFoundException extends SchemaKernelException
         super( Status.Schema.NoSuchSchemaRule, message );
     }
 
-    public SchemaRuleNotFoundException( String message, Throwable cause )
-    {
-        super( Status.Schema.NoSuchSchemaRule, message, cause );
-    }
-
     public SchemaRuleNotFoundException( long labelId, long propertyKeyId, String message )
     {
         this( message( labelId, propertyKeyId, message ) );

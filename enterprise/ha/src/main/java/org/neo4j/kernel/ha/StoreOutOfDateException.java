@@ -23,7 +23,7 @@ package org.neo4j.kernel.ha;
  * Thrown to point out that branching of data has occured for one or
  * more instances in a cluster. Branching is when one machine has
  * different (not meaning outdated) than the current master.
- * 
+ *
  * @author Mattias Persson
  */
 public class StoreOutOfDateException extends StoreUnableToParticipateInClusterException
@@ -36,15 +36,5 @@ public class StoreOutOfDateException extends StoreUnableToParticipateInClusterEx
     public StoreOutOfDateException( String message, Throwable cause )
     {
         super( message, cause );
-    }
-
-    public StoreOutOfDateException( String message )
-    {
-        super( message );
-    }
-
-    public StoreOutOfDateException( Throwable cause )
-    {
-        super( cause );
     }
 }

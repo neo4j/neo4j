@@ -120,19 +120,6 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
         public abstract void processRelationshipGroup( RecordStore<RelationshipGroupRecord> store,
                 RelationshipGroupRecord record ) throws FAILURE;
 
-        protected <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id )
-        {
-            return store.forceGetRecord( id );
-        }
-
-        public <R extends AbstractBaseRecord> void applyById( RecordStore<R> store, Iterable<Long> ids ) throws FAILURE
-        {
-            for ( R record : Scanner.scanById( store, ids ) )
-            {
-                store.accept( this, record );
-            }
-        }
-
         public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store,
                 Predicate<? super R>... filters ) throws FAILURE
         {

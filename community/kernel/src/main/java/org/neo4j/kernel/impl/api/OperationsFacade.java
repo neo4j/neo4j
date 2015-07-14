@@ -43,7 +43,6 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -778,7 +777,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     // <SchemaWrite>
     @Override
     public IndexDescriptor indexCreate( int labelId, int propertyKeyId )
-            throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
+            throws AlreadyIndexedException, AlreadyConstrainedException
     {
         statement.assertOpen();
         return schemaWrite().indexCreate( statement, labelId, propertyKeyId );

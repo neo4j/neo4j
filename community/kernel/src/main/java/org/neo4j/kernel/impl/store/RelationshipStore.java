@@ -42,11 +42,6 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
  */
 public class RelationshipStore extends AbstractRecordStore<RelationshipRecord>
 {
-    public static abstract class Configuration
-        extends AbstractStore.Configuration
-    {
-    }
-
     public static final String TYPE_DESCRIPTOR = "RelationshipStore";
 
     // record header size

@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
@@ -48,8 +48,8 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
@@ -256,12 +256,6 @@ public class MasterClient210 extends Client<Master> implements MasterClient
                 buffer.writeByte( success ? 1 : 0 );
             }
         }, VOID_DESERIALIZER );
-    }
-
-    @Override
-    public void rollbackOngoingTransactions( RequestContext context )
-    {
-        throw new UnsupportedOperationException( "Should never be called from the client side" );
     }
 
     @Override

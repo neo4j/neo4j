@@ -22,14 +22,13 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.command.LogReader;
 import org.neo4j.kernel.impl.transaction.log.entry.DefaultLogEntryParserFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 
-public class LogDeserializer implements LogReader<ReadableVersionableLogChannel>
+public class LogDeserializer
 {
     private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader;
 
@@ -43,7 +42,6 @@ public class LogDeserializer implements LogReader<ReadableVersionableLogChannel>
         logEntryReader = new LogEntryReaderFactory( logEntryParserFactory, commandReaderFactory ).versionable();
     }
 
-    @Override
     public IOCursor<LogEntry> logEntries( ReadableVersionableLogChannel channel )
     {
         return new LogCursor( channel );

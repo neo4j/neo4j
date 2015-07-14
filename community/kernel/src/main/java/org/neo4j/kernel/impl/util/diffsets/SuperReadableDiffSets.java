@@ -52,11 +52,7 @@ public interface SuperReadableDiffSets<T,LONGITERATOR extends PrimitiveLongItera
 
     LONGITERATOR augmentWithRemovals( LONGITERATOR source );
 
-    LONGITERATOR augmentWithAdditions( LONGITERATOR source );
-
     SuperReadableDiffSets<T,LONGITERATOR> filterAdded( Predicate<T> addedFilter );
-
-    SuperReadableDiffSets<T,LONGITERATOR> filter( Predicate<T> filter );
 
     void accept( DiffSetsVisitor<T> visitor );
 }

@@ -48,7 +48,6 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -64,6 +63,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
@@ -366,7 +366,7 @@ public class SchemaImpl implements Schema
                     statement.schemaWriteOperations().indexCreate( labelId, propertyKeyId );
                     return new IndexDefinitionImpl( this, label, propertyKey, false );
                 }
-                catch ( AlreadyIndexedException | AlreadyConstrainedException | AddIndexFailureException e )
+                catch ( AlreadyIndexedException | AlreadyConstrainedException e )
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );

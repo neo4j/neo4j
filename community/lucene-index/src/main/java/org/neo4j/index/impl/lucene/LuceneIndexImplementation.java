@@ -53,12 +53,10 @@ public class LuceneIndexImplementation implements IndexImplementation
     public static final int DEFAULT_LAZY_THRESHOLD = 100;
 
     private final LuceneDataSource dataSource;
-    final int lazynessThreshold;
 
     public LuceneIndexImplementation( LuceneDataSource dataSource )
     {
         this.dataSource = dataSource;
-        this.lazynessThreshold = DEFAULT_LAZY_THRESHOLD;
     }
 
     @Override

@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import org.neo4j.function.Predicate;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.neo4j.function.Predicate;
 
 import static java.util.Collections.emptyList;
 
@@ -171,13 +171,4 @@ public class NodeRecord extends PrimitiveRecord
             return item.inUse();
         }
     };
-
-    public void copyFrom( NodeRecord from )
-    {
-        this.nextRel = from.nextRel;
-        this.labels = from.labels;
-        this.isLight = from.isLight;
-        this.dense = from.dense;
-        this.setNextProp( from.getNextProp() );
-    }
 }

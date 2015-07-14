@@ -98,11 +98,6 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         visitor.visit( this );
     }
 
-    public void freeId( int id )
-    {
-        nameStore.freeId( id );
-    }
-
     @Override
     protected void closeStorage()
     {

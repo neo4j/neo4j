@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -109,7 +108,7 @@ public class LockingStatementOperations implements
 
     @Override
     public IndexDescriptor indexCreate( KernelStatement state, int labelId, int propertyKey )
-            throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
+            throws AlreadyIndexedException, AlreadyConstrainedException
     {
         state.locks().acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
         return schemaWriteDelegate.indexCreate( state, labelId, propertyKey );

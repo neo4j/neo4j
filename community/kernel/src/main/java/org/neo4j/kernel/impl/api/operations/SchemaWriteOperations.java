@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.operations;
 import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -38,7 +37,7 @@ public interface SchemaWriteOperations
      * {@code labelId}.
      */
     IndexDescriptor indexCreate( KernelStatement state, int labelId, int propertyKeyId )
-            throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException;
+            throws AlreadyIndexedException, AlreadyConstrainedException;
 
     /** Drops a {@link IndexDescriptor} from the database */
     void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException;

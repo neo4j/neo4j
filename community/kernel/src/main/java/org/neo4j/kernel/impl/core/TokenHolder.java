@@ -158,17 +158,6 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
         return idToToken.get( id );
     }
 
-    public boolean hasTokenWithId( int id )
-    {
-        return idToToken.containsKey( id );
-    }
-
-    /** Returns the id, or {@link #NO_ID} if no token with this name exists. */
-    public final int idOf( TOKEN token )
-    {
-        return getIdByName( token.name() );
-    }
-
     /** Returns the id, or {@link #NO_ID} if no token with this name exists. */
     public int getIdByName( String name )
     {

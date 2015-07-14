@@ -179,15 +179,11 @@ public class DiskLayer implements StoreReadLayer
     {
         try ( NodeCursor nodeCursor = statement.acquireSingleNodeCursor( nodeId ) )
         {
-
             if ( nodeCursor.next() )
             {
                 return Cursors.intIterator( nodeCursor.labels(), LabelCursor.GET_LABEL );
             }
-            else
-            {
-                throw new EntityNotFoundException( EntityType.NODE, nodeId );
-            }
+            throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
     }
 
@@ -213,10 +209,7 @@ public class DiskLayer implements StoreReadLayer
             {
                 return new CursorRelationshipIterator( nodeCursor.relationships( direction, relTypes ) );
             }
-            else
-            {
-                throw new EntityNotFoundException( EntityType.NODE, nodeId );
-            }
+            throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
     }
 
@@ -967,5 +960,4 @@ public class DiskLayer implements StoreReadLayer
             return false;
         }
     }
-
 }

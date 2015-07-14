@@ -110,11 +110,6 @@ public class TransactionEventHandlers
         return handler;
     }
 
-    public boolean hasHandlers()
-    {
-        return !transactionEventHandlers.isEmpty();
-    }
-
     @Override
     public TransactionHandlerState beforeCommit( ReadableTxState state, KernelTransaction transaction,
             StoreReadLayer storeReadLayer )

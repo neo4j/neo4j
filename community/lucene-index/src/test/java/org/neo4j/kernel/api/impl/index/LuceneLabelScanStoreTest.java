@@ -42,7 +42,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -58,8 +57,6 @@ import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 import static org.hamcrest.core.IsCollectionContaining.hasItem;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -70,6 +67,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -467,12 +468,6 @@ public class LuceneLabelScanStoreTest
             public long highestNodeId()
             {
                 return existingData.size(); // Well... not really
-            }
-
-            @Override
-            public PrimitiveLongIterator labelIds()
-            {
-                return PrimitiveLongCollections.emptyIterator();
             }
         };
     }

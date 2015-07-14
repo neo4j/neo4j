@@ -25,7 +25,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -105,7 +104,7 @@ public class DataIntegrityValidatingStatementOperations implements
 
     @Override
     public IndexDescriptor indexCreate( KernelStatement state, int labelId, int propertyKey )
-            throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException
+            throws AlreadyIndexedException, AlreadyConstrainedException
     {
         checkIndexExistence( state, OperationContext.INDEX_CREATION, labelId, propertyKey );
         return schemaWriteDelegate.indexCreate( state, labelId, propertyKey );

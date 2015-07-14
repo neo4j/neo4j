@@ -359,35 +359,6 @@ public class RelationshipChangesForNode
         return outgoing;
     }
 
-    private Iterator<Long> iteratorOrNull( Set<Long> set )
-    {
-        return set != null ? set.iterator() : null;
-    }
-
-    /**
-     * TODO Should perhaps be a visitor of some sort instead?
-     */
-    public Iterator<Long> outgoingChanges( int type )
-    {
-        return outgoing != null ? iteratorOrNull( outgoing.get( type ) ) : null;
-    }
-
-    /**
-     * TODO Should perhaps be a visitor of some sort instead?
-     */
-    public Iterator<Long> incomingChanges( int type )
-    {
-        return incoming != null ? iteratorOrNull( incoming.get( type ) ) : null;
-    }
-
-    /**
-     * TODO Should perhaps be a visitor of some sort instead?
-     */
-    public Iterator<Long> loopsChanges( int type )
-    {
-        return loops != null ? iteratorOrNull( loops.get( type ) ) : null;
-    }
-
     private Map<Integer /* Type */, Set<Long /* Id */>> incoming()
     {
         if ( incoming == null )

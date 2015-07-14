@@ -25,14 +25,4 @@ public class InvalidIdGeneratorException extends StoreFailureException
     {
         super( msg );
     }
-
-    public InvalidIdGeneratorException( Throwable cause )
-    {
-        super( cause );
-    }
-
-    public InvalidIdGeneratorException( String msg, Throwable cause )
-    {
-        super( msg, cause );
-    }
 }

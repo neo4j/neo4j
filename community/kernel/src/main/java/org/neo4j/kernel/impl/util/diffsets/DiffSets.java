@@ -70,24 +70,10 @@ public class DiffSets<T> extends SuperDiffSets<T,PrimitiveLongIterator> implemen
     }
 
     @Override
-    public PrimitiveLongIterator augmentWithAdditions( final PrimitiveLongIterator source )
-    {
-        return new DiffApplyingPrimitiveLongIterator( source, added( false ), Collections.emptySet() );
-    }
-
-    @Override
     public DiffSets<T> filterAdded( Predicate<T> addedFilter )
     {
         return new DiffSets<>(
                 asSet( Iterables.filter( addedFilter, added( false ) ) ),
                 asSet( removed( false ) ) );
-    }
-
-    @Override
-    public DiffSets<T> filter( Predicate<T> filter )
-    {
-        return new DiffSets<>(
-                asSet( Iterables.filter( filter, added( false ) ) ),
-                asSet( Iterables.filter( filter, removed( false ) ) ) );
     }
 }

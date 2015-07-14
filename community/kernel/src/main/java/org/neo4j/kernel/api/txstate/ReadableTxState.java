@@ -85,35 +85,15 @@ public interface ReadableTxState
 
     boolean relationshipIsDeletedInThisTx( long relationshipId );
 
-    ReadableDiffSets<Long> nodesWithChangedProperty( int propertyKeyId, Object value );
-
     ReadableDiffSets<Integer> nodeStateLabelDiffSets( long nodeId );
 
-    Iterator<DefinedProperty> augmentNodeProperties( long nodeId, Iterator<DefinedProperty> original );
-
-    Iterator<DefinedProperty> augmentRelationshipProperties( long relId, Iterator<DefinedProperty> original );
-
     Iterator<DefinedProperty> augmentGraphProperties( Iterator<DefinedProperty> original );
-
-    Iterator<DefinedProperty> addedAndChangedNodeProperties( long nodeId );
-
-    Iterator<DefinedProperty> addedAndChangedRelationshipProperties( long relId );
-
-    UpdateTriState labelState( long nodeId, int labelId );
 
     boolean nodeIsAddedInThisTx( long nodeId );
 
     boolean nodeIsDeletedInThisTx( long nodeId );
 
     boolean nodeModifiedInThisTx( long nodeId );
-
-    // TODO: refactor so that these are the same!
-    RelationshipIterator augmentRelationships( long nodeId, Direction direction, RelationshipIterator stored );
-
-    RelationshipIterator augmentRelationships( long nodeId, Direction direction, int[] relTypes,
-            RelationshipIterator stored );
-
-    PrimitiveLongIterator addedRelationships( long nodeId, int[] relTypes, Direction direction );
 
     PrimitiveIntIterator nodeRelationshipTypes( long nodeId );
 
@@ -167,8 +147,6 @@ public interface ReadableTxState
     LabelCursor augmentLabelCursor( LabelCursor cursor, NodeState nodeState );
 
     RelationshipCursor augmentSingleRelationshipCursor( RelationshipCursor cursor );
-
-    RelationshipCursor augmentIteratorRelationshipCursor( RelationshipCursor cursor, RelationshipIterator iterator );
 
     RelationshipCursor augmentNodeRelationshipCursor( RelationshipCursor cursor,
             NodeState nodeState,

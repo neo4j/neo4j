@@ -32,11 +32,6 @@ public class PropertyValueException extends BadInputException
         super( message );
     }
 
-    public PropertyValueException( Throwable cause )
-    {
-        super( cause );
-    }
-
     @Override
     public Status status()
     {
