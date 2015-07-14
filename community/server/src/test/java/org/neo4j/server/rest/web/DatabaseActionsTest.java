@@ -31,7 +31,9 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DynamicLabel;
@@ -95,6 +97,9 @@ public class DatabaseActionsTest
     private static Database database;
     private static InternalAbstractGraphDatabase graph;
     private static DatabaseActions actions;
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     @BeforeClass
     public static void createDb() throws IOException
@@ -1483,6 +1488,25 @@ public class DatabaseActionsTest
         finally
         {
             tx.finish();
+        }
+    }
+
+    @Test
+    public void dropNonExistentConstraint() throws Exception
+    {
+        // GIVEN
+        String labelName = "user", propertyKey = "login";
+        ConstraintDefinition constraint = graphdbHelper.createPropertyUniquenessConstraint( labelName,
+                asList( propertyKey ) );
+
+        // EXPECT
+        expectedException.expect( ConstraintViolationException.class );
+
+        // WHEN
+        try ( Transaction tx = graph.beginTx() )
+        {
+            constraint.drop();
+            constraint.drop();
         }
     }
 

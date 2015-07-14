@@ -19,29 +19,32 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.lang.String.format;
 
 public class SchemaRuleNotFoundException extends SchemaKernelException
 {
-    public SchemaRuleNotFoundException( String message )
+
+    private static final String RULE_NOT_FOUND_MESSAGE_TEMPLATE ="Index rule(s) for label '%s' and property '%s': %s.";
+
+    private final int labelId;
+    private final int propertyKeyId;
+    private final String reason;
+
+    public SchemaRuleNotFoundException( int labelId, int propertyKeyId, String reason )
     {
-        super( Status.Schema.NoSuchSchemaRule, message );
+        super(Status.Schema.NoSuchSchemaRule, format( RULE_NOT_FOUND_MESSAGE_TEMPLATE, labelId, propertyKeyId, reason ));
+        this.labelId = labelId;
+        this.propertyKeyId = propertyKeyId;
+        this.reason = reason;
     }
 
-    public SchemaRuleNotFoundException( String message, Throwable cause )
+    @Override
+    public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        super( Status.Schema.NoSuchSchemaRule, message, cause );
-    }
-
-    public SchemaRuleNotFoundException( long labelId, long propertyKeyId, String message )
-    {
-        this( message( labelId, propertyKeyId, message ) );
-    }
-
-    private static String message( long labelId, long propertyKeyId, String message )
-    {
-        return format( "Index rule(s) for label: %s and property: %s: %s", labelId, propertyKeyId, message );
+        return format( RULE_NOT_FOUND_MESSAGE_TEMPLATE, tokenNameLookup.labelGetName( labelId ),
+                tokenNameLookup.propertyKeyGetName( propertyKeyId ), reason );
     }
 }

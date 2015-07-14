@@ -363,8 +363,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         IndexDescriptor descriptor = schemaRead().indexesGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
         if ( descriptor == null )
         {
-            throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
-                                                   propertyKeyId + " not found" );
+            throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "not found" );
         }
         return descriptor;
     }
