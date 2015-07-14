@@ -129,6 +129,7 @@ public class EncodingIdMapper implements IdMapper
     private final Encoder encoder;
     private final Radix radix;
     private final int processorsForSorting;
+    private final Comparator comparator;
 
     private final List<Object> collisionValues = new ArrayList<>();
     private final LongArray collisionNodeIdCache;
@@ -143,20 +144,21 @@ public class EncodingIdMapper implements IdMapper
     private IdGroup[] idGroups = new IdGroup[10];
     private IdGroup currentIdGroup;
     private final Monitor monitor;
-    private final int chunkSize;
     private final Factory<Radix> radixFactory;
 
-    public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory, Monitor monitor )
+    public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
+            Monitor monitor )
     {
-        this( cacheFactory, encoder, radixFactory, monitor, DEFAULT_CACHE_CHUNK_SIZE, Runtime.getRuntime().availableProcessors() - 1 );
+        this( cacheFactory, encoder, radixFactory, monitor, DEFAULT_CACHE_CHUNK_SIZE,
+                Runtime.getRuntime().availableProcessors() - 1, DEFAULT );
     }
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
-            Monitor monitor, int chunkSize, int processorsForSorting )
+            Monitor monitor, int chunkSize, int processorsForSorting, Comparator comparator )
     {
         this.monitor = monitor;
         this.cacheFactory = cacheFactory;
-        this.chunkSize = chunkSize;
+        this.comparator = comparator;
         this.processorsForSorting = max( processorsForSorting, 1 );
         this.dataCache = cacheFactory.newDynamicLongArray( chunkSize, GAP_VALUE );
         this.encoder = encoder;
@@ -266,7 +268,7 @@ public class EncodingIdMapper implements IdMapper
         try
         {
             sortBuckets = new ParallelSort( radix, dataCache, highestSetIndex, trackerCache,
-                    processorsForSorting, progress, DEFAULT ).run();
+                    processorsForSorting, progress, comparator ).run();
 
             int numberOfCollisions = detectAndMarkCollisions( progress );
             if ( numberOfCollisions > 0 )
@@ -379,8 +381,8 @@ public class EncodingIdMapper implements IdMapper
 
                 switch ( unsignedDifference( eIdA, eIdB ) )
                 {
-                case GT: throw new IllegalStateException( "Failure:[" + i + "] " +
-                            Long.toHexString( eIdA ) + ":" + Long.toHexString( eIdB ) + " | " +
+                case GT: throw new IllegalStateException( "Unsorted data, a > b Failure:[" + i + "] " +
+                            Long.toHexString( eIdA ) + " > " + Long.toHexString( eIdB ) + " | " +
                             radixOf( eIdA ) + ":" + radixOf( eIdB ) );
                 case EQ:
                     // Here we have two equal encoded values. First let's check if they are in the same id space.
@@ -496,14 +498,14 @@ public class EncodingIdMapper implements IdMapper
         // comparison based on dataIndex is done if it's comparing two equal eIds. We do this so that
         // stretches of multiple equal eIds are sorted by dataIndex order, to be able to write an efficient
         // duplication scanning below and to have deterministic duplication reporting.
-        Comparator comparator = new Comparator()
+        Comparator duplicateComparator = new Comparator()
         {
             @Override
             public boolean lt( long left, long pivot )
             {
                 long leftEId = dataCache.get( left );
                 long pivotEId = dataCache.get( pivot );
-                if ( DEFAULT.lt( leftEId, pivotEId ) )
+                if ( comparator.lt( leftEId, pivotEId ) )
                 {
                     return true;
                 }
@@ -519,7 +521,7 @@ public class EncodingIdMapper implements IdMapper
             {
                 long rightEId = dataCache.get( right );
                 long pivotEId = dataCache.get( pivot );
-                if ( DEFAULT.ge( rightEId, pivotEId ) )
+                if ( comparator.ge( rightEId, pivotEId ) )
                 {
                     return rightEId == pivotEId ? right > pivot : true;
                 }
@@ -528,7 +530,7 @@ public class EncodingIdMapper implements IdMapper
         };
 
         new ParallelSort( radix, collisionNodeIdCache, numberOfCollisions-1,
-                collisionTrackerCache, processorsForSorting, ProgressListener.NONE, comparator ).run();
+                collisionTrackerCache, processorsForSorting, ProgressListener.NONE, duplicateComparator ).run();
         // Here we have a populated C
         // We want to detect duplicate input ids within the
         long previousEid = 0;

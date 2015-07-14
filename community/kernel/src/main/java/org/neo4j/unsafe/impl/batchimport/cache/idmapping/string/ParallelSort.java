@@ -21,9 +21,10 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.collection.primitive.PrimitiveIntStack;
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
@@ -74,7 +75,7 @@ public class ParallelSort
             }
             threadsNeeded++;
         }
-        CountDownLatch waitSignal = new CountDownLatch( 1 );
+
         Workers<SortWorker> sortWorkers = new Workers<>( "SortWorker" );
         progress.started( "SORT" );
         for ( int i = 0; i < threadsNeeded; i++ )
@@ -83,9 +84,8 @@ public class ParallelSort
             {
                 break;
             }
-            sortWorkers.start( new SortWorker( sortParams[i][0], sortParams[i][1], waitSignal ) );
+            sortWorkers.start( new SortWorker( sortParams[i][0], sortParams[i][1] ) );
         }
-        waitSignal.countDown();
         try
         {
             sortWorkers.awaitAndThrowOnError();
@@ -187,65 +187,6 @@ public class ParallelSort
         return builder.toString();
     }
 
-    private int partition( int leftIndex, int rightIndex, int pivotIndex )
-    {
-        int li = leftIndex, ri = rightIndex - 2, pi = pivotIndex;
-        long pivot = clearCollision( dataCache.get( tracker.get( pi ) ) );
-        //save pivot in last index
-        tracker.swap( pi, rightIndex - 1, 1 );
-        long left = clearCollision( dataCache.get( tracker.get( li ) ) );
-        long right = clearCollision( dataCache.get( tracker.get( ri ) ) );
-        while ( li < ri )
-        {
-            if ( comparator.lt( left, pivot ) )
-            {
-                //increment left to find the greater element than the pivot
-                left = clearCollision( dataCache.get( tracker.get( ++li ) ) );
-            }
-            else if ( comparator.ge( right, pivot ) )
-            {
-                //decrement right to find the smaller element than the pivot
-                right = clearCollision( dataCache.get( tracker.get( --ri ) ) );
-            }
-            else
-            {
-                //if right index is greater then only swap
-                tracker.swap( li, ri, 1 );
-                long temp = left;
-                left = right;
-                right = temp;
-            }
-        }
-        int partingIndex = ri;
-        if ( comparator.lt( right, pivot ) )
-        {
-            partingIndex++;
-        }
-        //restore pivot
-        tracker.swap( rightIndex - 1, partingIndex, 1 );
-        return partingIndex;
-    }
-
-    private void recursiveQsort( int start, int end, Random random, SortWorker workerProgress )
-    {
-        int diff = end - start;
-        if ( diff < 2 )
-        {
-            workerProgress.incrementProgress( diff );
-            return;
-        }
-
-        workerProgress.incrementProgress( 1 );
-
-        // choose a random pivot between start and end
-        int pivot = start + random.nextInt( diff );
-
-        pivot = partition( start, end, pivot );
-
-        recursiveQsort( start, pivot, random, workerProgress );
-        recursiveQsort( pivot + 1, end, random, workerProgress );
-    }
-
     /**
      * Pluggable comparator for the comparisons that quick-sort needs in order to function.
      */
@@ -285,14 +226,14 @@ public class ParallelSort
     private class SortWorker implements Runnable
     {
         private final int start, size;
-        private final CountDownLatch waitSignal;
         private int threadLocalProgress;
+        private final long[] pivotChoice = new long[10];
+        private final Random random = ThreadLocalRandom.current();
 
-        SortWorker( int startRange, int size, CountDownLatch wait )
+        SortWorker( int startRange, int size )
         {
             this.start = startRange;
             this.size = size;
-            this.waitSignal = wait;
         }
 
         void incrementProgress( int diff )
@@ -313,17 +254,110 @@ public class ParallelSort
         @Override
         public void run()
         {
-            Random random = ThreadLocalRandom.current();
-            try
-            {
-                waitSignal.await();
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
-            }
-            recursiveQsort( start, start + size, random, this );
+            qsort( start, start + size );
             reportProgress();
+        }
+
+        private int partition( int leftIndex, int rightIndex, int pivotIndex )
+        {
+            int li = leftIndex, ri = rightIndex - 2, pi = pivotIndex;
+            long pivot = clearCollision( dataCache.get( tracker.get( pi ) ) );
+            // save pivot in last index
+            tracker.swap( pi, rightIndex - 1, 1 );
+            long left = clearCollision( dataCache.get( tracker.get( li ) ) );
+            long right = clearCollision( dataCache.get( tracker.get( ri ) ) );
+            while ( li < ri )
+            {
+                if ( comparator.lt( left, pivot ) )
+                {   // this value is on the correct side of the pivot, moving on
+                    left = clearCollision( dataCache.get( tracker.get( ++li ) ) );
+                }
+                else if ( comparator.ge( right, pivot ) )
+                {   // this value is on the correct side of the pivot, moving on
+                    right = clearCollision( dataCache.get( tracker.get( --ri ) ) );
+                }
+                else
+                {   // this value is on the wrong side of the pivot, swapping
+                    tracker.swap( li, ri, 1 );
+                    long temp = left;
+                    left = right;
+                    right = temp;
+                }
+            }
+            int partingIndex = ri;
+            if ( comparator.lt( right, pivot ) )
+            {
+                partingIndex++;
+            }
+            // restore pivot
+            tracker.swap( rightIndex - 1, partingIndex, 1 );
+            return partingIndex;
+        }
+
+        private void qsort( int initialStart, int initialEnd )
+        {
+            PrimitiveIntStack stack = new PrimitiveIntStack( 100 );
+            stack.push( initialStart );
+            stack.push( initialEnd );
+            while ( !stack.isEmpty() )
+            {
+                int end = stack.poll();
+                int start = stack.poll();
+                int diff = end - start;
+                if ( diff < 2 )
+                {
+                    incrementProgress( 2 );
+                    continue;
+                }
+
+                incrementProgress( 1 );
+
+                // choose a random pivot between start and end
+                int pivot = start + random.nextInt( diff );
+                pivot = informedPivot( start, end, pivot );
+
+                // partition, given that pivot
+                pivot = partition( start, end, pivot );
+                if ( pivot > start )
+                {   // there are elements to left of pivot
+                    stack.push( start );
+                    stack.push( pivot );
+                }
+                if ( pivot + 1 < end )
+                {   // there are elements to right of pivot
+                    stack.push( pivot + 1 );
+                    stack.push( end );
+                }
+            }
+        }
+
+        private int informedPivot( int start, int end, int randomIndex )
+        {
+            if ( end-start < pivotChoice.length )
+            {
+                return randomIndex;
+            }
+
+            int low = Math.max( start, randomIndex - 5 );
+            int high = Utils.safeCastLongToInt( Math.min( low + 10, end ) );
+            int length = high-low;
+
+            for ( int i = low, j = 0; i < high; i++,j++ )
+            {
+                pivotChoice[j] = clearCollision( dataCache.get( tracker.get( i ) ) );
+            }
+            Arrays.sort( pivotChoice, 0, length );
+
+            long middle = pivotChoice[length/2];
+            for ( int i = low; i <= high; i++ )
+            {
+                if ( clearCollision( dataCache.get( tracker.get( i ) ) ) == middle )
+                {
+                    return i;
+                }
+            }
+            throw new ThisShouldNotHappenError( "Mattias and Raghu",
+                    "The middle value somehow dissappeared in front of our eyes" );
         }
     }
 
