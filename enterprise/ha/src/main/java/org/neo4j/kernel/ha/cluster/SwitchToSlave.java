@@ -452,7 +452,7 @@ public class SwitchToSlave
         // This will move the copied db to the graphdb location
         userLog.info( "Copying store from master" );
         new StoreCopyClient( storeDir, config, kernelExtensions, logService.getUserLogProvider(),
-                fileSystemAbstraction, pageCache, storeCopyMonitor ).copyStore(
+                fileSystemAbstraction, pageCache, storeCopyMonitor, false ).copyStore(
                 new StoreCopyClient.StoreCopyRequester()
                 {
                     @Override
