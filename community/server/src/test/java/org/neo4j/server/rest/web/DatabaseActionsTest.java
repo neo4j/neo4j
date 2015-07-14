@@ -1323,7 +1323,6 @@ public class DatabaseActionsTest
         }
     }
 
-
     @Test
     public void shouldDropPropertyUniquenessConstraint() throws Exception
     {
@@ -1339,7 +1338,6 @@ public class DatabaseActionsTest
         assertFalse( "Constraint should have been dropped",
                 asSet( graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey ) ).contains( index ) );
     }
-
 
     @Test
     public void dropNonExistentConstraint() throws Exception
