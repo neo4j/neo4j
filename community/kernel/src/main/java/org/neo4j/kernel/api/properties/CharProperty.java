@@ -79,28 +79,9 @@ final class CharProperty extends DefinedProperty implements DefinedProperty.With
         }
     }
 
-    protected TypeClassification typeClassification()
-    {
-        return TypeClassification.STRING;
-    }
-
     @Override
     public String stringValue()
     {
         return Character.toString( value );
-    }
-
-    @Override
-    int compareByValue( DefinedProperty other )
-    {
-        if ( other instanceof WithStringValue )
-        {
-            WithStringValue that = (WithStringValue) other;
-            return this.stringValue().compareTo( that.stringValue() );
-        }
-        else
-        {
-            return super.compareByValue( other );
-        }
     }
 }

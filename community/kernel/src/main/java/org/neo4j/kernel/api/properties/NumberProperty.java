@@ -25,23 +25,4 @@ public abstract class NumberProperty extends DefinedProperty implements DefinedP
     {
         super(propertyKeyId);
     }
-
-    protected TypeClassification typeClassification()
-    {
-        return TypeClassification.NUMBER;
-    }
-
-    @Override
-    int compareByValue( DefinedProperty other )
-    {
-        if ( other instanceof WithDoubleValue )
-        {
-            WithDoubleValue that = (WithDoubleValue) other;
-            return Double.compare( this.doubleValue(), that.doubleValue() );
-        }
-        else
-        {
-            return super.compareByValue( other );
-        }
-    }
 }

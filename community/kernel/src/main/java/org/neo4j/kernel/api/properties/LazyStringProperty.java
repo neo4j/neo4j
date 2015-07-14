@@ -45,23 +45,4 @@ class LazyStringProperty extends LazyProperty<String> implements DefinedProperty
     {
         return value();
     }
-
-    protected TypeClassification typeClassification()
-    {
-        return TypeClassification.STRING;
-    }
-
-    @Override
-    int compareByValue( DefinedProperty other )
-    {
-        if ( other instanceof WithStringValue )
-        {
-            WithStringValue that = (WithStringValue) other;
-            return this.stringValue().compareTo( that.stringValue() );
-        }
-        else
-        {
-            return super.compareByValue( other );
-        }
-    }
 }

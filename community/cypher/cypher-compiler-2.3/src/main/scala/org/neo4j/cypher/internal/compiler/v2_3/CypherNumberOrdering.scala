@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.kernel.impl.NumberPropertyValueComparator
+import org.neo4j.kernel.impl.api.PropertyValue
 
 object CypherNumberOrdering extends Ordering[Number] {
 
   override def compare(x: Number, y: Number) =
-    NumberPropertyValueComparator.INSTANCE.compare(x, y)
+    PropertyValue.NUMBER_COMPARATOR.compare(x, y)
 }

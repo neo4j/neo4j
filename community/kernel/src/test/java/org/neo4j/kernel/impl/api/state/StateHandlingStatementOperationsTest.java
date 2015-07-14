@@ -195,7 +195,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldConsiderTransactionStateWhenScanningAnIndex() throws Exception
+    public void shouldConsiderTransactionStateDuringIndexScan() throws Exception
     {
         // Given
         TransactionState txState = mock( TransactionState.class );
@@ -225,7 +225,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldConsiderTransactionStateWhenSearchingAnIndex() throws Exception
+    public void shouldConsiderTransactionStateDuringIndexSeek() throws Exception
     {
         // Given
         TransactionState txState = mock( TransactionState.class );
@@ -255,7 +255,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldConsiderTransactionStateWhenPerformingPrefixSearchOnAnIndex() throws Exception
+    public void shouldConsiderTransactionStateDuringIndexRangeSeekByPrefix() throws Exception
     {
         // Given
         TransactionState txState = mock( TransactionState.class );

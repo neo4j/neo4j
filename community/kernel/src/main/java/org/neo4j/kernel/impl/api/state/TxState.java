@@ -1223,7 +1223,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
         else
         {
-            sortedUpdates = new TreeMap<>();
+            sortedUpdates = new TreeMap<>( DefinedProperty.COMPARATOR );
             sortedUpdates.putAll( updates );
             indexUpdates.put( descriptor.getLabelId(), sortedUpdates );
         }

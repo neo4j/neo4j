@@ -166,11 +166,16 @@ public class DefinedPropertyTest
         assertThat( compare( p1, p2 ), lessThan( 0 ) );
     }
 
-    private int compare( DefinedProperty p1, DefinedProperty p2 )
+    private int compare( DefinedProperty leftProperty, DefinedProperty rightProperty )
     {
-        int left = p1.compareTo( p2 );
-        int right = p2.compareTo( p1 );
-        assertThat( left, equalTo( -right ) );
-        return left;
+        int leftComparison = DefinedProperty.COMPARATOR.compare( leftProperty, rightProperty );
+        int rightComparison = DefinedProperty.COMPARATOR.compare( rightProperty, leftProperty );
+        assertThat( sign ( leftComparison ) , equalTo( -sign( rightComparison ) ) );
+        return leftComparison;
+    }
+
+    private int sign( int value )
+    {
+        return value == 0 ? 0 : ( value < 0 ? -1 : + 1 );
     }
 }

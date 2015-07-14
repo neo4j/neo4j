@@ -32,9 +32,10 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
+import static org.neo4j.kernel.impl.api.PropertyValue.COMPARE_WITH_LEFT_NULLS;
+import static org.neo4j.kernel.impl.api.PropertyValue.SuperType.NUMBER;
 import static org.neo4j.register.Register.DoubleLong;
 
 class HashBasedIndex extends InMemoryIndexImplementation
@@ -83,9 +84,8 @@ class HashBasedIndex extends InMemoryIndexImplementation
         for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
         {
             Object key = entry.getKey();
-            if ( key instanceof Number )
+            if ( NUMBER.isSuperTypeOf( key ) )
             {
-                DefinedProperty keyNumber = DefinedProperty.numberProperty( 1, ((Number) key) );
                 boolean lowerFilter = false;
                 boolean upperFilter = false;
 
@@ -95,8 +95,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
                 }
                 else
                 {
-                    DefinedProperty lowerNumber = DefinedProperty.numberProperty( 1, lower );
-                    int cmp = keyNumber.compareTo( lowerNumber );
+                    int cmp = COMPARE_WITH_LEFT_NULLS.compare( key, lower );
                     lowerFilter = (includeLower && cmp >= 0) || (cmp > 0);
                 }
 
@@ -106,8 +105,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
                 }
                 else
                 {
-                    DefinedProperty upperNumber = DefinedProperty.numberProperty( 1, upper );
-                    int cmp = keyNumber.compareTo( upperNumber );
+                    int cmp = COMPARE_WITH_LEFT_NULLS.compare( key, upper );
                     upperFilter = (includeUpper && cmp <= 0) || (cmp < 0);
                 }
 
