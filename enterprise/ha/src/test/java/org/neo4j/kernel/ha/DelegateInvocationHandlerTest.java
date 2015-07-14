@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.neo4j.graphdb.TransientFailureException;
+
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -38,7 +40,7 @@ public class DelegateInvocationHandlerTest
             value.get();
             fail( "Should fail" );
         }
-        catch ( IllegalStateException e )
+        catch ( TransientFailureException e )
         {   // THEN
         }
     }

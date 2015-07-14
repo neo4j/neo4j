@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.graphdb.TransientTransactionFailureException;
+
 /**
  * Signals that a deadlock between two or more transactions has been detected.
  */
-public class DeadlockDetectedException extends RuntimeException
+public class DeadlockDetectedException extends TransientTransactionFailureException
 {
     public DeadlockDetectedException( String message )
     {
