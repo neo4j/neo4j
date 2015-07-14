@@ -27,11 +27,30 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
  */
 trait Comparer extends StringHelper {
 
-  def compare(l: Any, r: Any)(implicit qtx: QueryState): Int =
+  import Comparer._
+
+  def compare(l: Any, r: Any)(implicit qtx: QueryState): Int = {
     try {
-      CypherValueOrdering.compare(l, r)
+      if ( (isString(l) && isString(r)) || (isNumber(l) && isNumber(r)))
+        CypherOrdering.DEFAULT.compare(l, r)
+      else
+        throw new IncomparableValuesException(textWithType(l), textWithType(r))
     } catch {
       case _: IllegalArgumentException =>
         throw new IncomparableValuesException(textWithType(l), textWithType(r))
     }
+  }
+}
+
+object Comparer {
+  def isString(value: Any): Boolean = value match {
+    case _: String => true
+    case _: Character => true
+    case _ => value == null
+  }
+
+  def isNumber(value: Any): Boolean = value match {
+    case _: Number => true
+    case _ => value == null
+  }
 }

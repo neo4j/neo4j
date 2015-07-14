@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherValueOrdering, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_3.{CypherOrdering, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
@@ -67,49 +67,49 @@ class ComparablePredicateTest extends CypherFunSuite {
   test("should compare numerical values using <") {
     for (left <- numericalValues)
       for (right <- numericalValues)
-        actualLessThan(left, right) should equal(CypherValueOrdering.compare(left, right) < 0)
+        actualLessThan(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) < 0)
   }
 
   test("should compare numerical values using <=") {
     for (left <- numericalValues)
       for (right <- numericalValues)
-        actualLessThanOrEqual(left, right) should equal(CypherValueOrdering.compare(left, right) <= 0)
+        actualLessThanOrEqual(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) <= 0)
   }
 
   test("should compare numerical values using >") {
     for (left <- numericalValues)
       for (right <- numericalValues)
-        actualGreaterThan(left, right) should equal(CypherValueOrdering.compare(left, right) > 0)
+        actualGreaterThan(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) > 0)
   }
 
   test("should compare numerical values using >=") {
     for (left <- numericalValues)
       for (right <- numericalValues)
-        actualGreaterThanOrEqual(left, right) should equal(CypherValueOrdering.compare(left, right) >= 0)
+        actualGreaterThanOrEqual(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) >= 0)
   }
 
   test("should compare textual values using <") {
     for (left <- textualValues)
       for (right <- textualValues)
-        actualLessThan(left, right) should equal(CypherValueOrdering.compare(left, right) < 0)
+        actualLessThan(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) < 0)
   }
 
   test("should compare textual values using <=") {
     for (left <- textualValues)
       for (right <- textualValues)
-        actualLessThanOrEqual(left, right) should equal(CypherValueOrdering.compare(left, right) <= 0)
+        actualLessThanOrEqual(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) <= 0)
   }
 
   test("should compare textual values using >") {
     for (left <- textualValues)
       for (right <- textualValues)
-        actualGreaterThan(left, right) should equal(CypherValueOrdering.compare(left, right) > 0)
+        actualGreaterThan(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) > 0)
   }
 
   test("should compare textual values using >=") {
     for (left <- textualValues)
       for (right <- textualValues)
-        actualGreaterThanOrEqual(left, right) should equal(CypherValueOrdering.compare(left, right) >= 0)
+        actualGreaterThanOrEqual(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) >= 0)
   }
 
   private def actualLessThan(left: Any, right: Any) =

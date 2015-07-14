@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import java.util.Comparator;
-
 import org.neo4j.helpers.MathUtil;
 import org.neo4j.helpers.ObjectUtil;
-import org.neo4j.kernel.impl.api.PropertyValue;
 
-import static org.neo4j.kernel.impl.api.PropertyValue.*;
-import static org.neo4j.kernel.impl.api.PropertyValue.COMPARE_WITH_LEFT_NULLS;
+import java.util.Comparator;
+
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
+
 
 /**
  * Base class for properties that have a value.
@@ -56,7 +55,7 @@ public abstract class DefinedProperty extends Property
             int cmp = left.propertyKeyId - right.propertyKeyId;
             if ( cmp == 0 )
             {
-                return COMPARE_WITH_LEFT_NULLS.compare( left.value(), right.value() );
+                return COMPARE_VALUES.compare( left.value(), right.value() );
             }
 
             // else

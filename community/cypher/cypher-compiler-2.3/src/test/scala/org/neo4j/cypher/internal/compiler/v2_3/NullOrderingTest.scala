@@ -19,17 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-object CypherValueOrdering extends Ordering[Any] {
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.kernel.impl.api.PropertyValueComparison
 
-  override def compare(x: Any, y: Any) = (x, y) match {
-    case (null, null) => 0
-    case (null, _) => +1
-    case (_, null) => -1
-    case (l: Number, r: Number) => CypherNumberOrdering.compare(l, r)
-    case (l: String, r: String) => l.compareTo(r)
-    case (l: Character, r: String) => l.toString.compareTo(r)
-    case (l: String, r: Character) => l.compareTo(r.toString)
-    case (l: Character, r: Character) => Character.compare(l, r)
-    case _ => throw new IllegalArgumentException(s"Cannot compare '$x' with '$y'. They are incomparable.")
+class NullOrderingTest extends CypherFunSuite {
+
+  import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering._
+
+  val ordering = Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_NUMBERS)
+
+  test("Should be able to put nulls first") {
+    Seq[Number](null, 4.0d, -3, null, 12).sorted(ordering.withNullsFirst) should equal(Seq[Number](null, null, -3, 4.0d, 12))
+  }
+
+  test("Should be able to put nulls last") {
+    Seq[Number](null, 4.0d, -3, null, 12).sorted(ordering.withNullsLast) should equal(Seq[Number](-3, 4.0d, 12, null, null))
   }
 }

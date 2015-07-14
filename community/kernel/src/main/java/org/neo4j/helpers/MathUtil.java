@@ -19,6 +19,8 @@
  */
 package org.neo4j.helpers;
 
+import java.math.BigDecimal;
+
 public abstract class MathUtil
 {
     private static final long NON_DOUBLE_LONG = 0xFFE0_0000_0000_0000L; // doubles are exact integers up to 53 bits
@@ -64,4 +66,28 @@ public abstract class MathUtil
         return false;
     }
 
+    // Tested by PropertyValueComparisonTest
+    public static int compareDoubleAgainstLong( double lhs, long rhs )
+    {
+        if  ( (NON_DOUBLE_LONG & rhs ) != NON_DOUBLE_LONG )
+        {
+            if ( Double.isNaN( lhs ) )
+            {
+                return +1;
+            }
+            if ( Double.isInfinite( lhs ) )
+            {
+                return lhs < 0 ? -1 : +1;
+            }
+            return BigDecimal.valueOf( lhs ).compareTo( BigDecimal.valueOf( rhs ) );
+        }
+        return Double.compare( lhs, rhs );
+    }
+
+    // Tested by PropertyValueComparisonTest
+    public static int compareLongAgainstDouble( long lhs, double rhs )
+    {
+        return - compareDoubleAgainstLong( rhs, lhs );
+    }
 }
+

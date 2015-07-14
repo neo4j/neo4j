@@ -17,12 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3
+package org.neo4j.helpers;
 
-import org.neo4j.kernel.impl.api.PropertyValue
+import org.junit.Test;
 
-object CypherNumberOrdering extends Ordering[Number] {
+import static org.junit.Assert.*;
 
-  override def compare(x: Number, y: Number) =
-    PropertyValue.NUMBER_COMPARATOR.compare(x, y)
+import static org.neo4j.helpers.MathUtil.numbersEqual;
+
+public class MathUtilTest
+{
+    @Test
+    public void numbersEqualShouldAlwaysBeFalseWhenComparingAgainstDoubleNaN()
+    {
+        assertFalse( numbersEqual( Double.NaN, 0 ) );
+    }
+
+    @Test
+    public void numbersEqualShouldAlwaysBeFalseWhenComparingAgainstInfinities()
+    {
+        assertFalse( numbersEqual( Double.NEGATIVE_INFINITY, Long.MIN_VALUE ) );
+        assertFalse( numbersEqual( Double.POSITIVE_INFINITY, Long.MAX_VALUE ) );
+    }
 }

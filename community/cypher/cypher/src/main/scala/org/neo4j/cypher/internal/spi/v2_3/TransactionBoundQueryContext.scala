@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.collection.primitive.base.Empty
+import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.{BY_NUMBER, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
@@ -154,7 +155,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
       if (anyRange.nonEmpty) {
         // If we get back an exclusion test, the range could return values otherwise it is empty
-        anyRange.get.inclusionTest[Any](CypherValueOrdering).map { test =>
+        anyRange.get.inclusionTest[Any](BY_VALUE).map { test =>
           throw new IllegalArgumentException("Cannot compare a property against values that are neither strings nor numbers.")
         }.getOrElse(Iterator.empty)
       } else {
@@ -202,24 +203,24 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     val matchingNodes: PrimitiveLongIterator = range match {
 
       case rangeLessThan: RangeLessThan[Number] =>
-        rangeLessThan.limit[Number](CypherNumberOrdering).map { limit =>
+        rangeLessThan.limit(BY_NUMBER).map { limit =>
           readOps.nodesGetFromIndexRangeSeekByNumber( index, null, false, limit.endPoint, limit.isInclusive )
-        }.getOrElse(Empty.EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
       case rangeGreaterThan: RangeGreaterThan[Number] =>
-        rangeGreaterThan.limit[Number](CypherNumberOrdering).map { limit =>
+        rangeGreaterThan.limit(BY_NUMBER).map { limit =>
           readOps.nodesGetFromIndexRangeSeekByNumber( index, limit.endPoint, limit.isInclusive, null, false )
-        }.getOrElse(Empty.EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
-        rangeGreaterThan.limit[Number](CypherNumberOrdering).flatMap { greaterThanLimit =>
-          rangeLessThan.limit[Number](CypherNumberOrdering).map { lessThanLimit =>
+        rangeGreaterThan.limit(BY_NUMBER).flatMap { greaterThanLimit =>
+          rangeLessThan.limit(BY_NUMBER).map { lessThanLimit =>
             readOps.nodesGetFromIndexRangeSeekByNumber(
               index,
               greaterThanLimit.endPoint, greaterThanLimit.isInclusive,
               lessThanLimit.endPoint, lessThanLimit.isInclusive )
           }
-        }.getOrElse(Empty.EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
     }
 
     JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
@@ -229,7 +230,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     val readOps = statement.readOperations()
     val allNodesInIndex = JavaConversionSupport.mapToScalaENFXSafe(readOps.nodesGetFromIndexScan(index))(nodeOps.getById)
     val propertyKeyId = index.getPropertyKeyId
-    range.inclusionTest[Any](CypherValueOrdering).map {
+    range.inclusionTest[Any](BY_VALUE).map {
       case test =>
         allNodesInIndex.filter { (node: Node) =>
           val nodeId = node.getId

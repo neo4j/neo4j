@@ -34,8 +34,8 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
-import static org.neo4j.kernel.impl.api.PropertyValue.COMPARE_WITH_LEFT_NULLS;
-import static org.neo4j.kernel.impl.api.PropertyValue.SuperType.NUMBER;
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
 import static org.neo4j.register.Register.DoubleLong;
 
 class HashBasedIndex extends InMemoryIndexImplementation
@@ -95,7 +95,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
                 }
                 else
                 {
-                    int cmp = COMPARE_WITH_LEFT_NULLS.compare( key, lower );
+                    int cmp = COMPARE_VALUES.compare( key, lower );
                     lowerFilter = (includeLower && cmp >= 0) || (cmp > 0);
                 }
 
@@ -105,7 +105,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
                 }
                 else
                 {
-                    int cmp = COMPARE_WITH_LEFT_NULLS.compare( key, upper );
+                    int cmp = COMPARE_VALUES.compare( key, upper );
                     upperFilter = (includeUpper && cmp <= 0) || (cmp < 0);
                 }
 
