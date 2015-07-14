@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -27,16 +28,19 @@ import java.io.OutputStream;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.EphemeralFileSystemRule;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollectorTest.InputRelationshipBuilder.inputRelationship;
 
 public class BadCollectorTest
 {
+    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    
     @Test
     public void shouldCollectBadRelationshipsEvenIfThresholdNeverReached() throws IOException
     {
@@ -183,18 +187,16 @@ public class BadCollectorTest
 
     private OutputStream badOutputFile() throws IOException
     {
-        File badDataPath = new File( "/tmp/foo2" );
-        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        File badDataPath = new File( "/tmp/foo2" ).getAbsoluteFile();
+        FileSystemAbstraction fileSystem = fs.get();
         File badDataFile = badDataFile( fileSystem, badDataPath );
         return fileSystem.openAsOutputStream( badDataFile, true );
     }
 
     static class InputRelationshipBuilder
     {
-
         private String sourceDescription = "foo";
         private int lineNumber = 1;
-        ;
         private int position = 1;
         private Object[] properties = new Object[]{};
         private long firstPropertyId = -1l;
