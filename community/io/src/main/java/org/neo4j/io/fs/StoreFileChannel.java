@@ -164,4 +164,10 @@ public class StoreFileChannel implements StoreChannel
     {
         return channel.size();
     }
+
+    @Override
+    public void flush() throws IOException
+    {
+        force( false );
+    }
 }

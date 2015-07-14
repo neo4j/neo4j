@@ -22,7 +22,10 @@ package org.neo4j.kernel.impl.transaction.log;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
+import java.io.Flushable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -68,6 +71,7 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -257,7 +261,17 @@ public class BatchingTransactionAppenderTest
         String failureMessage = "Forces a failure";
         WritableLogChannel channel = spy( new InMemoryLogChannel() );
         IOException failure = new IOException( failureMessage );
-        doThrow( failure ).when( channel ).force();
+        final Flushable flushable = mock( Flushable.class );
+        doAnswer( new Answer<Flushable>()
+        {
+            @Override
+            public Flushable answer( InvocationOnMock invocation ) throws Throwable
+            {
+                invocation.callRealMethod();
+                return flushable;
+            }
+        } ).when( channel ).emptyBufferIntoChannelAndClearIt();
+        doThrow( failure ).when( flushable ).flush();
         LogFile logFile = mock( LogFile.class );
         when( logFile.getWriter() ).thenReturn( channel );
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 10 );
@@ -390,7 +404,9 @@ public class BatchingTransactionAppenderTest
                 transactionIdStore, BYPASS, kernelHealth );
 
         WritableLogChannel channel = mock( WritableLogChannel.class, RETURNS_MOCKS );
-        when( channel.putLong( anyLong() )).thenReturn( channel );
+        Flushable flushable = mock( Flushable.class );
+        when( channel.emptyBufferIntoChannelAndClearIt() ).thenReturn( flushable );
+        when( channel.putLong( anyLong() ) ).thenReturn( channel );
         when( logFile.getWriter() ).thenReturn( channel );
 
         appender.start();
@@ -402,7 +418,7 @@ public class BatchingTransactionAppenderTest
         verify( channel, times( 1 ) ).putLong( 1l );
         verify( channel, times( 1 ) ).putLong( 2l );
         verify( channel, times( 1 ) ).emptyBufferIntoChannelAndClearIt();
-        verify( channel, times( 1 ) ).force();
+        verify( flushable, times( 1 ) ).flush();
         verifyZeroInteractions( kernelHealth );
     }
 

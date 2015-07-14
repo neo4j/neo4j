@@ -25,6 +25,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.Flushable;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -90,10 +91,24 @@ public class BatchingTransactionAppenderConcurrencyTest
     @Before
     public void setUp()
     {
-        WritableLogChannel channel = new InMemoryLogChannel()
+        class Channel extends InMemoryLogChannel implements Flushable
         {
             @Override
-            public void force() throws IOException
+            public Flushable emptyBufferIntoChannelAndClearIt()
+            {
+                try
+                {
+                    channelCommandQueue.put( ChannelCommand.emptyBufferIntoChannelAndClearIt );
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new RuntimeException( e );
+                }
+                return this;
+            }
+
+            @Override
+            public void flush() throws IOException
             {
                 try
                 {
@@ -105,22 +120,9 @@ public class BatchingTransactionAppenderConcurrencyTest
                     throw new IOException( e );
                 }
             }
-
-            @Override
-            public void emptyBufferIntoChannelAndClearIt()
-            {
-                try
-                {
-                    channelCommandQueue.put( ChannelCommand.emptyBufferIntoChannelAndClearIt );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
         };
 
-        when( logFile.getWriter() ).thenReturn( channel );
+        when( logFile.getWriter() ).thenReturn( new Channel() );
     }
 
     private Runnable createForceAfterAppendRunnable( final BatchingTransactionAppender appender )

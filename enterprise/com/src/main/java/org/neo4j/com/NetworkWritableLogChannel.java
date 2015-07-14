@@ -19,14 +19,15 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
-
 import org.jboss.netty.buffer.ChannelBuffer;
+
+import java.io.Flushable;
+import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 
-public class NetworkWritableLogChannel implements WritableLogChannel
+public class NetworkWritableLogChannel implements Flushable, WritableLogChannel
 {
     private final ChannelBuffer delegate;
 
@@ -36,7 +37,7 @@ public class NetworkWritableLogChannel implements WritableLogChannel
     }
 
     @Override
-    public void force() throws IOException
+    public void flush() throws IOException
     {
     }
 
@@ -102,7 +103,8 @@ public class NetworkWritableLogChannel implements WritableLogChannel
     }
 
     @Override
-    public void emptyBufferIntoChannelAndClearIt()
+    public Flushable emptyBufferIntoChannelAndClearIt()
     {
+        return this;
     }
 }

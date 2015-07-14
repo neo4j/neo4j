@@ -205,4 +205,10 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
         result = 31 * result + (int) (version ^ (version >>> 32));
         return result;
     }
+
+    @Override
+    public void flush() throws IOException
+    {
+        force( false );
+    }
 }
