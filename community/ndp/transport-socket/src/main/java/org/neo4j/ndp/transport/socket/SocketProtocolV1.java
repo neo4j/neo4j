@@ -279,13 +279,16 @@ public class SocketProtocolV1 implements SocketProtocol
     {
         if ( inFlight.decrementAndGet() == 0 )
         {
-            try
+            if( state == State.AWAITING_CHUNK )
             {
-                packer.flush();
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
+                try
+                {
+                    packer.flush();
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
             }
         }
     }
