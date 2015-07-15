@@ -284,6 +284,36 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     result.executionPlanDescription().toString should include("NodeIndexSeekByRange")
   }
 
+  test("should be able to plan index seek without confusing property key ids") {
+    val smallValue = s"15${java.lang.Character.MIN_VALUE}"
+
+    // Given Non-matches
+    createLabeledNode(Map("prop" -> "15"), "Label")
+    createLabeledNode(Map("prop" -> smallValue), "Label")
+    createLabeledNode(Map("prop" -> "5"), "Label")
+    createLabeledNode(Map("prop2" -> 5), "Label")
+    createLabeledNode(Map("prop" -> ""), "Label")
+    createLabeledNode(Map("prop" -> "-5"), "Label")
+    createLabeledNode(Map("prop" -> "0"), "Label")
+    createLabeledNode(Map("prop" -> "10"), "Label")
+    createLabeledNode(Map("prop2" -> 10), "Label")
+    createLabeledNode(Map("prop" -> "14whatever"), "Label")
+
+    (1 to 400).foreach { _ =>
+      createLabeledNode("Label")
+    }
+    graph.createIndex("Label", "prop")
+
+    val query = "MATCH (n:Label) WHERE n.prop >= '15' AND n.prop2 > 5 RETURN n.prop AS prop"
+
+    // When
+    val result = executeWithCostPlannerOnly(query)
+
+    // Then
+    result.columnAs[String]("prop").toList should equal(List.empty)
+    result.executionPlanDescription().toString should include("NodeIndexSeekByRange")
+  }
+
   test("should be able to plan index seek for empty numerical between range") {
     // Given
     createLabeledNode(Map("prop" -> Double.NegativeInfinity), "Label")

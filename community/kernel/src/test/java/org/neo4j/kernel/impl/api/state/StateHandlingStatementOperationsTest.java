@@ -203,7 +203,7 @@ public class StateHandlingStatementOperationsTest
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
         IndexDescriptor index = new IndexDescriptor( 1, 2 );
-        when( txState.indexUpdates( index, null ) ).thenReturn(
+        when( txState.indexUpdatesForScanOrSeek( index, null ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
@@ -233,7 +233,7 @@ public class StateHandlingStatementOperationsTest
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
         IndexDescriptor index = new IndexDescriptor( 1, 2 );
-        when( txState.indexUpdates( index, "value" ) ).thenReturn(
+        when( txState.indexUpdatesForScanOrSeek( index, "value" ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
@@ -263,7 +263,7 @@ public class StateHandlingStatementOperationsTest
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
         IndexDescriptor index = new IndexDescriptor( 1, 2 );
-        when( txState.indexUpdatesForPrefix( index, "prefix" ) ).thenReturn(
+        when( txState.indexUpdatesForRangeSeekByPrefix( index, "prefix" ) ).thenReturn(
                 new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
         );
         when( txState.addedAndRemovedNodes() ).thenReturn(
@@ -283,6 +283,37 @@ public class StateHandlingStatementOperationsTest
         // Then
         assertEquals( asSet( 42L, 43L ), asSet( results ) );
     }
+
+    @Test
+    public void shouldConsiderTransactionStateDuringIndexBetweenRangeSeekByNumber() throws Exception
+    {
+        // Given
+        TransactionState txState = mock( TransactionState.class );
+        KernelStatement statement = mock( KernelStatement.class );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
+        IndexDescriptor index = new IndexDescriptor( 1, 2 );
+        when( txState.indexUpdatesForRangeSeekByNumber( index, 10, true, 20, false ) ).thenReturn(
+                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
+        );
+        when( txState.addedAndRemovedNodes() ).thenReturn(
+                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+        );
+
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        when( storeReadLayer.nodesGetFromIndexRangeSeekByNumber( statement, index, 10, true, 20, false ) ).thenReturn(
+                IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
+        );
+
+        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
+
+        // When
+        PrimitiveLongIterator results = context.nodesGetFromIndexRangeSeekByNumber( statement, index, 10, true, 20, false );
+
+        // Then
+        assertEquals( asSet( 42L, 43L ), asSet( results ) );
+    }
+
 
     @Test(expected = EntityNotFoundException.class)
     public void nodeDeletionShouldThrowExceptionWhenNodeWasAlreadyDeletedInSameTx() throws EntityNotFoundException

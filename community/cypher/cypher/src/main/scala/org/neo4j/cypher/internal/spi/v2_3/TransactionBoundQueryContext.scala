@@ -164,19 +164,17 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
           case (None, Some(stringRange)) => indexSeekByStringRange(index, stringRange)
 
           case (Some(numericRange), Some(stringRange)) =>
-            val numericResults = indexSeekByNumericalRange(index, numericRange)
-            val stringResults = indexSeekByStringRange(index, stringRange)
-
             // Consider MATCH (n:Person) WHERE n.prop < 1 AND n.prop > "London":
             // The order of predicate evaluation is unspecified, i.e.
-            // LabelScan fby Filter(n.prop < 1) fby Filter(n.prop > "London) is a valid plan
+            // LabelScan fby Filter(n.prop < 1) fby Filter(n.prop > "London") is a valid plan
             // If the first filter returns no results, the plan returns no results.
             // If the first filter returns any result, the following filter will fail since
             // comparing string against numbers throws an exception. Same for the reverse case.
             //
             // Below we simulate this behaviour:
             //
-            if (numericResults.isEmpty || stringResults.isEmpty) {
+            if (indexSeekByNumericalRange( index, numericRange ).isEmpty
+                || indexSeekByStringRange(index, stringRange).isEmpty) {
               Iterator.empty
             } else {
               throw throw new IllegalArgumentException(s"Cannot compare a property against both numbers and strings. They are incomparable.")

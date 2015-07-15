@@ -139,9 +139,13 @@ public interface ReadableTxState
 
     Long indexCreatedForConstraint( UniquenessConstraint constraint );
 
-    ReadableDiffSets<Long> indexUpdates( IndexDescriptor index, Object value );
+    ReadableDiffSets<Long> indexUpdatesForScanOrSeek( IndexDescriptor index, Object value );
 
-    ReadableDiffSets<Long> indexUpdatesForPrefix( IndexDescriptor index, String prefix );
+    ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( IndexDescriptor index,
+                                                             Number lower, boolean includeLower,
+                                                             Number upper, boolean includeUpper );
+
+    ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
 
     NodeState getNodeState( long id );
 

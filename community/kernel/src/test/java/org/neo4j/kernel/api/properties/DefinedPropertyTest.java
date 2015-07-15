@@ -130,7 +130,7 @@ public class DefinedPropertyTest
         DefinedProperty p1 = doubleProperty( 1, 10 );
         DefinedProperty p2 = stringProperty( 1, "20" );
 
-        assertThat( compare( p1, p2 ), lessThan( 0 ) );
+        assertThat( compare( p1, p2 ), greaterThan( 0 ) );
     }
 
     @Test
@@ -139,7 +139,7 @@ public class DefinedPropertyTest
         DefinedProperty p1 = stringProperty( 1, "10" );
         DefinedProperty p2 = intProperty( 1, 20 );
 
-        assertThat( compare( p1, p2 ), greaterThan( 0 ) );
+        assertThat( compare( p1, p2 ), lessThan( 0 ) );
     }
 
     @Test

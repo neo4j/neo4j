@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 
 /**
  * Kernel transaction state, please see {@link org.neo4j.kernel.impl.api.state.TxState} for implementation details.
