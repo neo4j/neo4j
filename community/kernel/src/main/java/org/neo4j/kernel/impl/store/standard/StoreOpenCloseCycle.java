@@ -19,24 +19,20 @@
  */
 package org.neo4j.kernel.impl.store.standard;
 
-import static java.nio.ByteBuffer.wrap;
-import static org.neo4j.helpers.UTF8.encode;
-import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.OverlappingFileLockException;
 
 import org.neo4j.helpers.UTF8;
-import org.neo4j.io.fs.FileLock;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.NotCurrentStoreVersionException;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.logging.Log;
+
+import static java.nio.ByteBuffer.wrap;
+import static org.neo4j.helpers.UTF8.encode;
+import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
 
 /**
  * Manages the "opening" and "closing" of store files. In this context, a "closed" store is one that has a footer
@@ -110,16 +106,12 @@ public class StoreOpenCloseCycle
     private final Log log;
     private final File dbFileName;
     private final StoreFormat<?, ?> format;
-    private final FileSystemAbstraction fs;
 
-    private FileLock fileLock;
-
-    public StoreOpenCloseCycle( Log log, File dbFileName, StoreFormat<?, ?> format, FileSystemAbstraction fs )
+    public StoreOpenCloseCycle( Log log, File dbFileName, StoreFormat<?, ?> format )
     {
         this.log = log;
         this.dbFileName = dbFileName;
         this.format = format;
-        this.fs = fs;
     }
 
     /**
@@ -129,7 +121,6 @@ public class StoreOpenCloseCycle
      */
     public boolean openStore( StoreChannel channel ) throws IOException
     {
-        lock( channel );
         StateDescription result = determineState( channel );
         StoreState state = result.state();
         switch ( state )
@@ -163,31 +154,8 @@ public class StoreOpenCloseCycle
                         " vs file size " + channel.size() );
                 channel.truncate( channel.position() );
                 channel.force( false );
-                if ( fileLock != null )
-                {
-                    fileLock.release();
-                    fileLock = null;
-                }
             }
         } );
-    }
-
-    private void lock( StoreChannel channel )
-    {
-        try
-        {
-            this.fileLock = fs.tryLock( dbFileName, channel );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Unable to lock store[" + dbFileName + "]", e );
-        }
-        catch ( OverlappingFileLockException e )
-        {
-            throw new IllegalStateException( "Unable to lock store [" + dbFileName +
-                    "], this is usually caused by another Neo4j kernel already running in " +
-                    "this JVM for this particular store" );
-        }
     }
 
     private StateDescription determineState( StoreChannel channel ) throws IOException

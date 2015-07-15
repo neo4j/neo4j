@@ -34,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.storecopy.StoreCopyServer;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -509,13 +510,14 @@ public class BackupServiceIT
 
         createAndIndexNode( db, 1 ); // create some data
 
-        NeoStoreDataSource ds = db.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource();
+        final DependencyResolver resolver = db.getDependencyResolver();
+        NeoStoreDataSource ds = resolver.resolveDependency( DataSourceManager.class ).getDataSource();
         long expectedLastTxId = ds.getNeoStore().getLastCommittedTransactionId();
 
         // This monitor is added server-side...
         monitors.addMonitorListener( new StoreSnoopingMonitor( barrier ) );
 
-        Dependencies dependencies = new Dependencies(db.getDependencyResolver());
+        Dependencies dependencies = new Dependencies( resolver );
         dependencies.satisfyDependencies( defaultConfig, monitors, NullLogProvider.getInstance() );
 
         OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension) new OnlineBackupExtensionFactory().newKernelExtension(
@@ -523,7 +525,7 @@ public class BackupServiceIT
         backup.start();
 
         // when
-        BackupService backupService =backupService();
+        BackupService backupService = backupService();
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute( new Runnable()
         {
@@ -533,7 +535,7 @@ public class BackupServiceIT
                 barrier.awaitUninterruptibly();
 
                 createAndIndexNode( db, 1 );
-                db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get().flush();
+                resolver.resolveDependency( NeoStoreSupplier.class ).get().flush();
 
                 barrier.release();
             }
@@ -548,7 +550,10 @@ public class BackupServiceIT
 
         // then
         checkPreviousCommittedTxIdFromLog( 0, expectedLastTxId );
-        checkLastCommittedTxIdInLogAndNeoStore( expectedLastTxId+1 );
+        File neoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
+        long txIdFromOrigin = NeoStore.getRecord(
+                resolver.resolveDependency( PageCache.class ), neoStore, Position.LAST_TRANSACTION_ID );
+        checkLastCommittedTxIdInLogAndNeoStore( expectedLastTxId+1, txIdFromOrigin );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupDir ) );
         assertTrue( backupOutcome.isConsistent() );
     }
@@ -663,7 +668,7 @@ public class BackupServiceIT
         assertEquals( txId, logHeader.lastCommittedTxId );
     }
 
-    private void checkLastCommittedTxIdInLogAndNeoStore( long txId ) throws IOException
+    private void checkLastCommittedTxIdInLogAndNeoStore( long txId, long txIdFromOrigin ) throws IOException
     {
         // Assert last committed transaction can be found in tx log and is the last tx in the log
         LifeSupport life = new LifeSupport();
@@ -684,8 +689,7 @@ public class BackupServiceIT
         }
 
         // Assert last committed transaction is correct in neostore
-        File neoStore = new File( storeDir, NeoStore.DEFAULT_NAME );
-        assertEquals( txId, NeoStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID ) );
+        assertEquals( txId, txIdFromOrigin );
     }
 
     private long getLastTxChecksum( PageCache pageCache )

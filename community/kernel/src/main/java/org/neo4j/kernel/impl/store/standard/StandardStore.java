@@ -63,7 +63,7 @@ public class StandardStore<RECORD, CURSOR extends Store.RecordCursor> extends Li
     {
         this(format, dbFileName, idGenerator, pageCache, fs,
                 new IdGeneratorRebuilder.FindHighestInUseRebuilderFactory(),
-                new StoreOpenCloseCycle( logProvider.getLog( StandardStore.class ), dbFileName, format, fs ) );
+                new StoreOpenCloseCycle( logProvider.getLog( StandardStore.class ), dbFileName, format ) );
     }
 
     public StandardStore( StoreFormat<RECORD, CURSOR> format, File dbFileName, StoreIdGenerator idGenerator,

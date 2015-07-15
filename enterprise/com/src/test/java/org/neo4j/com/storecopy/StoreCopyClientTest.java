@@ -19,15 +19,15 @@
  */
 package org.neo4j.com.storecopy;
 
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -45,10 +45,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
@@ -63,7 +63,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class StoreCopyClientTest
@@ -235,10 +234,10 @@ public class StoreCopyClientTest
             }
             initialDatabase.shutdown();
 
-            initialDatabase = startDatabase( initialStore );
             long originalTransactionOffset =
                     NeoStore.getRecord( pageCache, new File( initialStore, NeoStore.DEFAULT_NAME ),
                             NeoStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
+            initialDatabase = startDatabase( initialStore );
 
             StoreCopyClient copier =
                     new StoreCopyClient( backupStore, new Config(), loadKernelExtensions(), NullLogProvider

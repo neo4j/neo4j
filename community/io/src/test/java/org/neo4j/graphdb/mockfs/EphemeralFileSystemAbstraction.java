@@ -36,6 +36,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
@@ -57,7 +58,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.function.Function;
-import org.neo4j.io.fs.FileLock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
@@ -243,20 +243,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
     {
         return new OutputStreamWriter( openAsOutputStream( fileName, append ), encoding );
-    }
-
-    @Override
-    public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
-    {
-        final java.nio.channels.FileLock lock = channel.tryLock();
-        return new FileLock()
-        {
-            @Override
-            public void release() throws IOException
-            {
-                lock.release();
-            }
-        };
     }
 
     @Override
@@ -779,7 +765,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             {
                 if ( !data.lock() )
                 {
-                    throw new IOException( "Locked" );
+                    throw new OverlappingFileLockException();
                 }
                 return new EphemeralFileLock( this, data );
             }

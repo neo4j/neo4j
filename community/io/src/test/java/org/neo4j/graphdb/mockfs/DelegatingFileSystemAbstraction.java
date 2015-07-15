@@ -28,7 +28,6 @@ import java.io.Reader;
 import java.io.Writer;
 
 import org.neo4j.function.Function;
-import org.neo4j.io.fs.FileLock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 
@@ -76,12 +75,6 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     public boolean renameFile( File from, File to ) throws IOException
     {
         return delegate.renameFile( from, to );
-    }
-
-    @Override
-    public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
-    {
-        return delegate.tryLock( fileName, channel );
     }
 
     @Override

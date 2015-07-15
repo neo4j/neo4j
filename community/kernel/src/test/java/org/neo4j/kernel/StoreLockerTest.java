@@ -24,13 +24,17 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.FileLock;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileLock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -90,10 +94,6 @@ public class StoreLockerTest
         {
             storeLocker.checkLock( target.directory( "unused" ) );
             // Ok
-        }
-        catch ( StoreLockException e )
-        {
-            fail();
         }
         finally
         {
@@ -186,9 +186,16 @@ public class StoreLockerTest
             }
 
             @Override
-            public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
+            public StoreChannel open( File fileName, String mode ) throws IOException
             {
-                throw new IOException( "Unable to create lock file " + fileName );
+                return new DelegatingStoreChannel( super.open( fileName, mode ) )
+                {
+                    @Override
+                    public FileLock tryLock() throws IOException
+                    {
+                        return null; // 'null' implies that the file has been externally locked
+                    }
+                };
             }
         };
         StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
@@ -200,11 +207,37 @@ public class StoreLockerTest
         }
         catch ( StoreLockException e )
         {
-            assertThat( e.getMessage(), containsString( "Unable to obtain lock on store lock file" ) );
+            assertThat( e.getMessage(), containsString( "Store and its lock file has been locked by another process" ) );
         }
         finally
         {
             storeLocker.release();
+        }
+    }
+
+    @Test
+    public void mustPreventMultipleInstancesFromStartingOnSameStore()
+    {
+        File storeDir = target.graphDbDir();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
+
+        try
+        {
+            new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+            fail( "Should not be able to start up another db in the same dir" );
+        }
+        catch ( Exception e )
+        {
+            // Good
+        }
+        finally
+        {
+            db.shutdown();
         }
     }
 }

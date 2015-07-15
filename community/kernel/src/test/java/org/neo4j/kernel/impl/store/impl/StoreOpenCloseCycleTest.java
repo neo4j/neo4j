@@ -19,64 +19,26 @@
  */
 package org.neo4j.kernel.impl.store.impl;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.Rule;
-import org.junit.Test;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileLock;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.format.TestHeaderlessStoreFormat;
-import org.neo4j.kernel.impl.store.standard.IdGeneratorRebuilder;
-import org.neo4j.kernel.impl.store.standard.StoreFormat;
 import org.neo4j.kernel.impl.store.standard.StoreOpenCloseCycle;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.EphemeralFileSystemRule;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class StoreOpenCloseCycleTest
 {
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-
-    @Test
-    public void shouldLockAndUnlock() throws Exception
-    {
-        // Given
-        StoreFormat<?,?> format = mock(StoreFormat.class);
-        when(format.version()).thenReturn( "v1.0.0" );
-        when(format.type()).thenReturn( "SomeFormat" );
-
-        File dbFileName = new File( "/store" );
-        StoreChannel channel = mock(StoreChannel.class);
-
-        FileLock lock = mock(FileLock.class);
-
-        FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
-        when(fs.tryLock( dbFileName, channel )).thenReturn( lock );
-
-        StoreOpenCloseCycle logic = new StoreOpenCloseCycle( NullLog.getInstance(),
-                dbFileName, format, fs );
-
-        // When
-        logic.openStore(channel );
-
-        // Then
-        verify( fs ).tryLock(dbFileName, channel );
-
-        // And when
-        logic.closeStore( channel, 0 );
-
-        // Then
-        verify( lock ).release();
-    }
 
     @Test
     public void shouldReturnTrueIfStoreIsNotClean() throws Exception
@@ -87,7 +49,7 @@ public class StoreOpenCloseCycleTest
         TestHeaderlessStoreFormat format = new TestHeaderlessStoreFormat();
 
         StoreOpenCloseCycle cycle = new StoreOpenCloseCycle( NullLog.getInstance(),
-                storeFile, format, fs );
+                storeFile, format );
 
         // And given the file exists (but contains no headers, and should thus be considered unclean)
         fs.create( storeFile );
@@ -105,13 +67,11 @@ public class StoreOpenCloseCycleTest
     {
         // Given
         File storeFile = new File( "store" );
-        EphemeralFileSystemAbstraction fs = fsRule.get();
 
         StoreChannel channel = newCleanStore( storeFile );
 
-        IdGeneratorRebuilder idGenRebuilder = mock( IdGeneratorRebuilder.class );
         StoreOpenCloseCycle cycle = new StoreOpenCloseCycle( NullLog.getInstance(),
-                storeFile, new TestHeaderlessStoreFormat(), fs );
+                storeFile, new TestHeaderlessStoreFormat() );
 
         // When
         boolean uncleanShutdown = cycle.openStore( channel );
@@ -124,7 +84,7 @@ public class StoreOpenCloseCycleTest
     {
         EphemeralFileSystemAbstraction fs = fsRule.get();
         StoreOpenCloseCycle cycle = new StoreOpenCloseCycle( NullLog.getInstance(),
-                storeFile, new TestHeaderlessStoreFormat(), fs);
+                storeFile, new TestHeaderlessStoreFormat() );
 
         // And given a cleanly shut down store
         fs.create( storeFile );

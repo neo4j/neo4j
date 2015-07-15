@@ -122,9 +122,9 @@ public class UniqueIndexRecoveryTests
             public boolean accept( File pathName )
             {
                 String subPath = pathName.getAbsolutePath().substring( path.length() ).replace( File.separatorChar, '/' );
-                if ( "/lock".equals( subPath ) )
+                if ( "/store_lock".equals( subPath ) )
                 {
-                    return false; // since the db is running, exclude the 'lock' file
+                    return false; // since the db is running, exclude the 'store_lock' file
                 }
                 if ( subPath.startsWith( "/schema/index/lucene/" ) || subPath.startsWith( "/schema/label/lucene/" ) )
                 {

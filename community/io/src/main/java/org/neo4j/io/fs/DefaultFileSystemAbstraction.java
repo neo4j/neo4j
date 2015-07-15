@@ -80,12 +80,6 @@ public class DefaultFileSystemAbstraction
     }
 
     @Override
-    public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
-    {
-        return FileLock.getOsSpecificFileLock( fileName, channel );
-    }
-
-    @Override
     public StoreFileChannel create( File fileName ) throws IOException
     {
         return open( fileName, "rw" );
