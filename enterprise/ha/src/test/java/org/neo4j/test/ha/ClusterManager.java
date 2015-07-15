@@ -19,6 +19,9 @@
  */
 package org.neo4j.test.ha;
 
+import ch.qos.logback.classic.LoggerContext;
+import org.w3c.dom.Document;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -38,11 +41,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-
-import ch.qos.logback.classic.LoggerContext;
-import org.w3c.dom.Document;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
@@ -77,6 +78,7 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.master.Slaves;
+import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -85,11 +87,11 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.junit.Assert.fail;
+
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
-
-import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
@@ -334,9 +336,9 @@ public class ClusterManager
     }
 
     /**
-     * The current master sees this many slaves as available.
+     * The current master sees this many members (including itself).
      *
-     * @param count number of slaves to see as available.
+     * @param count number of members to see.
      */
     public static Predicate<ManagedCluster> masterSeesMembers( final int count )
     {
@@ -818,7 +820,6 @@ public class ClusterManager
         {
             return Iterables.map( new Function<HighlyAvailableGraphDatabaseProxy,HighlyAvailableGraphDatabase>()
             {
-
                 @Override
                 public HighlyAvailableGraphDatabase apply( HighlyAvailableGraphDatabaseProxy from )
                 {
@@ -1114,6 +1115,18 @@ public class ClusterManager
                     {
                         throw new IllegalStateException( stateToString( this ), e );
                     }
+                }
+            }
+        }
+
+        public void force( HighlyAvailableGraphDatabase... except )
+        {
+            Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<>( asList( except ) );
+            for ( HighlyAvailableGraphDatabase db : getAllMembers() )
+            {
+                if ( !exceptSet.contains( db ) )
+                {
+                    db.getDependencyResolver().resolveDependency( LogRotationControl.class ).forceEverything();
                 }
             }
         }

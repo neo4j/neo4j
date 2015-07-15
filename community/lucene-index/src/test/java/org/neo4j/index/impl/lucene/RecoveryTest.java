@@ -132,7 +132,7 @@ public class RecoveryTest
     }
 
     @Test
-    public void recoveryForRelationshipCommandsOnly() throws Exception
+    public void recoveryForRelationshipCommandsOnly() throws Throwable
     {
         // shutdown db here
         String storeDir = db.getStoreDir();
