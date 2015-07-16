@@ -30,11 +30,11 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 import org.neo4j.ndp.messaging.v1.MessageFormat;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
+import org.neo4j.ndp.messaging.v1.Neo4jPack;
 import org.neo4j.ndp.messaging.v1.msgprocess.TransportBridge;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.internal.ErrorReporter;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
-import org.neo4j.packstream.PackStream;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.ndp.messaging.v1.msgprocess.MessageProcessingCallback.publishError;
@@ -92,8 +92,8 @@ public class SocketProtocolV1 implements SocketProtocol
         this.errorReporter = new ErrorReporter( logging, usageData );
         this.output = new ChunkedOutput( channel, DEFAULT_BUFFER_SIZE );
         this.input = new ChunkedInput();
-        this.packer = new PackStreamMessageFormatV1.Writer( new PackStream.Packer( output ), output );
-        this.unpacker = new PackStreamMessageFormatV1.Reader( new PackStream.Unpacker( input ) );
+        this.packer = new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( output ), output );
+        this.unpacker = new PackStreamMessageFormatV1.Reader( new Neo4jPack.Unpacker( input ) );
         this.bridge = new TransportBridge( log ).reset( session, packer, onEachCompletedMessage );
     }
 

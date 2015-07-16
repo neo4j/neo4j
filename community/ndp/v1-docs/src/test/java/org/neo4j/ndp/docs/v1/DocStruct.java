@@ -62,11 +62,13 @@ public class DocStruct implements Iterable<DocStruct.Field>
     {
         private final String typeSignature;
         private final String name;
+        private final String exampleValue;
 
-        public Field( String typeSignature, String name )
+        public Field( String typeSignature, String name, String exampleValue )
         {
             this.typeSignature = typeSignature;
             this.name = name;
+            this.exampleValue = exampleValue;
         }
 
         @Override
@@ -78,6 +80,16 @@ public class DocStruct implements Iterable<DocStruct.Field>
         public String type()
         {
             return typeSignature;
+        }
+
+        public String name()
+        {
+            return name;
+        }
+
+        public String exampleValueOr( String defaultValue )
+        {
+            return exampleValue == null ? defaultValue : exampleValue;
         }
     }
 
@@ -124,8 +136,12 @@ public class DocStruct implements Iterable<DocStruct.Field>
         List<Field> out = new LinkedList<>();
         for ( String s : raw.split( "\n" ) )
         {
-            String[] parts = s.trim().split( "\\s+" );
-            out.add( new Field( parts[0], parts[1] ) );
+            String[] parts = s.trim().split( "\\s+", 2 );
+            String[] valAndExample = parts[1].split( "//\\se\\.g\\." );
+
+            String example = valAndExample.length == 2 ?
+                    valAndExample[1].replaceAll("^\"+", "").replaceAll("\"+$", "") : null;
+            out.add( new Field( parts[0], valAndExample[0], example ) );
         }
         return out;
     }

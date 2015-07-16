@@ -37,6 +37,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 
+import static org.neo4j.packstream.PackStream.UTF_8;
+
 public class PackStreamTest
 {
 
@@ -320,7 +322,7 @@ public class PackStreamTest
             machine.packer().flush();
 
             // Then
-            String value = newUnpacker( machine.output() ).unpackString();
+            String value = newUnpacker( machine.output() ).unpackText();
             assertThat( value, equalTo( string ) );
         }
     }
@@ -356,7 +358,7 @@ public class PackStreamTest
         packer.flush();
 
         // Then
-        String value = newUnpacker( machine.output() ).unpackString();
+        String value = newUnpacker( machine.output() ).unpackText();
         assertThat( value, equalTo( abcdefghij ) );
     }
 
@@ -373,8 +375,26 @@ public class PackStreamTest
         packer.flush();
 
         // Then
-        String value = newUnpacker( machine.output() ).unpackString();
+        String value = newUnpacker( machine.output() ).unpackText();
         assertThat( value, equalTo( abcdefghij ) );
+    }
+
+    @Test
+    public void testCanPackAndUnpackTextInParts() throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+        byte[] part1 = "node/".getBytes( UTF_8 );
+        long part2 = 12345;
+
+        // When
+        PackStream.Packer packer = machine.packer();
+        packer.packText( part1, part2 );
+        packer.flush();
+
+        // Then
+        String value = newUnpacker( machine.output() ).unpackText();
+        assertThat( value, equalTo( "node/12345" ) );
     }
 
     @Test
@@ -444,9 +464,9 @@ public class PackStreamTest
         // Then
         assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
 
-        assertThat( unpacker.unpackString(), equalTo( "eins" ) );
-        assertThat( unpacker.unpackString(), equalTo( "zwei" ) );
-        assertThat( unpacker.unpackString(), equalTo( "drei" ) );
+        assertThat( unpacker.unpackText(), equalTo( "eins" ) );
+        assertThat( unpacker.unpackText(), equalTo( "zwei" ) );
+        assertThat( unpacker.unpackText(), equalTo( "drei" ) );
     }
 
     @Test
@@ -469,9 +489,9 @@ public class PackStreamTest
 
         assertThat( unpacker.unpackMapHeader(), equalTo( 2L ) );
 
-        assertThat( unpacker.unpackString(), equalTo( "one" ) );
+        assertThat( unpacker.unpackText(), equalTo( "one" ) );
         assertThat( unpacker.unpackLong(), equalTo( 1L ) );
-        assertThat( unpacker.unpackString(), equalTo( "two" ) );
+        assertThat( unpacker.unpackText(), equalTo( "two" ) );
         assertThat( unpacker.unpackLong(), equalTo( 2L ) );
     }
 
@@ -503,13 +523,13 @@ public class PackStreamTest
         assertThat( unpacker.unpackLong(), equalTo( 12L ) );
 
         assertThat( unpacker.unpackListHeader(), equalTo( 2L ) );
-        assertThat( unpacker.unpackString(), equalTo( "Person" ) );
-        assertThat( unpacker.unpackString(), equalTo( "Employee" ) );
+        assertThat( unpacker.unpackText(), equalTo( "Person" ) );
+        assertThat( unpacker.unpackText(), equalTo( "Employee" ) );
 
         assertThat( unpacker.unpackMapHeader(), equalTo( 2L ) );
-        assertThat( unpacker.unpackString(), equalTo( "name" ) );
-        assertThat( unpacker.unpackString(), equalTo( "Alice" ) );
-        assertThat( unpacker.unpackString(), equalTo( "age" ) );
+        assertThat( unpacker.unpackText(), equalTo( "name" ) );
+        assertThat( unpacker.unpackText(), equalTo( "Alice" ) );
+        assertThat( unpacker.unpackText(), equalTo( "age" ) );
         assertThat( unpacker.unpackLong(), equalTo( 33L ) );
     }
 
@@ -648,9 +668,9 @@ public class PackStreamTest
 
         // Then I can do streaming unpacking
         long size = unpacker.unpackMapHeader();
-        String k1 = unpacker.unpackString();
-        String v1 = unpacker.unpackString();
-        String k2 = unpacker.unpackString();
+        String k1 = unpacker.unpackText();
+        String v1 = unpacker.unpackText();
+        String k2 = unpacker.unpackText();
 
         long innerSize = unpacker.unpackListHeader();
         double d = unpacker.unpackDouble();

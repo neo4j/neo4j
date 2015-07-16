@@ -20,43 +20,20 @@
 package org.neo4j.ndp.messaging.v1;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.ndp.messaging.NDPIOException;
-import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
-import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
-import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
 import org.neo4j.ndp.messaging.v1.message.Message;
 import org.neo4j.packstream.PackStream;
-import org.neo4j.packstream.PackType;
 import org.neo4j.ndp.runtime.spi.Record;
 
-import static org.neo4j.ndp.messaging.v1.infrastructure.ValueParser.parseId;
 import static org.neo4j.ndp.runtime.internal.Neo4jError.codeFromString;
 import static org.neo4j.ndp.runtime.spi.Records.record;
 
 public class PackStreamMessageFormatV1 implements MessageFormat
 {
     public static final int VERSION = 1;
-
-    public static final byte NODE = 'N';
-    public static final byte RELATIONSHIP = 'R';
-    public static final byte PATH = 'P';
 
     @Override
     public int version()
@@ -105,14 +82,14 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             }
         };
 
-        private final PackStream.Packer packer;
+        private final Neo4jPack.Packer packer;
         private final MessageBoundaryHook onMessageComplete;
 
         /**
          * @param packer serializer to output channel
          * @param onMessageComplete invoked for each message, after it's done writing to the output
          */
-        public Writer( PackStream.Packer packer, MessageBoundaryHook onMessageComplete )
+        public Writer( Neo4jPack.Packer packer, MessageBoundaryHook onMessageComplete )
         {
             this.packer = packer;
             this.onMessageComplete = onMessageComplete;
@@ -131,7 +108,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             packer.packStructHeader( 2, MessageTypes.MSG_RUN );
             packer.pack( statement );
-            packRawMap( params );
+            packer.packRawMap( params );
             onMessageComplete.onMessageComplete();
         }
 
@@ -167,7 +144,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             packer.packListHeader( fields.length );
             for ( Object field : fields )
             {
-                packValue( field );
+                packer.pack( field );
             }
             onMessageComplete.onMessageComplete();
         }
@@ -177,7 +154,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throws IOException
         {
             packer.packStructHeader( 1, MessageTypes.MSG_SUCCESS );
-            packRawMap( metadata );
+            packer.packRawMap( metadata );
             onMessageComplete.onMessageComplete();
         }
 
@@ -218,195 +195,15 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             packer.flush();
         }
 
-        private void packRawMap( Map<String,Object> map ) throws IOException
-        {
-            packer.packMapHeader( map.size() );
-            if ( map.size() > 0 )
-            {
-                for ( Map.Entry<String,Object> entry : map.entrySet() )
-                {
-                    packer.pack( entry.getKey() );
-                    packValue( entry.getValue() );
-                }
-            }
-        }
-
-        private void packValue( Object obj ) throws IOException
-        {
-            // Note: below uses instanceof for quick implementation, this should be swapped over to a dedicated
-            // visitable type that the serializer can simply visit. This would create explicit contract for what can
-            // be serialized and allow performant method dispatch rather than if branching.
-            if ( obj == null )
-            {
-                packer.packNull();
-            }
-            else if ( obj instanceof Boolean )
-            {
-                packer.pack( (boolean) obj );
-            }
-            else if ( obj instanceof Byte || obj instanceof Short || obj instanceof Integer || obj instanceof Long )
-            {
-                packer.pack( ((Number) obj).longValue() );
-            }
-            else if ( obj instanceof Float || obj instanceof Double )
-            {
-                packer.pack( ((Number) obj).doubleValue() );
-            }
-            else if ( obj instanceof String )
-            {
-                packer.pack( (String) obj );
-            }
-            else if ( obj instanceof Map )
-            {
-                Map<Object,Object> map = (Map<Object,Object>) obj;
-
-                packer.packMapHeader( map.size() );
-                for ( Map.Entry<?,?> entry : map.entrySet() )
-                {
-                    packer.pack( entry.getKey().toString() );
-                    packValue( entry.getValue() );
-                }
-            }
-            else if ( obj instanceof Collection )
-            {
-                List list = (List) obj;
-                packer.packListHeader( list.size() );
-                for ( Object item : list )
-                {
-                    packValue( item );
-                }
-            }
-            else if ( obj instanceof byte[] )
-            {
-                // Pending decision
-                throw new UnsupportedOperationException( "Binary values cannot be packed." );
-            }
-            else if ( obj instanceof short[] )
-            {
-                short[] arr = (short[]) obj;
-                packer.packListHeader( arr.length );
-                for ( int i = 0; i < arr.length; i++ )
-                {
-                    packer.pack( arr[i] );
-                }
-            }
-            else if ( obj instanceof int[] )
-            {
-                int[] arr = (int[]) obj;
-                packer.packListHeader( arr.length );
-                for ( int i = 0; i < arr.length; i++ )
-                {
-                    packer.pack( arr[i] );
-                }
-            }
-            else if ( obj instanceof long[] )
-            {
-                long[] arr = (long[]) obj;
-                packer.packListHeader( arr.length );
-                for ( int i = 0; i < arr.length; i++ )
-                {
-                    packer.pack( arr[i] );
-                }
-            }
-            else if ( obj instanceof float[] )
-            {
-                float[] arr = (float[]) obj;
-                packer.packListHeader( arr.length );
-                for ( int i = 0; i < arr.length; i++ )
-                {
-                    packer.pack( arr[i] );
-                }
-            }
-            else if ( obj instanceof double[] )
-            {
-                double[] arr = (double[]) obj;
-                packer.packListHeader( arr.length );
-                for ( int i = 0; i < arr.length; i++ )
-                {
-                    packer.pack( arr[i] );
-                }
-            }
-            else if ( obj instanceof boolean[] )
-            {
-                boolean[] arr = (boolean[]) obj;
-                packer.packListHeader( arr.length );
-                for ( int i = 0; i < arr.length; i++ )
-                {
-                    packer.pack( arr[i] );
-                }
-            }
-            else if ( obj.getClass().isArray() )
-            {
-                Object[] arr = (Object[]) obj;
-                packer.packListHeader( arr.length );
-                for ( int i = 0; i < arr.length; i++ )
-                {
-                    packValue( arr[i] );
-                }
-            }
-            else if ( obj instanceof Node )
-            {
-                Node node = (Node) obj;
-                packer.packStructHeader( 3, NODE );
-                packer.pack( "node/" + node.getId() );
-
-                Collection<Label> labels = Iterables.toList( node.getLabels() );
-                packer.packListHeader( labels.size() );
-                for ( Label label : labels )
-                {
-                    packer.pack( label.name() );
-                }
-
-                Collection<String> propertyKeys = Iterables.toList( node.getPropertyKeys() );
-                packer.packMapHeader( propertyKeys.size() );
-                for ( String propertyKey : propertyKeys )
-                {
-                    packer.pack( propertyKey );
-                    packValue( node.getProperty( propertyKey ) );
-                }
-            }
-            else if ( obj instanceof Relationship )
-            {
-                Relationship rel = (Relationship) obj;
-                packer.packStructHeader( 5, RELATIONSHIP );
-                packer.pack( "rel/" + rel.getId() );
-                packer.pack( "node/" + rel.getStartNode().getId() );
-                packer.pack( "node/" + rel.getEndNode().getId() );
-
-                packer.pack( rel.getType().name() );
-
-                Collection<String> propertyKeys = Iterables.toList( rel.getPropertyKeys() );
-                packer.packMapHeader( propertyKeys.size() );
-                for ( String propertyKey : propertyKeys )
-                {
-                    packer.pack( propertyKey );
-                    packValue( rel.getProperty( propertyKey ) );
-                }
-            }
-            else if ( obj instanceof Path )
-            {
-                Path path = (Path) obj;
-                packer.packStructHeader( 1, PATH );
-                packer.packListHeader( path.length() * 2 + 1 );
-                for ( PropertyContainer pc : path )
-                {
-                    packValue( pc );
-                }
-            }
-            else
-            {
-                throw new NDPIOException( Status.General.UnknownFailure, "Unpackable value " + obj + " of type " + obj.getClass().getName() );
-            }
-        }
     }
 
     public static class Reader implements MessageFormat.Reader
     {
-        private final PackStream.Unpacker unpacker;
+        private final Neo4jPack.Unpacker unpacker;
 
-        public Reader( PackStream.Unpacker input )
+        public Reader( Neo4jPack.Unpacker unpacker )
         {
-            unpacker = input;
+            this.unpacker = unpacker;
         }
 
         @Override
@@ -462,17 +259,17 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                                 "0x" + Integer.toHexString(type) + " is not a valid message type." );
                     }
                 }
-                catch( PackStream.PackstreamException e )
+                catch( PackStream.PackStreamException e )
                 {
                     throw new NDPIOException( Status.Request.InvalidFormat,
                             "Unable to read " + messageTypeName (type) + " message. " +
-                            "Error was: " + e.getMessage() );
+                            "Error was: " + e.getMessage(), e );
                 }
             }
-            catch( PackStream.PackstreamException e )
+            catch( PackStream.PackStreamException e )
             {
                 throw new NDPIOException( Status.Request.InvalidFormat, "Unable to read message type. " +
-                        "Error was: " + e.getMessage() );
+                        "Error was: " + e.getMessage(), e );
             }
         }
 
@@ -485,22 +282,22 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private <E extends Exception> void unpackSuccessMessage( MessageHandler<E> output )
                 throws E, IOException
         {
-            Map<String,Object> map = unpackRawMap();
+            Map<String,Object> map = unpacker.unpackRawMap();
             output.handleSuccessMessage( map );
         }
 
         private <E extends Exception> void unpackFailureMessage( MessageHandler<E> output )
                 throws E, IOException
         {
-            Map<String,Object> map = unpackRawMap();
+            Map<String,Object> map = unpacker.unpackRawMap();
 
             String codeStr = map.containsKey( "code" ) ?
-                             (String) map.get( "code" ) :
-                             Status.General.UnknownFailure.name();
+                    (String) map.get( "code" ) :
+                    Status.General.UnknownFailure.name();
 
             String msg = map.containsKey( "message" ) ?
-                         (String) map.get( "message" ) :
-                         "<No message supplied>";
+                    (String) map.get( "message" ) :
+                    "<No message supplied>";
 
             output.handleFailureMessage( codeFromString( codeStr ), msg );
         }
@@ -518,7 +315,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             final Object[] fields = new Object[(int) length];
             for ( int i = 0; i < length; i++ )
             {
-                fields[i] = unpackValue();
+                fields[i] = unpacker.unpack();
             }
             output.handleRecordMessage( record( fields ) );
         }
@@ -526,8 +323,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private <E extends Exception> void unpackRunMessage( MessageHandler<E> output )
                 throws E, IOException
         {
-            String statement = unpacker.unpackString();
-            Map<String,Object> params = unpackRawMap();
+            String statement = unpacker.unpackText();
+            Map<String,Object> params = unpacker.unpackRawMap();
             output.handleRunMessage( statement, params );
         }
 
@@ -545,161 +342,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private <E extends Exception> void unpackInitializeMessage( MessageHandler<E> output ) throws IOException, E
         {
-            String clientName = unpacker.unpackString();
+            String clientName = unpacker.unpackText();
             output.handleInitializeMessage( clientName );
         }
 
-        private Map<String,Object> unpackRawMap() throws IOException
-        {
-            int size = (int) unpacker.unpackMapHeader();
-            if ( size == 0 )
-            {
-                return Collections.emptyMap();
-            }
-            Map<String,Object> map = new HashMap<>( size, 1 );
-            for ( int i = 0; i < size; i++ )
-            {
-                String key = unpacker.unpackString();
-                map.put( key, unpackValue() );
-            }
-            return map;
-        }
-
-        private Object unpackValue() throws IOException
-        {
-            PackType valType = unpacker.peekNextType();
-            switch ( valType )
-            {
-            case TEXT:
-                return unpacker.unpackString();
-            case INTEGER:
-                return unpacker.unpackLong();
-            case FLOAT:
-                return unpacker.unpackDouble();
-            case BOOLEAN:
-                return unpacker.unpackBoolean();
-            case NULL:
-                // still need to move past the null value
-                unpacker.unpackNull();
-                return null;
-            case LIST:
-            {
-                int size = (int) unpacker.unpackListHeader();
-                if ( size == 0 )
-                {
-                    return Collections.EMPTY_LIST;
-                }
-                ArrayList<Object> vals = new ArrayList<>( size );
-                for ( int j = 0; j < size; j++ )
-                {
-                    vals.add( unpackValue() );
-                }
-                return vals;
-            }
-            case MAP:
-            {
-                int size = (int) unpacker.unpackMapHeader();
-                if ( size == 0 )
-                {
-                    return Collections.EMPTY_MAP;
-                }
-                Map<String,Object> map = new HashMap<>( size, 1 );
-                for ( int j = 0; j < size; j++ )
-                {
-                    String key = unpacker.unpackString();
-                    Object val = unpackValue();
-                    map.put( key, val );
-                }
-                return map;
-            }
-            case STRUCT:
-            {
-                unpacker.unpackStructHeader();
-                char signature = unpacker.unpackStructSignature();
-                switch ( signature )
-                {
-                case NODE:
-                {
-                    String urn = unpacker.unpackString();
-
-                    int numLabels = (int) unpacker.unpackListHeader();
-                    List<Label> labels;
-                    if ( numLabels > 0 )
-                    {
-                        labels = new ArrayList<>( numLabels );
-                        for ( int i = 0; i < numLabels; i++ )
-                        {
-                            labels.add( DynamicLabel.label( unpacker.unpackString() ) );
-                        }
-                    }
-                    else
-                    {
-                        labels = Collections.emptyList();
-                    }
-
-                    Map<String,Object> props = unpackProperties();
-
-                    return new ValueNode( parseId( urn ), labels, props );
-                }
-                case RELATIONSHIP:
-                {
-                    String urn = unpacker.unpackString();
-                    String startUrn = unpacker.unpackString();
-                    String endUrn = unpacker.unpackString();
-                    String relTypeName = unpacker.unpackString();
-
-                    Map<String,Object> props = unpackProperties();
-
-                    long relId = parseId( urn );
-                    long startNodeId = parseId( startUrn );
-                    long endNodeId = parseId( endUrn );
-                    RelationshipType relType = DynamicRelationshipType.withName( relTypeName );
-
-                    return new ValueRelationship( relId, startNodeId, endNodeId, relType, props );
-                }
-                case PATH:
-                {
-                    int length = (int) unpacker.unpackListHeader();
-                    // Note, this obviously assumes blindly that the client will send us paths of manageble sizes,
-                    // opening
-                    // the door for a bad client to make us allocate a ton of extra RAM. The assumption here is that
-                    // the client has gone through a handshake and we trust her. That said, this is still wasteful, so
-                    // look into more efficient ways to handle this if we ever take paths as input arguments.
-                    PropertyContainer[] entities = new PropertyContainer[length];
-                    for ( int i = 0; i < length; i++ )
-                    {
-                        entities[i] = (PropertyContainer) unpackValue();
-                    }
-                    return new ValuePath( entities );
-                }
-                default:
-                    throw new NDPIOException( Status.Request.InvalidFormat, "Unknown struct type: " + signature );
-                }
-            }
-            default:
-                throw new NDPIOException( Status.Request.InvalidFormat, "Unknown value type: " + valType );
-            }
-        }
-
-        private Map<String,Object> unpackProperties() throws IOException
-        {
-            int numProps = (int) unpacker.unpackMapHeader();
-            Map<String,Object> map;
-            if ( numProps > 0 )
-            {
-                map = new HashMap<>( numProps, 1 );
-                for ( int j = 0; j < numProps; j++ )
-                {
-                    String key = unpacker.unpackString();
-                    Object val = unpackValue();
-                    map.put( key, val );
-                }
-            }
-            else
-            {
-                map = Collections.EMPTY_MAP;
-            }
-            return map;
-        }
     }
 }

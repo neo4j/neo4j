@@ -10,17 +10,17 @@ For details on the layout and meaning of specific messages, see <<ndp-messaging,
 .Types overview
 [cols="20,80",options="header",name="value-translation-table"]
 |=======================
-|Type                                  |Description
-|<<ndp-packstream-null,Null>>          |Represents the absence of a value
-|<<ndp-packstream-booleans,Boolean>>   |Boolean true or false
-|<<ndp-packstream-ints,Integer>>       |64-bit signed integer
-|<<ndp-packstream-floats,Float>>       |64-bit floating point number
-|<<ndp-packstream-text,Text>>          |Unicode text string
-|<<ndp-packstream-lists,List>>         |Ordered collection of values
-|<<ndp-packstream-maps,Map>>           |Unordered, keyed collection of values
-|<<ndp-value-nodestruct,Node>>         |A node in the graph with optional properties and labels
-|<<ndp-value-relstruct,Relationship>>  |A directed, typed connection between two nodes. Each relationship may have properties and always has an identity
-|<<ndp-value-pathstruct,Path>>         |The record of a directed walk through the graph, a sequence of zero or more segments*. A path with zero segments consists of a single node.
+|Type                                           |Description
+|<<ndp-packstream-null,Null>>                   |Represents the absence of a value
+|<<ndp-packstream-booleans,Boolean>>            |Boolean true or false
+|<<ndp-packstream-ints,Integer>>                |64-bit signed integer
+|<<ndp-packstream-floats,Float>>                |64-bit floating point number
+|<<ndp-packstream-text,Text>>                   |Unicode text string
+|<<ndp-packstream-lists,List>>                  |Ordered collection of values
+|<<ndp-packstream-maps,Map>>                    |Unordered, keyed collection of values
+|<<ndp-value-nodestruct,Node>>                  |A node in the graph with optional properties and labels
+|<<ndp-value-relstruct,Relationship>>           |A directed, typed connection between two nodes. Each relationship may have properties and always has an identity
+|<<ndp-value-pathstruct,Path>>                  |The record of a directed walk through the graph, a sequence of zero or more segments*. A path with zero segments consists of a single node.
 |=======================
 
 NOTE: *A segment is the record of a single step traversal through a graph, encompassing a start node, a relationship
@@ -382,8 +382,8 @@ A Node represents a node from a Neo4j graph and consists of a unique identifier 
 
 [source,ndp_value_struct]
 ----
-Node (signature=0x4E) {             /* signature: 'N' */
-    Text              identity
+Node (signature=0x4E) {
+    Text              nodeIdentity
     List<Text>        labels
     Map<Text, Value>  properties
 }
@@ -395,10 +395,10 @@ A Relationship represents a relationship from a Neo4j graph and consists of a un
 
 [source,ndp_value_struct]
 ----
-Relationship (signature=0x52) {    /* signature: 'R' */
-    Text              identity
-    Text              startNode    /* identity of the start node */
-    Text              endNode      /* identity of the end node   */
+Relationship (signature=0x52) {
+    Text              relIdentity
+    Text              startNodeIdentity
+    Text              endNodeIdentity
     Text              type
     Map<Text, Value>  properties
 }
@@ -406,12 +406,30 @@ Relationship (signature=0x52) {    /* signature: 'R' */
 
 [[ndp-value-pathstruct]]
 ==== Path
-A Path consists of a list of alternating nodes and relationships, always starting and ending with a node. The general serialised structure is as follows:
+A Path represents a walk through a graph.
+Its representation consists of a set of distinct nodes included within the path, a similar set of distinct relationships and a sequence describing the shape of the path.
+The general serialised structure is as follows:
 
 [source,ndp_value_struct]
 ----
-Path (signature=0x50) {                  /* signature: 'P' */
-    List<Node|Relationship> entities
+Path (signature=0x50) {
+    List<Node> nodes
+    List<UnboundRelationship> relationships
+    List<Integer> sequence
+}
+----
+
+[[ndp-value-unboundrelstruct]]
+==== UnboundRelationship
+An UnboundRelationship represents a relationship relative to a separately known start point and end point.
+The general serialised structure is as follows:
+
+[source,ndp_value_struct]
+----
+UnboundRelationship (signature=0x72) {
+    Text              relIdentity
+    Text              type          // e.g. "KNOWS"
+    Map<Text, Value>  properties    // e.g. {since:1999}
 }
 ----
 

@@ -32,11 +32,11 @@ import java.util.Map;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
+import org.neo4j.ndp.messaging.v1.Neo4jPack;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
 import org.neo4j.ndp.messaging.v1.message.Message;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.packstream.BufferedChannelOutput;
-import org.neo4j.packstream.PackStream;
 import org.neo4j.udc.UsageData;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
@@ -166,7 +166,7 @@ public class FragmentedMessageDeliveryTest
             RecordingByteChannel channel = new RecordingByteChannel();
 
             PackStreamMessageFormatV1.Writer format = new PackStreamMessageFormatV1.Writer(
-                    new PackStream.Packer( new BufferedChannelOutput( channel ) ), NO_OP );
+                    new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_OP );
             format.write( msgs[i] ).flush();
             serialized[i] = channel.getBytes();
         }
