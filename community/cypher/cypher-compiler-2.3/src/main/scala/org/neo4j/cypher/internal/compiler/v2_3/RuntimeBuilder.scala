@@ -33,10 +33,9 @@ import org.neo4j.helpers.Clock
 object RuntimeBuilder {
   def create(runtimeName: Option[RuntimeName], interpretedProducer: InterpretedPlanBuilder,
             compiledProducer: CompiledPlanBuilder, useErrorsOverWarnings: Boolean) = runtimeName match {
-    case None => SilentFallbackRuntimeBuilder(interpretedProducer, compiledProducer)
+    case None | Some(InterpretedRuntimeName) => InterpretedRuntimeBuilder(interpretedProducer)
     case Some(CompiledRuntimeName) if useErrorsOverWarnings => ErrorReportingRuntimeBuilder(compiledProducer)
     case Some(CompiledRuntimeName) => WarningFallbackRuntimeBuilder(interpretedProducer, compiledProducer)
-    case Some(InterpretedRuntimeName) => InterpretedRuntimeBuilder(interpretedProducer)
   }
 }
 trait RuntimeBuilder {
