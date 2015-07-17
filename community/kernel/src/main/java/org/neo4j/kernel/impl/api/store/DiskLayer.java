@@ -509,7 +509,7 @@ public class DiskLayer implements StoreReadLayer
 
     {
         IndexReader reader = statement.getIndexReader( index );
-        throw new UnsupportedOperationException("TODO");
+        return reader.rangeSeekByString( lower, includeLower, upper, includeUpper );
     }
 
     @Override

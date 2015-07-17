@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.spi.v2_3
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.{BY_NUMBER, BY_VALUE}
+import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.{BY_NUMBER, BY_VALUE, BY_STRING}
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
@@ -226,19 +226,31 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   def indexSeekByStringRange(index: IndexDescriptor, range: InequalitySeekRange[String]): scala.Iterator[Node] = {
     val readOps = statement.readOperations()
-    val allNodesInIndex = JavaConversionSupport.mapToScalaENFXSafe(readOps.nodesGetFromIndexScan(index))(nodeOps.getById)
     val propertyKeyId = index.getPropertyKeyId
-    range.inclusionTest[Any](BY_VALUE).map {
-      case test =>
-        allNodesInIndex.filter { (node: Node) =>
-          val nodeId = node.getId
-          readOps.nodeGetProperty(nodeId, propertyKeyId) match {
-            case s: String => test(s)
-            case c: Character => test(c)
-            case _ => false
+    val matchingNodes: PrimitiveLongIterator = range match {
+
+      case rangeLessThan: RangeLessThan[String] =>
+        rangeLessThan.limit(BY_STRING).map { limit =>
+          readOps.nodesGetFromIndexRangeSeekByString( index, null, false, limit.endPoint.toString(), limit.isInclusive )
+        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+
+      case rangeGreaterThan: RangeGreaterThan[String] =>
+        rangeGreaterThan.limit(BY_STRING).map { limit =>
+          readOps.nodesGetFromIndexRangeSeekByString( index, limit.endPoint.toString(), limit.isInclusive, null, false )
+        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+
+      case RangeBetween(rangeGreaterThan, rangeLessThan) =>
+        rangeGreaterThan.limit(BY_STRING).flatMap { greaterThanLimit =>
+          rangeLessThan.limit(BY_STRING).map { lessThanLimit =>
+            readOps.nodesGetFromIndexRangeSeekByString(
+              index,
+              greaterThanLimit.endPoint.toString(), greaterThanLimit.isInclusive,
+              lessThanLimit.endPoint.toString(), lessThanLimit.isInclusive )
           }
-        }
-    }.getOrElse(Iterator.empty)
+        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+    }
+
+    JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
   }
 
   def indexScan(index: IndexDescriptor) =

@@ -267,6 +267,41 @@ public class LuceneDocumentStructure
         );
     }
 
+    public TermRangeQuery newRangeSeekByStringQuery( String lower, boolean includeLower,
+                                                     String upper, boolean upperInclusive )
+    {
+        String chosenLower, chosenUpper;
+        boolean includeChosenLower, includeChosenUpper;
+
+        if ( lower == null )
+        {
+            chosenLower = null;
+            includeChosenLower = true;
+        }
+        else
+        {
+            chosenLower = lower;
+            includeChosenLower = includeLower;
+        }
+
+        if ( upper == null )
+        {
+            chosenUpper = null;
+            includeChosenUpper = true;
+        }
+        else
+        {
+            chosenUpper = upper;
+            includeChosenUpper = upperInclusive;
+        }
+
+        return new TermRangeQuery(
+                ValueEncoding.String.key(),
+                chosenLower, chosenUpper,
+                includeChosenLower, includeChosenUpper
+        );
+    }
+
     public PrefixQuery newRangeSeekByPrefixQuery( String prefix )
     {
         return new PrefixQuery( new Term( ValueEncoding.String.key(), prefix ) );

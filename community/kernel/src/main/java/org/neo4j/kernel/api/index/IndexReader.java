@@ -47,6 +47,11 @@ public interface IndexReader extends Resource
     PrimitiveLongIterator rangeSeekByNumber( Number lower, boolean includeLower, Number upper, boolean includeUpper );
 
     /**
+     * String range query by index seek
+     */
+    PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower, String upper, boolean includeUpper );
+
+    /**
      * Prefix search by index seek
      */
     PrimitiveLongIterator rangeSeekByPrefix( String prefix );
@@ -95,6 +100,13 @@ public interface IndexReader extends Resource
                                                         Number upper, boolean includeUpper )
         {
             return delegate.rangeSeekByNumber( lower, includeLower, upper, includeUpper );
+        }
+
+        @Override
+        public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
+                                                        String upper, boolean includeUpper )
+        {
+            return delegate.rangeSeekByString( lower, includeLower, upper, includeUpper );
         }
 
         @Override
@@ -151,6 +163,13 @@ public interface IndexReader extends Resource
         @Override
         public PrimitiveLongIterator rangeSeekByNumber( Number lower, boolean includeLower,
                                                         Number upper, boolean includeUpper )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        @Override
+        public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
+                                                        String upper, boolean includeUpper )
         {
             return PrimitiveLongCollections.emptyIterator();
         }
