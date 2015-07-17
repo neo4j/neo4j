@@ -25,9 +25,9 @@ import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 
 public abstract class PropertyConstraintRule extends AbstractSchemaRule
 {
-    PropertyConstraintRule( long id, int label, int relationshipType, Kind kind )
+    PropertyConstraintRule( long id, Kind kind )
     {
-        super( id, label, relationshipType, kind );
+        super( id, kind );
     }
 
     public abstract PropertyConstraint toConstraint();

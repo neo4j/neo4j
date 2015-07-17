@@ -23,28 +23,12 @@ import java.nio.ByteBuffer;
 
 public abstract class AbstractSchemaRule implements SchemaRule
 {
-    /**
-     * Idea to keep both label and relationship type ids in this class is definitely incorrect.
-     * This is a temporary measure to minimize amount of changes in an unrelated feature commit.
-     * Such design should be fixed when we fuse hierarchies of
-     * {@link org.neo4j.kernel.api.constraints.PropertyConstraint} and {@link SchemaRule}. This could be done because
-     * both are internal representations of indexes/constraints and it is wasteful and confusing to have two internal
-     * representations in addition to one external {@link org.neo4j.graphdb.schema.ConstraintDefinition}
-     */
+    protected final Kind kind;
+    protected final long id;
 
-    protected static final int NOT_INITIALIZED = -1;
-
-    private final int label;
-    private final int relationshipType;
-    private final Kind kind;
-    private final long id;
-
-    public AbstractSchemaRule( long id, int label, int relationshipType, Kind kind )
+    public AbstractSchemaRule( long id, Kind kind )
     {
-        verifyLabelAndRelType( label, relationshipType );
         this.id = id;
-        this.label = label;
-        this.relationshipType = relationshipType;
         this.kind = kind;
     }
 
@@ -54,11 +38,6 @@ public abstract class AbstractSchemaRule implements SchemaRule
         return this.id;
     }
 
-    protected final int getLabelOrRelationshipType()
-    {
-        return (label == NOT_INITIALIZED) ? relationshipType : label;
-    }
-
     @Override
     public final Kind getKind()
     {
@@ -66,17 +45,10 @@ public abstract class AbstractSchemaRule implements SchemaRule
     }
 
     @Override
-    public int length()
-    {
-        return 4 /*label or relationshipType id*/ + 1 /*kind id*/;
-    }
+    public abstract int length();
 
     @Override
-    public void serialize( ByteBuffer target )
-    {
-        target.putInt( getLabelOrRelationshipType() );
-        target.put( kind.id() );
-    }
+    public abstract void serialize( ByteBuffer target );
 
     @Override
     public boolean equals( Object o )
@@ -90,33 +62,15 @@ public abstract class AbstractSchemaRule implements SchemaRule
             return false;
         }
         AbstractSchemaRule that = (AbstractSchemaRule) o;
-        return label == that.label && relationshipType == that.relationshipType && kind == that.kind;
+        return kind == that.kind;
     }
 
     @Override
     public int hashCode()
     {
-        return 31 * (31 * label + relationshipType) + kind.hashCode();
+        return kind.hashCode();
     }
 
     @Override
-    public String toString()
-    {
-        return getClass().getSimpleName() + "[id=" + id + ", label=" + label +
-               " relationshipType=" + relationshipType + ", kind=" + kind + innerToString() + "]";
-    }
-
-    protected abstract String innerToString();
-
-    private static void verifyLabelAndRelType( int label, int relationshipType )
-    {
-        if ( label == NOT_INITIALIZED && relationshipType == NOT_INITIALIZED )
-        {
-            throw new IllegalArgumentException( "Either label or relationshipType should be initialized" );
-        }
-        if ( label != NOT_INITIALIZED && relationshipType != NOT_INITIALIZED )
-        {
-            throw new IllegalArgumentException( "Both label and relationshipType can't be initialized" );
-        }
-    }
+    public abstract String toString();
 }

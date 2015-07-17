@@ -28,12 +28,14 @@ public class MandatoryRelationshipPropertyConstraintRule extends RelationshipPro
 {
     private final int propertyKeyId;
 
-    public static MandatoryRelationshipPropertyConstraintRule mandatoryRelPropertyConstraintRule( long id, int relTypeId, int propertyKeyId )
+    public static MandatoryRelationshipPropertyConstraintRule mandatoryRelPropertyConstraintRule( long id,
+            int relTypeId, int propertyKeyId )
     {
         return new MandatoryRelationshipPropertyConstraintRule( id, relTypeId, propertyKeyId );
     }
 
-    public static MandatoryRelationshipPropertyConstraintRule readMandatoryRelPropertyConstraintRule( long id, int relTypeId, ByteBuffer buffer )
+    public static MandatoryRelationshipPropertyConstraintRule readMandatoryRelPropertyConstraintRule( long id,
+            int relTypeId, ByteBuffer buffer )
     {
         return new MandatoryRelationshipPropertyConstraintRule( id, relTypeId, readPropertyKey( buffer ) );
     }
@@ -45,34 +47,25 @@ public class MandatoryRelationshipPropertyConstraintRule extends RelationshipPro
     }
 
     @Override
-    public int hashCode()
+    public String toString()
     {
-        return super.hashCode() | propertyKeyId;
-    }
-
-    @Override
-    public boolean equals( Object obj )
-    {
-        return super.equals( obj ) && propertyKeyId == ((MandatoryRelationshipPropertyConstraintRule) obj).propertyKeyId;
-    }
-
-    @Override
-    protected String innerToString()
-    {
-        return ", propertyKey=" + propertyKeyId;
+        return "MandatoryRelationshipPropertyConstraint" + id + ", relationshipType=" + relationshipType +
+               ", kind=" + kind + ", propertyKeyId=" + propertyKeyId + "]";
     }
 
     @Override
     public int length()
     {
-        return super.length() +
-               4; /* propertyKeyId */
+        return 4 /* relationship type id */ +
+               1 /* kind id */ +
+               4; /* property key id */
     }
 
     @Override
     public void serialize( ByteBuffer target )
     {
-        super.serialize( target );
+        target.putInt( relationshipType );
+        target.put( kind.id() );
         target.putInt( propertyKeyId );
     }
 
@@ -96,5 +89,29 @@ public class MandatoryRelationshipPropertyConstraintRule extends RelationshipPro
     public boolean containsPropertyKeyId( int propertyKeyId )
     {
         return propertyKeyId == this.propertyKeyId;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        if ( !super.equals( o ) )
+        {
+            return false;
+        }
+        return propertyKeyId == ((MandatoryRelationshipPropertyConstraintRule) o).propertyKeyId;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return 31 * super.hashCode() + propertyKeyId;
     }
 }

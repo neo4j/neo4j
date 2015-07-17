@@ -31,7 +31,7 @@ import org.neo4j.graphdb.RelationshipType;
 public interface ConstraintDefinition
 {
     /**
-     * This accessor method returns a label which this constraint is associated with iff this constraint has type
+     * This accessor method returns a label which this constraint is associated with if this constraint has type
      * {@link ConstraintType#UNIQUENESS} or {@link ConstraintType#MANDATORY_NODE_PROPERTY}.
      * Type of the constraint can be examined by calling {@link #getConstraintType()} or
      * {@link #isConstraintType(ConstraintType)} methods.
@@ -42,7 +42,7 @@ public interface ConstraintDefinition
     Label getLabel();
 
     /**
-     * This accessor method returns a relationship type which this constraint is associated with iff this constraint
+     * This accessor method returns a relationship type which this constraint is associated with if this constraint
      * has type {@link ConstraintType#UNIQUENESS} or {@link ConstraintType#MANDATORY_NODE_PROPERTY}.
      * Type of the constraint can be examined by calling {@link #getConstraintType()} or
      * {@link #isConstraintType(ConstraintType)} methods.

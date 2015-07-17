@@ -24,6 +24,7 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
@@ -66,6 +67,9 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 
 public class ConstraintEnforcingEntityOperations implements EntityOperations, SchemaWriteOperations
 {
+    private static final Predicate<NodePropertyConstraint> UNIQUENESS_CONSTRAINT =
+            Predicates.instanceOf( UniquenessConstraint.class );
+
     private final EntityWriteOperations entityWriteOperations;
     private final EntityReadOperations entityReadOperations;
     private final SchemaWriteOperations schemaWriteOperations;
@@ -162,14 +166,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     private Iterator<NodePropertyConstraint> uniquePropertyConstraints( Iterator<NodePropertyConstraint> constraints )
     {
-        return new FilteringIterator<>( constraints, new Predicate<NodePropertyConstraint>()
-        {
-            @Override
-            public boolean test( NodePropertyConstraint constraint )
-            {
-                return constraint instanceof UniquenessConstraint;
-            }
-        } );
+        return new FilteringIterator<>( constraints, UNIQUENESS_CONSTRAINT );
     }
 
     // Simply delegate the rest of the invocations

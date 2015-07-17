@@ -52,27 +52,17 @@ public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
     }
 
     @Override
-    public int hashCode()
+    public String toString()
     {
-        return super.hashCode() | Arrays.hashCode( propertyKeyIds );
-    }
-
-    @Override
-    public boolean equals( Object obj )
-    {
-        return super.equals( obj ) && Arrays.equals( propertyKeyIds, ((UniquePropertyConstraintRule) obj).propertyKeyIds );
-    }
-
-    @Override
-    protected String innerToString()
-    {
-        return ", propertyKeys=" + Arrays.toString( propertyKeyIds ) + ", ownedIndex=" + ownedIndexRule;
+        return "UniquePropertyConstraintRule[id=" + id + ", label=" + label + ", kind=" + kind +
+               ", propertyKeys=" + Arrays.toString( propertyKeyIds ) + ", ownedIndex=" + ownedIndexRule + "]";
     }
 
     @Override
     public int length()
     {
-        return super.length() +
+        return 4 /* label */ +
+               1 /* kind id */ +
                1 +  /* the number of properties that form a unique tuple */
                8 * propertyKeyIds.length + /* the property keys themselves */
                8; /* owned index rule */
@@ -81,7 +71,8 @@ public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
     @Override
     public void serialize( ByteBuffer target )
     {
-        super.serialize( target );
+        target.putInt( label );
+        target.put( kind.id() );
         target.put( (byte) propertyKeyIds.length );
         for ( int propertyKeyId : propertyKeyIds )
         {
@@ -133,5 +124,29 @@ public class UniquePropertyConstraintRule extends NodePropertyConstraintRule
     public UniquenessConstraint toConstraint()
     {
         return new UniquenessConstraint( getLabel(), getPropertyKey() );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        if ( !super.equals( o ) )
+        {
+            return false;
+        }
+        return Arrays.equals( propertyKeyIds, ((UniquePropertyConstraintRule) o).propertyKeyIds );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return 31 * super.hashCode() + Arrays.hashCode( propertyKeyIds );
     }
 }

@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
@@ -45,6 +46,12 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
 {
+    private static final Predicate<NodePropertyConstraint> MANDATORY_NODE_PROPERTY_CONSTRAINT =
+            Predicates.instanceOf( MandatoryNodePropertyConstraint.class );
+
+    private static final Predicate<RelationshipPropertyConstraint> MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT =
+            Predicates.instanceOf( MandatoryRelationshipPropertyConstraint.class );
+
     private final EntityReadOperations readOperations;
     private final StoreReadLayer storeLayer;
     private final StoreStatement storeStatement;
@@ -176,26 +183,12 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
     private Iterator<NodePropertyConstraint> mandatoryNodePropertyConstraints( int label )
     {
         return new FilteringIterator<>( storeLayer.constraintsGetForLabel( label ),
-                new Predicate<NodePropertyConstraint>()
-                {
-                    @Override
-                    public boolean test( NodePropertyConstraint constraint )
-                    {
-                        return constraint instanceof MandatoryNodePropertyConstraint;
-                    }
-                } );
+                MANDATORY_NODE_PROPERTY_CONSTRAINT );
     }
 
     private Iterator<RelationshipPropertyConstraint> mandatoryRelPropertyConstraints( int type )
     {
         return new FilteringIterator<>( storeLayer.constraintsGetForRelationshipType( type ),
-                new Predicate<RelationshipPropertyConstraint>()
-                {
-                    @Override
-                    public boolean test( RelationshipPropertyConstraint constraint )
-                    {
-                        return constraint instanceof MandatoryRelationshipPropertyConstraint;
-                    }
-                } );
+                MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT );
     }
 }

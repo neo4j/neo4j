@@ -23,9 +23,12 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 
 public abstract class RelationshipPropertyConstraintRule extends PropertyConstraintRule
 {
+    protected final int relationshipType;
+
     public RelationshipPropertyConstraintRule( long id, int relationshipType, Kind kind )
     {
-        super( id, NOT_INITIALIZED, relationshipType, kind );
+        super( id, kind );
+        this.relationshipType = relationshipType;
     }
 
     @Override
@@ -37,9 +40,33 @@ public abstract class RelationshipPropertyConstraintRule extends PropertyConstra
     @Override
     public final int getRelationshipType()
     {
-        return getLabelOrRelationshipType();
+        return relationshipType;
     }
 
     @Override
     public abstract RelationshipPropertyConstraint toConstraint();
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        if ( !super.equals( o ) )
+        {
+            return false;
+        }
+        return relationshipType == ((RelationshipPropertyConstraintRule) o).relationshipType;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return 31 * super.hashCode() + relationshipType;
+    }
 }

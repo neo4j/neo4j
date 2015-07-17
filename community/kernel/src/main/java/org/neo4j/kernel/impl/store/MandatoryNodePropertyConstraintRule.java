@@ -29,12 +29,14 @@ public class MandatoryNodePropertyConstraintRule extends NodePropertyConstraintR
 {
     private final int propertyKeyId;
 
-    public static MandatoryNodePropertyConstraintRule mandatoryNodePropertyConstraintRule( long id, int labelId, int propertyKeyId )
+    public static MandatoryNodePropertyConstraintRule mandatoryNodePropertyConstraintRule( long id, int labelId,
+            int propertyKeyId )
     {
         return new MandatoryNodePropertyConstraintRule( id, labelId, propertyKeyId );
     }
 
-    public static MandatoryNodePropertyConstraintRule readMandatoryNodePropertyConstraintRule( long id, int labelId, ByteBuffer buffer )
+    public static MandatoryNodePropertyConstraintRule readMandatoryNodePropertyConstraintRule( long id, int labelId,
+            ByteBuffer buffer )
     {
         return new MandatoryNodePropertyConstraintRule( id, labelId, readPropertyKey( buffer ) );
     }
@@ -46,34 +48,25 @@ public class MandatoryNodePropertyConstraintRule extends NodePropertyConstraintR
     }
 
     @Override
-    public int hashCode()
+    public String toString()
     {
-        return super.hashCode() | propertyKeyId;
-    }
-
-    @Override
-    public boolean equals( Object obj )
-    {
-        return super.equals( obj ) && propertyKeyId == ((MandatoryNodePropertyConstraintRule) obj).propertyKeyId;
-    }
-
-    @Override
-    protected String innerToString()
-    {
-        return ", propertyKey=" + propertyKeyId;
+        return "MandatoryNodePropertyConstraintRule[id=" + id + ", label=" + label + ", kind=" + kind +
+               ", propertyKeyId=" + propertyKeyId + "]";
     }
 
     @Override
     public int length()
     {
-        return super.length() +
-               4; /* propertyKeyId */
+        return 4 /* label id */ +
+               1 /* kind id */ +
+               4; /* property key id */
     }
 
     @Override
     public void serialize( ByteBuffer target )
     {
-        super.serialize( target );
+        target.putInt( label );
+        target.put( kind.id() );
         target.putInt( propertyKeyId );
     }
 
@@ -97,5 +90,30 @@ public class MandatoryNodePropertyConstraintRule extends NodePropertyConstraintR
     public boolean containsPropertyKeyId( int propertyKeyId )
     {
         return propertyKeyId == this.propertyKeyId;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        if ( !super.equals( o ) )
+        {
+            return false;
+        }
+        return propertyKeyId == ((MandatoryNodePropertyConstraintRule) o).propertyKeyId;
+
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return 31 * super.hashCode() + propertyKeyId;
     }
 }

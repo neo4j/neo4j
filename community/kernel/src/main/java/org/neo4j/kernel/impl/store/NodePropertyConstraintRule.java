@@ -23,15 +23,18 @@ import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 
 public abstract class NodePropertyConstraintRule extends PropertyConstraintRule
 {
+    protected final int label;
+
     public NodePropertyConstraintRule( long id, int label, Kind kind )
     {
-        super( id, label, NOT_INITIALIZED, kind );
+        super( id, kind );
+        this.label = label;
     }
 
     @Override
     public final int getLabel()
     {
-        return getLabelOrRelationshipType();
+        return label;
     }
 
     @Override
@@ -42,4 +45,29 @@ public abstract class NodePropertyConstraintRule extends PropertyConstraintRule
 
     @Override
     public abstract NodePropertyConstraint toConstraint();
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        if ( !super.equals( o ) )
+        {
+            return false;
+        }
+        return label == ((NodePropertyConstraintRule) o).label;
+
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return 31 * super.hashCode() + label;
+    }
 }
