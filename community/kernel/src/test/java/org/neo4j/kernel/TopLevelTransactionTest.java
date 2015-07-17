@@ -21,6 +21,8 @@ package org.neo4j.kernel;
 
 import org.junit.Test;
 
+import org.neo4j.graphdb.TransientDatabaseFailureException;
+import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -75,6 +77,28 @@ public class TopLevelTransactionTest
             fail( "Should have failed" );
         }
         catch ( org.neo4j.graphdb.TransactionFailureException e )
+        {   // THEN Good
+        }
+    }
+
+    @Test
+    public void shouldLetThroughTransactionFailureException() throws Exception
+    {
+        // GIVEN
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        when( kernelTransaction.isOpen() ).thenReturn( true );
+        doThrow( new TransientDatabaseFailureException( "Just a random failure" ) ).when( kernelTransaction ).close();
+        ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge();
+        TopLevelTransaction transaction = new TopLevelTransaction( kernelTransaction, bridge );
+
+        // WHEN
+        transaction.success();
+        try
+        {
+            transaction.close();
+            fail( "Should have failed" );
+        }
+        catch ( TransientFailureException e )
         {   // THEN Good
         }
     }

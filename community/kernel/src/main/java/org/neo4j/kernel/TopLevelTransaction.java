@@ -23,6 +23,7 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -115,7 +116,7 @@ public class TopLevelTransaction implements Transaction
                 transaction.close();
             }
         }
-        catch ( DeadlockDetectedException e )
+        catch ( TransientFailureException e )
         {
             // We let deadlock exceptions pass through unchanged since they aren't really transaction failures
             // in the same sense as unexpected failures are. A deadlock exception signals that the transaction
