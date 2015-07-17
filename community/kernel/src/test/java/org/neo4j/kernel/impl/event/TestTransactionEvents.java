@@ -64,6 +64,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
@@ -989,6 +991,47 @@ public class TestTransactionEvents
             count( dbRule.getGraphDatabaseService().traversalDescription().traverse( root ) );
             tx.success();
         }
+    }
+
+    @Test
+    public void shouldNotFireEventForTokenTransactions() throws Exception
+    {
+        // GIVEN
+        final AtomicInteger counter = new AtomicInteger();
+        dbRule.getGraphDatabaseService().registerTransactionEventHandler( new TransactionEventHandler.Adapter<Void>()
+        {
+            @Override
+            public Void beforeCommit( TransactionData data ) throws Exception
+            {
+                assertTrue( "Expected only transactions that had nodes or relationships created",
+                        data.createdNodes().iterator().hasNext() ||
+                        data.createdRelationships().iterator().hasNext() );
+                counter.incrementAndGet();
+                return null;
+            }
+        } );
+
+        // WHEN creating a label token
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.createNode( label( "Label" ) );
+            tx.success();
+        }
+        // ... a property key token
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.createNode().setProperty( "key", "value" );
+            tx.success();
+        }
+        // ... and a relationship type
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.createNode().createRelationshipTo( dbRule.createNode(), withName( "A_TYPE" ) );
+            tx.success();
+        }
+
+        // THEN only three transaction events should've been fired
+        assertEquals( 3, counter.get() );
     }
 
     private Node createTree( int depth, int width )

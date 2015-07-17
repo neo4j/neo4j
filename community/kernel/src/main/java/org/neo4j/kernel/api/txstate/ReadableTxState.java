@@ -134,4 +134,13 @@ public interface ReadableTxState
     Long indexCreatedForConstraint( UniquenessConstraint constraint );
 
     ReadableDiffSets<Long> indexUpdates( IndexDescriptor index, Object value );
+
+    /**
+     * The way tokens are created is that the first time a token is needed it gets created in its own little
+     * token mini-transaction, separate from the surrounding transaction that creates or modifies data that need it.
+     * From the kernel POV it's interesting to know whether or not any tokens have been created in this tx state,
+     * because then we know it's a mini-transaction like this and won't have to let transaction event handlers
+     * know about it, for example.
+     */
+    boolean hasTokenChanges();
 }
