@@ -26,6 +26,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.graphdb.TransientFailureException;
 
 import static org.neo4j.function.Predicates.any;
 import static org.neo4j.function.Predicates.not;
@@ -38,9 +39,10 @@ import static org.neo4j.function.Predicates.not;
  * First instantiate and configure the template using the fluent API methods, and then
  * invoke execute which will begin/commit transactions in a loop for the specified number of times.
  * <p>
- * By default all exceptions (except Errors and TransactionTerminatedException) cause a retry, and the monitor does nothing, but these can be overridden
- * with
- * custom behaviour.
+ * By default all exceptions (except Errors and TransactionTerminatedException) cause a retry,
+ * and the monitor does nothing, but these can be overridden with custom behaviour.
+ * A bit more narrow and typical exception to retry on is {@link TransientFailureException},
+ * which aims to represent exceptions that are most likely to succeed after a retry.
  */
 public class TransactionTemplate
 {

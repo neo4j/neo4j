@@ -24,8 +24,12 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransientFailureException;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status.Classification;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 
@@ -104,12 +108,12 @@ public class TopLevelTransaction implements Transaction
     {
         try
         {
-            if (transaction.isOpen())
+            if ( transaction.isOpen() )
             {
                 transaction.close();
             }
         }
-        catch ( DeadlockDetectedException e )
+        catch ( TransientFailureException e )
         {
             // We let deadlock exceptions pass through unchanged since they aren't really transaction failures
             // in the same sense as unexpected failures are. A deadlock exception signals that the transaction
@@ -122,12 +126,15 @@ public class TopLevelTransaction implements Transaction
         }
         catch ( Exception e )
         {
-            if ( transactionOutcome.successCalled() )
+            String userMessage = transactionOutcome.successCalled()
+                    ? "Transaction was marked as successful, but unable to commit transaction so rolled back."
+                    : "Unable to rollback transaction";
+            if ( e instanceof KernelException &&
+                    ((KernelException)e).status().code().classification() == Classification.TransientError )
             {
-                throw new TransactionFailureException( "Transaction was marked as successful, " +
-                        "but unable to commit transaction so rolled back.", e );
+                throw new TransientTransactionFailureException( userMessage, e );
             }
-            throw new TransactionFailureException( "Unable to rollback transaction", e );
+            throw new TransactionFailureException( userMessage, e );
         }
         finally
         {

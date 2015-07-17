@@ -66,7 +66,7 @@ public class IntegrityValidator
             // explicitly creates a constraint, after the index has been populated. We can improve this later on by
             // replicating the constraint validation logic down here, or rethinking where we validate constraints.
             // For now, we just kill these transactions.
-            throw new TransactionFailureException( Status.Transaction.ValidationFailed,
+            throw new TransactionFailureException( Status.Transaction.ConstraintsChanged,
                             "Database constraints have changed (txId=%d) after this transaction (txId=%d) started, " +
                             "which is not yet supported. Please retry your transaction to ensure all " +
                             "constraints are executed.", latestConstraintIntroducingTx,

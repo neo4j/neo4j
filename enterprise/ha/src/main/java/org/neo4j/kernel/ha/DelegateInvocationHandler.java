@@ -24,6 +24,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
+import org.neo4j.graphdb.TransientDatabaseFailureException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.util.LazySingleReference;
 
@@ -152,7 +153,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
         {
             if ( delegate == null )
             {
-                throw new IllegalStateException( "Transaction state is not valid. Perhaps a state change of the database has happened while this transaction was running?" );
+                throw new TransientDatabaseFailureException( "Transaction state is not valid. Perhaps a state change of the database has happened while this transaction was running?" );
             }
             
             return proxyInvoke( delegate, method, args );
