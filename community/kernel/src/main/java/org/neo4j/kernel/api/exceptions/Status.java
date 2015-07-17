@@ -116,6 +116,7 @@ public interface Status
         "will be rolled back." ),
 
         ValidationFailed( ClientError, "Transaction changes did not pass validation checks" ),
+        ConstraintsChanged( TransientError, "Database constraints changed since the start of this transaction" ),
         HookFailed( ClientError, "Transaction hook failure." ),
         MarkedAsFailed( ClientError, "Transaction was marked as both successful and failed. Failure takes precedence" +
                 " and so this transaction was rolled back although it may have looked like it was going to be " +
