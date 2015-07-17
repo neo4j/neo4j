@@ -1324,4 +1324,10 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
         hasChanges = true;
     }
+
+    @Override
+    public boolean hasTokenChanges()
+    {
+        return createdLabelTokens != null || createdPropertyKeyTokens != null || createdRelationshipTypeTokens != null;
+    }
 }

@@ -54,10 +54,10 @@ import org.neo4j.graphdb.TransactionFailureException;
  * {@link Transaction#close()}. All handlers which at this point have had its
  * {@link #beforeCommit(TransactionData)} method executed successfully will
  * receive a call to {@link #afterRollback(TransactionData, Object)}.
- * 
+ *
  * @author Tobias Ivarsson
  * @author Mattias Persson
- * 
+ *
  * @param <T> The type of a state object that the transaction handler can use to
  *            pass information from the {@link #beforeCommit(TransactionData)}
  *            event dispatch method to the
@@ -89,7 +89,9 @@ public interface TransactionEventHandler<T>
 
     /**
      * Invoked after the transaction has been committed successfully.
-     * 
+     * Any {@link TransactionData} being passed in to this method is guaranteed
+     * to first be have been called with {@link #beforeCommit(TransactionData)}.
+     *
      * @param data the changes that were committed in this transaction.
      * @param state the object returned by
      *            {@link #beforeCommit(TransactionData)}.
@@ -99,6 +101,8 @@ public interface TransactionEventHandler<T>
     /**
      * Invoked after the transaction has been rolled back if committing the
      * transaction failed for some reason.
+     * Any {@link TransactionData} being passed in to this method is guaranteed
+     * to first be have been called with {@link #beforeCommit(TransactionData)}.
      *
      * @param data the changes that were committed in this transaction.
      * @param state the object returned by
@@ -106,7 +110,7 @@ public interface TransactionEventHandler<T>
      */
     // TODO: should this method take a parameter describing WHY the tx failed?
     void afterRollback( TransactionData data, T state );
-    
+
     /**
      * Adapter for a {@link TransactionEventHandler}
      *

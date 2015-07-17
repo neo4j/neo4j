@@ -51,6 +51,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestLabels;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -61,8 +62,11 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.helpers.collection.Iterables.count;
 
 public class TestTransactionEvents
 {
@@ -499,47 +503,50 @@ public class TestTransactionEvents
 
     private static class ExceptionThrowingEventHandler implements TransactionEventHandler<Object>
     {
-
     	private final Exception beforeCommitException;
     	private final Exception afterCommitException;
     	private final Exception afterRollbackException;
 
-		public ExceptionThrowingEventHandler(Exception beforeCommitException,
-				Exception afterCommitException, Exception afterRollbackException) {
-			super();
-			this.beforeCommitException = beforeCommitException;
-			this.afterCommitException = afterCommitException;
-			this.afterRollbackException = afterRollbackException;
-		}
+        public ExceptionThrowingEventHandler( Exception exceptionForAll )
+        {
+            this( exceptionForAll, exceptionForAll, exceptionForAll );
+        }
 
-		@Override
-		public Object beforeCommit(TransactionData data) throws Exception
-		{
-			if(beforeCommitException != null)
+        public ExceptionThrowingEventHandler( Exception beforeCommitException, Exception afterCommitException,
+                Exception afterRollbackException )
+        {
+            this.beforeCommitException = beforeCommitException;
+            this.afterCommitException = afterCommitException;
+            this.afterRollbackException = afterRollbackException;
+        }
+
+        @Override
+        public Object beforeCommit( TransactionData data ) throws Exception
+        {
+            if ( beforeCommitException != null )
             {
                 throw beforeCommitException;
             }
-			return null;
-		}
+            return null;
+        }
 
-		@Override
-		public void afterCommit(TransactionData data, Object state)
-		{
-			if(afterCommitException != null)
+        @Override
+        public void afterCommit( TransactionData data, Object state )
+        {
+            if ( afterCommitException != null )
             {
-                throw new RuntimeException(afterCommitException);
+                throw new RuntimeException( afterCommitException );
             }
-		}
+        }
 
-		@Override
-		public void afterRollback(TransactionData data, Object state)
-		{
-			if(afterRollbackException != null)
+        @Override
+        public void afterRollback( TransactionData data, Object state )
+        {
+            if ( afterRollbackException != null )
             {
-                throw new RuntimeException(afterRollbackException);
+                throw new RuntimeException( afterRollbackException );
             }
-		}
-
+        }
     }
 
     private static class DummyTransactionEventHandler<T> implements
@@ -674,7 +681,7 @@ public class TestTransactionEvents
         }
 
         // ... and a transaction event handler that likes to add the indexed property on nodes
-        db.registerTransactionEventHandler( new TransactionEventHandler<Object>()
+        db.registerTransactionEventHandler( new TransactionEventHandler.Adapter<Object>()
         {
             @Override
             public Object beforeCommit( TransactionData data ) throws Exception
@@ -686,16 +693,6 @@ public class TestTransactionEvents
                     node.setProperty( "indexed", "value" );
                 }
                 return null;
-            }
-
-            @Override
-            public void afterCommit( TransactionData data, Object state )
-            {
-            }
-
-            @Override
-            public void afterRollback( TransactionData data, Object state )
-            {
             }
         } );
 
@@ -730,7 +727,7 @@ public class TestTransactionEvents
         }
 
         // ... and a transaction event handler that likes to add the indexed property on nodes
-        db.registerTransactionEventHandler( new TransactionEventHandler<Object>()
+        db.registerTransactionEventHandler( new TransactionEventHandler.Adapter<Object>()
         {
             @Override
             public Object beforeCommit( TransactionData data ) throws Exception
@@ -742,16 +739,6 @@ public class TestTransactionEvents
                     node.addLabel( label );
                 }
                 return null;
-            }
-
-            @Override
-            public void afterCommit( TransactionData data, Object state )
-            {
-            }
-
-            @Override
-            public void afterRollback( TransactionData data, Object state )
-            {
             }
         } );
 
@@ -983,6 +970,88 @@ public class TestTransactionEvents
         assertEquals( 1, changedRelationships.size() );
         assertTrue( livesIn + " not in " + changedRelationships.toString(),
                 changedRelationships.contains( livesIn.name() ) );
+    }
+
+    @Test
+    public void shouldNotFireEventForReadOnlyTransaction() throws Exception
+    {
+        // GIVEN
+        Node root = createTree( 3, 3 );
+        dbRule.getGraphDatabaseService().registerTransactionEventHandler(
+                new ExceptionThrowingEventHandler( new RuntimeException( "Just failing" ) ) );
+
+        // WHEN
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            count( dbRule.getGraphDatabaseService().traversalDescription().traverse( root ) );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldNotFireEventForTokenTransactions() throws Exception
+    {
+        // GIVEN
+        final AtomicInteger counter = new AtomicInteger();
+        dbRule.getGraphDatabaseService().registerTransactionEventHandler( new TransactionEventHandler.Adapter<Void>()
+        {
+            @Override
+            public Void beforeCommit( TransactionData data ) throws Exception
+            {
+                assertTrue( "Expected only transactions that had nodes or relationships created",
+                        data.createdNodes().iterator().hasNext() ||
+                        data.createdRelationships().iterator().hasNext() );
+                counter.incrementAndGet();
+                return null;
+            }
+        } );
+
+        // WHEN creating a label token
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.createNode( label( "Label" ) );
+            tx.success();
+        }
+        // ... a property key token
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.createNode().setProperty( "key", "value" );
+            tx.success();
+        }
+        // ... and a relationship type
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.createNode().createRelationshipTo( dbRule.createNode(), withName( "A_TYPE" ) );
+            tx.success();
+        }
+
+        // THEN only three transaction events should've been fired
+        assertEquals( 3, counter.get() );
+    }
+
+    private Node createTree( int depth, int width )
+    {
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            Node root = dbRule.createNode( TestLabels.LABEL_ONE );
+            createTree( root, depth, width, 0 );
+            tx.success();
+            return root;
+        }
+    }
+
+    private void createTree( Node parent, int maxDepth, int width, int currentDepth )
+    {
+        if ( currentDepth > maxDepth )
+        {
+            return;
+        }
+        for ( int i = 0; i < width; i++ )
+        {
+            Node child = dbRule.createNode( TestLabels.LABEL_TWO );
+            parent.createRelationshipTo( child, MyRelTypes.TEST );
+            createTree( child, maxDepth, width, currentDepth + 1 );
+        }
     }
 
     private static final class ChangedLabels extends TransactionEventHandler.Adapter<Void>
