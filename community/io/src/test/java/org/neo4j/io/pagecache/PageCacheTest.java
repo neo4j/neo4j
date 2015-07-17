@@ -88,7 +88,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -3390,7 +3389,7 @@ public abstract class PageCacheTest<T extends PageCache>
         harness.run( 10, TimeUnit.SECONDS );
     }
 
-    @Test( timeout = 20000 )
+    @Test( timeout = 30000 )
     public void backgroundThreadsMustGracefullyShutDown() throws Exception
     {
         int iterations = 1000;
@@ -3444,17 +3443,40 @@ public abstract class PageCacheTest<T extends PageCache>
         // could possibly strongly reference the cache is any lingering background thread. If we do a couple of
         // GCs, then we should observe that the WeakReference has been cleared by the garbage collector. If it
         // hasn't, then something must be keeping it alive, even though it has been closed.
-        System.gc();
-        Thread.sleep( 100 );
-        System.gc();
-        Thread.sleep( 100 );
-        System.gc();
-        Thread.sleep( 100 );
-        System.gc();
-
-        for ( WeakReference<PageCache> ref : refs )
+        int maxChecks = 100;
+        boolean passed;
+        do
         {
-            assertNull( ref.get() );
+            System.gc();
+            Thread.sleep( 100 );
+            passed = true;
+
+            for ( WeakReference<PageCache> ref : refs )
+            {
+                if ( ref.get() != null )
+                {
+                    passed = false;
+                }
+            }
+        }
+        while ( !passed && maxChecks-- > 0 );
+
+        if ( !passed )
+        {
+            List<PageCache> nonNullPageCaches = new LinkedList<>();
+            for ( WeakReference<PageCache> ref : refs )
+            {
+                PageCache pageCache = ref.get();
+                if ( pageCache != null )
+                {
+                    nonNullPageCaches.add( pageCache );
+                }
+            }
+
+            if( !nonNullPageCaches.isEmpty() )
+            {
+                fail( "PageCaches should not be held live after close: " + nonNullPageCaches );
+            }
         }
     }
 
