@@ -119,6 +119,20 @@ public class PropertyValueComparisonTest
     }
 
     @Test
+    public void stringComparatorShouldRejectLeftNullArgument()
+    {
+        thrown.expect( NullPointerException.class );
+        PropertyValueComparison.COMPARE_STRINGS.compare( null, "foo" );
+    }
+
+    @Test
+    public void stringComparatorShouldRejectRightNullArgument()
+    {
+        thrown.expect( NullPointerException.class );
+        PropertyValueComparison.COMPARE_STRINGS.compare( "foo", null );
+    }
+
+    @Test
     public void shouldOrderValuesCorrectly()
     {
         for ( int i = 0; i < values.length; i++ )
