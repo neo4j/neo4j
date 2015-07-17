@@ -66,6 +66,14 @@ interface DataRead
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( IndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
+            throws IndexNotFoundKernelException;
+
+    /**
+     * Returns an iterator with the matched nodes.
+     *
+     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
+     */
     PrimitiveLongIterator nodesGetFromIndexScan( IndexDescriptor index )
             throws IndexNotFoundKernelException;
 

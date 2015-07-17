@@ -501,6 +501,18 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement statement,
+                                                                     IndexDescriptor index,
+                                                                     String lower, boolean includeLower,
+                                                                     String upper, boolean includeUpper )
+            throws IndexNotFoundKernelException
+
+    {
+        IndexReader reader = statement.getIndexReader( index );
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    @Override
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
                                                                      IndexDescriptor index,
                                                                      String prefix )

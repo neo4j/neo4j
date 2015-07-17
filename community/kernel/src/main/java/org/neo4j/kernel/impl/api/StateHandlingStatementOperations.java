@@ -237,6 +237,20 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public NodeCursor nodeCursorGetFromIndexRangeSeekByString( KernelStatement statement,
+                                                               IndexDescriptor index,
+                                                               String lower, boolean includeLower,
+                                                               String upper, boolean includeUpper )
+            throws IndexNotFoundKernelException
+
+    {
+        // TODO Filter this properly
+        return statement.getStoreStatement().acquireIteratorNodeCursor(
+                storeLayer.nodesGetFromIndexRangeSeekByString(statement, index, lower, includeLower, upper,
+                        includeUpper) );
+    }
+
+    @Override
     public NodeCursor nodeCursorGetFromIndexRangeSeekByPrefix( KernelStatement statement, IndexDescriptor index,
                                                                String prefix )
             throws IndexNotFoundKernelException
@@ -778,7 +792,7 @@ public class StateHandlingStatementOperations implements
     {
         PrimitiveLongResourceIterator committed = storeLayer.nodeGetFromUniqueIndexSeek( state, index, value );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
-        PrimitiveLongIterator changesFiltered = filterIndexStateChangesForScanOrSeek(state, index, value, exactMatches);
+        PrimitiveLongIterator changesFiltered = filterIndexStateChangesForScanOrSeek( state, index, value, exactMatches );
         return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
     }
 
@@ -788,7 +802,7 @@ public class StateHandlingStatementOperations implements
     {
         PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexSeek( state, index, value );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
-        return filterIndexStateChangesForScanOrSeek(state, index, value, exactMatches);
+        return filterIndexStateChangesForScanOrSeek( state, index, value, exactMatches );
     }
 
     @Override
@@ -798,7 +812,21 @@ public class StateHandlingStatementOperations implements
 
     {
         PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper );
-        return filterIndexStateChangesForRangeSeekByNumber(state, index, lower, includeLower, upper, includeUpper, committed);
+        return filterIndexStateChangesForRangeSeekByNumber( state, index, lower, includeLower, upper, includeUpper, committed );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement state, IndexDescriptor index,
+                                                                     String lower, boolean includeLower,
+                                                                     String upper, boolean includeUpper ) throws IndexNotFoundKernelException
+
+    {
+        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexRangeSeekByString(state, index, lower, includeLower, upper, includeUpper);
+        if (state.txState().hasChanges()) {
+            throw new UnsupportedOperationException("TODO");
+
+        }
+        return committed;
     }
 
     @Override
@@ -806,7 +834,7 @@ public class StateHandlingStatementOperations implements
                                                                      String prefix ) throws IndexNotFoundKernelException
     {
         PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexRangeSeekByPrefix( state, index, prefix );
-        return filterIndexStateChangesForRangeSeekByPrefix(state, index, prefix, committed);
+        return filterIndexStateChangesForRangeSeekByPrefix( state, index, prefix, committed );
     }
 
     @Override
@@ -814,7 +842,7 @@ public class StateHandlingStatementOperations implements
             throws IndexNotFoundKernelException
     {
         PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexScan( state, index );
-        return filterIndexStateChangesForScanOrSeek(state, index, null, committed);
+        return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
     }
 
     private PrimitiveLongIterator filterExactIndexMatches( final KernelStatement state, IndexDescriptor index,
