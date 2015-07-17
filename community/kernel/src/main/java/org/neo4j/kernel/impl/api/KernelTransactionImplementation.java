@@ -147,6 +147,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionType transactionType = TransactionType.ANY;
     private TransactionHooks.TransactionHooksState hooksState;
+    private boolean beforeHookInvoked;
     private Locks.Client locks;
     private boolean closing, closed;
     private boolean failure, success;
@@ -210,6 +211,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.terminated = closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
         this.hooksState = null;
+        this.beforeHookInvoked = false;
         this.txState = null; // TODO: Implement txState.clear() instead, to re-use data structures
         this.legacyIndexTransactionState.initialize();
         this.recordState.initialize( lastCommittedTx );
@@ -386,6 +388,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                counts.hasChanges();
     }
 
+    private boolean hasAnyTokenChanges()
+    {
+        return hasTxStateWithChanges() ? txState.hasTokenChanges() : false;
+    }
+
     public TransactionRecordState getTransactionRecordState()
     {
         return recordState;
@@ -458,10 +465,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         try ( CommitEvent commitEvent = transactionEvent.beginCommitEvent() )
         {
-            // Trigger transaction "before" hooks
-            if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
+            // Trigger transaction "before" hooks.
+            if ( hasChanges() && !hasAnyTokenChanges() )
             {
-                throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(), "" );
+                try
+                {
+                    if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
+                    {
+                        throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(), "" );
+                    }
+                }
+                finally
+                {
+                    beforeHookInvoked = true;
+                }
             }
 
             prepareRecordChangesFromTransactionState();
@@ -572,7 +589,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try
         {
             closeTransaction();
-            hooks.afterCommit( txState, this, hooksState );
+            if ( beforeHookInvoked )
+            {
+                hooks.afterCommit( txState, this, hooksState );
+            }
         }
         finally
         {
@@ -585,7 +605,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try
         {
             closeTransaction();
-            hooks.afterRollback( txState, this, hooksState );
+            if ( beforeHookInvoked )
+            {
+                hooks.afterRollback( txState, this, hooksState );
+            }
         }
         finally
         {
