@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+
 public interface DiffSetsVisitor<T>
 {
-    void visitAdded( T element );
+    void visitAdded( T element ) throws ConstraintValidationKernelException;
 
-    void visitRemoved( T element );
+    void visitRemoved( T element ) throws ConstraintValidationKernelException;
 
     class Adapter<T> implements DiffSetsVisitor<T>
     {

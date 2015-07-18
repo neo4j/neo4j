@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -30,7 +31,7 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 
 /**
- * Implementations are used to configure {@link IndexCreatorImpl} and {@link BaseConstraintCreator} for re-use
+ * Implementations are used to configure {@link IndexCreatorImpl} and {@link BaseNodeConstraintCreator} for re-use
  * by both the graph database and the batch inserter.
  */
 public interface InternalSchemaActions
@@ -47,9 +48,14 @@ public interface InternalSchemaActions
             throws IllegalTokenNameException, TooManyLabelsException, CreateConstraintFailureException,
             AlreadyConstrainedException;
 
+    ConstraintDefinition createPropertyExistenceConstraint( RelationshipType type, String propertyKey )
+            throws CreateConstraintFailureException, AlreadyConstrainedException;
+
     void dropPropertyUniquenessConstraint( Label label, String propertyKey );
 
-    void dropPropertyExistenceConstraint( Label label, String propertyKey );
+    void dropNodePropertyExistenceConstraint( Label label, String propertyKey );
+
+    void dropRelationshipPropertyExistenceConstraint( RelationshipType type, String propertyKey );
 
     String getUserMessage( KernelException e );
 

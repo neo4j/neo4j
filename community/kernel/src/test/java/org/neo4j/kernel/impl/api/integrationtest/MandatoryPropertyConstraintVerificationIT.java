@@ -26,9 +26,9 @@ import org.junit.Test;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -48,28 +48,36 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.test.DatabaseFunctions.addLabel;
-import static org.neo4j.test.DatabaseFunctions.createNode;
-import static org.neo4j.test.DatabaseFunctions.mandatoryPropertyConstraint;
 import static org.neo4j.test.ThreadingRule.waitingWhileIn;
 
-public class MandatoryPropertyConstraintVerificationIT
+public abstract class MandatoryPropertyConstraintVerificationIT
 {
+    private static final String KEY = "Foo";
+    private static final String PROPERTY = "bar";
+
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule();
     @Rule
     public final ThreadingRule thread = new ThreadingRule();
 
+    abstract void createConstraint( DatabaseRule db, String key, String property );
+
+    abstract String constraintCreationMethodName();
+
+    abstract long createOffender( DatabaseRule db, String key );
+
+    abstract String offenderCreationMethodName();
+
+    abstract Class<?> offenderType();
+
     @Test
     public void shouldFailToCreateConstraintIfSomeNodeLacksTheMandatoryProperty() throws Exception
     {
         // given
-        long nodeId;
+        long entityId;
         try ( Transaction tx = db.beginTx() )
         {
-            nodeId = db.createNode( label( "Foo" ) ).getId();
-
+            entityId = createOffender( db, KEY );
             tx.success();
         }
 
@@ -78,8 +86,7 @@ public class MandatoryPropertyConstraintVerificationIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().constraintFor( label( "Foo" ) ).assertPropertyExists( "bar" ).create();
-
+                createConstraint( db, KEY, PROPERTY );
                 tx.success();
             }
             fail( "expected exception" );
@@ -92,28 +99,28 @@ public class MandatoryPropertyConstraintVerificationIT
 
             Throwable rootCause = cause.getCause();
             assertThat( rootCause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
-            assertThat( userMessageOf( (KernelException) rootCause ), containsString( "Node(" + nodeId + ")" ) );
+            assertThat( userMessageOf( (KernelException) rootCause ),
+                    containsString( offenderType().getSimpleName() + "(" + entityId + ")" ) );
         }
     }
 
     @Test
-    public void shouldFailToCreateConstraintIfConcurrentlyCreatedNodeLacksTheMandatoryProperty() throws Exception
+    public void shouldFailToCreateConstraintIfConcurrentlyCreatedEntityLacksTheMandatoryProperty() throws Exception
     {
         // when
         try
         {
-            Future<Node> node;
+            Future<Void> nodeCreation;
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().constraintFor( label( "Foo" ) ).assertPropertyExists( "bar" ).create();
+                createConstraint( db, KEY, PROPERTY );
 
-                node = thread.executeAndAwait( db.tx( createNode().then( addLabel( label( "Foo" ) ) ) ),
-                        db.getGraphDatabaseService(),
-                        waitingWhileIn( OperationsFacade.class, "nodeAddLabel" ), 5, SECONDS );
+                nodeCreation = thread.executeAndAwait( createOffender(), null,
+                        waitingWhileIn( OperationsFacade.class, offenderCreationMethodName() ), 5, SECONDS );
 
                 tx.success();
             }
-            node.get();
+            nodeCreation.get();
             fail( "expected exception" );
         }
         // then, we either fail to create the constraint,
@@ -130,23 +137,22 @@ public class MandatoryPropertyConstraintVerificationIT
     }
 
     @Test
-    public void shouldFailToCreateConstraintIfConcurrentlyCommittedNodeLacksTheMandatoryProperty() throws Exception
+    public void shouldFailToCreateConstraintIfConcurrentlyCommittedEntityLacksTheMandatoryProperty() throws Exception
     {
         // when
         try
         {
-            Future<Void> constraint;
+            Future<Void> constraintCreation;
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode( label( "Foo" ) );
+                createOffender( db, KEY );
 
-                constraint = thread.executeAndAwait( db.tx( mandatoryPropertyConstraint( label( "Foo" ), "bar" ) ),
-                        db.getGraphDatabaseService(),
-                        waitingWhileIn( OperationsFacade.class, "mandatoryPropertyConstraintCreate" ), 5, SECONDS );
+                constraintCreation = thread.executeAndAwait( createConstraint(), null,
+                        waitingWhileIn( OperationsFacade.class, constraintCreationMethodName() ), 5, SECONDS );
 
                 tx.success();
             }
-            constraint.get();
+            constraintCreation.get();
             fail( "expected exception" );
         }
         // then, we either fail to create the constraint,
@@ -171,5 +177,39 @@ public class MandatoryPropertyConstraintVerificationIT
             TokenNameLookup tokenNameLookup = new StatementTokenNameLookup( statement.readOperations() );
             return exception.getUserMessage( tokenNameLookup );
         }
+    }
+
+    private ThrowingFunction<Void,Void,RuntimeException> createOffender()
+    {
+        return new ThrowingFunction<Void,Void,RuntimeException>()
+        {
+            @Override
+            public Void apply( Void aVoid ) throws RuntimeException
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    createOffender( db, KEY );
+                    tx.success();
+                }
+                return null;
+            }
+        };
+    }
+
+    private ThrowingFunction<Void,Void,RuntimeException> createConstraint()
+    {
+        return new ThrowingFunction<Void,Void,RuntimeException>()
+        {
+            @Override
+            public Void apply( Void aVoid ) throws RuntimeException
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    createConstraint( db, KEY, PROPERTY );
+                    tx.success();
+                }
+                return null;
+            }
+        };
     }
 }

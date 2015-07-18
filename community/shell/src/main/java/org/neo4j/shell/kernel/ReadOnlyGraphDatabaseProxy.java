@@ -23,6 +23,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,6 +52,7 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.RelationshipConstraintCreator;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -951,6 +953,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
 
         @Override
+        public RelationshipConstraintCreator constraintFor( RelationshipType type )
+        {
+            throw readOnlyException();
+        }
+
+        @Override
         public Iterable<ConstraintDefinition> getConstraints()
         {
             return actual.getConstraints();
@@ -960,6 +968,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         public Iterable<ConstraintDefinition> getConstraints( Label label )
         {
             return actual.getConstraints( label );
+        }
+
+        @Override
+        public Iterable<ConstraintDefinition> getConstraints( RelationshipType type )
+        {
+            return actual.getConstraints( type );
         }
     }
 

@@ -20,38 +20,28 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
 
-import static java.lang.String.format;
-
-public class MandatoryPropertyConstraintViolationKernelException extends ConstraintViolationKernelException
+public class MandatoryNodePropertyConstraintVerificationFailedKernelException
+        extends ConstraintVerificationFailedKernelException
 {
-    private final int labelId;
-    private final int propertyKeyId;
+    private final MandatoryNodePropertyConstraint constraint;
     private final long nodeId;
 
-    public MandatoryPropertyConstraintViolationKernelException( int labelId, int propertyKeyId, long nodeId )
+    public MandatoryNodePropertyConstraintVerificationFailedKernelException( MandatoryNodePropertyConstraint constraint,
+            long nodeId )
     {
-        super( "Node %d with label %d does not have the property %d", nodeId, labelId, propertyKeyId);
-        this.labelId = labelId;
-        this.propertyKeyId = propertyKeyId;
+        super( constraint );
+        this.constraint = constraint;
         this.nodeId = nodeId;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return format( "Node %d with label \"%s\" does not have a \"%s\" property", nodeId,
-                tokenNameLookup.labelGetName( labelId ),
-                tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
-    }
-
-    public int labelId()
-    {
-        return labelId;
-    }
-
-    public int propertyKeyId()
-    {
-        return propertyKeyId;
+        return String.format( "Node(%s) with label `%s` has no value for property `%s`",
+                nodeId,
+                tokenNameLookup.labelGetName( constraint.label() ),
+                tokenNameLookup.propertyKeyGetName( constraint.propertyKey() ) );
     }
 }

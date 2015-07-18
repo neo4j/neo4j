@@ -51,6 +51,7 @@ import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIPS;
 import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIP_INDEX;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
+import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_RELATIONSHIP_CONSTRAINT;
 
 public class AbstractRestFunctionalTestBase extends SharedServerTestBase implements GraphHolder
 {
@@ -278,6 +279,11 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/existence/";
     }
 
+    public String getSchemaRelationshipConstraintTypeExistenceUri( String type )
+    {
+        return getDataUri() + PATH_SCHEMA_RELATIONSHIP_CONSTRAINT + "/" + type + "/existence/";
+    }
+
     public String getSchemaConstraintLabelUniquenessPropertyUri( String label, String property )
     {
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/uniqueness/" + property;
@@ -286,5 +292,10 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     public String getSchemaConstraintLabelExistencePropertyUri( String label, String property )
     {
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/existence/" + property;
+    }
+
+    public String getSchemaRelationshipConstraintTypeExistencePropertyUri( String type, String property )
+    {
+        return getDataUri() + PATH_SCHEMA_RELATIONSHIP_CONSTRAINT + "/" + type + "/existence/" + property;
     }
 }

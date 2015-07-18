@@ -35,6 +35,7 @@ public class IndexRule extends AbstractSchemaRule
 {
     private static final long NO_OWNING_CONSTRAINT = -1;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
+    private final int label;
     private final int propertyKey;
     /**
      * Non-null for constraint indexes, equal to {@link #NO_OWNING_CONSTRAINT} for
@@ -74,7 +75,7 @@ public class IndexRule extends AbstractSchemaRule
     public IndexRule( long id, int label, int propertyKey, SchemaIndexProvider.Descriptor providerDescriptor,
                        Long owningConstraint )
     {
-        super( id, label, indexKind( owningConstraint ) );
+        super( id, indexKind( owningConstraint ) );
         this.owningConstraint = owningConstraint;
 
         if ( providerDescriptor == null )
@@ -83,6 +84,7 @@ public class IndexRule extends AbstractSchemaRule
         }
 
         this.providerDescriptor = providerDescriptor;
+        this.label = label;
         this.propertyKey = propertyKey;
     }
 
@@ -142,9 +144,22 @@ public class IndexRule extends AbstractSchemaRule
     }
 
     @Override
+    public int getLabel()
+    {
+        return label;
+    }
+
+    @Override
+    public int getRelationshipType()
+    {
+        throw new IllegalStateException( "Index rule is associated with nodes" );
+    }
+
+    @Override
     public int length()
     {
-        return super.length()
+        return 4 /* label id */
+               + 1 /* kind id */
                + UTF8.computeRequiredByteBufferSize( providerDescriptor.getKey() )
                + UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() )
                + 2 * 1                              /* number of property keys, for now always 1 */
@@ -155,7 +170,8 @@ public class IndexRule extends AbstractSchemaRule
     @Override
     public void serialize( ByteBuffer target )
     {
-        super.serialize( target );
+        target.putInt( label );
+        target.put( kind.id() );
         UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
         UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
         target.putShort( (short) 1 /*propertyKeys.length*/ );
@@ -170,46 +186,39 @@ public class IndexRule extends AbstractSchemaRule
     public int hashCode()
     {
         // TODO: Think if this needs to be extended with providerDescriptor
-        return 31 * super.hashCode() + propertyKey;
+        return 31 * (31 * super.hashCode() + label) + propertyKey;
     }
 
     @Override
-    public boolean equals( Object obj )
+    public boolean equals( Object o )
     {
-        if ( this == obj )
+        if ( this == o )
         {
             return true;
         }
-        if ( !super.equals( obj ) )
+        if ( o == null || getClass() != o.getClass() )
         {
             return false;
         }
-        if ( getClass() != obj.getClass() )
+        if ( !super.equals( o ) )
         {
             return false;
         }
-        IndexRule other = (IndexRule) obj;
-        return propertyKey == other.propertyKey;
+        IndexRule indexRule = (IndexRule) o;
+        return label == indexRule.label && propertyKey == indexRule.propertyKey;
     }
 
     @Override
-    protected String innerToString()
+    public String toString()
     {
-        StringBuilder result = new StringBuilder( ", provider=" ).append( providerDescriptor ).append( ", properties=" )
-                                                                 .append( propertyKey );
+        String ownerString = "";
         if ( owningConstraint != null )
         {
-            result.append( ", owner=" );
-            if ( owningConstraint == -1 )
-            {
-                result.append( "<not set>" );
-            }
-            else
-            {
-                result.append( owningConstraint );
-            }
+            ownerString = ", owner=" + (owningConstraint == -1 ? "<not set>" : owningConstraint);
         }
-        return result.toString();
+
+        return "IndexRule[id=" + id + ", label=" + label + ", kind=" + kind +
+               ", provider=" + providerDescriptor + ", properties=" + propertyKey + ownerString + "]";
     }
 
     public IndexRule withOwningConstraint( long constraintId )

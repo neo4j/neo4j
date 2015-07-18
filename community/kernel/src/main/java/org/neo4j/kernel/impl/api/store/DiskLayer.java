@@ -36,7 +36,9 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.cursor.LabelCursor;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
@@ -67,9 +69,11 @@ import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -104,6 +108,26 @@ public class DiskLayer implements StoreReadLayer
                     // We can use propertyKeyId straight up here, without reading from the record, since we have
                     // verified that it has that propertyKeyId in the predicate. And since we currently only support
                     // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
+                    return rule.toConstraint();
+                }
+            };
+
+    private static final Function<NodePropertyConstraintRule,NodePropertyConstraint> NODE_RULE_TO_CONSTRAINT =
+            new Function<NodePropertyConstraintRule,NodePropertyConstraint>()
+            {
+                @Override
+                public NodePropertyConstraint apply( NodePropertyConstraintRule rule )
+                {
+                    return rule.toConstraint();
+                }
+            };
+
+    private static final Function<RelationshipPropertyConstraintRule,RelationshipPropertyConstraint> REL_RULE_TO_CONSTRAINT =
+            new Function<RelationshipPropertyConstraintRule,RelationshipPropertyConstraint>()
+            {
+                @Override
+                public RelationshipPropertyConstraint apply( RelationshipPropertyConstraintRule rule )
+                {
                     return rule.toConstraint();
                 }
             };
@@ -622,13 +646,13 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, final int propertyKeyId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, final int propertyKeyId )
     {
-        return schemaStorage.schemaRules( RULE_TO_CONSTRAINT, PropertyConstraintRule.class,
-                labelId, new Predicate<PropertyConstraintRule>()
+        return schemaStorage.schemaRulesForNodes( NODE_RULE_TO_CONSTRAINT, NodePropertyConstraintRule.class,
+                labelId, new Predicate<NodePropertyConstraintRule>()
                 {
                     @Override
-                    public boolean test( PropertyConstraintRule rule )
+                    public boolean test( NodePropertyConstraintRule rule )
                     {
                         return rule.containsPropertyKeyId( propertyKeyId );
                     }
@@ -636,10 +660,33 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetForLabel( int labelId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId )
     {
-        return schemaStorage.schemaRules( RULE_TO_CONSTRAINT, PropertyConstraintRule.class,
-                labelId, Predicates.<PropertyConstraintRule>alwaysTrue() );
+        return schemaStorage.schemaRulesForNodes( NODE_RULE_TO_CONSTRAINT, NodePropertyConstraintRule.class,
+                labelId, Predicates.<NodePropertyConstraintRule>alwaysTrue() );
+    }
+
+    @Override
+    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( int typeId,
+            final int propertyKeyId )
+    {
+        return schemaStorage.schemaRulesForRelationships( REL_RULE_TO_CONSTRAINT,
+                RelationshipPropertyConstraintRule.class, typeId, new Predicate<RelationshipPropertyConstraintRule>()
+                {
+                    @Override
+                    public boolean test( RelationshipPropertyConstraintRule rule )
+                    {
+                        return rule.containsPropertyKeyId( propertyKeyId );
+                    }
+                } );
+    }
+
+    @Override
+    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( int typeId )
+    {
+        return schemaStorage.schemaRulesForRelationships( REL_RULE_TO_CONSTRAINT,
+                RelationshipPropertyConstraintRule.class, typeId,
+                Predicates.<RelationshipPropertyConstraintRule>alwaysTrue() );
     }
 
     @Override
@@ -728,7 +775,7 @@ public class DiskLayer implements StoreReadLayer
     {
         try
         {
-            return ((Token) relationshipTokenHolder.getTokenById( relationshipTypeId )).name();
+            return relationshipTokenHolder.getTokenById( relationshipTypeId ).name();
         }
         catch ( TokenNotFoundException e )
         {

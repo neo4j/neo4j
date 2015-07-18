@@ -26,7 +26,7 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v2_3.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.kernel.api.constraints.{MandatoryPropertyConstraint, UniquenessConstraint}
+import org.neo4j.kernel.api.constraints.{MandatoryNodePropertyConstraint, MandatoryRelationshipPropertyConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
@@ -61,10 +61,10 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     .thenReturn(IdempotentResult(mock[UniquenessConstraint]))
 
   when( inner.createNodeMandatoryConstraint(anyInt(), anyInt()) )
-    .thenReturn(IdempotentResult(mock[MandatoryPropertyConstraint]))
+    .thenReturn(IdempotentResult(mock[MandatoryNodePropertyConstraint]))
 
   when( inner.createRelationshipMandatoryConstraint(anyInt(), anyInt()) )
-    .thenReturn(IdempotentResult(mock[MandatoryPropertyConstraint]))
+    .thenReturn(IdempotentResult(mock[MandatoryRelationshipPropertyConstraint]))
 
   when( inner.addIndexRule(anyInt(), anyInt()) )
     .thenReturn(IdempotentResult(mock[IndexDescriptor]))

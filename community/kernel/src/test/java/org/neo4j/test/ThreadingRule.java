@@ -153,6 +153,8 @@ public class ThreadingRule extends ExternalResource
             @Override
             public boolean test( Thread thread )
             {
+                ReflectionUtil.verifyMethodExists( owner, method );
+
                 if ( thread.getState() != Thread.State.WAITING )
                 {
                     return false;

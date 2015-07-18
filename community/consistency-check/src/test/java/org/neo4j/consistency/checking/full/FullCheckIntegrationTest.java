@@ -115,8 +115,10 @@ import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
+import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -519,7 +521,7 @@ public class FullCheckIntegrationTest
     }
 
     @Test
-    public void shouldReportMissingMandatoryProperty() throws Exception
+    public void shouldReportMissingMandatoryNodeProperty() throws Exception
     {
         // given
         fixture.apply( new GraphStoreFixture.Transaction()
@@ -548,6 +550,55 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.NODE, 1 )
+                .andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportMissingMandatoryRelationshipProperty() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                long nodeId1 = next.node();
+                long nodeId2 = next.node();
+                long relId = next.relationship();
+                long propId = next.property();
+
+                NodeRecord node1 = new NodeRecord( nodeId1, true, false, relId, NO_NEXT_PROPERTY.intValue(),
+                        NO_LABELS_FIELD.intValue() );
+                NodeRecord node2 = new NodeRecord( nodeId2, true, false, relId, NO_NEXT_PROPERTY.intValue(),
+                        NO_LABELS_FIELD.intValue() );
+
+                // structurally correct, but does not have the 'mandatory' property with the 'M' rel type
+                RelationshipRecord relationship = new RelationshipRecord( relId, true, nodeId1, nodeId2, M,
+                        NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue(),
+                        NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue(), true, true );
+                relationship.setNextProp( propId );
+
+                PropertyRecord property = new PropertyRecord( propId, relationship );
+                property.setInUse( true );
+                PropertyBlock block = new PropertyBlock();
+                block.setSingleBlock( key | (((long) PropertyType.INT.intValue()) << 24) | (1337L << 28) );
+                property.addPropertyBlock( block );
+
+                tx.create( node1 );
+                tx.create( node2 );
+                tx.create( relationship );
+                tx.create( property );
+                tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( ANY_LABEL, M, ANY_LABEL, 1 );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.RELATIONSHIP, 1 )
                 .andThatsAllFolks();
     }
 
@@ -715,7 +766,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                tx.create( new RelationshipRecord( next.relationship(), 1, 2, 0 ) );
+                tx.create( new RelationshipRecord( next.relationship(), 1, 2, C ) );
             }
         } );
 
@@ -1557,6 +1608,7 @@ public class FullCheckIntegrationTest
                 graphDb.schema().indexFor( label( "label3" ) ).on( "key" ).create();
                 graphDb.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( "key" ).create();
                 graphDb.schema().constraintFor( label( "draconian" ) ).assertPropertyExists( "mandatory" ).create();
+                graphDb.schema().constraintFor( withName( "M" ) ).assertPropertyExists( "mandatory" ).create();
                 tx.success();
             }
 
@@ -1581,12 +1633,13 @@ public class FullCheckIntegrationTest
                 mandatory = statement.readOperations().propertyKeyGetForName( "mandatory" );
                 C = statement.readOperations().relationshipTypeGetForName( "C" );
                 T = statement.readOperations().relationshipTypeGetForName( "T" );
+                M = statement.readOperations().relationshipTypeGetForName( "M" );
             }
         }
     };
     private int label1, label2, label3, label4, draconian;
     private int key, mandatory;
-    private int C, T;
+    private int C, T, M;
 
     private final ByteArrayOutputStream out = new ByteArrayOutputStream();
     private final List<Long> indexedNodes = new ArrayList<>();

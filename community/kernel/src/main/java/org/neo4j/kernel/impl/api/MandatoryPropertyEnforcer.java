@@ -25,12 +25,16 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.api.exceptions.schema.MandatoryPropertyConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.MandatoryNodePropertyConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.MandatoryRelationshipPropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
@@ -42,6 +46,12 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
 {
+    private static final Predicate<NodePropertyConstraint> MANDATORY_NODE_PROPERTY_CONSTRAINT =
+            Predicates.instanceOf( MandatoryNodePropertyConstraint.class );
+
+    private static final Predicate<RelationshipPropertyConstraint> MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT =
+            Predicates.instanceOf( MandatoryRelationshipPropertyConstraint.class );
+
     private final EntityReadOperations readOperations;
     private final StoreReadLayer storeLayer;
     private final StoreStatement storeStatement;
@@ -51,7 +61,7 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
             TxStateVisitor next,
             TxStateHolder txStateHolder,
             StoreReadLayer storeLayer,
-            StoreStatement storeStatement)
+            StoreStatement storeStatement )
     {
         super( next );
         this.readOperations = operations;
@@ -76,24 +86,65 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
         super.visitNodeLabelChanges( id, added, removed );
     }
 
+    @Override
+    public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+            throws ConstraintValidationKernelException
+    {
+        validateRelationship( id, type );
+        super.visitCreatedRelationship( id, type, startNode, endNode );
+    }
 
+    @Override
+    public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+            Iterator<Integer> removed ) throws ConstraintValidationKernelException
+    {
+        validateRelationship( id );
+        super.visitRelPropertyChanges( id, added, changed, removed );
+    }
 
     private void validateNode( long node ) throws ConstraintValidationKernelException
     {
         for ( PrimitiveIntIterator labels = labelsOf( node ); labels.hasNext(); )
         {
-            for ( PropertyConstraint constraint : loop( mandatoryPropertyConstraints( labels.next() ) ) )
+            for ( NodePropertyConstraint constraint : loop( mandatoryNodePropertyConstraints( labels.next() ) ) )
             {
-                if ( !hasProperty( node, constraint.propertyKeyId() ) )
+                if ( !nodeHasProperty( node, constraint.propertyKey() ) )
                 {
-                    throw new MandatoryPropertyConstraintViolationKernelException( constraint.label(),
-                            constraint.propertyKeyId(), node );
+                    throw new MandatoryNodePropertyConstraintViolationKernelException( constraint.label(),
+                            constraint.propertyKey(), node );
                 }
             }
         }
     }
 
-    private boolean hasProperty( long nodeId, int propertyKeyId )
+    private void validateRelationship( long id ) throws ConstraintValidationKernelException
+    {
+        try
+        {
+            int type = readOperations.relationshipGetType( txStateHolder, storeStatement, id );
+            validateRelationship( id, type );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( "Relationship with changes should exist.", e );
+        }
+    }
+
+    private void validateRelationship( long id, int type ) throws ConstraintValidationKernelException
+    {
+        Iterator<RelationshipPropertyConstraint> constraints = mandatoryRelPropertyConstraints( type );
+        while ( constraints.hasNext() )
+        {
+            RelationshipPropertyConstraint constraint = constraints.next();
+            if ( !relHasProperty( id, constraint.propertyKey() ) )
+            {
+                throw new MandatoryRelationshipPropertyConstraintViolationKernelException(
+                        constraint.relationshipType(), constraint.propertyKey(), id );
+            }
+        }
+    }
+
+    private boolean nodeHasProperty( long nodeId, int propertyKeyId )
     {
         try
         {
@@ -102,6 +153,18 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
         catch ( EntityNotFoundException e )
         {
             throw new IllegalStateException( "Node with changes should exist.", e );
+        }
+    }
+
+    private boolean relHasProperty( long relId, int propertyKeyId )
+    {
+        try
+        {
+            return readOperations.relationshipHasProperty( txStateHolder, storeStatement, relId, propertyKeyId );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( "Relationship with changes should exist.", e );
         }
     }
 
@@ -117,15 +180,15 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
         }
     }
 
-    private Iterator<PropertyConstraint> mandatoryPropertyConstraints( int label )
+    private Iterator<NodePropertyConstraint> mandatoryNodePropertyConstraints( int label )
     {
-        return new FilteringIterator<>( storeLayer.constraintsGetForLabel( label ), new Predicate<PropertyConstraint>()
-        {
-            @Override
-            public boolean test( PropertyConstraint constraint )
-            {
-                return constraint instanceof MandatoryPropertyConstraint;
-            }
-        } );
+        return new FilteringIterator<>( storeLayer.constraintsGetForLabel( label ),
+                MANDATORY_NODE_PROPERTY_CONSTRAINT );
+    }
+
+    private Iterator<RelationshipPropertyConstraint> mandatoryRelPropertyConstraints( int type )
+    {
+        return new FilteringIterator<>( storeLayer.constraintsGetForRelationshipType( type ),
+                MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT );
     }
 }

@@ -25,17 +25,15 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.InvalidTransactionTypeException;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.schema.PropertyConstraintDefinition;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
@@ -50,19 +48,24 @@ import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public abstract class ConstraintHaIT
 {
-    private static final Label LABEL = DynamicLabel.label( "User" );
+    private static final String TYPE = "Type";
     private static final String PROPERTY_KEY = "name";
 
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() );
 
-    protected abstract void createConstraint( GraphDatabaseService db, Label label, String propertyKey );
+    protected abstract void createConstraint( GraphDatabaseService db, String type, String propertyKey );
 
-    protected abstract void createConstraintOffendingNode( GraphDatabaseService db, Label label, String propertyKey,
+    protected abstract void createEntityInTx( GraphDatabaseService db, String type, String propertyKey,
             String propertyValue );
 
-    protected abstract void assertConstraintHolds( GraphDatabaseService db, Label label, String propertyKey,
+    protected abstract void createConstraintViolation( GraphDatabaseService db, String type, String propertyKey,
             String propertyValue );
+
+    protected abstract void assertConstraintHolds( GraphDatabaseService db, String type, String propertyKey,
+            String propertyValue );
+
+    protected abstract Class<? extends ConstraintDefinition> constraintDefinitionClass();
 
     @Test
     public void shouldCreateConstraintOnMaster() throws Exception
@@ -74,7 +77,7 @@ public abstract class ConstraintHaIT
         // when
         try ( Transaction tx = master.beginTx() )
         {
-            createConstraint( master, LABEL, PROPERTY_KEY );
+            createConstraint( master, TYPE, PROPERTY_KEY );
             tx.success();
         }
 
@@ -85,7 +88,8 @@ public abstract class ConstraintHaIT
         {
             try ( Transaction tx = clusterMember.beginTx() )
             {
-                ConstraintDefinition constraint = single( clusterMember.schema().getConstraints( LABEL ) );
+                ConstraintDefinition constraint = single( clusterMember.schema().getConstraints() );
+                validateLabelOrRelationshipType( constraint );
                 assertEquals( PROPERTY_KEY, single( constraint.getPropertyKeys() ) );
                 tx.success();
             }
@@ -102,7 +106,7 @@ public abstract class ConstraintHaIT
         // when
         try ( Transaction ignored = slave.beginTx() )
         {
-            createConstraint( slave, LABEL, PROPERTY_KEY );
+            createConstraint( slave, TYPE, PROPERTY_KEY );
             fail( "We expected to not be able to create a constraint on a slave in a cluster." );
         }
         catch ( Exception e )
@@ -120,13 +124,13 @@ public abstract class ConstraintHaIT
 
         try ( Transaction tx = master.beginTx() )
         {
-            createConstraint( master, LABEL, PROPERTY_KEY );
+            createConstraint( master, TYPE, PROPERTY_KEY );
             tx.success();
         }
         cluster.sync();
 
         // and given I have some data for the constraint
-        createUser( cluster.getAnySlave(), "Bob" );
+        createEntityInTx( cluster.getAnySlave(), TYPE, PROPERTY_KEY, "Foo" );
 
         // when
         try ( Transaction tx = master.beginTx() )
@@ -143,7 +147,7 @@ public abstract class ConstraintHaIT
             {
                 assertEquals( count( clusterMember.schema().getConstraints() ), 0 );
                 assertEquals( count( clusterMember.schema().getIndexes() ), 0 );
-                createUser( clusterMember, "Bob" );
+                createConstraintViolation( clusterMember, TYPE, PROPERTY_KEY, "Foo" );
                 tx.success();
             }
         }
@@ -159,19 +163,19 @@ public abstract class ConstraintHaIT
 
         ThreadToStatementContextBridge txBridge = threadToStatementContextBridge( slave );
 
-        // And given there is a user named bob
-        createUser( master, "Bob" );
+        // And given there is an entity with property
+        createEntityInTx( master, TYPE, PROPERTY_KEY, "Foo" );
 
-        // And given that I begin a transaction that will create a constraint offending node
+        // And given that I begin a transaction that will create a constraint violation
         slave.beginTx();
-        createConstraintOffendingNode( slave, LABEL, PROPERTY_KEY, "Bob" );
+        createConstraintViolation( slave, TYPE, PROPERTY_KEY, "Foo" );
         TopLevelTransaction slaveTx = txBridge.getTopLevelTransactionBoundToThisThread( true );
         txBridge.unbindTransactionFromCurrentThread();
 
         // When I create a constraint
         try ( Transaction tx = master.beginTx() )
         {
-            createConstraint( master, LABEL, PROPERTY_KEY );
+            createConstraint( master, TYPE, PROPERTY_KEY );
             tx.success();
         }
 
@@ -192,13 +196,13 @@ public abstract class ConstraintHaIT
         }
 
         // And then both master and slave should keep working, accepting reads
-        assertConstraintHolds( master, LABEL, PROPERTY_KEY, "Bob" );
+        assertConstraintHolds( master, TYPE, PROPERTY_KEY, "Foo" );
         cluster.sync();
-        assertConstraintHolds( slave, LABEL, PROPERTY_KEY, "Bob" );
+        assertConstraintHolds( slave, TYPE, PROPERTY_KEY, "Foo" );
 
         // And then I should be able to perform new write transactions, on both master and slave
-        createUser( slave, "Steven" );
-        createUser( master, "Caroline" );
+        createEntityInTx( slave, TYPE, PROPERTY_KEY, "Bar" );
+        createEntityInTx( master, TYPE, PROPERTY_KEY, "Baz" );
     }
 
     @Test
@@ -218,7 +222,7 @@ public abstract class ConstraintHaIT
 
         try ( Transaction tx = master.beginTx() )
         {
-            createConstraint( master, LABEL, PROPERTY_KEY );
+            createConstraint( master, TYPE, PROPERTY_KEY );
             tx.success();
         }
 
@@ -228,20 +232,10 @@ public abstract class ConstraintHaIT
         // Then
         try ( Transaction ignored = slave.beginTx() )
         {
-            assertThat( single( slave.schema().getConstraints() ), instanceOf( PropertyConstraintDefinition.class ) );
-            PropertyConstraintDefinition constraint =
-                    (PropertyConstraintDefinition) single( slave.schema().getConstraints() );
-            assertThat( single( constraint.getPropertyKeys() ), equalTo( PROPERTY_KEY ) );
-            assertThat( constraint.getLabel(), equalTo( LABEL ) );
-        }
-    }
-
-    private static void createUser( HighlyAvailableGraphDatabase db, String name )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.createNode( LABEL ).setProperty( PROPERTY_KEY, name );
-            tx.success();
+            ConstraintDefinition definition = single( slave.schema().getConstraints() );
+            assertThat( definition, instanceOf( constraintDefinitionClass() ) );
+            assertThat( single( definition.getPropertyKeys() ), equalTo( PROPERTY_KEY ) );
+            validateLabelOrRelationshipType( definition );
         }
     }
 
@@ -249,5 +243,17 @@ public abstract class ConstraintHaIT
     {
         DependencyResolver dependencyResolver = db.getDependencyResolver();
         return dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
+    }
+
+    private static void validateLabelOrRelationshipType( ConstraintDefinition constraint )
+    {
+        if ( constraint.isConstraintType( ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY ) )
+        {
+            assertEquals( TYPE, constraint.getRelationshipType().name() );
+        }
+        else
+        {
+            assertEquals( TYPE, constraint.getLabel().name() );
+        }
     }
 }

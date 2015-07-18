@@ -195,7 +195,7 @@ public class DataSourceModule
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource( storeDir, config,
                 storeFactory, logging.getInternalLogProvider(), platformModule.jobScheduler,
                 new NonTransactionalTokenNameLookup( editionModule.labelTokenHolder,
-                        editionModule.propertyKeyTokenHolder ),
+                        editionModule.relationshipTypeTokenHolder, editionModule.propertyKeyTokenHolder ),
                 deps, editionModule.propertyKeyTokenHolder, editionModule.labelTokenHolder, relationshipTypeTokenHolder,
                 editionModule.lockManager, schemaWriteGuard, transactionEventHandlers,
                 platformModule.monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,

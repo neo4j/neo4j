@@ -24,7 +24,9 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -99,10 +101,14 @@ public interface StoreReadLayer
 
     Iterator<DefinedProperty> graphGetAllProperties();
 
-    Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey(
-            int labelId, int propertyKeyId );
+    Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId );
 
-    Iterator<PropertyConstraint> constraintsGetForLabel( int labelId );
+    Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId );
+
+    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( int typeId,
+            int propertyKeyId );
+
+    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( int typeId );
 
     Iterator<PropertyConstraint> constraintsGetAll();
 

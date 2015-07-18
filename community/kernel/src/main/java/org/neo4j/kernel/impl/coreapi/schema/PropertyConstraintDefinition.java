@@ -19,61 +19,28 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 
-import static java.util.Collections.singletonList;
+import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
 
-public class PropertyConstraintDefinition implements ConstraintDefinition
+abstract class PropertyConstraintDefinition implements ConstraintDefinition
 {
-    private final InternalSchemaActions actions;
-    private final Label label;
-    private final String propertyKey;
-    private final ConstraintType type;
+    protected final InternalSchemaActions actions;
+    protected final String propertyKey;
 
-    public PropertyConstraintDefinition( InternalSchemaActions actions, Label label, String propertyKey,
-            ConstraintType type )
+    protected PropertyConstraintDefinition( InternalSchemaActions actions, String propertyKey )
     {
-        this.actions = actions;
-        this.label = label;
-        this.propertyKey = propertyKey;
-        this.type = type;
-    }
-
-    @Override
-    public void drop()
-    {
-        assertInUnterminatedTransaction();
-        switch(type) {
-        case UNIQUENESS:
-            actions.dropPropertyUniquenessConstraint( label, propertyKey );
-            break;
-        case MANDATORY_PROPERTY:
-            actions.dropPropertyExistenceConstraint( label, propertyKey );
-
-        }
+        this.actions = requireNonNull( actions );
+        this.propertyKey = requireNonNull( propertyKey );
     }
 
     @Override
     public Iterable<String> getPropertyKeys()
     {
         assertInUnterminatedTransaction();
-        return singletonList( propertyKey );
-    }
-
-    @Override
-    public Label getLabel()
-    {
-        assertInUnterminatedTransaction();
-        return label;
-    }
-
-    @Override
-    public ConstraintType getConstraintType()
-    {
-        assertInUnterminatedTransaction();
-        return type;
+        return singleton( propertyKey );
     }
 
     @Override
@@ -84,70 +51,18 @@ public class PropertyConstraintDefinition implements ConstraintDefinition
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        PropertyConstraintDefinition that = (PropertyConstraintDefinition) o;
-
-        if ( type != that.type )
-        {
-            return false;
-        }
-        if ( !actions.equals( that.actions ) )
-        {
-            return false;
-        }
-        if ( !label.equals( that.label ) )
-        {
-            return false;
-        }
-        if ( !propertyKey.equals( that.propertyKey ) )
-        {
-            return false;
-        }
-
-        return true;
-    }
+    public abstract boolean equals( Object o );
 
     @Override
-    public int hashCode()
-    {
-        int result = type.hashCode();
-        result = 31 * result + label.name().hashCode();
-        result = 31 * result + propertyKey.hashCode();
+    public abstract int hashCode();
 
-        return result;
-    }
-
+    /**
+     * Returned string is used in shell's constraint listing.
+     */
     @Override
-    public String toString()
-    {
-        // using label name as a good identifier name
-        return String.format( "%s.%s IS %s", label.name().toLowerCase(), propertyKey, constraintString() );
-    }
+    public abstract String toString();
 
-    private String constraintString()
-    {
-        switch ( type )
-        {
-        case UNIQUENESS:
-            return "UNIQUE";
-        case MANDATORY_PROPERTY:
-            return "NOT NULL";
-        default:
-            throw new UnsupportedOperationException( "Unknown ConstraintType: " + type );
-        }
-    }
-
-    private void assertInUnterminatedTransaction()
+    protected void assertInUnterminatedTransaction()
     {
         actions.assertInUnterminatedTransaction();
     }

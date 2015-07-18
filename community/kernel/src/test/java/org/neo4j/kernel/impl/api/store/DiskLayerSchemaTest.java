@@ -25,11 +25,16 @@ import java.util.Set;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
@@ -45,16 +50,20 @@ public class DiskLayerSchemaTest extends DiskLayerTest
         createUniquenessConstraint( label1, propertyKey );
         createUniquenessConstraint( label2, propertyKey );
 
-        createMandatoryPropertyConstraint( label2, propertyKey );
+        createMandatoryNodePropertyConstraint( label2, propertyKey );
+        createMandatoryRelationshipPropertyConstraint( relType1, propertyKey );
 
         // When
         Set<PropertyConstraint> constraints = asSet( disk.constraintsGetAll() );
 
         // Then
+        int propKeyId = propertyKeyId( propertyKey );
+
         Set<PropertyConstraint> expectedConstraints = asSet(
-                new UniquenessConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ),
-                new UniquenessConstraint( labelId( label2 ), propertyKeyId( propertyKey ) ),
-                new MandatoryPropertyConstraint( labelId( label2 ), propertyKeyId( propertyKey ) ) );
+                new UniquenessConstraint( labelId( label1 ), propKeyId ),
+                new UniquenessConstraint( labelId( label2 ), propKeyId ),
+                new MandatoryNodePropertyConstraint( labelId( label2 ), propKeyId ),
+                new MandatoryRelationshipPropertyConstraint( relationshipTypeId( relType1 ), propKeyId ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -63,18 +72,18 @@ public class DiskLayerSchemaTest extends DiskLayerTest
     public void shouldListAllConstraintsForLabel()
     {
         // Given
-        createMandatoryPropertyConstraint( label1, propertyKey );
-        createMandatoryPropertyConstraint( label2, propertyKey );
+        createMandatoryNodePropertyConstraint( label1, propertyKey );
+        createMandatoryNodePropertyConstraint( label2, propertyKey );
 
         createUniquenessConstraint( label1, propertyKey );
 
         // When
-        Set<PropertyConstraint> constraints = asSet( disk.constraintsGetForLabel( labelId( label1 ) ) );
+        Set<NodePropertyConstraint> constraints = asSet( disk.constraintsGetForLabel( labelId( label1 ) ) );
 
         // Then
-        Set<PropertyConstraint> expectedConstraints = asSet(
+        Set<NodePropertyConstraint> expectedConstraints = asSet(
                 new UniquenessConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ),
-                new MandatoryPropertyConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ) );
+                new MandatoryNodePropertyConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -84,19 +93,62 @@ public class DiskLayerSchemaTest extends DiskLayerTest
     {
         // Given
         createUniquenessConstraint( label1, propertyKey );
-        createUniquenessConstraint( label1, "some other property key" );
+        createUniquenessConstraint( label1, otherPropertyKey );
 
-        createMandatoryPropertyConstraint( label1, propertyKey );
-        createMandatoryPropertyConstraint( label2, propertyKey );
+        createMandatoryNodePropertyConstraint( label1, propertyKey );
+        createMandatoryNodePropertyConstraint( label2, propertyKey );
 
         // When
-        Set<PropertyConstraint> constraints = asSet(
+        Set<NodePropertyConstraint> constraints = asSet(
                 disk.constraintsGetForLabelAndPropertyKey( labelId( label1 ), propertyKeyId( propertyKey ) ) );
 
         // Then
-        Set<PropertyConstraint> expectedConstraints = asSet(
+        Set<NodePropertyConstraint> expectedConstraints = asSet(
                 new UniquenessConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ),
-                new MandatoryPropertyConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ) );
+                new MandatoryNodePropertyConstraint( labelId( label1 ), propertyKeyId( propertyKey ) ) );
+
+        assertEquals( expectedConstraints, constraints );
+    }
+
+    @Test
+    public void shouldListAllConstraintsForRelationshipType()
+    {
+        // Given
+        createMandatoryRelationshipPropertyConstraint( relType1, propertyKey );
+        createMandatoryRelationshipPropertyConstraint( relType2, propertyKey );
+        createMandatoryRelationshipPropertyConstraint( relType2, otherPropertyKey );
+
+        // When
+        int relTypeId = relationshipTypeId( relType2 );
+        Set<RelationshipPropertyConstraint> constraints = asSet( disk.constraintsGetForRelationshipType( relTypeId ) );
+
+        // Then
+        Set<RelationshipPropertyConstraint> expectedConstraints = IteratorUtil.<RelationshipPropertyConstraint>asSet(
+                new MandatoryRelationshipPropertyConstraint( relTypeId, propertyKeyId( propertyKey ) ),
+                new MandatoryRelationshipPropertyConstraint( relTypeId, propertyKeyId( otherPropertyKey ) ) );
+
+        assertEquals( expectedConstraints, constraints );
+    }
+
+    @Test
+    public void shouldListAllConstraintsForRelationshipTypeAndProperty()
+    {
+        // Given
+        createMandatoryRelationshipPropertyConstraint( relType1, propertyKey );
+        createMandatoryRelationshipPropertyConstraint( relType1, otherPropertyKey );
+
+        createMandatoryRelationshipPropertyConstraint( relType2, propertyKey );
+        createMandatoryRelationshipPropertyConstraint( relType2, otherPropertyKey );
+
+        // When
+        int relTypeId = relationshipTypeId( relType1 );
+        int propKeyId = propertyKeyId( propertyKey );
+        Set<RelationshipPropertyConstraint> constraints = asSet(
+                disk.constraintsGetForRelationshipTypeAndPropertyKey( relTypeId, propKeyId ) );
+
+        // Then
+        Set<RelationshipPropertyConstraint> expectedConstraints = IteratorUtil.<RelationshipPropertyConstraint>asSet(
+                new MandatoryRelationshipPropertyConstraint( relTypeId, propKeyId ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -110,11 +162,20 @@ public class DiskLayerSchemaTest extends DiskLayerTest
         }
     }
 
-    private void createMandatoryPropertyConstraint( Label label, String propertyKey )
+    private void createMandatoryNodePropertyConstraint( Label label, String propertyKey )
     {
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( label ).assertPropertyExists( propertyKey ).create();
+            tx.success();
+        }
+    }
+
+    private void createMandatoryRelationshipPropertyConstraint( RelationshipType type, String propertyKey )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().constraintFor( type ).assertPropertyExists( propertyKey ).create();
             tx.success();
         }
     }
@@ -132,6 +193,14 @@ public class DiskLayerSchemaTest extends DiskLayerTest
         try ( Transaction ignored = db.beginTx() )
         {
             return readOps().propertyKeyGetForName( propertyKey );
+        }
+    }
+
+    private int relationshipTypeId( RelationshipType type )
+    {
+        try ( Transaction ignored = db.beginTx() )
+        {
+            return readOps().relationshipTypeGetForName( type.name() );
         }
     }
 

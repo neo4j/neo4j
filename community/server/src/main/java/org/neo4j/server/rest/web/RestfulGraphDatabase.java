@@ -30,7 +30,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -76,6 +75,7 @@ import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIPS;
 import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIP_INDEX;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
+import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_RELATIONSHIP_CONSTRAINT;
 
 @Path( "/" )
 public class RestfulGraphDatabase
@@ -147,6 +147,10 @@ public class RestfulGraphDatabase
     public static final String PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE = PATH_SCHEMA_CONSTRAINT_LABEL + "/existence";
     public static final String PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY = PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS + "/{property}";
     public static final String PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE_PROPERTY = PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE + "/{property}";
+
+    public static final String PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE = PATH_SCHEMA_RELATIONSHIP_CONSTRAINT + "/{type}";
+    public static final String PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE_EXISTENCE = PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE + "/existence";
+    public static final String PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_EXISTENCE_PROPERTY = PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE_EXISTENCE + "/{property}";
 
     public static final String NODE_AUTO_INDEX_TYPE = "node";
     public static final String RELATIONSHIP_AUTO_INDEX_TYPE = "relationship";
@@ -1857,7 +1861,7 @@ public class RestfulGraphDatabase
 
     @POST
     @Path( PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE )
-    public Response createPropertyExistenceConstraint( @PathParam( "label" ) String labelName, String body )
+    public Response createNodePropertyExistenceConstraint( @PathParam( "label" ) String labelName, String body )
     {
         try
         {
@@ -1868,7 +1872,37 @@ public class RestfulGraphDatabase
                 return output.badRequest( new IllegalArgumentException(
                         "Supply single property key or list of property keys" ) );
             }
-            return output.ok( actions.createPropertyExistenceConstraint( labelName, singlePropertyKey ) );
+            return output.ok( actions.createNodePropertyExistenceConstraint( labelName, singlePropertyKey ) );
+        }
+        catch( UnsupportedOperationException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( org.neo4j.graphdb.ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
+    }
+
+    @POST
+    @Path( PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE_EXISTENCE )
+    public Response createRelationshipPropertyExistenceConstraint( @PathParam( "type" ) String typeName,
+            String body )
+    {
+        try
+        {
+            Map<String, Object> data = input.readMap( body, "property_keys" );
+            Iterable<String> singlePropertyKey = singleOrList( data, "property_keys" );
+            if ( singlePropertyKey == null )
+            {
+                return output.badRequest( new IllegalArgumentException(
+                        "Supply single property key or list of property keys" ) );
+            }
+            return output.ok( actions.createRelationshipPropertyExistenceConstraint( typeName, singlePropertyKey ) );
         }
         catch( UnsupportedOperationException e )
         {
@@ -1908,12 +1942,34 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path( PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE_PROPERTY )
-    public Response dropPropertyExistenceConstraint( @PathParam( "label" ) String labelName,
+    public Response dropNodePropertyExistenceConstraint( @PathParam( "label" ) String labelName,
             @PathParam( "property" ) AmpersandSeparatedCollection properties )
     {
         try
         {
-            if ( actions.dropPropertyExistenceConstraint( labelName, properties ) )
+            if ( actions.dropNodePropertyExistenceConstraint( labelName, properties ) )
+            {
+                return nothing();
+            }
+            else
+            {
+                return output.notFound();
+            }
+        }
+        catch ( org.neo4j.graphdb.ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
+    }
+
+    @DELETE
+    @Path( PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_EXISTENCE_PROPERTY )
+    public Response dropRelationshipPropertyExistenceConstraint( @PathParam( "type" ) String typeName,
+            @PathParam( "property" ) AmpersandSeparatedCollection properties )
+    {
+        try
+        {
+            if ( actions.dropRelationshipPropertyExistenceConstraint( typeName, properties ) )
             {
                 return nothing();
             }
@@ -1957,6 +2013,13 @@ public class RestfulGraphDatabase
     }
 
     @GET
+    @Path( PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE_EXISTENCE )
+    public Response getSchemaConstraintsForRelationshipTypeAndExistence( @PathParam( "type" ) String typeName )
+    {
+        return output.ok( actions.getRelationshipTypeExistenceConstraints( typeName ) );
+    }
+
+    @GET
     @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY )
     public Response getSchemaConstraintsForLabelAndPropertyUniqueness( @PathParam( "label" ) String labelName,
             @PathParam( "property" ) AmpersandSeparatedCollection propertyKeys )
@@ -1979,7 +2042,23 @@ public class RestfulGraphDatabase
     {
         try
         {
-            ListRepresentation constraints = actions.getPropertyExistenceConstraint( labelName, propertyKeys );
+            ListRepresentation constraints = actions.getNodePropertyExistenceConstraint( labelName, propertyKeys );
+            return output.ok( constraints );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            return output.notFound( e );
+        }
+    }
+
+    @GET
+    @Path( PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_EXISTENCE_PROPERTY )
+    public Response getSchemaConstraintsForRelationshipTypeAndPropertyExistence( @PathParam( "type" ) String typeName,
+            @PathParam( "property" ) AmpersandSeparatedCollection propertyKeys )
+    {
+        try
+        {
+            ListRepresentation constraints = actions.getRelationshipPropertyExistenceConstraint( typeName, propertyKeys );
             return output.ok( constraints );
         }
         catch ( IllegalArgumentException e )

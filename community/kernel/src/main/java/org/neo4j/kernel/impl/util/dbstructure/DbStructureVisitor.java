@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 public interface DbStructureVisitor
@@ -30,7 +32,9 @@ public interface DbStructureVisitor
 
     void visitIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size );
     void visitUniqueIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage, long size );
-    void visitUniqueConstraint( PropertyConstraint constraint, String userDescription );
+    void visitUniqueConstraint( UniquenessConstraint constraint, String userDescription );
+    void visitMandatoryNodePropertyConstraint( MandatoryNodePropertyConstraint constraint, String userDescription );
+    void visitMandatoryRelationshipPropertyConstraint( MandatoryRelationshipPropertyConstraint constraint, String userDescription );
 
     void visitAllNodesCount( long nodeCount );
     void visitNodeCount( int labelId, String labelName, long nodeCount );

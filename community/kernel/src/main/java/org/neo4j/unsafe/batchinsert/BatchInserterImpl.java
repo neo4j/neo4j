@@ -40,9 +40,9 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.RelationshipConstraintCreator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
@@ -56,11 +56,13 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.StoreLocker;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -83,11 +85,14 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.coreapi.schema.BaseConstraintCreator;
+import org.neo4j.kernel.impl.coreapi.schema.BaseNodeConstraintCreator;
+import org.neo4j.kernel.impl.coreapi.schema.BaseRelationshipConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
-import org.neo4j.kernel.impl.coreapi.schema.PropertyConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.MandatoryNodePropertyConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.MandatoryRelationshipPropertyConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
@@ -96,7 +101,8 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
-import org.neo4j.kernel.impl.store.MandatoryPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.MandatoryNodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.MandatoryRelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -407,7 +413,7 @@ public class BatchInserterImpl implements BatchInserter
         propertyCreator.primitiveAddProperty( primitiveRecord, propertyKey, propertyValue, propertyRecords );
     }
 
-    private void checkSchemaCreationConstraints( int labelId, int propertyKeyId )
+    private void validateNodeConstraintCanBeCreated( int labelId, int propertyKeyId )
     {
         for ( SchemaRule rule : schemaCache.schemaRulesForLabel( labelId ) )
         {
@@ -422,17 +428,40 @@ public class BatchInserterImpl implements BatchInserter
                 case UNIQUENESS_CONSTRAINT:
                     otherPropertyKeyId = ((UniquePropertyConstraintRule) rule).getPropertyKey();
                     break;
-                case MANDATORY_PROPERTY_CONSTRAINT:
-                    otherPropertyKeyId = ((MandatoryPropertyConstraintRule) rule).getPropertyKey();
+                case MANDATORY_NODE_PROPERTY_CONSTRAINT:
+                    otherPropertyKeyId = ((MandatoryNodePropertyConstraintRule) rule).getPropertyKey();
                     break;
                 default:
-                    throw new IllegalStateException( "Case not handled.");
+                    throw new IllegalStateException( "Case not handled for " + rule.getKind());
             }
 
             if ( otherPropertyKeyId == propertyKeyId )
             {
                 throw new ConstraintViolationException(
                         "It is not allowed to create schema constraints and indexes on the same {label;property}." );
+            }
+        }
+    }
+
+    private void validateRelationshipConstraintCanBeCreated( int typeId, int propertyKeyId )
+    {
+        for ( SchemaRule rule : schemaCache.schemaRulesForRelationshipType( typeId ) )
+        {
+            int otherPropertyKeyId;
+
+            switch ( rule.getKind() )
+            {
+                case MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT:
+                    otherPropertyKeyId = ((MandatoryRelationshipPropertyConstraintRule) rule).getPropertyKey();
+                    break;
+                default:
+                    throw new IllegalStateException( "Case not handled for " + rule.getKind() );
+            }
+
+            if ( otherPropertyKeyId == propertyKeyId )
+            {
+                throw new ConstraintViolationException( "It is not allowed to create schema constraints and " +
+                                                        "indexes on the same {relationshipType;property}." );
             }
         }
     }
@@ -591,10 +620,16 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public ConstraintCreator createDeferredConstraint( Label label )
     {
-        return new BaseConstraintCreator( new BatchSchemaActions(), label );
+        return new BaseNodeConstraintCreator( new BatchSchemaActions(), label );
     }
 
-    private void createConstraintRule( PropertyConstraint constraint )
+    @Override
+    public RelationshipConstraintCreator createDeferredConstraint( RelationshipType type )
+    {
+        return new BaseRelationshipConstraintCreator( new BatchSchemaActions(), type );
+    }
+
+    private void createConstraintRule( UniquenessConstraint constraint )
     {
         // TODO: Do not create duplicate index
 
@@ -604,12 +639,12 @@ public class BatchInserterImpl implements BatchInserter
         long constraintRuleId = schemaStore.nextId();
 
         IndexRule indexRule = IndexRule.constraintIndexRule(
-                indexRuleId, constraint.label(), constraint.propertyKeyId(),
+                indexRuleId, constraint.label(), constraint.propertyKey(),
                 this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
                 constraintRuleId );
         UniquePropertyConstraintRule
                 constraintRule = UniquePropertyConstraintRule.uniquenessConstraintRule(
-                constraintRuleId, constraint.label(), constraint.propertyKeyId(), indexRuleId );
+                constraintRuleId, constraint.label(), constraint.propertyKey(), indexRuleId );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( constraintRule ) )
         {
@@ -622,6 +657,37 @@ public class BatchInserterImpl implements BatchInserter
         }
         schemaCache.addSchemaRule( indexRule );
         labelsTouched = true;
+        flushStrategy.forceFlush();
+    }
+
+    private void createConstraintRule( MandatoryNodePropertyConstraint constraint )
+    {
+        SchemaStore schemaStore = getSchemaStore();
+
+        SchemaRule rule = MandatoryNodePropertyConstraintRule.mandatoryNodePropertyConstraintRule( schemaStore.nextId(),
+                constraint.label(), constraint.propertyKey() );
+
+        for ( DynamicRecord record : schemaStore.allocateFrom( rule ) )
+        {
+            schemaStore.updateRecord( record );
+        }
+        schemaCache.addSchemaRule( rule );
+        labelsTouched = true;
+        flushStrategy.forceFlush();
+    }
+
+    private void createConstraintRule( MandatoryRelationshipPropertyConstraint constraint )
+    {
+        SchemaStore schemaStore = getSchemaStore();
+
+        SchemaRule rule = MandatoryRelationshipPropertyConstraintRule.mandatoryRelPropertyConstraintRule(
+                schemaStore.nextId(), constraint.relationshipType(), constraint.propertyKey() );
+
+        for ( DynamicRecord record : schemaStore.allocateFrom( rule ) )
+        {
+            schemaStore.updateRecord( record );
+        }
+        schemaCache.addSchemaRule( rule );
         flushStrategy.forceFlush();
     }
 
@@ -653,6 +719,16 @@ public class BatchInserterImpl implements BatchInserter
             labelId = createNewLabelId( name );
         }
         return labelId;
+    }
+
+    private int getOrCreateRelationshipTypeId( String name )
+    {
+        int relationshipTypeId = tokenIdByName( relationshipTypeTokens, name );
+        if ( relationshipTypeId == -1 )
+        {
+            relationshipTypeId = createNewRelationshipType( name );
+        }
+        return relationshipTypeId;
     }
 
     private int tokenIdByName( BatchTokenHolder tokens, String name )
@@ -1124,7 +1200,7 @@ public class BatchInserterImpl implements BatchInserter
             int labelId = getOrCreateLabelId( label.name() );
             int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
 
-            checkSchemaCreationConstraints( labelId, propertyKeyId );
+            validateNodeConstraintCanBeCreated( labelId, propertyKeyId );
 
             createIndexRule( labelId, propertyKeyId );
             return new IndexDefinitionImpl( this, label, propertyKey, false );
@@ -1142,10 +1218,10 @@ public class BatchInserterImpl implements BatchInserter
             int labelId = getOrCreateLabelId( label.name() );
             int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
 
-            checkSchemaCreationConstraints( labelId, propertyKeyId );
+            validateNodeConstraintCanBeCreated( labelId, propertyKeyId );
 
             createConstraintRule( new UniquenessConstraint( labelId, propertyKeyId ) );
-            return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.UNIQUENESS );
+            return new UniquenessConstraintDefinition( this, label, propertyKey );
         }
 
         @Override
@@ -1154,10 +1230,23 @@ public class BatchInserterImpl implements BatchInserter
             int labelId = getOrCreateLabelId( label.name() );
             int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
 
-            checkSchemaCreationConstraints( labelId, propertyKeyId );
+            validateNodeConstraintCanBeCreated( labelId, propertyKeyId );
 
-            createConstraintRule( new MandatoryPropertyConstraint( labelId, propertyKeyId ) );
-            return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.MANDATORY_PROPERTY );
+            createConstraintRule( new MandatoryNodePropertyConstraint( labelId, propertyKeyId ) );
+            return new MandatoryNodePropertyConstraintDefinition( this, label, propertyKey );
+        }
+
+        @Override
+        public ConstraintDefinition createPropertyExistenceConstraint( RelationshipType type, String propertyKey )
+                throws CreateConstraintFailureException, AlreadyConstrainedException
+        {
+            int relationshipTypeId = getOrCreateRelationshipTypeId( type.name() );
+            int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
+
+            validateRelationshipConstraintCanBeCreated( relationshipTypeId, propertyKeyId );
+
+            createConstraintRule( new MandatoryRelationshipPropertyConstraint( relationshipTypeId, propertyKeyId ) );
+            return new MandatoryRelationshipPropertyConstraintDefinition( this, type, propertyKey );
         }
 
         @Override
@@ -1167,7 +1256,13 @@ public class BatchInserterImpl implements BatchInserter
         }
 
         @Override
-        public void dropPropertyExistenceConstraint( Label label, String propertyKey )
+        public void dropNodePropertyExistenceConstraint( Label label, String propertyKey )
+        {
+            throw unsupportedException();
+        }
+
+        @Override
+        public void dropRelationshipPropertyExistenceConstraint( RelationshipType type, String propertyKey )
         {
             throw unsupportedException();
         }

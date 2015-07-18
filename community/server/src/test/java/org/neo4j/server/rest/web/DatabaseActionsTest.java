@@ -19,6 +19,13 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,13 +34,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -46,6 +46,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.Pair;
@@ -70,7 +71,6 @@ import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
@@ -80,7 +80,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -1305,19 +1304,38 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldCreatePropertyExistenceConstraint() throws Exception
+    public void shouldCreateNodePropertyExistenceConstraint() throws Exception
     {
         // GIVEN
         String labelName = "person", propertyKey = "name";
 
         // WHEN
-        actions.createPropertyExistenceConstraint( labelName, asList( propertyKey ) );
+        actions.createNodePropertyExistenceConstraint( labelName, asList( propertyKey ) );
 
         // THEN
         try ( Transaction tx = graph.beginTx() )
         {
-            Iterable<ConstraintDefinition> defs = graphdbHelper.getPropertyExistenceConstraints( labelName,
+            Iterable<ConstraintDefinition> defs = graphdbHelper.getNodePropertyExistenceConstraints( labelName,
                     propertyKey );
+            assertEquals( asSet( propertyKey ), asSet( single( defs ).getPropertyKeys() ) );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldCreateRelationshipPropertyExistenceConstraint() throws Exception
+    {
+        // GIVEN
+        String relationshipTypeName = "PROGRAMS", propertyKey = "since";
+
+        // WHEN
+        actions.createRelationshipPropertyExistenceConstraint( relationshipTypeName, asList( propertyKey ) );
+
+        // THEN
+        try ( Transaction tx = graph.beginTx() )
+        {
+            Iterable<ConstraintDefinition> defs = graphdbHelper.getRelationshipPropertyExistenceConstraints(
+                    relationshipTypeName, propertyKey );
             assertEquals( asSet( propertyKey ), asSet( single( defs ).getPropertyKeys() ) );
             tx.success();
         }
@@ -1339,6 +1357,38 @@ public class DatabaseActionsTest
                 asSet( graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey ) ).contains( index ) );
     }
 
+    @Test
+    public void shouldDropNodePropertyExistencesConstraint() throws Exception
+    {
+        // GIVEN
+        String labelName = "user", propertyKey = "login";
+        ConstraintDefinition index = graphdbHelper.createNodePropertyExistenceConstraint( labelName,
+                asList( propertyKey ) );
+
+        // WHEN
+        actions.dropNodePropertyExistenceConstraint( labelName, asList( propertyKey ) );
+
+        // THEN
+        assertFalse( "Constraint should have been dropped",
+                asSet( graphdbHelper.getNodePropertyExistenceConstraints( labelName, propertyKey ) ).contains( index ) );
+    }
+
+    @Test
+    public void shouldDropRelationshipPropertyExistencesConstraint() throws Exception
+    {
+        // GIVEN
+        String typeName = "PROGRAMS", propertyKey = "since";
+        ConstraintDefinition index = graphdbHelper.createRelationshipPropertyExistenceConstraint( typeName,
+                asList( propertyKey ) );
+
+        // WHEN
+        actions.dropRelationshipPropertyExistenceConstraint( typeName, asList( propertyKey ) );
+
+        // THEN
+        assertFalse( "Constraint should have been dropped",
+                asSet( graphdbHelper.getRelationshipPropertyExistenceConstraints( typeName, propertyKey ) ).contains( index ) );
+    }
+    
     @Test
     public void dropNonExistentConstraint() throws Exception
     {
@@ -1377,21 +1427,21 @@ public class DatabaseActionsTest
         Map<?, ?> definition = (Map<?, ?>) serialized.get( 0 );
         assertEquals( labelName, definition.get( "label" ) );
         assertEquals( asList( propertyKey ), definition.get( "property_keys" ) );
-        assertEquals( "UNIQUENESS", definition.get( "type" ) );
+        assertEquals( ConstraintType.UNIQUENESS.name(), definition.get( "type" ) );
     }
 
     @Test
-    public void shouldGetPropertyExistenceConstraint() throws Exception
+    public void shouldGetNodePropertyExistenceConstraint() throws Exception
     {
         // GIVEN
         String labelName = "mylabel", propertyKey = "name";
-        graphdbHelper.createPropertyExistenceConstraint( labelName, asList( propertyKey ) );
+        graphdbHelper.createNodePropertyExistenceConstraint( labelName, asList( propertyKey ) );
 
         // WHEN
         List<Object> serialized;
-        try ( Transaction transaction = graph.beginTx() )
+        try ( Transaction ignore = graph.beginTx() )
         {
-            serialized = serialize( actions.getPropertyExistenceConstraint( labelName, asList( propertyKey ) ) );
+            serialized = serialize( actions.getNodePropertyExistenceConstraint( labelName, asList( propertyKey ) ) );
         }
 
 
@@ -1400,7 +1450,30 @@ public class DatabaseActionsTest
         Map<?, ?> definition = (Map<?, ?>) serialized.get( 0 );
         assertEquals( labelName, definition.get( "label" ) );
         assertEquals( Collections.singletonList( propertyKey ), definition.get( "property_keys" ) );
-        assertEquals( "MANDATORY_PROPERTY", definition.get( "type" ) );
+        assertEquals( ConstraintType.MANDATORY_NODE_PROPERTY.name(), definition.get( "type" ) );
+    }
+
+    @Test
+    public void shouldGetRelationshipPropertyExistenceConstraint() throws Exception
+    {
+        // GIVEN
+        String typeName = "PROGRAMS", propertyKey = "since";
+        graphdbHelper.createRelationshipPropertyExistenceConstraint( typeName, asList( propertyKey ) );
+
+        // WHEN
+        List<Object> serialized;
+        try ( Transaction ignore = graph.beginTx() )
+        {
+            serialized = serialize( actions.getRelationshipPropertyExistenceConstraint( typeName, asList( propertyKey ) ) );
+        }
+
+
+        // THEN
+        assertEquals( 1, serialized.size() );
+        Map<?, ?> definition = (Map<?, ?>) serialized.get( 0 );
+        assertEquals( typeName, definition.get( "relationshipType" ) );
+        assertEquals( Collections.singletonList( propertyKey ), definition.get( "property_keys" ) );
+        assertEquals( ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY.name(), definition.get( "type" ) );
     }
 
     @Test

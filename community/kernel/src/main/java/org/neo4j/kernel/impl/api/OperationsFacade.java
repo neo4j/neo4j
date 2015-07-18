@@ -32,8 +32,11 @@ import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.NodeCursor;
 import org.neo4j.kernel.api.cursor.RelationshipCursor;
@@ -436,7 +439,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         IndexDescriptor descriptor = schemaRead().indexesGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
         if ( descriptor == null )
         {
-            throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "not found" );
+            throw SchemaRuleNotFoundException.forNode( labelId, propertyKeyId, "not found" );
         }
         return descriptor;
     }
@@ -473,14 +476,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
                 }
                 else
                 {
-                    throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "duplicate uniqueness index" );
+                    throw SchemaRuleNotFoundException.forNode( labelId, propertyKeyId, "duplicate uniqueness index" );
                 }
             }
         }
 
         if ( null == result )
         {
-            throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "uniqueness index not found" );
+            throw SchemaRuleNotFoundException.forNode( labelId, propertyKeyId, "uniqueness index not found" );
         }
 
         return result;
@@ -536,17 +539,32 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
     {
         statement.assertOpen();
         return schemaRead().constraintsGetForLabelAndPropertyKey( statement, labelId, propertyKeyId );
     }
 
     @Override
-    public Iterator<PropertyConstraint> constraintsGetForLabel( int labelId )
+    public Iterator<NodePropertyConstraint> constraintsGetForLabel( int labelId )
     {
         statement.assertOpen();
         return schemaRead().constraintsGetForLabel( statement, labelId );
+    }
+
+    @Override
+    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( int typeId )
+    {
+        statement.assertOpen();
+        return schemaRead().constraintsGetForRelationshipType( statement, typeId );
+    }
+
+    @Override
+    public Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( int typeId,
+            int propertyKeyId )
+    {
+        statement.assertOpen();
+        return schemaRead().constraintsGetForRelationshipTypeAndPropertyKey( statement, typeId, propertyKeyId );
     }
 
     @Override
@@ -798,15 +816,31 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public MandatoryPropertyConstraint mandatoryPropertyConstraintCreate( int labelId, int propertyKeyId )
+    public MandatoryNodePropertyConstraint mandatoryNodePropertyConstraintCreate( int labelId, int propertyKeyId )
             throws CreateConstraintFailureException, AlreadyConstrainedException
     {
         statement.assertOpen();
-        return schemaWrite().mandatoryPropertyConstraintCreate( statement, labelId, propertyKeyId );
+        return schemaWrite().mandatoryNodePropertyConstraintCreate( statement, labelId, propertyKeyId );
     }
 
     @Override
-    public void constraintDrop( PropertyConstraint constraint ) throws DropConstraintFailureException
+    public MandatoryRelationshipPropertyConstraint mandatoryRelationshipPropertyConstraintCreate(
+            int relTypeId, int propertyKeyId )
+            throws CreateConstraintFailureException, AlreadyConstrainedException
+    {
+        statement.assertOpen();
+        return schemaWrite().mandatoryRelationshipPropertyConstraintCreate( statement, relTypeId, propertyKeyId );
+    }
+
+    @Override
+    public void constraintDrop( NodePropertyConstraint constraint ) throws DropConstraintFailureException
+    {
+        statement.assertOpen();
+        schemaWrite().constraintDrop( statement, constraint );
+    }
+
+    @Override
+    public void constraintDrop( RelationshipPropertyConstraint constraint ) throws DropConstraintFailureException
     {
         statement.assertOpen();
         schemaWrite().constraintDrop( statement, constraint );

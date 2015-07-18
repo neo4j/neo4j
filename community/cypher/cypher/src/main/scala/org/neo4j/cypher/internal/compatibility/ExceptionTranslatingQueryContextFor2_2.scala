@@ -185,6 +185,8 @@ class ExceptionTranslatingQueryContextFor2_2(inner: QueryContext) extends Delega
       def propertyKeyGetName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)
 
       def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
+
+      def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
     }), e)
 
   }

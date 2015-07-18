@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.Collections;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Collections;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.cursor.LabelCursor;
 import org.neo4j.kernel.api.cursor.PropertyCursor;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.Property;
@@ -46,12 +46,10 @@ import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -330,7 +328,7 @@ public class IndexQueryTransactionStateTest
         when( store.indexesGetForLabel( labelId2 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.<PropertyConstraint>emptyIterator() );
+        when( store.constraintsGetForLabel( labelId ) ).thenReturn( Collections.<NodePropertyConstraint>emptyIterator() );
         when( store.indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) )
                 .thenReturn( new IndexDescriptor( labelId, propertyKeyId ) );
 

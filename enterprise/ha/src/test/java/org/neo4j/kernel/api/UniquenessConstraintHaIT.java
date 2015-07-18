@@ -20,35 +20,53 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
 public class UniquenessConstraintHaIT extends ConstraintHaIT
 {
     @Override
-    protected void createConstraint( GraphDatabaseService db, Label label, String propertyKey )
+    protected void createConstraint( GraphDatabaseService db, String type, String propertyKey )
     {
-        db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+        db.schema().constraintFor( label( type ) ).assertPropertyIsUnique( propertyKey ).create();
     }
 
     @Override
-    protected void createConstraintOffendingNode( GraphDatabaseService db, Label label, String propertyKey,
+    protected void createEntityInTx( GraphDatabaseService db, String type, String propertyKey, String propertyValue )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode( label( type ) ).setProperty( propertyKey, propertyValue );
+            tx.success();
+        }
+    }
+
+    @Override
+    protected void createConstraintViolation( GraphDatabaseService db, String type, String propertyKey,
             String propertyValue )
     {
-        db.createNode( label ).setProperty( propertyKey, propertyValue );
+        db.createNode( label( type ) ).setProperty( propertyKey, propertyValue );
     }
 
     @Override
-    protected void assertConstraintHolds( GraphDatabaseService db, Label label, String propertyKey,
+    protected void assertConstraintHolds( GraphDatabaseService db, String type, String propertyKey,
             String propertyValue )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 1, toList( db.findNodes( label, propertyKey, propertyValue ) ).size() );
+            assertEquals( 1, toList( db.findNodes( label( type ), propertyKey, propertyValue ) ).size() );
             tx.success();
         }
+    }
+
+    @Override
+    protected Class<? extends ConstraintDefinition> constraintDefinitionClass()
+    {
+        return UniquenessConstraintDefinition.class;
     }
 }

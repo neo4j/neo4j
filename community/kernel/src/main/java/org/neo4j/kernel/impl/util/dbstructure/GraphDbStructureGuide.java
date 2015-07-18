@@ -32,7 +32,10 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -40,7 +43,6 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
@@ -172,7 +174,26 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         {
             PropertyConstraint constraint = constraints.next();
             String userDescription = constraint.userDescription( nameLookup );
-            visitor.visitUniqueConstraint( constraint, userDescription );
+
+            if ( constraint instanceof UniquenessConstraint )
+            {
+                visitor.visitUniqueConstraint( (UniquenessConstraint) constraint, userDescription );
+            }
+            else if ( constraint instanceof MandatoryNodePropertyConstraint )
+            {
+                MandatoryNodePropertyConstraint mandatoryConstraint = (MandatoryNodePropertyConstraint) constraint;
+                visitor.visitMandatoryNodePropertyConstraint( mandatoryConstraint, userDescription );
+            }
+            else if ( constraint instanceof MandatoryRelationshipPropertyConstraint )
+            {
+                MandatoryRelationshipPropertyConstraint mandatoryConstraint = (MandatoryRelationshipPropertyConstraint) constraint;
+                visitor.visitMandatoryRelationshipPropertyConstraint( mandatoryConstraint, userDescription );
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Unknown constraint type: " + constraint.getClass() + ", " +
+                                                    "constraint: " + constraint );
+            }
         }
     }
 

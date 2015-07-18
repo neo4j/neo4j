@@ -19,11 +19,12 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -36,7 +37,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Neo4jMatchers.contains;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
@@ -60,6 +62,12 @@ public class SchemaAcceptanceTest
     {
         MY_LABEL,
         MY_OTHER_LABEL
+    }
+
+    private enum Types implements RelationshipType
+    {
+        MY_TYPE,
+        MY_OTHER_TYPE
     }
 
     @Test
@@ -311,7 +319,7 @@ public class SchemaAcceptanceTest
     public void shouldCreateUniquenessConstraint() throws Exception
     {
         // WHEN
-        ConstraintDefinition constraint = createConstraint( label, propertyKey );
+        ConstraintDefinition constraint = createUniquenessConstraint( label, propertyKey );
 
         // THEN
         try ( Transaction tx = db.beginTx() )
@@ -323,32 +331,67 @@ public class SchemaAcceptanceTest
             tx.success();
         }
     }
-    
+
+    @Test
+    public void shouldCreateMandatoryNodePropertyConstraint()
+    {
+        // When
+        ConstraintDefinition constraint = createMandatoryNodePropertyConstraint( label, propertyKey );
+
+        // Then
+        assertThat( getConstraints( db ), containsOnly( constraint ) );
+    }
+
+    @Test
+    public void shouldCreateMandatoryRelationshipPropertyConstraint()
+    {
+        // When
+        ConstraintDefinition constraint = createMandatoryRelationshipPropertyConstraint( Types.MY_TYPE , propertyKey );
+
+        // Then
+        assertThat( getConstraints( db ), containsOnly( constraint ) );
+    }
+
     @Test
     public void shouldListAddedConstraintsByLabel() throws Exception
     {
         // GIVEN
-        ConstraintDefinition createdConstraint = createConstraint( label, propertyKey );
+        ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
+        ConstraintDefinition constraint2 = createMandatoryNodePropertyConstraint( label, propertyKey );
+        createMandatoryNodePropertyConstraint( Labels.MY_OTHER_LABEL, propertyKey );
 
         // WHEN THEN
-        assertThat( getConstraints( db, label ), containsOnly( createdConstraint ) );
+        assertThat( getConstraints( db, label ), containsOnly( constraint1, constraint2 ) );
+    }
+
+    @Test
+    public void shouldListAddedConstraintsByRelationshipType() throws Exception
+    {
+        // GIVEN
+        ConstraintDefinition constraint1 = createMandatoryRelationshipPropertyConstraint( Types.MY_TYPE, propertyKey );
+        createMandatoryRelationshipPropertyConstraint( Types.MY_OTHER_TYPE, propertyKey );
+
+        // WHEN THEN
+        assertThat( getConstraints( db, Types.MY_TYPE ), containsOnly( constraint1 ) );
     }
 
     @Test
     public void shouldListAddedConstraints() throws Exception
     {
         // GIVEN
-        ConstraintDefinition createdConstraint = createConstraint( label, propertyKey );
+        ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
+        ConstraintDefinition constraint2 = createMandatoryNodePropertyConstraint( label, propertyKey );
+        ConstraintDefinition constraint3 = createMandatoryRelationshipPropertyConstraint( Types.MY_TYPE, propertyKey );
 
         // WHEN THEN
-        assertThat( getConstraints( db ), containsOnly( createdConstraint ) );
+        assertThat( getConstraints( db ), containsOnly( constraint1, constraint2, constraint3 ) );
     }
 
     @Test
     public void shouldDropUniquenessConstraint() throws Exception
     {
         // GIVEN
-        ConstraintDefinition constraint = createConstraint( label, propertyKey );
+        ConstraintDefinition constraint = createUniquenessConstraint( label, propertyKey );
 
         // WHEN
         dropConstraint( db, constraint );
@@ -361,12 +404,12 @@ public class SchemaAcceptanceTest
     public void addingConstraintWhenIndexAlreadyExistsGivesNiceError() throws Exception
     {
         // GIVEN
-        createIndex( db, label , propertyKey );
+        createIndex( db, label, propertyKey );
 
         // WHEN
         try
         {
-            createConstraint( label, propertyKey );
+            createUniquenessConstraint( label, propertyKey );
             fail( "Expected exception to be thrown" );
         }
         catch ( ConstraintViolationException e )
@@ -390,7 +433,7 @@ public class SchemaAcceptanceTest
         // WHEN
         try
         {
-            createConstraint( label, propertyKey );
+            createUniquenessConstraint( label, propertyKey );
             fail( "Expected exception to be thrown" );
         }
         catch ( ConstraintViolationException e )
@@ -408,18 +451,19 @@ public class SchemaAcceptanceTest
     public void addingConstraintWhenAlreadyConstrainedGivesNiceError() throws Exception
     {
         // GIVEN
-        createConstraint( label, propertyKey );
+        createUniquenessConstraint( label, propertyKey );
 
         // WHEN
         try
         {
-            createConstraint( label, propertyKey );
+            createUniquenessConstraint( label, propertyKey );
             fail( "Expected exception to be thrown" );
         }
         catch ( ConstraintViolationException e )
         {
-            assertEquals( "Label 'MY_LABEL' and property 'my_property_key' already have a unique constraint defined on them.",
-                          e.getMessage() );
+            assertEquals(
+                    "Constraint already exists: CONSTRAINT ON ( my_label:MY_LABEL ) ASSERT my_label.my_property_key IS UNIQUE",
+                    e.getMessage() );
         }
     }
 
@@ -427,7 +471,7 @@ public class SchemaAcceptanceTest
     public void addingIndexWhenAlreadyConstrained() throws Exception
     {
         // GIVEN
-        createConstraint( label, propertyKey );
+        createUniquenessConstraint( label, propertyKey );
 
         // WHEN
         try
@@ -467,7 +511,7 @@ public class SchemaAcceptanceTest
     {
         // GIVEN
         IndexDefinition indexA = createIndex( db, label, "a" );
-        createConstraint( label, "b" );
+        createUniquenessConstraint( label, "b" );
 
         // WHEN
         try ( Transaction tx = db.beginTx() )
@@ -496,13 +540,33 @@ public class SchemaAcceptanceTest
         }
     }
 
-    private ConstraintDefinition createConstraint( Label label, String prop )
+    private ConstraintDefinition createUniquenessConstraint( Label label, String prop )
     {
         try (Transaction tx = db.beginTx())
         {
             ConstraintDefinition constraint = db.schema().constraintFor( label ).assertPropertyIsUnique( prop ).create();
             tx.success();
             return constraint;
+        }
+    }
+
+    private ConstraintDefinition createMandatoryNodePropertyConstraint( Label label, String prop )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintDefinition cd = db.schema().constraintFor( label ).assertPropertyExists( prop ).create();
+            tx.success();
+            return cd;
+        }
+    }
+
+    private ConstraintDefinition createMandatoryRelationshipPropertyConstraint( RelationshipType type, String prop )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintDefinition cd = db.schema().constraintFor( type ).assertPropertyExists( prop ).create();
+            tx.success();
+            return cd;
         }
     }
 

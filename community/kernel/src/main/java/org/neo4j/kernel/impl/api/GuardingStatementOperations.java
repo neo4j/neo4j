@@ -251,12 +251,28 @@ public class GuardingStatementOperations implements
     }
 
     @Override
+    public int relationshipGetType( TxStateHolder txStateHolder, StoreStatement storeStatement, long relationshipId )
+            throws EntityNotFoundException
+    {
+        guard.check();
+        return entityReadDelegate.relationshipGetType( txStateHolder, storeStatement, relationshipId );
+    }
+
+    @Override
     public boolean relationshipHasProperty( KernelStatement state,
             long relationshipId,
             int propertyKeyId ) throws EntityNotFoundException
     {
         guard.check();
         return entityReadDelegate.relationshipHasProperty( state, relationshipId, propertyKeyId );
+    }
+
+    @Override
+    public boolean relationshipHasProperty( TxStateHolder txStateHolder, StoreStatement storeStatement,
+            long relationshipId, int propertyKeyId ) throws EntityNotFoundException
+    {
+        guard.check();
+        return entityReadDelegate.relationshipHasProperty( txStateHolder, storeStatement, relationshipId, propertyKeyId );
     }
 
     @Override

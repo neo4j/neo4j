@@ -25,27 +25,27 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.kernel.api.exceptions.KernelException;
 
-public class PropertyUniqueConstraintCreator extends BaseConstraintCreator
+public class NodePropertyExistsConstraintCreator extends BaseNodeConstraintCreator
 {
-    // Only single property key supported a.t.m.
     protected final String propertyKey;
 
-    PropertyUniqueConstraintCreator( InternalSchemaActions internalCreator, Label label, String propertyKeyOrNull )
+    NodePropertyExistsConstraintCreator( InternalSchemaActions internalCreator, Label label, String propertyKey )
     {
         super( internalCreator, label );
-        this.propertyKey = propertyKeyOrNull;
+        this.propertyKey = propertyKey;
     }
 
     @Override
     public final ConstraintCreator assertPropertyIsUnique( String propertyKey )
     {
-        throw new UnsupportedOperationException( "You can only create one unique constraint at a time." );
+        throw new UnsupportedOperationException( "You are already creating a mandatory node property constraint." );
     }
 
     @Override
-    public ConstraintCreator assertPropertyExists( String propertyKey )
+    public final ConstraintCreator assertPropertyExists( String propertyKey )
     {
-        throw new UnsupportedOperationException( "You are already creating a unique constraint." );
+        throw new UnsupportedOperationException(
+                "You can only create one mandatory node property constraint at a time." );
     }
 
     @Override
@@ -55,7 +55,7 @@ public class PropertyUniqueConstraintCreator extends BaseConstraintCreator
 
         try
         {
-            return actions.createPropertyUniquenessConstraint( label, propertyKey );
+            return actions.createPropertyExistenceConstraint( label, propertyKey );
         }
         catch ( KernelException e )
         {

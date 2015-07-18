@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -29,16 +30,17 @@ public class AlreadyConstrainedException extends SchemaKernelException
 {
     private final static String NO_CONTEXT_FORMAT = "Already constrained %s.";
 
-    private static final String CONSTRAINT_CONTEXT_FORMAT = "Label '%s' and property '%s' already have a unique constraint defined on them.";
+    private static final String ALREADY_CONSTRAINED_MESSAGE_PREFIX = "Constraint already exists: ";
+
     private static final String INDEX_CONTEXT_FORMAT = "Label '%s' and property '%s' have a unique constraint defined on them, so an index is " +
                                                        "already created that matches this.";
 
     private final PropertyConstraint constraint;
     private final OperationContext context;
 
-    public AlreadyConstrainedException( PropertyConstraint constraint, OperationContext context )
+    public AlreadyConstrainedException( PropertyConstraint constraint, OperationContext context, TokenNameLookup tokenNameLookup )
     {
-        super( Status.Schema.ConstraintAlreadyExists, constructUserMessage( context, null, constraint ) );
+        super( Status.Schema.ConstraintAlreadyExists, constructUserMessage( context, tokenNameLookup, constraint ) );
         this.constraint = constraint;
         this.context = context;
     }
@@ -53,11 +55,14 @@ public class AlreadyConstrainedException extends SchemaKernelException
         switch ( context )
         {
             case INDEX_CREATION:
+                // is is safe to cast here because we only support indexes on nodes atm
+                NodePropertyConstraint nodePropertyConstraint = (NodePropertyConstraint) constraint;
                 return messageWithLabelAndPropertyName( tokenNameLookup, INDEX_CONTEXT_FORMAT,
-                        constraint.label(), constraint.propertyKeyId() );
+                        nodePropertyConstraint.label(), nodePropertyConstraint.propertyKey() );
+
             case CONSTRAINT_CREATION:
-                return messageWithLabelAndPropertyName( tokenNameLookup, CONSTRAINT_CONTEXT_FORMAT,
-                        constraint.label(), constraint.propertyKeyId() );
+                return ALREADY_CONSTRAINED_MESSAGE_PREFIX + constraint.userDescription( tokenNameLookup );
+
             default:
                 return format( NO_CONTEXT_FORMAT, constraint );
         }

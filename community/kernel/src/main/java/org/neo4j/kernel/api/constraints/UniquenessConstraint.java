@@ -17,12 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.api.constraints;
 
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
+import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 
-public class UniquenessConstraint extends PropertyConstraint
+public class UniquenessConstraint extends NodePropertyConstraint
 {
     public UniquenessConstraint( int labelId, int propertyKeyId )
     {
@@ -45,6 +48,13 @@ public class UniquenessConstraint extends PropertyConstraint
     String constraintString()
     {
         return "UNIQUE";
+    }
+
+    @Override
+    public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
+    {
+        return new UniquenessConstraintDefinition( schemaActions, labelById( label(), readOps ),
+                propertyKeyById( propertyKeyId, readOps ) );
     }
 
     @Override

@@ -21,8 +21,10 @@ package org.neo4j.kernel.api.txstate;
 
 import java.util.Map;
 
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
-import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -87,11 +89,15 @@ public interface TransactionState extends ReadableTxState
 
     void constraintDoAdd( UniquenessConstraint constraint, long indexId );
 
-    void constraintDoAdd( MandatoryPropertyConstraint constraint );
+    void constraintDoAdd( MandatoryNodePropertyConstraint constraint );
 
-    void constraintDoDrop( PropertyConstraint constraint );
+    void constraintDoAdd( MandatoryRelationshipPropertyConstraint constraint );
 
-    boolean constraintDoUnRemove( PropertyConstraint constraint );
+    void constraintDoDrop( NodePropertyConstraint constraint );
+
+    void constraintDoDrop( RelationshipPropertyConstraint constraint );
+
+    boolean constraintDoUnRemove( NodePropertyConstraint constraint );
 
     boolean constraintIndexDoUnRemove( IndexDescriptor index );
 

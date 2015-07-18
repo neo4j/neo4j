@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
@@ -31,7 +29,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException.Evidence;
+import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -142,19 +140,12 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     @Override
     public void validate() throws ConstraintVerificationFailedKernelException
     {
-        Iterator<IndexEntryConflictException> iterator = failures.iterator();
-        if ( iterator.hasNext() )
+        if ( !failures.isEmpty() )
         {
-            Set<Evidence> evidences = new HashSet<>();
-            do
-            {
-                evidences.add( Evidence.of( iterator.next() ) );
-            }
-            while ( iterator.hasNext() );
-
             IndexDescriptor descriptor = getDescriptor();
-            throw new ConstraintVerificationFailedKernelException(
-                    new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ), evidences );
+            throw new UniquenessConstraintVerificationFailedKernelException(
+                    new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ),
+                    new HashSet<>( failures ) );
         }
     }
 

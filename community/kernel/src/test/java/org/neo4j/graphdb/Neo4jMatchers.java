@@ -39,7 +39,6 @@ import org.neo4j.graphdb.schema.Schema;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -433,6 +432,19 @@ public class Neo4jMatchers
             protected Iterable<ConstraintDefinition> manifest()
             {
                 return db.schema().getConstraints( label );
+            }
+        };
+    }
+
+    public static Deferred<ConstraintDefinition> getConstraints( final GraphDatabaseService db,
+            final RelationshipType type )
+    {
+        return new Deferred<ConstraintDefinition>( db )
+        {
+            @Override
+            protected Iterable<ConstraintDefinition> manifest()
+            {
+                return db.schema().getConstraints( type );
             }
         };
     }

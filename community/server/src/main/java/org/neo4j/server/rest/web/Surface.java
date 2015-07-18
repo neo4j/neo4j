@@ -28,6 +28,7 @@ public interface Surface
     String PATH_RELATIONSHIP_TYPES = "relationship/types";
     String PATH_SCHEMA_INDEX = "schema/index";
     String PATH_SCHEMA_CONSTRAINT = "schema/constraint";
+    String PATH_SCHEMA_RELATIONSHIP_CONSTRAINT = "schema/relationship/constraint";
     String PATH_BATCH = "batch";
     String PATH_CYPHER = "cypher";
     String PATH_TRANSACTION = "transaction";

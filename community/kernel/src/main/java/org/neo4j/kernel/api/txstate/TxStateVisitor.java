@@ -23,7 +23,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -39,7 +40,8 @@ public interface TxStateVisitor
 
     void visitDeletedNode( long id );
 
-    void visitCreatedRelationship( long id, int type, long startNode, long endNode );
+    void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+            throws ConstraintValidationKernelException;
 
     void visitDeletedRelationship( long id );
 
@@ -50,7 +52,7 @@ public interface TxStateVisitor
                                        RelationshipChangesForNode removed );
 
     void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
-                                  Iterator<Integer> removed );
+                                  Iterator<Integer> removed ) throws ConstraintValidationKernelException;
 
     void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
                                     Iterator<Integer> removed );
@@ -66,9 +68,13 @@ public interface TxStateVisitor
 
     void visitRemovedUniquePropertyConstraint( UniquenessConstraint element );
 
-    void visitAddedMandatoryPropertyConstraint( MandatoryPropertyConstraint element );
+    void visitAddedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint element );
 
-    void visitRemovedMandatoryPropertyConstraint( MandatoryPropertyConstraint element );
+    void visitRemovedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint element );
+
+    void visitAddedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint element );
+
+    void visitRemovedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint element );
 
     void visitCreatedLabelToken( String name, int id );
 
@@ -114,6 +120,7 @@ public interface TxStateVisitor
 
         @Override
         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+                throws ConstraintValidationKernelException
         {
             if ( next != null )
             {
@@ -154,7 +161,7 @@ public interface TxStateVisitor
         @Override
         public void visitRelPropertyChanges( long id,
                 Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
-                Iterator<Integer> removed )
+                Iterator<Integer> removed ) throws ConstraintValidationKernelException
         {
             if ( next != null )
             {
@@ -219,22 +226,38 @@ public interface TxStateVisitor
         }
 
         @Override
-        public void visitAddedMandatoryPropertyConstraint(
-                MandatoryPropertyConstraint element )
+        public void visitAddedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint element )
         {
             if ( next != null )
             {
-                next.visitAddedMandatoryPropertyConstraint( element );
+                next.visitAddedNodeMandatoryPropertyConstraint( element );
             }
         }
 
         @Override
-        public void visitRemovedMandatoryPropertyConstraint(
-                MandatoryPropertyConstraint element )
+        public void visitRemovedNodeMandatoryPropertyConstraint( MandatoryNodePropertyConstraint element )
         {
             if ( next != null )
             {
-                next.visitRemovedMandatoryPropertyConstraint( element );
+                next.visitRemovedNodeMandatoryPropertyConstraint( element );
+            }
+        }
+
+        @Override
+        public void visitAddedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint element )
+        {
+            if ( next != null )
+            {
+                next.visitAddedRelationshipMandatoryPropertyConstraint( element );
+            }
+        }
+
+        @Override
+        public void visitRemovedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint element )
+        {
+            if ( next != null )
+            {
+                next.visitRemovedRelationshipMandatoryPropertyConstraint( element );
             }
         }
 

@@ -17,39 +17,44 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.kernel.impl.api.integrationtest;
 
-package org.neo4j.kernel.api.constraints;
+import org.neo4j.graphdb.Node;
+import org.neo4j.test.DatabaseRule;
 
-import org.neo4j.graphdb.schema.ConstraintType;
+import static org.neo4j.graphdb.DynamicLabel.label;
 
-public class MandatoryPropertyConstraint extends PropertyConstraint
+public class MandatoryNodePropertyConstrainVerificationIT extends MandatoryPropertyConstraintVerificationIT
 {
-    public MandatoryPropertyConstraint( int labelId, int propertyKeyId )
+    @Override
+    void createConstraint( DatabaseRule db, String label, String property )
     {
-        super( labelId, propertyKeyId );
+        db.schema().constraintFor( label( label ) ).assertPropertyExists( property ).create();
     }
 
     @Override
-    public void added( ChangeVisitor visitor )
+    String constraintCreationMethodName()
     {
-        visitor.visitAddedMandatoryPropertyConstraint( this );
+        return "mandatoryNodePropertyConstraintCreate";
     }
 
     @Override
-    public void removed( ChangeVisitor visitor )
+    long createOffender( DatabaseRule db, String key )
     {
-        visitor.visitRemovedMandatoryPropertyConstraint( this );
+        Node node = db.createNode();
+        node.addLabel( label( key ) );
+        return node.getId();
     }
 
     @Override
-    String constraintString()
+    String offenderCreationMethodName()
     {
-        return "NOT NULL";
+        return "nodeAddLabel"; // takes schema read lock to enforce constraints
     }
 
     @Override
-    public ConstraintType type()
+    Class<?> offenderType()
     {
-        return ConstraintType.MANDATORY_PROPERTY;
+        return Node.class;
     }
 }

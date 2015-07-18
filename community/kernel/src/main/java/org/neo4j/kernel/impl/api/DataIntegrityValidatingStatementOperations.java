@@ -22,8 +22,12 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -136,14 +140,15 @@ public class DataIntegrityValidatingStatementOperations implements
     public UniquenessConstraint uniquePropertyConstraintCreate( KernelStatement state, int labelId, int propertyKey )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException
     {
-        Iterator<PropertyConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
+        Iterator<NodePropertyConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
                 state, labelId, propertyKey );
         while ( constraints.hasNext() )
         {
             PropertyConstraint constraint = constraints.next();
             if ( constraint instanceof UniquenessConstraint )
             {
-                throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION );
+                throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
+                        new StatementTokenNameLookup( state.readOperations() ) );
             }
         }
 
@@ -154,30 +159,66 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public MandatoryPropertyConstraint mandatoryPropertyConstraintCreate( KernelStatement state, int labelId,
+    public MandatoryNodePropertyConstraint mandatoryNodePropertyConstraintCreate( KernelStatement state, int labelId,
             int propertyKey ) throws AlreadyConstrainedException, CreateConstraintFailureException
     {
-        Iterator<PropertyConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
+        Iterator<NodePropertyConstraint> constraints = schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
                 state, labelId, propertyKey );
         while ( constraints.hasNext() )
         {
-            PropertyConstraint constraint = constraints.next();
-            if ( constraint instanceof MandatoryPropertyConstraint )
+            NodePropertyConstraint constraint = constraints.next();
+            if ( constraint instanceof MandatoryNodePropertyConstraint )
             {
-                throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION );
+                throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
+                        new StatementTokenNameLookup( state.readOperations() ) );
             }
         }
 
-        return schemaWriteDelegate.mandatoryPropertyConstraintCreate( state, labelId, propertyKey );
+        return schemaWriteDelegate.mandatoryNodePropertyConstraintCreate( state, labelId, propertyKey );
     }
 
     @Override
-    public void constraintDrop( KernelStatement state, PropertyConstraint constraint ) throws DropConstraintFailureException
+    public MandatoryRelationshipPropertyConstraint mandatoryRelationshipPropertyConstraintCreate( KernelStatement state,
+            int relTypeId, int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    {
+        Iterator<RelationshipPropertyConstraint> constraints = schemaReadDelegate.constraintsGetForRelationshipTypeAndPropertyKey(
+                state, relTypeId, propertyKeyId );
+        while ( constraints.hasNext() )
+        {
+            RelationshipPropertyConstraint constraint = constraints.next();
+            if ( constraint instanceof MandatoryRelationshipPropertyConstraint )
+            {
+                throw new AlreadyConstrainedException( constraint, OperationContext.CONSTRAINT_CREATION,
+                        new StatementTokenNameLookup( state.readOperations() ) );
+            }
+        }
+
+        return schemaWriteDelegate.mandatoryRelationshipPropertyConstraintCreate( state, relTypeId, propertyKeyId );
+    }
+
+    @Override
+    public void constraintDrop( KernelStatement state, NodePropertyConstraint constraint ) throws DropConstraintFailureException
     {
         try
         {
             assertConstraintExists( constraint, schemaReadDelegate.constraintsGetForLabelAndPropertyKey(
-                    state, constraint.label(), constraint.propertyKeyId() ) );
+                    state, constraint.label(), constraint.propertyKey() ) );
+        }
+        catch ( NoSuchConstraintException e )
+        {
+            throw new DropConstraintFailureException( constraint, e );
+        }
+        schemaWriteDelegate.constraintDrop( state, constraint );
+    }
+
+    @Override
+    public void constraintDrop( KernelStatement state, RelationshipPropertyConstraint constraint )
+            throws DropConstraintFailureException
+    {
+        try
+        {
+            assertConstraintExists( constraint, schemaReadDelegate.constraintsGetForRelationshipTypeAndPropertyKey(
+                    state, constraint.relationshipType(), constraint.propertyKey() ) );
         }
         catch ( NoSuchConstraintException e )
         {
@@ -201,7 +242,8 @@ public class DataIntegrityValidatingStatementOperations implements
             if ( descriptor.getPropertyKeyId() == propertyKey )
             {
                 throw new AlreadyConstrainedException(
-                        new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ), context );
+                        new UniquenessConstraint( descriptor.getLabelId(), descriptor.getPropertyKeyId() ), context,
+                        new StatementTokenNameLookup( state.readOperations() ) );
             }
         }
     }
@@ -242,12 +284,13 @@ public class DataIntegrityValidatingStatementOperations implements
         throw new NoSuchIndexException( descriptor );
     }
 
-    private void assertConstraintExists( PropertyConstraint constraint, Iterator<PropertyConstraint> constraints )
+    private <C extends PropertyConstraint> void assertConstraintExists( C constraint, Iterator<C> existingConstraints )
             throws NoSuchConstraintException
     {
-        for ( PropertyConstraint existing : loop( constraints ) )
+        while ( existingConstraints.hasNext() )
         {
-            if ( existing.equals( constraint.type(), constraint.label(), constraint.propertyKeyId() ) )
+            C existing = existingConstraints.next();
+            if ( existing.equals( constraint ) )
             {
                 return;
             }

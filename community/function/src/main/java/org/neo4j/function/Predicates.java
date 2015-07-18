@@ -75,6 +75,7 @@ public class Predicates
         return (Predicate<T>) NOT_NULL;
     }
 
+    @SafeVarargs
     public static <T> Predicate<T> all( final Predicate<T>... predicates )
     {
         return all( Arrays.asList( predicates ) );
@@ -99,6 +100,7 @@ public class Predicates
         };
     }
 
+    @SafeVarargs
     public static <T> Predicate<T> any( final Predicate<T>... predicates )
     {
         return any( Arrays.asList( predicates ) );

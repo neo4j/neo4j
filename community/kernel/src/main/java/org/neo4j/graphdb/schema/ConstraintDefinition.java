@@ -20,22 +20,43 @@
 package org.neo4j.graphdb.schema;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
 
 /**
  * Definition of a constraint.
+ *
+ * <b>Note:</b> This interface is going to be changed/removed in next major release to better cope with node and
+ * relationship constraints which are quite different concepts.
  */
 public interface ConstraintDefinition
 {
     /**
+     * This accessor method returns a label which this constraint is associated with if this constraint has type
+     * {@link ConstraintType#UNIQUENESS} or {@link ConstraintType#MANDATORY_NODE_PROPERTY}.
+     * Type of the constraint can be examined by calling {@link #getConstraintType()} or
+     * {@link #isConstraintType(ConstraintType)} methods.
+     *
      * @return the {@link Label} this constraint is associated with.
+     * @throws IllegalStateException when this constraint is associated with relationships.
      */
     Label getLabel();
+
+    /**
+     * This accessor method returns a relationship type which this constraint is associated with if this constraint
+     * has type {@link ConstraintType#UNIQUENESS} or {@link ConstraintType#MANDATORY_NODE_PROPERTY}.
+     * Type of the constraint can be examined by calling {@link #getConstraintType()} or
+     * {@link #isConstraintType(ConstraintType)} methods.
+     *
+     * @return the {@link RelationshipType} this constraint is associated with.
+     * @throws IllegalStateException when this constraint is associated with nodes.
+     */
+    RelationshipType getRelationshipType();
 
     /**
      * @return the property keys this constraint is about.
      */
     Iterable<String> getPropertyKeys();
-    
+
     /**
      * Drops this constraint.
      */

@@ -30,18 +30,21 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.RelationshipConstraintCreator;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.constraints.MandatoryPropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -280,7 +283,15 @@ public class SchemaImpl implements Schema
     {
         assertInUnterminatedTransaction();
 
-        return new BaseConstraintCreator( actions, label );
+        return new BaseNodeConstraintCreator( actions, label );
+    }
+
+    @Override
+    public RelationshipConstraintCreator constraintFor( RelationshipType type )
+    {
+        assertInUnterminatedTransaction();
+
+        return new BaseRelationshipConstraintCreator( actions, type );
     }
 
     @Override
@@ -291,7 +302,7 @@ public class SchemaImpl implements Schema
         try ( Statement statement = statementContextSupplier.get() )
         {
             Iterator<PropertyConstraint> constraints = statement.readOperations().constraintsGetAll();
-            return asConstraintDefinitions( statement.readOperations(), constraints );
+            return asConstraintDefinitions( constraints, statement.readOperations() );
         }
     }
 
@@ -307,43 +318,42 @@ public class SchemaImpl implements Schema
             {
                 return emptyList();
             }
-            Iterator<PropertyConstraint> constraints = statement.readOperations().constraintsGetForLabel( labelId );
-            return asConstraintDefinitions( statement.readOperations(), constraints );
+            Iterator<NodePropertyConstraint> constraints = statement.readOperations().constraintsGetForLabel( labelId );
+            return asConstraintDefinitions( constraints, statement.readOperations() );
         }
     }
 
-    private Iterable<ConstraintDefinition> asConstraintDefinitions(
-            final ReadOperations readOperations, Iterator<PropertyConstraint> constraints )
+    @Override
+    public Iterable<ConstraintDefinition> getConstraints( RelationshipType type )
     {
-        Iterator<ConstraintDefinition> definitions =
-                map( new Function<PropertyConstraint, ConstraintDefinition>()
-                {
-                    @Override
-                    public ConstraintDefinition apply( PropertyConstraint constraint )
-                    {
-                        int labelId = constraint.label();
-                        try
-                        {
-                            Label label = label( readOperations.labelGetName( labelId ) );
-                            return new PropertyConstraintDefinition( actions, label,
-                                    readOperations.propertyKeyGetName( constraint.propertyKeyId() ), constraint.type() );
-                        }
-                        catch ( PropertyKeyIdNotFoundKernelException e )
-                        {
-                            throw new ThisShouldNotHappenError( "Mattias", "Couldn't find property name for " +
-                                                                           constraint.propertyKeyId(), e );
-                        }
-                        catch ( LabelNotFoundKernelException e )
-                        {
-                            throw new ThisShouldNotHappenError( "Stefan",
-                                                                "Couldn't find label name for label id " +
-                                                                labelId, e );
-                        }
-                    }
-                }, constraints );
+        assertInUnterminatedTransaction();
 
-        // Intentionally iterator over it so that we can close the statement context within this method
-        return asCollection( definitions );
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            int typeId = statement.readOperations().relationshipTypeGetForName( type.name() );
+            if ( typeId == KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE )
+            {
+                return emptyList();
+            }
+            Iterator<RelationshipPropertyConstraint> constraints =
+                    statement.readOperations().constraintsGetForRelationshipType( typeId );
+            return asConstraintDefinitions( constraints, statement.readOperations() );
+        }
+    }
+
+    private Iterable<ConstraintDefinition> asConstraintDefinitions( Iterator<? extends PropertyConstraint> constraints,
+            ReadOperations readOperations )
+    {
+        // Intentionally create an eager list so that used statement can be closed
+        List<ConstraintDefinition> definitions = new ArrayList<>();
+
+        while ( constraints.hasNext() )
+        {
+            PropertyConstraint constraint = constraints.next();
+            definitions.add( constraint.asConstraintDefinition( actions, readOperations ) );
+        }
+
+        return definitions;
     }
 
     private static class GDBSchemaActions implements InternalSchemaActions
@@ -425,7 +435,7 @@ public class SchemaImpl implements Schema
                     int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
                     statement.schemaWriteOperations().uniquePropertyConstraintCreate( labelId, propertyKeyId );
-                    return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.UNIQUENESS );
+                    return new UniquenessConstraintDefinition( this, label, propertyKey );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException e )
                 {
@@ -456,8 +466,8 @@ public class SchemaImpl implements Schema
                 {
                     int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
-                    statement.schemaWriteOperations().mandatoryPropertyConstraintCreate( labelId, propertyKeyId );
-                    return new PropertyConstraintDefinition( this, label, propertyKey, ConstraintType.MANDATORY_PROPERTY );
+                    statement.schemaWriteOperations().mandatoryNodePropertyConstraintCreate( labelId, propertyKeyId );
+                    return new MandatoryNodePropertyConstraintDefinition( this, label, propertyKey );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException e )
                 {
@@ -480,6 +490,36 @@ public class SchemaImpl implements Schema
         }
 
         @Override
+        public ConstraintDefinition createPropertyExistenceConstraint( RelationshipType type, String propertyKey )
+                throws CreateConstraintFailureException, AlreadyConstrainedException
+        {
+            try ( Statement statement = ctxSupplier.get() )
+            {
+                try
+                {
+                    int typeId = statement.schemaWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
+                    int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
+                    statement.schemaWriteOperations().mandatoryRelationshipPropertyConstraintCreate( typeId,
+                            propertyKeyId );
+                    return new MandatoryRelationshipPropertyConstraintDefinition( this, type, propertyKey );
+                }
+                catch ( AlreadyConstrainedException | CreateConstraintFailureException e )
+                {
+                    throw new ConstraintViolationException(
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                }
+                catch ( IllegalTokenNameException e )
+                {
+                    throw new IllegalArgumentException( e );
+                }
+                catch ( InvalidTransactionTypeKernelException e )
+                {
+                    throw new InvalidTransactionTypeException( e.getMessage(), e );
+                }
+            }
+        }
+
+        @Override
         public void dropPropertyUniquenessConstraint( Label label, String propertyKey )
         {
             try ( Statement statement = ctxSupplier.get() )
@@ -488,7 +528,7 @@ public class SchemaImpl implements Schema
                 {
                     int labelId = statement.schemaWriteOperations().labelGetForName( label.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetForName( propertyKey );
-                    PropertyConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
+                    NodePropertyConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
                     statement.schemaWriteOperations().constraintDrop( constraint );
                 }
                 catch ( DropConstraintFailureException e )
@@ -504,7 +544,7 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public void dropPropertyExistenceConstraint( Label label, String propertyKey )
+        public void dropNodePropertyExistenceConstraint( Label label, String propertyKey )
         {
             try ( Statement statement = ctxSupplier.get() )
             {
@@ -512,7 +552,32 @@ public class SchemaImpl implements Schema
                 {
                     int labelId = statement.schemaWriteOperations().labelGetForName( label.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetForName( propertyKey );
-                    PropertyConstraint constraint = new MandatoryPropertyConstraint( labelId, propertyKeyId );
+                    NodePropertyConstraint constraint = new MandatoryNodePropertyConstraint( labelId, propertyKeyId );
+                    statement.schemaWriteOperations().constraintDrop( constraint );
+                }
+                catch ( DropConstraintFailureException e )
+                {
+                    throw new ConstraintViolationException(
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                }
+                catch ( InvalidTransactionTypeKernelException e )
+                {
+                    throw new ConstraintViolationException( e.getMessage(), e );
+                }
+            }
+        }
+
+        @Override
+        public void dropRelationshipPropertyExistenceConstraint( RelationshipType type, String propertyKey )
+        {
+            try ( Statement statement = ctxSupplier.get() )
+            {
+                try
+                {
+                    int typeId = statement.schemaWriteOperations().relationshipTypeGetForName( type.name() );
+                    int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetForName( propertyKey );
+                    RelationshipPropertyConstraint constraint = new MandatoryRelationshipPropertyConstraint( typeId,
+                            propertyKeyId );
                     statement.schemaWriteOperations().constraintDrop( constraint );
                 }
                 catch ( DropConstraintFailureException e )

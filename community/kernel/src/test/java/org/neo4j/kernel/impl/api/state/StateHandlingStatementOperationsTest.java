@@ -31,6 +31,7 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.cursor.LabelCursor;
@@ -134,7 +135,7 @@ public class StateHandlingStatementOperationsTest
         context.uniquePropertyConstraintCreate( state, 10, 66 );
 
         // when
-        Set<PropertyConstraint> result = asSet(
+        Set<NodePropertyConstraint> result = asSet(
                 asIterable( context.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) ) );
 
         // then
@@ -163,7 +164,7 @@ public class StateHandlingStatementOperationsTest
         context.uniquePropertyConstraintCreate( state, 11, 99 );
 
         // when
-        Set<PropertyConstraint> result = asSet( asIterable( context.constraintsGetForLabel( state, 11 ) ) );
+        Set<NodePropertyConstraint> result = asSet( asIterable( context.constraintsGetForLabel( state, 11 ) ) );
 
         // then
         assertEquals( asSet( constraint1, constraint2 ), result );
