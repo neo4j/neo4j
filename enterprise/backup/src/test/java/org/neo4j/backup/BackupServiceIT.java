@@ -19,6 +19,12 @@
  */
 package org.neo4j.backup;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -26,12 +32,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -77,8 +77,6 @@ import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -89,6 +87,8 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.backup.BackupServiceStressTestingBuilder.untilTimeExpired;
 
@@ -126,7 +126,7 @@ public class BackupServiceIT
     public int backupPort = 8200;
 
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( storeDir );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( storeDir ).startLazily();
     @Rule
     public Mute mute = Mute.muteAll();
 

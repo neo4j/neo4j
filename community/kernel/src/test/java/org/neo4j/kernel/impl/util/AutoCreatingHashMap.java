@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.util;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.function.Factory;
 
@@ -145,6 +147,30 @@ public class AutoCreatingHashMap<K,V> extends HashMap<K,V>
             public Map<K,V> newInstance()
             {
                 return new AutoCreatingHashMap<>( nested );
+            }
+        };
+    }
+
+    public static <V> Factory<V> dontCreate()
+    {
+        return new Factory<V>()
+        {
+            @Override
+            public V newInstance()
+            {
+                return null;
+            }
+        };
+    }
+
+    public static <V> Factory<Set<V>> valuesOfTypeHashSet()
+    {
+        return new Factory<Set<V>>()
+        {
+            @Override
+            public Set<V> newInstance()
+            {
+                return new HashSet<>();
             }
         };
     }
