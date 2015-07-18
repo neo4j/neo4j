@@ -17,7 +17,56 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+<#
+.SYNOPSIS
+Start a Neo4j Online Backup process
 
+.DESCRIPTION
+Start a Neo4j Online Backup process
+
+.PARAMETER Neo4jServer
+An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
+
+.PARAMETER UseHost
+The hostname of the online backup server to connect to.  If no host is specified, the host is determined from the Neo4j Configuration files (default)
+
+.PARAMETER UsePort
+The TCP port of the online backup server to connect to.  If no port is specified, the port is determined from the Neo4j Configuration files (default)
+
+.PARAMETER To
+The full path where to save the backup to
+
+.PARAMETER Wait
+Wait for the backup to complete.
+
+.PARAMETER PassThru
+Pass through the Neo4j Server object instead of the result of the backup
+
+.PARAMETER OtherArgs
+All other parameters are passed through to the Neo4j Backup Utility
+
+.EXAMPLE
+'C:\Neo4j\neo4j-enterprise' | Start-Neo4jBackup -Wait -to C:\Backup
+
+Backup the Neo4j database to C:\Backup, and wait for the process to complete
+
+.OUTPUTS
+System.Int32
+Exitcode of backup process
+
+System.Management.Automation.PSCustomObject
+Neo4j Server object (-PassThru)
+
+.LINK
+Initialize-Neo4jServer
+
+.LINK
+http://neo4j.com/docs/stable/operations-backup.html
+
+.NOTES
+This function is only applicable to Neo4j editions which support Online Backup
+
+#>
 Function Start-Neo4jBackup
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]

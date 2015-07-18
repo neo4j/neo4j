@@ -17,6 +17,50 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+<#
+.SYNOPSIS
+Start a Neo4j shell process
+
+.DESCRIPTION
+Start a Neo4j shell process
+
+.PARAMETER Neo4jServer
+An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
+
+.PARAMETER UseHost
+The hostname of the Neo4j Shell server to connect to.  If no host is specified, the host is determined from the Neo4j Configuration files (default)
+
+.PARAMETER UsePort
+The TCP port of the Neo4j Shell server to connect to.  If no port is specified, the port is determined from the Neo4j Configuration files (default)
+
+.PARAMETER Wait
+Wait for the shell process to complete
+
+.PARAMETER PassThru
+Pass through the Neo4j Server object instead of the result of the shell process
+
+.PARAMETER OtherArgs
+All other parameters are passed through to the Neo4j Shell Utility
+
+.EXAMPLE
+'C:\Neo4j\neo4j-community' | Start-Neo4jShell -file "C:\Database.cypher" -Wait
+
+Start and wait for a Neo4j Shell for the instance at C:\Neo4j\neo4j-community and execute the cypher statements in C:\Database.cypher
+
+.OUTPUTS
+System.Int32
+Exitcode of shell process
+
+System.Management.Automation.PSCustomObject
+Neo4j Server object (-PassThru)
+
+.LINK
+Initialize-Neo4jServer
+
+.LINK
+http://neo4j.com/docs/stable/shell.html
+
+#>
 Function Start-Neo4jShell
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]

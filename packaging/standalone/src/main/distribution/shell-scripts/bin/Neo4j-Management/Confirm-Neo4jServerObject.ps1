@@ -17,7 +17,33 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+<#
+.SYNOPSIS
+Confirms a Powershell Object is a valid Neo4j Server object
 
+.DESCRIPTION
+Confirms a Powershell Object is a valid Neo4j Server object
+
+.PARAMETER Neo4jServer
+The object to confirm
+
+.EXAMPLE
+$serverObject | Confirm-Neo4jServerObject 
+
+Confirm that $serverObject is a valid Neo4j Server object
+
+.EXAMPLE
+Confirm-Neo4jServerObject -Neo4jServer $serverObject
+
+Confirm that $serverObject is a valid Neo4j Server object
+
+.OUTPUTS
+System.Boolean
+
+.NOTES
+This function is private to the powershell module
+
+#>
 Function Confirm-Neo4jServerObject
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]

@@ -17,7 +17,39 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+<#
+.SYNOPSIS
+Retrieves properties about a Neo4j installation
 
+.DESCRIPTION
+Retrieves properties about a Neo4j installation and outputs a Neo4j Server object.
+
+.PARAMETER Neo4jHome
+The full path to the Neo4j installation.  If an empty string is passed, the Neo4j Home is determied via Get-Neo4jHome
+
+.EXAMPLE
+Get-Neo4jServer -Neo4jHome 'C:\Neo4j'
+
+Retrieves information about the Neo4j installation at C:\Neo4j
+
+.EXAMPLE
+'C:\Neo4j' | Get-Neo4jServer
+
+Retrieves information about the Neo4j installation at C:\Neo4j
+
+.EXAMPLE
+Get-Neo4jServer
+
+Retrieves information about the Neo4j installation as determined by Get-Neo4jHome
+
+.OUTPUTS
+System.Management.Automation.PSCustomObject
+This is a Neo4j Server Object
+
+.LINK
+Get-Neo4jHome  
+
+#>
 Function Get-Neo4jServer
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]

@@ -17,7 +17,32 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+<#
+.SYNOPSIS
+Uninstall a Neo4j Server Windows Service
 
+.DESCRIPTION
+Uninstall a Neo4j Server Windows Service
+
+.PARAMETER Neo4jServer
+An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
+
+.PARAMETER ServiceName
+The name of the Neo4j Server service.  If no name is specified, the name is determined from the Neo4j Configuration files (default)
+
+.PARAMETER SucceedIfNotExist
+Do not raise an error if the service does not exist
+
+.EXAMPLE
+'C:\Neo4j\neo4j-enterprise' | Uninstall-Neo4jServer
+
+Uninstall the Neo4j Server Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise'
+
+.OUTPUTS
+System.Management.Automation.PSCustomObject
+Neo4j Server object
+
+#>
 Function Uninstall-Neo4jServer
 {
   [cmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Medium')]

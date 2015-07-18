@@ -17,7 +17,47 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+<#
+.SYNOPSIS
+Start a Neo4j Import process
 
+.DESCRIPTION
+Start a Neo4j Import process
+
+.PARAMETER Neo4jServer
+An object representing a Neo4j Server.  Either an empty string (path determined by Get-Neo4jHome), a string (path to Neo4j installation) or a valid Neo4j Server object
+
+.PARAMETER FromPipeline
+Specifies that the Neo4jServer information should be read from the pipeline
+
+.PARAMETER Wait
+Wait for the import process to complete
+
+.PARAMETER PassThru
+Pass through the Neo4j Server object instead of the result of the import
+
+.PARAMETER OtherArgs
+All other parameters are passed through to the Neo4j Import Utility
+
+.EXAMPLE
+Start-Neo4jImport -Neo4jServer 'C:\Neo4j\neo4j-community' -Wait --nodes "C:\movies.csv" --nodes "C:\actors.csv" --relationships "C:\roles.csv"
+
+Import the nodes (movies.csv and actors.csv) and relationships (roles.csv) into the Neo4j installation at C:\Neo4j\neo4j-community and wait for the process to complete
+
+.OUTPUTS
+System.Int32
+Exitcode of import process
+
+System.Management.Automation.PSCustomObject
+Neo4j Server object (-PassThru)
+
+.LINK
+Initialize-Neo4jServer
+
+.LINK
+http://neo4j.com/docs/stable/import-tool.html
+
+#>
 Function Start-Neo4jImport
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Medium',DefaultParameterSetName='Default')]

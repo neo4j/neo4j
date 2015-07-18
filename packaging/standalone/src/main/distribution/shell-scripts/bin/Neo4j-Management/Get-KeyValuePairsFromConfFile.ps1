@@ -17,7 +17,33 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+<#
+.SYNOPSIS
+Parses a Neo4j configuration file into a hashtable
 
+.DESCRIPTION
+Parses a Neo4j configuration file into a hashtable.  Multivalue keys are output as string[] types.
+
+.PARAMETER Filename
+The full path to the file to read
+
+.EXAMPLE
+$serverObject | Confirm-Neo4jServerObject 
+
+Confirm that $serverObject is a valid Neo4j Server object
+
+.EXAMPLE
+Get-KeyValuePairsFromConfFile -Filename 'C:\Neo4j\conf\neo4j.properties'
+
+Reads the file 'C:\Neo4j\conf\neo4j.properties' and outputs a hashtable of key/value pairs
+
+.OUTPUTS
+System.Collections.Hashtable
+
+.NOTES
+This function is private to the powershell module
+
+#>
 Function Get-KeyValuePairsFromConfFile
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]

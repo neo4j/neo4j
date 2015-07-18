@@ -17,7 +17,56 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+<#
+.SYNOPSIS
+Initializes a Neo4j HA cluster installation with common settings
 
+.DESCRIPTION
+Initializes a Neo4j HA cluster installation with common settings such as cluster TCP port number.
+
+.PARAMETER Neo4jServer
+A directory path or Neo4j server object to the Neo4j instance to initialize
+
+.PARAMETER PassThru
+Pass through the Neo4j server object instead of the initialized settings
+
+.PARAMETER ServerID
+The cluster identifier for each instance. It must be a positive integer and must be unique among all Neo4j instances in the cluster.
+
+.PARAMETER InitialHosts
+A comma separated list of address/port pairs, which specify how to reach other Neo4j instances in the cluster e.g. 192.168.33.22:5001,192.168.33.21:5001
+
+.PARAMETER ClusterServer
+An address/port setting that specifies where the Neo4j instance will listen for cluster communications (like hearbeat messages) e.g. 192.168.33.22:5001.  Default port is 5001
+
+.PARAMETER HAServer
+An address/port setting that specifies where the Neo4j instance will listen for transactions (changes to the graph data) from the cluster master.
+
+.PARAMETER DisallowClusterInit
+Whether to allow this instance to create a cluster if unable to join.  Default is to create a cluster.
+
+.EXAMPLE
+Get-Neo4jServer 'C:\Neo4j\neo4j-enterprise' | Initialize-Neo4jHACluster -ServerID 1 -InitialHosts '127.0.0.1:5001' -ClusterServer '127.0.0.1:5001' -HAServer '127.0.0.1:6001'
+
+Configure a Neo4j cluster instance with ID 1, and initially look for itself as the cluster to join.
+
+.OUTPUTS
+System.Management.Automation.PSCustomObject[]
+Multiple Neo4j Setting objects
+
+System.Management.Automation.PSCustomObject
+Neo4j Server object (-PassThru)
+
+.LINK
+Get-Neo4jServer
+
+.LINK
+Initialize-Neo4jServer
+
+.NOTES
+This function is only applicable to Neo4j editions which support HA
+
+#>
 Function Initialize-Neo4jHACluster
 {
   [cmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='High')]
@@ -33,7 +82,7 @@ Function Initialize-Neo4jHACluster
     [int]$ServerID = 0
 
     ,[Parameter(Mandatory=$true)]
-    [ValidateScript({$_ -match '^[\d\-:.]+$'})]  
+    [ValidateScript({$_ -match '^[\d\-:.\,]+$'})]  
     [string]$InitialHosts = ''
 
     ,[Parameter(Mandatory=$false)]

@@ -17,7 +17,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+<#
+.SYNOPSIS
+Determines the default location of a Neo4j installation
 
+.DESCRIPTION
+Determines the default location of a Neo4j installation using the environment variable NEO4J_HOME
+
+.EXAMPLE
+Get-Neo4jHome
+
+Returns the path to the default Neo4j installation
+
+.OUTPUTS
+System.String
+
+#>
 Function Get-Neo4jHome
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
