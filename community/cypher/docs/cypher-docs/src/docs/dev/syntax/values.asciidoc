@@ -2,7 +2,6 @@
 Values
 ======
 
-Cypher queries the graph by looking at nodes, relationships, properties and query parameters.
 All values that are handled by Cypher have a distinct type.
 The supported types of values are:
 

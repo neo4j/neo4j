@@ -19,29 +19,35 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsMapContaining.hasKey;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
-import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.test.server.HTTP;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.test.server.HTTP.GET;
 import static org.neo4j.test.server.HTTP.POST;
+
+import org.junit.Test;
 
 public class TransactionDocTest extends AbstractRestFunctionalTestBase
 {
@@ -221,6 +227,31 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     }
 
     /**
+     * Execute multiple statements
+     *
+     * You can send multiple Cypher statements in the same request.
+     * The response will contain the result of each statement.
+     */
+    @Test
+    @Documented
+    public void execute_multiple_statements() throws JsonParseException
+    {
+        // Document
+        ResponseEntity response = gen.get().noGraph().expectedStatus( 200 )
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n) RETURN id(n)' }, "
+                        + "{ 'statement': 'CREATE (n {props}) RETURN n', "
+                        + "'parameters': { 'props': { 'name': 'My Node' } } } ] }" ) )
+                .post( getDataUri() + "transaction/commit" );
+
+        // Then
+        Map<String,Object> result = jsonToMap( response.entity() );
+        assertNoErrors( result );
+        Integer id = resultCell( result, 0, 0 );
+        assertThat( GET( getNodeUri( id ) ).status(), is( 200 ) );
+        assertThat( response.entity(), containsString( "My Node" ) );
+    }
+
+    /**
      * Return results in graph format
      *
      * If you want to understand the graph structure of nodes and relationships returned by your query,
@@ -320,6 +351,35 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         assertErrors( result, Status.Statement.InvalidSyntax );
     }
 
+    /**
+     * Include query statistics
+     *
+     * By setting `includeStats` to `true` for a statement, query statistics will be returned for it.
+     */
+    @Test
+    @Documented
+    public void include_query_statistics() throws JsonParseException
+    {
+        // Document
+        ResponseEntity response = gen.get()
+                .noGraph()
+                .expectedStatus( 200 )
+                .payload( quotedJson(
+                        "{ 'statements': [ { 'statement': 'CREATE (n) RETURN id(n)', 'includeStats': true } ] }" ) )
+                .post( getDataUri() + "transaction/commit" );
+
+        // Then
+        Map<String,Object> entity = jsonToMap( response.entity() );
+        assertNoErrors( entity );
+        Map<String,Object> firstResult = ((List<Map<String,Object>>) entity.get( "results" )).get( 0 );
+        
+        assertThat( firstResult, hasKey( "stats" ) );
+        Map<String,Object> stats = (Map<String,Object>) firstResult.get( "stats" );
+        assertThat( (Integer) stats.get( "nodes_created" ), equalTo( 1 ) );
+    }
+
+    
+    
     private void assertNoErrors( Map<String, Object> response )
     {
         assertErrors( response );

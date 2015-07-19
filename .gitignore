@@ -9,6 +9,8 @@ out
 .scala_dependencies
 .factorypath
 .cache
+.cache-main
+.cache-tests
 *.iws
 *.ipr
 *.iml

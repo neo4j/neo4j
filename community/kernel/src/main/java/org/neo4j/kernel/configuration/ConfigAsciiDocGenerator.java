@@ -20,6 +20,7 @@
 package org.neo4j.kernel.configuration;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -36,6 +37,9 @@ import org.neo4j.helpers.Triplet;
 public class ConfigAsciiDocGenerator
 {
     private static final Pattern CONFIG_SETTING_PATTERN = Pattern.compile( "[a-z0-9]+((\\.|_)[a-z0-9]+)+" );
+    private static final Pattern NUMBER_OR_IP = Pattern.compile( "[0-9\\.]+" );
+    private static final List<String> CONFIG_NAMES_BLACKLIST = Arrays.asList( "round_robin", "keep_all", "keep_last",
+            "keep_none" );
 
     public String generateDocsFor(
             Class<? extends SettingsResourceBundle> settingsResource )
@@ -185,6 +189,14 @@ public class ConfigAsciiDocGenerator
             {
                 // don't link to the settings we're describing
                 match = "`" + match + "`";
+            }
+            else if ( CONFIG_NAMES_BLACKLIST.contains( match ) )
+            {
+                // an option value; do nothing
+            }
+            else if ( NUMBER_OR_IP.matcher( match ).matches() )
+            {
+                // number or ip; do nothing
             }
             else
             {
