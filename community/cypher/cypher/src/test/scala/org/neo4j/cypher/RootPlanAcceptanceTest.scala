@@ -35,6 +35,18 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     }
   }
 
+  test("cost should be default planner in 2.3") {
+    given("match n return n")
+      .withCypherVersion(CypherVersion.v2_3)
+      .shouldHavePlanner(CostBasedPlannerName.default)
+  }
+
+  test("interpreted should be default runtime in 2.3") {
+    given("match n return n")
+      .withCypherVersion(CypherVersion.v2_3)
+      .shouldHaveRuntime(InterpretedRuntimeName)
+  }
+
   test("should use cost for varlength in 2.3") {
     given("match (a)-[r:T1*]->(b) return a,r,b")
       .withCypherVersion(CypherVersion.v2_3)
