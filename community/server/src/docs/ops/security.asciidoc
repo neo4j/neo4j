@@ -13,13 +13,13 @@ This is configured in the _conf/neo4j-server.properties_ file:
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7474
 
-#let the webserver only listen on the specified IP. Default
-#is localhost (only accept local connections). Uncomment to allow
-#any connection.
+# Let the webserver only listen on the specified IP. Default is localhost (only
+# accept local connections). Uncomment to allow any connection.
 #org.neo4j.server.webserver.address=0.0.0.0
 ----
 
-If you need to enable access from external hosts, configure the Web server in the _conf/neo4j-server.properties_ by setting the property +org.neo4j.server.webserver.address=0.0.0.0+ to enable access from any host.
+If you want the server to listen to external hosts, configure the Web server in the _conf/neo4j-server.properties_ by setting the property +org.neo4j.server.webserver.address=0.0.0.0+ which will cause the server to bind to all available network interfaces.
+Note that firewalls et cetera have to be configured accordingly as well.
 
 [[security-server-auth]]
 == Server authentication and authorization ==

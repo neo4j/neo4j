@@ -25,16 +25,13 @@ import java.util.Map;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
- * Provides instances of batch inserters.
- * <p>
- * A {@link BatchInserter} retrieved from the {@link #inserter(String)} or
- * {@link #inserter(String, Map)} methods is more performant while the
+ * Provides instances of {@link BatchInserter}.
  */
 public final class BatchInserters
 {

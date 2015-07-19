@@ -50,17 +50,9 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     /**
      * Execute multiple operations in batch.
      *
-     * This lets you execute multiple API calls through a single HTTP call,
-     * significantly improving performance for large insert and update
-     * operations.
-     *
      * The batch service expects an array of job descriptions as input, each job
      * description describing an action to be performed via the normal server
      * API.
-     *
-     * This service is transactional. If any of the operations performed fails
-     * (returns a non-2xx HTTP status code), the transaction will be rolled back
-     * and all changes will be undone.
      *
      * Each job description should contain a +to+ attribute, with a value
      * relative to the data API root (so http://localhost:7474/db/data/node becomes

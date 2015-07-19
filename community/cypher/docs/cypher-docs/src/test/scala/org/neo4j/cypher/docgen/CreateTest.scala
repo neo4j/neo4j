@@ -34,7 +34,16 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
       text = "Creating a single node is done by issuing the following query.",
       queryText = "create (n)",
       optionalResultExplanation = "Nothing is returned from this query, except the count of affected nodes.",
-      assertions = (p) => {})
+      assertions = (p) => assertStats(p, nodesCreated = 1))
+  }
+
+  @Test def create_multiple_nodes() {
+    testQuery(
+      title = "Create multiple nodes",
+      text = "Creating multiple nodes is done by separating them with a comma.",
+      queryText = "create (n), (m)",
+      optionalResultExplanation = "",
+      assertions = (p) => assertStats(p, nodesCreated = 2))
   }
 
   @Test def create_single_node_with_label() {
