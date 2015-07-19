@@ -21,6 +21,7 @@ The boolean operators are `AND`, `OR`, `XOR`, `NOT`.
 == String operators ==
 
 Strings can be concatenated using the `+` operator.
+For regular expression matching the `=~` operator is used.
 
 [[query-operators-collection]]
 == Collection operators ==
