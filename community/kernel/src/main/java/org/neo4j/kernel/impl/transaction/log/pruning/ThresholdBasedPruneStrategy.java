@@ -56,7 +56,7 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
         }
 
         threshold.init();
-        long upper = currentLogVersion-1;
+        long upper = currentLogVersion - 1;
         boolean exceeded = false;
         while ( upper >= 0 )
         {
@@ -86,6 +86,23 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
         while ( fileSystem.fileExists( files.getLogFileForVersion( lower - 1 ) ) )
         {
             lower--;
+        }
+
+        /*
+         * Here we make sure that at least one historical log remains behind, in addition of course to the
+         * current one. This is in order to make sure that at least one transaction remains always available for
+         * serving to whomever asks for it.
+         * To illustrate, imagine that there is a threshold in place configured so that it enforces prunning of the
+         * log file that was just rotated out (for example, a file size threshold that is misconfigured to be smaller
+         * than the smallest log). In such a case, until the database commits a transaction there will be no
+         * transactions present on disk, making impossible to serve any to whichever client might ask, leading to
+         * errors on both sides of the conversation.
+         * This if statement does nothing more complicated than checking if the next-to-last log would be prunned
+         * and simply skipping it if so.
+         */
+        if ( upper == currentLogVersion - 1)
+        {
+            upper--;
         }
 
         // The reason we delete from lower to upper is that if it crashes in the middle
