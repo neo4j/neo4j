@@ -49,7 +49,6 @@ public class DummyPageSwapper implements PageSwapper
     @Override
     public void evicted( long pageId, Page page )
     {
-
     }
 
     @Override
@@ -77,5 +76,17 @@ public class DummyPageSwapper implements PageSwapper
     @Override
     public void truncate() throws IOException
     {
+    }
+
+    @Override
+    public int read( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
+    {
+        return 0;
+    }
+
+    @Override
+    public int write( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
+    {
+        return 0;
     }
 }

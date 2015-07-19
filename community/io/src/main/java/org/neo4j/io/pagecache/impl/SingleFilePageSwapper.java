@@ -236,9 +236,10 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private int swapOut( Page page, long fileOffset, StoreChannel channel ) throws IOException
     {
+        long address = page.address();
         try
         {
-            ByteBuffer bufferProxy = proxy( page.address(), filePageSize );
+            ByteBuffer bufferProxy = proxy( address, filePageSize );
             channel.writeAll( bufferProxy, fileOffset );
         }
         catch ( IOException e )
@@ -291,6 +292,17 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
+    public int read( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
+    {
+        int bytes = 0;
+        for ( int i = 0; i < length; i++ )
+        {
+            bytes += read( startFilePageId + i, pages[arrayOffset + i] );
+        }
+        return bytes;
+    }
+
+    @Override
     public int write( long filePageId, Page page ) throws IOException
     {
         long fileOffset = pageIdToPosition( filePageId );
@@ -315,6 +327,17 @@ public class SingleFilePageSwapper implements PageSwapper
             }
             return bytesWritten;
         }
+    }
+
+    @Override
+    public int write( long startFilePageId, Page[] pages, int arrayOffset, int length ) throws IOException
+    {
+        int bytes = 0;
+        for ( int i = 0; i < length; i++ )
+        {
+            bytes += write( startFilePageId + i, pages[arrayOffset + i] );
+        }
+        return bytes;
     }
 
     @Override

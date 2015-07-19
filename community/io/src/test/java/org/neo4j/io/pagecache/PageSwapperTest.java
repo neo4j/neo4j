@@ -21,17 +21,28 @@ package org.neo4j.io.pagecache;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.NoSuchFileException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.io.pagecache.impl.ByteBufferPage;
+import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
@@ -57,6 +68,8 @@ public abstract class PageSwapperTest
 
     protected abstract PageSwapperFactory swapperFactory() throws Exception;
 
+    protected abstract void mkdirs( File dir ) throws IOException;
+
     protected int cachePageSize()
     {
         return cachePageSize;
@@ -81,6 +94,16 @@ public abstract class PageSwapperTest
         }
     }
 
+    private File file( String filename ) throws IOException
+    {
+        File file = testDir.file( filename );
+        mkdirs( file.getParentFile() );
+        return file;
+    }
+
+    @Rule
+    public final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
     @Before
     @After
     public void clearStrayInterrupts()
@@ -91,7 +114,7 @@ public abstract class PageSwapperTest
     @Test
     public void swappingOutMustNotSwallowInterrupts() throws Exception
     {
-        File file = new File( "a" );
+        File file = file( "a" );
 
         ByteBufferPage page = createPage();
         PageSwapperFactory swapperFactory = swapperFactory();
@@ -106,7 +129,7 @@ public abstract class PageSwapperTest
     @Test
     public void forcingMustNotSwallowInterrupts() throws Exception
     {
-        File file = new File( "a" );
+        File file = file( "a" );
 
         PageSwapperFactory swapperFactory = swapperFactory();
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
@@ -119,7 +142,7 @@ public abstract class PageSwapperTest
     @Test
     public void mustReopenChannelWhenReadFailsWithAsynchronousCloseException() throws Exception
     {
-        File file = new File( "a" );
+        File file = file( "a" );
         PageSwapperFactory swapperFactory = swapperFactory();
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
 
@@ -151,7 +174,7 @@ public abstract class PageSwapperTest
         page.putLong( X, 0 );
         page.putLong( Y, 8 );
         page.putInt( Z, 16 );
-        File file = new File( "a" );
+        File file = file( "a" );
 
         PageSwapperFactory swapperFactory = swapperFactory();
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
@@ -176,7 +199,7 @@ public abstract class PageSwapperTest
     @Test
     public void mustReopenChannelWhenForceFailsWithAsynchronousCloseException() throws Exception
     {
-        File file = new File( "a" );
+        File file = file( "a" );
 
         PageSwapperFactory swapperFactory = swapperFactory();
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
@@ -196,7 +219,8 @@ public abstract class PageSwapperTest
     @Test
     public void readMustNotReopenExplicitlyClosedChannel() throws Exception
     {
-        File file = new File( "a" );
+        String filename = "a";
+        File file = file( filename );
 
         ByteBufferPage page = createPage();
         PageSwapperFactory swapperFactory = swapperFactory();
@@ -218,7 +242,7 @@ public abstract class PageSwapperTest
     @Test
     public void writeMustNotReopenExplicitlyClosedChannel() throws Exception
     {
-        File file = new File( "a" );
+        File file = file( "a" );
 
         ByteBufferPage page = createPage();
         PageSwapperFactory swapperFactory = swapperFactory();
@@ -239,7 +263,7 @@ public abstract class PageSwapperTest
     @Test
     public void forceMustNotReopenExplicitlyClosedChannel() throws Exception
     {
-        File file = new File( "a" );
+        File file = file( "a" );
 
         PageSwapperFactory swapperFactory = swapperFactory();
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
@@ -259,8 +283,8 @@ public abstract class PageSwapperTest
     @Test
     public void mustNotOverwriteDataInOtherFiles() throws Exception
     {
-        File fileA = new File( "a" );
-        File fileB = new File( "b" );
+        File fileA = file( "a" );
+        File fileB = file( "b" );
         PageSwapperFactory factory = swapperFactory();
         PageSwapper swapperA =
                 factory.createPageSwapper( fileA, cachePageSize(), NO_CALLBACK, true );
@@ -294,7 +318,7 @@ public abstract class PageSwapperTest
                 callbackPage.set( page );
             }
         };
-        File file = new File( "file" );
+        File file = file( "file" );
         PageSwapperFactory factory = swapperFactory();
         PageSwapper swapper = factory.createPageSwapper( file, cachePageSize(), callback, true );
         Page page = createPage();
@@ -315,7 +339,7 @@ public abstract class PageSwapperTest
                 gotCallback.set( true );
             }
         };
-        File file = new File( "file" );
+        File file = file( "file" );
         PageSwapperFactory factory = swapperFactory();
         PageSwapper swapper = factory.createPageSwapper( file, cachePageSize(), callback, true );
         Page page = createPage();
@@ -328,7 +352,7 @@ public abstract class PageSwapperTest
     public void mustThrowExceptionIfFileDoesNotExist() throws Exception
     {
         PageSwapperFactory factory = swapperFactory();
-        factory.createPageSwapper( new File( "does not exist" ), cachePageSize(), NO_CALLBACK, false );
+        factory.createPageSwapper( file( "does not exist" ), cachePageSize(), NO_CALLBACK, false );
     }
 
     @Test
@@ -336,7 +360,7 @@ public abstract class PageSwapperTest
     {
         PageSwapperFactory factory = swapperFactory();
         PageSwapper pageSwapper =
-                factory.createPageSwapper( new File( "does not exist" ), cachePageSize(), NO_CALLBACK, true );
+                factory.createPageSwapper( file( "does not exist" ), cachePageSize(), NO_CALLBACK, true );
 
         // After creating the file, we must also be able to read and write
         ByteBufferPage page = createPage();
@@ -352,7 +376,7 @@ public abstract class PageSwapperTest
     @Test
     public void truncatedFilesMustBeEmpty() throws Exception
     {
-        File file = new File( "file" );
+        File file = file( "file" );
         PageSwapperFactory factory = swapperFactory();
         PageSwapper swapper = factory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
 
@@ -387,5 +411,567 @@ public abstract class PageSwapperTest
         assertThat( swapper.getLastPageId(), is( -1L ) );
 
         swapper.close();
+    }
+
+    @Test
+    public void positionedVectoredWriteMustFlushAllBuffersInOrder() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        ByteBufferPage pageA = createPage( 4 );
+        ByteBufferPage pageB = createPage( 4 );
+        ByteBufferPage pageC = createPage( 4 );
+        ByteBufferPage pageD = createPage( 4 );
+
+        pageA.putInt( 2, 0 );
+        pageB.putInt( 3, 0 );
+        pageC.putInt( 4, 0 );
+        pageD.putInt( 5, 0 );
+
+        swapper.write( 1, new Page[]{pageA, pageB, pageC, pageD}, 0, 4 );
+
+        ByteBufferPage result = createPage( 4 );
+
+        swapper.read( 0, result );
+        assertThat( result.getInt( 0 ), is( 0 ) );
+        result.putInt( 0, 0 );
+        assertThat( swapper.read( 1, result ), is( 4 ) );
+        assertThat( result.getInt( 0 ), is( 2 ) );
+        result.putInt( 0, 0 );
+        assertThat( swapper.read( 2, result ), is( 4 ) );
+        assertThat( result.getInt( 0 ), is( 3 ) );
+        result.putInt( 0, 0 );
+        assertThat( swapper.read( 3, result ), is( 4 ) );
+        assertThat( result.getInt( 0 ), is( 4 ) );
+        result.putInt( 0, 0 );
+        assertThat( swapper.read( 4, result ), is( 4 ) );
+        assertThat( result.getInt( 0 ), is( 5 ) );
+        result.putInt( 0, 0 );
+        assertThat( swapper.read( 5, result ), is( 0 ) );
+        assertThat( result.getInt( 0 ), is( 0 ) );
+    }
+
+    @Test
+    public void positionedVectoredReadMustFillAllBuffersInOrder() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        ByteBufferPage output = createPage();
+
+        output.putInt( 2, 0 );
+        swapper.write( 1, output );
+        output.putInt( 3, 0 );
+        swapper.write( 2, output );
+        output.putInt( 4, 0 );
+        swapper.write( 3, output );
+        output.putInt( 5, 0 );
+        swapper.write( 4, output );
+
+        ByteBufferPage pageA = createPage( 4 );
+        ByteBufferPage pageB = createPage( 4 );
+        ByteBufferPage pageC = createPage( 4 );
+        ByteBufferPage pageD = createPage( 4 );
+
+        // Read 4 pages of 4 bytes each
+        assertThat( swapper.read( 1, new Page[]{pageA, pageB, pageC, pageD}, 0, 4 ), is( 4 * 4 ) );
+
+        assertThat( pageA.getInt( 0 ), is( 2 ) );
+        assertThat( pageB.getInt( 0 ), is( 3 ) );
+        assertThat( pageC.getInt( 0 ), is( 4 ) );
+        assertThat( pageD.getInt( 0 ), is( 5 ) );
+    }
+
+    @Test
+    public void positionedVectoredReadFromEmptyFileMustFillPagesWithZeros() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        ByteBufferPage page = createPage( 4 );
+        page.putInt( 1, 0 );
+        assertThat( swapper.read( 0, new Page[]{page}, 0, 1 ), is( 0 ) );
+        assertThat( page.getInt( 0 ), is( 0 ) );
+    }
+
+    @Test
+    public void positionedVectoredReadBeyondEndOfFileMustFillPagesWithZeros() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        ByteBufferPage output = createPage( 4 );
+        output.putInt( 0xFFFF_FFFF, 0 );
+        swapper.write( 0, new Page[]{output, output, output}, 0, 3 );
+
+        ByteBufferPage pageA = createPage( 4 );
+        ByteBufferPage pageB = createPage( 4 );
+        pageA.putInt( -1, 0 );
+        pageB.putInt( -1, 0 );
+        assertThat( swapper.read( 3, new Page[]{pageA, pageB}, 0, 2 ), is( 0 ) );
+        assertThat( pageA.getInt( 0 ), is( 0 ) );
+        assertThat( pageB.getInt( 0 ), is( 0 ) );
+    }
+
+    @Test
+    public void positionedVectoredReadWhereLastPageExtendBeyondEndOfFileMustHaveRemainderZeroFilled() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        ByteBufferPage output = createPage( 4 );
+        output.putInt( 0xFFFF_FFFF, 0 );
+        swapper.write( 0, new Page[]{output, output, output, output, output}, 0, 5 );
+        swapper.close();
+
+        swapper = factory.createPageSwapper( file, 8, NO_CALLBACK, false );
+        ByteBufferPage pageA = createPage( 8 );
+        ByteBufferPage pageB = createPage( 8 );
+        assertThat( swapper.read( 1, new Page[]{pageA, pageB}, 0, 2 ), is( 12 ) );
+        assertThat( pageA.getLong( 0 ), is( 0xFFFF_FFFF_FFFF_FFFFL ) );
+        assertThat( pageB.getLong( 0 ), is( 0xFFFF_FFFF_0000_0000L ) );
+    }
+
+    @Test
+    public void positionedVectoredReadWhereSecondLastPageExtendBeyondEndOfFileMustHaveREstZeroFilled() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        ByteBufferPage output = createPage( 4 );
+        output.putInt( 1, 0 );
+        swapper.write( 0, output );
+        output.putInt( 2, 0 );
+        swapper.write( 1, output );
+        output.putInt( 3, 0 );
+        swapper.write( 2, output );
+        swapper.close();
+
+        swapper = factory.createPageSwapper( file, 8, NO_CALLBACK, false );
+        ByteBufferPage pageA = createPage( 8 );
+        ByteBufferPage pageB = createPage( 8 );
+        ByteBufferPage pageC = createPage( 8 );
+        pageA.putInt( -1, 0 );
+        pageB.putInt( -1, 0 );
+        assertThat( swapper.read( 0, new Page[]{pageA, pageB, pageC}, 0, 3 ), is( 12 ) );
+        assertThat( pageA.getInt( 0 ), is( 1 ) );
+        assertThat( pageA.getInt( 4 ), is( 2 ) );
+        assertThat( pageB.getInt( 0 ), is( 3 ) );
+        assertThat( pageB.getInt( 4 ), is( 0 ) );
+        assertThat( pageC.getLong( 0 ), is( 0L ) );
+    }
+
+    @Test
+    public void concurrentPositionedVectoredReadsAndWritesMustNotInterfere() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        final PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+        final int pageCount = 100;
+        final int iterations = 20000;
+        final CountDownLatch startLatch = new CountDownLatch( 1 );
+        ByteBufferPage output = createPage( 4 );
+        for ( int i = 0; i < pageCount; i++ )
+        {
+            output.putInt( i+1, 0 );
+            swapper.write( i, output );
+        }
+
+        Callable<Void> work = new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                ThreadLocalRandom rng = ThreadLocalRandom.current();
+                ByteBufferPage[] pages = new ByteBufferPage[10];
+                for ( int i = 0; i < pages.length; i++ )
+                {
+                    pages[i] = createPage( 4 );
+                }
+
+                startLatch.await();
+                for ( int i = 0; i < iterations; i++ )
+                {
+                    long startFilePageId = rng.nextLong( 0, pageCount - pages.length );
+                    if ( rng.nextBoolean() )
+                    {
+                        // Do read
+                        int bytesRead = swapper.read( startFilePageId, pages, 0, pages.length );
+                        assertThat( bytesRead, is( pages.length * 4 ) );
+                        for ( int j = 0; j < pages.length; j++ )
+                        {
+                            int expectedValue = (int) (1 + j + startFilePageId);
+                            int actualValue = pages[j].getInt( 0 );
+                            assertThat( actualValue, is( expectedValue ) );
+                        }
+                    }
+                    else
+                    {
+                        // Do write
+                        for ( int j = 0; j < pages.length; j++ )
+                        {
+                            int value = (int) (1 + j + startFilePageId);
+                            pages[j].putInt( value, 0 );
+                        }
+                        assertThat( swapper.write( startFilePageId, pages, 0, pages.length ), is( pages.length * 4 ) );
+                    }
+                }
+                return null;
+            }
+        };
+
+        int threads = 8;
+        ExecutorService executor = Executors.newFixedThreadPool( threads );
+        List<Future<Void>> futures = new ArrayList<>( threads );
+        for ( int i = 0; i < threads; i++ )
+        {
+            futures.add( executor.submit( work ) );
+        }
+
+        startLatch.countDown();
+        for ( Future<Void> future : futures )
+        {
+            future.get();
+        }
+    }
+
+    @Test
+    public void positionedVectoredReadMustWorkOnSubsequenceOfGivenArray() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        ByteBufferPage pageA = createPage( 4 );
+        ByteBufferPage pageB = createPage( 4 );
+        ByteBufferPage pageC = createPage( 4 );
+        ByteBufferPage pageD = createPage( 4 );
+
+        pageA.putInt( 1, 0 );
+        pageB.putInt( 2, 0 );
+        pageC.putInt( 3, 0 );
+        pageD.putInt( 4, 0 );
+
+        Page[] pages = {pageA, pageB, pageC, pageD};
+        int bytesWritten = swapper.write( 0, pages, 0, 4 );
+        assertThat( bytesWritten, is( 16 ) );
+
+        pageA.putInt( 5, 0 );
+        pageB.putInt( 6, 0 );
+        pageC.putInt( 7, 0 );
+        pageD.putInt( 8, 0 );
+
+        int bytesRead = swapper.read( 1, pages, 1, 2 );
+        assertThat( bytesRead, is( 8 ) );
+
+        int[] actualValues = {pageA.getInt( 0 ), pageB.getInt( 0 ), pageC.getInt( 0 ), pageD.getInt( 0 )};
+        int[] expectedValues = {5, 2, 3, 8};
+        assertThat( actualValues, is( expectedValues ) );
+    }
+
+    @Test
+    public void positionedVectoredWriteMustWorkOnSubsequenceOfGivenArray() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        ByteBufferPage pageA = createPage( 4 );
+        ByteBufferPage pageB = createPage( 4 );
+        ByteBufferPage pageC = createPage( 4 );
+        ByteBufferPage pageD = createPage( 4 );
+
+        pageA.putInt( 1, 0 );
+        pageB.putInt( 2, 0 );
+        pageC.putInt( 3, 0 );
+        pageD.putInt( 4, 0 );
+
+        Page[] pages = {pageA, pageB, pageC, pageD};
+        int bytesWritten = swapper.write( 0, pages, 0, 4 );
+        assertThat( bytesWritten, is( 16 ) );
+
+        pageB.putInt( 6, 0 );
+        pageC.putInt( 7, 0 );
+
+        bytesWritten = swapper.write( 1, pages, 1, 2 );
+        assertThat( bytesWritten, is( 8 ) );
+
+        pageA.putInt( 0, 0 );
+        pageB.putInt( 0, 0 );
+        pageC.putInt( 0, 0 );
+        pageD.putInt( 0, 0 );
+
+        int bytesRead = swapper.read( 0, pages, 0, 4 );
+        assertThat( bytesRead, is( 16 ) );
+
+        int[] actualValues = {pageA.getInt( 0 ), pageB.getInt( 0 ), pageC.getInt( 0 ), pageD.getInt( 0 )};
+        int[] expectedValues = {1, 6, 7, 4};
+        assertThat( actualValues, is( expectedValues ) );
+    }
+
+    @Test
+    public void mustThrowNullPointerExceptionFromReadWhenPageArrayElementsAreNull() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        ByteBufferPage page = createPage( 4 );
+
+        swapper.write( 0, new Page[]{page, page, page, page}, 0, 4 );
+
+        try
+        {
+            swapper.read( 0, new Page[]{page, page, null, page}, 0, 4 );
+            fail( "vectored read with nulls in array should have thrown" );
+        }
+        catch ( NullPointerException npe )
+        {
+            // This is fine
+        }
+    }
+
+    @Test
+    public void mustThrowNullPointerExceptionFromWriteWhenPageArrayElementsAreNull() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        ByteBufferPage page = createPage( 4 );
+
+        try
+        {
+            swapper.write( 0, new Page[]{page, page, null, page}, 0, 4 );
+            fail( "vectored read with nulls in array should have thrown" );
+        }
+        catch ( NullPointerException npe )
+        {
+            // This is fine
+        }
+    }
+
+    @Test
+    public void mustThrowNullPointerExceptionFromReadWhenPageArrayIsNull() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        ByteBufferPage page = createPage( 4 );
+
+        swapper.write( 0, new Page[]{page, page, page, page}, 0, 4 );
+
+        try
+        {
+            swapper.read( 0, null, 0, 4 );
+            fail( "vectored read with null array should have thrown" );
+        }
+        catch ( NullPointerException npe )
+        {
+            // This is fine
+        }
+    }
+
+    @Test
+    public void mustThrowNullPointerExceptionFromWriteWhenPageArrayIsNull() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        try
+        {
+            swapper.write( 0, null, 0, 4 );
+            fail( "vectored write with null array should have thrown" );
+        }
+        catch ( NullPointerException npe )
+        {
+            // This is fine
+        }
+    }
+
+    @Test( expected = IOException.class )
+    public void readMustThrowForNegativeFilePageIds() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        swapper.read( -1, createPage( 4 ) );
+    }
+
+    @Test( expected = IOException.class )
+    public void writeMustThrowForNegativeFilePageIds() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        swapper.write( -1, createPage( 4 ) );
+    }
+
+    @Test( expected = IOException.class )
+    public void vectoredReadMustThrowForNegativeFilePageIds() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        swapper.read( -1, new Page[]{createPage( 4 ), createPage( 4 )}, 0, 2 );
+    }
+
+    @Test( expected = IOException.class )
+    public void vectoredWriteMustThrowForNegativeFilePageIds() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        swapper.write( -1, new Page[] {createPage( 4 ), createPage( 4 )}, 0, 2 );
+    }
+
+    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    public void vectoredReadMustThrowForNegativeArrayOffsets() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        Page[] pages = {createPage( 4 ), createPage( 4 )};
+        swapper.write( 0, pages, 0, 2 );
+        swapper.read( 0, pages, -1, 2 );
+    }
+
+    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    public void vectoredWriteMustThrowForNegativeArrayOffsets() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        Page[] pages = {createPage( 4 ), createPage( 4 )};
+        swapper.write( 0, pages, -1, 2 );
+    }
+
+    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    public void vectoredReadMustThrowWhenLengthGoesBeyondArraySize() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        Page[] pages = {createPage( 4 ), createPage( 4 )};
+        swapper.write( 0, pages, 0, 2 );
+        swapper.read( 0, pages, 1, 2 );
+    }
+
+    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    public void vectoredWriteMustThrowWhenLengthGoesBeyondArraySize() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        Page[] pages = {createPage( 4 ), createPage( 4 )};
+        swapper.write( 0, pages, 1, 2 );
+    }
+
+    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    public void vectoredReadMustThrowWhenArrayOffsetIsEqualToArrayLength() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        Page[] pages = {createPage( 4 ), createPage( 4 )};
+        swapper.write( 0, pages, 0, 2 );
+        swapper.read( 0, pages, 2, 1 );
+    }
+
+    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    public void vectoredWriteMustThrowWhenArrayOffsetIsEqualToArrayLength() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        Page[] pages = {createPage( 4 ), createPage( 4 )};
+        swapper.write( 0, pages, 2, 1 );
+    }
+
+    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    public void vectoredReadMustThrowWhenArrayOffsetIsGreaterThanArrayLength() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        Page[] pages = {createPage( 4 ), createPage( 4 )};
+        swapper.write( 0, pages, 0, 2 );
+        swapper.read( 0, pages, 3, 1 );
+    }
+
+    @Test( expected = ArrayIndexOutOfBoundsException.class )
+    public void vectoredWriteMustThrowWhenArrayOffsetIsGreaterThanArrayLength() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        Page[] pages = {createPage( 4 ), createPage( 4 )};
+        swapper.write( 0, pages, 3, 1 );
+    }
+
+    @Test
+    public void vectoredReadMustReadNothingWhenLengthIsZero() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        ByteBufferPage pageA = createPage( 4 );
+        ByteBufferPage pageB = createPage( 4 );
+        pageA.putInt( 1, 0 );
+        pageB.putInt( 2, 0 );
+        Page[] pages = {pageA, pageB};
+        swapper.write( 0, pages, 0, 2 );
+        pageA.putInt( 3, 0 );
+        pageB.putInt( 4, 0 );
+        swapper.read( 0, pages, 0, 0 );
+
+        int[] expectedValues = {3, 4};
+        int[] actualValues = {pageA.getInt( 0 ), pageB.getInt( 0 )};
+        assertThat( actualValues, is( expectedValues ) );
+    }
+
+    @Test
+    public void vectoredWriteMustReadNothingWhenLengthIsZero() throws Exception
+    {
+        File file = file( "file" );
+        PageSwapperFactory factory = swapperFactory();
+        PageSwapper swapper = factory.createPageSwapper( file, 4, NO_CALLBACK, true );
+
+        ByteBufferPage pageA = createPage( 4 );
+        ByteBufferPage pageB = createPage( 4 );
+        pageA.putInt( 1, 0 );
+        pageB.putInt( 2, 0 );
+        Page[] pages = {pageA, pageB};
+        swapper.write( 0, pages, 0, 2 );
+        pageA.putInt( 3, 0 );
+        pageB.putInt( 4, 0 );
+        swapper.write( 0, pages, 0, 0 );
+        swapper.read( 0, pages, 0, 2 );
+
+        int[] expectedValues = {1, 2};
+        int[] actualValues = {pageA.getInt( 0 ), pageB.getInt( 0 )};
+        assertThat( actualValues, is( expectedValues ) );
     }
 }
