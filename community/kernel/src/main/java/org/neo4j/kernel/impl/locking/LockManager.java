@@ -35,8 +35,8 @@ import org.neo4j.logging.Logger;
  * <p>
  * Multiple locks on the same resource held by the same transaction requires the
  * transaction to invoke the release lock method multiple times. If a tx has
- * invoked {@link #getReadLock(Object, Transaction)} on the same resource x times in
- * a row it must invoke {@link #releaseReadLock(Object, Transaction)} x times to release
+ * invoked {@link #getReadLock(Object, Object)} on the same resource x times in
+ * a row it must invoke {@link #releaseReadLock(Object, Object)} x times to release
  * all the locks. Same for write locks correspondingly.
  * <p>
  * LockManager just maps locks to resources and they do all the hard work
@@ -49,12 +49,16 @@ public interface LockManager
      * transaction. If read lock can't be acquired the transaction will wait for
      * the transaction until it can acquire it. If waiting leads to dead lock a
      * {@link DeadlockDetectedException} will be thrown.
+     * Waiting can also be terminated. In that case waiting thread will be interrupted and corresponding
+     * {@link org.neo4j.kernel.impl.locking.community.RWLock.TxLockElement} will be marked as terminated.
+     * In that case lock will not be acquired and false will be return as result of acquisition
      *
      * @param resource the resource to lock
      * @throws DeadlockDetectedException if a deadlock is detected, or prevented rather
      * @throws IllegalResourceException if an illegal resource is supplied
+     * @return true is lock was acquired, false otherwise
      */
-    void getReadLock( Object resource, Object tx )
+    boolean getReadLock( Object resource, Object tx )
             throws DeadlockDetectedException, IllegalResourceException;
 
     /**
@@ -64,6 +68,7 @@ public interface LockManager
      *
      * @param resource the resource
      * @throws IllegalResourceException if an illegal resource is supplied
+     * @return true is lock was acquired, false otherwise
      */
     boolean tryReadLock( Object resource, Object tx )
             throws IllegalResourceException;
@@ -73,12 +78,16 @@ public interface LockManager
      * transaction. If write lock can't be acquired the transaction will wait
      * for the lock until it can acquire it. If waiting leads to dead lock a
      * {@link DeadlockDetectedException} will be thrown.
+     * Waiting can also be terminated. In that case waiting thread will be interrupted and corresponding
+     * {@link org.neo4j.kernel.impl.locking.community.RWLock.TxLockElement} will be marked as terminated.
+     * In that case lock will not be acquired and false will be return as result of acquisition
      *
      * @param resource the resource
      * @throws DeadlockDetectedException if a deadlock is detected, or prevented rather
      * @throws IllegalResourceException if an illegal resource is supplied
+     * @return true is lock was acquired, false otherwise
      */
-    void getWriteLock( Object resource, Object tx )
+    boolean getWriteLock( Object resource, Object tx )
             throws DeadlockDetectedException, IllegalResourceException;
 
     /**
@@ -88,6 +97,7 @@ public interface LockManager
      *
      * @param resource the resource
      * @throws IllegalResourceException if an illegal resource is supplied
+     * @return true is lock was acquired, false otherwise
      */
     boolean tryWriteLock( Object resource, Object tx )
             throws IllegalResourceException;
@@ -114,13 +124,13 @@ public interface LockManager
 
     /**
      * @return number of deadlocks that have been detected and prevented.
-     * @see #getWriteLock(Object, Transaction) and {@link #getReadLock(Object, Transaction)}.
+     * @see #getWriteLock(Object, Object) and {@link #getReadLock(Object, Object)}.
      */
     long getDetectedDeadlockCount();
 
     /**
      * Utility method for debugging. Dumps info to {@code logger} about txs having locks on resources.
      */
-    public void dumpLocksOnResource( final Object resource, Logger logger );
+    void dumpLocksOnResource( final Object resource, Logger logger );
 
 }
