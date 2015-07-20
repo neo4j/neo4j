@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Array;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,13 +38,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.collection.pool.Pool;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -55,7 +51,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.NullLogProvider;
@@ -75,16 +70,11 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIterator;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
-import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
-import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.function.Functions.constant;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -94,7 +84,6 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.sta
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.actual;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.strings;
 import static org.neo4j.unsafe.impl.batchimport.staging.ProcessorAssignmentStrategies.eagerRandomSaturation;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 
 @RunWith( Parameterized.class )
 public class ParallelBatchImporterTest
@@ -125,35 +114,32 @@ public class ParallelBatchImporterTest
             return random.intBetween( cores, cores + 100 );
         }
     };
-    private final Function<Configuration,WriterFactory> writerFactory;
     private final InputIdGenerator inputIdGenerator;
     private final IdMapper idMapper;
     private final IdGenerator idGenerator;
     private final boolean multiPassIterators;
 
-    @Parameterized.Parameters(name = "{0},{1},{2},{4}")
+    @Parameterized.Parameters(name = "{0},{1},{3}")
     public static Collection<Object[]> data()
     {
         return Arrays.<Object[]>asList(
 
                 // synchronous I/O, actual node id input
-                new Object[]{SYNCHRONOUS, new LongInputIdGenerator(), actual(), fromInput(), true},
+                new Object[]{new LongInputIdGenerator(), actual(), fromInput(), true},
                 // synchronous I/O, string id input
-                new Object[]{SYNCHRONOUS, new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(), true},
+                new Object[]{new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(), true},
                 // synchronous I/O, string id input
-                new Object[]{SYNCHRONOUS, new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(), false},
+                new Object[]{new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(), false},
                 // extra slow parallel I/O, actual node id input
-                new Object[]{new IoQueue( 4, 4, 30, synchronousSlowWriterFactory ),
-                        new LongInputIdGenerator(), actual(), fromInput(), false}
+                new Object[]{new LongInputIdGenerator(), actual(), fromInput(), false}
 
         );
     }
 
-    public ParallelBatchImporterTest( WriterFactory writerFactory, InputIdGenerator inputIdGenerator,
+    public ParallelBatchImporterTest( InputIdGenerator inputIdGenerator,
             IdMapper idMapper, IdGenerator idGenerator, boolean multiPassIterators )
     {
         this.multiPassIterators = multiPassIterators;
-        this.writerFactory = constant( writerFactory );
         this.inputIdGenerator = inputIdGenerator;
         this.idMapper = idMapper;
         this.idGenerator = idGenerator;
@@ -166,7 +152,7 @@ public class ParallelBatchImporterTest
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
         final BatchImporter inserter = new ParallelBatchImporter( directory.graphDbDir(),
                 new DefaultFileSystemAbstraction(), config, NullLogService.getInstance(),
-                processorAssigner, writerFactory, EMPTY );
+                processorAssigner, EMPTY );
 
         boolean successful = false;
         IdGroupDistribution groups = new IdGroupDistribution( NODE_COUNT, 5, random.random() );
@@ -465,46 +451,6 @@ public class ParallelBatchImporterTest
             assertEquals( input + ", " + entity + " for key:" + key, expected, array );
         }
     }
-
-    private static WriterFactory synchronousSlowWriterFactory = new WriterFactories.SingleThreadedWriterFactory()
-    {
-        @Override
-        public Writer create( final StoreChannel channel, final Monitor monitor )
-        {
-            return new Writer()
-            {
-                final Writer delegate = SYNCHRONOUS.create( channel, monitor );
-                final Random random = new Random();
-
-                @Override
-                public void write( ByteBuffer data, long position, Pool<ByteBuffer> pool )
-                        throws IOException
-                {
-                    if ( random.nextInt( 7 ) == 0 )
-                    {
-                        LockSupport.parkNanos( random.nextInt( 500 ) * 1_000_000 ); // slowness comes from here
-                    }
-                    delegate.write( data, position, pool );
-                }
-            };
-        }
-
-        @Override
-        public void awaitEverythingWritten()
-        { //noop
-        }
-
-        @Override
-        public void shutdown()
-        { //noop
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Randomly slow";
-        }
-    };
 
     private InputIterable<InputRelationship> relationships( final long randomSeed, final long count,
             final InputIdGenerator idGenerator, final IdGroupDistribution groups )
