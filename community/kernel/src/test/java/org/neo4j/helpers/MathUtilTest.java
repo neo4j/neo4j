@@ -17,19 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3
+package org.neo4j.helpers;
 
-object CypherValueOrdering extends Ordering[Any] {
+import org.junit.Test;
 
-  override def compare(x: Any, y: Any) = (x, y) match {
-    case (null, null) => 0
-    case (null, _) => +1
-    case (_, null) => -1
-    case (l: Number, r: Number) => CypherNumberOrdering.compare(l, r)
-    case (l: String, r: String) => l.compareTo(r)
-    case (l: Character, r: String) => l.toString.compareTo(r)
-    case (l: String, r: Character) => l.compareTo(r.toString)
-    case (l: Character, r: Character) => Character.compare(l, r)
-    case _ => throw new IllegalArgumentException(s"Cannot compare '$x' with '$y'. They are incomparable.")
-  }
+import static org.junit.Assert.*;
+
+import static org.neo4j.helpers.MathUtil.numbersEqual;
+
+public class MathUtilTest
+{
+    @Test
+    public void numbersEqualShouldAlwaysBeFalseWhenComparingAgainstDoubleNaN()
+    {
+        assertFalse( numbersEqual( Double.NaN, 0 ) );
+    }
+
+    @Test
+    public void numbersEqualShouldAlwaysBeFalseWhenComparingAgainstInfinities()
+    {
+        assertFalse( numbersEqual( Double.NEGATIVE_INFINITY, Long.MIN_VALUE ) );
+        assertFalse( numbersEqual( Double.POSITIVE_INFINITY, Long.MAX_VALUE ) );
+    }
 }

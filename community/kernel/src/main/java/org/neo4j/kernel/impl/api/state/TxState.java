@@ -69,6 +69,7 @@ import org.neo4j.kernel.impl.util.diffsets.RelationshipDiffSets;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.api.properties.Property.numberProperty;
 
 /**
  * This class contains transaction-local changes to the graph. These changes can then be used to augment reads from the
@@ -1191,21 +1192,118 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<Long> indexUpdates( IndexDescriptor descriptor, Object value )
+    public ReadableDiffSets<Long> indexUpdatesForScanOrSeek( IndexDescriptor descriptor, Object value )
     {
         return ReadableDiffSets.Empty.ifNull( (value == null) ?
-                getIndexUpdates( descriptor.getLabelId(), descriptor.getPropertyKeyId() ) :
-                getIndexUpdates( descriptor.getLabelId(), /*create=*/false,
-                        Property.property( descriptor.getPropertyKeyId(), value ) ) );
+            getIndexUpdatesForScanOrSeek(
+                    descriptor.getLabelId(),
+                    descriptor.getPropertyKeyId()
+            )
+            :
+            getIndexUpdatesForScanOrSeek(
+                    descriptor.getLabelId(), /*create=*/false,
+                    Property.property( descriptor.getPropertyKeyId(), value )
+            )
+        );
     }
 
     @Override
-    public ReadableDiffSets<Long> indexUpdatesForPrefix( IndexDescriptor descriptor, String prefix )
+    public ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( IndexDescriptor descriptor,
+                                                                    Number lower, boolean includeLower,
+                                                                    Number upper, boolean includeUpper )
     {
-        return ReadableDiffSets.Empty.ifNull( getIndexUpdatesForPrefix( descriptor, prefix ) );
+        return ReadableDiffSets.Empty.ifNull(
+            getIndexUpdatesForRangeSeekByNumber( descriptor, lower, includeLower, upper, includeUpper )
+        );
     }
 
-    private ReadableDiffSets<Long> getIndexUpdatesForPrefix( IndexDescriptor descriptor, String prefix )
+    private ReadableDiffSets<Long> getIndexUpdatesForRangeSeekByNumber( IndexDescriptor descriptor,
+                                                                        Number lower, boolean includeLower,
+                                                                        Number upper, boolean includeUpper )
+    {
+        TreeMap<DefinedProperty, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor );
+        if ( sortedUpdates == null )
+        {
+            return null;
+        }
+
+        DefinedProperty selectedLower;
+        boolean selectedIncludeLower;
+
+        DefinedProperty selectedUpper;
+        boolean selectedIncludeUpper;
+
+        int propertyKeyId = descriptor.getPropertyKeyId();
+
+        if ( lower == null )
+        {
+            selectedLower = DefinedProperty.doubleProperty( propertyKeyId, Double.NEGATIVE_INFINITY  );
+            selectedIncludeLower = true;
+        }
+        else
+        {
+            selectedLower = numberProperty( propertyKeyId, lower );
+            selectedIncludeLower = includeLower;
+        }
+
+        if ( upper == null )
+        {
+            selectedUpper = DefinedProperty.doubleProperty( propertyKeyId, Double.NaN  );
+            selectedIncludeUpper = true;
+        }
+        else
+        {
+            selectedUpper = numberProperty( propertyKeyId, upper );
+            selectedIncludeUpper = includeUpper;
+        }
+
+        DiffSets<Long> diffs = new DiffSets<>();
+        for ( Map.Entry<DefinedProperty,DiffSets<Long>> entry : sortedUpdates.subMap( selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper ).entrySet() )
+        {
+            DiffSets<Long> diffSets = entry.getValue();
+            diffs.addAll( diffSets.getAdded().iterator() );
+            diffs.removeAll( diffSets.getRemoved().iterator() );
+        }
+        return diffs;
+    }
+
+    @Override
+    public ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( IndexDescriptor descriptor, String prefix )
+    {
+        return ReadableDiffSets.Empty.ifNull( getIndexUpdatesForRangeSeekByPrefix( descriptor, prefix ) );
+    }
+
+    private ReadableDiffSets<Long> getIndexUpdatesForRangeSeekByPrefix( IndexDescriptor descriptor, String prefix )
+    {
+        TreeMap<DefinedProperty, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor );
+        if ( sortedUpdates == null )
+        {
+            return null;
+        }
+        int propertyKeyId = descriptor.getPropertyKeyId();
+        DefinedProperty floor = Property.stringProperty( propertyKeyId, prefix );
+        DiffSets<Long> diffs = new DiffSets<>();
+        for ( Map.Entry<DefinedProperty,DiffSets<Long>> entry : sortedUpdates.tailMap( floor ).entrySet() )
+        {
+            DefinedProperty key = entry.getKey();
+            if ( key.propertyKeyId() == propertyKeyId && key.value().toString().startsWith( prefix ) )
+            {
+                DiffSets<Long> diffSets = entry.getValue();
+                diffs.addAll( diffSets.getAdded().iterator() );
+                diffs.removeAll( diffSets.getRemoved().iterator() );
+            }
+            else
+            {
+                break;
+            }
+        }
+        return diffs;
+    }
+
+    // Ensure sorted index updates for a given index. This is needed for range query support and
+    // may involve converting the existing hash map first
+    //
+    private TreeMap<DefinedProperty, DiffSets<Long>> getSortedIndexUpdates( IndexDescriptor descriptor )
     {
         if ( indexUpdates == null )
         {
@@ -1223,33 +1321,18 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
         else
         {
-            sortedUpdates = new TreeMap<>();
+            sortedUpdates = new TreeMap<>( DefinedProperty.COMPARATOR );
             sortedUpdates.putAll( updates );
             indexUpdates.put( descriptor.getLabelId(), sortedUpdates );
         }
-        DiffSets<Long> diffs = new DiffSets<>();
-        DefinedProperty floor = Property.stringProperty( descriptor.getPropertyKeyId(), prefix );
-        for ( Map.Entry<DefinedProperty,DiffSets<Long>> entry : sortedUpdates.tailMap( floor ).entrySet() )
-        {
-            if ( entry.getKey().value().toString().startsWith( prefix ) )
-            {
-                DiffSets<Long> diffSets = entry.getValue();
-                diffs.addAll( diffSets.getAdded().iterator() );
-                diffs.removeAll( diffSets.getRemoved().iterator() );
-            }
-            else
-            {
-                break;
-            }
-        }
-        return diffs;
+        return sortedUpdates;
     }
 
     @Override
     public void indexDoUpdateProperty( IndexDescriptor descriptor, long nodeId,
             DefinedProperty propertyBefore, DefinedProperty propertyAfter )
     {
-        DiffSets<Long> before = getIndexUpdates( descriptor.getLabelId(), true, propertyBefore );
+        DiffSets<Long> before = getIndexUpdatesForScanOrSeek( descriptor.getLabelId(), true, propertyBefore );
         if ( before != null )
         {
             before.remove( nodeId );
@@ -1263,7 +1346,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             }
         }
 
-        DiffSets<Long> after = getIndexUpdates( descriptor.getLabelId(), true, propertyAfter );
+        DiffSets<Long> after = getIndexUpdatesForScanOrSeek( descriptor.getLabelId(), true, propertyAfter );
         if ( after != null )
         {
             after.add( nodeId );
@@ -1278,7 +1361,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
     }
 
-    private DiffSets<Long> getIndexUpdates( int label, boolean create, DefinedProperty property )
+    private DiffSets<Long> getIndexUpdatesForScanOrSeek( int label, boolean create, DefinedProperty property )
     {
         if ( property == null )
         {
@@ -1309,7 +1392,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return diffs;
     }
 
-    private DiffSets<Long> getIndexUpdates( int label, int propertyKeyId )
+    private DiffSets<Long> getIndexUpdatesForScanOrSeek( int label, int propertyKeyId )
     {
         if ( indexUpdates == null )
         {

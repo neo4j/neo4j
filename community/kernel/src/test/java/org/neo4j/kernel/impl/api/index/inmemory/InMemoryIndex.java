@@ -94,7 +94,7 @@ class InMemoryIndex
 
     protected final PrimitiveLongIterator indexSeek( Object propertyValue )
     {
-        return indexData.indexSeek( propertyValue );
+        return indexData.seek( propertyValue );
     }
 
     protected boolean add( long nodeId, Object propertyValue, boolean applyIdempotently )

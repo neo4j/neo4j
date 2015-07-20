@@ -20,36 +20,24 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 // Tested by SeekRangeTest
-sealed trait BoundOrdering[T] extends Ordering[Bound[T]] {
-  def inner: Ordering[T]
-
+final case class MinBoundOrdering[T](inner: Ordering[T]) extends Ordering[Bound[T]] {
   override def compare(x: Bound[T], y: Bound[T]): Int = {
-    val lhs = x.endPoint
-    val rhs = y.endPoint
-
-    val cmp =
-      if (lhs == null) {
-        if (rhs == null) 0 else flip(-1)
-      } else if (rhs == null) {
-        flip(+1)
-      } else {
-        inner.compare(lhs, rhs)
-      }
-
+    val cmp = inner.compare(x.endPoint, y.endPoint)
     if (cmp == 0)
-      flip(Ordering.Boolean.compare(x.isInclusive, y.isInclusive))
+      Ordering.Boolean.compare(x.isInclusive, y.isInclusive)
     else
       cmp
   }
-
-  def flip(cmp: Int): Int
 }
 
-final case class MinBoundOrdering[T](inner: Ordering[T]) extends BoundOrdering[T] {
-  def flip(cmp: Int): Int = cmp
-}
-
-final case class MaxBoundOrdering[T](inner: Ordering[T]) extends BoundOrdering[T] {
-  def flip(cmp: Int): Int = -cmp
+// Tested by SeekRangeTest
+final case class MaxBoundOrdering[T](inner: Ordering[T]) extends Ordering[Bound[T]] {
+  override def compare(x: Bound[T], y: Bound[T]): Int = {
+    val cmp = inner.compare(x.endPoint, y.endPoint)
+    if (cmp == 0)
+      Ordering.Boolean.compare(y.isInclusive, x.isInclusive)
+    else
+      cmp
+  }
 }
 

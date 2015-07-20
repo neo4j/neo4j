@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
-class PropertyValueTest extends CypherFunSuite {
+class PropertyValueComparisonTest extends CypherFunSuite {
 
   private val expectedNull = null.asInstanceOf[Any]
 

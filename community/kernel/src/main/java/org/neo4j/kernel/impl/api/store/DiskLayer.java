@@ -485,17 +485,29 @@ public class DiskLayer implements StoreReadLayer
             Object value ) throws IndexNotFoundKernelException
     {
         IndexReader reader = state.getIndexReader( index );
-        return reader.indexSeek( value );
+        return reader.seek( value );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state,
-            IndexDescriptor index,
-            String prefix )
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement statement,
+                                                                     IndexDescriptor index,
+                                                                     Number lower, boolean includeLower,
+                                                                     Number upper, boolean includeUpper )
+            throws IndexNotFoundKernelException
+
+    {
+        IndexReader reader = statement.getIndexReader( index );
+        return reader.rangeSeekByNumber( lower, includeLower, upper, includeUpper );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
+                                                                     IndexDescriptor index,
+                                                                     String prefix )
             throws IndexNotFoundKernelException
     {
         IndexReader reader = state.getIndexReader( index );
-        return reader.indexSeekByPrefix( prefix );
+        return reader.rangeSeekByPrefix( prefix );
     }
 
     @Override
@@ -705,7 +717,7 @@ public class DiskLayer implements StoreReadLayer
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
         IndexReader reader = state.getFreshIndexReader( descriptor );
-        return resourceIterator( reader.indexSeek( value ), reader );
+        return resourceIterator( reader.seek( value ), reader );
     }
 
     @Override

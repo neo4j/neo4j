@@ -78,28 +78,9 @@ final class  StringProperty extends DefinedProperty implements DefinedProperty.W
         return false;
     }
 
-    protected TypeClassification typeClassification()
-    {
-        return TypeClassification.STRING;
-    }
-
     @Override
     public String stringValue()
     {
         return value;
-    }
-
-    @Override
-    int compareByValue( DefinedProperty other )
-    {
-        if ( other instanceof WithStringValue )
-        {
-            WithStringValue that = (WithStringValue) other;
-            return this.stringValue().compareTo( that.stringValue() );
-        }
-        else
-        {
-            return super.compareByValue( other );
-        }
     }
 }

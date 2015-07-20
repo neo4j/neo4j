@@ -498,7 +498,7 @@ public class IndexingAcceptanceTest
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations ops = statement.readOperations();
             IndexDescriptor descriptor = indexDescriptor( ops, index );
-            found.addAll( ops.nodesGetFromIndexSeekByPrefix( descriptor, "Karl" ) );
+            found.addAll( ops.nodesGetFromIndexRangeSeekByPrefix( descriptor, "Karl" ) );
         }
 
         // THEN
@@ -523,7 +523,7 @@ public class IndexingAcceptanceTest
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
             IndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            found.addAll( readOperations.nodesGetFromIndexSeekByPrefix( descriptor, "Karl" ) );
+            found.addAll( readOperations.nodesGetFromIndexRangeSeekByPrefix( descriptor, "Karl" ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -553,7 +553,7 @@ public class IndexingAcceptanceTest
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
             IndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            found.addAll( readOperations.nodesGetFromIndexSeekByPrefix( descriptor, "Karl" ) );
+            found.addAll( readOperations.nodesGetFromIndexRangeSeekByPrefix( descriptor, "Karl" ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -592,7 +592,7 @@ public class IndexingAcceptanceTest
             Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations readOperations = statement.readOperations();
             IndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            found.addAll( readOperations.nodesGetFromIndexSeekByPrefix( descriptor, prefix ) );
+            found.addAll( readOperations.nodesGetFromIndexRangeSeekByPrefix( descriptor, prefix ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );

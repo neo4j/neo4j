@@ -43,7 +43,7 @@ class AllNodesCollector extends Collector
         {
             List<Long> nodes = new ArrayList<>();
             LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
-            Query query = documentStructure.newValueQuery( propertyValue );
+            Query query = documentStructure.newSeekQuery( propertyValue );
             searcher.search( query, new AllNodesCollector( documentStructure, nodes ) );
             return nodes;
         }

@@ -95,7 +95,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
             IndexSearcher searcher = searcherManager.acquire();
             try
             {
-                TopDocs docs = searcher.search( documentStructure.newValueQuery( propertyValue ), 1 );
+                TopDocs docs = searcher.search( documentStructure.newSeekQuery( propertyValue ), 1 );
                 if ( docs.totalHits > 0 )
                 {
                     Document doc = searcher.getIndexReader().document( docs.scoreDocs[0].doc );

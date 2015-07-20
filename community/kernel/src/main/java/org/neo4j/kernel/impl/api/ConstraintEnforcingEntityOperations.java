@@ -246,10 +246,20 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeekByPrefix( KernelStatement state, IndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement statement,
+                                                                     IndexDescriptor index,
+                                                                     Number lower, boolean includeLower,
+                                                                     Number upper, boolean includeUpper )
+            throws IndexNotFoundKernelException {
+        return entityReadOperations.nodesGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper, includeUpper );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
+                                                                     IndexDescriptor index, String prefix )
+            throws IndexNotFoundKernelException
     {
-        return entityReadOperations.nodesGetFromIndexSeekByPrefix( state, index, prefix );
+        return entityReadOperations.nodesGetFromIndexRangeSeekByPrefix( state, index, prefix );
     }
 
     @Override
@@ -525,11 +535,22 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public NodeCursor nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement,
-            IndexDescriptor index,
-            String prefix ) throws IndexNotFoundKernelException
+    public NodeCursor nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
+                                                               IndexDescriptor index,
+                                                               Number lower, boolean includeLower,
+                                                               Number upper, boolean includeUpper )
+            throws IndexNotFoundKernelException
+
     {
-        return entityReadOperations.nodeCursorGetFromIndexSeekByPrefix( statement, index, prefix );
+        return entityReadOperations.nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper, includeUpper );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexRangeSeekByPrefix( KernelStatement statement,
+                                                               IndexDescriptor index,
+                                                               String prefix ) throws IndexNotFoundKernelException
+    {
+        return entityReadOperations.nodeCursorGetFromIndexRangeSeekByPrefix( statement, index, prefix );
     }
 
     @Override

@@ -23,6 +23,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.EMPTY_LIST;
+import static java.util.Collections.singletonList;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
@@ -71,7 +74,24 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     }
 
     @Test
-    public void testIndexSeekByPrefixWithDuplicates() throws Exception
+    public void testIndexRangeSeekByNumberWithDuplicates() throws Exception
+    {
+        updateAndCommit( asList(
+                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, -5, new long[]{1000} ),
+                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, -5, new long[]{1000} ),
+                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, 0, new long[]{1000} ),
+                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, 5, new long[]{1000} ),
+                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, 5, new long[]{1000} ) ) );
+
+        assertThat( getAllNodesFromIndexSeekByNumber( -5, false, 5, false ), equalTo( singletonList( 3L ) ) );
+        assertThat( getAllNodesFromIndexSeekByNumber( -3, false, 0, false ), equalTo( EMPTY_LIST ) );
+        assertThat( getAllNodesFromIndexSeekByNumber( -5, true, 5, false ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( getAllNodesFromIndexSeekByNumber( -5, false, 5, true ), equalTo( asList( 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromIndexSeekByNumber( -5, true, 5, true ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+    }
+
+    @Test
+    public void testIndexRangeSeekByPrefixWithDuplicates() throws Exception
     {
         updateAndCommit( asList(
                 NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),

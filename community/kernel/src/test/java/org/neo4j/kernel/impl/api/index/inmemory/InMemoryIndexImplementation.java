@@ -33,7 +33,7 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
     abstract void drop();
 
     @Override
-    public final PrimitiveLongIterator indexSeek( Object value )
+    public final PrimitiveLongIterator seek( Object value )
     {
         return doIndexSeek( encode( value ) );
     }

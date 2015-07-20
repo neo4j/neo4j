@@ -35,6 +35,9 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.EMPTY_LIST;
+import static java.util.Collections.singletonList;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
@@ -70,6 +73,27 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     }
 
     @Test
+    public void testIndexSeekByNumber() throws Exception
+    {
+        updateAndCommit( asList(
+                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, -5, new long[]{1000} ),
+                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, 0, new long[]{1000} ),
+                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, 5.5, new long[]{1000} ),
+                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, 10.0, new long[]{1000} ),
+                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, 100.0, new long[]{1000} ) ) );
+
+        assertThat( getAllNodesFromIndexSeekByNumber( 0, true, 10, false ), equalTo( asList( 2L, 3L ) ) );
+        assertThat( getAllNodesFromIndexSeekByNumber( 10, true, null, false ), equalTo( asList( 4L, 5L ) ) );
+        assertThat( getAllNodesFromIndexSeekByNumber( 10, false, null, true ), equalTo( singletonList( 5L ) ) );
+        assertThat( getAllNodesFromIndexSeekByNumber( 100, false, 0, true ), equalTo( EMPTY_LIST ) );
+        assertThat( getAllNodesFromIndexSeekByNumber( null, false, 5.5, false ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( getAllNodesFromIndexSeekByNumber( null, true, 5.5, true ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( getAllNodesFromIndexSeekByNumber( null, true, null, true ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromIndexSeekByNumber( -5, false, 0, true ), equalTo( singletonList( 2L ) ) );
+        assertThat( getAllNodesFromIndexSeekByNumber( -5, false, 5.5, false ), equalTo( singletonList( 2L ) ) );
+    }
+
+    @Test
     public void testIndexSeekByPrefix() throws Exception
     {
         updateAndCommit( asList(
@@ -81,7 +105,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 
         assertThat( getAllNodesFromIndexSeekByPrefix( "a" ), equalTo( asList( 1L, 3L, 4L ) ) );
         assertThat( getAllNodesFromIndexSeekByPrefix( "A" ), equalTo( asList( 2L ) ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "ba" ), equalTo( Collections.EMPTY_LIST ) );
+        assertThat( getAllNodesFromIndexSeekByPrefix( "ba" ), equalTo( EMPTY_LIST ) );
         assertThat( getAllNodesFromIndexSeekByPrefix( "" ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
     }
 
@@ -91,7 +115,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         updateAndCommit( asList(
                 NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
                 NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, 2L, new long[]{1000} ) ) );
-        assertThat( getAllNodesFromIndexSeekByPrefix( "2" ), equalTo( Collections.EMPTY_LIST ) );
+        assertThat( getAllNodesFromIndexSeekByPrefix( "2" ), equalTo( EMPTY_LIST ) );
     }
 
     protected List<Long> getAllNodesWithProperty( String propertyValue ) throws IOException
@@ -99,7 +123,21 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         try ( IndexReader reader = accessor.newReader() )
         {
             List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.indexSeek( propertyValue ); iterator.hasNext(); )
+            for ( PrimitiveLongIterator iterator = reader.seek( propertyValue ); iterator.hasNext(); )
+            {
+                list.add( iterator.next() );
+            }
+            Collections.sort( list );
+            return list;
+        }
+    }
+
+    protected List<Long> getAllNodesFromIndexSeekByNumber( Number lower, boolean includeLower, Number upper, boolean includeUpper ) throws IOException
+    {
+        try ( IndexReader reader = accessor.newReader() )
+        {
+            List<Long> list = new LinkedList<>();
+            for ( PrimitiveLongIterator iterator = reader.rangeSeekByNumber( lower, includeLower, upper, includeUpper ); iterator.hasNext(); )
             {
                 list.add( iterator.next() );
             }
@@ -113,7 +151,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         try ( IndexReader reader = accessor.newReader() )
         {
             List<Long> list = new LinkedList<>();
-            for ( PrimitiveLongIterator iterator = reader.indexSeekByPrefix( prefix ); iterator.hasNext(); )
+            for ( PrimitiveLongIterator iterator = reader.rangeSeekByPrefix( prefix ); iterator.hasNext(); )
             {
                 list.add( iterator.next() );
             }

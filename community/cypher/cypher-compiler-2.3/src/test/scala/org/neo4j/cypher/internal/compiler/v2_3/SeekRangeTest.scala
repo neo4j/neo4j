@@ -24,80 +24,80 @@ import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class SeekRangeTest extends CypherFunSuite {
 
-  implicit val ordering = CypherValueOrdering
+  implicit val ordering = MinMaxOrdering.BY_NUMBER
 
   test("Computes correct limit for less than") {
-    RangeLessThan(NonEmptyList(InclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(3)))
-    RangeLessThan(NonEmptyList(InclusiveBound(3), ExclusiveBound(4))).limit should equal(Some(InclusiveBound(3)))
-    RangeLessThan(NonEmptyList(ExclusiveBound(3), InclusiveBound(4))).limit should equal(Some(ExclusiveBound(3)))
-    RangeLessThan(NonEmptyList(ExclusiveBound(3), InclusiveBound(3))).limit should equal(Some(ExclusiveBound(3)))
-    RangeLessThan(NonEmptyList(ExclusiveBound(3), InclusiveBound(null))).limit should equal(None)
-    RangeLessThan(NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
+    RangeLessThan[Number](NonEmptyList(InclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(3)))
+    RangeLessThan[Number](NonEmptyList(InclusiveBound(3), ExclusiveBound(4))).limit should equal(Some(InclusiveBound(3)))
+    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(4))).limit should equal(Some(ExclusiveBound(3)))
+    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(3))).limit should equal(Some(ExclusiveBound(3)))
+    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(null))).limit should equal(None)
+    RangeLessThan[Number](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
 
   test("Computes inclusion for less than") {
-    RangeLessThan(NonEmptyList(InclusiveBound(3))).includes(2) should be(right = true)
-    RangeLessThan(NonEmptyList(ExclusiveBound(3))).includes(2) should be(right = true)
-    RangeLessThan(NonEmptyList(InclusiveBound(3))).includes(3) should be(right = true)
-    RangeLessThan(NonEmptyList(ExclusiveBound(3))).includes(3) should be(right = false)
-    RangeLessThan(NonEmptyList(InclusiveBound(3))).includes(4) should be(right = false)
-    RangeLessThan(NonEmptyList(ExclusiveBound(3))).includes(4) should be(right = false)
+    RangeLessThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](2) should be(right = true)
+    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](2) should be(right = true)
+    RangeLessThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](3) should be(right = true)
+    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](3) should be(right = false)
+    RangeLessThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](4) should be(right = false)
+    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](4) should be(right = false)
 
-    RangeLessThan(NonEmptyList(InclusiveBound(null))).includes(null) should be(right = false)
-    RangeLessThan(NonEmptyList(ExclusiveBound(null))).includes(null) should be(right = false)
-    RangeLessThan(NonEmptyList(InclusiveBound(null))).includes(3) should be(right = false)
-    RangeLessThan(NonEmptyList(ExclusiveBound(null))).includes(3) should be(right = false)
-    RangeLessThan(NonEmptyList(InclusiveBound(3))).includes(null) should be(right = false)
-    RangeLessThan(NonEmptyList(ExclusiveBound(3))).includes(null) should be(right = false)
+    RangeLessThan[Number](NonEmptyList(InclusiveBound(null))).includes[Number](null) should be(right = false)
+    RangeLessThan[Number](NonEmptyList(ExclusiveBound(null))).includes[Number](null) should be(right = false)
+    RangeLessThan[Number](NonEmptyList(InclusiveBound(null))).includes[Number](3) should be(right = false)
+    RangeLessThan[Number](NonEmptyList(ExclusiveBound(null))).includes[Number](3) should be(right = false)
+    RangeLessThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](null) should be(right = false)
+    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](null) should be(right = false)
   }
 
   test("Computes correct limit for greater than") {
-    RangeGreaterThan(NonEmptyList(InclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(4)))
-    RangeGreaterThan(NonEmptyList(InclusiveBound(3), ExclusiveBound(4))).limit should equal(Some(ExclusiveBound(4)))
-    RangeGreaterThan(NonEmptyList(ExclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(4)))
-    RangeGreaterThan(NonEmptyList(ExclusiveBound(3), InclusiveBound(3))).limit should equal(Some(ExclusiveBound(3)))
-    RangeGreaterThan(NonEmptyList(ExclusiveBound(3), InclusiveBound(null))).limit should equal(None)
-    RangeGreaterThan(NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
+    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(4)))
+    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3), ExclusiveBound(4))).limit should equal(Some(ExclusiveBound(4)))
+    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(4)))
+    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(3))).limit should equal(Some(ExclusiveBound(3)))
+    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(null))).limit should equal(None)
+    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
 
   test("Computes inclusion for greater than") {
-    RangeGreaterThan(NonEmptyList(InclusiveBound(3))).includes(2) should be(right = false)
-    RangeGreaterThan(NonEmptyList(ExclusiveBound(3))).includes(2) should be(right = false)
-    RangeGreaterThan(NonEmptyList(InclusiveBound(3))).includes(3) should be(right = true)
-    RangeGreaterThan(NonEmptyList(ExclusiveBound(3))).includes(3) should be(right = false)
-    RangeGreaterThan(NonEmptyList(InclusiveBound(3))).includes(4) should be(right = true)
-    RangeGreaterThan(NonEmptyList(ExclusiveBound(3))).includes(4) should be(right = true)
+    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](2) should be(right = false)
+    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](2) should be(right = false)
+    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](3) should be(right = true)
+    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](3) should be(right = false)
+    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](4) should be(right = true)
+    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](4) should be(right = true)
 
-    RangeGreaterThan(NonEmptyList(InclusiveBound(null))).includes(null) should be(right = false)
-    RangeGreaterThan(NonEmptyList(ExclusiveBound(null))).includes(null) should be(right = false)
-    RangeGreaterThan(NonEmptyList(InclusiveBound(null))).includes(3) should be(right = false)
-    RangeGreaterThan(NonEmptyList(ExclusiveBound(null))).includes(3) should be(right = false)
-    RangeGreaterThan(NonEmptyList(InclusiveBound(3))).includes(null) should be(right = false)
-    RangeGreaterThan(NonEmptyList(ExclusiveBound(3))).includes(null) should be(right = false)
+    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(null))).includes[Number](null) should be(right = false)
+    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(null))).includes[Number](null) should be(right = false)
+    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(null))).includes[Number](3) should be(right = false)
+    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(null))).includes[Number](3) should be(right = false)
+    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](null) should be(right = false)
+    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](null) should be(right = false)
   }
 
   test("Computes inclusion for range between") {
     val range = RangeBetween(
-      RangeGreaterThan(NonEmptyList(InclusiveBound(3))),
-      RangeLessThan(NonEmptyList(ExclusiveBound(5)))
+      RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))),
+      RangeLessThan[Number](NonEmptyList(ExclusiveBound(5)))
     )
 
-    range.includes(2) should be(right = false)
-    range.includes(3) should be(right = true)
-    range.includes(4) should be(right = true)
-    range.includes(5) should be(right = false)
-    range.includes(6) should be(right = false)
+    range.includes[Number](2) should be(right = false)
+    range.includes[Number](3) should be(right = true)
+    range.includes[Number](4) should be(right = true)
+    range.includes[Number](5) should be(right = false)
+    range.includes[Number](6) should be(right = false)
 
     RangeBetween(
-      RangeGreaterThan(NonEmptyList(InclusiveBound(null))),
-      RangeLessThan(NonEmptyList(ExclusiveBound(5)))
-    ).includes(4) should be(right = false)
+      RangeGreaterThan[Number](NonEmptyList(InclusiveBound(null))),
+      RangeLessThan[Number](NonEmptyList(ExclusiveBound(5)))
+    ).includes[Number](4) should be(right = false)
 
     RangeBetween(
-      RangeGreaterThan(NonEmptyList(InclusiveBound(3))),
-      RangeLessThan(NonEmptyList(ExclusiveBound(null)))
-    ).includes(4) should be(right = false)
+      RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))),
+      RangeLessThan[Number](NonEmptyList(ExclusiveBound(null)))
+    ).includes[Number](4) should be(right = false)
 
-    range.includes(null) should be(right = false)
+    range.includes[Number](null) should be(right = false)
   }
 }

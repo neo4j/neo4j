@@ -36,10 +36,10 @@ sealed trait InequalitySeekRange[+V] extends SeekRange[V] {
 
   def groupBy[K](f: Bound[V] => K): Map[K, InequalitySeekRange[V]]
 
-  def includes[X >: V](value: X)(implicit ordering: Ordering[X]): Boolean =
+  def includes[X >: V](value: X)(implicit ordering: MinMaxOrdering[X]): Boolean =
     inclusionTest[X](ordering).exists(_(value))
 
-  def inclusionTest[X >: V](implicit ordering: Ordering[X]): Option[X => Boolean]
+  def inclusionTest[X >: V](implicit ordering: MinMaxOrdering[X]): Option[X => Boolean]
 }
 
 sealed trait HalfOpenSeekRange[+V] extends InequalitySeekRange[V] {
@@ -47,12 +47,12 @@ sealed trait HalfOpenSeekRange[+V] extends InequalitySeekRange[V] {
 
   override def mapBounds[P](f: V => P): HalfOpenSeekRange[P]
 
-  def limit[X >: V](implicit ordering: Ordering[X]): Option[Bound[X]] =
+  def limit[X >: V](implicit ordering: MinMaxOrdering[X]): Option[Bound[X]] =
     boundLimit(boundOrdering(ordering))
 
   protected def boundLimit[X >: V](implicit ordering: Ordering[Bound[X]]): Option[Bound[X]]
 
-  protected def boundOrdering[X >: V](implicit ordering: Ordering[X]): Ordering[Bound[X]]
+  protected def boundOrdering[X >: V](implicit ordering: MinMaxOrdering[X]): Ordering[Bound[X]]
 }
 
 final case class RangeBetween[+V](greaterThan: RangeGreaterThan[V], lessThan: RangeLessThan[V]) extends InequalitySeekRange[V] {
@@ -71,7 +71,7 @@ final case class RangeBetween[+V](greaterThan: RangeGreaterThan[V], lessThan: Ra
     }
   }
 
-  override def inclusionTest[X >: V](implicit ordering: Ordering[X]): Option[X => Boolean] = {
+  override def inclusionTest[X >: V](implicit ordering: MinMaxOrdering[X]): Option[X => Boolean] = {
     (lessThan.inclusionTest[X](ordering), greaterThan.inclusionTest[X](ordering)) match {
       case (_, None) => None
       case (None, _) => None
@@ -88,14 +88,14 @@ final case class RangeGreaterThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRan
   override def groupBy[K](f: Bound[V] => K): Map[K, RangeGreaterThan[V]] =
     bounds.groupBy(f).mapValues(bounds => RangeGreaterThan(bounds))
 
-  override def inclusionTest[X >: V](implicit ordering: Ordering[X]): Option[X => Boolean] = {
+  override def inclusionTest[X >: V](implicit ordering: MinMaxOrdering[X]): Option[X => Boolean] = {
     limit[X].map { bound =>
       val endPoint = bound.endPoint
       (value: X) => {
         if (value == null || endPoint == null) {
           false
         } else {
-          val cmp = ordering.compare(value, endPoint)
+          val cmp = ordering.ordering.compare(value, endPoint)
           if (bound.isInclusive) cmp >= 0 else cmp > 0
         }
       }
@@ -107,8 +107,8 @@ final case class RangeGreaterThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRan
     if (limit.endPoint == null) None else Some(limit)
   }
 
-  protected def boundOrdering[X >: V](implicit ordering: Ordering[X]): Ordering[Bound[X]] =
-    MaxBoundOrdering(ordering)
+  protected def boundOrdering[X >: V](implicit ordering: MinMaxOrdering[X]): Ordering[Bound[X]] =
+    MaxBoundOrdering(ordering.forMax)
 }
 
 final case class RangeLessThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[V] {
@@ -119,14 +119,14 @@ final case class RangeLessThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[
   override def groupBy[K](f: Bound[V] => K): Map[K, RangeLessThan[V]] =
     bounds.groupBy(f).mapValues(bounds => RangeLessThan(bounds))
 
-  override def inclusionTest[X >: V](implicit ordering: Ordering[X]): Option[X => Boolean] = {
+  override def inclusionTest[X >: V](implicit ordering: MinMaxOrdering[X]): Option[X => Boolean] = {
     limit[X].map { bound =>
       val endPoint = bound.endPoint
       (value: X) => {
         if (value == null || endPoint == null) {
           false
         } else {
-          val cmp = ordering.compare(value, endPoint)
+          val cmp = ordering.ordering.compare(value, endPoint)
           if (bound.isInclusive) cmp <= 0 else cmp < 0
         }
       }
@@ -138,8 +138,8 @@ final case class RangeLessThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[
     if (limit.endPoint == null) None else Some(limit)
   }
 
-  protected def boundOrdering[X >: V](implicit ordering: Ordering[X]): Ordering[Bound[X]] =
-    MinBoundOrdering(ordering)
+  protected def boundOrdering[X >: V](implicit ordering: MinMaxOrdering[X]): Ordering[Bound[X]] =
+    MinBoundOrdering(ordering.forMin)
 }
 
 final case class PrefixRange(prefix: String) extends SeekRange[String]

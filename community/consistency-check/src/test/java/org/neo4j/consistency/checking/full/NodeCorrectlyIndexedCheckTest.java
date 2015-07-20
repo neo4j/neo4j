@@ -211,7 +211,7 @@ public class NodeCorrectlyIndexedCheckTest
             return new IndexReader()
             {
                 @Override
-                public PrimitiveLongIterator indexSeek( Object value )
+                public PrimitiveLongIterator seek( Object value )
                 {
                     if ( entries.containsKey( value ) )
                     {
@@ -221,7 +221,14 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
-                public PrimitiveLongIterator indexSeekByPrefix( String prefix )
+                public PrimitiveLongIterator rangeSeekByNumber( Number lower, boolean includeLower,
+                                                                Number upper, boolean includeUpper )
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
                 {
                     throw new UnsupportedOperationException();
                 }
@@ -241,7 +248,7 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
-                public int getIndexedCount( long nodeId, Object propertyValue )
+                public int countIndexedNodes( long nodeId, Object propertyValue )
                 {
                     long[] candidates = entries.get( propertyValue );
                     if ( candidates == null )

@@ -262,7 +262,7 @@ public class LuceneSchemaIndexPopulatorTest
 
         for ( Hit hit : expectedHits )
         {
-            TopDocs hits = searcher.search( documentLogic.newValueQuery( hit.value ), 10 );
+            TopDocs hits = searcher.search( documentLogic.newSeekQuery( hit.value ), 10 );
             assertEquals( "Unexpected number of index results from " + hit.value, hit.nodeIds.length, hits.totalHits );
             Set<Long> foundNodeIds = new HashSet<>();
             for ( int i = 0; i < hits.totalHits; i++ )

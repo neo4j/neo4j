@@ -17,32 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.properties;
+package org.neo4j.cypher.internal.compiler.v2_3
 
-import java.util.concurrent.Callable;
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.kernel.impl.api.PropertyValueComparison
 
-class LazyStringProperty extends LazyProperty<String> implements DefinedProperty.WithStringValue
-{
-    LazyStringProperty( int propertyKeyId, Callable<String> producer )
-    {
-        super( propertyKeyId, producer );
-    }
+class NullOrderingTest extends CypherFunSuite {
 
-    @Override
-    public boolean valueEquals( Object value )
-    {
-        return StringProperty.valueEquals( value(), value );
-    }
+  import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering._
 
-    @Override
-    int valueHash()
-    {
-        return value().hashCode();
-    }
+  val ordering = Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_NUMBERS)
 
-    @Override
-    public String stringValue()
-    {
-        return value();
-    }
+  test("Should be able to put nulls first") {
+    Seq[Number](null, 4.0d, -3, null, 12).sorted(ordering.withNullsFirst) should equal(Seq[Number](null, null, -3, 4.0d, 12))
+  }
+
+  test("Should be able to put nulls last") {
+    Seq[Number](null, 4.0d, -3, null, 12).sorted(ordering.withNullsLast) should equal(Seq[Number](-3, 4.0d, 12, null, null))
+  }
 }

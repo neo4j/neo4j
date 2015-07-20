@@ -96,6 +96,36 @@ public abstract class Property
         return new LazyArrayProperty( propertyKeyId, producer );
     }
 
+    public static DefinedProperty numberProperty( int propertyKeyId, Number number )
+    {
+        if (number instanceof Long)
+        {
+            return longProperty( propertyKeyId, number.longValue() );
+        }
+        if (number instanceof Integer)
+        {
+            return intProperty( propertyKeyId, number.intValue() );
+        }
+        if (number instanceof Double)
+        {
+            return doubleProperty( propertyKeyId, number.doubleValue() );
+        }
+        if (number instanceof Byte)
+        {
+            return byteProperty( propertyKeyId, number.byteValue() );
+        }
+        if (number instanceof Float)
+        {
+            return floatProperty( propertyKeyId, number.floatValue() );
+        }
+        if (number instanceof Short)
+        {
+            return shortProperty( propertyKeyId, number.shortValue() );
+        }
+
+        throw new UnsupportedOperationException( "Unsupported type of Number " + number.toString() );
+    }
+
     public static DefinedProperty longProperty( int propertyKeyId, long value )
     {
         return new LongProperty( propertyKeyId, value );
