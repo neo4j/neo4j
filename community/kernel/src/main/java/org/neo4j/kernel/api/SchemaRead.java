@@ -25,6 +25,7 @@ import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -43,7 +44,7 @@ interface SchemaRead
 
     /** Returns the constraint index for the given labelId and propertyKey. */
     IndexDescriptor uniqueIndexGetForLabelAndPropertyKey( int labelId, int propertyKeyId )
-        throws SchemaRuleNotFoundException;
+            throws SchemaRuleNotFoundException, DuplicateIndexSchemaRuleException;
 
     /** Get all constraint indexes for a label. */
     Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId );

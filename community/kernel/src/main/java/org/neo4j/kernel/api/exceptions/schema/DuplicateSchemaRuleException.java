@@ -21,15 +21,14 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public abstract class SchemaRuleNotFoundException extends SchemaRuleException
+public abstract class DuplicateSchemaRuleException extends SchemaRuleException
 {
-    protected static final String UNIQUE_CONSTRAINT_PREFIX = "Uniqueness constraint";
-    protected static final String CONSTRAINT_PREFIX = "Constraint";
+    protected static final String UNIQUE_CONSTRAINT_PREFIX = "uniqueness constraints";
+    protected static final String CONSTRAINT_PREFIX = "constraints";
 
-    protected SchemaRuleNotFoundException( String messageTemplate, int ruleEntityId, int propertyKeyId, String messagePrefix)
+    protected DuplicateSchemaRuleException( String messageTemplate, int ruleEntityId, int propertyKeyId, String
+            messagePrefix )
     {
-        super( Status.Schema.NoSuchSchemaRule, messageTemplate, ruleEntityId, propertyKeyId, messagePrefix );
-
+        super( Status.Schema.DuplicateSchemaRule, messageTemplate, ruleEntityId, propertyKeyId, messagePrefix );
     }
-
 }
