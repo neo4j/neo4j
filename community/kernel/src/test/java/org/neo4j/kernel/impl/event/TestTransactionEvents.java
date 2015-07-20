@@ -69,7 +69,10 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
+import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.index.DummyIndexExtensionFactory.IDENTIFIER;
 
 public class TestTransactionEvents
 {
@@ -845,7 +848,7 @@ public class TestTransactionEvents
     public void shouldAccessRelationshipDataInAfterCommit() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        final GraphDatabaseService db = dbRule.getGraphDatabaseService();
         final AtomicInteger accessCount = new AtomicInteger();
         final Map<Long,Triplet<Node,String,Node>> expectedRelationshipData = new HashMap<>();
         TransactionEventHandler<Void> handler = new TransactionEventHandler.Adapter<Void>()
@@ -854,17 +857,21 @@ public class TestTransactionEvents
             public void afterCommit( TransactionData data, Void state )
             {
                 accessCount.set( 0 );
-                for ( Relationship relationship : data.createdRelationships() )
+                try ( Transaction tx = db.beginTx() )
                 {
-                    accessData( relationship );
-                }
-                for ( PropertyEntry<Relationship> change : data.assignedRelationshipProperties() )
-                {
-                    accessData( change.entity() );
-                }
-                for ( PropertyEntry<Relationship> change : data.removedRelationshipProperties() )
-                {
-                    accessData( change.entity() );
+                    for ( Relationship relationship : data.createdRelationships() )
+                    {
+                        accessData( relationship );
+                    }
+                    for ( PropertyEntry<Relationship> change : data.assignedRelationshipProperties() )
+                    {
+                        accessData( change.entity() );
+                    }
+                    for ( PropertyEntry<Relationship> change : data.removedRelationshipProperties() )
+                    {
+                        accessData( change.entity() );
+                    }
+                    tx.success();
                 }
             }
 
@@ -994,7 +1001,7 @@ public class TestTransactionEvents
     }
 
     @Test
-    public void shouldNotFireEventForTokenTransactions() throws Exception
+    public void shouldNotFireEventForNonDataTransactions() throws Exception
     {
         // GIVEN
         final AtomicInteger counter = new AtomicInteger();
@@ -1010,27 +1017,51 @@ public class TestTransactionEvents
                 return null;
             }
         } );
+        Label label = label( "Label" );
+        String key = "key";
+        assertEquals( 0, counter.get() );
 
         // WHEN creating a label token
         try ( Transaction tx = dbRule.beginTx() )
         {
-            dbRule.createNode( label( "Label" ) );
+            dbRule.createNode( label );
             tx.success();
         }
+        assertEquals( 1, counter.get() );
         // ... a property key token
         try ( Transaction tx = dbRule.beginTx() )
         {
-            dbRule.createNode().setProperty( "key", "value" );
+            dbRule.createNode().setProperty( key, "value" );
             tx.success();
         }
+        assertEquals( 2, counter.get() );
         // ... and a relationship type
         try ( Transaction tx = dbRule.beginTx() )
         {
             dbRule.createNode().createRelationshipTo( dbRule.createNode(), withName( "A_TYPE" ) );
             tx.success();
         }
+        assertEquals( 3, counter.get() );
+        // ... also when creating an index
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.schema().indexFor( label ).on( key ).create();
+            tx.success();
+        }
+        // ... or a constraint
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.schema().constraintFor( label ).assertPropertyIsUnique( "otherkey" ).create();
+            tx.success();
+        }
+        // ... or even a legacy index
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            dbRule.index().forNodes( "some index", stringMap( PROVIDER, IDENTIFIER ) );
+            tx.success();
+        }
 
-        // THEN only three transaction events should've been fired
+        // THEN only three transaction events (all including graph data) should've been fired
         assertEquals( 3, counter.get() );
     }
 

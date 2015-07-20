@@ -139,7 +139,7 @@ public final class TxState implements TransactionState
 
     private PrimitiveIntObjectMap<Map<DefinedProperty, DiffSets<Long>>> indexUpdates;
 
-    private boolean hasChanges;
+    private boolean hasChanges, hasDataChanges;
 
     @Override
     public void accept( final TxStateVisitor visitor )
@@ -446,11 +446,22 @@ public final class TxState implements TransactionState
         return relationships != null && relationships.isAdded( relationshipId );
     }
 
+    private void changed()
+    {
+        hasChanges = true;
+    }
+
+    private void dataChanged()
+    {
+        changed();
+        hasDataChanges = true;
+    }
+
     @Override
     public void nodeDoCreate( long id )
     {
         nodes().add( id );
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -475,7 +486,7 @@ public final class TxState implements TransactionState
                 nodeState.clear();
             }
         }
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -495,7 +506,7 @@ public final class TxState implements TransactionState
 
         getOrCreateRelationshipState( id ).setMetaData( startNodeId, endNodeId, relationshipTypeId );
 
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -539,7 +550,7 @@ public final class TxState implements TransactionState
             }
         }
 
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -578,7 +589,7 @@ public final class TxState implements TransactionState
             nodeState.addProperty( newProperty );
             nodePropertyChanges().addProperty( nodeId, newProperty.propertyKeyId(), newProperty.value() );
         }
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -592,7 +603,7 @@ public final class TxState implements TransactionState
         {
             getOrCreateRelationshipState( relationshipId ).addProperty( newProperty );
         }
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -606,7 +617,7 @@ public final class TxState implements TransactionState
         {
             getOrCreateGraphState().addProperty( newProperty );
         }
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -615,21 +626,21 @@ public final class TxState implements TransactionState
         getOrCreateNodeState( nodeId ).removeProperty( removedProperty );
         nodePropertyChanges().removeProperty( nodeId, removedProperty.propertyKeyId(),
                 removedProperty.value() );
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
     public void relationshipDoRemoveProperty( long relationshipId, DefinedProperty removedProperty )
     {
         getOrCreateRelationshipState( relationshipId ).removeProperty( removedProperty );
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
     public void graphDoRemoveProperty( DefinedProperty removedProperty )
     {
         getOrCreateGraphState().removeProperty( removedProperty );
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -637,7 +648,7 @@ public final class TxState implements TransactionState
     {
         getOrCreateLabelStateNodeDiffSets( labelId ).add( nodeId );
         getOrCreateNodeStateLabelDiffSets( nodeId ).add( labelId );
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -645,7 +656,7 @@ public final class TxState implements TransactionState
     {
         getOrCreateLabelStateNodeDiffSets( labelId ).remove( nodeId );
         getOrCreateNodeStateLabelDiffSets( nodeId ).remove( labelId );
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -656,8 +667,7 @@ public final class TxState implements TransactionState
             createdLabelTokens = new HashMap<>();
         }
         createdLabelTokens.put( id, labelName );
-
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -668,8 +678,7 @@ public final class TxState implements TransactionState
             createdPropertyKeyTokens = new HashMap<>();
         }
         createdPropertyKeyTokens.put( id, propertyKeyName );
-
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -680,8 +689,7 @@ public final class TxState implements TransactionState
             createdRelationshipTypeTokens = new HashMap<>();
         }
         createdRelationshipTypeTokens.put( id, labelName );
-
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -709,7 +717,7 @@ public final class TxState implements TransactionState
             diff.add( descriptor );
             getOrCreateLabelState( descriptor.getLabelId() ).getOrCreateIndexChanges().add( descriptor );
         }
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -717,7 +725,7 @@ public final class TxState implements TransactionState
     {
         constraintIndexChangesDiffSets().add( descriptor );
         getOrCreateLabelState( descriptor.getLabelId() ).getOrCreateConstraintIndexChanges().add( descriptor );
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -725,7 +733,7 @@ public final class TxState implements TransactionState
     {
         indexChangesDiffSets().remove( descriptor );
         getOrCreateLabelState( descriptor.getLabelId() ).getOrCreateIndexChanges().remove( descriptor );
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -733,7 +741,7 @@ public final class TxState implements TransactionState
     {
         constraintIndexChangesDiffSets().remove( descriptor );
         getOrCreateLabelState( descriptor.getLabelId() ).getOrCreateConstraintIndexChanges().remove( descriptor );
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -902,7 +910,7 @@ public final class TxState implements TransactionState
         constraintsChangesDiffSets().add( constraint );
         createdConstraintIndexesByConstraint().put( constraint, indexId );
         getOrCreateLabelState( constraint.label() ).getOrCreateConstraintsChanges().add( constraint );
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -947,7 +955,7 @@ public final class TxState implements TransactionState
 
         constraintIndexDoDrop( new IndexDescriptor( constraint.label(), constraint.propertyKeyId() ));
         getOrCreateLabelState( constraint.label() ).getOrCreateConstraintsChanges().remove( constraint );
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -1117,8 +1125,7 @@ public final class TxState implements TransactionState
         }
 
         createdNodeLegacyIndexes.put(indexName, customConfig);
-
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -1132,13 +1139,12 @@ public final class TxState implements TransactionState
         }
 
         createdRelationshipLegacyIndexes.put(indexName, customConfig);
-
-        hasChanges = true;
+        changed();
     }
 
     @Override
-    public boolean hasTokenChanges()
+    public boolean hasDataChanges()
     {
-        return createdLabelTokens != null || createdPropertyKeyTokens != null || createdRelationshipTypeTokens != null;
+        return hasDataChanges;
     }
 }

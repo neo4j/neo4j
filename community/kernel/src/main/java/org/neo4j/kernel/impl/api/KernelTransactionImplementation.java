@@ -393,9 +393,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                counts.hasChanges();
     }
 
-    private boolean hasAnyTokenChanges()
+    private boolean hasDataChanges()
     {
-        return hasTxStateWithChanges() ? txState.hasTokenChanges() : false;
+        return hasTxStateWithChanges() ? txState.hasDataChanges() : false;
     }
 
     public TransactionRecordState getTransactionRecordState()
@@ -471,7 +471,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try ( CommitEvent commitEvent = transactionEvent.beginCommitEvent() )
         {
             // Trigger transaction "before" hooks.
-            if ( hasChanges() && !hasAnyTokenChanges() )
+            if ( hasDataChanges() )
             {
                 try
                 {
