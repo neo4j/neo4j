@@ -26,6 +26,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -33,6 +35,7 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -43,19 +46,18 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
-import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
+import org.neo4j.unsafe.impl.batchimport.store.io.IoTracer;
 
 import static java.lang.String.valueOf;
 
@@ -76,28 +78,33 @@ public class BatchingNeoStore implements AutoCloseable, NeoStoreSupplier
     private final LogProvider logProvider;
     private final File storeDir;
     private final Config neo4jConfig;
-    private final BatchingPageCache pageCache;
+    private final PageCache pageCache;
     private final NeoStore neoStore;
-    private final WriterFactory writerFactory;
     private final LifeSupport life = new LifeSupport();
     private final LabelScanStore labelScanStore;
+    private final IoTracer ioTracer;
 
     public BatchingNeoStore( FileSystemAbstraction fileSystem, File storeDir,
-                             Configuration config, Monitor writeMonitor, LogService logService,
-                             Monitors monitors, WriterFactory writerFactory, AdditionalInitialIds initialIds )
+                             Configuration config, LogService logService,
+                             Monitors monitors, AdditionalInitialIds initialIds )
     {
         this.fileSystem = fileSystem;
         this.monitors = monitors;
-        this.writerFactory = writerFactory;
         this.logProvider = logService.getInternalLogProvider();
         this.storeDir = storeDir;
         this.neo4jConfig = new Config( stringMap( dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ) ),
                         GraphDatabaseSettings.class );
-
-        this.pageCache = new BatchingPageCache( fileSystem, config.fileChannelBufferSize(),
-                config.bigFileChannelBufferSizeMultiplier(), writerFactory, writeMonitor );
+        final PageCacheTracer tracer = new DefaultPageCacheTracer();
+        this.pageCache = createPageCache( fileSystem, neo4jConfig, logProvider, tracer );
+        this.ioTracer = new IoTracer()
+        {
+            @Override
+            public long countBytesWrittem()
+            {
+                return tracer.countBytesWritten();
+            }
+        };
         this.neoStore = newNeoStore( pageCache );
-        flushNeoStoreAndAwaitEverythingWritten();
         if ( alreadyContainsData( neoStore ) )
         {
             neoStore.close();
@@ -150,6 +157,13 @@ public class BatchingNeoStore implements AutoCloseable, NeoStoreSupplier
                 LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore() );
     }
 
+    private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogProvider log,
+            PageCacheTracer tracer )
+    {
+        return new ConfiguringPageCacheFactory( fileSystem, config, tracer,
+                log.getLog( BatchingNeoStore.class ) ).getOrCreatePageCache();
+    }
+
     private boolean alreadyContainsData( NeoStore neoStore )
     {
         return neoStore.getNodeStore().getHighId() > 0 || neoStore.getRelationshipStore().getHighId() > 0;
@@ -163,13 +177,13 @@ public class BatchingNeoStore implements AutoCloseable, NeoStoreSupplier
      */
     public static void createStore( FileSystemAbstraction fileSystem, String storeDir ) throws IOException
     {
-        PageCache pageCache = new BatchingPageCache( fileSystem, Configuration.DEFAULT.fileChannelBufferSize(),
-                Configuration.DEFAULT.bigFileChannelBufferSizeMultiplier(),
-                BatchingPageCache.SYNCHRONOUS, Monitor.NO_MONITOR );
-        StoreFactory storeFactory = new StoreFactory(
-                fileSystem, new File( storeDir ), pageCache, NullLogProvider.getInstance(), new Monitors() );
-        storeFactory.createNeoStore().close();
-        pageCache.close();
+        try ( PageCache pageCache = createPageCache( fileSystem, new Config(), NullLogProvider.getInstance(),
+                PageCacheTracer.NULL ) )
+        {
+            StoreFactory storeFactory = new StoreFactory(
+                    fileSystem, new File( storeDir ), pageCache, NullLogProvider.getInstance(), new Monitors() );
+            storeFactory.createNeoStore().close();
+        }
     }
 
     private NeoStore newNeoStore( PageCache pageCache )
@@ -177,6 +191,11 @@ public class BatchingNeoStore implements AutoCloseable, NeoStoreSupplier
         StoreFactory storeFactory = new StoreFactory( storeDir, neo4jConfig, new BatchingIdGeneratorFactory(),
                 pageCache, fileSystem, logProvider, monitors );
         return storeFactory.newNeoStore( true );
+    }
+
+    public IoTracer getIoTracer()
+    {
+        return ioTracer;
     }
 
     public NodeStore getNodeStore()
@@ -220,30 +239,17 @@ public class BatchingNeoStore implements AutoCloseable, NeoStoreSupplier
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
         // Flush out all pending changes
         propertyKeyRepository.close();
         labelRepository.close();
         relationshipTypeRepository.close();
-        flushNeoStoreAndAwaitEverythingWritten();
 
         // Close the neo store
         life.shutdown();
         neoStore.close();
-    }
-
-    private void flushNeoStoreAndAwaitEverythingWritten()
-    {
-        neoStore.flush();
-        // Issuing a "flush" might queue up I/O jobs to the WriterFactory given to this batching neo store.
-        // That's why we have to wait for any pending I/O jobs to be written after the flush.
-        writerFactory.awaitEverythingWritten();
-    }
-
-    public void flush() throws IOException
-    {
-        pageCache.flushAndForce();
+        pageCache.close();
     }
 
     public long getLastCommittedTransactionId()

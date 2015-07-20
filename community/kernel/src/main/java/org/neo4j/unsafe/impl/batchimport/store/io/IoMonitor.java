@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store.io;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.unsafe.impl.batchimport.IoThroughputStat;
 import org.neo4j.unsafe.impl.batchimport.stats.Key;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
@@ -30,26 +28,26 @@ import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import static java.lang.System.currentTimeMillis;
 
 /**
- * {@link Monitor} exposed as a {@link StatsProvider}.
+ * {@link IoTracer} exposed as a {@link StatsProvider}.
  *
  * Assumes that I/O is busy all the time.
  */
-public class IoMonitor implements StatsProvider, Monitor
+public class IoMonitor implements StatsProvider
 {
     private volatile long startTime = currentTimeMillis(), endTime;
-    private final AtomicLong totalWritten = new AtomicLong();
+    private final IoTracer tracer;
+    private long resetPoint;
 
-    @Override
-    public void dataWritten( int bytes )
+    public IoMonitor( IoTracer tracer )
     {
-        totalWritten.addAndGet( bytes );
+        this.tracer = tracer;
     }
 
     public void reset()
     {
         startTime = currentTimeMillis();
         endTime = 0;
-        totalWritten.set( 0 );
+        resetPoint = tracer.countBytesWrittem();
     }
 
     public void stop()
@@ -64,7 +62,7 @@ public class IoMonitor implements StatsProvider, Monitor
 
     public long totalBytesWritten()
     {
-        return totalWritten.get();
+        return tracer.countBytesWrittem() - resetPoint;
     }
 
     @Override
@@ -72,7 +70,7 @@ public class IoMonitor implements StatsProvider, Monitor
     {
         if ( key == Keys.io_throughput )
         {
-            return new IoThroughputStat( startTime, endTime, totalWritten.get() );
+            return new IoThroughputStat( startTime, endTime, totalBytesWritten() );
         }
         return null;
     }

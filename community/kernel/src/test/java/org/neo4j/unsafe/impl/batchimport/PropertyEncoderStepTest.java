@@ -27,16 +27,17 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.staging.Step;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 
 import static org.mockito.Matchers.any;
@@ -46,21 +47,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
-import static org.neo4j.unsafe.impl.batchimport.store.io.Monitor.NO_MONITOR;
 
 public class PropertyEncoderStepTest
 {
     public final @Rule EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    public final @Rule PageCacheRule pageCacheRule = new PageCacheRule();
     private NeoStore neoStore;
-    private BatchingPageCache pageCache;
+    private PageCache pageCache;
 
     @Before
     public void setUpNeoStore()
     {
         File storeDir = new File( "dir" );
-        pageCache = new BatchingPageCache( fsRule.get(), 1_000, 1, SYNCHRONOUS, NO_MONITOR );
-        neoStore = new StoreFactory( fsRule.get(), storeDir, pageCache, NullLogProvider.getInstance(), new Monitors() ).createNeoStore();
+        pageCache = pageCacheRule.getPageCache( fsRule.get() );
+        neoStore = new StoreFactory( fsRule.get(), storeDir, pageCache, NullLogProvider.getInstance(),
+                new Monitors() ).createNeoStore();
     }
 
     @After

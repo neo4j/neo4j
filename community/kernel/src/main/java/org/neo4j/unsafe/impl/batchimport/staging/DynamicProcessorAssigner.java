@@ -26,7 +26,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.EntityStoreUpdaterStep;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
-import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;

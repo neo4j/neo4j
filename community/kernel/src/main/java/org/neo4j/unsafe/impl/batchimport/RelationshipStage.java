@@ -26,7 +26,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_PROCESS;
@@ -38,7 +37,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTRE
  */
 public class RelationshipStage extends Stage
 {
-    public RelationshipStage( Configuration config, IoMonitor writeMonitor, WriterFactory writerFactory,
+    public RelationshipStage( Configuration config, IoMonitor writeMonitor,
             InputIterable<InputRelationship> relationships, IdMapper idMapper,
             BatchingNeoStore neoStore, NodeRelationshipCache cache, boolean specificIds,
             EntityStoreUpdaterStep.Monitor storeUpdateMonitor )
@@ -54,6 +53,6 @@ public class RelationshipStage extends Stage
         add( new RelationshipEncoderStep( control(), config,
                 neoStore.getRelationshipTypeRepository(), cache, specificIds ) );
         add( new EntityStoreUpdaterStep<>( control(), config,
-                relationshipStore, propertyStore, writeMonitor, writerFactory, storeUpdateMonitor ) );
+                relationshipStore, propertyStore, writeMonitor, storeUpdateMonitor ) );
     }
 }

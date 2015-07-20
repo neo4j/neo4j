@@ -35,7 +35,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPropertyRecordAccess;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
@@ -62,7 +61,6 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
     private final AbstractRecordStore<RECORD> entityStore;
     private final PropertyStore propertyStore;
     private final IoMonitor ioMonitor;
-    private final WriterFactory writerFactory;
     private final PropertyCreator propertyCreator;
     private final Monitor monitor;
 
@@ -72,13 +70,12 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
 
     EntityStoreUpdaterStep( StageControl control, Configuration config,
             AbstractRecordStore<RECORD> entityStore,
-            PropertyStore propertyStore, IoMonitor ioMonitor, WriterFactory writerFactory,
+            PropertyStore propertyStore, IoMonitor ioMonitor,
             Monitor monitor )
     {
         super( control, "v", config, 1, ioMonitor );
         this.entityStore = entityStore;
         this.propertyStore = propertyStore;
-        this.writerFactory = writerFactory;
         this.monitor = monitor;
         this.propertyCreator = new PropertyCreator( propertyStore, null );
         this.ioMonitor = ioMonitor;
@@ -192,25 +189,5 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         // and bytes written. NodeStage and CalculateDenseNodesStage can be run in parallel so if
         // NodeStage completes before CalculateDenseNodesStage then we want to stop the time in the I/O monitor.
         ioMonitor.stop();
-    }
-
-    // Below we override the "parallizable" methods to go directly towards the I/O writer, since
-    // this step is very cheap and not parallelizable, except for the I/O part which is all handled by the writer.
-    @Override
-    public int numberOfProcessors()
-    {
-        return writerFactory.numberOfProcessors();
-    }
-
-    @Override
-    public boolean incrementNumberOfProcessors()
-    {
-        return writerFactory.incrementNumberOfProcessors();
-    }
-
-    @Override
-    public boolean decrementNumberOfProcessors()
-    {
-        return writerFactory.decrementNumberOfProcessors();
     }
 }
