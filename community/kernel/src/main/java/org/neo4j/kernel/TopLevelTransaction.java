@@ -26,6 +26,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.KernelTransaction.CloseListener;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -37,60 +38,38 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 @Deprecated
 public class TopLevelTransaction implements Transaction
 {
-    static class TransactionOutcome
-    {
-        private boolean success = false;
-        private boolean failure = false;
-
-        public void failed()
-        {
-            failure = true;
-        }
-
-        public void success()
-        {
-            success = true;
-        }
-
-        public boolean canCommit()
-        {
-            return success && !failure;
-        }
-
-        public boolean successCalled()
-        {
-            return success;
-        }
-
-        public boolean failureCalled()
-        {
-            return failure;
-        }
-    }
-
     private final static PropertyContainerLocker locker = new PropertyContainerLocker();
     private final ThreadToStatementContextBridge stmtProvider;
-    private final TransactionOutcome transactionOutcome = new TransactionOutcome();
+    private boolean successCalled;
+    private boolean failureCalled;
     private final KernelTransaction transaction;
 
     public TopLevelTransaction( KernelTransaction transaction,
-                                ThreadToStatementContextBridge stmtProvider )
+                                final ThreadToStatementContextBridge stmtProvider )
     {
         this.transaction = transaction;
         this.stmtProvider = stmtProvider;
+        this.transaction.registerCloseListener( new CloseListener()
+        {
+            @Override
+            public void notify( boolean success )
+            {
+                stmtProvider.unbindTransactionFromCurrentThread();
+            }
+        } );
     }
 
     @Override
     public void failure()
     {
-        transactionOutcome.failed();
+        failureCalled = true;
         transaction.failure();
     }
 
     @Override
     public void success()
     {
-        transactionOutcome.success();
+        successCalled = true;
         transaction.success();
     }
 
@@ -125,7 +104,7 @@ public class TopLevelTransaction implements Transaction
         }
         catch ( Exception e )
         {
-            String userMessage = transactionOutcome.successCalled()
+            String userMessage = successCalled
                     ? "Transaction was marked as successful, but unable to commit transaction so rolled back."
                     : "Unable to rollback transaction";
             if ( e instanceof KernelException &&
@@ -134,10 +113,6 @@ public class TopLevelTransaction implements Transaction
                 throw new TransientTransactionFailureException( userMessage, e );
             }
             throw new TransactionFailureException( userMessage, e );
-        }
-        finally
-        {
-            stmtProvider.unbindTransactionFromCurrentThread();
         }
     }
 
@@ -159,8 +134,8 @@ public class TopLevelTransaction implements Transaction
         return transaction;
     }
 
-    TransactionOutcome getTransactionOutcome()
+    boolean failureCalled()
     {
-        return transactionOutcome;
+        return failureCalled;
     }
 }

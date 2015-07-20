@@ -48,17 +48,17 @@ public class PlaceboTransaction implements Transaction
     {
     	parentTransaction.failure();
     }
-    
+
     @Override
     public void success()
     {
         success = true;
     }
-    
+
     @Override
     public void close()
     {
-    	if ( !success && !parentTransaction.getTransactionOutcome().failureCalled() )
+        if ( !success && !parentTransaction.failureCalled() )
         {
             parentTransaction.failure();
         }

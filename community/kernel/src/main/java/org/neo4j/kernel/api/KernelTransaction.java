@@ -73,6 +73,11 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
  */
 public interface KernelTransaction extends AutoCloseable
 {
+    interface CloseListener
+    {
+        void notify( boolean success );
+    }
+
     /**
      * Acquires a new {@link Statement} for this transaction which allows for reading and writing data from and
      * to the underlying database. After the group of reads and writes have been performed the statement
@@ -99,11 +104,29 @@ public interface KernelTransaction extends AutoCloseable
      * {@link #failure()} has NOT been called. Otherwise its changes will be rolled back.
      */
     @Override
-    public void close() throws TransactionFailureException;
+    void close() throws TransactionFailureException;
 
+    /**
+     * @return {@code true} if the transaction is still open, i.e. if {@link #close()} hasn't been called yet.
+     */
     boolean isOpen();
 
+    /**
+     * @return {@code true} if {@link #markForTermination()} has been invoked, otherwise {@code false}.
+     */
     boolean shouldBeTerminated();
 
+    /**
+     * Marks this transaction for termination, such that it cannot commit successfully and will try to be
+     * terminated by having other methods throw a specific termination exception, as to sooner reach the assumed
+     * point where {@link #close()} will be invoked.
+     */
     void markForTermination();
+
+    /**
+     * Register a {@link CloseListener} to be invoked after commit, but before transaction events "after" hooks
+     * are invoked.
+     * @param listener {@link CloseListener} to get these notifications.
+     */
+    void registerCloseListener( CloseListener listener );
 }

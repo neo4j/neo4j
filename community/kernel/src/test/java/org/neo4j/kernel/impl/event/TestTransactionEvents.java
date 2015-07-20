@@ -1034,6 +1034,50 @@ public class TestTransactionEvents
         assertEquals( 3, counter.get() );
     }
 
+    @Test
+    public void shouldBeAbleToTouchDataOutsideTxDataInAfterCommit() throws Exception
+    {
+        // GIVEN
+        final Node node = createNode( "one", "Two", "three", "Four" );
+        dbRule.getGraphDatabaseService().registerTransactionEventHandler( new TransactionEventHandler.Adapter<Object>()
+        {
+            @Override
+            public void afterCommit( TransactionData data, Object nothing )
+            {
+                try ( Transaction tx = dbRule.beginTx() )
+                {
+                    for ( String key : node.getPropertyKeys() )
+                    {   // Just to see if one can reach them
+                        node.getProperty( key );
+                    }
+                    tx.success();
+                }
+            }
+        } );
+
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            // WHEN/THEN
+            dbRule.createNode();
+            node.setProperty( "five", "Six" );
+            tx.success();
+        }
+    }
+
+    private Node createNode( String... properties )
+    {
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            Node node = dbRule.createNode();
+            for ( int i = 0; i < properties.length; i++ )
+            {
+                node.setProperty( properties[i++], properties[i] );
+            }
+            tx.success();
+            return node;
+        }
+    }
+
     private Node createTree( int depth, int width )
     {
         try ( Transaction tx = dbRule.beginTx() )

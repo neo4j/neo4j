@@ -160,7 +160,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // Event tracing
     private final TransactionTracer tracer;
     private TransactionEvent transactionEvent;
-
+    private CloseListener closeListener;
 
     public KernelTransactionImplementation( StatementOperationParts operations,
                                             SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
@@ -220,6 +220,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.transactionEvent = tracer.beginTransaction();
         assert transactionEvent != null: "transactionEvent was null!";
+        this.closeListener = null;
         return this;
     }
 
@@ -343,6 +344,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             currentStatement.forceClose();
             currentStatement = null;
+        }
+        if ( closeListener != null )
+        {
+            closeListener.notify( success );
         }
     }
 
@@ -945,5 +950,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private PrimitiveIntIterator labelsOf( long nodeId ) throws EntityNotFoundException
     {
         return StateHandlingStatementOperations.nodeGetLabels( storeLayer, txState, nodeId );
+    }
+
+    @Override
+    public void registerCloseListener( CloseListener listener )
+    {
+        assert closeListener == null;
+        closeListener = listener;
     }
 }
