@@ -39,6 +39,7 @@ public class PropertyValueComparisonTest
 
     Object[] values = new Object[]{
             // OTHER
+            PropertyValueComparison.LOWEST_OBJECT,
             new Object(),
 
             // STRING
@@ -116,6 +117,20 @@ public class PropertyValueComparisonTest
     {
         thrown.expect( NullPointerException.class );
         PropertyValueComparison.COMPARE_NUMBERS.compare( 1, null );
+    }
+
+    @Test
+    public void stringComparatorShouldRejectLeftNullArgument()
+    {
+        thrown.expect( NullPointerException.class );
+        PropertyValueComparison.COMPARE_STRINGS.compare( null, "foo" );
+    }
+
+    @Test
+    public void stringComparatorShouldRejectRightNullArgument()
+    {
+        thrown.expect( NullPointerException.class );
+        PropertyValueComparison.COMPARE_STRINGS.compare( "foo", null );
     }
 
     @Test

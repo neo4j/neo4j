@@ -124,6 +124,9 @@ public interface StoreReadLayer
     PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement statement, IndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException;
 
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement statement, IndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
+            throws IndexNotFoundKernelException;
+
     PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state, IndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException;
 

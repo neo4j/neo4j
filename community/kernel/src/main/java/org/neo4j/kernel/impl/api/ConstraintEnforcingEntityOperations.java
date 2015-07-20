@@ -255,6 +255,15 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement statement,
+                                                                     IndexDescriptor index,
+                                                                     String lower, boolean includeLower,
+                                                                     String upper, boolean includeUpper )
+            throws IndexNotFoundKernelException {
+        return entityReadOperations.nodesGetFromIndexRangeSeekByString(statement, index, lower, includeLower, upper, includeUpper);
+    }
+
+    @Override
     public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
                                                                      IndexDescriptor index, String prefix )
             throws IndexNotFoundKernelException
@@ -543,6 +552,17 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
     {
         return entityReadOperations.nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper, includeUpper );
+    }
+
+    @Override
+    public NodeCursor nodeCursorGetFromIndexRangeSeekByString( KernelStatement statement,
+                                                               IndexDescriptor index,
+                                                               String lower, boolean includeLower,
+                                                               String upper, boolean includeUpper )
+            throws IndexNotFoundKernelException
+
+    {
+        return entityReadOperations.nodeCursorGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper, includeUpper );
     }
 
     @Override

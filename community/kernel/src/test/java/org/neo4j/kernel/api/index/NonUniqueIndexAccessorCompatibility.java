@@ -91,6 +91,23 @@ public class NonUniqueIndexAccessorCompatibility extends IndexAccessorCompatibil
     }
 
     @Test
+    public void testIndexRangeSeekByStringWithDuplicates() throws Exception
+    {
+        updateAndCommit( asList(
+                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "Anna", new long[]{1000} ),
+                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "Anna", new long[]{1000} ),
+                NodePropertyUpdate.add( 3L, PROPERTY_KEY_ID, "Bob", new long[]{1000} ),
+                NodePropertyUpdate.add( 4L, PROPERTY_KEY_ID, "William", new long[]{1000} ),
+                NodePropertyUpdate.add( 5L, PROPERTY_KEY_ID, "William", new long[]{1000} ) ) );
+
+        assertThat( getAllNodesFromIndexSeekByString( "Anna", false, "William", false ), equalTo( singletonList( 3L ) ) );
+        assertThat( getAllNodesFromIndexSeekByString( "Arabella", false, "Bob", false ), equalTo( EMPTY_LIST ) );
+        assertThat( getAllNodesFromIndexSeekByString( "Anna", true, "William", false ), equalTo( asList( 1L, 2L, 3L ) ) );
+        assertThat( getAllNodesFromIndexSeekByString( "Anna", false, "William", true ), equalTo( asList( 3L, 4L, 5L ) ) );
+        assertThat( getAllNodesFromIndexSeekByString( "Anna", true, "William", true ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+    }
+
+    @Test
     public void testIndexRangeSeekByPrefixWithDuplicates() throws Exception
     {
         updateAndCommit( asList(

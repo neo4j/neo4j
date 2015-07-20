@@ -144,6 +144,20 @@ public class LuceneDocumentStructureTest
     }
 
     @Test
+    public void shouldBuildRangeSeekByStringQueryForStrings() throws Exception
+    {
+        // given
+        TermRangeQuery query = documentStructure.newRangeSeekByStringQuery( "foo", false, null, true );
+
+        // then
+        assertEquals( "string", query.getField() );
+        assertEquals( "foo" , query.getLowerTerm() );
+        assertEquals( false, query.includesLower() );
+        assertEquals( null, query.getUpperTerm() );
+        assertEquals( true, query.includesUpper() );
+    }
+
+    @Test
     public void shouldBuildRangeSeekByPrefixQueryForStrings() throws Exception
     {
         // given

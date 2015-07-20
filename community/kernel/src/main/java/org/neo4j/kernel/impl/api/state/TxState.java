@@ -70,6 +70,8 @@ import org.neo4j.kernel.impl.util.diffsets.RelationshipDiffSets;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.api.properties.Property.numberProperty;
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING;
 
 /**
  * This class contains transaction-local changes to the graph. These changes can then be used to augment reads from the
@@ -1237,8 +1239,8 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( lower == null )
         {
-            selectedLower = DefinedProperty.doubleProperty( propertyKeyId, Double.NEGATIVE_INFINITY  );
-            selectedIncludeLower = true;
+            selectedLower = DefinedProperty.numberProperty( propertyKeyId, NUMBER.lowLimit.castValue( Number.class ) );
+            selectedIncludeLower = NUMBER.lowLimit.isInclusive;
         }
         else
         {
@@ -1248,12 +1250,72 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( upper == null )
         {
-            selectedUpper = DefinedProperty.doubleProperty( propertyKeyId, Double.NaN  );
-            selectedIncludeUpper = true;
+            selectedUpper = DefinedProperty.numberProperty( propertyKeyId, NUMBER.highLimit.castValue( Number.class ) );
+            selectedIncludeUpper = NUMBER.highLimit.isInclusive;
         }
         else
         {
             selectedUpper = numberProperty( propertyKeyId, upper );
+            selectedIncludeUpper = includeUpper;
+        }
+
+        DiffSets<Long> diffs = new DiffSets<>();
+        for ( Map.Entry<DefinedProperty,DiffSets<Long>> entry : sortedUpdates.subMap( selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper ).entrySet() )
+        {
+            DiffSets<Long> diffSets = entry.getValue();
+            diffs.addAll( diffSets.getAdded().iterator() );
+            diffs.removeAll( diffSets.getRemoved().iterator() );
+        }
+        return diffs;
+    }
+
+    @Override
+    public ReadableDiffSets<Long> indexUpdatesForRangeSeekByString( IndexDescriptor descriptor,
+                                                                    String lower, boolean includeLower,
+                                                                    String upper, boolean includeUpper )
+    {
+        return ReadableDiffSets.Empty.ifNull(
+                getIndexUpdatesForRangeSeekByString( descriptor, lower, includeLower, upper, includeUpper )
+        );
+    }
+
+    private ReadableDiffSets<Long> getIndexUpdatesForRangeSeekByString( IndexDescriptor descriptor,
+                                                                        String lower, boolean includeLower,
+                                                                        String upper, boolean includeUpper )
+    {
+        TreeMap<DefinedProperty, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor );
+        if ( sortedUpdates == null )
+        {
+            return null;
+        }
+
+        DefinedProperty selectedLower;
+        boolean selectedIncludeLower;
+
+        DefinedProperty selectedUpper;
+        boolean selectedIncludeUpper;
+
+        int propertyKeyId = descriptor.getPropertyKeyId();
+
+        if ( lower == null )
+        {
+            selectedLower = DefinedProperty.stringProperty( propertyKeyId, STRING.lowLimit.castValue( String.class ) );
+            selectedIncludeLower = STRING.lowLimit.isInclusive;
+        }
+        else
+        {
+            selectedLower = DefinedProperty.stringProperty( propertyKeyId, lower );
+            selectedIncludeLower = includeLower;
+        }
+
+        if ( upper == null )
+        {
+            selectedUpper = DefinedProperty.booleanProperty( propertyKeyId, STRING.highLimit.castValue( Boolean.class ).booleanValue() );
+            selectedIncludeUpper = STRING.highLimit.isInclusive;
+        }
+        else
+        {
+            selectedUpper = DefinedProperty.stringProperty( propertyKeyId, upper );
             selectedIncludeUpper = includeUpper;
         }
 

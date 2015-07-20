@@ -77,6 +77,20 @@ public abstract class AbstractLuceneIndexAccessorReaderTest<R extends LuceneInde
     }
 
     @Test
+    public void shouldUseCorrectLuceneQueryForRangeSeekByStringQuery() throws Exception
+    {
+        // Given
+        when( documentLogic.newRangeSeekByStringQuery( "foo", true, null, false ) ).thenReturn( mock( TermRangeQuery.class) );
+
+        // When
+        accessor.rangeSeekByString( "foo", true, null, false );
+
+        // Then
+        verify( documentLogic ).newRangeSeekByStringQuery( "foo", true, null, false );
+        verifyNoMoreInteractions( documentLogic );
+    }
+
+    @Test
     public void shouldUseCorrectLuceneQueryForRangeSeekByPrefixQuery() throws Exception
     {
         // Given

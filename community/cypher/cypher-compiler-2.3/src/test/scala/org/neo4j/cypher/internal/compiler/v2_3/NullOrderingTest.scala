@@ -26,13 +26,24 @@ class NullOrderingTest extends CypherFunSuite {
 
   import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering._
 
-  val ordering = Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_NUMBERS)
+  val orderingForNumbers = Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_NUMBERS)
 
-  test("Should be able to put nulls first") {
-    Seq[Number](null, 4.0d, -3, null, 12).sorted(ordering.withNullsFirst) should equal(Seq[Number](null, null, -3, 4.0d, 12))
+  test("Should be able to put nulls first in a numeric sequence") {
+    Seq[Number](null, 4.0d, -3, null, 12).sorted(orderingForNumbers.withNullsFirst) should equal(Seq[Number](null, null, -3, 4.0d, 12))
   }
 
-  test("Should be able to put nulls last") {
-    Seq[Number](null, 4.0d, -3, null, 12).sorted(ordering.withNullsLast) should equal(Seq[Number](-3, 4.0d, 12, null, null))
+  test("Should be able to put nulls last in a numeric sequence") {
+    Seq[Number](null, 4.0d, -3, null, 12).sorted(orderingForNumbers.withNullsLast) should equal(Seq[Number](-3, 4.0d, 12, null, null))
   }
+
+  val orderingForStrings = Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_STRINGS)
+
+  test("Should be able to put nulls first in a string sequence") {
+    Seq[String](null, "Annie", "", null, "Xavier").sorted(orderingForStrings.withNullsFirst) should equal(Seq[String](null, null, "", "Annie", "Xavier"))
+  }
+
+  test("Should be able to put nulls last in a string sequence") {
+    Seq[String](null, "Annie", "", null, "Xavier").sorted(orderingForStrings.withNullsLast) should equal(Seq[String]("", "Annie", "Xavier", null, null))
+  }
+
 }
