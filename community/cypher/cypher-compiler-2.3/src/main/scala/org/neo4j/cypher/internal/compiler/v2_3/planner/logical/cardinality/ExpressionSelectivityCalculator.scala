@@ -53,11 +53,11 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       calculateSelectivityForPropertyEquality(seekable.name, seekable.args.sizeHint, selections, seekable.propertyKey)
 
     // WHERE x.prop LIKE ...
-    case AsStringRangeSeekable(seekable@StringRangeSeekable(PrefixRange(prefix), _, _, _)) =>
+    case AsStringRangeSeekable(seekable@PrefixRangeSeekable(PrefixRange(prefix), _, _, _)) =>
       calculateSelectivityForPrefixRangeSeekable(seekable.name, selections, seekable.propertyKey, prefix)
 
     // WHERE x.prop <, <=, >=, > that could benefit from an index
-    case AsValueRangeSeekable(seekable@ValueRangeSeekable(_, _, _)) =>
+    case AsValueRangeSeekable(seekable@InequalityRangeSeekable(_, _, _)) =>
       calculateSelectivityForValueRangeSeekable(seekable, selections)
 
     // WHERE has(x.prop)
@@ -148,7 +148,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     Selectivity(equality.add(slack).doubleValue())
   }
 
-  private def calculateSelectivityForValueRangeSeekable(seekable: ValueRangeSeekable,
+  private def calculateSelectivityForValueRangeSeekable(seekable: InequalityRangeSeekable,
                                                         selections: Selections)
                                                        (implicit semanticTable: SemanticTable): Selectivity = {
     val name = seekable.ident.name

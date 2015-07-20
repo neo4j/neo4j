@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class SeekRangeTest extends CypherFunSuite {
 
-  implicit val ordering = MinMaxOrdering.BY_NUMBER
+  test("Computes correct limit for numerical less than") {
+    implicit val ordering = MinMaxOrdering.BY_NUMBER
 
-  test("Computes correct limit for less than") {
     RangeLessThan[Number](NonEmptyList(InclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(3)))
     RangeLessThan[Number](NonEmptyList(InclusiveBound(3), ExclusiveBound(4))).limit should equal(Some(InclusiveBound(3)))
     RangeLessThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(4))).limit should equal(Some(ExclusiveBound(3)))
@@ -35,7 +35,9 @@ class SeekRangeTest extends CypherFunSuite {
     RangeLessThan[Number](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
 
-  test("Computes inclusion for less than") {
+  test("Computes inclusion for numerical less than") {
+    implicit val ordering = MinMaxOrdering.BY_NUMBER
+
     RangeLessThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](2) should be(right = true)
     RangeLessThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](2) should be(right = true)
     RangeLessThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](3) should be(right = true)
@@ -51,7 +53,9 @@ class SeekRangeTest extends CypherFunSuite {
     RangeLessThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](null) should be(right = false)
   }
 
-  test("Computes correct limit for greater than") {
+  test("Computes correct limit for numerical greater than") {
+    implicit val ordering = MinMaxOrdering.BY_NUMBER
+
     RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(4)))
     RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3), ExclusiveBound(4))).limit should equal(Some(ExclusiveBound(4)))
     RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(4)))
@@ -60,7 +64,9 @@ class SeekRangeTest extends CypherFunSuite {
     RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
 
-  test("Computes inclusion for greater than") {
+  test("Computes inclusion for numerical greater than") {
+    implicit val ordering = MinMaxOrdering.BY_NUMBER
+
     RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](2) should be(right = false)
     RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](2) should be(right = false)
     RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))).includes[Number](3) should be(right = true)
@@ -76,7 +82,9 @@ class SeekRangeTest extends CypherFunSuite {
     RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3))).includes[Number](null) should be(right = false)
   }
 
-  test("Computes inclusion for range between") {
+  test("Computes inclusion for numerical range between") {
+    implicit val ordering = MinMaxOrdering.BY_NUMBER
+
     val range = RangeBetween(
       RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3))),
       RangeLessThan[Number](NonEmptyList(ExclusiveBound(5)))
@@ -99,5 +107,102 @@ class SeekRangeTest extends CypherFunSuite {
     ).includes[Number](4) should be(right = false)
 
     range.includes[Number](null) should be(right = false)
+  }
+
+  test("Computes correct limit for string less than") {
+    implicit val ordering = MinMaxOrdering.BY_STRING
+
+    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound(""), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("")))
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(""), InclusiveBound("4"))).limit should equal(Some(ExclusiveBound("")))
+    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("3")))
+    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"), ExclusiveBound("4"))).limit should equal(Some(InclusiveBound("3")))
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("4"))).limit should equal(Some(ExclusiveBound("3")))
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("3"))).limit should equal(Some(ExclusiveBound("3")))
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound(null))).limit should equal(None)
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
+  }
+
+  test("Computes inclusion for string less than") {
+    implicit val ordering = MinMaxOrdering.BY_STRING
+
+    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound(""))).includes[AnyRef]("") should be(right = true)
+    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound(""))).includes[AnyRef]("2") should be(right = false)
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(""))).includes[AnyRef]("2") should be(right = false)
+    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef]("2") should be(right = true)
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef]("2") should be(right = true)
+    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef]("3") should be(right = true)
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef]("3") should be(right = false)
+    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef]("4") should be(right = false)
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef]("4") should be(right = false)
+
+    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound(null))).includes[AnyRef](null) should be(right = false)
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(null))).includes[AnyRef](null) should be(right = false)
+    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound(null))).includes[AnyRef]("3") should be(right = false)
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(null))).includes[AnyRef]("3") should be(right = false)
+    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef](null) should be(right = false)
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef](null) should be(right = false)
+  }
+
+  test("Computes correct limit for string greater than") {
+    implicit val ordering = MinMaxOrdering.BY_STRING
+
+    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(""), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("4")))
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(""), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("4")))
+    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("4")))
+    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"), ExclusiveBound("4"))).limit should equal(Some(ExclusiveBound("4")))
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("4")))
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("3"))).limit should equal(Some(ExclusiveBound("3")))
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound(null))).limit should equal(None)
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
+  }
+
+  test("Computes inclusion for string greater than") {
+    implicit val ordering = MinMaxOrdering.BY_STRING
+
+
+    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(""))).includes[AnyRef]("") should be(right = true)
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(""))).includes[AnyRef]("") should be(right = false)
+    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(""))).includes[AnyRef]("2") should be(right = true)
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(""))).includes[AnyRef]("2") should be(right = true)
+    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef]("2") should be(right = false)
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef]("2") should be(right = false)
+    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef]("3") should be(right = true)
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef]("3") should be(right = false)
+    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef]("4") should be(right = true)
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef]("4") should be(right = true)
+
+    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(null))).includes[AnyRef](null) should be(right = false)
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(null))).includes[AnyRef](null) should be(right = false)
+    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(null))).includes[AnyRef]("3") should be(right = false)
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(null))).includes[AnyRef]("3") should be(right = false)
+    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"))).includes[AnyRef](null) should be(right = false)
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"))).includes[AnyRef](null) should be(right = false)
+  }
+
+  test("Computes inclusion for string range between") {
+    implicit val ordering = MinMaxOrdering.BY_STRING
+
+    val range = RangeBetween(
+      RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"))),
+      RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("5")))
+    )
+
+    range.includes[AnyRef]("2") should be(right = false)
+    range.includes[AnyRef]("3") should be(right = true)
+    range.includes[AnyRef]("4") should be(right = true)
+    range.includes[AnyRef]("5") should be(right = false)
+    range.includes[AnyRef]("6") should be(right = false)
+
+    RangeBetween(
+      RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(null))),
+      RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("5")))
+    ).includes[AnyRef]("4") should be(right = false)
+
+    RangeBetween(
+      RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"))),
+      RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(null)))
+    ).includes[AnyRef]("4") should be(right = false)
+
+    range.includes[AnyRef](null) should be(right = false)
   }
 }

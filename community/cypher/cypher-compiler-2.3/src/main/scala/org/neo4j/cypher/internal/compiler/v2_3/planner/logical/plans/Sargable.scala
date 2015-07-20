@@ -66,20 +66,20 @@ object AsPropertyScannable {
 }
 
 object AsStringRangeSeekable {
-  def unapply(v: Any): Option[StringRangeSeekable] = v match {
+  def unapply(v: Any): Option[PrefixRangeSeekable] = v match {
     case like@Like(Property(ident: Identifier, propertyKey), LikePattern(lit@StringLiteral(value)), _)
       if !like.caseInsensitive =>
         for ((range, prefix) <- getRange(value))
           yield {
             val prefixPattern = LikePattern(StringLiteral(prefix)(lit.position))
             val predicate = like.copy(pattern = prefixPattern)(like.position)
-            StringRangeSeekable(range, predicate, ident, propertyKey)
+            PrefixRangeSeekable(range, predicate, ident, propertyKey)
           }
     case _ =>
       None
   }
 
-  def getRange(literal: String): Option[(SeekRange[String], String)] = {
+  def getRange(literal: String): Option[(PrefixRange, String)] = {
     val ops: List[LikePatternOp] = LikePatternParser(literal).compact.ops
     ops match {
       case MatchText(prefix) :: (_: WildcardLikePatternOp) :: tl =>
@@ -91,9 +91,9 @@ object AsStringRangeSeekable {
 }
 
 object AsValueRangeSeekable {
-  def unapply(v: Any): Option[ValueRangeSeekable] = v match {
+  def unapply(v: Any): Option[InequalityRangeSeekable] = v match {
     case inequalities@AndedPropertyInequalities(ident, prop, _) =>
-      Some(ValueRangeSeekable(ident, prop.propertyKey, inequalities))
+      Some(InequalityRangeSeekable(ident, prop.propertyKey, inequalities))
     case _ =>
       None
   }
@@ -131,15 +131,16 @@ sealed trait RangeSeekable[T <: Expression, V] extends Seekable[T] {
   def range: SeekRange[V]
 }
 
-case class StringRangeSeekable(override val range: SeekRange[String], expr: Like, ident: Identifier, propertyKey: PropertyKeyName)
+case class PrefixRangeSeekable(override val range: PrefixRange, expr: Like, ident: Identifier, propertyKey: PropertyKeyName)
   extends RangeSeekable[Like, String] {
 
   def dependencies = Set.empty
 
-  def asQueryExpression: QueryExpression[Expression] = RangeQueryExpression(StringSeekRangeWrapper(range)(expr.rhs.position))
+  def asQueryExpression: QueryExpression[Expression] =
+    RangeQueryExpression(PrefixSeekRangeWrapper(range)(expr.rhs.position))
 }
 
-case class ValueRangeSeekable(ident: Identifier, propertyKeyName: PropertyKeyName, expr: AndedPropertyInequalities)
+case class InequalityRangeSeekable(ident: Identifier, propertyKeyName: PropertyKeyName, expr: AndedPropertyInequalities)
   extends RangeSeekable[AndedPropertyInequalities, Expression] {
 
   def dependencies = expr.inequalities.map(_.dependencies).toSet.flatten
@@ -153,7 +154,7 @@ case class ValueRangeSeekable(ident: Identifier, propertyKeyName: PropertyKeyNam
     })
 
   def asQueryExpression: QueryExpression[Expression] =
-    RangeQueryExpression(ValueExpressionSeekRangeWrapper(range)(ident.position))
+    RangeQueryExpression(InequalitySeekRangeWrapper(range)(ident.position))
 }
 
 sealed trait Scannable[T <: Expression] extends Sargable[T]

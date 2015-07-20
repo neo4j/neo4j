@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_3._
 
-case class StringSeekRangeWrapper(range: SeekRange[String])(val position: InputPosition) extends Expression {
+case class PrefixSeekRangeWrapper(range: PrefixRange)(val position: InputPosition) extends Expression {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }
 
-case class ValueExpressionSeekRangeWrapper(range: InequalitySeekRange[Expression])(val position: InputPosition) extends Expression {
+case class InequalitySeekRangeWrapper(range: InequalitySeekRange[Expression])(val position: InputPosition) extends Expression {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }
 
