@@ -69,7 +69,7 @@ Neo4j reuses its internal ids when nodes and relationships are deleted.
 This means that applications using, and relying on internal Neo4j ids, are brittle or at risk of making mistakes.
 Rather use application generated ids.
              """,
-      queryText = "match n where id(n) = %Charlie% return n",
+      queryText = "match (n) where id(n) = %Charlie% return n",
       optionalResultExplanation = "The corresponding node is returned.",
       assertions = (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(node("Charlie"))))
   }
@@ -91,7 +91,7 @@ This is not recommended practice. See <<match-node-by-id>> for more information 
     testQuery(
       title = "Multiple nodes by id",
       text = "Multiple nodes are selected by specifying them in an IN clause.",
-      queryText = "match n where id(n) in [%Charlie%, %Martin%, %Oliver%] return n",
+      queryText = "match (n) where id(n) in [%Charlie%, %Martin%, %Oliver%] return n",
       optionalResultExplanation = "This returns the nodes listed in the `IN` expression.",
       assertions = (p) => assertEquals(Set(node("Charlie"), node("Martin"), node("Oliver")), p.columnAs[Node]("n").toSet))
   }
@@ -100,7 +100,7 @@ This is not recommended practice. See <<match-node-by-id>> for more information 
     testQuery(
       title = "Multiple identifiers by id",
       text = "Sometimes you want to return multiple nodes by id and separate identifiers. Just list them separated by commas.",
-      queryText = "match a, b where id(a) = %Charlie% and id(b) = %Martin% return a, b",
+      queryText = "match (a), (b) where id(a) = %Charlie% and id(b) = %Martin% return a, b",
       optionalResultExplanation = """Both the nodes +Charlie+ and the +Martin+  are returned.""",
       assertions = p => assertEquals(List(Map("a" -> node("Charlie"), "b" -> node("Martin"))), p.toList))
   }

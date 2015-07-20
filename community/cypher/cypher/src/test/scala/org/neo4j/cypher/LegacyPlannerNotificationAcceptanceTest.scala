@@ -24,7 +24,7 @@ import org.neo4j.graphdb.SeverityLevel
 class LegacyPlannerNotificationAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should warn when using PLANNER X") {
-    val notifications = eengine.execute("EXPLAIN PLANNER RULE MATCH a RETURN a").notifications
+    val notifications = eengine.execute("EXPLAIN PLANNER RULE MATCH (a) RETURN a").notifications
 
     notifications should have size 1
 
@@ -36,7 +36,7 @@ class LegacyPlannerNotificationAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should not warn when using planner=x") {
-    val notifications = eengine.execute("EXPLAIN CYPHER planner=rule MATCH a RETURN a").notifications
+    val notifications = eengine.execute("EXPLAIN CYPHER planner=rule MATCH (a) RETURN a").notifications
 
     notifications shouldBe empty
   }

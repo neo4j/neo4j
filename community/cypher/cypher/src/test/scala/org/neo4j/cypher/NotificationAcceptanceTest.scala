@@ -121,4 +121,9 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.notifications should contain(IndexHintUnfulfillableNotification("Party", "city"))
     result.notifications should contain(IndexHintUnfulfillableNotification("Animal", "species"))
   }
+
+  test("warn for bare node pattern") {
+    val result = innerExecute("EXPLAIN MATCH n-->(m) RETURN n, m")
+    result.notifications.toSet should equal(Set(BareNodeSyntaxDeprecatedNotification(InputPosition(6, 1, 7))))
+  }
 }

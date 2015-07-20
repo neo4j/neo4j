@@ -33,8 +33,8 @@ class BoostingRecommendationResultsTest extends DocumentingTestBase {
   override protected def getGraphvizStyle: GraphStyle = {
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
   }
-  
-  override val setupQueries = List("""create 
+
+  override val setupQueries = List("""create
 (clark {name: "Clark Kent"}),
 (lois {name:"Lois Lane"}),
 (jimmy {name:"Jimmy Olsen"}),
@@ -42,29 +42,29 @@ class BoostingRecommendationResultsTest extends DocumentingTestBase {
 (cooper {name:"Anderson Cooper"}),
 (dailyplanet {name:"Daily Planet"}),
 (cnn {name:"CNN"}),
-clark-[:KNOWS {weight: 4}]->lois,
-clark-[:KNOWS {weight: 4}]->jimmy,
-lois-[:KNOWS {weight: 4}]->perry,
-jimmy-[:KNOWS {weight: 4}]->perry,
-lois-[:KNOWS {weight: 4}]->cooper,
-clark-[:WORKS_AT {weight: 2, activity: 45}]->dailyplanet,
-jimmy-[:WORKS_AT {weight: 2, activity: 10}]->dailyplanet,
-perry-[:WORKS_AT {weight: 2, activity: 6}]->dailyplanet,
-lois-[:WORKS_AT {weight: 2, activity: 56}]->dailyplanet,
-cooper-[:WORKS_AT {weight: 2, activity: 2}]->cnn,
-perry-[:WORKS_AT {weight: 2, activity: 3}]->cnn""")
+(clark)-[:KNOWS {weight: 4}]->(lois),
+(clark)-[:KNOWS {weight: 4}]->(jimmy),
+(lois)-[:KNOWS {weight: 4}]->(perry),
+(jimmy)-[:KNOWS {weight: 4}]->(perry),
+(lois)-[:KNOWS {weight: 4}]->(cooper),
+(clark)-[:WORKS_AT {weight: 2, activity: 45}]->(dailyplanet),
+(jimmy)-[:WORKS_AT {weight: 2, activity: 10}]->(dailyplanet),
+(perry)-[:WORKS_AT {weight: 2, activity: 6}]->(dailyplanet),
+(lois)-[:WORKS_AT {weight: 2, activity: 56}]->(dailyplanet),
+(cooper)-[:WORKS_AT {weight: 2, activity: 2}]->(cnn),
+(perry)-[:WORKS_AT {weight: 2, activity: 3}]->(cnn)""")
 
   @Test def boostingRecommendations() {
     testQuery(
       title = "Boosting with properties on relationships",
       text =
-"""This query finds the recommended friends for the origin that are working at the same place as the origin, 
-or know a person that the origin knows, also, the origin should not already know the target. This recommendation is 
+"""This query finds the recommended friends for the origin that are working at the same place as the origin,
+or know a person that the origin knows, also, the origin should not already know the target. This recommendation is
 weighted for the weight of the relationship `r2`, and boosted with a factor of 2, if there is an `activity`-property on that relationship""",
       queryText = """MATCH (origin)-[r1:KNOWS|WORKS_AT]-(c)-[r2:KNOWS|WORKS_AT]-(candidate)
 WHERE origin.name = "Clark Kent"
 AND type(r1)=type(r2) AND NOT (origin)-[:KNOWS]-(candidate)
-RETURN origin.name as origin, candidate.name as candidate, 
+RETURN origin.name as origin, candidate.name as candidate,
     SUM(ROUND(r2.weight + (COALESCE(r2.activity, 0) * 2))) as boost
 ORDER BY boost desc limit 10""",
       optionalResultExplanation =
@@ -72,5 +72,5 @@ ORDER BY boost desc limit 10""",
       assertions = (p) => assertEquals(List(
           Map("origin" -> "Clark Kent","candidate" -> "Perry White","boost" -> 22),
           Map("origin" -> "Clark Kent","candidate" -> "Anderson Cooper","boost" -> 4)),p.toList))
-  } 
+  }
 }

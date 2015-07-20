@@ -66,7 +66,7 @@ END""",
       text = "The expression is calculated, and compared in order with the +WHEN+ clauses until a match is found. " +
         "If no match is found the expression in the +ELSE+ clause is used, or +null+, if no +ELSE+ case exists.",
       queryText =
-        """match n return CASE n.eyes
+        """match (n) return CASE n.eyes
     WHEN 'blue'  THEN 1
     WHEN 'brown' THEN 2
                  ELSE 3
@@ -93,7 +93,7 @@ END""",
       text = "The predicates are evaluated in order until a true value is found, and the result value is used. " +
         "If no match is found the expression in the +ELSE+ clause is used, or +null+, if no +ELSE+ case exists.",
       queryText =
-        """match n return CASE
+        """match (n) return CASE
     WHEN n.eyes = 'blue'  THEN 1
     WHEN n.age < 40       THEN 2
                           ELSE 3

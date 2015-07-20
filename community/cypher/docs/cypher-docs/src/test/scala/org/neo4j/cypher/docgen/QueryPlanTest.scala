@@ -227,7 +227,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       text =
         """Reads one or more nodes by id from the node store.
           |The following query will return the node which has nodeId `0`.""".stripMargin,
-      queryText = """MATCH n WHERE id(n) = 0 RETURN n""",
+      queryText = """MATCH (n) WHERE id(n) = 0 RETURN n""",
       assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeByIdSeek"))
     )
   }

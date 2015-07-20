@@ -29,29 +29,47 @@ import org.neo4j.kernel.api.exceptions.Status;
  */
 public enum NotificationCode
 {
-    CARTESIAN_PRODUCT( SeverityLevel.WARNING,
-           Status.Statement.CartesianProduct,
-            "If a part of a query contains multiple disconnected patterns, this will build a " +
-                    "cartesian product between all those parts. This may produce a large amount of data and slow down" +
-                    " query processing. " +
-                    "While occasionally intended, it may often be possible to reformulate the query that avoids the " +
-                    "use of this cross " +
-                    "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH" ),
-    LEGACY_PLANNER( SeverityLevel.WARNING,
-                    Status.Statement.DeprecationWarning,
-                    "Using PLANNER for switching between planners has been deprecated, please use CYPHER planner=[rule,cost] instead" ),
-    PLANNER_UNSUPPORTED( SeverityLevel.WARNING,
-                    Status.Statement.PlannerUnsupportedWarning,
-                    "Using COST planner is unsupported for this query, please use RULE planner instead" ),
-    RUNTIME_UNSUPPORTED( SeverityLevel.WARNING,
-                    Status.Statement.RuntimeUnsupportedWarning,
-                    "Using COMPILED runtime is unsupported for this query, please use interpreted runtime instead" ),
-    INDEX_HINT_UNFULFILLABLE( SeverityLevel.WARNING,
-                    Status.Schema.NoSuchIndex,
-                    "The hinted index does not exist, please check the schema" ),
-    LENGTH_ON_NON_PATH( SeverityLevel.WARNING,
-                    Status.Statement.DeprecationWarning,
-                    "Using 'length' on anything that is not a path is deprecated, please use 'size' instead" );
+    CARTESIAN_PRODUCT(
+       SeverityLevel.WARNING,
+       Status.Statement.CartesianProduct,
+       "If a part of a query contains multiple disconnected patterns, this will build a " +
+       "cartesian product between all those parts. This may produce a large amount of data and slow down" +
+       " query processing. " +
+       "While occasionally intended, it may often be possible to reformulate the query that avoids the " +
+       "use of this cross " +
+       "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH"
+    ),
+    LEGACY_PLANNER(
+        SeverityLevel.WARNING,
+        Status.Statement.DeprecationWarning,
+        "Using PLANNER for switching between planners has been deprecated, please use CYPHER planner=[rule,cost] instead"
+    ),
+    PLANNER_UNSUPPORTED(
+        SeverityLevel.WARNING,
+        Status.Statement.PlannerUnsupportedWarning,
+        "Using COST planner is unsupported for this query, please use RULE planner instead"
+    ),
+    RUNTIME_UNSUPPORTED(
+        SeverityLevel.WARNING,
+        Status.Statement.RuntimeUnsupportedWarning,
+        "Using COMPILED runtime is unsupported for this query, please use interpreted runtime instead"
+    ),
+    INDEX_HINT_UNFULFILLABLE(
+        SeverityLevel.WARNING,
+        Status.Schema.NoSuchIndex,
+        "The hinted index does not exist, please check the schema"
+    ),
+    LENGTH_ON_NON_PATH(
+        SeverityLevel.WARNING,
+        Status.Statement.DeprecationWarning,
+        "Using 'length' on anything that is not a path is deprecated, please use 'size' instead"
+    ),
+    BARE_NODE_SYNTAX_DEPRECATED(
+        SeverityLevel.WARNING,
+        Status.Statement.DeprecationWarning,
+        "Use of bare node patterns has been deprecated. Please enclose the identifier in parenthesis."
+    ) ;
+
     private final Status status;
     private final String description;
     private final SeverityLevel severity;
