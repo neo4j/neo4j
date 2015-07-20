@@ -88,8 +88,8 @@ object ExpressionConverters {
       case e: ast.PathExpression => e.asCommandProjectedPath
       case e: ast.NestedPipeExpression => e.asPipeCommand
       case e: ast.GetDegree => e.asCommandGetDegree
-      case e: ast.StringSeekRangeWrapper => e.asCommandStringSeekRange
-      case e: ast.ValueExpressionSeekRangeWrapper => e.asCommandValueSeekRange
+      case e: ast.PrefixSeekRangeWrapper => e.asCommandStringSeekRange
+      case e: ast.InequalitySeekRangeWrapper => e.asCommandValueSeekRange
       case e: ast.AndedPropertyInequalities => e.asCommandAnds
       case _ =>
         throw new ThisShouldNotHappenError("cleishm", s"Unknown expression type during transformation (${expression.getClass})")
@@ -107,12 +107,12 @@ object ExpressionConverters {
     }
   }
 
-  implicit class StringSeekRangeConverter(val original: ast.StringSeekRangeWrapper) extends AnyVal {
+  implicit class StringSeekRangeConverter(val original: ast.PrefixSeekRangeWrapper) extends AnyVal {
     def asCommandStringSeekRange =
       commandexpressions.StringSeekRange(original.range)
   }
 
-  implicit class ValueSeekRangeConverter(val original: ast.ValueExpressionSeekRangeWrapper) extends AnyVal {
+  implicit class ValueSeekRangeConverter(val original: ast.InequalitySeekRangeWrapper) extends AnyVal {
     def asCommandValueSeekRange =
       ValueExpressionSeekRange(original.range.mapBounds(_.asCommandExpression))
   }

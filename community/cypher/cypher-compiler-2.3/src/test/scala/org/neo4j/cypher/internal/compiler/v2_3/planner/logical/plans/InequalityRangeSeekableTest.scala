@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
-class ValueRangeSeekableTest extends CypherFunSuite with AstConstructionTestSupport {
+class InequalityRangeSeekableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   val identifier = ident("n")
   val propertyKeyName: PropertyKeyName = PropertyKeyName("prop")_
@@ -70,7 +70,7 @@ class ValueRangeSeekableTest extends CypherFunSuite with AstConstructionTestSupp
 
   private def valueRangeSeekable(first: InequalityExpression, others: InequalityExpression*) = {
     val inequalities = NonEmptyList(first, others: _*)
-    ValueRangeSeekable(
+    InequalityRangeSeekable(
       identifier,
       propertyKeyName,
       AndedPropertyInequalities(identifier, property, inequalities)

@@ -36,7 +36,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val leftExpr: Property = Property(nodeA, propKey) _
     val like: Like = Like(leftExpr, LikePattern(StringLiteral("prefix%") _)) _
     assertMatches(like) {
-      case AsStringRangeSeekable(StringRangeSeekable(range, expr, ident, propertyKey)) =>
+      case AsStringRangeSeekable(PrefixRangeSeekable(range, expr, ident, propertyKey)) =>
         range should equal(PrefixRange("prefix"))
         expr should equal(like)
         ident should equal(nodeA)
@@ -50,7 +50,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val originalLike: Like = Like(leftExpr, LikePattern(StringLiteral("prefix%suffix") _)) _
     val prefixLike: Like = Like(leftExpr, LikePattern(StringLiteral("prefix%") _)) _
     assertMatches(originalLike) {
-      case AsStringRangeSeekable(StringRangeSeekable(range, expr, ident, propertyKey)) =>
+      case AsStringRangeSeekable(PrefixRangeSeekable(range, expr, ident, propertyKey)) =>
         range should equal(PrefixRange("prefix"))
         expr should equal(prefixLike)
         ident should equal(nodeA)
