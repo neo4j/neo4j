@@ -145,6 +145,10 @@ public interface ReadableTxState
                                                              Number lower, boolean includeLower,
                                                              Number upper, boolean includeUpper );
 
+    ReadableDiffSets<Long> indexUpdatesForRangeSeekByString( IndexDescriptor index,
+                                                             String lower, boolean includeLower,
+                                                             String upper, boolean includeUpper );
+
     ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
 
     NodeState getNodeState( long id );

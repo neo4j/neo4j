@@ -507,6 +507,300 @@ public class TxStateTest
 
     //endregion
 
+    //region range seek by string index update tests
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWhenThereAreNoMatchingNodes() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withStringProperties( asList( of( 42L, "Agatha" ), of( 43L, "Barbara" ) ) );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 44L, "Andreas" ) ) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString( indexOn_1_1, "Cindy", false, "William", true );
+
+        // THEN
+        assertEquals( emptySet(), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWhenThereAreNewNodesCreatedInSingleBatch() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(asList(of( 42L, "Agatha"), of(43L, "Barbara")) );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties(singletonList(of( 44L, "Andreas")) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString( indexOn_1_1, "Amy", true, "Cathy", true );
+
+        // THEN
+        assertEquals( asSet( 43L ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWhenThereAreNewNodesCreatedInTwoBatches() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(singletonList(of( 42L, "Agatha" )));
+        addNodesToIndex( indexOn_1_2 ).withStringProperties(singletonList(of( 44L, "Andreas" )));
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(singletonList(of( 43L, "Barbara" )));
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString( indexOn_1_1, "Amy", true, "Cathy", true );
+
+        // THEN
+        assertEquals( asSet( 43L ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithIncludeLowerAndIncludeUpper() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(asList(
+                        of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
+                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) )
+        );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList ( of( 46L, "Andreas" ) ) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString( indexOn_1_1, "Amy", true, "Arwen", true );
+
+        // THEN
+        assertEquals( asSet( 43L, 44L, 45L, 47L, 48L ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithIncludeLowerAndExcludeUpper() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(asList(
+                        of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
+                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) )
+        );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList ( of( 46L, "Andreas" ) ) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString( indexOn_1_1, "Amy", true, "Arwen", false) ;
+
+        // THEN
+        assertEquals( asSet( 43L, 44L, 45L, 47L ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithExcludeLowerAndIncludeUpper() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(asList(
+                        of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
+                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) )
+        );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList ( of( 46L, "Andreas" ) ) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString( indexOn_1_1, "Amy", false, "Arwen", true );
+
+        // THEN
+        assertEquals( asSet( 44L, 45L, 47L, 48L ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithExcludeLowerAndExcludeUpper() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(asList(
+                        of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
+                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) )
+        );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList ( of( 46L, "Andreas" ) ) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString( indexOn_1_1, "Amy", false, "Arwen", false );
+
+        // THEN
+        assertEquals( asSet( 44L, 45L, 47L ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerExcludeLowerAndIncludeUpper() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList(
+                of( 39L, true ), of( 38L, false )
+        ) );
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(asList(
+                        of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
+                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) )
+        );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString(indexOn_1_1, null, false, "Arwen", true);
+
+        // THEN
+        assertEquals( asSet( 42L, 43L, 44L, 45L, 47L, 48L ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerIncludeLowerAndIncludeUpper() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList(
+                of( 39L, true ), of( 38L, false )
+        ) );
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(asList(
+                        of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
+                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) )
+        );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas") ) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString(indexOn_1_1, null, true, "Arwen", true);
+
+        // THEN
+        assertEquals( asSet( 42L, 43L, 44L, 45L, 47L, 48L ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerExcludeLowerAndExcludeUpper() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList(
+                of( 39L, true ), of( 38L, false )
+        ) );
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(asList(
+                        of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
+                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) )
+        );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString(indexOn_1_1, null, false, "Arwen", false);
+
+        // THEN
+        assertEquals( asSet( 42L, 43L, 44L, 45L, 47L ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerIncludeLowerAndExcludeUpper() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList(
+                of( 39L, true ), of( 38L, false )
+        ) );
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(asList(
+                        of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
+                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) )
+        );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString(indexOn_1_1, null, true, "Arwen", false);
+
+        // THEN
+        assertEquals( asSet( 42L, 43L, 44L, 45L, 47L ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperIncludeLowerAndIncludeUpper() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList(
+                of( 39L, true ), of( 38L, false )
+        ) );
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(asList(
+                        of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
+                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) )
+        );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList(of( 46L, "Andreas" ) ) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString(indexOn_1_1, "Arthur", true, null, true);
+
+        // THEN
+        assertEquals( asSet( 47L, 48L, 49L ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperIncludeLowerAndExcludeUpper() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList(
+                of( 39L, true ), of( 38L, false )
+        ) );
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(asList(
+                        of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
+                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) )
+        );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString(indexOn_1_1, "Arthur", true, null, false);
+
+        // THEN
+        assertEquals( asSet( 47L, 48L, 49L ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperExcludeLowerAndIncludeUpper() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList(
+                of( 39L, true ), of( 38L, false )
+        ) );
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(asList(
+                        of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
+                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) )
+        );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString(indexOn_1_1, "Arthur", false, null, true);
+
+        // THEN
+        assertEquals( asSet( 48L, 49L ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperExcludeLowerAndExcludeUpper() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList(
+                of( 39L, true ), of( 38L, false )
+        ) );
+        addNodesToIndex( indexOn_1_1 ).withStringProperties(asList(
+                        of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ), of( 45L, "Aristotle" ),
+                        of( 47L, "Arthur" ), of( 48L, "Arwen" ), of( 49L, "Ashley" ) )
+        );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of ( 46L, "Andreas" ) ) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString( indexOn_1_1, "Arthur", false, null, false );
+
+        // THEN
+        assertEquals( asSet( 48L, 49L ), diffSets.getAdded() );
+    }
+
+    @Test
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithNoBounds() throws Exception
+    {
+        // GIVEN
+        addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList(
+                of( 39L, true ), of( 38L, false )
+        ) );
+        addNodesToIndex( indexOn_1_1 ).withStringProperties( asList(
+                        of( 42L, "Agatha" ), of( 43L, "Amy" ), of( 44L, "Andreas" ) )
+        );
+        addNodesToIndex( indexOn_1_2 ).withStringProperties( singletonList( of( 46L, "Andreas" ) ) );
+
+        // WHEN
+        ReadableDiffSets<Long> diffSets = state.indexUpdatesForRangeSeekByString( indexOn_1_1, null, true, null, true );
+
+        // THEN
+        assertEquals( asSet( 42L, 43L, 44L ), diffSets.getAdded() );
+    }
+
+    //endregion
+
     //region range seek by prefix index update tests
 
     @Test

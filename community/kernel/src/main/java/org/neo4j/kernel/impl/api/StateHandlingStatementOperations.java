@@ -822,11 +822,7 @@ public class StateHandlingStatementOperations implements
 
     {
         PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexRangeSeekByString(state, index, lower, includeLower, upper, includeUpper);
-        if (state.txState().hasChanges()) {
-            throw new UnsupportedOperationException("TODO");
-
-        }
-        return committed;
+        return filterIndexStateChangesForRangeSeekByString(state, index, lower, includeLower, upper, includeUpper, committed);
     }
 
     @Override
@@ -873,12 +869,31 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
-            ReadableDiffSets<Long> labelPropertyChangesForPrefix =
+            ReadableDiffSets<Long> labelPropertyChangesForNumber =
                     state.txState().indexUpdatesForRangeSeekByNumber( index, lower, includeLower, upper, includeUpper );
             ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
 
             // Apply to actual index lookup
-            return nodes.augmentWithRemovals( labelPropertyChangesForPrefix.augment( nodeIds ) );
+            return nodes.augmentWithRemovals( labelPropertyChangesForNumber.augment( nodeIds ) );
+        }
+        return nodeIds;
+
+    }
+
+    private PrimitiveLongIterator filterIndexStateChangesForRangeSeekByString( KernelStatement state,
+                                                                               IndexDescriptor index,
+                                                                               String lower, boolean includeLower,
+                                                                               String upper, boolean includeUpper,
+                                                                               PrimitiveLongIterator nodeIds )
+    {
+        if ( state.hasTxStateWithChanges() )
+        {
+            ReadableDiffSets<Long> labelPropertyChangesForString =
+                    state.txState().indexUpdatesForRangeSeekByString( index, lower, includeLower, upper, includeUpper );
+            ReadableDiffSets<Long> nodes = state.txState().addedAndRemovedNodes();
+
+            // Apply to actual index lookup
+            return nodes.augmentWithRemovals( labelPropertyChangesForString.augment( nodeIds ) );
         }
         return nodeIds;
 

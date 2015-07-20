@@ -1268,6 +1268,66 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
+    public ReadableDiffSets<Long> indexUpdatesForRangeSeekByString( IndexDescriptor descriptor,
+                                                                    String lower, boolean includeLower,
+                                                                    String upper, boolean includeUpper )
+    {
+        return ReadableDiffSets.Empty.ifNull(
+                getIndexUpdatesForRangeSeekByString(descriptor, lower, includeLower, upper, includeUpper)
+        );
+    }
+
+    private ReadableDiffSets<Long> getIndexUpdatesForRangeSeekByString( IndexDescriptor descriptor,
+                                                                        String lower, boolean includeLower,
+                                                                        String upper, boolean includeUpper )
+    {
+        TreeMap<DefinedProperty, DiffSets<Long>> sortedUpdates = getSortedIndexUpdates( descriptor );
+        if ( sortedUpdates == null )
+        {
+            return null;
+        }
+
+        DefinedProperty selectedLower;
+        boolean selectedIncludeLower;
+
+        DefinedProperty selectedUpper;
+        boolean selectedIncludeUpper;
+
+        int propertyKeyId = descriptor.getPropertyKeyId();
+
+        if ( lower == null )
+        {
+            selectedLower = DefinedProperty.stringProperty(propertyKeyId, "");
+            selectedIncludeLower = true;
+        }
+        else
+        {
+            selectedLower = DefinedProperty.stringProperty(propertyKeyId, lower);
+            selectedIncludeLower = includeLower;
+        }
+
+        if ( upper == null )
+        {
+            selectedUpper = DefinedProperty.stringProperty(propertyKeyId, String.valueOf(Character.MAX_VALUE) );
+            selectedIncludeUpper = true;
+        }
+        else
+        {
+            selectedUpper = DefinedProperty.stringProperty(propertyKeyId, upper );
+            selectedIncludeUpper = includeUpper;
+        }
+
+        DiffSets<Long> diffs = new DiffSets<>();
+        for ( Map.Entry<DefinedProperty,DiffSets<Long>> entry : sortedUpdates.subMap( selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper ).entrySet() )
+        {
+            DiffSets<Long> diffSets = entry.getValue();
+            diffs.addAll( diffSets.getAdded().iterator() );
+            diffs.removeAll( diffSets.getRemoved().iterator() );
+        }
+        return diffs;
+    }
+
+    @Override
     public ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( IndexDescriptor descriptor, String prefix )
     {
         return ReadableDiffSets.Empty.ifNull( getIndexUpdatesForRangeSeekByPrefix( descriptor, prefix ) );
