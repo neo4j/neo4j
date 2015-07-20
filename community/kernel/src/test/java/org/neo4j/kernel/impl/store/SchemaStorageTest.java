@@ -37,7 +37,12 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.store.record.MandatoryNodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.MandatoryRelationshipPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
@@ -47,9 +52,9 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.store.MandatoryNodePropertyConstraintRule.mandatoryNodePropertyConstraintRule;
-import static org.neo4j.kernel.impl.store.MandatoryRelationshipPropertyConstraintRule.mandatoryRelPropertyConstraintRule;
-import static org.neo4j.kernel.impl.store.UniquePropertyConstraintRule.uniquenessConstraintRule;
+import static org.neo4j.kernel.impl.store.record.MandatoryNodePropertyConstraintRule.mandatoryNodePropertyConstraintRule;
+import static org.neo4j.kernel.impl.store.record.MandatoryRelationshipPropertyConstraintRule.mandatoryRelPropertyConstraintRule;
+import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class SchemaStorageTest
 {
