@@ -45,7 +45,7 @@
     <docs-plugin.skip>false</docs-plugin.skip>
     <attach-docs-phase>verify</attach-docs-phase>
     <remote-csv-upload>http://neo4j.com/docs/${project.version}/csv</remote-csv-upload>
-    <scala.version>2.11.6</scala.version>
+    <scala.version>2.11.7</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
   </properties>
 

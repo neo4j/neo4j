@@ -16,7 +16,7 @@
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <neo4j.version>${project.version}</neo4j.version>
-    <scala.version>2.11.6</scala.version>
+    <scala.version>2.11.7</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
