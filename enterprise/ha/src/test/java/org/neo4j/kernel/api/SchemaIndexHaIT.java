@@ -42,6 +42,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
@@ -66,21 +67,23 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterRule;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
-import static org.neo4j.register.Register.DoubleLong;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
@@ -539,7 +542,6 @@ public class SchemaIndexHaIT
 
     public static class ControllingIndexProviderFactory extends KernelExtensionFactory<IndexProviderDependencies>
     {
-
         private final Map<GraphDatabaseService, SchemaIndexProvider> perDbIndexProvider;
         private final Predicate<GraphDatabaseService> injectLatchPredicate;
 
@@ -557,13 +559,15 @@ public class SchemaIndexHaIT
             if(injectLatchPredicate.test( deps.db() ))
             {
                 ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider(
-                        new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, context.storeDir() ) );
+                        new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
+                                DirectoryFactory.PERSISTENT, context.storeDir() ) );
                 perDbIndexProvider.put( deps.db(), provider );
                 return provider;
             }
             else
             {
-                return new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, context.storeDir() );
+                return new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
+                        DirectoryFactory.PERSISTENT, context.storeDir() );
             }
         }
     }

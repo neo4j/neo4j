@@ -339,7 +339,7 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, context.storeDir() )
+                return new LuceneSchemaIndexProvider( fs.get(), ignoreCloseDirectoryFactory, context.storeDir() )
                 {
                     @Override
                     public InternalIndexState getInitialState( long indexId )
@@ -361,7 +361,7 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, context.storeDir() )
+                return new LuceneSchemaIndexProvider( fs.get(), ignoreCloseDirectoryFactory, context.storeDir() )
                 {
                     @Override
                     public int compareTo( SchemaIndexProvider o )

@@ -147,7 +147,7 @@ public class ConsistencyCheckService
                 labelScanStore = new LuceneLabelScanStoreBuilder(
                         storeDir, store.getRawNeoStore(), fileSystem, logProvider ).build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
-                        DirectoryFactory.PERSISTENT,
+                        fileSystem, DirectoryFactory.PERSISTENT,
                         storeDir );
                 DirectStoreAccess stores = new DirectStoreAccess( store, labelScanStore, indexes );
                 FullCheck check = new FullCheck( tuningConfiguration, progressFactory );
