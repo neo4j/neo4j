@@ -25,7 +25,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -37,15 +36,14 @@ import java.util.Set;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
@@ -166,25 +164,6 @@ public class TestDynamicStore
         if ( file.exists() )
         {
             assertTrue( file.delete() );
-        }
-    }
-
-    @Test
-    public void testStickyStore() throws IOException
-    {
-        try
-        {
-            createEmptyStore( dynamicStoreFile(), 30 );
-            StoreChannel fileChannel = fs.get().open( dynamicStoreFile(), "rw" );
-            fileChannel.truncate( fileChannel.size() - 2 );
-            fileChannel.close();
-            DynamicArrayStore store = newStore();
-            store.makeStoreOk();
-            store.close();
-        }
-        finally
-        {
-            deleteBothFiles();
         }
     }
 

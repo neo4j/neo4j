@@ -28,6 +28,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.AbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -258,13 +259,13 @@ public enum StoreFile
         }
     }
 
-    public static void ensureStoreVersion( FileSystemAbstraction fs,
+    public static void ensureStoreVersion( FileSystemAbstraction fs, PageCache pageCache,
                                            File storeDir, Iterable<StoreFile> files ) throws IOException
     {
-        ensureStoreVersion( fs, storeDir, files, ALL_STORES_VERSION );
+        ensureStoreVersion( fs, pageCache, storeDir, files, ALL_STORES_VERSION );
     }
 
-    public static void ensureStoreVersion( FileSystemAbstraction fs,
+    public static void ensureStoreVersion( FileSystemAbstraction fs, PageCache pageCache,
                                            File storeDir, Iterable<StoreFile> files, String version ) throws IOException
     {
         for ( StoreFile file : files )
@@ -272,7 +273,8 @@ public enum StoreFile
             setStoreVersionTrailer( fs, new File( storeDir, file.storeFileName() ), file.isOptional(),
                     buildTypeDescriptorAndVersion( file.typeDescriptor(), version ) );
         }
-        setRecord( fs, new File( storeDir, DEFAULT_NAME ), Position.STORE_VERSION, versionStringToLong( version ) );
+        setRecord( pageCache, new File( storeDir, DEFAULT_NAME ), Position.STORE_VERSION,
+                versionStringToLong( version ) );
     }
 
     boolean isOptional()

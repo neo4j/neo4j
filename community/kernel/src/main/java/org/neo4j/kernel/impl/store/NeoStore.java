@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.config.Setting;
@@ -29,7 +28,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -42,6 +40,7 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
@@ -54,7 +53,6 @@ import org.neo4j.logging.Logger;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.util.CappedOperation.time;
@@ -363,63 +361,79 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     /**
      * Writes a record in a neostore file.
+     * This method only works for neostore files of the current version. It is not guaranteed to correctly handle store
+     * version trailers of other store versions.
      *
-     * @param fileSystem {@link FileSystemAbstraction} the {@code neoStore} file lives in.
+     * @param pageCache {@link PageCache} the {@code neoStore} file lives in.
      * @param neoStore {@link File} pointing to the neostore.
      * @param position record {@link Position}.
      * @param value value to write in that record.
      * @return the previous value before writing.
      * @throws IOException if any I/O related error occurs.
      */
-    public static long setRecord( FileSystemAbstraction fileSystem, File neoStore, Position position, long value )
-            throws IOException
+    public static long setRecord( PageCache pageCache, File neoStore, Position position, long value ) throws IOException
     {
-        int trailerSize = UTF8.encode( buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ) ).length;
-        try ( StoreChannel channel = fileSystem.open( neoStore, "rw" ) )
+        long previousValue = FIELD_NOT_INITIALIZED;
+        try ( PagedFile pagedFile = pageCache.map( neoStore, getPageSize( pageCache ) ) )
         {
-            long previous = FIELD_NOT_INITIALIZED;
-
-            long trailerOffset = channel.size() - trailerSize;
-            ByteBuffer buffer = ByteBuffer.allocate( RECORD_SIZE );
-            ByteBuffer trailerBuffer = null;
-            int recordOffset = RECORD_SIZE * position.id;
-            if ( recordOffset < trailerOffset )
+            if ( pagedFile.getLastPageId() == -1 )
             {
-                // We're overwriting a record, get the previous value
-                channel.position( recordOffset );
-                channel.read( buffer );
-                buffer.flip();
-                buffer.get(); // inUse
-                previous = buffer.getLong();
+                return previousValue;
             }
-            else
+            try ( PageCursor pageCursor = pagedFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
             {
-                // We're adding a new record, first cut off and keep the trailer
-                trailerBuffer = ByteBuffer.allocate( trailerSize );
-                channel.position( trailerOffset );
-                channel.read( trailerBuffer );
-                trailerBuffer.flip();
-                channel.truncate( trailerOffset );
-            }
-            buffer.clear();
+                if ( pageCursor.next() )
+                {
+                    byte[] trailerData = UTF8.encode( buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ) );
+                    byte[] allData = new byte[pagedFile.pageSize()];
+                    do
+                    {
+                        pageCursor.getBytes( allData );
+                    }
+                    while ( pageCursor.shouldRetry() );
+                    int trailerOffset = StoreVersionCheck.findTrailerOffset( allData, trailerData );
+                    int recordOffset = RECORD_SIZE * position.id;
+                    if ( recordOffset < trailerOffset )
+                    {
+                        // We're overwriting a record, get the previous value
+                        long record;
+                        byte inUse;
+                        do
+                        {
+                            pageCursor.setOffset( recordOffset );
+                            inUse = pageCursor.getByte();
+                            record = pageCursor.getLong();
+                        }
+                        while ( pageCursor.shouldRetry() );
+                        if ( inUse == Record.IN_USE.byteValue() )
+                        {
+                            previousValue = record;
+                        }
+                    }
+                    // Write the value
+                    do
+                    {
+                        pageCursor.setOffset( recordOffset );
+                        pageCursor.putByte( Record.IN_USE.byteValue() );
+                        pageCursor.putLong( value );
+                    }
+                    while ( pageCursor.shouldRetry() );
 
-            // Write the value
-            channel.position( recordOffset );
-            buffer.put( Record.IN_USE.byteValue() );
-            buffer.putLong( value );
-            buffer.flip();
-            channel.write( buffer );
-
-            // Append the trailer if we cut it off previously
-            int newTrailerOffset = recordOffset + RECORD_SIZE;
-            if ( newTrailerOffset > trailerOffset )
-            {
-                assert trailerBuffer != null;
-                channel.position( newTrailerOffset );
-                channel.write( trailerBuffer );
+                    // Append the trailer if we cut it off previously
+                    int newTrailerOffset = recordOffset + RECORD_SIZE;
+                    if ( newTrailerOffset > trailerOffset )
+                    {
+                        do
+                        {
+                            pageCursor.setOffset( newTrailerOffset );
+                            pageCursor.putBytes( trailerData );
+                        }
+                        while ( pageCursor.shouldRetry() );
+                    }
+                }
             }
-            return previous;
         }
+        return previousValue;
     }
 
     /**

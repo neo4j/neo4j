@@ -1077,9 +1077,9 @@ public class TestNeoStore
         FileSystemAbstraction fileSystem = fs.get();
         File storeDir = new File("target/test-data/set-version").getAbsoluteFile();
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
-        assertEquals( 0, NeoStore.setRecord( fileSystem, new File( storeDir,
+        assertEquals( 0, NeoStore.setRecord( pageCache, new File( storeDir,
                 NeoStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 10 ) );
-        assertEquals( 10, NeoStore.setRecord( fileSystem, new File( storeDir,
+        assertEquals( 10, NeoStore.setRecord( pageCache, new File( storeDir,
                 NeoStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 12 ) );
 
         Monitors monitors = new Monitors();
@@ -1184,9 +1184,9 @@ public class TestNeoStore
         assertNotEquals( 10, neoStore.getUpgradeTransaction()[0] );
         assertNotEquals( 11, neoStore.getUpgradeTime() );
 
-        NeoStore.setRecord( fileSystem, file, Position.UPGRADE_TRANSACTION_ID, 10 );
-        NeoStore.setRecord( fileSystem, file, Position.UPGRADE_TRANSACTION_CHECKSUM, 11 );
-        NeoStore.setRecord( fileSystem, file, Position.UPGRADE_TIME, 12 );
+        NeoStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, 10 );
+        NeoStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, 11 );
+        NeoStore.setRecord( pageCache, file, Position.UPGRADE_TIME, 12 );
 
         neoStore = factory.newNeoStore( false );
         assertEquals( 3, neoStore.getCreationTime() );

@@ -83,7 +83,7 @@ public class StoreVersionCheck
         return expectedVersion.substring( 0, spaceIndex );
     }
 
-    private String readVersion( PagedFile pagedFile, String expectedVersion ) throws IOException
+    public static String readVersion( PagedFile pagedFile, String expectedVersion ) throws IOException
     {
         byte[] encodedExpectedVersion = UTF8.encode( expectedVersion );
         int maximumNumberOfPagesVersionSpans = encodedExpectedVersion.length / pagedFile.pageSize() + 2;
@@ -94,7 +94,7 @@ public class StoreVersionCheck
         {
             int currentPage = 0;
             byte[] allData = new byte[pagedFile.pageSize() * maximumNumberOfPagesVersionSpans];
-            while ( pageCursor.next() )
+            while ( currentPage < maximumNumberOfPagesVersionSpans && pageCursor.next() )
             {
                 byte[] data = new byte[pagedFile.pageSize()];
                 do
@@ -105,7 +105,7 @@ public class StoreVersionCheck
                 System.arraycopy( data, 0, allData, currentPage * data.length, data.length );
                 currentPage++;
             }
-            int offset = findPattern( allData, UTF8.encode( expectedVersion.split( " " )[0] ) );
+            int offset = findTrailerOffset( allData, UTF8.encode( expectedVersion.split( " " )[0] ) );
             if ( offset != -1 )
             {
                 version = new String( allData, offset, encodedExpectedVersion.length, Charsets.UTF_8 );
@@ -114,7 +114,7 @@ public class StoreVersionCheck
         return version;
     }
 
-    private int findPattern( byte[] src, byte[] sought )
+    public static int findTrailerOffset( byte[] src, byte[] sought )
     {
         for ( int i = src.length - sought.length; i >= 0; i-- )
         {
