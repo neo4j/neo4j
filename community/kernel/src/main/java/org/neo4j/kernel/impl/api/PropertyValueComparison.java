@@ -28,6 +28,17 @@ import static java.lang.String.format;
 
 public class PropertyValueComparison
 {
+    public final static Object LOWEST_OBJECT = new Object()
+    {
+        @Override
+        public String toString()
+        {
+            return "";
+        }
+    };
+
+    // DO NOT CHANGE the sort order without considering the implications for TxState and lucene!
+
     // This compares two values that have the same super type according to that super type's comparator
     // Any values that fall under OTHER, are compared by ObjectUtil.toString
     // NULL is not supported
@@ -41,18 +52,22 @@ public class PropertyValueComparison
 
     public enum SuperType
     {
-        OTHER( 0 ),
-        STRING( 1 ),
-        BOOLEAN( 2 ),
+        OTHER( 0, Limit.inclusive( LOWEST_OBJECT ), Limit.<Object>exclusive( "" ) ),
+        STRING( 1, Limit.<Object>inclusive( "" ), Limit.<Object>exclusive( false ) ),
+        BOOLEAN( 2, Limit.<Object>inclusive( false ), Limit.<Object>inclusive( true ) ),
 
         // Keep this last so that Double.NaN is the largest value
-        NUMBER( 3 );
+        NUMBER( 3, Limit.<Object>inclusive( Double.NEGATIVE_INFINITY ), Limit.<Object>inclusive( Double.NaN ) );
 
         public final int typeId;
+        public final Limit<Object> lowLimit;
+        public final Limit<Object> highLimit;
 
-        SuperType( int id )
+        SuperType( int typeId, Limit<Object> lowLimit, Limit<Object> highLimit )
         {
-            typeId = id;
+            this.typeId = typeId;
+            this.lowLimit = lowLimit;
+            this.highLimit = highLimit;
         }
 
         public boolean isSuperTypeOf( Object value )
@@ -96,6 +111,33 @@ public class PropertyValueComparison
                 return left.typeId - right.typeId;
             }
         };
+    }
+
+    public static final class Limit<T>
+    {
+        public final T value;
+        public final boolean isInclusive;
+
+        private Limit( T value, boolean isInclusive )
+        {
+            this.value = value;
+            this.isInclusive = isInclusive;
+        }
+
+        public <X extends T> X castValue( Class<X> clazz )
+        {
+            return clazz.cast( value );
+        }
+
+        public static <T> Limit<T> inclusive( T value )
+        {
+            return new Limit<>( value, true );
+        }
+
+        public static <T> Limit<T> exclusive( T value )
+        {
+            return new Limit<>( value, false );
+        }
     }
 
     private static class PropertyValuesComparator implements Comparator<Object>
