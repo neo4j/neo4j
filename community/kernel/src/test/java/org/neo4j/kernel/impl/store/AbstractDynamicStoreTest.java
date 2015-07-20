@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -35,12 +36,10 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache;
-import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
+import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 public class AbstractDynamicStoreTest
 {
@@ -76,8 +75,8 @@ public class AbstractDynamicStoreTest
     private AbstractDynamicStore newTestableDynamicStore()
     {
         return new AbstractDynamicStore( fileName, new Config(), IdType.ARRAY_BLOCK, new DefaultIdGeneratorFactory(),
-                new BatchingPageCache( fsr.get(), 1000, 1, BatchingPageCache.SYNCHRONOUS, mock( Monitor.class ) ),
-                fsr.get(), StringLogger.DEV_NULL, StoreVersionMismatchHandler.ALLOW_OLD_VERSION, new Monitors() )
+                pageCache, fsr.get(), StringLogger.DEV_NULL,
+                StoreVersionMismatchHandler.ALLOW_OLD_VERSION, new Monitors() )
         {
             @Override
             public void accept( Processor processor, DynamicRecord record )
@@ -93,11 +92,14 @@ public class AbstractDynamicStoreTest
     }
 
     public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
+    public final @Rule PageCacheRule pageCacheRule = new PageCacheRule();
     private final File fileName = new File( "store" );
+    private PageCache pageCache;
 
     @Before
     public void before() throws IOException
     {
+        pageCache = pageCacheRule.getPageCache( fsr.get() );
         StoreChannel channel = fsr.get().create( fileName );
         try
         {
