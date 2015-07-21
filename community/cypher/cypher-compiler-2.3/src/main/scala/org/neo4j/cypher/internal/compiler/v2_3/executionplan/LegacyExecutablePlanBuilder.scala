@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenT
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.{DisconnectedShortestPathEndPointsBuilder, _}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Converge.iterateUntilConverged
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
@@ -81,7 +82,7 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, rewriterSequencer: (String
   }
 
   def buildQuery(inputQuery: Query, context: PlanContext)(implicit pipeMonitor:PipeMonitor): PipeInfo = {
-    val initialPSQ = PartiallySolvedQuery(inputQuery)
+    val initialPSQ = PartiallySolvedQuery(inputQuery).rewriteFromTheTail(groupAndRewriteInequalities)
 
     def untilConverged(in: ExecutionPlanInProgress): ExecutionPlanInProgress =
       iterateUntilConverged { input: ExecutionPlanInProgress =>
@@ -102,6 +103,17 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, rewriterSequencer: (String
     val pipe = eagernessRewriter(planInProgress.pipe)
 
     PipeInfo(pipe, planInProgress.isUpdating, plannerUsed = RulePlannerName )
+  }
+
+  private def groupAndRewriteInequalities(psq: PartiallySolvedQuery): PartiallySolvedQuery = {
+    import NonEmptyList._
+    psq.where.map(p => p.token) match {
+      case None => psq
+      case Some(predicates) => {
+        val newWhere = groupInequalityPredicatesForLegacy(predicates).map(Unsolved(_)).toSeq
+        psq.copy(where = newWhere)
+      }
+    }
   }
 
   private def produceAndThrowException(plan: ExecutionPlanInProgress) {

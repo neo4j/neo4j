@@ -200,4 +200,12 @@ class NonEmptyListTest extends CypherFunSuite {
     NonEmptyList(1, 2, 3).partition { x => if (x != 0) Left(x) else Right(x) } should equal(Left(NonEmptyList(1, 2, 3) -> None))
     NonEmptyList(1, 2, 3).partition { x => if (x == 0) Left(x) else Right(x) } should equal(Right(None -> NonEmptyList(1, 2, 3)))
   }
+
+  test("exists should work as expected") {
+    NonEmptyList(1).exists(_ == 2) should be(false)
+    NonEmptyList(1).exists(_ == 1) should be(true)
+    NonEmptyList(1, 2, 3).exists(_ == 4) should be(false)
+    NonEmptyList(1, 2, 3).exists(_ < 4) should be(true)
+    NonEmptyList(1, 2, 3).exists(_ >= 3) should be(true)
+  }
 }

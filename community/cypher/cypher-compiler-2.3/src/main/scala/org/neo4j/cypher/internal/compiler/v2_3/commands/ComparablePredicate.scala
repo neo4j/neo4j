@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsCollection
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.graphdb.{Node, Relationship}
 
-abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends Predicate with Comparer {
+abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {

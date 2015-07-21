@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Literal}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Expression, Literal, Property}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabel}
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CastSupport, CollectionSupport, IsCollection}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.{NonEmptyList, CastSupport, CollectionSupport, IsCollection}
 import org.neo4j.cypher.internal.compiler.v2_3.parser.ParsedLikePattern
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
@@ -94,6 +94,46 @@ case class Ands(predicates: List[Predicate]) extends Predicate {
   def rewrite(f: (Expression) => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
 
   override def atoms: Seq[Predicate] = predicates
+}
+
+case class AndedPropertyComparablePredicates(ident: Identifier, prop: Property, comparables: NonEmptyList[ComparablePredicate]) extends Predicate {
+
+  def symbolTableDependencies: Set[String] = comparables.foldLeft(Set.empty[String]) {
+    case (acc, predicate) => acc ++ predicate.symbolTableDependencies
+  }
+
+  def containsIsNull: Boolean = comparables.exists(_.containsIsNull)
+
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
+    var result: Option[Option[Boolean]] = None
+    val iter = comparables.toIterable.iterator
+    while (iter.nonEmpty) {
+      val p = iter.next()
+      val r = p.isMatch(m)
+
+      if(r.nonEmpty && !r.get)
+        return r
+
+      if(result.isEmpty)
+        result = Some(r)
+      else {
+        val stored = result.get
+        if (stored.nonEmpty && stored.get && r.isEmpty)
+          result = Some(None)
+      }
+    }
+
+    result.get
+  }
+
+  def arguments: Seq[Expression] = comparables.toSeq
+
+  def rewrite(f: (Expression) => Expression): Expression =
+    f(AndedPropertyComparablePredicates(ident.rewrite(f).asInstanceOf[Identifier],
+                                        prop.rewrite(f).asInstanceOf[Property],
+                                        comparables.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))
+
+  override def atoms: Seq[Predicate] = comparables.toSeq
 }
 
 
