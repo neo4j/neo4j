@@ -45,8 +45,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
@@ -54,7 +57,7 @@ public class TestLogPruning
 {
     private interface Extractor
     {
-        int extract( File from ) throws IOException;
+        int extract( long fromVersion ) throws IOException;
     }
 
     private GraphDatabaseAPI db;
@@ -144,6 +147,31 @@ public class TestLogPruning
                 transactionCount <= (transactionsToKeep + transactionsPerLog) );
     }
 
+    @Test
+    public void shouldKeepAtLeastOneTransactionAfterRotate() throws Exception
+    {
+        // Given
+        // a database configured to keep 1 byte worth of logs, which means prune everything on rotate
+        newDb( 1 + " size", 1 );
+
+        // When
+        // some transactions go through, rotating and pruning everything after them
+        for ( int i = 0; i < 2; i++ )
+        {
+            doTransaction();
+        }
+        // and the log gets rotated, which means we have a new one with no txs in it
+        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+        /*
+         * if we hadn't rotated after the txs went through, we would need to change the assertion to be at least 1 tx
+         * instead of exactly one.
+         */
+
+        // Then
+        // the database must have kept at least one tx (in our case exactly one, because we rotated the log)
+        assertThat( transactionCount(), greaterThanOrEqualTo( 1 ) );
+    }
+
     private GraphDatabaseAPI newDb( String logPruning, int rotateEveryNTransactions )
     {
         this.rotateEveryNTransactions = rotateEveryNTransactions;
@@ -188,10 +216,9 @@ public class TestLogPruning
         int total = 0;
         for ( long i = files.getHighestLogVersion(); i >= 0; i-- )
         {
-            File versionFileName = files.getLogFileForVersion( i );
-            if ( fs.fileExists( versionFileName ) )
+            if ( files.versionExists( i ) )
             {
-                total += extractor.extract( versionFileName );
+                total += extractor.extract( i );
             }
             else
             {
@@ -206,7 +233,7 @@ public class TestLogPruning
         return aggregateLogData( new Extractor()
         {
             @Override
-            public int extract( File from )
+            public int extract( long from )
             {
                 return 1;
             }
@@ -218,9 +245,9 @@ public class TestLogPruning
         return aggregateLogData( new Extractor()
         {
             @Override
-            public int extract( File from )
+            public int extract( long from )
             {
-                return (int) fs.getFileSize( from );
+                return (int) fs.getFileSize( files.getLogFileForVersion( from ) );
             }
         } );
     }
@@ -230,7 +257,7 @@ public class TestLogPruning
         return aggregateLogData( new Extractor()
         {
             @Override
-            public int extract( File from ) throws IOException
+            public int extract( long version ) throws IOException
             {
                 int counter = 0;
                 LogVersionBridge bridge = new LogVersionBridge()
@@ -241,8 +268,8 @@ public class TestLogPruning
                         return channel;
                     }
                 };
-                StoreChannel storeChannel = fs.open( from, "r" );
-                LogVersionedStoreChannel versionedStoreChannel = PhysicalLogFile.openForVersion( files, fs, CURRENT_LOG_VERSION );
+                StoreChannel storeChannel = fs.open( files.getLogFileForVersion( version ), "r" );
+                LogVersionedStoreChannel versionedStoreChannel = PhysicalLogFile.openForVersion( files, fs, version );
                         new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, CURRENT_LOG_VERSION );
                 try ( ReadableVersionableLogChannel channel =
                               new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
