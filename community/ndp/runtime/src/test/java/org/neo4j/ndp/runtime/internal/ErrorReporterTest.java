@@ -29,28 +29,33 @@ import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class ErrorReporterTest
 {
     @Test
-    public void shouldReportUnknownErrors() throws Throwable
+    public void shouldReportUnknownErrors()
     {
         // Given
         AssertableLogProvider provider = new AssertableLogProvider();
-        ErrorReporter translator =
+        ErrorReporter reporter =
                 new ErrorReporter( provider.getLog( "userlog" ), new UsageData() );
 
         Throwable cause = new Throwable( "This is not an error we know how to handle." );
+        Neo4jError error = Neo4jError.from( cause );
 
         // When
-        Neo4jError error = Neo4jError.from( cause );
+        reporter.report( error );
 
         // Then
         assertThat( error.status(), equalTo( (Status) Status.General.UnknownFailure ) );
         provider.assertExactly(
                 inLog( "userlog" )
-                    .error( both(containsString( "START OF REPORT" ))
-                            .and(containsString( "END OF REPORT" )) ));
+                        .error( both( containsString( "START OF REPORT" ) )
+                                .and( containsString( "END OF REPORT" ) ) ) );
+        provider.assertExactly(
+                inLog( "userlog" ).error( containsString( error.reference().toString() ) ) );
     }
+
 }
