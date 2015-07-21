@@ -52,6 +52,8 @@ import static org.neo4j.shell.Continuation.INPUT_COMPLETE;
 
 public class Schema extends TransactionProvidingApp
 {
+    private static final String INDENT = "  ";
+
     private static final Function<IndexDefinition, String> LABEL_COMPARE_FUNCTION =
             new Function<IndexDefinition, String>()
             {
@@ -292,7 +294,7 @@ public class Schema extends TransactionProvidingApp
                 out.println( "Constraints" );
             }
 
-            out.println( constraint.toString() );
+            out.println( indent( constraint.toString() ) );
             j++;
 
         }
@@ -306,7 +308,7 @@ public class Schema extends TransactionProvidingApp
     private void reportNodeIndexes( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels, String property,
             boolean verbose ) throws RemoteException
     {
-        ColumnPrinter printer = new ColumnPrinter( "  ON ", "", "" );
+        ColumnPrinter printer = new ColumnPrinter( indent( "ON " ), "", "" );
         Iterable<IndexDefinition> indexes = indexesByLabelAndProperty( schema, labels, property );
         
         int i = 0;
@@ -481,5 +483,10 @@ public class Schema extends TransactionProvidingApp
             }, indexes );
         }
         return indexes;
+    }
+
+    private static String indent( String str )
+    {
+        return INDENT + str;
     }
 }

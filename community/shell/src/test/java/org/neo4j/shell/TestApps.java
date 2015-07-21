@@ -992,6 +992,36 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
+    public void shouldHaveCorrectIndentationsInSchemaListing() throws Exception
+    {
+        // GIVEN
+        Label label = DynamicLabel.label( "Person" );
+        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
+
+        // WHEN
+        beginTx();
+        db.schema().constraintFor( label ).assertPropertyIsUnique( "name" ).create();
+        finishTx();
+
+        beginTx();
+        db.schema().constraintFor( label ).assertPropertyExists( "name" ).create();
+        finishTx();
+
+        beginTx();
+        db.schema().constraintFor( relType ).assertPropertyExists( "since" ).create();
+        finishTx();
+
+        // THEN
+        executeCommand( "schema",
+                "Indexes",
+                "  ON :Person\\(name\\) ONLINE \\(for uniqueness constraint\\)",
+                "Constraints",
+                "  ON \\(person:Person\\) ASSERT person.name IS UNIQUE",
+                "  ON \\(person:Person\\) ASSERT person.name IS NOT NULL",
+                "  ON \\(\\)-\\[knows:KNOWS\\]-\\(\\) ASSERT knows.since IS NOT NULL" );
+    }
+
+    @Test
     public void canListUniquePropertyConstraintsByLabelAndProperty() throws Exception
     {
         // GIVEN
