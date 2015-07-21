@@ -59,7 +59,7 @@ public class Chunker
         for ( byte[] message : messages )
         {
             out.writeBytes( message, 0, message.length );
-            out.messageBoundaryHook().run();
+            out.onMessageComplete();
         }
         out.flush();
 

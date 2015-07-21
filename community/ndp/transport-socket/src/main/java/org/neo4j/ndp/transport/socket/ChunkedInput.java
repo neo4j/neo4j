@@ -193,7 +193,7 @@ public class ChunkedInput implements PackInput
 
     private void ensureChunkAvailable() throws IOException
     {
-        if ( currentChunk == null || currentChunk.readableBytes() == 0 )
+        while ( currentChunk == null || currentChunk.readableBytes() == 0 )
         {
             currentChunkIndex++;
             if ( currentChunkIndex < chunks.size() )

@@ -89,8 +89,8 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
     {
-        close();
         log.error( "Fatal error occurred when handling a client connection: " + cause.getMessage(), cause );
+        close();
     }
 
     private void close()

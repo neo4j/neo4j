@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.HostnamePort;
@@ -41,7 +41,7 @@ public class SecureWebSocketConnection implements Connection, WebSocketListener
     private RemoteEndpoint server;
 
     // Incoming data goes on this queue
-    private final ArrayBlockingQueue<byte[]> received = new ArrayBlockingQueue<>( 4 );
+    private final LinkedBlockingQueue<byte[]> received = new LinkedBlockingQueue<>();
 
     // Current input data being handled, poppoed off of 'recieved' queue
     private byte[] currentRecieveBuffer = null;
