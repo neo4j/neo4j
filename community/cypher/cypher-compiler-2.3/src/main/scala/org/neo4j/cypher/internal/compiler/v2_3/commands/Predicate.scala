@@ -98,7 +98,7 @@ case class Ands(predicates: List[Predicate]) extends Predicate {
 
 case class AndedPropertyComparablePredicates(ident: Identifier, prop: Property, comparables: NonEmptyList[ComparablePredicate]) extends Predicate {
 
-  def symbolTableDependencies: Set[String] = comparables.foldLeft(Set.empty[String]) {
+  def symbolTableDependencies: Set[String] = comparables.foldLeft(prop.symbolTableDependencies) {
     case (acc, predicate) => acc ++ predicate.symbolTableDependencies
   }
 
@@ -128,8 +128,15 @@ case class AndedPropertyComparablePredicates(ident: Identifier, prop: Property, 
 
   def arguments: Seq[Expression] = comparables.toSeq
 
+  // some rewriters change the type of this, and we can't allow that
+  private def rewriteIdentifierIfNotTypeChanged(f: (Expression) => Expression) =
+    ident.rewrite(f) match {
+      case i: Identifier => i
+      case _ => ident
+    }
+
   def rewrite(f: (Expression) => Expression): Expression =
-    f(AndedPropertyComparablePredicates(ident.rewrite(f).asInstanceOf[Identifier],
+    f(AndedPropertyComparablePredicates(rewriteIdentifierIfNotTypeChanged(f),
                                         prop.rewrite(f).asInstanceOf[Property],
                                         comparables.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))
 

@@ -72,7 +72,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     val result = executeWithRulePlanner(query)
 
     result.executionPlanDescription().toString should include("SchemaIndex")
-    result.executionPlanDescription().toString should include("StringSeekRange")
+    result.executionPlanDescription().toString should include("PrefixSeekRange")
     result.toList should equal(List(Map("NAME" -> "LONDON")))
   }
 
@@ -86,7 +86,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     val result = executeWithRulePlanner(query)
 
     result.executionPlanDescription().toString should include("SchemaIndex")
-    result.executionPlanDescription().toString should include("StringSeekRange")
+    result.executionPlanDescription().toString should include("PrefixSeekRange")
     result.toList should equal(List(Map("NAME" -> "LOONY")))
   }
 
@@ -101,7 +101,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     val result = executeWithRulePlanner(query)
 
     result.executionPlanDescription().toString should include("SchemaIndex")
-    result.executionPlanDescription().toString should include("StringSeekRange")
+    result.executionPlanDescription().toString should include("PrefixSeekRange")
     result.toList should equal(List(Map("NAME" -> "LOONYBOOM")))
   }
 
@@ -116,7 +116,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     val result = executeWithRulePlanner(query)
 
     result.executionPlanDescription().toString should include("SchemaIndex")
-    result.executionPlanDescription().toString should include("StringSeekRange")
+    result.executionPlanDescription().toString should include("PrefixSeekRange")
     result.executionPlanDescription().toString should include("Filter")
     result.toList should equal(List(Map("NAME" -> "LONDON")))
   }

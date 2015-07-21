@@ -159,6 +159,17 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     costResult
   }
 
+  def executeWithAllPlannersReplaceNaNs(queryText: String, params: (String, Any)*): InternalExecutionResult = {
+    val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
+    val idpResult = innerExecute(s"CYPHER planner=idp $queryText", params: _*)
+    val costResult = executeWithCostPlannerOnly(queryText, params: _*)
+
+    assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners", true)
+    assertResultsAreSame(idpResult, costResult, queryText, "Diverging results between IDP and greedy planner", true)
+    ruleResult.close()
+    costResult
+  }
+
   //TODO remove as soon compiled plans support dumpToString and PROFILE
   def executeWithAllPlannersOnInterpretedRuntime(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
@@ -184,12 +195,12 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     compiledResult
   }
 
-  private def assertResultsAreSame(ruleResult: InternalExecutionResult, costResult: InternalExecutionResult, queryText: String, errorMsg: String) {
+  private def assertResultsAreSame(ruleResult: InternalExecutionResult, costResult: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
     withClue(errorMsg) {
       if (queryText.toLowerCase contains "order by") {
-        ruleResult.toComparableResult should contain theSameElementsInOrderAs costResult.toComparableResult
+        ruleResult.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsInOrderAs costResult.toComparableResultWithOptions(replaceNaNs)
       } else {
-        ruleResult.toComparableResult should contain theSameElementsAs costResult.toComparableResult
+        ruleResult.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsAs costResult.toComparableResultWithOptions(replaceNaNs)
       }
     }
   }
@@ -243,14 +254,15 @@ trait NewPlannerTestSupport extends CypherTestSupport {
    * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
    */
   implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
-    def toComparableResult: Seq[Map[String, Any]] = res.toList.toCompararableSeq
+    def toComparableResultWithOptions(replaceNaNs: Boolean): Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs)
+    def toComparableResult: Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs = false)
   }
 
   implicit class RichMapSeq(res: Seq[Map[String, Any]]) {
 
     import scala.collection.JavaConverters._
 
-    def toCompararableSeq: Seq[Map[String, Any]] = {
+    def toCompararableSeq(replaceNaNs: Boolean): Seq[Map[String, Any]] = {
       def convert(v: Any): Any = v match {
         case a: Array[_] => a.toList.map(convert)
         case m: Map[_,_] =>  {
@@ -260,6 +272,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
           Eagerly.immutableMapValues(m.asScala, convert)
         }
         case l: java.util.List[_] => l.asScala.map(convert)
+        case d: java.lang.Double if replaceNaNs && java.lang.Double.isNaN(d) => "NaNreplacement"
         case m => m
       }
 

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.UpdateAction
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.FakePipe
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
@@ -276,6 +277,36 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
         val query = q(
           where = Seq(labelPredicate, likePredicate),
+          patterns = Seq(SingleNode(identifier))
+        )
+
+        when(context.getIndexRule(label, property)).thenReturn(Some(new IndexDescriptor(123, 456)))
+        when(context.getUniquenessConstraint( Matchers.any(), Matchers.any() )).thenReturn(None)
+
+        // When
+        val result = assertAccepts(query).query
+
+        // Then
+        result.start.exists(_.token.isInstanceOf[SchemaIndex]) should equal(true)
+      }
+    }
+
+    inner.run()
+  }
+
+  test("should pick any index available for range queries") {
+    object inner extends org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport {
+      import ExpressionConverters._
+
+      def run() = {
+        // Given
+        val labelPredicate = HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label))
+        val prop: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop") _) _
+        val inequality = ast.AndedPropertyInequalities(ident("n"), prop, NonEmptyList(ast.GreaterThan(prop, ast.SignedDecimalIntegerLiteral("42") _) _))
+        val inequalityPredicate = inequality.asCommandPredicate
+
+        val query = q(
+          where = Seq(labelPredicate, inequalityPredicate),
           patterns = Seq(SingleNode(identifier))
         )
 

@@ -92,7 +92,7 @@ class GroupInequalityPredicatesForLegacyTest extends CypherFunSuite {
 
   private def greaterThan(lhs: Expression, v: Int) =
     GreaterThan(lhs, Literal(v))
-  
+
   private def greaterThanOrEqual(lhs: Expression, v: Int) =
     GreaterThanOrEqual(lhs, Literal(v))
 

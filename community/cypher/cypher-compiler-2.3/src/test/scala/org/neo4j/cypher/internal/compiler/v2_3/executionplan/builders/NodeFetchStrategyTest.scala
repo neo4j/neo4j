@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Collection, Identifier, Property}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedLabel, UnresolvedProperty}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{AnyInCollection, Equals, HasLabel}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
@@ -98,6 +99,38 @@ class NodeFetchStrategyTest extends CypherFunSuite {
         val labelPredicate = HasLabel(Identifier(nodeName), UnresolvedLabel(labelName))
         val like: ast.Like = ast.Like(ast.Property(ident(nodeName), ast.PropertyKeyName(propertyName)_)_, ast.LikePattern(ast.StringLiteral("prefix%")_))_
         val likePredicate = like.asCommandPredicate
+
+        val planCtx = mock[PlanContext]
+        val indexDescriptor = new IndexDescriptor(0, 0)
+
+        when(planCtx.getIndexRule(labelName, propertyName)).thenReturn(Some(indexDescriptor))
+        when(planCtx.getUniquenessConstraint(labelName, propertyName)).thenReturn(None)
+
+        // When
+        val foundStartItem = NodeFetchStrategy.findStartStrategy(nodeName, Seq(likePredicate, labelPredicate), planCtx, symbols)
+
+        // Then
+        foundStartItem.rating should equal(NodeFetchStrategy.IndexRange)
+      }
+    }
+
+    inner.run()
+  }
+
+  test("should select schema index for range queries") {
+    object inner extends AstConstructionTestSupport {
+
+      import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
+
+      def run(): Unit = {
+        //Given
+        val nodeName = "n"
+        val symbols = new SymbolTable(Map(nodeName -> CTNode))
+        val labelPredicate = HasLabel(Identifier(nodeName), UnresolvedLabel(labelName))
+        val prop: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop") _) _
+        val inequality = ast.AndedPropertyInequalities(ident("n"), prop, NonEmptyList(ast.GreaterThan(prop, ast.SignedDecimalIntegerLiteral("42") _) _))
+
+        val likePredicate = inequality.asCommandPredicate
 
         val planCtx = mock[PlanContext]
         val indexDescriptor = new IndexDescriptor(0, 0)

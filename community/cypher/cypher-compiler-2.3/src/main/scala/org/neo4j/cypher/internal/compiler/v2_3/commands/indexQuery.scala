@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, StringSeekRange, ValueExpressionSeekRange}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, PrefixSeekRangeExpression, InequalitySeekRangeExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsCollection
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
@@ -61,10 +61,10 @@ object indexQuery extends GraphElementPropertyFunctions {
     case RangeQueryExpression(rangeWrapper) =>
       val range = rangeWrapper match {
         // StringSeekRange => PrefixRange("Petra")
-        case s: StringSeekRange => s.range
+        case s: PrefixSeekRangeExpression => s.range
 
         // ValueSeekRange(RangeGT(InclusiveBound(n.prop + 12)) => RangeGT(InclusiveBound(15)))
-        case ValueExpressionSeekRange(range) => range.mapBounds(_(m)(state)).mapBounds(makeValueNeoSafe)
+        case InequalitySeekRangeExpression(range) => range.mapBounds(_(m)(state)).mapBounds(makeValueNeoSafe)
       }
       index(range).toIterator
   }

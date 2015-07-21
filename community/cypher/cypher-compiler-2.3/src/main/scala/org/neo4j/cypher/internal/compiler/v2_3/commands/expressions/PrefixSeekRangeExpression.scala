@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-import org.neo4j.cypher.internal.compiler.v2_3.{SeekRange, ExecutionContext, InternalException}
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionContext, InternalException, PrefixRange}
 
-case class StringSeekRange(range: SeekRange[String])
+case class PrefixSeekRangeExpression(range: PrefixRange)
   extends Expression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = throw new

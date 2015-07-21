@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_3.{PrefixRange, IndexHintException}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
@@ -43,7 +44,7 @@ class StartPointBuilderTest extends BuilderTest {
   }
 
   test("plans index seek by prefix") {
-    val range = StringSeekRange(PrefixRange("prefix"))
+    val range = PrefixSeekRangeExpression(PrefixRange("prefix"))
     val labelName = "Label"
     val propertyName = "prop"
     val q = PartiallySolvedQuery().
@@ -54,7 +55,75 @@ class StartPointBuilderTest extends BuilderTest {
   }
 
   test("plans unique index seek by prefix") {
-    val range = StringSeekRange(PrefixRange("prefix"))
+    val range = PrefixSeekRangeExpression(PrefixRange("prefix"))
+    val labelName = "Label"
+    val propertyName = "prop"
+    val q = PartiallySolvedQuery().
+      copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, UniqueIndex, Some(RangeQueryExpression(range))))))
+    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+
+    assertAccepts(q)
+  }
+
+  test("plans index seek for textual range query") {
+    val range = InequalitySeekRangeExpression(RangeLessThan(NonEmptyList(InclusiveBound(Literal("xxx")))))
+    val labelName = "Label"
+    val propertyName = "prop"
+    val q = PartiallySolvedQuery().
+      copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, AnyIndex, Some(RangeQueryExpression(range))))))
+    when(context.getIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+
+    assertAccepts(q)
+  }
+
+  test("plans index seek for textual range query with several ranges") {
+    val range = InequalitySeekRangeExpression(RangeBetween(RangeGreaterThan(NonEmptyList(InclusiveBound(Literal("xxx")), ExclusiveBound(Literal("yyy")))),
+                                                           RangeLessThan(NonEmptyList(ExclusiveBound(Literal("@@@"))))))
+    val labelName = "Label"
+    val propertyName = "prop"
+    val q = PartiallySolvedQuery().
+      copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, AnyIndex, Some(RangeQueryExpression(range))))))
+    when(context.getIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+
+    assertAccepts(q)
+  }
+
+  test("plans index seek for numerical range query") {
+    val range = InequalitySeekRangeExpression(RangeGreaterThan(NonEmptyList(InclusiveBound(Literal(42)))))
+    val labelName = "Label"
+    val propertyName = "prop"
+    val q = PartiallySolvedQuery().
+      copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, UniqueIndex, Some(RangeQueryExpression(range))))))
+    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+
+    assertAccepts(q)
+  }
+
+  test("plans index seek for numerical range query with several ranges") {
+    val range = InequalitySeekRangeExpression(RangeBetween(RangeGreaterThan(NonEmptyList(InclusiveBound(Literal(Double.NaN)), ExclusiveBound(Literal(25.5)))),
+                                                           RangeLessThan(NonEmptyList(ExclusiveBound(Literal(Double.NegativeInfinity))))))
+    val labelName = "Label"
+    val propertyName = "prop"
+    val q = PartiallySolvedQuery().
+      copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, UniqueIndex, Some(RangeQueryExpression(range))))))
+    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+
+    assertAccepts(q)
+  }
+
+  test("plans unique index seek for textual range query") {
+    val range = InequalitySeekRangeExpression(RangeLessThan(NonEmptyList(InclusiveBound(Literal("xxx")))))
+    val labelName = "Label"
+    val propertyName = "prop"
+    val q = PartiallySolvedQuery().
+      copy(start = Seq(Unsolved(SchemaIndex("n", labelName, propertyName, UniqueIndex, Some(RangeQueryExpression(range))))))
+    when(context.getUniqueIndexRule(labelName, propertyName)).thenReturn(Some(new IndexDescriptor(123,456)))
+
+    assertAccepts(q)
+  }
+
+  test("plans unique index seek for numerical range query") {
+    val range = InequalitySeekRangeExpression(RangeGreaterThan(NonEmptyList(InclusiveBound(Literal(42)))))
     val labelName = "Label"
     val propertyName = "prop"
     val q = PartiallySolvedQuery().

@@ -36,7 +36,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     val query = "MATCH (n:Label) WHERE n.prop < 10 RETURN n.prop AS prop"
 
-    a[IncomparableValuesException] should be thrownBy executeWithCostPlannerOnly(query)
+    a[IncomparableValuesException] should be thrownBy executeWithAllPlanners(query)
   }
 
   test("should be able to plan index seek for numerical less than") {
@@ -62,7 +62,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop < 10 RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[Number]("prop").asMultiSet should equal(MultiSet(Double.NegativeInfinity, -5, 0, 5, 5.0))
@@ -92,7 +92,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop <= 10 RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[Number]("prop").asMultiSet should equal(MultiSet(Double.NegativeInfinity, -5, 0, 5, 5.0, 10, 10.0))
@@ -122,7 +122,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop > 5 RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlannersReplaceNaNs(query)
 
     // Then
     val values = result.columnAs[Number]("prop").toSeq
@@ -155,7 +155,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop >= 5 RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlannersReplaceNaNs(query)
 
     // Then
     val values = result.columnAs[Number]("prop").toSeq
@@ -186,7 +186,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop < '15' RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[String]("prop").asMultiSet should equal(MultiSet("", "-5", "0", "10", "14whatever"))
@@ -215,7 +215,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop <= '15' RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[String]("prop").asMultiSet should equal(MultiSet("", "-5", "0", "10", "15", "14whatever"))
@@ -246,7 +246,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop > '15' RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[String]("prop").asMultiSet should equal(MultiSet(smallValue, "5" ,"5"))
@@ -277,7 +277,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop >= '15' RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[String]("prop").asMultiSet should equal(MultiSet("15", smallValue, "5", "5"))
@@ -307,7 +307,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop >= '15' AND n.prop2 > 5 RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[String]("prop").toList should equal(List.empty)
@@ -332,7 +332,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop <= 10 AND n.prop > 10 RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[Number]("prop").toList should equal(List.empty)
@@ -357,7 +357,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop <= null RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[Number]("prop").toList should equal(List.empty)
@@ -388,7 +388,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop >=5 AND n.prop < 10 RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[Number]("prop").asMultiSet should equal(MultiSet(5, 5.0, 6.1))
@@ -420,7 +420,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop >= 0 AND n.prop >=5 AND n.prop < 10 AND n.prop < 100 RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[Number]("prop").asMultiSet should equal(MultiSet(5, 5.0, 6.1))
@@ -449,7 +449,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop < '15' AND n.prop >= '15' RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[String]("prop").toList should equal(List.empty)
@@ -478,7 +478,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop < null RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[String]("prop").toList should equal(List.empty)
@@ -509,7 +509,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop >= '10' AND n.prop < '15' RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[String]("prop").asMultiSet should equal(MultiSet("10", "14whatever"))
@@ -540,7 +540,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop > '1' AND n.prop >= '10' AND n.prop < '15' AND n.prop <= '14whatever' RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[String]("prop").asMultiSet should equal(MultiSet("10", "14whatever"))
@@ -560,7 +560,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop > '1' AND n.prop > 10 RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[String]("prop").toList should equal(List.empty)
@@ -580,7 +580,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop > '1' AND n.prop > 10 RETURN n.prop AS prop"
 
     // When
-    val result = executeWithCostPlannerOnly(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     result.columnAs[String]("prop").toList should equal(List.empty)
@@ -600,10 +600,10 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop >= '1' AND n.prop > 10 RETURN n.prop AS prop"
 
     an[IllegalArgumentException] should be thrownBy {
-      executeWithCostPlannerOnly(query).toList
+      executeWithAllPlanners(query).toList
     }
 
-    executeWithCostPlannerOnly(s"EXPLAIN $query").executionPlanDescription().toString should include("NodeIndexSeekByRange")
+    executeWithAllPlanners(s"EXPLAIN $query").executionPlanDescription().toString should include("NodeIndexSeekByRange")
   }
 
   test("should refuse to execute index seeks using inequalities over incomparable types (detected at compile time)") {
@@ -611,7 +611,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop >= [1, 2, 3] RETURN n.prop AS prop"
 
     an[SyntaxException] should be thrownBy {
-      executeWithCostPlannerOnly(query).toList
+      executeWithAllPlanners(query).toList
     }
   }
 
@@ -625,10 +625,10 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop >= {param} RETURN n.prop AS prop"
 
     an[IllegalArgumentException] should be thrownBy {
-      executeWithCostPlannerOnly(query, "param" -> Array[Int](1, 2, 3)).toList
+      executeWithAllPlanners(query, "param" -> Array[Int](1, 2, 3)).toList
     }
 
-    executeWithCostPlannerOnly(s"EXPLAIN $query").executionPlanDescription().toString should include("NodeIndexSeekByRange")
+    executeWithAllPlanners(s"EXPLAIN $query").executionPlanDescription().toString should include("NodeIndexSeekByRange")
   }
 
   test("should return no rows when executing index seeks using inequalities over incomparable types but also comparing against null") {
@@ -640,8 +640,8 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     val query = "MATCH (n:Label) WHERE n.prop >= {param} AND n.prop < null RETURN n.prop AS prop"
 
-    executeWithCostPlannerOnly(query, "param" -> Array[Int](1, 2, 3)).toList should equal(List.empty)
-    executeWithCostPlannerOnly(s"EXPLAIN $query").executionPlanDescription().toString should include("NodeIndexSeekByRange")
+    executeWithAllPlanners(query, "param" -> Array[Int](1, 2, 3)).toList should equal(List.empty)
+    executeWithAllPlanners(s"EXPLAIN $query").executionPlanDescription().toString should include("NodeIndexSeekByRange")
   }
 
   test("should plan range index seeks matching characters against properties (coerced to string wrt the inequality)") {
@@ -659,7 +659,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     val query = "MATCH (n:Label) WHERE n.prop >= {param} RETURN n.prop AS prop"
 
-    val result = executeWithCostPlannerOnly(query, "param" -> matchingChar)
+    val result = executeWithAllPlanners(query, "param" -> matchingChar)
 
     result.columnAs[Any]("prop").asMultiSet should equal(MultiSet(matchingChar, matchingChar.toString))
     result.executionPlanDescription().toString should include("NodeIndexSeekByRange")
@@ -680,10 +680,24 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     val query = "MATCH (n:Label) WHERE n.prop >= {param} RETURN n.prop AS prop"
 
-    val result = executeWithCostPlannerOnly(query, "param" -> matchingChar.toString)
+    val result = executeWithAllPlanners(query, "param" -> matchingChar.toString)
 
     result.columnAs[Any]("prop").asMultiSet should equal(MultiSet(matchingChar, matchingChar.toString))
     result.executionPlanDescription().toString should include("NodeIndexSeekByRange")
+  }
+
+  test("rule planner should plan index seek for inequality match") {
+    graph.createIndex("Label", "prop")
+    createLabeledNode(Map("prop" -> 1), "Label")
+    createLabeledNode(Map("prop" -> 5), "Label")
+    createLabeledNode(Map("prop" -> 10), "Label")
+
+    val query = "MATCH (n:Label) WHERE n.prop < 10 CREATE () RETURN n.prop"
+
+    val result = executeWithRulePlanner(query)
+
+    result.executionPlanDescription().toString should include("SchemaIndex")
+    result.toList should equal(List(Map("n.prop" -> 1), Map("n.prop" -> 5)))
   }
 
   object MultiSet {
