@@ -44,7 +44,7 @@ class DocumentationTestBaseTest extends DocumentingTestBase with QueryStatistics
     testQuery(
       title = "Test DocumentationTestBase",
       text = "Aggregated results have to pass through a `WITH` clause to be able to filter on.",
-      queryText = """match david--otherPerson-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson""",
+      queryText = """match (david)--(otherPerson)-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson""",
       optionalResultExplanation = """The person connected to David with the at least more than one outgoing relationship will be returned by the query.""",
       assertions = (p) => assertEquals(List(node("A")), p.columnAs[Node]("otherPerson").toList))
 

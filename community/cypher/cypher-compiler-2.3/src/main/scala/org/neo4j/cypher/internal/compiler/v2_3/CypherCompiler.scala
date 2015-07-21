@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.CompilationPhase.{AST_REWRITE, PARSING, SEMANTIC_CHECK}
-import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{NodePattern, Statement}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.CodeStructure
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.closing
+import org.neo4j.cypher.internal.compiler.v2_3.notification.{BareNodeSyntaxDeprecatedNotification, InternalNotification}
 import org.neo4j.cypher.internal.compiler.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.LogicalPlanRewriter
@@ -140,12 +141,17 @@ case class CypherCompiler(parser: CypherParser,
                 offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) =
     planPreparedQuery(prepareQuery(queryText, queryText, notificationLogger), context, CompilationPhaseTracer.NO_TRACING)
 
+
   def prepareQuery(queryText: String, rawQueryText: String, notificationLogger: InternalNotificationLogger,
                    offset: Option[InputPosition] = None,
                    tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuery = {
+
     val parsedStatement = closing(tracer.beginPhase(PARSING)) {
       parser.parse(queryText, offset)
     }
+
+    val syntaxDeprecations = syntaxDeprecationNotifications(parsedStatement)
+    syntaxDeprecations.foreach(notificationLogger.log)
 
     val mkException = new SyntaxExceptionCreator(rawQueryText, offset)
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException),
@@ -184,6 +190,13 @@ case class CypherCompiler(parser: CypherParser,
     }.next()
     (plan, parsedQuery.extractedParams)
   }
+
+  private def syntaxDeprecationNotifications(statement: Statement) =
+    statement.treeFold(Seq.empty[InternalNotification]) {
+      case pat: NodePattern if pat.naked =>
+        (acc, children) =>
+          children(acc :+ BareNodeSyntaxDeprecatedNotification(pat.position))
+    }
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                            monitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],

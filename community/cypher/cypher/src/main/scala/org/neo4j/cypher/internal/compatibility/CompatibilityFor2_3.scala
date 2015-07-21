@@ -284,17 +284,19 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
 
   private def asKernelNotification(notification: InternalNotification) = notification match {
     case CartesianProductNotification(pos, identifiers) =>
-      NotificationCode.CARTESIAN_PRODUCT.notification(new InputPosition(pos.offset, pos.line, pos.column), NotificationDetail.Factory.cartesianProduct(identifiers.asJava))
+      NotificationCode.CARTESIAN_PRODUCT.notification(pos.asInputPosition, NotificationDetail.Factory.cartesianProduct(identifiers.asJava))
     case LegacyPlannerNotification =>
       NotificationCode.LEGACY_PLANNER.notification(InputPosition.empty)
     case LengthOnNonPathNotification(pos) =>
-      NotificationCode.LENGTH_ON_NON_PATH.notification(new InputPosition(pos.offset, pos.line, pos.column))
+      NotificationCode.LENGTH_ON_NON_PATH.notification(pos.asInputPosition)
     case PlannerUnsupportedNotification =>
       NotificationCode.PLANNER_UNSUPPORTED.notification(InputPosition.empty)
     case RuntimeUnsupportedNotification =>
       NotificationCode.RUNTIME_UNSUPPORTED.notification(InputPosition.empty)
     case IndexHintUnfulfillableNotification(label, propertyKey) =>
       NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, NotificationDetail.Factory.index(label, propertyKey))
+    case BareNodeSyntaxDeprecatedNotification(pos) =>
+      NotificationCode.BARE_NODE_SYNTAX_DEPRECATED.notification(pos.asInputPosition)
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_3.runSafely {
@@ -304,6 +306,10 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
 
   override def toString() = {
     getClass.getName + "@" + Integer.toHexString(hashCode())
+  }
+
+  private implicit class ConvertibleCompilerInputPosition(pos: org.neo4j.cypher.internal.compiler.v2_3.InputPosition) {
+    def asInputPosition = new InputPosition(pos.offset, pos.line, pos.column)
   }
 }
 

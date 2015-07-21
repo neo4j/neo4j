@@ -27,20 +27,20 @@ import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class NewsFeedTest extends DocumentingTestBase {
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
-  
+
   def section = "cookbook"
   override val noTitle = true;
-  
+
   override val setupQueries = List("""
-create 
+create
 (bob{name:'Bob'})-[:STATUS]->(bob_s1{name:'bob_s1', text:'bobs status1',date:1})-[:NEXT]->(bob_s2{name:'bob_s2', text:'bobs status2',date:4}),
 (alice{name:'Alice'})-[:STATUS]->(alice_s1{name:'alice_s1', text:'Alices status1',date:2})-[:NEXT]->(alice_s2{name:'alice_s2', text:'Alices status2',date:5}),
 (joe{name:'Joe'})-[:STATUS]->(joe_s1{name:'joe_s1', text:'Joe status1',date:3})-[:NEXT]->(joe_s2{name:'joe_s2', text:'Joe status2',date:6}),
-(joe)-[:FRIEND{status:'CONFIRMED'}]->bob,
-(alice)-[:FRIEND{status:'PENDING'}]->joe,
-(bob)-[:FRIEND{status:'CONFIRMED'}]->alice
+(joe)-[:FRIEND{status:'CONFIRMED'}]->(bob),
+(alice)-[:FRIEND{status:'PENDING'}]->(joe),
+(bob)-[:FRIEND{status:'CONFIRMED'}]->(alice)
 """)
 
   @Test def timelineSearch() {
@@ -56,7 +56,7 @@ Starting at `me`, retrieve the time-ordered status feed of the status updates of
       queryText = """MATCH (me {name: 'Joe'})-[rels:FRIEND*0..1]-(myfriend)
 WHERE ALL(r in rels WHERE r.status = 'CONFIRMED')
 WITH myfriend
-MATCH (myfriend)-[:STATUS]-(latestupdate)-[:NEXT*0..1]-(statusupdates) 
+MATCH (myfriend)-[:STATUS]-(latestupdate)-[:NEXT*0..1]-(statusupdates)
 RETURN myfriend.name as name, statusupdates.date as date, statusupdates.text as text
 ORDER BY statusupdates.date DESC LIMIT 3""",
       optionalResultExplanation =
@@ -64,7 +64,7 @@ ORDER BY statusupdates.date DESC LIMIT 3""",
 To understand the strategy, let's divide the query into five steps:
 
 . First Get the list of all my friends (along with me) through `FRIEND` relationship (`MATCH (me {name: 'Joe'})-[rels:FRIEND*0..1]-(myfriend)`). Also,  the `WHERE` predicate can be added to check whether the friend request is pending or confirmed.
-. Get the latest status update of my friends through Status relationship (`MATCH myfriend-[:STATUS]-latestupdate`).
+. Get the latest status update of my friends through Status relationship (`MATCH (myfriend)-[:STATUS]-(latestupdate)`).
 . Get subsequent status updates (along with the latest one) of my friends through `NEXT` relationships (`MATCH (myfriend)-[:STATUS]-(latestupdate)-[:NEXT*0..1]-(statusupdates)`) which will give you the latest and one additional statusupdate; adjust `0..1` to whatever suits your case.
 . Sort the status updates by posted date (`ORDER BY statusupdates.date DESC`).
 . `LIMIT` the number of updates you need in every query (`LIMIT 3`).""",
