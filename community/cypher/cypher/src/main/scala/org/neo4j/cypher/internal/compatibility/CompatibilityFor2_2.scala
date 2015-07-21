@@ -24,6 +24,7 @@ import java.util
 
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_2
+import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition => InputPositionForV_2_2 }
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => ExecutionPlan_v2_2, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Planner, Rows, Version}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
@@ -150,8 +151,10 @@ trait CompatibilityFor2_2 {
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(statementAsText: String) = new ParsedQuery {
-    val preparedQueryForV_2_2 = Try(compiler.prepareQuery(statementAsText))
+  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = new ParsedQuery {
+    val offset_2_3 = preParsedQuery.offset
+    val offset_2_2 = InputPositionForV_2_2(offset_2_3.offset, offset_2_3.line, offset_2_3.column)
+    val preparedQueryForV_2_2 = Try(compiler.prepareQuery(preParsedQuery.statement, preParsedQuery.rawStatement, Some(offset_2_2)))
 
     def isPeriodicCommit = preparedQueryForV_2_2.map(_.isPeriodicCommit).getOrElse(false)
 
