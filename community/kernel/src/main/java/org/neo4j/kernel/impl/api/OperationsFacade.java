@@ -178,16 +178,26 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber(IndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
-            throws IndexNotFoundKernelException {
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( IndexDescriptor index,
+            Number lower,
+            boolean includeLower,
+            Number upper,
+            boolean includeUpper )
+            throws IndexNotFoundKernelException
+    {
         statement.assertOpen();
         return dataRead().nodesGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper,
                 includeUpper );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString(IndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException {
+    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( IndexDescriptor index,
+            String lower,
+            boolean includeLower,
+            String upper,
+            boolean includeUpper )
+            throws IndexNotFoundKernelException
+    {
         statement.assertOpen();
         return dataRead().nodesGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper,
                 includeUpper );
@@ -221,14 +231,20 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public boolean nodeExists( long nodeId )
     {
         statement.assertOpen();
-        return dataRead().nodeExists( statement, nodeId );
+        try ( Cursor<NodeItem> cursor = nodeCursor( nodeId ) )
+        {
+            return cursor.next();
+        }
     }
 
     @Override
     public boolean relationshipExists( long relId )
     {
         statement.assertOpen();
-        return dataRead().relationshipExists( statement, relId );
+        try ( Cursor<RelationshipItem> cursor = relationshipCursor( relId ) )
+        {
+            return cursor.next();
+        }
     }
 
     @Override
@@ -243,7 +259,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
         try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
         {
-            return dataRead().nodeHasLabel( statement, node.get(), labelId );
+            return node.get().hasLabel( labelId );
         }
     }
 
@@ -253,7 +269,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
         {
-            return dataRead().nodeGetLabels( statement, statement.getStoreStatement(), node.get() );
+            return node.get().getLabels();
         }
     }
 
@@ -267,7 +283,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         }
         try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
         {
-            return dataRead().nodeHasProperty( statement, node.get(), propertyKeyId );
+            return node.get().hasProperty( propertyKeyId );
         }
     }
 
@@ -281,7 +297,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         }
         try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
         {
-            return dataRead().nodeGetProperty( statement, node.get(), propertyKeyId );
+            return node.get().getProperty( propertyKeyId );
         }
     }
 
@@ -292,7 +308,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
         {
-            return dataRead().nodeGetRelationships( statement, node.get(), direction, relTypes );
+            return node.get().getRelationships( direction, relTypes );
         }
     }
 
@@ -303,7 +319,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
         {
-            return dataRead().nodeGetRelationships( statement, node.get(), direction );
+            return node.get().getRelationships( direction );
         }
     }
 
@@ -313,7 +329,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
         {
-            return dataRead().nodeGetDegree( statement, node.get(), direction, relType );
+            return node.get().degree( direction, relType );
         }
     }
 
@@ -323,7 +339,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
         {
-            return dataRead().nodeGetDegree( statement, node.get(), direction );
+            return node.get().degree( direction );
         }
     }
 
@@ -333,7 +349,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
         {
-            return dataRead().nodeGetRelationshipTypes( statement, node.get() );
+            return node.get().getRelationshipTypes();
         }
     }
 
@@ -347,7 +363,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         }
         try ( Cursor<RelationshipItem> relationship = getRelationshipCursor( relationshipId ) )
         {
-            return dataRead().relationshipHasProperty( statement, relationship.get(), propertyKeyId );
+            return relationship.get().hasProperty( propertyKeyId );
         }
     }
 
@@ -361,7 +377,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         }
         try ( Cursor<RelationshipItem> relationship = getRelationshipCursor( relationshipId ) )
         {
-            return dataRead().relationshipGetProperty( statement, relationship.get(), propertyKeyId );
+            return relationship.get().getProperty( propertyKeyId );
         }
     }
 
@@ -393,7 +409,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         try ( Cursor<NodeItem> node = getNodeCursor( nodeId ) )
         {
-            return dataRead().nodeGetPropertyKeys( statement, node.get() );
+            return node.get().getPropertyKeys();
         }
     }
 
@@ -403,7 +419,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         try ( Cursor<RelationshipItem> relationship = getRelationshipCursor( relationshipId ) )
         {
-            return dataRead().relationshipGetPropertyKeys( statement, relationship.get() );
+            return relationship.get().getPropertyKeys();
         }
     }
 
@@ -477,22 +493,24 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     @Override
     public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( IndexDescriptor index,
-                                                               Number lower, boolean includeLower,
-                                                               Number upper, boolean includeUpper )
+            Number lower, boolean includeLower,
+            Number upper, boolean includeUpper )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper, includeUpper );
+        return dataRead().nodeCursorGetFromIndexRangeSeekByNumber( statement, index, lower, includeLower, upper,
+                includeUpper );
     }
 
     @Override
     public Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( IndexDescriptor index,
-                                                               String lower, boolean includeLower,
-                                                               String upper, boolean includeUpper )
+            String lower, boolean includeLower,
+            String upper, boolean includeUpper )
             throws IndexNotFoundKernelException
     {
         statement.assertOpen();
-        return dataRead().nodeCursorGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper, includeUpper );
+        return dataRead().nodeCursorGetFromIndexRangeSeekByString( statement, index, lower, includeLower, upper,
+                includeUpper );
     }
 
     @Override
@@ -808,7 +826,15 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException
     {
         statement.assertOpen();
-        return dataWrite().relationshipCreate( statement, relationshipTypeId, startNodeId, endNodeId );
+
+        try ( Cursor<NodeItem> startNode = getNodeCursor( startNodeId ) )
+        {
+            try ( Cursor<NodeItem> endNode = getNodeCursor( endNodeId ) )
+            {
+                return dataWrite().relationshipCreate( statement, relationshipTypeId, startNode.get(), endNode.get() );
+            }
+        }
+
     }
 
     @Override

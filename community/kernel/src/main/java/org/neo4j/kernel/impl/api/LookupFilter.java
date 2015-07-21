@@ -124,7 +124,7 @@ public class LookupFilter
             {
                 if ( node.next() )
                 {
-                    Object value = readOperations.nodeGetProperty( state, node.get(), propertyKeyId );
+                    Object value = node.get().getProperty( propertyKeyId );
                     return value == null ? Property.noNodeProperty( nodeId, propertyKeyId ) : Property.property(
                             propertyKeyId, value );
                 }

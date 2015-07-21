@@ -19,31 +19,95 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.IntValue;
+import org.neo4j.function.IntSupplier;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.api.cursor.DegreeItem;
 import org.neo4j.kernel.api.cursor.LabelItem;
 import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
-import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
+import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.util.InstanceCache;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
  * Base cursor for nodes.
  */
-public abstract class StoreAbstractNodeCursor implements Cursor<NodeItem>, NodeItem
+public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper implements Cursor<NodeItem>, NodeItem
 {
     protected final NodeRecord nodeRecord;
-    protected final NodeStore nodeStore;
+    protected final NeoStore neoStore;
     protected StoreStatement storeStatement;
 
-    public StoreAbstractNodeCursor( NodeRecord nodeRecord, NodeStore nodeStore, StoreStatement storeStatement )
+    private InstanceCache<StoreLabelCursor> labelCursor;
+    private InstanceCache<StoreSingleLabelCursor> singleLabelCursor;
+    private InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipCursor;
+    private InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
+    private InstanceCache<StorePropertyCursor> allPropertyCursor;
+
+    public StoreAbstractNodeCursor( NodeRecord nodeRecord,
+            final NeoStore neoStore,
+            final StoreStatement storeStatement )
     {
         this.nodeRecord = nodeRecord;
-        this.nodeStore = nodeStore;
+        this.neoStore = neoStore;
         this.storeStatement = storeStatement;
+
+        labelCursor = new InstanceCache<StoreLabelCursor>()
+        {
+            @Override
+            protected StoreLabelCursor create()
+            {
+                return new StoreLabelCursor( this );
+            }
+        };
+        singleLabelCursor = new InstanceCache<StoreSingleLabelCursor>()
+        {
+            @Override
+            protected StoreSingleLabelCursor create()
+            {
+                return new StoreSingleLabelCursor( this );
+            }
+        };
+        nodeRelationshipCursor = new InstanceCache<StoreNodeRelationshipCursor>()
+        {
+            @Override
+            protected StoreNodeRelationshipCursor create()
+            {
+                return new StoreNodeRelationshipCursor( new RelationshipRecord( -1 ),
+                        neoStore,
+                        new RelationshipGroupRecord( -1, -1 ), storeStatement, this );
+            }
+        };
+        singlePropertyCursor = new InstanceCache<StoreSinglePropertyCursor>()
+        {
+            @Override
+            protected StoreSinglePropertyCursor create()
+            {
+                return new StoreSinglePropertyCursor( neoStore.getPropertyStore(), this );
+            }
+        };
+        allPropertyCursor = new InstanceCache<StorePropertyCursor>()
+        {
+            @Override
+            protected StorePropertyCursor create()
+            {
+                return new StorePropertyCursor( neoStore.getPropertyStore(), this );
+            }
+        };
+
     }
 
     @Override
@@ -61,38 +125,396 @@ public abstract class StoreAbstractNodeCursor implements Cursor<NodeItem>, NodeI
     @Override
     public Cursor<LabelItem> labels()
     {
-        return storeStatement.acquireLabelCursor( parseLabelsField( nodeRecord ).get( nodeStore ) );
+        return labelCursor.get().init( parseLabelsField( nodeRecord ).get( neoStore.getNodeStore() ) );
     }
 
     @Override
     public Cursor<LabelItem> label( int labelId )
     {
-        return storeStatement.acquireSingleLabelCursor( parseLabelsField( nodeRecord ).get( nodeStore ), labelId );
+        return singleLabelCursor.get().init( parseLabelsField( nodeRecord ).get( neoStore.getNodeStore() ), labelId );
     }
 
     @Override
     public Cursor<PropertyItem> properties()
     {
-        return storeStatement.acquirePropertyCursor( nodeRecord.getNextProp() );
+        return allPropertyCursor.get().init( nodeRecord.getNextProp() );
     }
 
     @Override
     public Cursor<PropertyItem> property( int propertyKeyId )
     {
-        return storeStatement.acquireSinglePropertyCursor( nodeRecord.getNextProp(), propertyKeyId );
+        return singlePropertyCursor.get().init( nodeRecord.getNextProp(), propertyKeyId );
     }
 
     @Override
     public Cursor<RelationshipItem> relationships( Direction direction )
     {
-        return storeStatement.acquireNodeRelationshipCursor( nodeRecord.isDense(), nodeRecord.getNextRel(),
-                nodeRecord.getId(), direction, null );
+        return nodeRelationshipCursor.get().init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(),
+                direction, null );
     }
 
     @Override
     public Cursor<RelationshipItem> relationships( Direction direction, int... relTypes )
     {
-        return storeStatement.acquireNodeRelationshipCursor( nodeRecord.isDense(), nodeRecord.getNextRel(),
-                nodeRecord.getId(), direction, relTypes );
+        return nodeRelationshipCursor.get().init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(),
+                direction, relTypes );
+    }
+
+    @Override
+    public Cursor<IntSupplier> relationshipTypes()
+    {
+        if ( nodeRecord.isDense() )
+        {
+            return new Cursor<IntSupplier>()
+            {
+                private long groupId = nodeRecord.getNextRel();
+                private IntValue value = new IntValue();
+
+                @Override
+                public boolean next()
+                {
+                    if ( groupId == Record.NO_NEXT_RELATIONSHIP.intValue() )
+                    {
+                        return false;
+                    }
+
+                    RelationshipGroupRecord group = neoStore.getRelationshipGroupStore().getRecord( groupId );
+                    try
+                    {
+                        value.setValue( group.getType() );
+                        return true;
+                    }
+                    finally
+                    {
+                        groupId = group.getNext();
+                    }
+                }
+
+                @Override
+                public void close()
+                {
+
+                }
+
+                @Override
+                public IntSupplier get()
+                {
+                    return value;
+                }
+            };
+        }
+        else
+        {
+            final Cursor<RelationshipItem> relationships = relationships( Direction.BOTH );
+            return new Cursor<IntSupplier>()
+            {
+                private PrimitiveIntSet foundTypes = Primitive.intSet( 5 );
+                private IntValue value = new IntValue();
+
+                @Override
+                public boolean next()
+                {
+                    while ( relationships.next() )
+                    {
+                        if ( !foundTypes.contains( relationships.get().type() ) )
+                        {
+                            foundTypes.add( relationships.get().type() );
+                            value.setValue( relationships.get().type() );
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
+                @Override
+                public void close()
+                {
+
+                }
+
+                @Override
+                public IntSupplier get()
+                {
+                    return value;
+                }
+            };
+        }
+    }
+
+    @Override
+    public int degree( Direction direction )
+    {
+        if ( nodeRecord.isDense() )
+        {
+            long groupId = nodeRecord.getNextRel();
+            long count = 0;
+            while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+            {
+                RelationshipGroupRecord group = neoStore.getRelationshipGroupStore().getRecord( groupId );
+                count += nodeDegreeByDirection( group, direction );
+                groupId = group.getNext();
+            }
+            return (int) count;
+        }
+        else
+        {
+            try ( Cursor<RelationshipItem> relationship = relationships( direction ) )
+            {
+                int count = 0;
+                while ( relationship.next() )
+                {
+                    count++;
+                }
+                return count;
+            }
+        }
+    }
+
+    @Override
+    public int degree( Direction direction, int relType )
+    {
+        if ( nodeRecord.isDense() )
+        {
+            long groupId = nodeRecord.getNextRel();
+            while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+            {
+                RelationshipGroupRecord group = neoStore.getRelationshipGroupStore().getRecord( groupId );
+                if ( group.getType() == relType )
+                {
+                    return (int) nodeDegreeByDirection( group, direction );
+                }
+                groupId = group.getNext();
+            }
+            return 0;
+        }
+        else
+        {
+            try ( Cursor<RelationshipItem> relationship = relationships( direction, relType ) )
+            {
+                int count = 0;
+                while ( relationship.next() )
+                {
+                    count++;
+                }
+                return count;
+            }
+        }
+    }
+
+    @Override
+    public Cursor<DegreeItem> degrees()
+    {
+        if ( nodeRecord.isDense() )
+        {
+            long groupId = nodeRecord.getNextRel();
+            return new DegreeItemDenseCursor( groupId );
+        }
+        else
+        {
+            final PrimitiveIntObjectMap<int[]> degrees = Primitive.intObjectMap( 5 );
+
+            try ( Cursor<RelationshipItem> relationship = relationships( Direction.BOTH ) )
+            {
+                while ( relationship.next() )
+                {
+                    RelationshipItem rel = relationship.get();
+
+                    int[] byType = degrees.get( rel.type() );
+                    if ( byType == null )
+                    {
+                        degrees.put( rel.type(), byType = new int[3] );
+                    }
+                    byType[directionOf( nodeRecord.getId(), rel.id(), rel.startNode(), rel.endNode() ).ordinal()]++;
+                }
+            }
+
+            final PrimitiveIntIterator keys = degrees.iterator();
+
+            return new DegreeItemIterator( keys, degrees );
+        }
+    }
+
+    private long nodeDegreeByDirection( RelationshipGroupRecord group, Direction direction )
+    {
+        long loopCount = countByFirstPrevPointer( group.getFirstLoop() );
+        switch ( direction )
+        {
+            case OUTGOING:
+                return countByFirstPrevPointer( group.getFirstOut() ) + loopCount;
+            case INCOMING:
+                return countByFirstPrevPointer( group.getFirstIn() ) + loopCount;
+            case BOTH:
+                return countByFirstPrevPointer( group.getFirstOut() ) +
+                        countByFirstPrevPointer( group.getFirstIn() ) + loopCount;
+            default:
+                throw new IllegalArgumentException( direction.name() );
+        }
+    }
+
+    private long countByFirstPrevPointer( long relationshipId )
+    {
+        if ( relationshipId == Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            return 0;
+        }
+        RelationshipRecord record = neoStore.getRelationshipStore().getRecord( relationshipId );
+        if ( record.getFirstNode() == nodeRecord.getId() )
+        {
+            return record.getFirstPrevRel();
+        }
+        if ( record.getSecondNode() == nodeRecord.getId() )
+        {
+            return record.getSecondPrevRel();
+        }
+        throw new InvalidRecordException( "Node " + nodeRecord.getId() + " neither start nor end node of " + record );
+    }
+
+    private Direction directionOf( long nodeId, long relationshipId, long startNode, long endNode )
+    {
+        if ( startNode == nodeId )
+        {
+            return endNode == nodeId ? Direction.BOTH : Direction.OUTGOING;
+        }
+        if ( endNode == nodeId )
+        {
+            return Direction.INCOMING;
+        }
+        throw new InvalidRecordException( "Node " + nodeId + " neither start nor end node of relationship " +
+                relationshipId + " with startNode:" + startNode + " and endNode:" + endNode );
+    }
+
+    private static class DegreeItemIterator implements Cursor<DegreeItem>, DegreeItem
+    {
+        private final PrimitiveIntObjectMap<int[]> degrees;
+        private PrimitiveIntIterator keys;
+
+        private int type;
+        private int outgoing;
+        private int incoming;
+
+        public DegreeItemIterator( PrimitiveIntIterator keys, PrimitiveIntObjectMap<int[]> degrees )
+        {
+            this.keys = keys;
+            this.degrees = degrees;
+        }
+
+        @Override
+        public void close()
+        {
+            keys = null;
+        }
+
+        @Override
+        public int type()
+        {
+            return type;
+        }
+
+        @Override
+        public long outgoing()
+        {
+            return outgoing;
+        }
+
+        @Override
+        public long incoming()
+        {
+            return incoming;
+        }
+
+        @Override
+        public DegreeItem get()
+        {
+            if ( keys == null )
+            {
+                throw new IllegalStateException();
+            }
+
+            return this;
+        }
+
+        @Override
+        public boolean next()
+        {
+            if ( keys != null && keys.hasNext() )
+            {
+                type = keys.next();
+                int[] degreeValues = degrees.get( type );
+                outgoing = degreeValues[0] + degreeValues[2];
+                incoming = degreeValues[1] + degreeValues[2];
+
+                return true;
+            }
+            else
+            {
+                keys = null;
+                return false;
+            }
+        }
+    }
+
+    private class DegreeItemDenseCursor implements Cursor<DegreeItem>, DegreeItem
+    {
+        private long groupId;
+
+        private int type;
+        private long outgoing;
+        private long incoming;
+
+        public DegreeItemDenseCursor( long groupId )
+        {
+            this.groupId = groupId;
+        }
+
+        @Override
+        public boolean next()
+        {
+            if ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+            {
+                RelationshipGroupRecord group = neoStore.getRelationshipGroupStore().getRecord( groupId );
+                this.type = group.getType();
+                long loop = countByFirstPrevPointer( group.getFirstLoop() );
+                outgoing = countByFirstPrevPointer( group.getFirstOut() ) + loop;
+                incoming = countByFirstPrevPointer( group.getFirstIn() ) + loop;
+                groupId = group.getNext();
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+
+        @Override
+        public DegreeItem get()
+        {
+            return this;
+        }
+
+        @Override
+        public int type()
+        {
+            return type;
+        }
+
+        @Override
+        public long outgoing()
+        {
+            return outgoing;
+        }
+
+        @Override
+        public long incoming()
+        {
+            return incoming;
+        }
     }
 }

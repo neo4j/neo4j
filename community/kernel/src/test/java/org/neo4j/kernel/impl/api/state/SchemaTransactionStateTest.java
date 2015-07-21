@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,6 +32,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
+import org.neo4j.kernel.impl.util.Cursors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -288,8 +289,14 @@ public class SchemaTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
+            when( storeStatement.acquireSingleNodeCursor( nodeLabels.nodeId ) ).thenReturn(
+                    StubCursors.asNodeCursor( nodeLabels.nodeId,
+                            Cursors.<PropertyItem>empty(), StubCursors.asLabelCursor( nodeLabels.labelIds ) ) );
+
+/*
             when( store.nodeGetLabels( storeStatement, nodeLabels.nodeId ) ).then(
                     asAnswer( Arrays.<Integer>asList( nodeLabels.labelIds ) ) );
+*/
             for ( int label : nodeLabels.labelIds )
             {
 

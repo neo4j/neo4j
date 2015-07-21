@@ -19,8 +19,16 @@
  */
 package org.neo4j.kernel.api.cursor;
 
+import java.util.Arrays;
+
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.IntSupplier;
+import org.neo4j.function.ToIntFunction;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.impl.api.store.CursorRelationshipIterator;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.util.Cursors;
 
 /**
  * Represents a single node from a cursor.
@@ -28,6 +36,89 @@ import org.neo4j.graphdb.Direction;
 public interface NodeItem
         extends EntityItem
 {
+    public abstract class NodeItemHelper
+            extends EntityItemHelper
+            implements NodeItem
+    {
+        ToIntFunction<LabelItem> GET_LABEL = new ToIntFunction<LabelItem>()
+        {
+            @Override
+            public int apply( LabelItem item )
+            {
+                return item.getAsInt();
+            }
+        };
+
+        ToIntFunction<IntSupplier> GET_RELATIONSHIP_TYPE = new ToIntFunction<IntSupplier>()
+        {
+            @Override
+            public int apply( IntSupplier item )
+            {
+                return item.getAsInt();
+            }
+        };
+
+        @Override
+        public boolean hasLabel( int labelId )
+        {
+            try ( Cursor<LabelItem> labelCursor = label( labelId ) )
+            {
+                return labelCursor.next();
+            }
+        }
+
+        @Override
+        public PrimitiveIntIterator getLabels()
+        {
+            return Cursors.intIterator( labels(), GET_LABEL );
+        }
+
+        @Override
+        public RelationshipIterator getRelationships( Direction direction, int[] relTypes )
+        {
+            relTypes = deduplicate( relTypes );
+
+            return new CursorRelationshipIterator( relationships( direction, relTypes ) );
+        }
+
+        public RelationshipIterator getRelationships( Direction direction )
+        {
+            return new CursorRelationshipIterator( relationships( direction ) );
+        }
+
+        @Override
+        public PrimitiveIntIterator getRelationshipTypes()
+        {
+            return Cursors.intIterator( relationshipTypes(), GET_RELATIONSHIP_TYPE );
+        }
+
+        private static int[] deduplicate( int[] types )
+        {
+            int unique = 0;
+            for ( int i = 0; i < types.length; i++ )
+            {
+                int type = types[i];
+                for ( int j = 0; j < unique; j++ )
+                {
+                    if ( type == types[j] )
+                    {
+                        type = -1; // signal that this relationship is not unique
+                        break; // we will not find more than one conflict
+                    }
+                }
+                if ( type != -1 )
+                { // this has to be done outside the inner loop, otherwise we'd never accept a single one...
+                    types[unique++] = types[i];
+                }
+            }
+            if ( unique < types.length )
+            {
+                types = Arrays.copyOf( types, unique );
+            }
+            return types;
+        }
+    }
+
     /**
      * @return label cursor for current node
      * @throws IllegalStateException if no current node is selected
@@ -52,4 +143,24 @@ public interface NodeItem
      * @throws IllegalStateException if no current node is selected
      */
     Cursor<RelationshipItem> relationships( Direction direction );
+
+    Cursor<IntSupplier> relationshipTypes();
+
+    int degree( Direction direction );
+
+    int degree( Direction direction, int relType );
+
+    Cursor<DegreeItem> degrees();
+
+    // Helper methods
+
+    boolean hasLabel( int labelId );
+
+    PrimitiveIntIterator getLabels();
+
+    RelationshipIterator getRelationships( Direction direction, int[] relTypes );
+
+    RelationshipIterator getRelationships( Direction direction );
+
+    PrimitiveIntIterator getRelationshipTypes();
 }

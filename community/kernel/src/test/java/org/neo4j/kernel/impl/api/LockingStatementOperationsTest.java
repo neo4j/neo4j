@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.impl.api.state.StubCursors;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
@@ -60,7 +61,8 @@ public class LockingStatementOperationsTest
     private final SchemaWriteOperations schemaWriteOps;
     private final Locks.Client locks = mock( Locks.Client.class );
     private final InOrder order;
-    private final KernelStatement state = new KernelStatement( null, null, null, null, locks, null,
+    private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
+    private final KernelStatement state = new KernelStatement( transaction, null, null, null, locks, null,
             null );
     private final SchemaStateOperations schemaStateOps;
 
@@ -75,18 +77,22 @@ public class LockingStatementOperationsTest
         lockingOps = new LockingStatementOperations(
                 entityReadOps, entityWriteOps, schemaReadOps, schemaWriteOps, schemaStateOps
         );
+
+        when( transaction.shouldBeTerminated() ).thenReturn( false );
     }
 
     @Test
     public void shouldAcquireEntityWriteLockCreatingRelationship() throws Exception
     {
         // when
-        lockingOps.relationshipCreate( state, 1, 2, 3 );
+        NodeItem node1 = StubCursors.asNode( 2 );
+        NodeItem node2 = StubCursors.asNode( 3 );
+        lockingOps.relationshipCreate( state, 1, node1, node2 );
 
         // then
         order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 2 );
         order.verify( locks ).acquireExclusive( ResourceTypes.NODE, 3 );
-        order.verify( entityWriteOps ).relationshipCreate( state, 1, 2, 3 );
+        order.verify( entityWriteOps ).relationshipCreate( state, 1, node1, node2 );
     }
 
     @Test

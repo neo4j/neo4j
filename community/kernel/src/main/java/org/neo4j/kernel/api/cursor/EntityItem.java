@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.cursor;
 
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntStack;
 import org.neo4j.cursor.Cursor;
 
 /**
@@ -26,6 +28,48 @@ import org.neo4j.cursor.Cursor;
  */
 public interface EntityItem
 {
+    public abstract class EntityItemHelper
+            implements EntityItem
+    {
+        @Override
+        public boolean hasProperty( int propertyKeyId )
+        {
+            try ( Cursor<PropertyItem> cursor = property( propertyKeyId ) )
+            {
+                return cursor.next();
+            }
+        }
+
+        @Override
+        public Object getProperty( int propertyKeyId )
+        {
+            try ( Cursor<PropertyItem> cursor = property( propertyKeyId ) )
+            {
+                if ( cursor.next() )
+                {
+                    return cursor.get().value();
+                }
+            }
+
+            return null;
+        }
+
+        @Override
+        public PrimitiveIntIterator getPropertyKeys()
+        {
+            PrimitiveIntStack keys = new PrimitiveIntStack();
+            try ( Cursor<PropertyItem> properties = properties() )
+            {
+                while ( properties.next() )
+                {
+                    keys.push( properties.get().propertyKeyId() );
+                }
+            }
+
+            return keys.iterator();
+        }
+    }
+
     /**
      * @return id of current entity
      * @throws IllegalStateException if no current entity is selected
@@ -44,4 +88,10 @@ public interface EntityItem
      * @throws IllegalStateException if no current entity is selected
      */
     Cursor<PropertyItem> property( int propertyKeyId );
+
+    boolean hasProperty( int propertyKeyId );
+
+    Object getProperty( int propertyKeyId );
+
+    PrimitiveIntIterator getPropertyKeys();
 }

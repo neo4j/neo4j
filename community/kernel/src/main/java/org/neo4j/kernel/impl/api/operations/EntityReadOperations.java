@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.operations;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -32,16 +31,10 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 
 public interface EntityReadOperations
 {
-    // Currently, of course, most relevant operations here are still in the old core API implementation.
-    boolean nodeExists( KernelStatement state, long nodeId );
-
-    boolean relationshipExists( KernelStatement statement, long relId );
-
     /**
      * @param labelId the label id of the label that returned nodes are guaranteed to have
      * @return ids of all nodes that have the given label
@@ -61,7 +54,12 @@ public interface EntityReadOperations
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state, IndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state,
+            IndexDescriptor index,
+            Number lower,
+            boolean includeLower,
+            Number upper,
+            boolean includeUpper )
             throws IndexNotFoundKernelException;
 
     /**
@@ -69,7 +67,12 @@ public interface EntityReadOperations
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement state, IndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement state,
+            IndexDescriptor index,
+            String lower,
+            boolean includeLower,
+            String upper,
+            boolean includeUpper )
             throws IndexNotFoundKernelException;
 
     /**
@@ -77,7 +80,9 @@ public interface EntityReadOperations
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state, IndexDescriptor index, String prefix )
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
+            IndexDescriptor index,
+            String prefix )
             throws IndexNotFoundKernelException;
 
     /**
@@ -97,69 +102,14 @@ public interface EntityReadOperations
     long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
-    /**
-     * Checks if a node is labeled with a certain label or not. Returns
-     * {@code true} if the node is labeled with the label, otherwise {@code false.}
-     * Label ids are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(org.neo4j.kernel.api.Statement,
-     * String)} or
-     * {@link KeyReadOperations#labelGetForName(org.neo4j.kernel.api.Statement, String)}.
-     */
-    boolean nodeHasLabel( KernelStatement state, NodeItem node, int labelId );
-
-    /**
-     * Returns all labels set on node with id {@code nodeId}.
-     * If the node has no labels an empty iterator will be returned.
-     */
-    PrimitiveIntIterator nodeGetLabels( KernelStatement state, NodeItem node );
-
-    public PrimitiveIntIterator nodeGetLabels( TxStateHolder txStateHolder,
-            StoreStatement storeStatement,
-            NodeItem node );
-
-    boolean nodeHasProperty( KernelStatement statement, NodeItem node, int propertyKeyId );
-
-    public boolean nodeHasProperty( TxStateHolder txStateHolder, StoreStatement storeStatement,
-            NodeItem node, int propertyKeyId );
-
-    Object nodeGetProperty( KernelStatement state, NodeItem node, int propertyKeyId );
-
-    boolean relationshipHasProperty( KernelStatement state, RelationshipItem relationship, int propertyKeyId );
-
-    boolean relationshipHasProperty( TxStateHolder txStateHolder, StoreStatement storeStatement, RelationshipItem relationship, int propertyKeyId );
-
-    Object relationshipGetProperty( KernelStatement state, RelationshipItem relationship, int propertyKeyId );
-
     boolean graphHasProperty( KernelStatement state, int propertyKeyId );
 
     Object graphGetProperty( KernelStatement state, int propertyKeyId );
 
     /**
-     * Return all property keys associated with a node.
-     */
-    PrimitiveIntIterator nodeGetPropertyKeys( KernelStatement state, NodeItem node );
-
-    /**
-     * Return all property keys associated with a relationship.
-     */
-    PrimitiveIntIterator relationshipGetPropertyKeys( KernelStatement state, RelationshipItem relationship );
-
-    /**
      * Return all property keys associated with a relationship.
      */
     PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state );
-
-    RelationshipIterator nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction,
-            int[] relTypes );
-
-    RelationshipIterator nodeGetRelationships( KernelStatement statement, NodeItem node, Direction direction );
-
-    int nodeGetDegree( KernelStatement statement, NodeItem node, Direction direction, int relType ) throws
-            EntityNotFoundException;
-
-    int nodeGetDegree( KernelStatement statement, NodeItem node, Direction direction ) throws EntityNotFoundException;
-
-    PrimitiveIntIterator nodeGetRelationshipTypes( KernelStatement statement, NodeItem node ) throws
-            EntityNotFoundException;
 
     PrimitiveLongIterator nodesGetAll( KernelStatement state );
 
@@ -185,14 +135,26 @@ public interface EntityReadOperations
     Cursor<NodeItem> nodeCursorGetFromIndexSeek( KernelStatement statement,
             IndexDescriptor index,
             Object value ) throws IndexNotFoundKernelException;
-    
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement, IndexDescriptor index, Number lower, boolean includeLower, Number upper, boolean includeUpper )
+
+    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
+            IndexDescriptor index,
+            Number lower,
+            boolean includeLower,
+            Number upper,
+            boolean includeUpper )
             throws IndexNotFoundKernelException;
 
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( KernelStatement statement, IndexDescriptor index, String lower, boolean includeLower, String upper, boolean includeUpper )
+    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( KernelStatement statement,
+            IndexDescriptor index,
+            String lower,
+            boolean includeLower,
+            String upper,
+            boolean includeUpper )
             throws IndexNotFoundKernelException;
 
-    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( KernelStatement statement, IndexDescriptor index, String prefix ) throws IndexNotFoundKernelException;
+    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( KernelStatement statement,
+            IndexDescriptor index,
+            String prefix ) throws IndexNotFoundKernelException;
 
     Cursor<NodeItem> nodeCursorGetFromIndexScan( KernelStatement statement,
             IndexDescriptor index ) throws IndexNotFoundKernelException;

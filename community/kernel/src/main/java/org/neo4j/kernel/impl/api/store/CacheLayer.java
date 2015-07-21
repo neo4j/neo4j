@@ -42,15 +42,11 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -62,7 +58,6 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.core.Token;
@@ -108,12 +103,6 @@ public class CacheLayer implements StoreReadLayer
     public StoreStatement acquireStatement()
     {
         return diskLayer.acquireStatement();
-    }
-
-    @Override
-    public PrimitiveIntIterator nodeGetLabels( StoreStatement statement, long nodeId ) throws EntityNotFoundException
-    {
-        return diskLayer.nodeGetLabels( statement, nodeId );
     }
 
     @Override
@@ -406,51 +395,6 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public RelationshipIterator nodeListRelationships( StoreStatement statement,
-            long nodeId,
-            Direction direction )
-            throws EntityNotFoundException
-    {
-        return diskLayer.nodeListRelationships( statement, nodeId, direction );
-    }
-
-    @Override
-    public RelationshipIterator nodeListRelationships( StoreStatement statement, long nodeId, Direction direction,
-            int[] relTypes ) throws EntityNotFoundException
-    {
-        return diskLayer.nodeListRelationships( statement, nodeId, direction, relTypes );
-    }
-
-    @Override
-    public int nodeGetDegree( StoreStatement statement, long nodeId, Direction direction )
-            throws EntityNotFoundException
-    {
-        return diskLayer.nodeGetDegree( statement, nodeId, direction );
-    }
-
-    @Override
-    public int nodeGetDegree( StoreStatement statement, long nodeId,
-            Direction direction,
-            int relType )
-            throws EntityNotFoundException
-    {
-        return diskLayer.nodeGetDegree( statement, nodeId, direction, relType );
-    }
-
-    @Override
-    public boolean nodeVisitDegrees( StoreStatement statement, long nodeId, DegreeVisitor visitor )
-    {
-        return diskLayer.nodeVisitDegrees( statement, nodeId, visitor );
-    }
-
-    @Override
-    public PrimitiveIntIterator nodeGetRelationshipTypes( StoreStatement statement, long nodeId )
-            throws EntityNotFoundException
-    {
-        return diskLayer.nodeGetRelationshipTypes( statement, nodeId );
-    }
-
-    @Override
     public <EXCEPTION extends Exception> void relationshipVisit( long relationshipId,
             RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION
     {
@@ -479,18 +423,6 @@ public class CacheLayer implements StoreReadLayer
     public PrimitiveLongIterator nodesGetAll()
     {
         return diskLayer.nodesGetAll();
-    }
-
-    @Override
-    public Cursor<NodeItem> nodesGetAllCursor( StoreStatement statement )
-    {
-        return diskLayer.nodesGetAllCursor( statement );
-    }
-
-    @Override
-    public Cursor<RelationshipItem> relationshipsGetAllCursor( StoreStatement storeStatement )
-    {
-        return diskLayer.relationshipsGetAllCursor( storeStatement );
     }
 
     @Override

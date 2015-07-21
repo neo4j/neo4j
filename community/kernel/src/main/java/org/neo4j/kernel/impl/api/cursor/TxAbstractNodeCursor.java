@@ -19,10 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.cursor;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.cursor.GenericCursor;
+import org.neo4j.cursor.IntValue;
 import org.neo4j.function.Consumer;
+import org.neo4j.function.IntSupplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.cursor.DegreeItem;
 import org.neo4j.kernel.api.cursor.LabelItem;
 import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
@@ -35,6 +42,7 @@ import org.neo4j.kernel.impl.util.Cursors;
  * Overlays transaction state on a {@link NodeItem} cursor.
  */
 public abstract class TxAbstractNodeCursor
+        extends NodeItem.NodeItemHelper
         implements Cursor<NodeItem>, NodeItem
 {
     protected final TransactionState state;
@@ -131,5 +139,143 @@ public abstract class TxAbstractNodeCursor
                 nodeIsAddedInThisTx ? Cursors.<RelationshipItem>empty() : cursor.get().relationships( direction ),
                 nodeState,
                 direction, null );
+    }
+
+    @Override
+    public Cursor<IntSupplier> relationshipTypes()
+    {
+        if ( nodeIsAddedInThisTx )
+        {
+            return new RelationshipTypeCursor( nodeState.relationshipTypes() );
+        }
+
+        PrimitiveIntSet types = Primitive.intSet();
+
+        // Add types in the current transaction
+        PrimitiveIntIterator typesInTx = nodeState.relationshipTypes();
+        while ( typesInTx.hasNext() )
+        {
+            types.add( typesInTx.next() );
+        }
+
+        // Augment with types stored on disk, minus any types where all rels of that type are deleted
+        // in current tx.
+        try ( Cursor<IntSupplier> storeTypes = cursor.get().relationshipTypes() )
+        {
+            while ( storeTypes.next() )
+            {
+                int current = storeTypes.get().getAsInt();
+                if ( !types.contains( current ) && degree( Direction.BOTH, current ) > 0 )
+                {
+                    types.add( current );
+                }
+            }
+        }
+        return new RelationshipTypeCursor( types.iterator() );
+    }
+
+    @Override
+    public int degree( Direction direction )
+    {
+        return nodeState.augmentDegree( direction, nodeIsAddedInThisTx ? 0 : cursor.get().degree( direction ) );
+    }
+
+    @Override
+    public int degree( Direction direction, int relType )
+    {
+        return nodeState.augmentDegree( direction, nodeIsAddedInThisTx ? 0 : cursor.get().degree( direction, relType ),
+                relType );
+    }
+
+    @Override
+    public Cursor<DegreeItem> degrees()
+    {
+        return new DegreeCursor( relationshipTypes() );
+    }
+
+    private class RelationshipTypeCursor extends GenericCursor<IntSupplier>
+    {
+        private PrimitiveIntIterator primitiveIntIterator;
+
+        public RelationshipTypeCursor( PrimitiveIntIterator primitiveIntIterator )
+        {
+            this.primitiveIntIterator = primitiveIntIterator;
+            current = new IntValue();
+        }
+
+        @Override
+        public boolean next()
+        {
+            if ( primitiveIntIterator.hasNext() )
+            {
+                ((IntValue) current).setValue( primitiveIntIterator.next() );
+                return true;
+            }
+            else
+            {
+                current = null;
+                return false;
+            }
+        }
+    }
+
+    private class DegreeCursor implements Cursor<DegreeItem>, DegreeItem
+    {
+        private Cursor<IntSupplier> relTypeCursor;
+        private int type;
+        private long outgoing;
+        private long incoming;
+
+        public DegreeCursor( Cursor<IntSupplier> relTypeCursor )
+        {
+            this.relTypeCursor = relTypeCursor;
+        }
+
+        @Override
+        public boolean next()
+        {
+            if ( relTypeCursor.next() )
+            {
+                type = relTypeCursor.get().getAsInt();
+                outgoing = degree( Direction.OUTGOING, type );
+                incoming = degree( Direction.INCOMING, type );
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            relTypeCursor.close();
+        }
+
+        @Override
+        public int type()
+        {
+            return type;
+        }
+
+        @Override
+        public long outgoing()
+        {
+            return outgoing;
+        }
+
+        @Override
+        public long incoming()
+        {
+            return incoming;
+        }
+
+        @Override
+        public DegreeItem get()
+        {
+            return this;
+        }
     }
 }
