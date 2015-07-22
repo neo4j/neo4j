@@ -2897,44 +2897,44 @@ class CypherParserTest extends CypherFunSuite {
 
   test("node mandatory property constraint creation") {
     expectQuery(
-      "CREATE CONSTRAINT ON (id:Label) ASSERT id.property IS NOT NULL",
+      "CREATE CONSTRAINT ON (id:Label) ASSERT has(id.property)",
       CreateNodeMandatoryPropertyConstraint("id", "Label", "id", "property")
     )
   }
 
   test("node mandatory property constraint deletion") {
     expectQuery(
-      "DROP CONSTRAINT ON (id:Label) ASSERT id.property IS NOT NULL",
+      "DROP CONSTRAINT ON (id:Label) ASSERT has(id.property)",
       DropNodeMandatoryPropertyConstraint("id", "Label", "id", "property")
     )
   }
 
   test("relationship mandatory property constraint creation") {
     expectQuery(
-      "CREATE CONSTRAINT ON ()-[id:RelType]-() ASSERT id.property IS NOT NULL",
+      "CREATE CONSTRAINT ON ()-[id:RelType]-() ASSERT has(id.property)",
       CreateRelationshipMandatoryPropertyConstraint("id", "RelType", "id", "property")
     )
     expectQuery(
-      "CREATE CONSTRAINT ON ()-[id:RelType]->() ASSERT id.property IS NOT NULL",
+      "CREATE CONSTRAINT ON ()-[id:RelType]->() ASSERT has(id.property)",
       CreateRelationshipMandatoryPropertyConstraint("id", "RelType", "id", "property")
     )
     expectQuery(
-      "CREATE CONSTRAINT ON ()<-[id:RelType]-() ASSERT id.property IS NOT NULL",
+      "CREATE CONSTRAINT ON ()<-[id:RelType]-() ASSERT has(id.property)",
       CreateRelationshipMandatoryPropertyConstraint("id", "RelType", "id", "property")
     )
   }
 
   test("relationship mandatory property constraint deletion") {
     expectQuery(
-      "DROP CONSTRAINT ON ()-[id:RelType]-() ASSERT id.property IS NOT NULL",
+      "DROP CONSTRAINT ON ()-[id:RelType]-() ASSERT has(id.property)",
       DropRelationshipMandatoryPropertyConstraint("id", "RelType", "id", "property")
     )
     expectQuery(
-      "DROP CONSTRAINT ON ()-[id:RelType]->() ASSERT id.property IS NOT NULL",
+      "DROP CONSTRAINT ON ()-[id:RelType]->() ASSERT has(id.property)",
       DropRelationshipMandatoryPropertyConstraint("id", "RelType", "id", "property")
     )
     expectQuery(
-      "DROP CONSTRAINT ON ()<-[id:RelType]-() ASSERT id.property IS NOT NULL",
+      "DROP CONSTRAINT ON ()<-[id:RelType]-() ASSERT has(id.property)",
       DropRelationshipMandatoryPropertyConstraint("id", "RelType", "id", "property")
     )
   }

@@ -20,9 +20,12 @@
 
 package org.neo4j.kernel.api.constraints;
 
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.impl.coreapi.schema.MandatoryNodePropertyConstraintDefinition;
 
@@ -46,21 +49,33 @@ public class MandatoryNodePropertyConstraint extends NodePropertyConstraint
     }
 
     @Override
-    String constraintString()
-    {
-        return "NOT NULL";
-    }
-
-    @Override
     public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
     {
-        return new MandatoryNodePropertyConstraintDefinition( schemaActions, labelById( label(), readOps ),
-                propertyKeyById( propertyKeyId, readOps ) );
+        StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOps );
+        return new MandatoryNodePropertyConstraintDefinition( schemaActions,
+                DynamicLabel.label( lookup.labelGetName( labelId ) ),
+                lookup.propertyKeyGetName( propertyKeyId ) );
     }
 
     @Override
     public ConstraintType type()
     {
         return ConstraintType.MANDATORY_NODE_PROPERTY;
+    }
+
+    @Override
+    public String userDescription( TokenNameLookup tokenNameLookup )
+    {
+        String labelName = tokenNameLookup.labelGetName( labelId );
+        String boundIdentifier = labelName.toLowerCase();
+        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT has(%s.%s)",
+                boundIdentifier, labelName, boundIdentifier, tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "CONSTRAINT ON ( n:label[%s] ) ASSERT has(n.property[%s])",
+                labelId, propertyKeyId );
     }
 }
