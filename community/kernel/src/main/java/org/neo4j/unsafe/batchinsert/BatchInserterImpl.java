@@ -99,6 +99,7 @@ import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.record.MandatoryNodePropertyConstraintRule;
@@ -249,6 +250,7 @@ public class BatchInserterImpl implements BatchInserter
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, NullLog.getInstance() );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
+        life.add( new PageCacheLifecycle( pageCache ) );
 
         logService = life.add( StoreLogService.inStoreDirectory( fileSystem, this.storeDir ) );
         msgLog = logService.getInternalLog( getClass() );
