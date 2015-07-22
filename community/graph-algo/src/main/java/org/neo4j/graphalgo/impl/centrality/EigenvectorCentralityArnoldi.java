@@ -46,174 +46,27 @@ import org.neo4j.graphdb.Relationship;
  *             eigenvector solving of the H matrix. Typically j = the number of
  *             iterations / k, where normally k = 3.
  * @author Patrik Larsson
+ * @author Anton Persson
  */
-public class EigenvectorCentralityArnoldi implements EigenvectorCentrality
+public class EigenvectorCentralityArnoldi extends EigenvectorCentralityBase
 {
-    protected Direction relationDirection;
-    protected CostEvaluator<Double> costEvaluator;
-    protected Set<Node> nodeSet;
-    protected Set<Relationship> relationshipSet;
-    protected double precision = 0.001;
-    protected boolean doneCalculation = false;
-    protected Map<Node,Double> values;
-    protected int totalIterations = 0;
-    private int maxIterations = Integer.MAX_VALUE;
-
     /**
-     * @param relationDirection
-     *            The direction in which the paths should follow the
-     *            relationships.
-     * @param costEvaluator
-     * @see CostEvaluator
-     * @param nodeSet
-     *            The set of nodes the calculation should be run on.
-     * @param relationshipSet
-     *            The set of relationships that should be processed.
-     * @param precision
-     *            Precision factor (ex. 0.01 for 1% error). Note that this is
-     *            not the error from the correct values, but the amount of
-     *            change tolerated in one iteration.
+     * See {@link EigenvectorCentralityBase#EigenvectorCentralityBase(Direction, CostEvaluator, Set, Set, double)}
      */
     public EigenvectorCentralityArnoldi( Direction relationDirection,
         CostEvaluator<Double> costEvaluator, Set<Node> nodeSet,
         Set<Relationship> relationshipSet, double precision )
     {
-        super();
-        this.relationDirection = relationDirection;
-        this.costEvaluator = costEvaluator;
-        this.nodeSet = nodeSet;
-        this.relationshipSet = relationshipSet;
-        this.precision = precision;
-    }
-
-    /**
-     * This can be used to retrieve the result for every node. Will return null
-     * if the node is not contained in the node set initially given, or doesn't
-     * receive a result because no relationship points to it.
-     * @param node
-     * @return
-     */
-    public Double getCentrality( Node node )
-    {
-        calculate();
-        return values.get( node );
-    }
-
-    /**
-     * This resets the calculation if we for some reason would like to redo it.
-     */
-    public void reset()
-    {
-        doneCalculation = false;
-    }
-
-    /**
-     * Internal calculate method that will do the calculation. This can however
-     * be called externally to manually trigger the calculation.The calculation is
-     * done the first time this method is run. Upon successive requests, the old
-     * result is returned, unless the calculation is reset via {@link #reset()}
-     */
-    public void calculate()
-    {
-        // Don't do it more than once
-        if ( doneCalculation )
-        {
-            return;
-        }
-        doneCalculation = true;
-        values = new HashMap<Node,Double>();
-        totalIterations = 0;
-        // generate a random start vector
-        Random random = new Random( System.currentTimeMillis() );
-        for ( Node node : nodeSet )
-        {
-            values.put( node, random.nextDouble() );
-        }
-        normalize( values );
-        runIterations( maxIterations );
-    }
-
-    /**
-     * Stop condition for the iteration.
-     * @return true if enough precision has been achieved.
-     */
-    private boolean timeToStop( Map<Node,Double> oldValues,
-        Map<Node,Double> newValues )
-    {
-        for ( Node node : oldValues.keySet() )
-        {
-            if ( newValues.get( node ) == null )
-            {
-                return false;
-            }
-            if ( oldValues.get( node ) == 0.0 )
-            {
-                if ( Math.abs( newValues.get( node ) ) > precision )
-                {
-                    return false;
-                }
-                continue;
-            }
-            double factor = newValues.get( node ) / oldValues.get( node );
-            factor = Math.abs( factor );
-            if ( factor - precision > 1.0 || factor + precision < 1.0 )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * This runs a number of iterations in the computation and stops when enough
-     * precision has been reached. A maximum number of iterations to perform is
-     * supplied. NOTE: For maxNrIterations > 0 at least one iteration will be
-     * run, regardless if good precision has already been reached or not. This
-     * method also ignores the global limit defined by maxIterations.
-     * @param maxNrIterations
-     *            The maximum number of iterations to run.
-     * @return the number of iterations performed. if this is lower than the
-     *         given maxNrIterations the desired precision has been reached.
-     */
-    public int runIterations( int maxNrIterations )
-    {
-        if ( maxNrIterations <= 0 )
-        {
-            return 0;
-        }
-        int localIterations = 0;
-        while ( localIterations < maxNrIterations )
-        {
-            Map<Node,Double> oldValues = values;
-            localIterations += runInternalArnoldi( 3 );
-            if ( timeToStop( oldValues, values ) )
-            {
-                break;
-            }
-        }
-        // If the first value is negative (possibly the whole vector), negate
-        // the whole vector
-        if ( values.get( nodeSet.iterator().next() ) < 0 )
-        {
-            for ( Node node : nodeSet )
-            {
-                values.put( node, -values.get( node ) );
-            }
-        }
-        return localIterations;
+        super( relationDirection, costEvaluator, nodeSet, relationshipSet, precision );
     }
 
     /**
      * This runs the Arnoldi decomposition in a specified number of steps.
-     * @param iterations
-     *            The number of steps to perform, i.e. the dimension of the H
-     *            matrix.
-     * @return The number of iterations actually performed. This can be less
-     *         than the input argument if the starting vector is not linearly
-     *         dependent on that many eigenvectors.
      */
-    protected int runInternalArnoldi( int iterations )
+    @Override
+    protected int runInternalIteration()
     {
+        int iterations = 3;
         // Create a list of the nodes, in order to quickly translate an index
         // into a node.
         ArrayList<Node> nodes = new ArrayList<Node>( nodeSet.size() );
@@ -231,7 +84,7 @@ public class EigenvectorCentralityArnoldi implements EigenvectorCentrality
         // The main arnoldi iteration loop
         while ( true )
         {
-            ++totalIterations;
+            incrementTotalIterations();
             Map<Node,Double> newValues = new HashMap<Node,Double>();
             // "matrix multiplication"
             for ( Relationship relationship : relationshipSet )
@@ -352,91 +205,5 @@ public class EigenvectorCentralityArnoldi implements EigenvectorCentrality
         }
         normalize( values );
         return localIterations;
-    }
-
-    /**
-     * Internal method used in the "matrix multiplication" in each iteration.
-     */
-    protected void processRelationship( Map<Node,Double> newValues,
-        Relationship relationship, boolean backwards )
-    {
-        Node startNode = relationship.getStartNode();
-        if ( backwards )
-        {
-            startNode = relationship.getEndNode();
-        }
-        Node endNode = relationship.getOtherNode( startNode );
-        Double newValue = newValues.get( endNode );
-        if ( newValue == null )
-        {
-            newValue = 0.0;
-        }
-        if ( values.get( startNode ) != null )
-        {
-            newValue += values.get( startNode )
-                        * costEvaluator.getCost( relationship,
-                                backwards ? Direction.INCOMING
-                                        : Direction.OUTGOING );
-        }
-        newValues.put( endNode, newValue );
-    }
-
-    /**
-     * Normalizes a vector represented as a Map.
-     * @param vector
-     * @return the initial length of the vector.
-     */
-    protected double normalize( Map<Node,Double> vector )
-    {
-        // Compute vector length
-        double sum = 0;
-        for ( Node node : vector.keySet() )
-        {
-            Double d = vector.get( node );
-            if ( d == null )
-            {
-                d = 0.0;
-                vector.put( node, 0.0 );
-            }
-            sum += d * d;
-        }
-        sum = Math.sqrt( sum );
-        // Divide all components
-        if ( sum > 0.0 )
-        {
-            for ( Node node : vector.keySet() )
-            {
-                vector.put( node, vector.get( node ) / sum );
-            }
-        }
-        return sum;
-    }
-
-    /**
-     * @return the number of iterations made.
-     */
-    public int getTotalIterations()
-    {
-        return totalIterations;
-    }
-
-    /**
-     * @return the maxIterations
-     */
-    public int getMaxIterations()
-    {
-        return maxIterations;
-    }
-
-    /**
-     * Limit the maximum number of iterations to run. Per default,
-     * the maximum iterations are set to Integer.MAX_VALUE, which should
-     * be limited to 50-100 normally.
-     * @param maxIterations
-     *            the maxIterations to set
-     */
-    public void setMaxIterations( int maxIterations )
-    {
-        this.maxIterations = maxIterations;
     }
 }
