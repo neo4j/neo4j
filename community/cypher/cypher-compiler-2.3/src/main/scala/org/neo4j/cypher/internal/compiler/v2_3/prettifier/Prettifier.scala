@@ -123,6 +123,7 @@ class PrettifierParser extends Parser with Base with Strings {
       keyword("USING PERIODIC COMMIT") |
       keyword("USING INDEX") |
       keyword("USING SCAN") |
+      keyword("USING JOIN ON") |
       keyword("OPTIONAL MATCH") |
       keyword("START") |
       keyword("MATCH") |

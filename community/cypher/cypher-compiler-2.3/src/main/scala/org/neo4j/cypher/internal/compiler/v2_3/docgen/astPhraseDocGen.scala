@@ -120,6 +120,9 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
       case UsingScanHint(identifier, label) =>
         Some(group("USING" :/: "SCAN" :/: group(pretty(identifier) :: pretty(label))))
 
+      case UsingJoinHint(identifier) =>
+        Some(group("USING" :/: "JOIN" :/: "ON" :/: pretty(identifier)))
+
       case _ =>
         None
     }

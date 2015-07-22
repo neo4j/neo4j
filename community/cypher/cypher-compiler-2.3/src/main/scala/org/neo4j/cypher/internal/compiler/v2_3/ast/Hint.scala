@@ -56,6 +56,10 @@ case class UsingScanHint(identifier: Identifier, label: LabelName)(val position:
   def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
 }
 
+case class UsingJoinHint(identifier: Identifier)(val position: InputPosition) extends UsingHint with NodeHint {
+  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
+}
+
 // start items
 
 sealed trait StartItem extends ASTNode with ASTPhrase with SemanticCheckable {

@@ -96,6 +96,11 @@ class AstPhraseDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstruct
     pprintToString(astNode) should equal("USING SCAN n:Person")
   }
 
+  test("USING JOIN ON n") {
+    val astNode: ASTNode = UsingJoinHint(ident("n"))_
+    pprintToString(astNode) should equal("USING JOIN ON n")
+  }
+
   test("UNWIND x AS y") {
     val astNode: ASTNode = Unwind(ident("x"), ident("y"))_
     pprintToString(astNode) should equal("UNWIND x AS y")

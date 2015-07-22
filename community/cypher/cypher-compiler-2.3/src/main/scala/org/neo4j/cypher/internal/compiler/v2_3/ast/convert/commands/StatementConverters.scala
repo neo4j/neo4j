@@ -230,6 +230,8 @@ object StatementConverters {
         commands.SchemaIndex(identifier.name, label.name, property.name, commands.AnyIndex, None)
       case ast.UsingScanHint(identifier, label) =>
         commands.NodeByLabel(identifier.name, label.name)
+      case ast.UsingJoinHint(identifier) =>
+        ???
     }
   }
 

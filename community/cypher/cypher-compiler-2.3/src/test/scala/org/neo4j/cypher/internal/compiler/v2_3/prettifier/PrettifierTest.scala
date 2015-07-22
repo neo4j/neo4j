@@ -125,6 +125,12 @@ class PrettifierTest extends CypherFunSuite {
     )
   }
 
+  test("should handle join hints") {
+    actual("match (a:A)-->(b:B) USING join ON b return a.prop") should equal(
+      expected("MATCH (a:A)-->(b:B)%nUSING JOIN ON b%nRETURN a.prop")
+    )
+  }
+
   private def actual(text: String) = Prettifier(text)
   private def expected(text: String) = String.format(text)
 }
