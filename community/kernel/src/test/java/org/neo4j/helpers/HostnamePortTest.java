@@ -109,8 +109,8 @@ public class HostnamePortTest
     	assertThat( HostnamePort.getHostAddress( null, "default" ), equalTo( "default" ) );
     	
     	// should return host ip address when host is known
-    	assertThat( HostnamePort.getHostAddress( hostName, "default" ), equalTo( InetAddress.getByName( hostName ).getHostAddress() ) );
-    	
+        assertThat( HostnamePort.getHostAddress( hostName, "default" ), equalTo( hostName ) );
+
     }
     
     @Test
@@ -227,9 +227,9 @@ public class HostnamePortTest
         // When & Then
         
         // Should match, same host and port
-        assertTrue( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 + ":1234" ) ) );
+        assertTrue( hostnamePortSinglePort.matches( URI.create( "ha://" + hostname1 + ":1234" ) ) );
         // Should fail, different host or port
-        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 + ":1235" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + hostname1 + ":1235" ) ) );
         assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host2 + ":1234" ) ) );
         assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host2 + ":1235" ) ) );
         // Should fail, no port
@@ -237,17 +237,17 @@ public class HostnamePortTest
         assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host2 ) ) );
 
         // Should match, port in range and host the same
-        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1234" ) ) );
-        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1235" ) ) );
-        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1236" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1234" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1235" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1236" ) ) );
         // Should not match, different host
         assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host2 + ":1234" ) ) );
         assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host2 + ":1235" ) ) );
         // Should not match, port outside of range
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1233" ) ) );
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1237" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1233" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1237" ) ) );
         // Should not match, no port
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host1 ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 ) ) );
         assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host2 ) ) );
     }
 
@@ -278,27 +278,27 @@ public class HostnamePortTest
         // When & Then
         
         // Should match, same host and port
-        assertTrue( hostnamePortSinglePort.matches( URI.create( "ha://" + hostname1 + ":1234" ) ) );
+        assertTrue( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 + ":1234" ) ) );
         // Should fail, different host or port
-        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + hostname1 + ":1235" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 + ":1235" ) ) );
         assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + hostname2 + ":1234" ) ) );
         assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + hostname2 + ":1235" ) ) );
         // Should fail, no port
-        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + hostname1 ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 ) ) );
         assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + hostname2 ) ) );
 
         // Should match, port in range and host the same
-        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1234" ) ) );
-        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1235" ) ) );
-        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1236" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1234" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1235" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1236" ) ) );
         // Should not match, different host
         assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname2 + ":1234" ) ) );
         assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname2 + ":1235" ) ) );
         // Should not match, port outside of range
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1233" ) ) );
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1237" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1233" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1237" ) ) );
         // Should not match, no port
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host1 ) ) );
         assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname2 ) ) );
  
     }
@@ -497,20 +497,11 @@ public class HostnamePortTest
     }
     
     @Test
-    public void testHostnameLookup() throws Exception
-    {
-        String hostName = InetAddress.getLocalHost().getHostName();
-        HostnamePort hostnamePort = new HostnamePort( hostName, 1234 );
-        
-        assertThat( hostnamePort.toString( null ), equalTo( InetAddress.getByName( hostName ).getHostAddress()+":1234" ) );
-    }
-
-    @Test
     public void testIPv6Address()
     {
         HostnamePort hostnamePort = new HostnamePort( "[2001:cdba:0:0:0:0:3257:9652]" );
 
-        assertThat( hostnamePort.getHost( null ), equalTo( resolveHost( "[2001:cdba:0:0:0:0:3257:9652]" ) ) );
+        assertThat( hostnamePort.getHost( null ), equalTo( "[2001:cdba:0:0:0:0:3257:9652]" ) );
         assertThat( hostnamePort.getPort(), equalTo( 0 ) );
         assertThat( hostnamePort.getPorts(), equalTo( new int[]{0, 0} ) );
     }
@@ -520,7 +511,7 @@ public class HostnamePortTest
     {
         HostnamePort hostnamePort = new HostnamePort( "foo://[ff02::1:1]:9191" );
 
-        assertThat( hostnamePort.getHost( null ), equalTo( resolveHost( "[ff02::1:1]" ) ) );
+        assertThat( hostnamePort.getHost( null ), equalTo( "[ff02::1:1]" ) );
         assertThat( hostnamePort.getPort(), equalTo( 9191 ) );
         assertThat( hostnamePort.getPorts(), equalTo( new int[]{9191, 9191} ) );
     }
@@ -530,7 +521,7 @@ public class HostnamePortTest
     {
         HostnamePort hostnamePort = new HostnamePort( "[::1]" );
 
-        assertThat( hostnamePort.getHost( null ), equalTo( resolveHost( "[::1]" ) ) );
+        assertThat( hostnamePort.getHost( null ), equalTo( "[::1]" ) );
         assertThat( hostnamePort.getPort(), equalTo( 0 ) );
         assertThat( hostnamePort.getPorts(), equalTo( new int[]{0, 0} ) );
     }
@@ -540,20 +531,8 @@ public class HostnamePortTest
     {
         HostnamePort hostnamePort = new HostnamePort( "foo://[::1]:6362" );
 
-        assertThat( hostnamePort.getHost( null ), equalTo( resolveHost( "[::1]" ) ) );
+        assertThat( hostnamePort.getHost( null ), equalTo( "[::1]" ) );
         assertThat( hostnamePort.getPort(), equalTo( 6362 ) );
         assertThat( hostnamePort.getPorts(), equalTo( new int[]{6362, 6362} ) );
-    }
-
-    private static String resolveHost( String address )
-    {
-        try
-        {
-            return InetAddress.getByName( address ).getHostAddress();
-        }
-        catch ( UnknownHostException e )
-        {
-            throw new RuntimeException( "Unable to resolve host for '" + address + "'", e );
-        }
     }
 }

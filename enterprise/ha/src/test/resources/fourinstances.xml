@@ -21,9 +21,9 @@
 -->
 <clusters>
   <cluster name="neo4j.ha">
-    <member>127.0.0.1:5001</member>
-    <member>127.0.0.1:5002</member>
-    <member>127.0.0.1:5003</member>
-    <member>127.0.0.1:5004</member>
+    <member>localhost:5001</member>
+    <member>localhost:5002</member>
+    <member>localhost:5003</member>
+    <member>localhost:5004</member>
   </cluster>
 </clusters>

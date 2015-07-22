@@ -59,7 +59,7 @@ public class ClusterTest
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
                 testDirectory.directory(  "testCluster" ),
-                MapUtil.stringMap(HaSettings.ha_server.name(), ":6001-6005",
+                MapUtil.stringMap( HaSettings.ha_server.name(), "localhost:6001-6005",
                                   HaSettings.tx_push_factor.name(), "2"));
         try
         {

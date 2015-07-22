@@ -20,7 +20,6 @@
 package org.neo4j.cluster.com;
 
 import java.net.ConnectException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -181,7 +180,6 @@ public class NetworkReceiver
         {
             try
             {
-                InetAddress host;
                 String address = config.clusterServer().getHost();
                 InetSocketAddress localAddress;
                 if ( address == null || address.equals( INADDR_ANY ))
@@ -190,8 +188,7 @@ public class NetworkReceiver
                 }
                 else
                 {
-                    host = InetAddress.getByName( address );
-                    localAddress = new InetSocketAddress( host, checkPort );
+                    localAddress = new InetSocketAddress( address, checkPort );
                 }
 
                 Channel listenChannel = serverBootstrap.bind( localAddress );
