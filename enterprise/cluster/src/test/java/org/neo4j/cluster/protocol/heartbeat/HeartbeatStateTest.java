@@ -19,11 +19,12 @@
  */
 package org.neo4j.cluster.protocol.heartbeat;
 
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.Mockito;
+
 import java.net.URI;
 import java.util.concurrent.Executor;
-
-import org.junit.Test;
-import org.mockito.Mockito;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
@@ -31,18 +32,25 @@ import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerMessage;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
+import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class HeartbeatStateTest
 {
@@ -106,5 +114,52 @@ public class HeartbeatStateTest
         // Then
         assertThat( heartbeatContext.getSuspicionsOf( myId ).size(), equalTo( 0 ) );
         assertThat( heartbeatContext.getSuspicionsOf( foreignId ).size(), equalTo( 1 ) );
+    }
+
+    @Test
+    public void shouldAddInstanceIdHeaderInCatchUpMessages() throws Throwable
+    {
+        // Given
+        InstanceId instanceId = new InstanceId( 1 );
+        HeartbeatState heartbeat= HeartbeatState.heartbeat;
+        ClusterConfiguration configuration = new ClusterConfiguration( "whatever", NullLogProvider.getInstance(),
+                "cluster://1", "cluster://2" );
+        configuration.joined( instanceId, URI.create("cluster://1" ) );
+        InstanceId otherInstance = new InstanceId( 2 );
+        configuration.joined( otherInstance, URI.create("cluster://2" ));
+
+        LogService logging = mock( LogService.class );
+        when( logging.getInternalLog( Matchers.<Class>any() ) ).thenReturn( mock( Log.class ) );
+
+        MultiPaxosContext context = new MultiPaxosContext(
+                instanceId,
+                Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole( "coordinator" ) ),
+                configuration,
+                Mockito.mock( Executor.class ),
+                logging,
+                Mockito.mock( ObjectInputStreamFactory.class),
+                Mockito.mock( ObjectOutputStreamFactory.class),
+                Mockito.mock( AcceptorInstanceStore.class),
+                Mockito.mock( Timeouts.class ),
+                mock( ElectionCredentialsProvider.class ) );
+
+        int lastDeliveredInstanceId = 100;
+        context.getLearnerContext().setLastDeliveredInstanceId( lastDeliveredInstanceId );
+        // This gap will trigger the catchUp message that we'll test against
+        lastDeliveredInstanceId += 20;
+
+        HeartbeatContext heartbeatContext = context.getHeartbeatContext();
+        Message received = Message.internal( HeartbeatMessage.i_am_alive,
+                new HeartbeatMessage.IAmAliveState( otherInstance ) );
+        received.setHeader( Message.FROM, "cluster://2" ).setHeader( Message.INSTANCE_ID, "2" )
+                .setHeader( "last-learned", Integer.toString( lastDeliveredInstanceId ) );
+
+        // When
+        MessageHolder holder = mock( MessageHolder.class );
+        heartbeat.handle( heartbeatContext, received, holder );
+
+        // Then
+        verify( holder, times( 1 ) ).offer( Matchers.argThat( new MessageArgumentMatcher<LearnerMessage>()
+                .onMessageType( LearnerMessage.catchUp ).withHeader( Message.INSTANCE_ID, "2" ) ) );
     }
 }

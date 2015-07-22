@@ -135,12 +135,17 @@ public enum HeartbeatState
                                 long lastLearned = Long.parseLong( message.getHeader( "last-learned" ) );
                                 if ( lastLearned > context.getLastKnownLearnedInstanceInCluster() )
                                 {
-                                    // Need to pass the FROM header to catchUp state,
-                                    // as the instance in catchUp state should be aware of at least one
-                                    // alive member of the cluster (can use FROM as such instance)
+                                    /*
+                                     * Need to pass the INSTANCE_ID header to catchUp state,
+                                     * as the instance in catchUp state should be aware of at least one
+                                     * alive member of the cluster. FROM used to be abused for this reason
+                                     * previously, so we leave it here for legacy reasons - should really have
+                                     * no use within the current codebase but mixed version clusters may
+                                     * make use of it.
+                                     */
                                     Message<LearnerMessage> catchUpMessage = message.copyHeadersTo(
                                             internal( LearnerMessage.catchUp, lastLearned ),
-                                            Message.FROM );
+                                            Message.FROM, Message.INSTANCE_ID );
                                     outgoing.offer( catchUpMessage );
                                 }
                             }

@@ -21,6 +21,8 @@ package org.neo4j.cluster.protocol.omega;
 
 import java.io.Serializable;
 import java.net.URI;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.hamcrest.Description;
 import org.mockito.ArgumentMatcher;
@@ -34,6 +36,8 @@ public class MessageArgumentMatcher<T extends MessageType> extends ArgumentMatch
     private URI to;
     private T theMessageType;
     private Serializable payload;
+    private final List<String> headers = new LinkedList<>();
+    private final List<String> headerValues = new LinkedList<>();
 
     public MessageArgumentMatcher<T> from( URI from )
     {
@@ -59,6 +63,17 @@ public class MessageArgumentMatcher<T extends MessageType> extends ArgumentMatch
         return this;
     }
 
+    /**
+     * Use this for matching on headers other than TO and FROM, for which there are dedicated methods. The value
+     * of the header is mandatory - if you don't care about it, set it to the empty string.
+     */
+    public MessageArgumentMatcher<T> withHeader( String headerName, String headerValue )
+    {
+        this.headers.add( headerName );
+        this.headerValues.add( headerValue );
+        return this;
+    }
+
     @Override
     public boolean matches( Object message )
     {
@@ -66,7 +81,7 @@ public class MessageArgumentMatcher<T extends MessageType> extends ArgumentMatch
         {
             return false;
         }
-        if (message == this)
+        if ( message == this )
         {
             return true;
         }
@@ -75,7 +90,28 @@ public class MessageArgumentMatcher<T extends MessageType> extends ArgumentMatch
         boolean fromMatches = from == null ? true : from.toString().equals( toMatchAgainst.getHeader( Message.FROM ) );
         boolean typeMatches = theMessageType == null ? true : theMessageType == toMatchAgainst.getMessageType();
         boolean payloadMatches = payload == null ? true : payload.equals( toMatchAgainst.getPayload() );
-        return fromMatches && toMatches && typeMatches && payloadMatches;
+        boolean headersMatch = true;
+        for ( String header : headers )
+        {
+            headersMatch = headersMatch && matchHeaderAndValue( header, toMatchAgainst.getHeader( header ) );
+        }
+        return fromMatches && toMatches && typeMatches && payloadMatches && headersMatch;
+    }
+
+    private boolean matchHeaderAndValue( String headerName, String headerValue )
+    {
+        int headerIndex = headers.indexOf( headerName );
+        if ( headerIndex == -1 )
+        {
+            // Header not present
+            return false;
+        }
+        if ( headerValues.get( headerIndex ).equals( "" ) )
+        {
+            // header name was present and value does not matter
+            return true;
+        }
+        return headerValues.get( headerIndex ).equals( headerValue );
     }
 
     @Override
