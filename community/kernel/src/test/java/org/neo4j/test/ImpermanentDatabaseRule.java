@@ -40,6 +40,12 @@ public class ImpermanentDatabaseRule extends DatabaseRule
     }
 
     @Override
+    public ImpermanentDatabaseRule startLazily()
+    {
+        return (ImpermanentDatabaseRule) super.startLazily();
+    }
+
+    @Override
     protected GraphDatabaseFactory newFactory()
     {
         return new TestGraphDatabaseFactory( logging );

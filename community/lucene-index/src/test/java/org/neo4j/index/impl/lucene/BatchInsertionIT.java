@@ -36,9 +36,11 @@ import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
-import static java.lang.System.currentTimeMillis;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+
+import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -47,13 +49,13 @@ import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG
 public class BatchInsertionIT
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( BatchInsertionIT.class );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( BatchInsertionIT.class ).startLazily();
 
     @Test
     public void shouldIndexNodesWithMultipleLabels() throws Exception
     {
         // Given
-        String path = dbRule.getStoreDir().getAbsolutePath();
+        String path = dbRule.getStoreDirAbsolutePath();
         BatchInserter inserter = BatchInserters.inserter( path );
 
         inserter.createNode( map( "name", "Bob" ), label( "User" ), label( "Admin" ) );
@@ -82,7 +84,7 @@ public class BatchInsertionIT
     public void shouldNotIndexNodesWithWrongLabel() throws Exception
     {
         // Given
-        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDir().getAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDirAbsolutePath() );
 
         inserter.createNode( map("name", "Bob"), label( "User" ), label("Admin"));
 
@@ -107,7 +109,7 @@ public class BatchInsertionIT
     @Test
     public void shouldBeAbleToMakeRepeatedCallsToSetNodeProperty() throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDir().getAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDirAbsolutePath() );
         long nodeId = inserter.createNode( Collections.<String, Object>emptyMap() );
 
         final Object finalValue = 87;
@@ -132,7 +134,7 @@ public class BatchInsertionIT
     @Test
     public void shouldBeAbleToMakeRepeatedCallsToSetNodePropertyWithMultiplePropertiesPerBlock() throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDir().getAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDirAbsolutePath() );
         long nodeId = inserter.createNode( Collections.<String, Object>emptyMap() );
 
         final Object finalValue1 = 87;
@@ -161,7 +163,7 @@ public class BatchInsertionIT
     @Test
     public void testInsertionSpeed()
     {
-        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDir().getAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDirAbsolutePath() );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
         BatchInserterIndex index = provider.nodeIndex( "yeah", EXACT_CONFIG );
         index.setCacheCapacity( "key", 1000000 );

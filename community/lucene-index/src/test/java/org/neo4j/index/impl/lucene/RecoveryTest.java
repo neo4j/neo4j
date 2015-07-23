@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -35,11 +34,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -47,6 +46,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 /**
@@ -54,45 +54,36 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
  */
 public class RecoveryTest
 {
-    private static final File path = new File( "target/var/recovery" );
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( path );
-    private GraphDatabaseService graphDb;
-
-    @Before
-    public void setup()
-    {
-        Neo4jTestCase.deleteFileOrDirectory( path );
-        startDB();
-    }
+    public DatabaseRule db = new EmbeddedDatabaseRule();
 
     private void shutdownDB()
     {
-        dbRule.stopAndKeepFiles();
+        db.stopAndKeepFiles();
     }
 
     private void startDB()
     {
-        graphDb = dbRule.getGraphDatabaseService();
+        db.getGraphDatabaseService(); // will ensure started
     }
 
     private void forceRecover() throws IOException
     {
-        graphDb = dbRule.restartDatabase();
+        db.restartDatabase();
     }
 
     @Test
     public void testRecovery() throws Exception
     {
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            Node node = graphDb.createNode();
-            Node otherNode = graphDb.createNode();
+            Node node = db.createNode();
+            Node otherNode = db.createNode();
             Relationship rel = node.createRelationshipTo( otherNode, withName( "recovery" ) );
-            graphDb.index().forNodes( "node-index" ).add( node, "key1", "string value" );
-            graphDb.index().forNodes( "node-index" ).add( node, "key2", 12345 );
-            graphDb.index().forRelationships( "rel-index" ).add( rel, "key1", "string value" );
-            graphDb.index().forRelationships( "rel-index" ).add( rel, "key2", 12345 );
+            db.index().forNodes( "node-index" ).add( node, "key1", "string value" );
+            db.index().forNodes( "node-index" ).add( node, "key2", 12345 );
+            db.index().forRelationships( "rel-index" ).add( rel, "key1", "string value" );
+            db.index().forRelationships( "rel-index" ).add( rel, "key2", 12345 );
             tx.success();
         }
 
@@ -102,9 +93,9 @@ public class RecoveryTest
     @Test
     public void testAsLittleAsPossibleRecoveryScenario() throws Exception
     {
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            graphDb.index().forNodes( "my-index" ).add( graphDb.createNode(), "key", "value" );
+            db.index().forNodes( "my-index" ).add( db.createNode(), "key", "value" );
             tx.success();
         }
 
@@ -114,12 +105,13 @@ public class RecoveryTest
     @Test
     public void testIndexDeleteIssue() throws Exception
     {
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            graphDb.index().forNodes( "index" );
+            db.index().forNodes( "index" );
             tx.success();
         }
 
+        String storeDir = db.getStoreDir();
         shutdownDB();
 
         // NB: AddDeleteQuit will start and shutdown the db
@@ -127,7 +119,7 @@ public class RecoveryTest
                 "java",
                 "-cp", System.getProperty( "java.class.path" ),
                 AddDeleteQuit.class.getName(),
-                path.getPath()
+                storeDir
         } );
 
         int result = new ProcessStreamHandler( process, true ).waitForResult();
@@ -143,20 +135,22 @@ public class RecoveryTest
     public void recoveryForRelationshipCommandsOnly() throws Exception
     {
         // shutdown db here
+        String storeDir = db.getStoreDir();
         shutdownDB();
 
         // NB: AddRelToIndex will start and shutdown the db
         Process process = Runtime.getRuntime().exec( new String[]{
                 "java", "-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005", "-cp",
                 System.getProperty( "java.class.path" ),
-                AddRelToIndex.class.getName(), path.getPath()
+                AddRelToIndex.class.getName(), storeDir
         } );
         assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        Map<String, String> params = MapUtil.stringMap( "store_dir", path.getPath() );
+        Map<String, String> params = MapUtil.stringMap( "store_dir", storeDir );
         Config config = new Config( params, GraphDatabaseSettings.class );
-        LuceneDataSource ds = new LuceneDataSource( config, new IndexConfigStore( path, fileSystem ), fileSystem );
+        LuceneDataSource ds = new LuceneDataSource( config,
+                new IndexConfigStore( new File( storeDir ), fileSystem ), fileSystem );
         ds.start();
         ds.stop();
     }
@@ -164,13 +158,14 @@ public class RecoveryTest
     @Test
     public void recoveryOnDeletedIndex() throws Exception
     {
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            graphDb.index().forNodes( "index" );
+            db.index().forNodes( "index" );
             tx.success();
         }
 
         // shutdown db here
+        String storeDir = db.getStoreDir();
         shutdownDB();
 
         // NB: AddThenDeleteInAnotherTxAndQuit will start and shutdown the db
@@ -178,17 +173,17 @@ public class RecoveryTest
                 "java",
                 "-cp", System.getProperty( "java.class.path" ),
                 AddThenDeleteInAnotherTxAndQuit.class.getName(),
-                path.getPath()
+                storeDir
         } );
         assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );
 
         // restart db
         startDB();
 
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            assertFalse( graphDb.index().existsForNodes( "index" ) );
-            assertNotNull( graphDb.index().forNodes( "index2" ).get( "key", "value" ).getSingle() );
+            assertFalse( db.index().existsForNodes( "index" ) );
+            assertNotNull( db.index().forNodes( "index2" ).get( "key", "value" ).getSingle() );
         }
 
         // db shutdown handled in tearDown...

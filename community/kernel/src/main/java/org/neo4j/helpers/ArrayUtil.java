@@ -76,6 +76,63 @@ public abstract class ArrayUtil
         }
     };
 
+    public static final ArrayEquality BOXING_AWARE_ARRAY_EQUALITY = new ArrayEquality()
+    {
+        @Override
+        public boolean typeEquals( Class<?> firstType, Class<?> otherType )
+        {
+            return boxedType( firstType ) == boxedType( otherType );
+        }
+
+        private Class<?> boxedType( Class<?> type )
+        {
+            if ( !type.isPrimitive() )
+            {
+                return type;
+            }
+
+            if ( type.equals( Boolean.TYPE ) )
+            {
+                return Boolean.class;
+            }
+            if ( type.equals( Byte.TYPE ) )
+            {
+                return Byte.class;
+            }
+            if ( type.equals( Short.TYPE ) )
+            {
+                return Short.class;
+            }
+            if ( type.equals( Character.TYPE ) )
+            {
+                return Character.class;
+            }
+            if ( type.equals( Integer.TYPE ) )
+            {
+                return Integer.class;
+            }
+            if ( type.equals( Long.TYPE ) )
+            {
+                return Long.class;
+            }
+            if ( type.equals( Float.TYPE ) )
+            {
+                return Float.class;
+            }
+            if ( type.equals( Double.TYPE ) )
+            {
+                return Double.class;
+            }
+            throw new IllegalArgumentException( "Oops, forgot to include a primitive type " + type );
+        }
+
+        @Override
+        public boolean itemEquals( Object lhs, Object rhs )
+        {
+            return lhs == rhs || lhs != null && lhs.equals( rhs );
+        }
+    };
+
     public static boolean equals( Object firstArray, Object otherArray )
     {
         return equals( firstArray, otherArray, DEFAULT_ARRAY_EQUALITY );
@@ -97,7 +154,7 @@ public abstract class ArrayUtil
         assert otherArray.getClass().isArray() : otherArray + " is not an array";
 
         int length;
-        if ( equality.typeEquals( firstArray.getClass(), otherArray.getClass() )
+        if ( equality.typeEquals( firstArray.getClass().getComponentType(), otherArray.getClass().getComponentType() )
                 && (length = Array.getLength( firstArray )) == Array.getLength( otherArray ) )
         {
             for ( int i = 0; i < length; i++ )

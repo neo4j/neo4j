@@ -37,25 +37,25 @@ import org.neo4j.io.fs.FileUtils;
 public class EmbeddedDatabaseRule extends DatabaseRule
 {
     private final TempDirectory temp;
-    
+
     public EmbeddedDatabaseRule()
     {
         this.temp = new TempDirectory()
         {
             private final TemporaryFolder folder = new TemporaryFolder();
-            
+
             @Override
             public File root()
             {
                 return folder.getRoot();
             }
-            
+
             @Override
             public void delete()
             {
                 folder.delete();
             }
-            
+
             @Override
             public void create() throws IOException
             {
@@ -63,7 +63,7 @@ public class EmbeddedDatabaseRule extends DatabaseRule
             }
         };
     }
-    
+
     public EmbeddedDatabaseRule( final Class<?> testClass )
     {
         this.temp = new TempDirectory()
@@ -76,13 +76,13 @@ public class EmbeddedDatabaseRule extends DatabaseRule
             {
                 return dbDir;
             }
-            
+
             @Override
             public void delete() throws IOException
             {
                 targetDirectory.cleanup();
             }
-            
+
             @Override
             public void create()
             {
@@ -117,13 +117,31 @@ public class EmbeddedDatabaseRule extends DatabaseRule
             }
         };
     }
-    
+
+    @Override
+    public EmbeddedDatabaseRule startLazily()
+    {
+        return (EmbeddedDatabaseRule) super.startLazily();
+    }
+
+    @Override
+    public String getStoreDir()
+    {
+        return temp.root().getPath();
+    }
+
+    @Override
+    public String getStoreDirAbsolutePath()
+    {
+        return temp.root().getAbsolutePath();
+    }
+
     @Override
     protected GraphDatabaseFactory newFactory()
     {
         return new TestGraphDatabaseFactory();
     }
-    
+
     @Override
     protected GraphDatabaseBuilder newBuilder(GraphDatabaseFactory factory )
     {
@@ -135,7 +153,7 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     {
         temp.create();
     }
-    
+
     @Override
     protected void deleteResources()
     {
@@ -149,17 +167,12 @@ public class EmbeddedDatabaseRule extends DatabaseRule
         }
     }
 
-    public File getStoreDir()
-    {
-        return temp.root();
-    }
-    
     private interface TempDirectory
     {
         File root();
-        
+
         void create() throws IOException;
-        
+
         void delete() throws IOException;
     }
 }

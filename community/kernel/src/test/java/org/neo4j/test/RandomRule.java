@@ -135,12 +135,6 @@ public class RandomRule implements TestRule
         return randoms.string( minLength, maxLength, characterSets );
     }
 
-    @Override
-    public boolean equals( Object obj )
-    {
-        return randoms.equals( obj );
-    }
-
     public char character( int characterSets )
     {
         return randoms.character( characterSets );
