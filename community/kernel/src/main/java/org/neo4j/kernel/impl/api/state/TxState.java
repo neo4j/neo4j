@@ -170,7 +170,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     private InstanceCache<TxPropertyCursor> propertyCursor;
     private InstanceCache<TxLabelCursor> labelCursor;
 
-    private boolean hasChanges;
+    private boolean hasChanges, hasDataChanges;
 
     public TxState()
     {
@@ -557,11 +557,22 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         return relationships != null && relationships.isAdded( relationshipId );
     }
 
+    private void changed()
+    {
+        hasChanges = true;
+    }
+
+    private void dataChanged()
+    {
+        changed();
+        hasDataChanges = true;
+    }
+
     @Override
     public void nodeDoCreate( long id )
     {
         nodes().add( id );
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -586,7 +597,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
                 nodeState.clear();
             }
         }
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -606,7 +617,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
         getOrCreateRelationshipState( id ).setMetaData( startNodeId, endNodeId, relationshipTypeId );
 
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -650,7 +661,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             }
         }
 
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -689,7 +700,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             nodeState.addProperty( newProperty );
             nodePropertyChanges().addProperty( nodeId, newProperty.propertyKeyId(), newProperty.value() );
         }
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -705,7 +716,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         {
             getOrCreateRelationshipState( relationshipId ).addProperty( newProperty );
         }
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -719,7 +730,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         {
             getOrCreateGraphState().addProperty( newProperty );
         }
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -728,21 +739,21 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         getOrCreateNodeState( nodeId ).removeProperty( removedProperty );
         nodePropertyChanges().removeProperty( nodeId, removedProperty.propertyKeyId(),
                 removedProperty.value() );
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
     public void relationshipDoRemoveProperty( long relationshipId, DefinedProperty removedProperty )
     {
         getOrCreateRelationshipState( relationshipId ).removeProperty( removedProperty );
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
     public void graphDoRemoveProperty( DefinedProperty removedProperty )
     {
         getOrCreateGraphState().removeProperty( removedProperty );
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -750,7 +761,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     {
         getOrCreateLabelStateNodeDiffSets( labelId ).add( nodeId );
         getOrCreateNodeStateLabelDiffSets( nodeId ).add( labelId );
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -758,7 +769,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     {
         getOrCreateLabelStateNodeDiffSets( labelId ).remove( nodeId );
         getOrCreateNodeStateLabelDiffSets( nodeId ).remove( labelId );
-        hasChanges = true;
+        dataChanged();
     }
 
     @Override
@@ -769,8 +780,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             createdLabelTokens = new HashMap<>();
         }
         createdLabelTokens.put( id, labelName );
-
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -781,8 +791,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             createdPropertyKeyTokens = new HashMap<>();
         }
         createdPropertyKeyTokens.put( id, propertyKeyName );
-
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -793,8 +802,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             createdRelationshipTypeTokens = new HashMap<>();
         }
         createdRelationshipTypeTokens.put( id, labelName );
-
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -875,7 +883,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             diff.add( descriptor );
             getOrCreateLabelState( descriptor.getLabelId() ).getOrCreateIndexChanges().add( descriptor );
         }
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -883,7 +891,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     {
         constraintIndexChangesDiffSets().add( descriptor );
         getOrCreateLabelState( descriptor.getLabelId() ).getOrCreateConstraintIndexChanges().add( descriptor );
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -891,7 +899,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     {
         indexChangesDiffSets().remove( descriptor );
         getOrCreateLabelState( descriptor.getLabelId() ).getOrCreateIndexChanges().remove( descriptor );
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -899,7 +907,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     {
         constraintIndexChangesDiffSets().remove( descriptor );
         getOrCreateLabelState( descriptor.getLabelId() ).getOrCreateConstraintIndexChanges().remove( descriptor );
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -1028,7 +1036,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         constraintsChangesDiffSets().add( constraint );
         createdConstraintIndexesByConstraint().put( constraint, indexId );
         getOrCreateLabelState( constraint.label() ).getOrCreateConstraintsChanges().add( constraint );
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -1121,7 +1129,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             constraintIndexDoDrop( new IndexDescriptor( constraint.label(), constraint.propertyKey() ));
         }
         getOrCreateLabelState( constraint.label() ).getOrCreateConstraintsChanges().remove( constraint );
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -1526,8 +1534,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
 
         createdNodeLegacyIndexes.put( indexName, customConfig );
-
-        hasChanges = true;
+        changed();
     }
 
     @Override
@@ -1541,13 +1548,12 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         }
 
         createdRelationshipLegacyIndexes.put( indexName, customConfig );
-
-        hasChanges = true;
+        changed();
     }
 
     @Override
-    public boolean hasTokenChanges()
+    public boolean hasDataChanges()
     {
-        return createdLabelTokens != null || createdPropertyKeyTokens != null || createdRelationshipTypeTokens != null;
+        return hasDataChanges;
     }
 }

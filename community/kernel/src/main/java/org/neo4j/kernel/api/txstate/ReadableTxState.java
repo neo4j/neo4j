@@ -178,6 +178,8 @@ public interface ReadableTxState
      * From the kernel POV it's interesting to know whether or not any tokens have been created in this tx state,
      * because then we know it's a mini-transaction like this and won't have to let transaction event handlers
      * know about it, for example.
+     *
+     * The same applies to schema changes, such as creating and dropping indexes and constraints.
      */
-    boolean hasTokenChanges();
+    boolean hasDataChanges();
 }

@@ -21,18 +21,16 @@ package org.neo4j.kernel;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.TopLevelTransaction.TransactionOutcome;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -48,22 +46,16 @@ public class TestPlaceboTransaction
     {
         ThreadToStatementContextBridge bridge = mock (ThreadToStatementContextBridge.class );
         when( bridge.get() ).thenReturn( mock( Statement.class ) );
-        mockTopLevelTx = mock ( TopLevelTransaction.class);
-        final TransactionOutcome outcome = new TransactionOutcome();
-        when( mockTopLevelTx.getTransactionOutcome()).thenReturn(outcome);
-        doAnswer(new Answer<Void>()
-        {
-            @Override
-            public Void answer(InvocationOnMock invocation) {
-                outcome.failed();
-                return null;
-            }})
-                .when(mockTopLevelTx).failure();
-
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        Statement statement = mock( Statement.class );
+        ReadOperations readOperations = mock( ReadOperations.class );
+        when( statement.readOperations() ).thenReturn( readOperations );
+        when( bridge.get() ).thenReturn( statement );
+        mockTopLevelTx = spy( new TopLevelTransaction( kernelTransaction, bridge ) );
 
         placeboTx = new PlaceboTransaction( mockTopLevelTx );
         resource = mock( Node.class );
-        when(resource.getId()).thenReturn( 1l );
+        when( resource.getId() ).thenReturn( 1l );
     }
 
     @Test
@@ -71,13 +63,13 @@ public class TestPlaceboTransaction
     {
         // When
         placeboTx.close();
-        
+
         // Then
         verify( mockTopLevelTx ).failure();
     }
 
     @Test
-    public void shouldRollbackParentIfFailureCalled() throws TransactionFailureException
+    public void shouldRollbackParentIfFailureCalled()
     {
         // When
         placeboTx.failure();
@@ -99,7 +91,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void successCannotOverrideFailure() throws Exception
+    public void successCannotOverrideFailure()
     {
         // When
         placeboTx.failure();
