@@ -4,7 +4,7 @@ $common = Join-Path (Split-Path -Parent $here) 'Common.ps1'
 . $common
 
 Import-Module "$src\Neo4j-Management.psm1"
-
+ 
 InModuleScope Neo4j-Management {
   Describe "Confirm-Neo4jHome" {
     Context "Invalid Neo4jHome path" {
