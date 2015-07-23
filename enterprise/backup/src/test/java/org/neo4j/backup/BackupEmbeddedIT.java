@@ -42,6 +42,7 @@ import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.Settings.osIsWindows;
 
 public class BackupEmbeddedIT
@@ -53,8 +54,7 @@ public class BackupEmbeddedIT
     public final File backupPath = testDirectory.directory( "backup-db" );
 
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( testDirectory.directory( "db" ) );
-    private GraphDatabaseService db;
+    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( testDirectory.directory( "db" ) ).startLazily();
     private String ip;
 
     @Before
@@ -125,12 +125,12 @@ public class BackupEmbeddedIT
 
     private void startDb( String backupPort )
     {
-        dbRule.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
+        db.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
         if(backupPort != null)
         {
-            dbRule.setConfig( OnlineBackupSettings.online_backup_server, ip +":" + backupPort );
+            db.setConfig( OnlineBackupSettings.online_backup_server, ip +":" + backupPort );
         }
-        db = dbRule.getGraphDatabaseService();
+        db.ensureStarted();
         createSomeData( db );
     }
 

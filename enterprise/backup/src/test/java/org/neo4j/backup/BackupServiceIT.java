@@ -79,7 +79,6 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -89,6 +88,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.backup.BackupServiceStressTestingBuilder.untilTimeExpired;
 
 public class BackupServiceIT
@@ -126,7 +128,7 @@ public class BackupServiceIT
     public int backupPort = 8200;
 
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
@@ -136,7 +138,7 @@ public class BackupServiceIT
     public void setup()
     {
         backupPort = backupPort + 1;
-        storeDir = dbRule.getStoreDir();
+        storeDir = dbRule.getStoreDirFile();
         backupDir = target.directory( "backup_dir" );
     }
 

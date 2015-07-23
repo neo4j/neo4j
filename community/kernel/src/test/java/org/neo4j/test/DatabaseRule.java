@@ -27,30 +27,51 @@ import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
 import org.neo4j.function.Functions;
 import org.neo4j.function.Supplier;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilderTestTools;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
+import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.store.StoreId;
 
-public abstract class DatabaseRule extends ExternalResource
+public abstract class DatabaseRule extends ExternalResource implements GraphDatabaseAPI
 {
     GraphDatabaseBuilder databaseBuilder;
     GraphDatabaseAPI database;
     private String storeDir;
     private Supplier<Statement> statementSupplier;
+    private boolean startEagerly = true;
+
+    /**
+     * Means the database will be started on first {@link #getGraphDatabaseAPI()}, {@link #getGraphDatabaseService()}
+     * or {@link #ensureStarted()} call.
+     */
+    public DatabaseRule startLazily()
+    {
+        startEagerly = false;
+        return this;
+    }
 
     public <T> T when( Function<GraphDatabaseService, T> function )
     {
@@ -112,36 +133,43 @@ public abstract class DatabaseRule extends ExternalResource
         }
     }
 
+    @Override
     public Result execute( String query ) throws QueryExecutionException
     {
         return getGraphDatabaseAPI().execute( query );
     }
 
+    @Override
     public Result execute( String query, Map<String, Object> parameters ) throws QueryExecutionException
     {
         return getGraphDatabaseAPI().execute( query, parameters );
     }
 
+    @Override
     public Transaction beginTx()
     {
         return getGraphDatabaseAPI().beginTx();
     }
 
+    @Override
     public Node createNode( Label... labels )
     {
         return getGraphDatabaseAPI().createNode( labels );
     }
 
+    @Override
     public Node getNodeById( long id )
     {
         return getGraphDatabaseService().getNodeById( id );
     }
 
+    @Override
     public IndexManager index()
     {
         return getGraphDatabaseService().index();
     }
 
+    @Override
     public Schema schema()
     {
         return getGraphDatabaseAPI().schema();
@@ -151,6 +179,10 @@ public abstract class DatabaseRule extends ExternalResource
     protected void before() throws Throwable
     {
         create();
+        if ( startEagerly )
+        {
+            ensureStarted();
+        }
     }
 
     @Override
@@ -159,7 +191,6 @@ public abstract class DatabaseRule extends ExternalResource
         shutdown( success );
     }
 
-    @SuppressWarnings("deprecation")
     private void create() throws IOException
     {
         createResources();
@@ -216,18 +247,27 @@ public abstract class DatabaseRule extends ExternalResource
         GraphDatabaseBuilderTestTools.clearConfig( databaseBuilder );
     }
 
+    /**
+     * {@link DatabaseRule} now implements {@link GraphDatabaseAPI} directly, so no need. Also for ensuring
+     * a lazily started database is created, use {@link #ensureStarted()} instead.
+     */
+    @Deprecated
     public GraphDatabaseService getGraphDatabaseService()
     {
         return getGraphDatabaseAPI();
     }
 
+    /**
+     * {@link DatabaseRule} now implements {@link GraphDatabaseAPI} directly, so no need. Also for ensuring
+     * a lazily started database is created, use {@link #ensureStarted()} instead.
+     */
     public GraphDatabaseAPI getGraphDatabaseAPI()
     {
         ensureStarted();
         return database;
     }
 
-    private synchronized void ensureStarted()
+    public synchronized void ensureStarted()
     {
         if ( database == null )
         {
@@ -265,6 +305,7 @@ public abstract class DatabaseRule extends ExternalResource
         return getGraphDatabaseAPI();
     }
 
+    @Override
     public void shutdown()
     {
         shutdown( true );
@@ -309,5 +350,123 @@ public abstract class DatabaseRule extends ExternalResource
     {
         ensureStarted();
         return statementSupplier.get();
+    }
+
+    @Override
+    public DependencyResolver getDependencyResolver()
+    {
+        return database.getDependencyResolver();
+    }
+
+    @Override
+    public StoreId storeId()
+    {
+        return database.storeId();
+    }
+
+    @Override
+    public String getStoreDir()
+    {
+        return database.getStoreDir();
+    }
+
+    public String getStoreDirAbsolutePath()
+    {
+        return new File( getStoreDir() ).getAbsolutePath();
+    }
+
+    public File getStoreDirFile()
+    {
+        return new File( getStoreDir() );
+    }
+
+    @Override
+    public Node createNode()
+    {
+        return database.createNode();
+    }
+
+    @Override
+    public Relationship getRelationshipById( long id )
+    {
+        return database.getRelationshipById( id );
+    }
+
+    @Override
+    public Iterable<Node> getAllNodes()
+    {
+        return database.getAllNodes();
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, String key, Object value )
+    {
+        return database.findNodes( label, key, value );
+    }
+
+    @Override
+    public Node findNode( Label label, String key, Object value )
+    {
+        return database.findNode( label, key, value );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label )
+    {
+        return database.findNodes( label );
+    }
+
+    @Override
+    public ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value )
+    {
+        return database.findNodesByLabelAndProperty( label, key, value );
+    }
+
+    @Override
+    public Iterable<RelationshipType> getRelationshipTypes()
+    {
+        return database.getRelationshipTypes();
+    }
+
+    @Override
+    public boolean isAvailable( long timeout )
+    {
+        return database.isAvailable( timeout );
+    }
+
+    @Override
+    public <T> TransactionEventHandler<T> registerTransactionEventHandler( TransactionEventHandler<T> handler )
+    {
+        return database.registerTransactionEventHandler( handler );
+    }
+
+    @Override
+    public <T> TransactionEventHandler<T> unregisterTransactionEventHandler( TransactionEventHandler<T> handler )
+    {
+        return database.unregisterTransactionEventHandler( handler );
+    }
+
+    @Override
+    public KernelEventHandler registerKernelEventHandler( KernelEventHandler handler )
+    {
+        return database.registerKernelEventHandler( handler );
+    }
+
+    @Override
+    public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )
+    {
+        return database.unregisterKernelEventHandler( handler );
+    }
+
+    @Override
+    public TraversalDescription traversalDescription()
+    {
+        return database.traversalDescription();
+    }
+
+    @Override
+    public BidirectionalTraversalDescription bidirectionalTraversalDescription()
+    {
+        return database.bidirectionalTraversalDescription();
     }
 }

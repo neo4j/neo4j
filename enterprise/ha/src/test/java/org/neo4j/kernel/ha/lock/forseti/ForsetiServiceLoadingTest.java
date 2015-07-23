@@ -34,7 +34,7 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 public class ForsetiServiceLoadingTest
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
 
     @Test
     public void shouldUseForsetiAsDefaultLockManager() throws Exception

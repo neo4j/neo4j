@@ -227,7 +227,7 @@ public class TestTransactionEvents
                 node3.setProperty( "name", "No name" );
                 node3.delete();
                 expectedData.expectedDeletedNodes.add( node3 );
-                expectedData.removedProperty( node3, "name", null, "Node 3" );
+                expectedData.removedProperty( node3, "name", "Node 3" );
 
                 node1.setProperty( "new name", "A name" );
                 node1.setProperty( "new name", "A better name" );
@@ -238,7 +238,7 @@ public class TestTransactionEvents
                 expectedData.assignedProperty( node1, "name", "Mattias Persson",
                         "Mattias" );
                 node1.removeProperty( "counter" );
-                expectedData.removedProperty( node1, "counter", null, 10 );
+                expectedData.removedProperty( node1, "counter", 10 );
                 node1.removeProperty( "last name" );
                 node1.setProperty( "last name", "Hi" );
                 expectedData.assignedProperty( node1, "last name", "Hi", "Persson" );
@@ -247,7 +247,7 @@ public class TestTransactionEvents
                 expectedData.expectedDeletedRelationships.add( rel2 );
 
                 rel1.removeProperty( "number" );
-                expectedData.removedProperty( rel1, "number", null, 4.5D );
+                expectedData.removedProperty( rel1, "number", 4.5D );
                 rel1.setProperty( "description", "Ignored" );
                 rel1.setProperty( "description", "New" );
                 expectedData.assignedProperty( rel1, "description", "New",

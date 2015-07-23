@@ -121,6 +121,24 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     }
 
     @Override
+    public EmbeddedDatabaseRule startLazily()
+    {
+        return (EmbeddedDatabaseRule) super.startLazily();
+    }
+
+    @Override
+    public String getStoreDir()
+    {
+        return temp.root().getPath();
+    }
+
+    @Override
+    public String getStoreDirAbsolutePath()
+    {
+        return temp.root().getAbsolutePath();
+    }
+
+    @Override
     protected GraphDatabaseFactory newFactory()
     {
         return new TestGraphDatabaseFactory();
@@ -149,11 +167,6 @@ public class EmbeddedDatabaseRule extends DatabaseRule
         {
             throw new RuntimeException( e );
         }
-    }
-
-    public File getStoreDir()
-    {
-        return temp.root();
     }
 
     private interface TempDirectory

@@ -21,11 +21,15 @@ package org.neo4j.kernel.impl.event;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.event.PropertyEntry;
+import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.helpers.ObjectUtil;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.ArrayUtil.BOXING_AWARE_ARRAY_EQUALITY;
 
 class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
 {
@@ -41,7 +45,7 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
         this.value = value;
         this.valueBeforeTx = valueBeforeTx;
     }
-    
+
     @Override
     public T entity()
     {
@@ -65,11 +69,11 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
     {
         return this.valueBeforeTx;
     }
-    
+
     void compareToAssigned( PropertyEntry<T> entry )
     {
         basicCompareTo( entry );
-        assertEqualsMaybeNull( entry.value(), value() );
+        assertEqualsMaybeNull( entry.value(), value(), entry.entity(), entry.key() );
     }
 
     void compareToRemoved( PropertyEntry<T> entry )
@@ -86,12 +90,13 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
         }
         assertNull( value() );
     }
-    
+
     void basicCompareTo( PropertyEntry<T> entry )
     {
         assertEquals( entry.entity(), entity() );
         assertEquals( entry.key(), key() );
-        assertEqualsMaybeNull( entry.previouslyCommitedValue(), previouslyCommitedValue() );
+        assertEqualsMaybeNull( entry.previouslyCommitedValue(), previouslyCommitedValue(),
+                entry.entity(), entry.key() );
     }
 
     @Override
@@ -101,15 +106,26 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
                 + valueBeforeTx + "]";
     }
 
-    public static void assertEqualsMaybeNull( Object o1, Object o2 )
+    public static <T extends PropertyContainer> void assertEqualsMaybeNull( Object o1, Object o2, T entity, String key )
     {
-        if ( o1 == null )
+        String entityDescription = "For " + entity + " and " + key;
+        if ( o1 == null || o2 == null )
         {
-            assertTrue( o1 == o2 );
+            assertTrue( entityDescription + ". " + ObjectUtil.toString( o1 ) + " != " + ObjectUtil.toString( o2 ), o1 == o2 );
         }
         else
         {
-            assertEquals( o1, o2 );
+            assertEquals( o1.getClass().isArray(), o2.getClass().isArray() );
+            if ( o1.getClass().isArray() )
+            {
+                assertTrue( entityDescription + " (" + o1.getClass().getComponentType().getSimpleName() + ") " +
+                        ObjectUtil.toString( o1 ) + " not equal to " + ObjectUtil.toString( o2 ),
+                        ArrayUtil.equals( o1, o2, BOXING_AWARE_ARRAY_EQUALITY ) );
+            }
+            else
+            {
+                assertEquals( entityDescription, o1, o2 );
+            }
         }
     }
 }
