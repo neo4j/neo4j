@@ -24,11 +24,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.CommandRecordVisitor;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 
-import static org.neo4j.helpers.collection.MapUtil.reverse;
+import static java.lang.Math.pow;
+import static java.lang.String.format;
+
+import static org.neo4j.collection.primitive.Primitive.intObjectMap;
 
 /**
  * A command which have to be first in the transaction. It will map index names
@@ -44,20 +49,20 @@ public class IndexDefineCommand extends Command
 {
     private final AtomicInteger nextIndexNameId = new AtomicInteger();
     private final AtomicInteger nextKeyId = new AtomicInteger();
-    private Map<String, Byte> indexNameIdRange;
-    private Map<String, Byte> keyIdRange;
-    private Map<Byte, String> idToIndexName;
-    private Map<Byte, String> idToKey;
+    private Map<String,Integer> indexNameIdRange;
+    private Map<String,Integer> keyIdRange;
+    private PrimitiveIntObjectMap<String> idToIndexName;
+    private PrimitiveIntObjectMap<String> idToKey;
 
     public IndexDefineCommand()
     {
-        setIndexNameIdRange( new HashMap<String, Byte>() );
-        setKeyIdRange( new HashMap<String, Byte>() );
-        idToIndexName = new HashMap<>();
-        idToKey = new HashMap<>();
+        setIndexNameIdRange( new HashMap<String,Integer>() );
+        setKeyIdRange( new HashMap<String,Integer>() );
+        idToIndexName = intObjectMap( 16 );
+        idToKey = intObjectMap( 16 );
     }
 
-    public void init( Map<String, Byte> indexNames, Map<String, Byte> keys )
+    public void init( Map<String,Integer> indexNames, Map<String,Integer> keys )
     {
         this.setIndexNameIdRange( indexNames );
         this.setKeyIdRange( keys );
@@ -65,7 +70,17 @@ public class IndexDefineCommand extends Command
         idToKey = reverse( keys );
     }
 
-    private static String getFromMap( Map<Byte, String> map, byte id )
+    private static PrimitiveIntObjectMap<String> reverse( Map<String,Integer> map )
+    {
+        PrimitiveIntObjectMap<String> result = Primitive.intObjectMap( map.size() );
+        for ( Map.Entry<String,Integer> entry : map.entrySet() )
+        {
+            result.put( entry.getValue().intValue(), entry.getKey() );
+        }
+        return result;
+    }
+
+    private static String getFromMap( PrimitiveIntObjectMap<String> map, int id )
     {
         if ( id == -1 )
         {
@@ -79,27 +94,27 @@ public class IndexDefineCommand extends Command
         return result;
     }
 
-    public String getIndexName( byte id )
+    public String getIndexName( int id )
     {
         return getFromMap( idToIndexName, id );
     }
 
-    public String getKey( byte id )
+    public String getKey( int id )
     {
         return getFromMap( idToKey, id );
     }
 
-    public byte getOrAssignIndexNameId( String indexName )
+    public int getOrAssignIndexNameId( String indexName )
     {
         return getOrAssignId( indexNameIdRange, idToIndexName, nextIndexNameId, indexName );
     }
 
-    public byte getOrAssignKeyId( String key )
+    public int getOrAssignKeyId( String key )
     {
         return getOrAssignId( keyIdRange, idToKey, nextKeyId, key );
     }
 
-    private byte getOrAssignId( Map<String, Byte> stringToId, Map<Byte, String> idToString,
+    private int getOrAssignId( Map<String,Integer> stringToId, PrimitiveIntObjectMap<String> idToString,
             AtomicInteger nextId, String string )
     {
         if ( string == null )
@@ -107,18 +122,20 @@ public class IndexDefineCommand extends Command
             return -1;
         }
 
-        Byte id = stringToId.get( string );
+        Integer id = stringToId.get( string );
         if ( id != null )
         {
             return id;
         }
 
         int nextIdInt = nextId.incrementAndGet();
-        if ( nextIdInt > 63 )
+        if ( (nextIdInt & ~0xFFFF) != 0 )
         {
-            throw new IllegalStateException( "Modifying more than 63 indexes in a single transaction is not supported" );
+            throw new IllegalStateException( format(
+                    "Modifying more than %d indexes in a single transaction is not supported",
+                    (int)(pow( 2, 16 ) - 1) ) );
         }
-        id = (byte) nextIdInt;
+        id = nextIdInt;
 
         stringToId.put( string, id );
         idToString.put( id, string );
@@ -158,22 +175,22 @@ public class IndexDefineCommand extends Command
         return visitor.visitIndexDefineCommand( this );
     }
 
-    public Map<String, Byte> getIndexNameIdRange()
+    public Map<String,Integer> getIndexNameIdRange()
     {
         return indexNameIdRange;
     }
 
-    public void setIndexNameIdRange( Map<String, Byte> indexNameIdRange )
+    public void setIndexNameIdRange( Map<String,Integer> indexNameIdRange )
     {
         this.indexNameIdRange = indexNameIdRange;
     }
 
-    public Map<String, Byte> getKeyIdRange()
+    public Map<String,Integer> getKeyIdRange()
     {
         return keyIdRange;
     }
 
-    public void setKeyIdRange( Map<String, Byte> keyIdRange )
+    public void setKeyIdRange( Map<String,Integer> keyIdRange )
     {
         this.keyIdRange = keyIdRange;
     }

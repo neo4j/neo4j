@@ -104,27 +104,28 @@ public class LogTruncationTest
 
         // Index commands
         AddRelationshipCommand addRelationshipCommand = new AddRelationshipCommand();
-        addRelationshipCommand.init( (byte) 1, 1l, (byte) 1, "some value", 1, 1 );
+        addRelationshipCommand.init( 1, 1l, 12345, "some value", 1, 1 );
         permutations.put( AddRelationshipCommand.class, new Command[] { addRelationshipCommand } );
 
         CreateCommand createCommand = new CreateCommand();
-        createCommand.init( (byte) 1, IndexEntityType.Relationship.id(), MapUtil.stringMap( "string1", "string 2" ) );
+        createCommand.init( 1, IndexEntityType.Relationship.id(), MapUtil.stringMap( "string1", "string 2" ) );
         permutations.put( CreateCommand.class, new Command[] { createCommand } );
 
         AddNodeCommand addCommand = new AddNodeCommand();
-        addCommand.init( (byte) 1, 122l, (byte) 2, "value" );
+        addCommand.init( 1234, 122l, 2, "value" );
         permutations.put( AddNodeCommand.class, new Command[] { addCommand } );
 
         DeleteCommand deleteCommand = new DeleteCommand();
-        deleteCommand.init( (byte) 1, IndexEntityType.Relationship.id() );
+        deleteCommand.init( 1, IndexEntityType.Relationship.id() );
         permutations.put( DeleteCommand.class, new Command[] { deleteCommand } );
 
         RemoveCommand removeCommand = new RemoveCommand();
-        removeCommand.init( (byte) 1, IndexEntityType.Node.id(), 126, (byte) 3, "the value" );
+        removeCommand.init( 1, IndexEntityType.Node.id(), 126, (byte) 3, "the value" );
         permutations.put( RemoveCommand.class, new Command[] { removeCommand } );
 
         IndexDefineCommand indexDefineCommand = new IndexDefineCommand();
-        indexDefineCommand.init( MapUtil.<String, Byte>genericMap( "string1", (byte) 45, "key1", (byte) 2 ), MapUtil.<String, Byte>genericMap( "string", (byte) 2 ) );
+        indexDefineCommand.init( MapUtil.<String, Integer>genericMap(
+                "string1", 45, "key1", 2 ), MapUtil.<String, Integer>genericMap( "string", 2 ) );
         permutations.put( IndexDefineCommand.class, new Command[] { indexDefineCommand } );
 
         // Counts commands

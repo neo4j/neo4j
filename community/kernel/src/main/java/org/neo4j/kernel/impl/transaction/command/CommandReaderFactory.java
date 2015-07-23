@@ -35,6 +35,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSIO
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_1;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_2;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_3;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_2_4;
 
 public abstract class CommandReaderFactory
 {
@@ -66,26 +67,28 @@ public abstract class CommandReaderFactory
         {
             switch ( logEntryVersion )
             {
-            // These are not thread safe, so if they are to be cached it has to be done in an object pool
-            case LEGACY_LOG_ENTRY_VERSION:
-                switch ( logFormatVersion )
-                {
-                case LOG_VERSION_2_0:
-                    return new PhysicalLogNeoCommandReaderV0_20();
-                case LOG_VERSION_1_9:
-                    return new PhysicalLogNeoCommandReaderV0_19();
-                }
-            case LOG_ENTRY_VERSION_2_1:
-            case LOG_ENTRY_VERSION_2_2:
-            case LOG_ENTRY_VERSION_2_3:
-                switch ( logFormatVersion )
-                {
-                case LOG_VERSION_2_1:
-                    return new PhysicalLogNeoCommandReaderV1();
-                case LOG_VERSION_2_2:
-                case LOG_VERSION_2_3:
-                    return new PhysicalLogNeoCommandReaderV2();
-                }
+                // These are not thread safe, so if they are to be cached it has to be done in an object pool
+                case LEGACY_LOG_ENTRY_VERSION:
+                    switch ( logFormatVersion )
+                    {
+                        case LOG_VERSION_2_0:
+                            return new PhysicalLogNeoCommandReaderV0_20();
+                        case LOG_VERSION_1_9:
+                            return new PhysicalLogNeoCommandReaderV0_19();
+                    }
+                case LOG_ENTRY_VERSION_2_1:
+                case LOG_ENTRY_VERSION_2_2:
+                case LOG_ENTRY_VERSION_2_3:
+                    switch ( logFormatVersion )
+                    {
+                        case LOG_VERSION_2_1:
+                            return new PhysicalLogNeoCommandReaderV1();
+                        case LOG_VERSION_2_2:
+                        case LOG_VERSION_2_3:
+                            return new PhysicalLogNeoCommandReaderV2();
+                        case LOG_VERSION_2_2_4:
+                            return new PhysicalLogNeoCommandReaderV2_2_4();
+                    }
             }
             throw new IllegalArgumentException( "Unknown log format version (" + logFormatVersion + ") and " +
                                                 "log entry version (" + logEntryVersion + ")" );

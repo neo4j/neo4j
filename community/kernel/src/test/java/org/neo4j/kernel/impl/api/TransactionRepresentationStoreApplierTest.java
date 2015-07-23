@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.mockito.Matchers;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -171,9 +172,9 @@ public class TransactionRepresentationStoreApplierTest
     {
         IndexDefineCommand definitions = new IndexDefineCommand();
         definitions.init(
-                MapUtil.<String,Byte>genericMap( "one", (byte) 1 ),
-                MapUtil.<String,Byte>genericMap( "two", (byte) 2 ) );
-        return Collections.<Command>singletonList( definitions );
+                MapUtil.<String,Integer>genericMap( "one" ,1 ),
+                MapUtil.<String,Integer>genericMap( "two", 2 ) );
+        return Arrays.<Command>asList( definitions );
     }
 
     private TransactionRepresentation createNodeTransaction( long nodeId )
