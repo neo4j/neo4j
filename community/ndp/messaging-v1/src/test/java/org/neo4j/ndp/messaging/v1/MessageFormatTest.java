@@ -42,7 +42,6 @@ import org.neo4j.ndp.messaging.v1.message.PullAllMessage;
 import org.neo4j.ndp.messaging.v1.message.RecordMessage;
 import org.neo4j.ndp.messaging.v1.message.RunMessage;
 import org.neo4j.ndp.messaging.v1.message.SuccessMessage;
-import org.neo4j.ndp.runtime.internal.Neo4jError;
 import org.neo4j.packstream.BufferedChannelInput;
 import org.neo4j.packstream.BufferedChannelOutput;
 import org.neo4j.packstream.PackStream;

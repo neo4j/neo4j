@@ -42,7 +42,6 @@ import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
 import org.neo4j.ndp.messaging.v1.message.Message;
-import org.neo4j.ndp.runtime.internal.Neo4jError;
 import org.neo4j.packstream.PackStream;
 import org.neo4j.packstream.PackType;
 import org.neo4j.ndp.runtime.spi.Record;

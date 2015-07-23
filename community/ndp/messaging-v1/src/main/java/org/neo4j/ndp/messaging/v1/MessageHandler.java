@@ -22,7 +22,6 @@ package org.neo4j.ndp.messaging.v1;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.ndp.runtime.internal.Neo4jError;
 import org.neo4j.ndp.runtime.spi.Record;
 
 public interface MessageHandler<E extends Exception>

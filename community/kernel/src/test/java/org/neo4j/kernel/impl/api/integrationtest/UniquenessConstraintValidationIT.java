@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.properties.Property;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -61,6 +62,31 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         {
             assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[value1]" ) );
         }
+    }
+
+    @Test
+    public void roundingErrorsFromLongToDoubleShouldNotPreventTxFromCommitting() throws Exception
+    {
+        // Given
+        // a node with a constrained label and a long value
+        long propertyValue = 285414114323346805l;
+        long firstNode = constrainedNode( "label1", "key1", propertyValue );
+
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+
+        long node = createLabeledNode( statement, "label1" );
+
+        assertNotEquals( firstNode, node );
+
+        // When
+        // a new node with the same constraint is added, with a value not equal but which would be mapped to the same double
+        propertyValue++;
+        // note how propertyValue is definitely not equal to propertyValue++ but they do equal if they are cast to double
+        statement.nodeSetProperty( node, Property.property( statement.propertyKeyGetOrCreateForName( "key1" ), propertyValue ) );
+
+        // Then
+        // the commit should still succeed
+        commit();
     }
 
     @Test

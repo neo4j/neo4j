@@ -34,7 +34,6 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
-import org.neo4j.ndp.runtime.internal.Neo4jError;
 import org.neo4j.ndp.transport.socket.client.Connection;
 import org.neo4j.packstream.BufferedChannelOutput;
 import org.neo4j.packstream.PackStream;
