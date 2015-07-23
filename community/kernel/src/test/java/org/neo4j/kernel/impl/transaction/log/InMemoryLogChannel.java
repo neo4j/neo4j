@@ -163,7 +163,7 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
 
     private void ensureAvailableToRead( int i ) throws ReadPastEndException
     {
-        if ( asReader.remaining() < i )
+        if ( asReader.remaining() < i || asReader.position() + i > asWriter.position() )
         {
             throw ReadPastEndException.INSTANCE;
         }

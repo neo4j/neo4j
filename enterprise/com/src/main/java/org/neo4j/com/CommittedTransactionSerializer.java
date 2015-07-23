@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 
 /**
  * Serialized {@link CommittedTransactionRepresentation transactions} to raw bytes on the {@link ChannelBuffer
@@ -38,12 +38,12 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 public class CommittedTransactionSerializer implements Visitor<CommittedTransactionRepresentation,IOException>
 {
     private final NetworkWritableLogChannel channel;
-    private final LogEntryWriterv1 writer;
+    private final LogEntryWriter writer;
 
     public CommittedTransactionSerializer( ChannelBuffer targetBuffer )
     {
         this.channel = new NetworkWritableLogChannel( targetBuffer );
-        this.writer = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
+        this.writer = new LogEntryWriter( channel, new CommandWriter( channel ) );
     }
 
     @Override

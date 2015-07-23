@@ -40,10 +40,10 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
@@ -56,6 +56,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
@@ -128,7 +129,7 @@ public class PhysicalLogicalTransactionStoreTest
         life = new LifeSupport();
         final AtomicInteger recoveredTransactions = new AtomicInteger();
         final LogFileRecoverer recoverer = new LogFileRecoverer(
-                new LogEntryReaderFactory().versionable(),
+                new VersionAwareLogEntryReader<ReadableVersionableLogChannel>(),
                 new CloseableVisitor<CommittedTransactionRepresentation, IOException>()
                 {
                     @Override
@@ -228,7 +229,7 @@ public class PhysicalLogicalTransactionStoreTest
         life = new LifeSupport();
         final AtomicInteger recoveredTransactions = new AtomicInteger();
         final LogFileRecoverer recoverer = new LogFileRecoverer(
-                new LogEntryReaderFactory().versionable(),
+                new VersionAwareLogEntryReader<ReadableVersionableLogChannel>(),
                 new CloseableVisitor<CommittedTransactionRepresentation, IOException>()
                 {
                     @Override

@@ -24,7 +24,7 @@ import java.util.TimeZone;
 
 import org.neo4j.kernel.impl.transaction.command.LogHandler;
 
-/*
+/**
  * This class is used when reading legacy log entries and it will preserve their identifiers.
  * Identifiers will be use for reordering the log entries when migrating from older neo4j versions.
  */
@@ -52,7 +52,7 @@ public class IdentifiableLogEntry implements LogEntry
     }
 
     @Override
-    public byte getVersion()
+    public LogEntryVersion getVersion()
     {
         return entry.getVersion();
     }

@@ -41,11 +41,12 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
@@ -270,7 +271,8 @@ public class TestLogPruning
                               new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
                 {
                     try (PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
-                            new PhysicalTransactionCursor<>( channel, new LogEntryReaderFactory().versionable() ))
+                            new PhysicalTransactionCursor<>( channel,
+                                    new VersionAwareLogEntryReader<ReadableVersionableLogChannel>() ))
                     {
                         while ( physicalTransactionCursor.next())
                         {

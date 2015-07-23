@@ -32,7 +32,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
-import org.neo4j.kernel.impl.transaction.log.LogDeserializer;
+import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -308,7 +308,7 @@ class TransactionStream
 
     private static IOCursor<LogEntry> logEntryCursor( StoreChannel channel, LogHeader header ) throws IOException
     {
-        return new LogDeserializer().logEntries( new ReadAheadLogChannel(
+        return new LogEntryCursor( new ReadAheadLogChannel(
                 new PhysicalLogVersionedStoreChannel( channel, header.logVersion, header.logFormatVersion ),
                 NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE ) );
     }

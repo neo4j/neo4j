@@ -29,9 +29,9 @@ public abstract class LogEntryCommit extends AbstractLogEntry
     private final long timeWritten;
     protected final String name;
 
-    LogEntryCommit( byte type, byte version, long txId, long timeWritten, String name )
+    LogEntryCommit( LogEntryVersion version, byte type, long txId, long timeWritten, String name )
     {
-        super( type, version );
+        super( version, type );
         this.txId = txId;
         this.timeWritten = timeWritten;
         this.name = name;

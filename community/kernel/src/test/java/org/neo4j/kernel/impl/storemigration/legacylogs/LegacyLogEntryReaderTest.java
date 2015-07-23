@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacylogs;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -85,7 +86,15 @@ public class LegacyLogEntryReaderTest
         // given
         final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = mock( LogEntryReader.class );
         when( logEntryReader.readLogEntry( any( ReadableVersionableLogChannel.class ) ) ).thenReturn( null );
-        final LegacyLogEntryReader reader = new LegacyLogEntryReader( fs, logEntryReader );
+        final LegacyLogEntryReader reader = new LegacyLogEntryReader( fs,
+                new Function<LogHeader,LogEntryReader<ReadableVersionableLogChannel>>()
+        {
+            @Override
+            public LogEntryReader<ReadableVersionableLogChannel> apply( LogHeader from ) throws RuntimeException
+            {
+                return logEntryReader;
+            }
+        } );
 
         // when
         final IOCursor<LogEntry> cursor = reader.openReadableChannel( input ).other();
@@ -113,7 +122,15 @@ public class LegacyLogEntryReaderTest
                 null
         );
 
-        final LegacyLogEntryReader reader = new LegacyLogEntryReader( fs, logEntryReader );
+        final LegacyLogEntryReader reader = new LegacyLogEntryReader( fs,
+                new Function<LogHeader,LogEntryReader<ReadableVersionableLogChannel>>()
+        {
+            @Override
+            public LogEntryReader<ReadableVersionableLogChannel> apply( LogHeader from ) throws RuntimeException
+            {
+                return logEntryReader;
+            }
+        } );
 
         // when
         final IOCursor<LogEntry> cursor = reader.openReadableChannel( input ).other();

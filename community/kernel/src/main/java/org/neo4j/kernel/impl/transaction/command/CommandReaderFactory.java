@@ -26,72 +26,8 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.LEGACY_LOG_ENTRY_VERSION;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.LOG_ENTRY_VERSION_2_1;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.LOG_ENTRY_VERSION_2_2;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_1_9;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_0;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_1;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_2;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_2_4;
-
 public abstract class CommandReaderFactory
 {
-    public abstract CommandReader newInstance( byte logFormatVersion, byte logEntryVersion );
-
-    public static class Default extends CommandReaderFactory
-    {
-        // Remember the latest log formant and log entry versions of the last reader returned.
-        // Don't use a map because of the overhead of it.
-        // Typically lots of log entries of the same version comes together.
-        private byte lastFormatVersion;
-        private byte lastEntryVersion;
-        private CommandReader lastReader;
-
-        @Override
-        public CommandReader newInstance( byte logFormatVersion, byte logEntryVersion )
-        {
-            if ( logFormatVersion == lastFormatVersion && logEntryVersion == lastEntryVersion && lastReader != null )
-            {
-                return lastReader;
-            }
-
-            lastFormatVersion = logFormatVersion;
-            lastEntryVersion = logEntryVersion;
-            return (lastReader = figureOutCorrectReader( logFormatVersion, logEntryVersion ));
-        }
-
-        private CommandReader figureOutCorrectReader( byte logFormatVersion, byte logEntryVersion )
-        {
-            switch ( logEntryVersion )
-            {
-                // These are not thread safe, so if they are to be cached it has to be done in an object pool
-                case LEGACY_LOG_ENTRY_VERSION:
-                    switch ( logFormatVersion )
-                    {
-                        case LOG_VERSION_2_0:
-                            return new PhysicalLogNeoCommandReaderV0_20();
-                        case LOG_VERSION_1_9:
-                            return new PhysicalLogNeoCommandReaderV0_19();
-                    }
-                case LOG_ENTRY_VERSION_2_1:
-                case LOG_ENTRY_VERSION_2_2:
-                    switch ( logFormatVersion )
-                    {
-                        case LOG_VERSION_2_1:
-                            return new PhysicalLogNeoCommandReaderV1();
-                        case LOG_VERSION_2_2:
-                            return new PhysicalLogNeoCommandReaderV2();
-                        case LOG_VERSION_2_2_4:
-                            return new PhysicalLogNeoCommandReaderV2_2_4();
-                    }
-            }
-            throw new IllegalArgumentException( "Unknown log format version (" + logFormatVersion + ") and " +
-                    "log entry version (" + logEntryVersion + ")" );
-
-        }
-    }
-
     public interface DynamicRecordAdder<T>
     {
         void add( T target, DynamicRecord record );

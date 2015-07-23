@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;

@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
 import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
@@ -101,7 +101,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>,L
         LogEntry done = null;
         for ( LogEntry logEntry : from )
         {
-            if ( logEntry.getVersion() == LogEntryVersions.CURRENT_LOG_ENTRY_VERSION )
+            if ( logEntry.getVersion() == LogEntryVersion.CURRENT )
             {
                 throw new RuntimeException( "crap" );
             }

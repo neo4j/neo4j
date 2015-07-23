@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.function.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -32,8 +33,8 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
@@ -45,17 +46,25 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 class LegacyLogEntryReader
 {
     private final FileSystemAbstraction fs;
-    private final LogEntryReader<ReadableVersionableLogChannel> reader;
+    private final Function<LogHeader,LogEntryReader<ReadableVersionableLogChannel>> readerFactory;
 
-    LegacyLogEntryReader( FileSystemAbstraction fs, LogEntryReader<ReadableVersionableLogChannel> reader )
+    LegacyLogEntryReader( FileSystemAbstraction fs,
+            Function<LogHeader,LogEntryReader<ReadableVersionableLogChannel>> readerFactory )
     {
         this.fs = fs;
-        this.reader = reader;
+        this.readerFactory = readerFactory;
     }
 
     LegacyLogEntryReader( FileSystemAbstraction fs )
     {
-        this( fs, new LogEntryReaderFactory().versionable() );
+        this( fs, new Function<LogHeader,LogEntryReader<ReadableVersionableLogChannel>>()
+        {
+            @Override
+            public LogEntryReader<ReadableVersionableLogChannel> apply( LogHeader from ) throws RuntimeException
+            {
+                return new VersionAwareLogEntryReader<>( from.logFormatVersion );
+            }
+        } );
     }
 
     public Pair<LogHeader, IOCursor<LogEntry>> openReadableChannel( File logFile ) throws IOException
@@ -64,6 +73,7 @@ class LegacyLogEntryReader
         final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
 
         final LogHeader header = readLogHeader( buffer, rawChannel, false );
+        LogEntryReader<ReadableVersionableLogChannel> reader = readerFactory.apply( header );
 
         // this ensures that the last committed txId field in the header is initialized properly
         long lastCommittedTxId = Math.max( BASE_TX_ID, header.lastCommittedTxId );
