@@ -208,6 +208,13 @@ public class ChunkedInput implements PackInput
                                                                         "problem with your client driver." );
             }
         }
+        if( currentChunk == null || currentChunk.readableBytes() == 0 )
+        {
+            // if we encounter a new chunk with no data.
+            throw new NDPIOException( Status.General.UnknownFailure, // TODO Change it to a server error
+                    "Error: Found a empty chunk, which indicates the server consumed the reading buffer as a writing " +
+                    "buffer and send the buffer content to the client!" );
+        }
     }
 
     public void close()
