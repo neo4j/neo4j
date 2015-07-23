@@ -87,6 +87,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -2213,10 +2214,13 @@ public abstract class PageCacheTest<T extends PageCache>
         // that leaves a small window wherein we can race with eviction, have
         // the evictor flush the page, and then fault it back and mark it as
         // dirty again.
+        // We also subtract 'maxPages' from the expected flush count, because
+        // vectored IO may coalesce all the flushes we do as part of unmapping
+        // the file, into a single flush.
         long flushes = tracer.countFlushes();
         long bytesWritten = tracer.countBytesWritten();
         assertThat( "wrong count of flushes",
-                flushes, greaterThanOrEqualTo( pagesToGenerate ) );
+                flushes, greaterThanOrEqualTo( pagesToGenerate - maxPages ) );
         assertThat( "wrong count of bytes written",
                 bytesWritten, greaterThanOrEqualTo( pagesToGenerate * filePageSize ) );
     }
@@ -2787,7 +2791,7 @@ public abstract class PageCacheTest<T extends PageCache>
             {
                 Throwable cause = e.getCause();
                 assertThat( cause, instanceOf( IllegalStateException.class ) );
-                assertThat( cause.getMessage(), is( "File has been unmapped" ) );
+                assertThat( cause.getMessage(), startsWith( "File has been unmapped" ) );
             }
         }
         catch ( TimeoutException e )
@@ -3755,7 +3759,8 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test( timeout = 1000 )
+    @RepeatRule.Repeat( times = 50 )
+    @Test( timeout = 10000 )
     public void mustEvictPagesFromUnmappedFiles() throws Exception
     {
         // GIVEN mapping then unmapping
@@ -3768,7 +3773,7 @@ public abstract class PageCacheTest<T extends PageCache>
 
         // WHEN using all pages, so that eviction of some pages will happen
         try ( PagedFile pagedFile = pageCache.map( file, filePageSize );
-                PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+              PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
         {
             for ( int i = 0; i < maxPages+5; i++ )
             {
@@ -3823,7 +3828,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test
+    @Test( timeout = 10000 )
     public void mustReadZerosFromBeyondEndOfFile() throws Exception
     {
         StandardRecordFormat recordFormat = new StandardRecordFormat();
@@ -3913,7 +3918,7 @@ public abstract class PageCacheTest<T extends PageCache>
         return queue;
     }
 
-    @Test
+    @Test( timeout = 10000 )
     public void mustSyncDeviceWhenFlushAndForcingPagedFile() throws Exception
     {
         AtomicInteger syncDeviceCounter = new AtomicInteger();
@@ -3941,7 +3946,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test
+    @Test( timeout = 10000 )
     public void mustSyncDeviceWhenFlushAndForcingPageCache() throws Exception
     {
         AtomicInteger syncDeviceCounter = new AtomicInteger();
@@ -3976,7 +3981,7 @@ public abstract class PageCacheTest<T extends PageCache>
         pageCache.map( new File( "does not exist" ), filePageSize );
     }
 
-    @Test
+    @Test( timeout = 10000 )
     public void mustCreateNonExistingFileWithCreateOption() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
@@ -3987,7 +3992,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test
+    @Test( timeout = 10000 )
     public void mustIgnoreCreateOptionIfFileAlreadyExists() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
@@ -3998,7 +4003,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test
+    @Test( timeout = 10000 )
     public void mustIgnoreCertainOpenOptions() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
@@ -4011,7 +4016,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test
+    @Test( timeout = 10000 )
     public void mustThrowOnUnsupportedOpenOptions() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
@@ -4042,7 +4047,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test
+    @Test( timeout = 10000 )
     public void mappingFileWithTruncateOptionMustTruncateFile() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );

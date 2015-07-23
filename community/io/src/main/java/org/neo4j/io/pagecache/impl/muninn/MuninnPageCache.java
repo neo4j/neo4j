@@ -382,7 +382,7 @@ public class MuninnPageCache implements PageCache
         try
         {
             backgroundThreadExecutor.execute( new EvictionTask( this ) );
-            backgroundThreadExecutor.execute( new FlushTask( this ) );
+            backgroundThreadExecutor.execute( new FlushTask( this ) ); // TODO disable background flushing
         }
         catch ( Exception e )
         {

@@ -110,6 +110,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         {
             done();
         }
+
+        @Override
+        public void addPagesFlushed( int pageCount )
+        {
+        }
     };
 
     private final FlushEventOpportunity flushEventOpportunity = new FlushEventOpportunity()

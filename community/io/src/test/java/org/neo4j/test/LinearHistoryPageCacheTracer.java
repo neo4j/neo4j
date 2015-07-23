@@ -68,6 +68,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
 
         public SwitchableBufferedOutputStream()
         {
+            //noinspection ConstantConditions
             super( null ); // No output target by default. This is changed in printHistory.
         }
 
@@ -298,6 +299,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     {
         private long filePageId;
         private int cachePageId;
+        private int pageCount;
         private File file;
         private int bytesWritten;
         private IOException exception;
@@ -306,6 +308,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         {
             this.filePageId = filePageId;
             this.cachePageId = cachePageId;
+            this.pageCount = 1;
             this.file = swapper.file();
         }
 
@@ -329,12 +332,20 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         }
 
         @Override
+        public void addPagesFlushed( int pageCount )
+        {
+            this.pageCount = pageCount;
+        }
+
+        @Override
         void printBody( PrintStream out, String exceptionLinePrefix )
         {
             out.print( ", filePageId:" );
             out.print( filePageId );
             out.print( ", cachePageId:" );
             out.print( cachePageId );
+            out.print( ", pageCount:" );
+            out.print( pageCount );
             print( out, file );
             out.print( ", bytesWritten:" );
             out.print( bytesWritten );

@@ -43,6 +43,7 @@ public interface PageSwapper
      * interrupted. If this happens, then the implementation must reopen the
      * channel and the operation must be retried.
      */
+    // TODO all these read and write methods should return long instead of int
     int read( long filePageId, Page page ) throws IOException;
 
     /**
@@ -54,7 +55,7 @@ public interface PageSwapper
      * filled with zero bytes.
      *
      * The contents of the pages should be considered to be garbage if the operation throws an exception,
-     * since the constiuent reads can be reordered, and no zeroing will take place.
+     * since the constituent reads can be reordered, and no zeroing will take place.
      *
      * Note: It is possible for the channel to be asynchronously closed while
      * this operation is taking place. For instance, if the current thread is

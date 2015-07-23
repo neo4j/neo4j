@@ -107,7 +107,7 @@ final class MuninnPage extends StampedLock implements Page
         cachePageHeader |= ~0x7F;
     }
 
-    private void markAsClean()
+    public void markAsClean()
     {
         cachePageHeader &= 0x7F;
     }

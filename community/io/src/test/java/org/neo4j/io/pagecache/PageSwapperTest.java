@@ -112,18 +112,103 @@ public abstract class PageSwapperTest
     }
 
     @Test
-    public void swappingOutMustNotSwallowInterrupts() throws Exception
+    public void readMustNotSwallowInterrupts() throws Exception
     {
         File file = file( "a" );
 
         ByteBufferPage page = createPage();
+        page.putInt( 1, 0 );
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
+
+        assertThat( swapper.write( 0, page ), is( page.size() ) );
+                page.putInt( 0, 0 );
+        Thread.currentThread().interrupt();
+
+        assertThat( swapper.read( 0, page ), is( page.size() ) );
+        assertTrue( Thread.currentThread().isInterrupted() );
+        assertThat( page.getInt( 0 ), is( 1 ) );
+
+        assertThat( swapper.read( 0, page ), is( page.size() ) );
+        assertTrue( Thread.currentThread().isInterrupted() );
+        assertThat( page.getInt( 0 ), is( 1 ) );
+    }
+
+    @Test
+    public void vectoredReadMustNotSwallowInterrupts() throws Exception
+    {
+        File file = file( "a" );
+
+        ByteBufferPage page = createPage();
+        page.putInt( 1, 0 );
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
+
+        assertThat( swapper.write( 0, page ), is( page.size() ) );
+                page.putInt( 0, 0 );
+        Thread.currentThread().interrupt();
+
+        assertThat( swapper.read( 0, new Page[]{page}, 0, 1 ), is( page.size() ) );
+        assertTrue( Thread.currentThread().isInterrupted() );
+        assertThat( page.getInt( 0 ), is( 1 ) );
+
+        assertThat( swapper.read( 0, new Page[] {page}, 0, 1 ), is( page.size() ) );
+        assertTrue( Thread.currentThread().isInterrupted() );
+        assertThat( page.getInt( 0 ), is( 1 ) );
+    }
+
+    @Test
+    public void writeMustNotSwallowInterrupts() throws Exception
+    {
+        File file = file( "a" );
+
+        ByteBufferPage page = createPage();
+        page.putInt( 1, 0 );
         PageSwapperFactory swapperFactory = swapperFactory();
         PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
 
         Thread.currentThread().interrupt();
 
-        swapper.write( 0, page );
+        assertThat( swapper.write( 0, page ), is( page.size() ) );
         assertTrue( Thread.currentThread().isInterrupted() );
+
+        page.putInt( 0, 0 );
+        assertThat( swapper.read( 0, page ), is( page.size() ) );
+        assertThat( page.getInt( 0 ), is( 1 ) );
+
+        assertThat( swapper.write( 0, page ), is( page.size() ) );
+        assertTrue( Thread.currentThread().isInterrupted() );
+
+        page.putInt( 0, 0 );
+        assertThat( swapper.read( 0, page ), is( page.size() ) );
+        assertThat( page.getInt( 0 ), is( 1 ) );
+    }
+
+    @Test
+    public void vectoredWriteMustNotSwallowInterrupts() throws Exception
+    {
+        File file = file( "a" );
+
+        ByteBufferPage page = createPage();
+        page.putInt( 1, 0 );
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
+
+        Thread.currentThread().interrupt();
+
+        assertThat( swapper.write( 0, new Page[] {page}, 0, 1 ), is( page.size() ) );
+        assertTrue( Thread.currentThread().isInterrupted() );
+
+        page.putInt( 0, 0 );
+        assertThat( swapper.read( 0, page ), is( page.size() ) );
+        assertThat( page.getInt( 0 ), is( 1 ) );
+
+        assertThat( swapper.write( 0, new Page[] {page}, 0, 1 ), is( page.size() ) );
+        assertTrue( Thread.currentThread().isInterrupted() );
+
+        page.putInt( 0, 0 );
+        assertThat( swapper.read( 0, page ), is( page.size() ) );
+        assertThat( page.getInt( 0 ), is( 1 ) );
     }
 
     @Test
@@ -168,6 +253,34 @@ public abstract class PageSwapperTest
     }
 
     @Test
+    public void mustReopenChannelWhenVectoredReadFailsWithAsynchronousCloseException() throws Exception
+    {
+        File file = file( "a" );
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
+
+        ByteBufferPage page = createPage();
+        page.putLong( X, 0 );
+        page.putLong( Y, 8 );
+        page.putInt( Z, 16 );
+        swapper.write( 0, page );
+
+        Thread.currentThread().interrupt();
+
+        swapper.read( 0, new Page[] {page}, 0, 1 );
+
+        // Clear the interrupted flag and assert that it was still raised
+        assertTrue( Thread.interrupted() );
+
+        assertThat( page.getLong( 0 ), is( X ) );
+        assertThat( page.getLong( 8 ), is( Y ) );
+        assertThat( page.getInt( 16 ), is( Z ) );
+
+        // This must not throw because we should still have a usable channel
+        swapper.force();
+    }
+
+    @Test
     public void mustReopenChannelWhenWriteFailsWithAsynchronousCloseException() throws Exception
     {
         ByteBufferPage page = createPage();
@@ -182,6 +295,35 @@ public abstract class PageSwapperTest
         Thread.currentThread().interrupt();
 
         swapper.write( 0, page );
+
+        // Clear the interrupted flag and assert that it was still raised
+        assertTrue( Thread.interrupted() );
+
+        // This must not throw because we should still have a usable channel
+        swapper.force();
+
+        clear( page );
+        swapper.read( 0, page );
+        assertThat( page.getLong( 0 ), is( X ) );
+        assertThat( page.getLong( 8 ), is( Y ) );
+        assertThat( page.getInt( 16 ), is( Z ) );
+    }
+
+    @Test
+    public void mustReopenChannelWhenVectoredWriteFailsWithAsynchronousCloseException() throws Exception
+    {
+        ByteBufferPage page = createPage();
+        page.putLong( X, 0 );
+        page.putLong( Y, 8 );
+        page.putInt( Z, 16 );
+        File file = file( "a" );
+
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
+
+        Thread.currentThread().interrupt();
+
+        swapper.write( 0, new Page[] {page}, 0, 1 );
 
         // Clear the interrupted flag and assert that it was still raised
         assertTrue( Thread.interrupted() );
@@ -240,6 +382,29 @@ public abstract class PageSwapperTest
     }
 
     @Test
+    public void vectoredReadMustNotReopenExplicitlyClosedChannel() throws Exception
+    {
+        String filename = "a";
+        File file = file( filename );
+
+        ByteBufferPage page = createPage();
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
+        swapper.write( 0, page );
+        swapper.close();
+
+        try
+        {
+            swapper.read( 0, new Page[] {page}, 0, 1 );
+            fail( "Should have thrown because the channel should be closed" );
+        }
+        catch ( ClosedChannelException ignore )
+        {
+            // This is fine.
+        }
+    }
+
+    @Test
     public void writeMustNotReopenExplicitlyClosedChannel() throws Exception
     {
         File file = file( "a" );
@@ -252,6 +417,27 @@ public abstract class PageSwapperTest
         try
         {
             swapper.write( 0, page );
+            fail( "Should have thrown because the channel should be closed" );
+        }
+        catch ( ClosedChannelException ignore )
+        {
+            // This is fine.
+        }
+    }
+
+    @Test
+    public void vectoredWriteMustNotReopenExplicitlyClosedChannel() throws Exception
+    {
+        File file = file( "a" );
+
+        ByteBufferPage page = createPage();
+        PageSwapperFactory swapperFactory = swapperFactory();
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize(), NO_CALLBACK, true );
+        swapper.close();
+
+        try
+        {
+            swapper.write( 0, new Page[] {page}, 0, 1 );
             fail( "Should have thrown because the channel should be closed" );
         }
         catch ( ClosedChannelException ignore )
@@ -533,6 +719,8 @@ public abstract class PageSwapperTest
         swapper = factory.createPageSwapper( file, 8, NO_CALLBACK, false );
         ByteBufferPage pageA = createPage( 8 );
         ByteBufferPage pageB = createPage( 8 );
+        pageA.putLong( X, 0 );
+        pageB.putLong( Y, 0 );
         assertThat( swapper.read( 1, new Page[]{pageA, pageB}, 0, 2 ), is( 12 ) );
         assertThat( pageA.getLong( 0 ), is( 0xFFFF_FFFF_FFFF_FFFFL ) );
         assertThat( pageB.getLong( 0 ), is( 0xFFFF_FFFF_0000_0000L ) );
@@ -560,6 +748,7 @@ public abstract class PageSwapperTest
         ByteBufferPage pageC = createPage( 8 );
         pageA.putInt( -1, 0 );
         pageB.putInt( -1, 0 );
+        pageC.putInt( -1, 0 );
         assertThat( swapper.read( 0, new Page[]{pageA, pageB, pageC}, 0, 3 ), is( 12 ) );
         assertThat( pageA.getInt( 0 ), is( 1 ) );
         assertThat( pageA.getInt( 4 ), is( 2 ) );

@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -118,11 +119,7 @@ final class MuninnPagedFile implements PagedFile
     @Override
     public PageCursor io( long pageId, int pf_flags )
     {
-        if ( getRefCount() == 0 )
-        {
-            throw new IllegalStateException(
-                    "File has been unmapped" );
-        }
+        assertStillMapped();
 
         int lockMask = PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK;
         if ( (pf_flags & lockMask) == 0 )
@@ -148,6 +145,14 @@ final class MuninnPagedFile implements PagedFile
         cursor.initialise( this, pageId, pf_flags );
         cursor.rewind();
         return cursor;
+    }
+
+    void assertStillMapped()
+    {
+        if ( getRefCount() == 0 )
+        {
+            throw new IllegalStateException( "File has been unmapped: " + file().getPath() );
+        }
     }
 
     @Override
@@ -184,25 +189,40 @@ final class MuninnPagedFile implements PagedFile
     void flushAndForceInternal( FlushEventOpportunity flushOpportunity ) throws IOException
     {
         pageCache.pauseBackgroundFlushTask();
+        long[] stamps = new long[translationTableChunkSize];
+        MuninnPage[] pages = new MuninnPage[translationTableChunkSize];
         try
         {
             for ( Object[] chunk : translationTable )
             {
+                // TODO only flush pages that are actually dirty, except we can tolerate flushing a few clean pages if
+                // TODO it means we can use larger vectors
+                int pagesGrabbed = 0;
                 for ( Object element : chunk )
                 {
                     if ( element instanceof MuninnPage )
                     {
                         MuninnPage page = (MuninnPage) element;
-                        long stamp = page.readLock();
-                        try
+                        stamps[pagesGrabbed] = page.readLock();
+                        if ( page.isLoaded() && page.isDirty() )
                         {
-                            page.flush( swapper, page.getFilePageId(), flushOpportunity );
+                            pages[pagesGrabbed] = page;
+                            pagesGrabbed++;
+                            continue;
                         }
-                        finally
+                        else
                         {
-                            page.unlockRead( stamp );
+                            page.unlockRead( stamps[pagesGrabbed] );
                         }
                     }
+                    if ( pagesGrabbed > 0 )
+                    {
+                        pagesGrabbed = vectoredFlush( stamps, pages, pagesGrabbed, flushOpportunity );
+                    }
+                }
+                if ( pagesGrabbed > 0 )
+                {
+                    vectoredFlush( stamps, pages, pagesGrabbed, flushOpportunity );
                 }
             }
 
@@ -211,6 +231,43 @@ final class MuninnPagedFile implements PagedFile
         finally
         {
             pageCache.unpauseBackgroundFlushTask();
+        }
+    }
+
+    private int vectoredFlush(
+            long[] stamps, MuninnPage[] pages, int pagesGrabbed, FlushEventOpportunity flushOpportunity )
+            throws IOException
+    {
+        FlushEvent flush = null;
+        try
+        {
+            MuninnPage firstPage = pages[0];
+            long startFilePageId = firstPage.getFilePageId();
+            flush = flushOpportunity.beginFlush( startFilePageId, firstPage.getCachePageId(), swapper );
+            int bytesWritten = swapper.write( startFilePageId, pages, 0, pagesGrabbed );
+            flush.addBytesWritten( bytesWritten );
+            flush.addPagesFlushed( pagesGrabbed );
+            flush.done();
+            for ( int j = 0; j < pagesGrabbed; j++ )
+            {
+                pages[j].markAsClean();
+            }
+            return 0;
+        }
+        catch ( IOException ioe )
+        {
+            if ( flush != null )
+            {
+                flush.done( ioe );
+            }
+            throw ioe;
+        }
+        finally
+        {
+            for ( int j = 0; j < pagesGrabbed; j++ )
+            {
+                pages[j].unlockRead( stamps[j] );
+            }
         }
     }
 
