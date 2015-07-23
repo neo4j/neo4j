@@ -50,6 +50,7 @@ public class DefaultLogEntryParserFactory implements LogEntryParserFactory
             case LogVersions.LOG_VERSION_2_1:
                 return new LogEntryParserDispatcher<>( LogEntryParsersV4.values() );
             case LogVersions.LOG_VERSION_2_2:
+            case LogVersions.LOG_VERSION_2_2_4:
                 return new LogEntryParserDispatcher<>( LogEntryParsersV5.values() );
             default:
                 throw new IllegalStateException( "Unsupported log version format " + logVersion );

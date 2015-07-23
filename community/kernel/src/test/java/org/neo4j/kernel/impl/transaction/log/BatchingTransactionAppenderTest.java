@@ -347,7 +347,7 @@ public class BatchingTransactionAppenderTest
     {
         Collection<Command> commands = new ArrayList<>();
         IndexDefineCommand command = new IndexDefineCommand();
-        command.init( new HashMap<String,Byte>(), new HashMap<String,Byte>() );
+        command.init( new HashMap<String,Integer>(), new HashMap<String,Integer>() );
         commands.add( command );
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
         transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
@@ -415,8 +415,8 @@ public class BatchingTransactionAppenderTest
         {
             IndexDefineCommand defineCommand = new IndexDefineCommand();
             defineCommand.init(
-                    MapUtil.<String,Byte>genericMap( "one", (byte)1 ),
-                    MapUtil.<String,Byte>genericMap( "two", (byte)2 ) );
+                    MapUtil.<String,Integer>genericMap( "one", 1 ),
+                    MapUtil.<String,Integer>genericMap( "two", 2 ) );
             commands.add( defineCommand );
         }
         else

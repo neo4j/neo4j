@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 
@@ -42,7 +41,7 @@ public class PhysicalLogNeoCommandReaderV2Test
         // Number 12 will do just fine.
 
         // GIVEN
-        PhysicalLogNeoCommandReaderV2 reader = new PhysicalLogNeoCommandReaderV2();
+        PhysicalLogNeoCommandReaderV2_2_4 reader = new PhysicalLogNeoCommandReaderV2_2_4();
         InMemoryLogChannel data = new InMemoryLogChannel();
         CommandWriter writer = new CommandWriter( data );
         AddRelationshipCommand command = new AddRelationshipCommand();
@@ -79,7 +78,7 @@ public class PhysicalLogNeoCommandReaderV2Test
          */
 
         // GIVEN
-        PhysicalLogNeoCommandReaderV2 reader = new PhysicalLogNeoCommandReaderV2();
+        PhysicalLogNeoCommandReaderV2_2_4 reader = new PhysicalLogNeoCommandReaderV2_2_4();
         InMemoryLogChannel data = new InMemoryLogChannel();
         CommandWriter writer = new CommandWriter( data );
         // Here we take advantage of the fact that all index commands have the same header written out

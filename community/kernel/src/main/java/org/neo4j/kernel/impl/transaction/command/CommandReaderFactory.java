@@ -33,6 +33,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSIO
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_0;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_1;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_2;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_2_2_4;
 
 public abstract class CommandReaderFactory
 {
@@ -81,6 +82,8 @@ public abstract class CommandReaderFactory
                             return new PhysicalLogNeoCommandReaderV1();
                         case LOG_VERSION_2_2:
                             return new PhysicalLogNeoCommandReaderV2();
+                        case LOG_VERSION_2_2_4:
+                            return new PhysicalLogNeoCommandReaderV2_2_4();
                     }
             }
             throw new IllegalArgumentException( "Unknown log format version (" + logFormatVersion + ") and " +
