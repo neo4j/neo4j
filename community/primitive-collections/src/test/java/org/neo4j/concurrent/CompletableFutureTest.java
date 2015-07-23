@@ -24,7 +24,9 @@ import org.junit.Test;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsSame.sameInstance;
@@ -125,5 +127,21 @@ public class CompletableFutureTest
         future.complete( 1 );
         thread.join( 10000 );
         assertThat( thread.isAlive(), is( false ) );
+    }
+
+    @Test
+    public void shouldThrowTimeoutException() throws Exception
+    {
+        CompletableFuture<Integer> future = new CompletableFuture<>();
+
+        try
+        {
+            future.get( 1, MILLISECONDS );
+            fail( "expected exception not thrown" );
+        }
+        catch ( TimeoutException e )
+        {
+            // expected
+        }
     }
 }
