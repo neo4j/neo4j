@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ndp.runtime.Session;
+import org.neo4j.udc.UsageData;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -103,7 +104,7 @@ public class SocketTransportHandlerTest
             @Override
             public SocketProtocol apply( Channel channel )
             {
-                return new SocketProtocolV1( NullLogService.getInstance(), session, channel );
+                return new SocketProtocolV1( NullLogService.getInstance(), session, channel, new UsageData() );
             }
         } );
 

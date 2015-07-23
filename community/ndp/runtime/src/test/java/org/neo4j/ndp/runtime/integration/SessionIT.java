@@ -276,7 +276,7 @@ public class SessionIT
         pullAllCallbackCalled.await( 30, TimeUnit.SECONDS );
         final Neo4jError err = error.get();
         assertThat( err.status(), equalTo( (Status)Status.General.UnknownFailure ) );
-        assertThat( err.message(), containsString( "An unexpected failure occurred" ) );
+        assertThat( err.message(), containsString( "Ooopsies!" ) );
     }
 
     @Test

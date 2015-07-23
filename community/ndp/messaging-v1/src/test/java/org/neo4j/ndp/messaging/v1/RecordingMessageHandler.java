@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.ndp.messaging.v1.message.AcknowledgeFailureMessage;
 import org.neo4j.ndp.messaging.v1.message.DiscardAllMessage;
 import org.neo4j.ndp.messaging.v1.message.FailureMessage;
@@ -77,9 +78,9 @@ public class RecordingMessageHandler implements MessageHandler<RuntimeException>
     }
 
     @Override
-    public void handleFailureMessage( Neo4jError cause )
+    public void handleFailureMessage( Status status, String message )
     {
-        messages.add( new FailureMessage( cause ) );
+        messages.add( new FailureMessage( status, message ) );
     }
 
     @Override

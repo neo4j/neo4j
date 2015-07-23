@@ -405,16 +405,16 @@ public interface Status
     enum Classification
     {
         /** The Client sent a bad request - changing the request might yield a successful outcome. */
-        ClientError( TransactionEffect.NONE,
-                "The Client sent a bad request - changing the request might yield a successful outcome." ),
+        ClientError( TransactionEffect.NONE, PublishingPolicy.PUBLISHABLE,
+                "The Client sent a bad request - changing the request might yield a successful outcome."),
         /** There are notifications about the request sent by the client.*/
-        ClientNotification( TransactionEffect.NONE,
+        ClientNotification( TransactionEffect.NONE, PublishingPolicy.PUBLISHABLE,
                 "There are notifications about the request sent by the client." ),
         /** The database failed to service the request. */
-        DatabaseError( TransactionEffect.ROLLBACK,
+        DatabaseError( TransactionEffect.ROLLBACK, PublishingPolicy.INTERNAL,
                 "The database failed to service the request. " ),
         /** The database cannot service the request right now, retrying later might yield a successful outcome. */
-        TransientError( TransactionEffect.ROLLBACK,
+        TransientError( TransactionEffect.ROLLBACK, PublishingPolicy.PUBLISHABLE,
                 "The database cannot service the request right now, retrying later might yield a successful outcome. "),
         ;
 
@@ -423,24 +423,43 @@ public interface Status
             ROLLBACK, NONE,
         }
 
-        final boolean rollbackTransaction;
-
-        private final String description;
-
-        Classification( TransactionEffect transactionEffect, String description )
+        /**
+         * A PUBLISHABLE error/warning is one which allows sending a meaningful error message to
+         * the client with the expectation that the user will be able to take any necessary action
+         * to resolve the error. INTERNAL errors are more sensitive and may not be resolvable by
+         * the user - these will be logged and a only a reference will be forwarded to the user.
+         * This is a security feature to avoid leaking potentially sensitive information to end
+         * users.
+         */
+        private enum PublishingPolicy
         {
-            this.description = description;
-            this.rollbackTransaction = transactionEffect == TransactionEffect.ROLLBACK;
+            PUBLISHABLE, INTERNAL,
         }
 
-        public String description()
+        private final boolean rollbackTransaction;
+        private final boolean publishable;
+        private final String description;
+
+        Classification( TransactionEffect transactionEffect, PublishingPolicy publishingPolicy, String description )
         {
-            return description;
+            this.description = description;
+            this.publishable = publishingPolicy == PublishingPolicy.PUBLISHABLE;
+            this.rollbackTransaction = transactionEffect == TransactionEffect.ROLLBACK;
         }
 
         public boolean rollbackTransaction()
         {
             return rollbackTransaction;
+        }
+
+        public boolean publishable()
+        {
+            return publishable;
+        }
+
+        public String description()
+        {
+            return description;
         }
     }
 

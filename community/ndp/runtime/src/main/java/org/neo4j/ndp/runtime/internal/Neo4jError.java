@@ -19,6 +19,8 @@
  */
 package org.neo4j.ndp.runtime.internal;
 
+import java.util.UUID;
+
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -29,11 +31,20 @@ public class Neo4jError
 {
     private final Status status;
     private final String message;
+    private final Throwable cause;
+    private final UUID reference;
 
-    public Neo4jError( Status status, String message )
+    public Neo4jError( Status status, String message, Throwable cause )
     {
         this.status = status;
         this.message = message;
+        this.cause = cause;
+        this.reference = UUID.randomUUID();
+    }
+
+    public Neo4jError( Status status, String message )
+    {
+        this(status, message, null);
     }
 
     public Status status()
@@ -44,6 +55,16 @@ public class Neo4jError
     public String message()
     {
         return message;
+    }
+
+    public Throwable cause()
+    {
+        return cause;
+    }
+
+    public UUID reference()
+    {
+        return reference;
     }
 
     @Override
@@ -80,9 +101,11 @@ public class Neo4jError
     public String toString()
     {
         return "Neo4jError{" +
-               "status=" + status +
-               ", message='" + message + '\'' +
-               '}';
+                "status=" + status +
+                ", message='" + message + '\'' +
+                ", cause=" + cause +
+                ", reference=" + reference +
+                '}';
     }
 
     public static Status codeFromString( String codeStr )
@@ -117,4 +140,22 @@ public class Neo4jError
             return Status.General.UnknownFailure;
         }
     }
+
+    public static Neo4jError from( Throwable any )
+    {
+        for( Throwable cause = any; cause != null; cause = cause.getCause() )
+        {
+            if ( cause instanceof Status.HasStatus )
+            {
+                return new Neo4jError( ((Status.HasStatus) cause).status(), any.getMessage(), any );
+            }
+        }
+
+        // In this case, an error has "slipped out", and we don't have a good way to handle it. This indicates
+        // a buggy code path, and we need to try to convince whoever ends up here to tell us about it.
+
+
+        return new Neo4jError( Status.General.UnknownFailure, any.getMessage(), any );
+    }
+
 }

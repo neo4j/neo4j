@@ -96,7 +96,7 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
     }
 
     @Override
-    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
+    public Lifecycle newKernelExtension( final Dependencies dependencies ) throws Throwable
     {
         final Config config = dependencies.config();
         final GraphDatabaseService gdb = dependencies.db();
@@ -126,7 +126,7 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
                 @Override
                 public SocketProtocol apply( Channel channel )
                 {
-                    return new SocketProtocolV1( logging, sessions.newSession(), channel );
+                    return new SocketProtocolV1( logging, sessions.newSession(), channel, dependencies.usageData() );
                 }
             } );
 

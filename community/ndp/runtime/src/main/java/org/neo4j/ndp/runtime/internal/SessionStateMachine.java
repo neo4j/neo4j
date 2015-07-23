@@ -330,7 +330,7 @@ public class SessionStateMachine implements Session, SessionState
                 }
                 catch ( Throwable e )
                 {
-                    ctx.error( ctx.errTrans.translate( e ) );
+                    ctx.error( Neo4jError.from( e ) );
                 }
             }
             return STOPPED;
@@ -338,11 +338,12 @@ public class SessionStateMachine implements Session, SessionState
 
         State error( SessionStateMachine ctx, Throwable err )
         {
-            return error( ctx, ctx.errTrans.translate( err ) );
+            return error( ctx, Neo4jError.from( err ) );
         }
 
         State error( SessionStateMachine ctx, Neo4jError err )
         {
+            ctx.errorReporter.report( err );
             State outcome = ERROR;
             if ( ctx.hasTransaction() )
             {
@@ -383,7 +384,7 @@ public class SessionStateMachine implements Session, SessionState
     private final UsageData usageData;
     private final GraphDatabaseService db;
     private final StatementRunner statementRunner;
-    private final ErrorTranslator errTrans;
+    private final ErrorReporter errorReporter;
     private final Log log;
     private final String id;
 
@@ -431,7 +432,7 @@ public class SessionStateMachine implements Session, SessionState
         this.db = db;
         this.txBridge = txBridge;
         this.statementRunner = engine;
-        this.errTrans = new ErrorTranslator( logging );
+        this.errorReporter = new ErrorReporter( logging, this.usageData );
         this.log = logging.getInternalLog( getClass() );
         this.id = UUID.randomUUID().toString();
     }

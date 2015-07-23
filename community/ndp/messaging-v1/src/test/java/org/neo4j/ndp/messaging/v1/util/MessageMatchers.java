@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.ndp.messaging.v1.MessageFormat;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
@@ -137,7 +138,7 @@ public class MessageMatchers
         };
     }
 
-    public static Matcher<Message> msgFailure( final Neo4jError error )
+    public static Matcher<Message> msgFailure( final Status status, final String message )
     {
         return new TypeSafeMatcher<Message>()
         {
@@ -146,7 +147,8 @@ public class MessageMatchers
             {
                 assertThat( t, instanceOf( FailureMessage.class ) );
                 FailureMessage msg = (FailureMessage) t;
-                assertThat( msg.cause(), equalTo( error ) );
+                assertThat( msg.status(), equalTo( status ) );
+                assertThat( msg.message(), equalTo( message ) );
                 return true;
             }
 
