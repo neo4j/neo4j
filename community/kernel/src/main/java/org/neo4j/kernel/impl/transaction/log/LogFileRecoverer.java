@@ -32,10 +32,10 @@ import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_
 
 public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,IOException>
 {
-    private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader;
+    private final LogEntryReader<ReadableLogChannel> logEntryReader;
     private final CloseableVisitor<RecoverableTransaction,IOException> visitor;
 
-    public LogFileRecoverer( LogEntryReader<ReadableVersionableLogChannel> logEntryReader,
+    public LogFileRecoverer( LogEntryReader<ReadableLogChannel> logEntryReader,
             CloseableVisitor<RecoverableTransaction,IOException> visitor )
     {
         this.logEntryReader = logEntryReader;
@@ -48,7 +48,7 @@ public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,IOExce
         final ReadableVersionableLogChannel recoveredDataChannel =
                 new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
 
-        try ( final PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
+        try ( final PhysicalTransactionCursor<ReadableLogChannel> physicalTransactionCursor =
                       new PhysicalTransactionCursor<>( recoveredDataChannel, logEntryReader ) )
         {
             RecoverableTransaction recoverableTransaction = new RecoverableTransaction()

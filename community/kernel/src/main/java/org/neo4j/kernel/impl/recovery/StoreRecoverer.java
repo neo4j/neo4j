@@ -30,9 +30,10 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.kernel.recovery.PositionToRecoverFrom;
 import org.neo4j.logging.LogProvider;
@@ -72,7 +73,7 @@ public class StoreRecoverer
 
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
 
-        LogEntryReader<ReadableVersionableLogChannel> reader = new LogEntryReaderFactory().versionable();
+        LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>( LogEntryVersion.CURRENT.byteCode() );
 
         LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 

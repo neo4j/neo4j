@@ -21,20 +21,18 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
-
 public class CheckPoint extends AbstractLogEntry
 {
     private final LogPosition logPosition;
 
     public CheckPoint( LogPosition logPosition )
     {
-        this( CURRENT_LOG_ENTRY_VERSION, logPosition );
+        this( LogEntryVersion.CURRENT, logPosition );
     }
 
-    public CheckPoint( byte version, LogPosition logPosition )
+    public CheckPoint( LogEntryVersion version, LogPosition logPosition )
     {
-        super( LogEntryByteCodes.CHECK_POINT, version );
+        super( version, LogEntryByteCodes.CHECK_POINT );
         this.logPosition = logPosition;
     }
 

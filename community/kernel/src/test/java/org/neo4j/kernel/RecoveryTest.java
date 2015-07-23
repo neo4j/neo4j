@@ -44,18 +44,19 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.recovery.DefaultRecoverySPI;
@@ -137,7 +138,8 @@ public class RecoveryTest
             RecoveryLegacyIndexApplierLookup lookup = mock( RecoveryLegacyIndexApplierLookup.class );
 
             StoreFlusher flusher = mock( StoreFlusher.class );
-            final LogEntryReader<ReadableVersionableLogChannel> reader = new LogEntryReaderFactory().versionable();
+            final LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
+                    LogEntryVersion.CURRENT.byteCode() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( provider, lookup, flusher, null, logFiles, fs,
@@ -210,7 +212,7 @@ public class RecoveryTest
                     }
                 }
             };
-            LogEntryWriter first = new LogEntryWriterV1( writableLogChannel, NeoCommandHandler.EMPTY );
+            LogEntryWriter first = new LogEntryWriter( writableLogChannel, NeoCommandHandler.EMPTY );
             visitor.visit( Pair.of( first, consumer ) );
         }
     }

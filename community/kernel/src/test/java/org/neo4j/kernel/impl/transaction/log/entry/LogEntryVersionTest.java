@@ -19,24 +19,33 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.junit.Test;
 
-public class LogEntryParserDispatcher<T extends LogEntryParser<? extends LogEntry>>
+import static org.junit.Assert.assertEquals;
+
+public class LogEntryVersionTest
 {
-    private final Map<Byte, T> parsers;
-
-    public LogEntryParserDispatcher( T[] parsers )
+    @Test
+    public void shouldBeAbleToSelectAnyVersion() throws Exception
     {
-        this.parsers = new HashMap<>( parsers.length * 2 );
-        for ( T parser : parsers )
+        for ( LogEntryVersion version : LogEntryVersion.values() )
         {
-            this.parsers.put( parser.byteCode(), parser );
+            // GIVEN
+            byte code = version.byteCode();
+            byte logHeaderFormatVersion = version.logHeaderFormatVersion();
+            System.out.println( "trying " + code +  ", " + logHeaderFormatVersion );
+
+            // WHEN
+            LogEntryVersion selectedVersion = LogEntryVersion.byVersion( code, logHeaderFormatVersion );
+
+            // THEN
+            assertEquals( version, selectedVersion );
         }
     }
 
-    public T dispatch( byte type )
+    @Test
+    public void shouldDisregardLogHeaderFormatVersionForUniqueVersions() throws Exception
     {
-        return parsers.get( type );
+        assertEquals( LogEntryVersion.V2_1, LogEntryVersion.byVersion( LogEntryVersion.V2_1.byteCode(), (byte)99 ) );
     }
 }

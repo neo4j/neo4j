@@ -19,6 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+/**
+ * @deprecated since from 2.2.4 and onwards there's only one version in town, namely {@link LogEntryVersion}.
+ * The way this log version was used was actually to set a hard command format version inside a particular log file
+ * so even if it may have looked like multiple versions of log entries were supported it wasn't. Also the
+ * log entry versions implied specific command versions so it was a bit of a mess. This class is here as
+ * long as we decide to keep the log format header, which may be good to keep for backwards compatibility of
+ * reading log headers.
+ */
+@Deprecated
 public class LogVersions
 {
     private LogVersions()
@@ -26,22 +35,9 @@ public class LogVersions
         // no instances are allowed
     }
 
-    /* version 1 as of 2011-02-22
-     * version 2 as of 2011-10-17
-     * version 3 as of 2013-02-09: neo4j 2.0 Labels & Indexing
-     * version 4 as of 2014-02-06: neo4j 2.1 Dense nodes, split by type/direction into groups
-     * version 5 as of 2014-05-23: neo4j 2.2 Removal of JTA / unified data source
-     * version 6 as of 2015-05-26: neo4j 2.3 added checkpoint entry
-     * version 7 as of 2015-05-26: neo4j 2.2.4 legacy index command header has bigger id space
-     */
-    public static final byte LOG_VERSION_1_9 = (byte) 2;
-    public static final byte LOG_VERSION_2_0 = (byte) 3;
-    public static final byte LOG_VERSION_2_1 = (byte) 4;
-    public static final byte LOG_VERSION_2_2 = (byte) 5;
-
-    public static final byte LOG_VERSION_2_2_4 = (byte) 6;
-    public static final byte LOG_VERSION_2_3 = (byte) 7;
-    public static final byte CURRENT_LOG_VERSION = LOG_VERSION_2_3;
+    // This version will probably be the end of the line of log header format versions.
+    // Please don't add more since they aren't really used anyway.
+    public static final byte CURRENT_LOG_VERSION = 6;
 
     // on disk current format version
     static final short CURRENT_FORMAT_VERSION = CURRENT_LOG_VERSION & 0xFF;

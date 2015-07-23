@@ -39,11 +39,12 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -182,13 +183,13 @@ public class CheckPointerIntegrationTest
     {
         private final PhysicalLogFiles logFiles;
         private final FileSystemAbstraction fileSystem;
-        private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader;
+        private final LogEntryReader<ReadableLogChannel> logEntryReader;
 
         public CheckPointCollector( File directory, FileSystemAbstraction fileSystem )
         {
             this.fileSystem = fileSystem;
             this.logFiles = new PhysicalLogFiles( directory, fileSystem );
-            this.logEntryReader = new LogEntryReaderFactory().versionable();
+            this.logEntryReader = new VersionAwareLogEntryReader<>( LogEntryVersion.CURRENT.byteCode() );
         }
 
         public List<CheckPoint> find( long version ) throws IOException
@@ -202,11 +203,10 @@ public class CheckPointerIntegrationTest
                     break;
                 }
 
-                ReadableVersionableLogChannel recoveredDataChannel =
+                ReadableLogChannel recoveredDataChannel =
                         new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
 
-                try ( LogEntryCursor<ReadableVersionableLogChannel> cursor =
-                              new LogEntryCursor<>( recoveredDataChannel, logEntryReader ) )
+                try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, recoveredDataChannel ) )
                 {
                     while ( cursor.next() )
                     {

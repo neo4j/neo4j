@@ -47,9 +47,9 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
@@ -120,7 +120,7 @@ public class BatchingTransactionAppenderTest
         appender.append( transaction, logAppendEvent );
 
         // THEN
-        final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
+        final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> reader =
                       new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
@@ -164,7 +164,7 @@ public class BatchingTransactionAppenderTest
         appender.append( transaction.getTransactionRepresentation(), transaction.getCommitEntry().getTxId() );
 
         // THEN
-        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
+        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> reader =
                       new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.COMMAND;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURRENT;
 
 public class LogEntryCommand extends AbstractLogEntry
 {
@@ -28,12 +28,12 @@ public class LogEntryCommand extends AbstractLogEntry
 
     public LogEntryCommand( org.neo4j.kernel.impl.transaction.command.Command command )
     {
-        this( CURRENT_LOG_ENTRY_VERSION, command );
+        this( CURRENT, command );
     }
 
-    public LogEntryCommand( byte version, org.neo4j.kernel.impl.transaction.command.Command command )
+    public LogEntryCommand( LogEntryVersion version, org.neo4j.kernel.impl.transaction.command.Command command )
     {
-        super( COMMAND, version );
+        super( version, COMMAND );
         this.command = command;
     }
 

@@ -30,7 +30,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
-import org.neo4j.kernel.impl.transaction.log.LogDeserializer;
+import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles.LogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -41,15 +41,15 @@ import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-
-import static javax.transaction.xa.Xid.MAXBQUALSIZE;
-import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
+import static javax.transaction.xa.Xid.MAXBQUALSIZE;
+import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
@@ -119,14 +119,12 @@ public class LogTestUtils
             LogHeader logHeader = readLogHeader( buffer, file, true );
 
             // Read all log entries
-            LogDeserializer deserializer = new LogDeserializer();
-
             PhysicalLogVersionedStoreChannel channel =
                     new PhysicalLogVersionedStoreChannel( file, logHeader.logVersion, logHeader.logFormatVersion );
             ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, 4096 );
 
             // Assert entries are what we expected
-            try ( IOCursor<LogEntry> cursor = deserializer.logEntries( logChannel ) )
+            try ( IOCursor<LogEntry> cursor = new LogEntryCursor( logChannel ) )
             {
                 int entryNo=0;
                 while (cursor.next())
@@ -197,7 +195,7 @@ public class LogTestUtils
                     new PhysicalLogVersionedStoreChannel( in, logHeader.logVersion, logHeader.logFormatVersion );
             ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel, NO_MORE_CHANNELS,
                     DEFAULT_READ_AHEAD_SIZE );
-            LogEntryReader<ReadableLogChannel> entryReader = new LogEntryReaderFactory().create();
+            LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
 
             LogEntry entry;
             while ( (entry = entryReader.readLogEntry( inBuffer )) != null )

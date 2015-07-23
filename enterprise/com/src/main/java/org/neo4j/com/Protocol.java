@@ -19,17 +19,17 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.collection.Visitor;
@@ -44,8 +44,8 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 /**
  * Contains the logic for serializing requests and deserializing responses. Still missing the inverse, serializing
@@ -111,7 +111,7 @@ public abstract class Protocol
                 public TransactionRepresentation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
                         IOException
                 {
-                    LogEntryReader<ReadableLogChannel> reader = new LogEntryReaderFactory().create();
+                    LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>();
                     NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
 
                     int authorId = channel.getInt();
@@ -254,7 +254,7 @@ public abstract class Protocol
             @Override
             public void accept( Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
             {
-                LogEntryReader<ReadableLogChannel> reader = new LogEntryReaderFactory().create();
+                LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>();
                 NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
 
                 try ( PhysicalTransactionCursor<ReadableLogChannel> cursor =
@@ -328,7 +328,7 @@ public abstract class Protocol
             channel.putLong( tx.getTimeCommitted() );
             channel.putInt( tx.additionalHeader().length );
             channel.put( tx.additionalHeader(), tx.additionalHeader().length );
-            new LogEntryWriterV1( channel, new CommandWriter( channel ) ).serialize( tx );
+            new LogEntryWriter( channel, new CommandWriter( channel ) ).serialize( tx );
         }
     }
 }

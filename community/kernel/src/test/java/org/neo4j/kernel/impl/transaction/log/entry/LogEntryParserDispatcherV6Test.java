@@ -23,8 +23,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory;
+import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -36,10 +37,8 @@ import static org.junit.Assert.assertNull;
 
 public class LogEntryParserDispatcherV6Test
 {
-    private final LogEntryParserDispatcher<LogEntryParsersV6> dispatcher =
-            new LogEntryParserDispatcher<>( LogEntryParsersV6.values() );
-    private final CommandReaderFactory.Default commandReaderFactory = new CommandReaderFactory.Default();
-    private final byte version = LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
+    private final LogEntryVersion version = LogEntryVersion.CURRENT;
+    private final CommandReader commandReader = version.newCommandReader();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 29 );
 
@@ -60,8 +59,8 @@ public class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.TX_START );
-        final LogEntry logEntry = parser.parse( version, channel, marker, commandReaderFactory );
+        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.TX_START );
+        final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
         assertEquals( start, logEntry );
@@ -81,8 +80,8 @@ public class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.TX_1P_COMMIT );
-        final LogEntry logEntry = parser.parse( version, channel, marker, commandReaderFactory );
+        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.TX_1P_COMMIT );
+        final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
         assertEquals( commit, logEntry );
@@ -94,16 +93,28 @@ public class LogEntryParserDispatcherV6Test
     {
         // given
         Command.NodeCommand nodeCommand = new Command.NodeCommand();
+        // The record, it will be used as before and after
+        NodeRecord theRecord = new NodeRecord( 1 );
+        nodeCommand.init( theRecord, theRecord );
+
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
         final InMemoryLogChannel channel = new InMemoryLogChannel();
 
         channel.put( NeoCommandType.NODE_COMMAND );
+        channel.putLong( theRecord.getLongId() );
+
+        // record image before
+        channel.put( (byte) 0 ); // not in use
+        channel.putInt( 0 ); // number of dynamic records in use
+        // record image after
+        channel.put( (byte) 0 ); // not in use
+        channel.putInt( 0 ); // number of dynamic records in use
 
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.COMMAND );
-        final LogEntry logEntry = parser.parse( version, channel, marker, commandReaderFactory );
+        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.COMMAND );
+        final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
         assertEquals( command, logEntry );
@@ -114,8 +125,8 @@ public class LogEntryParserDispatcherV6Test
     public void shouldParseEmptyEntry() throws IOException
     {
         // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.EMPTY );
-        final LogEntry logEntry = parser.parse( version, new InMemoryLogChannel(), marker, commandReaderFactory );
+        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.EMPTY );
+        final LogEntry logEntry = parser.parse( version, new InMemoryLogChannel(), marker, commandReader );
 
         // then
         assertNull( logEntry );
@@ -135,41 +146,41 @@ public class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.CHECK_POINT );
-        final LogEntry logEntry = parser.parse( version, channel, marker, commandReaderFactory );
+        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.CHECK_POINT );
+        final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
         assertEquals( checkPoint, logEntry );
         assertFalse( parser.skip() );
     }
 
-    @Test
+    @Test( expected = IllegalArgumentException.class)
     public void shouldThrowWhenParsingPrepareEntry() throws IOException
     {
         // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.TX_PREPARE );
+        version.entryParser( LogEntryByteCodes.TX_PREPARE );
 
         // then
-        assertNull( parser );
+        // it should throw exception
     }
 
-    @Test
+    @Test( expected = IllegalArgumentException.class)
     public void shouldThrowWhenParsingTwoPhaseCommitEntry() throws IOException
     {
         // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.TX_2P_COMMIT );
+        version.entryParser( LogEntryByteCodes.TX_2P_COMMIT );
 
         // then
-        assertNull( parser );
+        // it should throw exception
     }
 
-    @Test
+    @Test( expected = IllegalArgumentException.class)
     public void shouldThrowWhenParsingDoneEntry() throws IOException
     {
         // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.DONE );
+        version.entryParser( LogEntryByteCodes.DONE );
 
         // then
-        assertNull( parser );
+        // it should throw exception
     }
 }

@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -41,10 +41,10 @@ public class LatestCheckPointFinder
 {
     private final PhysicalLogFiles logFiles;
     private final FileSystemAbstraction fileSystem;
-    private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader;
+    private final LogEntryReader<ReadableLogChannel> logEntryReader;
 
     public LatestCheckPointFinder( PhysicalLogFiles logFiles, FileSystemAbstraction fileSystem,
-            LogEntryReader<ReadableVersionableLogChannel> logEntryReader )
+            LogEntryReader<ReadableLogChannel> logEntryReader )
     {
         this.logFiles = logFiles;
         this.fileSystem = fileSystem;
@@ -67,11 +67,10 @@ public class LatestCheckPointFinder
             oldestVersionFound = version;
 
             CheckPoint latestCheckPoint = null;
-            ReadableVersionableLogChannel recoveredDataChannel =
+            ReadableLogChannel recoveredDataChannel =
                     new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
 
-            try ( LogEntryCursor<ReadableVersionableLogChannel> cursor =
-                          new LogEntryCursor<>( recoveredDataChannel, logEntryReader ) )
+            try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, recoveredDataChannel ) )
             {
                 LogEntry entry;
                 while ( cursor.next() )

@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 
@@ -71,7 +71,7 @@ public class StoreMigratorCheckPointer
             try ( PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( storeChannel ) )
             {
                 final TransactionLogWriter writer =
-                        new TransactionLogWriter( new LogEntryWriterV1( channel, new CommandWriter( channel ) ) );
+                        new TransactionLogWriter( new LogEntryWriter( channel, new CommandWriter( channel ) ) );
                 writer.checkPoint( new LogPosition( logVersion, offset ) );
             }
         }

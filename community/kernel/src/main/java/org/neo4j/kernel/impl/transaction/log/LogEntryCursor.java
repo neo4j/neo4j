@@ -23,37 +23,37 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
-public class LogEntryCursor<T extends ReadableLogChannel> implements IOCursor<LogEntry>
+public class LogEntryCursor implements IOCursor<LogEntry>
 {
-    private final T channel;
-    private final LogEntryReader<T> entryReader;
-    private LogEntry current;
+    private final LogEntryReader<ReadableLogChannel> logEntryReader;
+    private final ReadableLogChannel channel;
+    private LogEntry entry;
 
-    public LogEntryCursor( T channel, LogEntryReader<T> entryReader )
+    public LogEntryCursor( ReadableLogChannel channel )
     {
+        this( new VersionAwareLogEntryReader<>(), channel );
+    }
+
+    public LogEntryCursor( LogEntryReader<ReadableLogChannel> logEntryReader, ReadableLogChannel channel )
+    {
+        this.logEntryReader = logEntryReader;
         this.channel = channel;
-        this.entryReader = entryReader;
     }
 
     @Override
     public LogEntry get()
     {
-        return current;
+        return entry;
     }
 
     @Override
-    public boolean next() throws IOException
+    public boolean next( ) throws IOException
     {
-        LogEntry entry = entryReader.readLogEntry( channel );
-        if ( entry == null )
-        {
-            current = null;
-            return false;
-        }
+        entry = logEntryReader.readLogEntry( channel );
 
-        current = entry;
-        return true;
+        return entry != null;
     }
 
     @Override

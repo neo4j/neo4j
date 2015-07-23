@@ -116,6 +116,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
@@ -128,8 +129,8 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CountCommittedTransactio
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TimeCheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
@@ -758,8 +759,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 LogPosition position = LogPosition.start( version );
                 try ( ReadableVersionableLogChannel channel = logFile.getReader( position ) )
                 {
-                    final LogEntryReader<ReadableVersionableLogChannel> reader =
-                            new LogEntryReaderFactory().versionable();
+                    final LogEntryReader<ReadableVersionableLogChannel> reader = new VersionAwareLogEntryReader<>();
                     LogEntry entry;
                     while ( (entry = reader.readLogEntry( channel )) != null )
                     {
@@ -903,7 +903,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         RecoveryVisitor recoveryVisitor =
                 new RecoveryVisitor( neoStore, storeRecoverer, indexUpdatesValidator, recoveryVisitorMonitor );
 
-        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
+        LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         final Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer =
                 new LogFileRecoverer( logEntryReader, recoveryVisitor );
 

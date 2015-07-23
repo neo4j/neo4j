@@ -60,8 +60,8 @@ import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.CleanupRule;
@@ -251,7 +251,7 @@ public class TransactionRecordStateTest
 
     private CommittedTransactionRepresentation readFromChannel( ReadableVersionableLogChannel channel ) throws IOException
     {
-        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
+        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> cursor =
                 new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
@@ -263,7 +263,7 @@ public class TransactionRecordStateTest
     private void writeToChannel( TransactionRepresentation transaction, WritableLogChannel channel )
             throws IOException
     {
-        TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriterV1( channel,
+        TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel,
                 new CommandWriter( channel ) ) );
         writer.append( transaction, 2 );
     }

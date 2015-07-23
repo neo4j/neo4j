@@ -56,8 +56,8 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterV1;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
@@ -72,9 +72,9 @@ import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 public class LogTruncationTest
 {
     private final InMemoryLogChannel inMemoryChannel = new InMemoryLogChannel();
-    private final LogEntryReader<ReadableLogChannel> logEntryReader = new LogEntryReaderFactory().create();
+    private final LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
     private final CommandWriter serializer = new CommandWriter( inMemoryChannel );
-    private final LogEntryWriterV1 writer = new LogEntryWriterV1( inMemoryChannel, serializer );
+    private final LogEntryWriter writer = new LogEntryWriter( inMemoryChannel, serializer );
     /** Stores all known commands, and an arbitrary set of different permutations for them */
     private final Map<Class<?>, Command[]> permutations = new HashMap<>();
     {

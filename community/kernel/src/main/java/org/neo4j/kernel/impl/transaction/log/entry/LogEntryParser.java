@@ -21,14 +21,14 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory;
+import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
 public interface LogEntryParser<T extends LogEntry>
 {
-    T parse( byte version, ReadableLogChannel channel,
-             LogPositionMarker marker, CommandReaderFactory commandReaderFactory ) throws IOException;
+    T parse( LogEntryVersion version, ReadableLogChannel channel,
+             LogPositionMarker marker, CommandReader commandReader ) throws IOException;
 
     byte byteCode();
 

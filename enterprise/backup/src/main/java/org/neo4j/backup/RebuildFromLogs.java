@@ -56,13 +56,14 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.logging.FormattedLog;
 
 import static java.lang.String.format;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersion;
@@ -101,7 +102,7 @@ class RebuildFromLogs
         ReadableVersionableLogChannel channel =
                 new ReadAheadLogChannel( startingChannel, versionBridge, DEFAULT_READ_AHEAD_SIZE );
         try ( IOCursor<CommittedTransactionRepresentation> cursor =
-                      new PhysicalTransactionCursor<>( channel, new LogEntryReaderFactory().versionable() ) )
+                      new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
         {
             while (cursor.next())
             {
@@ -214,7 +215,7 @@ class RebuildFromLogs
         long lastTransactionId = -1;
 
         try ( IOCursor<CommittedTransactionRepresentation> cursor =
-                      new PhysicalTransactionCursor<>( logChannel, new LogEntryReaderFactory().versionable() ) )
+                      new PhysicalTransactionCursor<>( logChannel, new VersionAwareLogEntryReader<>() ) )
         {
             while (cursor.next())
             {

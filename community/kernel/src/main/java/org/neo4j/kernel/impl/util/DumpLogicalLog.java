@@ -36,7 +36,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
-import org.neo4j.kernel.impl.transaction.log.LogDeserializer;
+import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
@@ -91,14 +91,14 @@ public class DumpLogicalLog
             out.println( "Logical log format:" + logHeader.logFormatVersion + "version: " + logHeader.logVersion +
                     " with prev committed tx[" + logHeader.lastCommittedTxId + "]" );
 
-            LogDeserializer deserializer = new LogDeserializer();
+//            LogDeserializer deserializer = new LogDeserializer();
 
             PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
                     fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
             ReadableVersionableLogChannel logChannel =
                     new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, 4096 );
 
-            try ( IOCursor<LogEntry> cursor = deserializer.logEntries( logChannel ) )
+            try ( IOCursor<LogEntry> cursor = new LogEntryCursor( logChannel ) )
             {
                 while (cursor.next())
                 {

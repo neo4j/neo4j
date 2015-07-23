@@ -23,9 +23,9 @@ import java.util.TimeZone;
 
 public interface LogEntry
 {
-    byte getType();
+    LogEntryVersion getVersion();
 
-    byte getVersion();
+    byte getType();
 
     String toString( TimeZone timeZone );
 

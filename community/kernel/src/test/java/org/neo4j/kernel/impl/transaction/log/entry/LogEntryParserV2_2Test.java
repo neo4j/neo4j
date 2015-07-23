@@ -23,9 +23,10 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
+import org.neo4j.kernel.impl.transaction.command.CommandReader;
+import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
@@ -33,18 +34,17 @@ import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
-public class LogEntryParserDispatcherV5Test
+public class LogEntryParserV2_2Test
 {
-    private final LogEntryParserDispatcher<LogEntryParsersV5> dispatcher =
-            new LogEntryParserDispatcher<>( LogEntryParsersV5.values() );
-    private final CommandReaderFactory.Default commandReaderFactory = new CommandReaderFactory.Default();
-    private final byte version = LogEntryVersions.CURRENT_LOG_ENTRY_VERSION;
+    private final LogEntryVersion version = LogEntryVersion.V2_2;
+    private final CommandReader commandReader = version.newCommandReader();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 29 );
 
     @Test
-    public void shouldParserStartEntry() throws IOException
+    public void shouldParseStartEntry() throws IOException
     {
         // given
         final LogEntryStart start = new LogEntryStart( version, 1, 2, 3, 4, new byte[]{5}, position );
@@ -60,8 +60,8 @@ public class LogEntryParserDispatcherV5Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.TX_START );
-        final LogEntry logEntry = parser.parse( version, channel, marker, commandReaderFactory );
+        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.TX_START );
+        final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
         assertEquals( start, logEntry );
@@ -69,7 +69,7 @@ public class LogEntryParserDispatcherV5Test
     }
 
     @Test
-    public void shouldParserOnePhaseCommitEntry() throws IOException
+    public void shouldParseOnePhaseCommitEntry() throws IOException
     {
         // given
         final LogEntryCommit commit = new OnePhaseCommit( version, 42, 21 );
@@ -81,8 +81,8 @@ public class LogEntryParserDispatcherV5Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.TX_1P_COMMIT );
-        final LogEntry logEntry = parser.parse( version, channel, marker, commandReaderFactory );
+        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.TX_1P_COMMIT );
+        final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
         assertEquals( commit, logEntry );
@@ -90,20 +90,21 @@ public class LogEntryParserDispatcherV5Test
     }
 
     @Test
-    public void shouldParserCommandsUsingAGivenFactory() throws IOException
+    public void shouldParseCommandsUsingAGivenFactory() throws IOException
     {
         // given
         Command.NodeCommand nodeCommand = new Command.NodeCommand();
+        nodeCommand.init( new NodeRecord( 0 ), new NodeRecord( 0 ) );
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
         final InMemoryLogChannel channel = new InMemoryLogChannel();
 
-        channel.put( NeoCommandType.NODE_COMMAND );
+        new CommandWriter( channel ).visitNodeCommand( nodeCommand );
 
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.COMMAND );
-        final LogEntry logEntry = parser.parse( version, channel, marker, commandReaderFactory );
+        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.COMMAND );
+        final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
         assertEquals( command, logEntry );
@@ -115,8 +116,8 @@ public class LogEntryParserDispatcherV5Test
     public void shouldParseEmptyEntry() throws IOException
     {
         // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.EMPTY );
-        final LogEntry logEntry = parser.parse( version, new InMemoryLogChannel(), marker, commandReaderFactory );
+        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.EMPTY );
+        final LogEntry logEntry = parser.parse( version, new InMemoryLogChannel(), marker, commandReader );
 
         // then
         assertNull( logEntry );
@@ -124,32 +125,17 @@ public class LogEntryParserDispatcherV5Test
     }
 
     @Test
-    public void shouldThrowWhenParsingPrepareEntry() throws IOException
+    public void shouldThrowWhenParsingUnknownEntry()
     {
         // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.TX_PREPARE );
-
-        // then
-        assertNull( parser );
-    }
-
-    @Test
-    public void shouldThrowWhenParsingTwoPhaseCommitEntry() throws IOException
-    {
-        // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.TX_2P_COMMIT );
-
-        // then
-        assertNull( parser );
-    }
-
-    @Test
-    public void shouldThrowWhenParsingDoneEntry() throws IOException
-    {
-        // when
-        final LogEntryParser parser = dispatcher.dispatch( LogEntryByteCodes.DONE );
-
-        // then
-        assertNull( parser );
+        try
+        {
+            version.entryParser( LogEntryByteCodes.TX_PREPARE );
+            fail( "Should have thrown" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // Good
+        }
     }
 }

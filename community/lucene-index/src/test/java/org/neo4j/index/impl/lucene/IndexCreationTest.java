@@ -42,7 +42,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
-import org.neo4j.kernel.impl.transaction.log.LogDeserializer;
+import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
@@ -136,11 +136,9 @@ public class IndexCreationTest
 
         ReadableVersionableLogChannel logChannel = pLogFile.getReader( LogPosition.start( version ) );
 
-        LogDeserializer deserializer = new LogDeserializer();
-
         final AtomicBoolean success = new AtomicBoolean( false );
 
-        try ( IOCursor<LogEntry> cursor = deserializer.logEntries( logChannel ) )
+        try ( IOCursor<LogEntry> cursor = new LogEntryCursor( logChannel ) )
         {
             List<Command> commandsInFirstEntry = new ArrayList<>();
             boolean startFound = false;

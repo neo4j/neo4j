@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 public class PhysicalTransactionCursor<T extends ReadableLogChannel>
         implements IOCursor<CommittedTransactionRepresentation>
 {
-    private final LogEntryCursor<T> logEntryCursor;
+    private final LogEntryCursor logEntryCursor;
     private final Marker<T> marker;
 
     private CommittedTransactionRepresentation current;
@@ -45,7 +45,7 @@ public class PhysicalTransactionCursor<T extends ReadableLogChannel>
     {
         this.marker = new Marker<>( channel );
         this.lastKnownGoodPosition = marker.currentPosition();
-        this.logEntryCursor = new LogEntryCursor<>( channel, entryReader );
+        this.logEntryCursor = new LogEntryCursor( (LogEntryReader<ReadableLogChannel>) entryReader, channel );
     }
 
     protected List<Command> commandList()

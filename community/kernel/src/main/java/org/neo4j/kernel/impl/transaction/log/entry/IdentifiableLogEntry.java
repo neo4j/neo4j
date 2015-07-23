@@ -43,7 +43,7 @@ public class IdentifiableLogEntry implements LogEntry
     }
 
     @Override
-    public byte getVersion()
+    public LogEntryVersion getVersion()
     {
         return entry.getVersion();
     }

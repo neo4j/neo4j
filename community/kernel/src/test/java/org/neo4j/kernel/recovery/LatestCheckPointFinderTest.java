@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -50,7 +51,7 @@ public class LatestCheckPointFinderTest
     private final PhysicalLogFiles logFiles = mock( PhysicalLogFiles.class );
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     @SuppressWarnings( "unchecked" )
-    private final LogEntryReader<ReadableVersionableLogChannel> reader = mock( LogEntryReader.class );
+    private final LogEntryReader<ReadableLogChannel> reader = mock( LogEntryReader.class );
     private final int olderLogVersion = 0;
     private final int logVersion = 1;
 
