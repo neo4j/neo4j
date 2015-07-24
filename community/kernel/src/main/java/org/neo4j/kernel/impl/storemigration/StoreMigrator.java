@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
 
@@ -582,11 +583,17 @@ public class StoreMigrator implements StoreMigrationParticipant
                 return new SourceInputIterator<InputRelationship, RelationshipRecord>( traceability )
                 {
                     @Override
-                    protected InputRelationship fetchNextOrNull()
+                    public boolean hasNext()
                     {
-                        if ( !source.hasNext() )
+                        return source.hasNext();
+                    }
+
+                    @Override
+                    public InputRelationship next()
+                    {
+                        if ( !hasNext() )
                         {
-                            return null;
+                            throw new NoSuchElementException();
                         }
 
                         RelationshipRecord record = source.next();
@@ -637,11 +644,17 @@ public class StoreMigrator implements StoreMigrationParticipant
                 return new SourceInputIterator<InputNode, NodeRecord>( traceability )
                 {
                     @Override
-                    protected InputNode fetchNextOrNull()
+                    public boolean hasNext()
                     {
-                        if ( !source.hasNext() )
+                        return source.hasNext();
+                    }
+
+                    @Override
+                    public InputNode next()
+                    {
+                        if ( !hasNext() )
                         {
-                            return null;
+                            throw new NoSuchElementException();
                         }
 
                         NodeRecord record = source.next();
