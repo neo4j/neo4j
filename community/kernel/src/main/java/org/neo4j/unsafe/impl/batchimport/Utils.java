@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.util.NoSuchElementException;
+
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.SourceInputIterator;
 
@@ -116,9 +118,19 @@ public class Utils
                     }
 
                     @Override
-                    protected Object fetchNextOrNull()
+                    public boolean hasNext()
                     {
-                        return iterator.hasNext() ? iterator.next().id() : null;
+                        return iterator.hasNext();
+                    }
+
+                    @Override
+                    public Object next()
+                    {
+                        if ( !hasNext() )
+                        {
+                            throw new NoSuchElementException();
+                        }
+                        return iterator.next().id();
                     }
                 };
             }
