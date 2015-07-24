@@ -17,47 +17,46 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-package org.neo4j.kernel.impl.store;
+package org.neo4j.kernel.impl.store.record;
 
 import java.nio.ByteBuffer;
 
-import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
-import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 
-public class MandatoryNodePropertyConstraintRule extends NodePropertyConstraintRule
+public class MandatoryRelationshipPropertyConstraintRule extends RelationshipPropertyConstraintRule
 {
     private final int propertyKeyId;
 
-    public static MandatoryNodePropertyConstraintRule mandatoryNodePropertyConstraintRule( long id, int labelId,
-            int propertyKeyId )
+    public static MandatoryRelationshipPropertyConstraintRule mandatoryRelPropertyConstraintRule( long id,
+            int relTypeId, int propertyKeyId )
     {
-        return new MandatoryNodePropertyConstraintRule( id, labelId, propertyKeyId );
+        return new MandatoryRelationshipPropertyConstraintRule( id, relTypeId, propertyKeyId );
     }
 
-    public static MandatoryNodePropertyConstraintRule readMandatoryNodePropertyConstraintRule( long id, int labelId,
-            ByteBuffer buffer )
+    public static MandatoryRelationshipPropertyConstraintRule readMandatoryRelPropertyConstraintRule( long id,
+            int relTypeId, ByteBuffer buffer )
     {
-        return new MandatoryNodePropertyConstraintRule( id, labelId, readPropertyKey( buffer ) );
+        return new MandatoryRelationshipPropertyConstraintRule( id, relTypeId, readPropertyKey( buffer ) );
     }
 
-    private MandatoryNodePropertyConstraintRule( long id, int labelId, int propertyKeyId )
+    private MandatoryRelationshipPropertyConstraintRule( long id, int relTypeId, int propertyKeyId )
     {
-        super( id, labelId, Kind.MANDATORY_NODE_PROPERTY_CONSTRAINT );
+        super( id, relTypeId, Kind.MANDATORY_RELATIONSHIP_PROPERTY_CONSTRAINT );
         this.propertyKeyId = propertyKeyId;
     }
 
     @Override
     public String toString()
     {
-        return "MandatoryNodePropertyConstraintRule[id=" + id + ", label=" + label + ", kind=" + kind +
-               ", propertyKeyId=" + propertyKeyId + "]";
+        return "MandatoryRelationshipPropertyConstraint" + id + ", relationshipType=" + relationshipType +
+               ", kind=" + kind + ", propertyKeyId=" + propertyKeyId + "]";
     }
 
     @Override
     public int length()
     {
-        return 4 /* label id */ +
+        return 4 /* relationship type id */ +
                1 /* kind id */ +
                4; /* property key id */
     }
@@ -65,7 +64,7 @@ public class MandatoryNodePropertyConstraintRule extends NodePropertyConstraintR
     @Override
     public void serialize( ByteBuffer target )
     {
-        target.putInt( label );
+        target.putInt( relationshipType );
         target.put( kind.id() );
         target.putInt( propertyKeyId );
     }
@@ -81,9 +80,9 @@ public class MandatoryNodePropertyConstraintRule extends NodePropertyConstraintR
     }
 
     @Override
-    public NodePropertyConstraint toConstraint()
+    public RelationshipPropertyConstraint toConstraint()
     {
-        return new MandatoryNodePropertyConstraint( getLabel(), getPropertyKey() );
+        return new MandatoryRelationshipPropertyConstraint( getRelationshipType(), getPropertyKey() );
     }
 
     @Override
@@ -107,8 +106,7 @@ public class MandatoryNodePropertyConstraintRule extends NodePropertyConstraintR
         {
             return false;
         }
-        return propertyKeyId == ((MandatoryNodePropertyConstraintRule) o).propertyKeyId;
-
+        return propertyKeyId == ((MandatoryRelationshipPropertyConstraintRule) o).propertyKeyId;
     }
 
     @Override

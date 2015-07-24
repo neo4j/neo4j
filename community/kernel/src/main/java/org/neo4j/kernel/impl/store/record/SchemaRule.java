@@ -22,9 +22,6 @@ package org.neo4j.kernel.impl.store.record;
 import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.store.MandatoryNodePropertyConstraintRule;
-import org.neo4j.kernel.impl.store.MandatoryRelationshipPropertyConstraintRule;
-import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
 
 public interface SchemaRule extends RecordSerializable
 {

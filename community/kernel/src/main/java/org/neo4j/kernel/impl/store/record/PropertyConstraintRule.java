@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel.impl.store;
+package org.neo4j.kernel.impl.store.record;
 
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;

@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -29,6 +31,8 @@ import java.util.concurrent.Future;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -48,168 +52,256 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.junit.runners.Suite.SuiteClasses;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.kernel.impl.api.integrationtest.MandatoryPropertyConstraintVerificationIT.*;
 import static org.neo4j.test.ThreadingRule.waitingWhileIn;
 
-public abstract class MandatoryPropertyConstraintVerificationIT
+@RunWith( Suite.class )
+@SuiteClasses( {
+        MandatoryNodePropertyConstrainVerificationIT.class,
+        MandatoryRelationshipPropertyConstrainVerificationIT.class
+} )
+public class MandatoryPropertyConstraintVerificationIT
 {
-    private static final String KEY = "Foo";
-    private static final String PROPERTY = "bar";
-
-    @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
-    @Rule
-    public final ThreadingRule thread = new ThreadingRule();
-
-    abstract void createConstraint( DatabaseRule db, String key, String property );
-
-    abstract String constraintCreationMethodName();
-
-    abstract long createOffender( DatabaseRule db, String key );
-
-    abstract String offenderCreationMethodName();
-
-    abstract Class<?> offenderType();
-
-    @Test
-    public void shouldFailToCreateConstraintIfSomeNodeLacksTheMandatoryProperty() throws Exception
+    public static class MandatoryNodePropertyConstrainVerificationIT
+            extends AbstractMandatoryPropertyConstraintVerificationIT
     {
-        // given
-        long entityId;
-        try ( Transaction tx = db.beginTx() )
+        @Override
+        void createConstraint( DatabaseRule db, String label, String property )
         {
-            entityId = createOffender( db, KEY );
-            tx.success();
+            db.schema().constraintFor( label( label ) ).assertPropertyExists( property ).create();
         }
 
-        // when
-        try
+        @Override
+        String constraintCreationMethodName()
         {
+            return "mandatoryNodePropertyConstraintCreate";
+        }
+
+        @Override
+        long createOffender( DatabaseRule db, String key )
+        {
+            Node node = db.createNode();
+            node.addLabel( label( key ) );
+            return node.getId();
+        }
+
+        @Override
+        String offenderCreationMethodName()
+        {
+            return "nodeAddLabel"; // takes schema read lock to enforce constraints
+        }
+
+        @Override
+        Class<?> offenderType()
+        {
+            return Node.class;
+        }
+    }
+
+    public static class MandatoryRelationshipPropertyConstrainVerificationIT
+            extends AbstractMandatoryPropertyConstraintVerificationIT
+    {
+        @Override
+        public void createConstraint( DatabaseRule db, String relType, String property )
+        {
+            db.schema().constraintFor( withName( relType ) ).assertPropertyExists( property ).create();
+        }
+
+        @Override
+        public String constraintCreationMethodName()
+        {
+            return "mandatoryRelationshipPropertyConstraintCreate";
+        }
+
+        @Override
+        public long createOffender( DatabaseRule db, String key )
+        {
+            Node start = db.createNode();
+            Node end = db.createNode();
+            Relationship relationship = start.createRelationshipTo( end, withName( key ) );
+            return relationship.getId();
+        }
+
+        @Override
+        public String offenderCreationMethodName()
+        {
+            return "relationshipCreate"; // takes schema read lock to enforce constraints
+        }
+
+        @Override
+        public Class<?> offenderType()
+        {
+            return Relationship.class;
+        }
+    }
+
+    public abstract static class AbstractMandatoryPropertyConstraintVerificationIT
+    {
+        private static final String KEY = "Foo";
+        private static final String PROPERTY = "bar";
+
+        @Rule
+        public final DatabaseRule db = new ImpermanentDatabaseRule();
+        @Rule
+        public final ThreadingRule thread = new ThreadingRule();
+
+        abstract void createConstraint( DatabaseRule db, String key, String property );
+
+        abstract String constraintCreationMethodName();
+
+        abstract long createOffender( DatabaseRule db, String key );
+
+        abstract String offenderCreationMethodName();
+
+        abstract Class<?> offenderType();
+
+        @Test
+        public void shouldFailToCreateConstraintIfSomeNodeLacksTheMandatoryProperty() throws Exception
+        {
+            // given
+            long entityId;
             try ( Transaction tx = db.beginTx() )
             {
-                createConstraint( db, KEY, PROPERTY );
+                entityId = createOffender( db, KEY );
                 tx.success();
             }
-            fail( "expected exception" );
-        }
-        // then
-        catch ( ConstraintViolationException e )
-        {
-            Throwable cause = e.getCause();
-            assertThat( cause, instanceOf( CreateConstraintFailureException.class ) );
 
-            Throwable rootCause = cause.getCause();
-            assertThat( rootCause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
-            assertThat( userMessageOf( (KernelException) rootCause ),
-                    containsString( offenderType().getSimpleName() + "(" + entityId + ")" ) );
-        }
-    }
-
-    @Test
-    public void shouldFailToCreateConstraintIfConcurrentlyCreatedEntityLacksTheMandatoryProperty() throws Exception
-    {
-        // when
-        try
-        {
-            Future<Void> nodeCreation;
-            try ( Transaction tx = db.beginTx() )
-            {
-                createConstraint( db, KEY, PROPERTY );
-
-                nodeCreation = thread.executeAndAwait( createOffender(), null,
-                        waitingWhileIn( OperationsFacade.class, offenderCreationMethodName() ), 5, SECONDS );
-
-                tx.success();
-            }
-            nodeCreation.get();
-            fail( "expected exception" );
-        }
-        // then, we either fail to create the constraint,
-        catch ( ConstraintViolationException e )
-        {
-            assertThat( e.getCause(), instanceOf( CreateConstraintFailureException.class ) );
-        }
-        // or we fail to create the offending node
-        catch ( ExecutionException e )
-        {
-            assertThat( e.getCause(), instanceOf( ConstraintViolationException.class ) );
-            assertThat( e.getCause().getCause(), instanceOf( ConstraintViolationTransactionFailureException.class ) );
-        }
-    }
-
-    @Test
-    public void shouldFailToCreateConstraintIfConcurrentlyCommittedEntityLacksTheMandatoryProperty() throws Exception
-    {
-        // when
-        try
-        {
-            Future<Void> constraintCreation;
-            try ( Transaction tx = db.beginTx() )
-            {
-                createOffender( db, KEY );
-
-                constraintCreation = thread.executeAndAwait( createConstraint(), null,
-                        waitingWhileIn( OperationsFacade.class, constraintCreationMethodName() ), 5, SECONDS );
-
-                tx.success();
-            }
-            constraintCreation.get();
-            fail( "expected exception" );
-        }
-        // then, we either fail to create the constraint,
-        catch ( ExecutionException e )
-        {
-            assertThat( e.getCause(), instanceOf( ConstraintViolationException.class ) );
-            assertThat( e.getCause().getCause(), instanceOf( CreateConstraintFailureException.class ) );
-        }
-        // or we fail to create the offending node
-        catch ( ConstraintViolationException e )
-        {
-            assertThat( e.getCause(), instanceOf( ConstraintViolationTransactionFailureException.class ) );
-        }
-    }
-
-    private String userMessageOf( KernelException exception )
-    {
-        try ( Transaction ignored = db.beginTx() )
-        {
-            DependencyResolver dependencyResolver = db.getGraphDatabaseAPI().getDependencyResolver();
-            Statement statement = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();
-            TokenNameLookup tokenNameLookup = new StatementTokenNameLookup( statement.readOperations() );
-            return exception.getUserMessage( tokenNameLookup );
-        }
-    }
-
-    private ThrowingFunction<Void,Void,RuntimeException> createOffender()
-    {
-        return new ThrowingFunction<Void,Void,RuntimeException>()
-        {
-            @Override
-            public Void apply( Void aVoid ) throws RuntimeException
-            {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    createOffender( db, KEY );
-                    tx.success();
-                }
-                return null;
-            }
-        };
-    }
-
-    private ThrowingFunction<Void,Void,RuntimeException> createConstraint()
-    {
-        return new ThrowingFunction<Void,Void,RuntimeException>()
-        {
-            @Override
-            public Void apply( Void aVoid ) throws RuntimeException
+            // when
+            try
             {
                 try ( Transaction tx = db.beginTx() )
                 {
                     createConstraint( db, KEY, PROPERTY );
                     tx.success();
                 }
-                return null;
+                fail( "expected exception" );
             }
-        };
+            // then
+            catch ( ConstraintViolationException e )
+            {
+                Throwable cause = e.getCause();
+                assertThat( cause, instanceOf( CreateConstraintFailureException.class ) );
+
+                Throwable rootCause = cause.getCause();
+                assertThat( rootCause, instanceOf( ConstraintVerificationFailedKernelException.class ) );
+                assertThat( userMessageOf( (KernelException) rootCause ),
+                        containsString( offenderType().getSimpleName() + "(" + entityId + ")" ) );
+            }
+        }
+
+        @Test
+        public void shouldFailToCreateConstraintIfConcurrentlyCreatedEntityLacksTheMandatoryProperty() throws Exception
+        {
+            // when
+            try
+            {
+                Future<Void> nodeCreation;
+                try ( Transaction tx = db.beginTx() )
+                {
+                    createConstraint( db, KEY, PROPERTY );
+
+                    nodeCreation = thread.executeAndAwait( createOffender(), null,
+                            waitingWhileIn( OperationsFacade.class, offenderCreationMethodName() ), 5, SECONDS );
+
+                    tx.success();
+                }
+                nodeCreation.get();
+                fail( "expected exception" );
+            }
+            // then, we either fail to create the constraint,
+            catch ( ConstraintViolationException e )
+            {
+                assertThat( e.getCause(), instanceOf( CreateConstraintFailureException.class ) );
+            }
+            // or we fail to create the offending node
+            catch ( ExecutionException e )
+            {
+                assertThat( e.getCause(), instanceOf( ConstraintViolationException.class ) );
+                assertThat( e.getCause().getCause(),
+                        instanceOf( ConstraintViolationTransactionFailureException.class ) );
+            }
+        }
+
+        @Test
+        public void shouldFailToCreateConstraintIfConcurrentlyCommittedEntityLacksTheMandatoryProperty()
+                throws Exception
+        {
+            // when
+            try
+            {
+                Future<Void> constraintCreation;
+                try ( Transaction tx = db.beginTx() )
+                {
+                    createOffender( db, KEY );
+
+                    constraintCreation = thread.executeAndAwait( createConstraint(), null,
+                            waitingWhileIn( OperationsFacade.class, constraintCreationMethodName() ), 5, SECONDS );
+
+                    tx.success();
+                }
+                constraintCreation.get();
+                fail( "expected exception" );
+            }
+            // then, we either fail to create the constraint,
+            catch ( ExecutionException e )
+            {
+                assertThat( e.getCause(), instanceOf( ConstraintViolationException.class ) );
+                assertThat( e.getCause().getCause(), instanceOf( CreateConstraintFailureException.class ) );
+            }
+            // or we fail to create the offending node
+            catch ( ConstraintViolationException e )
+            {
+                assertThat( e.getCause(), instanceOf( ConstraintViolationTransactionFailureException.class ) );
+            }
+        }
+
+        private String userMessageOf( KernelException exception )
+        {
+            try ( Transaction ignored = db.beginTx() )
+            {
+                DependencyResolver dependencyResolver = db.getGraphDatabaseAPI().getDependencyResolver();
+                Statement statement =
+                        dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();
+                TokenNameLookup tokenNameLookup = new StatementTokenNameLookup( statement.readOperations() );
+                return exception.getUserMessage( tokenNameLookup );
+            }
+        }
+
+        private ThrowingFunction<Void,Void,RuntimeException> createOffender()
+        {
+            return new ThrowingFunction<Void,Void,RuntimeException>()
+            {
+                @Override
+                public Void apply( Void aVoid ) throws RuntimeException
+                {
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        createOffender( db, KEY );
+                        tx.success();
+                    }
+                    return null;
+                }
+            };
+        }
+
+        private ThrowingFunction<Void,Void,RuntimeException> createConstraint()
+        {
+            return new ThrowingFunction<Void,Void,RuntimeException>()
+            {
+                @Override
+                public Void apply( Void aVoid ) throws RuntimeException
+                {
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        createConstraint( db, KEY, PROPERTY );
+                        tx.success();
+                    }
+                    return null;
+                }
+            };
+        }
     }
 }

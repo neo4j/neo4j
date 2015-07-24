@@ -33,9 +33,9 @@ import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.store.MandatoryNodePropertyConstraintRule;
-import org.neo4j.kernel.impl.store.MandatoryRelationshipPropertyConstraintRule;
-import org.neo4j.kernel.impl.store.UniquePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.MandatoryNodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.MandatoryRelationshipPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 
@@ -45,9 +45,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.store.MandatoryNodePropertyConstraintRule.mandatoryNodePropertyConstraintRule;
-import static org.neo4j.kernel.impl.store.MandatoryRelationshipPropertyConstraintRule.mandatoryRelPropertyConstraintRule;
-import static org.neo4j.kernel.impl.store.UniquePropertyConstraintRule.uniquenessConstraintRule;
+import static org.neo4j.kernel.impl.store.record.MandatoryNodePropertyConstraintRule.mandatoryNodePropertyConstraintRule;
+import static org.neo4j.kernel.impl.store.record.MandatoryRelationshipPropertyConstraintRule.mandatoryRelPropertyConstraintRule;
+import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class SchemaCacheTest
 {
