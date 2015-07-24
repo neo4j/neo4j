@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.{InequalitySeekRange, ExecutionContext, InternalException}
 
-case class ValueExpressionSeekRange(range: InequalitySeekRange[Expression])
+case class InequalitySeekRangeExpression(range: InequalitySeekRange[Expression])
   extends Expression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = throw new

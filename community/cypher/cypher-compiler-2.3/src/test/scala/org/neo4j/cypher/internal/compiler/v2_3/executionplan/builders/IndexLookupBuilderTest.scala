@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_3.{PrefixRange, IndexHintException, ast}
+import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.NonEmptyList
 
 class IndexLookupBuilderTest extends BuilderTest {
 
@@ -67,7 +68,68 @@ class IndexLookupBuilderTest extends BuilderTest {
         val predicate = like.asCommandPredicate
 
         // WHAM
-        check("n", "label", "prop", predicate, RangeQueryExpression(StringSeekRange(PrefixRange("prefix"))))
+        check("n", "label", "prop", predicate, RangeQueryExpression(PrefixSeekRangeExpression(PrefixRange("prefix"))))
+      }
+    }
+
+    inner.run()
+  }
+
+  test("should accept a textual range seek query") {
+    object inner extends org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport {
+      import ExpressionConverters._
+
+      def run() = {
+        //GIVEN
+        val property: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop")_)_
+        val inequality = ast.AndedPropertyInequalities(ident("n"), property, NonEmptyList(ast.LessThanOrEqual(property, ast.StringLiteral("xxx")_)_))
+        val predicate = inequality.asCommandPredicate
+
+        // WHAM
+        check("n", "label", "prop", predicate, RangeQueryExpression(InequalitySeekRangeExpression(RangeLessThan(NonEmptyList(InclusiveBound(Literal("xxx")))))))
+      }
+    }
+
+    inner.run()
+  }
+
+  test("should accept a numerical range seek query") {
+    object inner extends org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport {
+
+      import ExpressionConverters._
+
+      def run() = {
+        //GIVEN
+        val property: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop") _) _
+        val inequality = ast.AndedPropertyInequalities(ident("n"), property, NonEmptyList(ast.GreaterThan(property, ast.SignedDecimalIntegerLiteral("42") _) _))
+        val predicate = inequality.asCommandPredicate
+
+        // WHAM
+        check("n", "label", "prop", predicate, RangeQueryExpression(
+          InequalitySeekRangeExpression(RangeGreaterThan(NonEmptyList(ExclusiveBound(Literal(42)))))))
+      }
+    }
+
+    inner.run()
+  }
+
+  test("should accept a numerical range seek query with many ranges") {
+    object inner extends org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport {
+
+      import ExpressionConverters._
+
+      def run() = {
+        //GIVEN
+        val property: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop") _) _
+        val inequality = ast.AndedPropertyInequalities(ident("n"), property, NonEmptyList(ast.GreaterThan(property, ast.SignedDecimalIntegerLiteral("10") _) _,
+                                                                                          ast.LessThan(property, ast.SignedDecimalIntegerLiteral("100") _) _,
+                                                                                          ast.GreaterThanOrEqual(property, ast.DecimalDoubleLiteral("15.5") _) _))
+        val predicate = inequality.asCommandPredicate
+
+        // WHAM
+        check("n", "label", "prop", predicate, RangeQueryExpression(InequalitySeekRangeExpression(RangeBetween(
+          RangeGreaterThan(NonEmptyList(ExclusiveBound(Literal(10)), InclusiveBound(Literal(15.5)))),
+          RangeLessThan(NonEmptyList(ExclusiveBound(Literal(100))))))))
       }
     }
 

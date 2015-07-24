@@ -121,29 +121,38 @@ object IndexSeekStrategy extends NodeStrategy {
     val labelPredicates: Seq[SolvedPredicate[LabelName]] = findLabelsForNode(node, where)
     val equalityPredicates: Seq[SolvedPredicate[PropertyKey]] = findEqualityPredicatesOnProperty(node, where, symbols)
     val seekByPrefixPredicates: Seq[SolvedPredicate[PropertyKey]] = findIndexSeekByPrefixPredicatesOnProperty(node, where, symbols)
+    val seekByRangePredicates: Seq[SolvedPredicate[PropertyKey]] = findIndexSeekByRangePredicatesOnProperty(node, where, symbols)
 
     val result = for (
       labelPredicate <- labelPredicates
     ) yield {
-      val equalityItems: Seq[RatedStartItem] =
-        for (equalityPredicate <- equalityPredicates if ctx.getIndexRule(labelPredicate.solution, equalityPredicate.solution).nonEmpty)
-        yield {
-          val schemaIndex = SchemaIndex(node, labelPredicate.solution, equalityPredicate.solution, AnyIndex, None)
-          val optConstraint = ctx.getUniquenessConstraint(labelPredicate.solution, equalityPredicate.solution)
-          val rating = if (optConstraint.isDefined) Single else IndexEquality
-          RatedStartItem(schemaIndex, rating, solvedPredicates = Seq.empty, newUnsolvedPredicates = equalityPredicate.newUnsolvedPredicate.toSeq)
-        }
+        val equalityItems: Seq[RatedStartItem] =
+          for (equalityPredicate <- equalityPredicates if ctx.getIndexRule(labelPredicate.solution, equalityPredicate.solution).nonEmpty)
+            yield {
+              val schemaIndex = SchemaIndex(node, labelPredicate.solution, equalityPredicate.solution, AnyIndex, None)
+              val optConstraint = ctx.getUniquenessConstraint(labelPredicate.solution, equalityPredicate.solution)
+              val rating = if (optConstraint.isDefined) Single else IndexEquality
+              RatedStartItem(schemaIndex, rating, solvedPredicates = Seq.empty,
+                             newUnsolvedPredicates = equalityPredicate.newUnsolvedPredicate.toSeq)
+            }
 
-      val seekByPrefixItems: Seq[RatedStartItem] =
-        for (seekByPrefixPredicate <- seekByPrefixPredicates if ctx.getIndexRule(labelPredicate.solution, seekByPrefixPredicate.solution).nonEmpty)
-          yield {
-            val schemaIndex = SchemaIndex(node, labelPredicate.solution, seekByPrefixPredicate.solution, AnyIndex, None)
-            val optConstraint = ctx.getUniquenessConstraint(labelPredicate.solution, seekByPrefixPredicate.solution)
-            RatedStartItem(schemaIndex, NodeFetchStrategy.IndexRange, solvedPredicates = Seq.empty, newUnsolvedPredicates = seekByPrefixPredicate.newUnsolvedPredicate.toSeq)
-          }
+        val seekByPrefixItems: Seq[RatedStartItem] =
+          for (seekByPrefixPredicate <- seekByPrefixPredicates if ctx.getIndexRule(labelPredicate.solution, seekByPrefixPredicate.solution).nonEmpty)
+            yield {
+              val schemaIndex = SchemaIndex(node, labelPredicate.solution, seekByPrefixPredicate.solution, AnyIndex, None)
+              RatedStartItem(schemaIndex, NodeFetchStrategy.IndexRange, solvedPredicates = Seq.empty,
+                             newUnsolvedPredicates = seekByPrefixPredicate.newUnsolvedPredicate.toSeq)
+            }
 
-      equalityItems ++ seekByPrefixItems
-    }
+        val seekByRangeItems: Seq[RatedStartItem] =
+          for (seekByRangePredicate <- seekByRangePredicates if ctx.getIndexRule(labelPredicate.solution, seekByRangePredicate.solution).nonEmpty)
+            yield {
+              val schemaIndex = SchemaIndex(node, labelPredicate.solution, seekByRangePredicate.solution, AnyIndex, None)
+              RatedStartItem(schemaIndex, NodeFetchStrategy.IndexRange, solvedPredicates = Seq.empty)
+            }
+
+        equalityItems ++ seekByPrefixItems ++ seekByRangeItems
+      }
 
     result.flatten
   }
@@ -189,6 +198,16 @@ object IndexSeekStrategy extends NodeStrategy {
           )
           SolvedPredicate(prop.name, predicate = prefixPredicate, newUnsolvedPredicate = Some(filterPredicate))
         }
+    }
+  }
+
+  private def findIndexSeekByRangePredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], initialSymbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
+    val symbols = initialSymbols.add(identifier, CTNode)
+
+    where.collect {
+      case predicate@AndedPropertyComparablePredicates(Identifier(id), Property(_, key), comparables)
+        if id == identifier && predicate.symbolDependenciesMet(symbols) =>
+        SolvedPredicate(key.name, predicate)
     }
   }
 }

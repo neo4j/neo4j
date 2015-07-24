@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConverters._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression, ProjectedPath, ValueExpressionSeekRange}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression, ProjectedPath, InequalitySeekRangeExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedRelType
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{Predicate => CommandPredicate, expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{Predicate => CommandPredicate, expressions => commandexpressions, values => commandvalues, AndedPropertyComparablePredicates}
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{LikePatternParser, ParsedLikePattern, convertLikePatternToRegex}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -53,10 +53,7 @@ object ExpressionConverters {
       case e: ast.NotLike => e.asCommandNegatedRegex
       case e: ast.IsNull => e.asCommandIsNull
       case e: ast.IsNotNull => e.asCommandIsNotNull
-      case e: ast.LessThan => e.asCommandLessThan
-      case e: ast.LessThanOrEqual => e.asCommandLessThanOrEqual
-      case e: ast.GreaterThan => e.asCommandGreaterThan
-      case e: ast.GreaterThanOrEqual => e.asCommandGreaterThanOrEqual
+      case e: ast.InequalityExpression => e.asCommandComparablePredicate
       case e: ast.Add => e.asCommandAdd
       case e: ast.UnaryAdd => e.asCommandAdd
       case e: ast.Subtract => e.asCommandSubtract
@@ -90,7 +87,7 @@ object ExpressionConverters {
       case e: ast.GetDegree => e.asCommandGetDegree
       case e: ast.PrefixSeekRangeWrapper => e.asCommandStringSeekRange
       case e: ast.InequalitySeekRangeWrapper => e.asCommandValueSeekRange
-      case e: ast.AndedPropertyInequalities => e.asCommandAnds
+      case e: ast.AndedPropertyInequalities => e.asCommandAndedPropertyComparablePredicates
       case _ =>
         throw new ThisShouldNotHappenError("cleishm", s"Unknown expression type during transformation (${expression.getClass})")
     }
@@ -107,14 +104,23 @@ object ExpressionConverters {
     }
   }
 
-  implicit class StringSeekRangeConverter(val original: ast.PrefixSeekRangeWrapper) extends AnyVal {
-    def asCommandStringSeekRange =
-      commandexpressions.StringSeekRange(original.range)
+  implicit class InequalityExpressionConverter(val original: ast.InequalityExpression) extends AnyVal {
+    def asCommandComparablePredicate = original match {
+      case e: ast.LessThan => e.asCommandLessThan
+      case e: ast.LessThanOrEqual => e.asCommandLessThanOrEqual
+      case e: ast.GreaterThan => e.asCommandGreaterThan
+      case e: ast.GreaterThanOrEqual => e.asCommandGreaterThanOrEqual
+    }
   }
 
-  implicit class ValueSeekRangeConverter(val original: ast.InequalitySeekRangeWrapper) extends AnyVal {
+  implicit class PrefixSeekRangeConverter(val original: ast.PrefixSeekRangeWrapper) extends AnyVal {
+    def asCommandStringSeekRange =
+      commandexpressions.PrefixSeekRangeExpression(original.range)
+  }
+
+  implicit class InequalitySeekRangeConverter(val original: ast.InequalitySeekRangeWrapper) extends AnyVal {
     def asCommandValueSeekRange =
-      ValueExpressionSeekRange(original.range.mapBounds(_.asCommandExpression))
+      InequalitySeekRangeExpression(original.range.mapBounds(_.asCommandExpression))
   }
 
   implicit class GetDegreeConverter(val original: ast.GetDegree) extends AnyVal {
@@ -477,7 +483,7 @@ object ExpressionConverters {
   }
 
   implicit class AndedInequalitiesConverter(val e: ast.AndedPropertyInequalities) extends AnyVal {
-    def asCommandAnds: commands.Ands =
-      commands.Ands(e.inequalities.map(_.asCommandPredicate).toList)
+    def asCommandAndedPropertyComparablePredicates: AndedPropertyComparablePredicates =
+      commands.AndedPropertyComparablePredicates(e.identifier.asCommandIdentifier, e.property.asCommandProperty, e.inequalities.map(_.asCommandComparablePredicate))
   }
 }

@@ -127,6 +127,13 @@ sealed trait NonEmptyList[+T] {
       case (acc@Some(nel), elem) => if (f(elem)) Some(Fby(elem, nel)) else acc
     }.map(_.reverse)
 
+  @tailrec
+  final def exists[X >: T](predicate: (X) => Boolean): Boolean = self match {
+    case Last(elem) => predicate(elem)
+    case Fby(elem, _) if predicate(elem) => true
+    case Fby(_, tail) => tail.exists(predicate)
+  }
+
   final def map[S](f: T => S): NonEmptyList[S] = self match {
     case Fby(elem, tail) => tail.mapAndPrependReversedTo[T, S](f, Last(f(elem))).reverse
     case Last(elem) => Last(f(elem))

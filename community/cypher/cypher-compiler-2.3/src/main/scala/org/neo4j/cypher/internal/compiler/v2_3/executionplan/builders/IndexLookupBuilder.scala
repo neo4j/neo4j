@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Identifier, Property, StringSeekRange}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{MatchText, ParsedLikePattern, WildcardLikePatternOp}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.PipeMonitor
@@ -35,7 +35,8 @@ class IndexLookupBuilder extends PlanBuilder {
     val querylessHint: QueryToken[SchemaIndex] = extractInterestingStartItem(plan)
     val hint: SchemaIndex = querylessHint.token
 
-    val propertyPredicates = findPropertyPredicates(plan, hint) ++ findLikePredicates(plan, hint)
+    val propertyPredicates: Seq[(QueryToken[Predicate], QueryExpression[Expression])] =
+      findPropertyPredicates(plan, hint) ++ findLikePredicates(plan, hint) ++ findInequalityPredicates(plan, hint)
     val labelPredicates = findLabelPredicates(plan, hint)
 
     if (propertyPredicates.isEmpty || labelPredicates.isEmpty)
@@ -55,13 +56,13 @@ class IndexLookupBuilder extends PlanBuilder {
     plan.copy(query = newQuery)
   }
 
-  private def findLabelPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[QueryToken[Predicate]] =
+  private def findLabelPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
     plan.query.where.collect {
       case predicate@QueryToken(HasLabel(Identifier(identifier), label))
         if identifier == hint.identifier && label.name == hint.label => predicate
     }
 
-  private def findPropertyPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[(QueryToken[Predicate], QueryExpression[Expression])] =
+  private def findPropertyPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
     plan.query.where.collect {
       case predicate@QueryToken(Equals(Property(Identifier(id), prop), expression))
         if id == hint.identifier && prop.name == hint.property => (predicate, SingleQueryExpression(expression))
@@ -76,15 +77,28 @@ class IndexLookupBuilder extends PlanBuilder {
         if id == hint.identifier && prop.name == hint.property => (predicate, ScanQueryExpression(expr))
     }
 
-  private def findLikePredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[(QueryToken[Predicate], QueryExpression[Expression])] =
+  private def findLikePredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
     plan.query.where.collect {
       case predicate@QueryToken(LiteralLikePattern(
         LiteralRegularExpression(Property(Identifier(id), prop), _),
         ParsedLikePattern(MatchText(prefix) :: (_: WildcardLikePatternOp) :: tl),
         caseInsensitive)
       ) if !caseInsensitive && id == hint.identifier && prop.name == hint.property =>
-        val range = StringSeekRange(PrefixRange(prefix))
+        val range = PrefixSeekRangeExpression(PrefixRange(prefix))
         (predicate, RangeQueryExpression(range))
+    }
+
+  private def findInequalityPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
+    plan.query.where.collect {
+      case predicate@QueryToken(AndedPropertyComparablePredicates(Identifier(id), Property(_, prop), comparables))
+        if id == hint.identifier && prop.name == hint.property =>
+        val seekRange: InequalitySeekRange[Expression] = InequalitySeekRange.fromPartitionedBounds(comparables.partition {
+          case GreaterThan(_, value) => Left(ExclusiveBound(value))
+          case GreaterThanOrEqual(_, value) => Left(InclusiveBound(value))
+          case LessThan(_, value) => Right(ExclusiveBound(value))
+          case LessThanOrEqual(_, value) => Right(InclusiveBound(value))
+        })
+        (predicate, RangeQueryExpression(InequalitySeekRangeExpression(seekRange)))
     }
 
   private def extractInterestingStartItem(plan: ExecutionPlanInProgress): QueryToken[SchemaIndex] =
