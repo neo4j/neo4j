@@ -44,6 +44,7 @@ import org.neo4j.index.lucene.ValueContext;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+
 import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.KEY_TO_LOWER_CASE;
 
 public abstract class IndexType
@@ -356,19 +357,11 @@ public abstract class IndexType
         return doc;
     }
 
-    public static Document newDocument( Object entityId )
+    public static Document newDocument( EntityId entityId )
     {
-        if ( entityId instanceof RelationshipId )
-        {
-            RelationshipId relationshipId = (RelationshipId) entityId;
-            Document document = newBaseDocument( relationshipId.id );
-            document.add( new Field( LuceneIndex.KEY_START_NODE_ID, "" + relationshipId.startNode, Store.YES,
-                    org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
-            document.add( new Field( LuceneIndex.KEY_END_NODE_ID, "" + relationshipId.endNode, Store.YES,
-                    org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
-            return document;
-        }
-        return newBaseDocument( (Long) entityId );
+        Document document = newBaseDocument( entityId.id() );
+        entityId.enhance( document );
+        return document;
     }
 
     public Term idTerm( long entityId )

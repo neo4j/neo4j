@@ -24,11 +24,11 @@ import java.util.Iterator;
 
 class ConstantScoreIterator extends AbstractLegacyIndexHits
 {
-    private final Iterator<Long> items;
+    private final Iterator<EntityId> items;
     private final int size;
     private final float score;
 
-    ConstantScoreIterator( Collection<Long> items, float score )
+    ConstantScoreIterator( Collection<EntityId> items, float score )
     {
         this.items = items.iterator();
         this.score = score;
@@ -50,6 +50,6 @@ class ConstantScoreIterator extends AbstractLegacyIndexHits
     @Override
     protected boolean fetchNext()
     {
-        return items.hasNext() && next( items.next() );
+        return items.hasNext() && next( items.next().id() );
     }
 }

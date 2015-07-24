@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
@@ -34,19 +35,24 @@ public abstract class LuceneUtil
     {
         close( (Object) writer );
     }
-    
+
     static void close( IndexSearcher searcher )
     {
         close( (Object) searcher );
     }
-    
+
+    static void close( IndexReader reader )
+    {
+        close( (Object) reader );
+    }
+
     private static void close( Object object )
     {
         if ( object == null )
         {
             return;
         }
-        
+
         try
         {
             if ( object instanceof IndexWriter )
@@ -57,13 +63,17 @@ public abstract class LuceneUtil
             {
                 ((IndexSearcher) object).close();
             }
+            else if ( object instanceof IndexReader )
+            {
+                ((IndexReader) object).close();
+            }
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
     }
-    
+
     /**
      * Will create a {@link Query} with a query for numeric ranges, that is
      * values that have been indexed using {@link ValueContext#indexNumeric()}.
@@ -71,7 +81,7 @@ public abstract class LuceneUtil
      * are indexed in the index, f.ex. long, int, float and double.
      * If both {@code from} and {@code to} is {@code null} then it will default
      * to int.
-     * 
+     *
      * @param key the property key to query.
      * @param from the low end of the range (inclusive)
      * @param to the high end of the range (inclusive)

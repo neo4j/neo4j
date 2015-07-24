@@ -25,6 +25,8 @@ import java.util.Map;
 
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.index.impl.lucene.CommitContext.DocumentContext;
+import org.neo4j.index.impl.lucene.EntityId.IdData;
+import org.neo4j.index.impl.lucene.EntityId.RelationshipData;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
@@ -60,7 +62,8 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
         String key = definitions.getKey( command.getKeyId() );
         Object value = command.getValue();
         context.ensureWriterInstantiated();
-        context.indexType.addToDocument( context.getDocument( command.getEntityId(), true ).document, key, value );
+        context.indexType.addToDocument( context.getDocument( new IdData( command.getEntityId() ), true ).document,
+                key, value );
         context.dataSource.invalidateCache( context.identifier, key, value );
         return false;
     }
@@ -72,7 +75,7 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
         String key = definitions.getKey( command.getKeyId() );
         Object value = command.getValue();
         context.ensureWriterInstantiated();
-        RelationshipId entityId = RelationshipId.of( command.getEntityId(),
+        RelationshipData entityId = new RelationshipData( command.getEntityId(),
                 command.getStartNode(), command.getEndNode() );
         context.indexType.addToDocument( context.getDocument( entityId, true ).document, key, value );
         context.dataSource.invalidateCache( context.identifier, key, value );
@@ -86,7 +89,7 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
         String key = definitions.getKey( command.getKeyId() );
         Object value = command.getValue();
         context.ensureWriterInstantiated();
-        DocumentContext document = context.getDocument( command.getEntityId(), false );
+        DocumentContext document = context.getDocument( new IdData( command.getEntityId() ), false );
         if ( document != null )
         {
             context.indexType.removeFromDocument( document.document, key, value );

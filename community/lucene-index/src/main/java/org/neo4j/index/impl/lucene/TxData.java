@@ -29,21 +29,21 @@ import org.neo4j.index.lucene.QueryContext;
 abstract class TxData
 {
     final LuceneIndex index;
-    
+
     TxData( LuceneIndex index )
     {
         this.index = index;
     }
 
-    abstract void add( TxDataHolder holder, Object entityId, String key, Object value );
-    
-    abstract void remove( TxDataHolder holder, Object entityId, String key, Object value );
+    abstract void add( TxDataHolder holder, EntityId entityId, String key, Object value );
 
-    abstract Collection<Long> query( TxDataHolder holder, Query query, QueryContext contextOrNull );
+    abstract void remove( TxDataHolder holder, EntityId entityId, String key, Object value );
 
-    abstract Collection<Long> get( TxDataHolder holder, String key, Object value );
-    
-    abstract Collection<Long> getOrphans( String key );
+    abstract Collection<EntityId> query( TxDataHolder holder, Query query, QueryContext contextOrNull );
+
+    abstract Collection<EntityId> get( TxDataHolder holder, String key, Object value );
+
+    abstract Collection<EntityId> getOrphans( String key );
 
     abstract void close();
 
