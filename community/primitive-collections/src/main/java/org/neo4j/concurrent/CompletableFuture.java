@@ -137,7 +137,10 @@ public class CompletableFuture<T> implements Future<T>
     @Override
     public T get( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException, TimeoutException
     {
-        latch.await( timeout, unit );
+        if( !latch.await( timeout, unit ) )
+        {
+            throw new TimeoutException();
+        }
         return state.get().get();
     }
 }
