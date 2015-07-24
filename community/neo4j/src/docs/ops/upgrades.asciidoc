@@ -5,10 +5,12 @@ Upgrading
 [IMPORTANT]
 This section describes upgrading a single Neo4j instance.
 Upgrading a Neo4j HA cluster (Neo4j Enterprise) requires a very specific process be followed.
-Please refer to <<ha-upgrade-guide>>.
+Please see 
+ifndef::upgradetext[<<ha-upgrade-guide>>.]
+ifdef::upgradetext['Upgrade of a Neo4j HA Cluster' at http://neo4j.com/docs/{neo4j-version}/ha-upgrade-guide.html.]
 
 A database created by an older version of Neo4j will be upgraded during startup when opened by Neo4j {neo4j-version}.
-Whilst this upgrade will occur automatically for minor changes, larger migrations require explicit configuration before Neo4j will start.
+While this upgrade will occur automatically for minor changes, larger migrations require explicit configuration before Neo4j will start.
 
 Each Neo4j version supports upgrading from a limited number of previous versions.
 These upgrades are either automatic, or require explicit configuration to allow them.
@@ -41,7 +43,10 @@ To perform a normal store upgrade (for minor changes to the database store):
 +
 [IMPORTANT]
 It is strongly advised to make a copy of the database store directory at this time, to use as a backup in case rollback/downgrade is required.
-This is not necessary if a backup has been made using the <<operations-backup, online backup tool>>, available with Neo4j Enterprise.
+This is not necessary if a backup has been made using the 
+ifndef::upgradetext[<<operations-backup, online backup tool>>, ]
+ifdef::upgradetext[online backup tool (see http://neo4j.com/docs/{neo4j-version}/operations-backup.html), ]
+available with Neo4j Enterprise.
 
 . Start up Neo4j.
 
@@ -71,4 +76,7 @@ It is suggested to have available free disk space equivalent to at least 1.5 tim
 *Cypher compatibility*:
 The Cypher language is rapidly evolving, and may change between Neo4j versions (although not between patch releases).
 However, Neo4j supports compatibility directives for Cypher, that allow explicitly selecting a language version.
-This is possible to do for individual statements, or globally, as described in the <<cypher-compatibility, Cypher Compatibility section>>.
+This is possible to do for individual statements, or globally, as described in the 
+ifndef::upgradetext[<<cypher-compatibility, Cypher Compatibility section>>.]
+ifdef::upgradetext[Cypher Compatibility section at see http://neo4j.com/docs/{neo4j-version}/cypher-compatibility.html.]
+
