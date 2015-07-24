@@ -92,6 +92,10 @@ class IndexHintException(identifier: String, label: String, property: String, me
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.indexHintException(identifier, label, property, message, this)
 }
 
+class JoinHintException(identifier: String, message: String) extends CypherException {
+  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.joinHintException(identifier, message, this)
+}
+
 class LabelScanHintException(identifier: String, label: String, message: String) extends CypherException {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.labelScanHintException(identifier, label, message, this)
 }

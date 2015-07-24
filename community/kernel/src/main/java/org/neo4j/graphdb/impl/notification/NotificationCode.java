@@ -59,6 +59,11 @@ public enum NotificationCode
         Status.Schema.NoSuchIndex,
         "The hinted index does not exist, please check the schema"
     ),
+    JOIN_HINT_UNFULFILLABLE(
+        SeverityLevel.WARNING,
+        Status.Statement.JoinUnsupportedWarning,
+        "The hinted hash join was not planned"
+    ),
     LENGTH_ON_NON_PATH(
         SeverityLevel.WARNING,
         Status.Statement.DeprecationWarning,

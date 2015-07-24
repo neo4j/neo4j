@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Collection, Equals, HasLabels, Identifier, In, LabelName, LabelToken, Not, Property, PropertyKeyName, PropertyKeyToken, StringLiteral}
+import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
@@ -87,5 +87,42 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), SingleQueryExpression(StringLiteral("Andres") _), Set.empty)(solved)
       )(solved)
     )
+  }
+
+  test("should plan hash join when join hint is used") {
+    val cypherQuery = """
+                        |MATCH (a:A)-[r1:X]->(b)-[r2:X]->(c:C)
+                        |USING JOIN ON b
+                        |WHERE a.prop = c.prop
+                        |RETURN b""".stripMargin
+
+    val result = (new given {
+      cardinality = mapCardinality {
+        // node label scan
+        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
+        // all node scan
+        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
+        case _ => Double.MaxValue
+      }
+    } planFor cypherQuery).innerPlan
+
+    val expected =
+      Selection(
+        Seq(Not(Equals(Identifier("r1") _, Identifier("r2") _) _) _,
+          In(Property(Identifier("a") _, PropertyKeyName("prop") _) _,
+            Collection(List(Property(Identifier("c") _, PropertyKeyName("prop") _) _)) _) _
+        ),
+        NodeHashJoin(
+          Set(IdName("b")),
+          Expand(
+            NodeByLabelScan(IdName("a"), LazyLabel("A"), Set.empty)(solved),
+            IdName("a"), Direction.OUTGOING, Seq(RelTypeName("X") _), IdName("b"), IdName("r1"), ExpandAll)(solved),
+          Expand(
+            NodeByLabelScan(IdName("c"), LazyLabel("C"), Set.empty)(solved),
+            IdName("c"), Direction.INCOMING, Seq(RelTypeName("X") _), IdName("b"), IdName("r2"), ExpandAll)(solved)
+        )(solved)
+      )(solved)
+
+    result shouldEqual expected
   }
 }

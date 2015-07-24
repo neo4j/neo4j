@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientError;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientNotification;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
@@ -163,6 +162,7 @@ public interface Status
         PlannerUnsupportedWarning( ClientNotification, "This query is not supported by the COST planner." ),
         RuntimeUnsupportedWarning( ClientNotification, "This query is not supported by the compiled runtime." ),
         DeprecationWarning( ClientNotification, "This feature is deprecated and will be removed in future versions." ),
+        JoinUnsupportedWarning( ClientNotification, "The database was unable to plan hash join." ),
         ;
 
         private final Code code;

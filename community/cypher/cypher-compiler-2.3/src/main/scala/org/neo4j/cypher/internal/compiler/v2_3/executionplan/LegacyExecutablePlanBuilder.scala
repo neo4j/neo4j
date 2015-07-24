@@ -146,6 +146,7 @@ The Neo4j Team""")
    */
   private def prepare = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
+      new UnsupportedHintsRemovalBuilder,
       new UnwindBuilder,
       new LoadCSVBuilder,
       new PredicateRewriter,

@@ -35,6 +35,12 @@ public interface NotificationDetail
                     String.format( "index on :%s(%s)", labelName, propertyKeyName ), true );
         }
 
+        public static NotificationDetail join( String identifier )
+        {
+            return createNotificationDetail( "hinted hash join",
+                    String.format( "on node identifier %s", identifier ), true );
+        }
+
         public static NotificationDetail cartesianProduct( Set<String> identifiers )
         {
             StringBuilder builder = new StringBuilder();

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands
 import ExpressionConverters._
 import PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions, values => commandvalues, Hint, ReturnColumn, StartItem, PeriodicCommitQuery}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions, values => commandvalues, _}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 object StatementConverters {
@@ -231,7 +231,7 @@ object StatementConverters {
       case ast.UsingScanHint(identifier, label) =>
         commands.NodeByLabel(identifier.name, label.name)
       case ast.UsingJoinHint(identifier) =>
-        ???
+        commands.NodeJoin(identifier.name)
     }
   }
 

@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.v2_3.ast.UsingJoinHint
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{LogicalPlan, NodeHashJoin, PatternRelationship}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin, PatternRelationship}
 
 case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
 
@@ -30,8 +31,8 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
     val goalSize = goal.size / 2
 
     val result: Iterator[Iterator[NodeHashJoin]] =
-      for(
-        leftGoal <- goal.subsets if leftGoal.size <= goalSize;
+      for (
+        leftGoal <- goal.subsets() if leftGoal.size <= goalSize;
         lhs <- table(leftGoal);
         leftNodes = lhs.solved.graph.patternNodes -- qg.argumentIds;
         rightGoal = goal &~ leftGoal; // bit set -- operator
@@ -39,9 +40,14 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
         rightNodes = rhs.solved.graph.patternNodes;
         overlap = leftNodes intersect rightNodes if overlap.nonEmpty
       ) yield {
+
+        val hints = qg.hints.collect {
+          case hint@UsingJoinHint(identifier) if overlap contains IdName(identifier.name) => hint
+        }
+
         Iterator(
-          context.logicalPlanProducer.planNodeHashJoin(overlap, lhs, rhs),
-          context.logicalPlanProducer.planNodeHashJoin(overlap, rhs, lhs)
+          context.logicalPlanProducer.planNodeHashJoin(overlap, lhs, rhs, hints),
+          context.logicalPlanProducer.planNodeHashJoin(overlap, rhs, lhs, hints)
         )
       }
 

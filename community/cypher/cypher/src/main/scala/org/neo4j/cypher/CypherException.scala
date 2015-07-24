@@ -105,6 +105,11 @@ class IndexHintException(identifier: String, label: String, property: String, me
   val status = Status.Statement.ExecutionFailure
 }
 
+class JoinHintException(identifier: String, message: String, cause: Throwable)
+  extends CypherException(message, cause) {
+  val status = Status.Statement.ExecutionFailure
+}
+
 class LabelScanHintException(identifier: String, label: String, message: String, cause: Throwable)
   extends CypherException(s"$message\nLabel: `$label`", cause) {
   val status = Status.Statement.InvalidSemantics

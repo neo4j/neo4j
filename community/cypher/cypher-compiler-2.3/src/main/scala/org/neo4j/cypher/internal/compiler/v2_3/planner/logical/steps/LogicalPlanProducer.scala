@@ -202,9 +202,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     LegacyIndexSeek(idName, hint, argumentIds)(solved)
   }
 
-  def planNodeHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan)
+  def planNodeHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint])
                       (implicit context: LogicalPlanningContext) = {
-    val solved = left.solved ++ right.solved
+
+    val plannerQuery = left.solved ++ right.solved
+    val solved = plannerQuery.updateGraph(_.addHints(hints))
     NodeHashJoin(nodes, left, right)(solved)
   }
 

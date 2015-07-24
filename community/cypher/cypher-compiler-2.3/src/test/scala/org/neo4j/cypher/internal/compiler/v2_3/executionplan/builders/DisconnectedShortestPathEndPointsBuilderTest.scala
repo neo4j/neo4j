@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_3.mutation.UpdateAction
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.FakePipe
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.graphdb.Direction
 import org.scalatest.mock.MockitoSugar
 
@@ -37,7 +35,7 @@ class DisconnectedShortestPathEndPointsBuilderTest extends BuilderTest with Mock
 
   test("should_add_nodes_for_shortest_path") {
     // Given
-    val query = q(
+    val query = newQuery(
       patterns = Seq(shortestPath)
     )
 
@@ -55,7 +53,7 @@ class DisconnectedShortestPathEndPointsBuilderTest extends BuilderTest with Mock
 
   test("should_not_add_nodes_when_they_already_exist") {
     // Given
-    val query = q(
+    val query = newQuery(
       start = Seq(
         AllNodes(identifier),
         AllNodes(otherIdentifier)),
@@ -68,7 +66,7 @@ class DisconnectedShortestPathEndPointsBuilderTest extends BuilderTest with Mock
 
   test("should_add_the_missing_nodes_when_one_end_is_done") {
     // Given
-    val query = q(
+    val query = newQuery(
       start = Seq(
         AllNodes(identifier)
       ),
@@ -87,7 +85,7 @@ class DisconnectedShortestPathEndPointsBuilderTest extends BuilderTest with Mock
 
   test("should_add_one_node_when_the_incoming_pipe_is_missing_a_node") {
     // Given
-    val query = q(
+    val query = newQuery(
       patterns = Seq(shortestPath)
     )
 
@@ -100,19 +98,4 @@ class DisconnectedShortestPathEndPointsBuilderTest extends BuilderTest with Mock
     // Then
     assert(plan.query.start.toList === Seq(Unsolved(AllNodes(otherIdentifier))))
   }
-
-  private def q(start: Seq[StartItem] = Seq(),
-                where: Seq[Predicate] = Seq(),
-                updates: Seq[UpdateAction] = Seq(),
-                patterns: Seq[Pattern] = Seq(),
-                returns: Seq[ReturnColumn] = Seq(),
-                tail: Option[PartiallySolvedQuery] = None) =
-    PartiallySolvedQuery().copy(
-      start = start.map(Unsolved(_)),
-      where = where.map(Unsolved(_)),
-      patterns = patterns.map(Unsolved(_)),
-      returns = returns.map(Unsolved(_)),
-      updates = updates.map(Unsolved(_)),
-      tail = tail
-    )
 }
