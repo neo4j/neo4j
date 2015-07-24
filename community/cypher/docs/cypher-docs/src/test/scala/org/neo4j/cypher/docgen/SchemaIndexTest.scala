@@ -89,12 +89,32 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     )
   }
 
-  @Test def use_index_with_where() {
+  @Test def use_index_with_where_using_equality() {
     testQuery(
-      title = "Use index with WHERE",
-      text = "Indexes are also automatically used for equality comparisons of a indexed property in the WHERE clause." +
+      title = "Use index with WHERE using equality",
+      text = "Indexes are also automatically used for equality comparisons of an indexed property in the WHERE clause. " +
         "If you for some reason want to hint to specific indexes, see <<query-using>>.",
       queryText = "match (person:Person) WHERE person.name = 'Andres' return person",
+      optionalResultExplanation = "",
+      assertions = {
+        (p) =>
+          assertEquals(1, p.size)
+
+          checkPlanDescription(p)("SchemaIndex", "NodeIndexSeek")
+      }
+    )
+  }
+
+  @Test def use_index_with_where_using_inequality() {
+    // Need to make index preferable in terms of cost
+    executePreparationQueries((0 to 300).map { i =>
+      "CREATE (:Person)"
+    }.toList)
+    testQuery(
+      title = "Use index with WHERE using inequality",
+      text = "Indexes are also automatically used for inequality (range) comparisons of an indexed property in the WHERE clause. " +
+        "If you for some reason want to hint to specific indexes, see <<query-using>>.",
+      queryText = "match (person:Person) WHERE person.name > 'B' return person",
       optionalResultExplanation = "",
       assertions = {
         (p) =>

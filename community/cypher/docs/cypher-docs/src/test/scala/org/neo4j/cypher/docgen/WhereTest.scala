@@ -239,4 +239,22 @@ subgraphs where `a` and `b` do not have a directed relationship chain between th
       optionalResultExplanation = "This query shows how to check if a property exists in a literal collection.",
       assertions = (p) => assertEquals(List(node("Tobias"),node("Peter")), p.columnAs[Node]("a").toList))
   }
+
+  @Test def simple_range() {
+    testQuery(
+      title = "Simple range",
+      text = "To check for an element being inside a specific range, use the inequality operators `<`, `<=`, `>=`, `>`.",
+      queryText = """match (a) where a.name >= 'Peter' return a""",
+      optionalResultExplanation = "This query shows how to check if a property exists in a literal collection.",
+      assertions = (p) => assertEquals(List(node("Tobias"),node("Peter")), p.columnAs[Node]("a").toList))
+  }
+
+  @Test def composite_range() {
+    testQuery(
+      title = "Composite range",
+      text = "Several inequalities can be used to construct a range.",
+      queryText = """match (a) where a.name > 'Andres' AND a.name <= 'Tobias' return a""",
+      optionalResultExplanation = "This query shows how to check if a property exists in a literal collection.",
+      assertions = (p) => assertEquals(List(node("Tobias"),node("Peter")), p.columnAs[Node]("a").toList))
+  }
 }
