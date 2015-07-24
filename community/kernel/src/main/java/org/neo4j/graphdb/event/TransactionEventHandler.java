@@ -26,7 +26,8 @@ import org.neo4j.graphdb.TransactionFailureException;
 /**
  * An event handler interface for Neo4j Transaction events. Once it has been
  * registered at a {@link GraphDatabaseService} instance it will receive events
- * about what has happened in each transaction which is about to be committed.
+ * about what has happened in each transaction which is about to be committed
+ * and has any data that is accessible via {@link TransactionData}.
  * Handlers won't get notified about transactions which hasn't performed any
  * write operation or won't be committed (either if
  * {@link Transaction#success()} hasn't been called or the transaction has been
@@ -68,7 +69,8 @@ import org.neo4j.graphdb.TransactionFailureException;
 public interface TransactionEventHandler<T>
 {
     /**
-     * Invoked when a transaction is about to be committed.
+     * Invoked when a transaction that has changes accessible via {@link TransactionData}
+     * is about to be committed.
      *
      * If this method throws an exception the transaction will be rolled back
      * and a {@link TransactionFailureException} will be thrown from
@@ -76,7 +78,7 @@ public interface TransactionEventHandler<T>
      *
      * The transaction is still open when this method is invoked, making it
      * possible to perform mutating operations in this method. This is however
-     * highly discouraged. Changes made in this method are not guaranteed to be
+     * highly discouraged since changes made in this method are not guaranteed to be
      * visible by this or other {@link TransactionEventHandler}s.
      *
      * @param data the changes that will be committed in this transaction.
@@ -90,7 +92,10 @@ public interface TransactionEventHandler<T>
     /**
      * Invoked after the transaction has been committed successfully.
      * Any {@link TransactionData} being passed in to this method is guaranteed
-     * to first be have been called with {@link #beforeCommit(TransactionData)}.
+     * to first have been called with {@link #beforeCommit(TransactionData)}.
+     * At the point of calling this method the transaction have been closed
+     * and so accessing data outside that of what the {@link TransactionData}
+     * can provide will require a new transaction to be opened.
      *
      * @param data the changes that were committed in this transaction.
      * @param state the object returned by
@@ -102,9 +107,12 @@ public interface TransactionEventHandler<T>
      * Invoked after the transaction has been rolled back if committing the
      * transaction failed for some reason.
      * Any {@link TransactionData} being passed in to this method is guaranteed
-     * to first be have been called with {@link #beforeCommit(TransactionData)}.
+     * to first have been called with {@link #beforeCommit(TransactionData)}.
+     * At the point of calling this method the transaction have been closed
+     * and so accessing data outside that of what the {@link TransactionData}
+     * can provide will require a new transaction to be opened.
      *
-     * @param data the changes that were committed in this transaction.
+     * @param data the changes that were attempted to be committed in this transaction.
      * @param state the object returned by
      *            {@link #beforeCommit(TransactionData)}.
      */
