@@ -105,6 +105,10 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
     private boolean deserializeNextFromSource() throws IOException
     {
         Header.Entry[] entries = header.entries();
+        if ( entries.length == 0 )
+        {
+            return false;
+        }
         int fieldIndex = 0;
         try
         {

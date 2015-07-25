@@ -42,6 +42,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -622,7 +623,6 @@ public class ImportToolTest
         }
     }
 
-
     @Test
     public void shouldPrintReferenceLinkOnDataImportErrors() throws Exception
     {
@@ -666,6 +666,26 @@ public class ImportToolTest
         {
             // EXPECT
             assertTrue( suppressOutput.getErrorVoice().containsMessage( message ) );
+        }
+    }
+
+    @Test
+    public void shouldSkipEmptyFiles() throws Exception
+    {
+        // GIVEN
+        File data = data( "" );
+
+        // WHEN
+        importTool( "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", data.getAbsolutePath() );
+
+        // THEN
+        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
+        try ( Transaction tx = graphDatabaseService.beginTx() )
+        {
+            ResourceIterator<Node> allNodes = GlobalGraphOperations.at( graphDatabaseService ).getAllNodes().iterator();
+            assertFalse( "Expected database to be empty", allNodes.hasNext() );
+            tx.success();
         }
     }
 
