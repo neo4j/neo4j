@@ -27,6 +27,7 @@ import java.util.Set;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
@@ -37,6 +38,8 @@ import org.neo4j.kernel.api.constraints.MandatoryNodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.MandatoryRelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.cursor.DegreeItem;
+import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -394,7 +397,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             PropertyConstraint constraint = constraints.next();
             if ( constraint.type() == ConstraintType.MANDATORY_NODE_PROPERTY ||
-                 constraint.type() == ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY )
+                    constraint.type() == ConstraintType.MANDATORY_RELATIONSHIP_PROPERTY )
             {
                 return new MandatoryPropertyEnforcer( operations.entityReadOperations(), txStateToRecordStateVisitor,
                         this, storeLayer, storeStatement );
@@ -509,7 +512,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 {
                     if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
                     {
-                        throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(), "" );
+                        throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(),
+                                "" );
                     }
                 }
                 finally
@@ -703,30 +707,35 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             try ( StoreStatement statement = storeLayer.acquireStatement() )
             {
                 counts.incrementNodeCount( ANY_LABEL, -1 );
-                PrimitiveIntIterator labels = storeLayer.nodeGetLabels( statement, id );
-                if ( labels.hasNext() )
+                try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
                 {
-                    final int[] removed = PrimitiveIntCollections.asArray( labels );
-                    for ( int label : removed )
+                    if ( node.next() )
                     {
-                        counts.incrementNodeCount( label, -1 );
-                    }
-                    storeLayer.nodeVisitDegrees( statement, id, new DegreeVisitor()
-                    {
-                        @Override
-                        public void visitDegree( int type, int outgoing, int incoming )
+                        // TODO Rewrite this to use cursors directly instead of iterator
+                        PrimitiveIntIterator labels = node.get().getLabels();
+                        if ( labels.hasNext() )
                         {
+                            final int[] removed = PrimitiveIntCollections.asArray( labels );
                             for ( int label : removed )
                             {
-                                updateRelationshipsCountsFromDegrees( type, label, -outgoing, -incoming );
+                                counts.incrementNodeCount( label, -1 );
+                            }
+
+                            try ( Cursor<DegreeItem> degrees = node.get().degrees() )
+                            {
+                                while ( degrees.next() )
+                                {
+                                    DegreeItem degree = degrees.get();
+                                    for ( int label : removed )
+                                    {
+                                        updateRelationshipsCountsFromDegrees( degree.type(), label, -degree.outgoing(),
+                                                -degree.incoming() );
+                                    }
+                                }
                             }
                         }
-                    } );
+                    }
                 }
-            }
-            catch ( EntityNotFoundException e )
-            {
-                // this should not happen, but I guess it means the node we deleted did not exist...?
             }
             recordState.nodeDelete( id );
         }
@@ -843,21 +852,30 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     }
                     // get the relationship counts from *before* this transaction,
                     // the relationship changes will compensate for what happens during the transaction
-                    storeLayer.nodeVisitDegrees( statement, id, new DegreeVisitor()
+                    try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
                     {
-                        @Override
-                        public void visitDegree( int type, int outgoing, int incoming )
+                        if ( node.next() )
                         {
-                            for ( Integer label : added )
+                            try ( Cursor<DegreeItem> degrees = node.get().degrees() )
                             {
-                                updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming );
-                            }
-                            for ( Integer label : removed )
-                            {
-                                updateRelationshipsCountsFromDegrees( type, label, -outgoing, -incoming );
+                                while ( degrees.next() )
+                                {
+                                    DegreeItem degree = degrees.get();
+
+                                    for ( Integer label : added )
+                                    {
+                                        updateRelationshipsCountsFromDegrees( degree.type(), label, degree.outgoing(),
+                                                degree.incoming() );
+                                    }
+                                    for ( Integer label : removed )
+                                    {
+                                        updateRelationshipsCountsFromDegrees( degree.type(), label, -degree.outgoing(),
+                                                -degree.incoming() );
+                                    }
+                                }
                             }
                         }
-                    } );
+                    }
                 }
             }
 
@@ -958,7 +976,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 throw new IllegalStateException(
                         "Mandatory node property constraint to be removed should exist, since its existence should " +
-                        "have been validated earlier and the schema should have been locked." );
+                                "have been validated earlier and the schema should have been locked." );
             }
         }
 
@@ -966,12 +984,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void visitAddedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint element )
         {
             clearState = true;
-            recordState.createSchemaRule( MandatoryRelationshipPropertyConstraintRule.mandatoryRelPropertyConstraintRule(
-                    schemaStorage.newRuleId(), element.relationshipType(), element.propertyKey() ) );
+            recordState.createSchemaRule(
+                    MandatoryRelationshipPropertyConstraintRule.mandatoryRelPropertyConstraintRule(
+                            schemaStorage.newRuleId(), element.relationshipType(), element.propertyKey() ) );
         }
 
         @Override
-        public void visitRemovedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint element )
+        public void visitRemovedRelationshipMandatoryPropertyConstraint( MandatoryRelationshipPropertyConstraint
+                element )
         {
             try
             {
@@ -984,7 +1004,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 throw new IllegalStateException(
                         "Mandatory relationship property constraint to be removed should exist, since its existence " +
-                        "should have been validated earlier and the schema should have been locked." );
+                                "should have been validated earlier and the schema should have been locked." );
             }
         }
 
@@ -1019,7 +1039,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void updateRelationshipsCountsFromDegrees( int type, int label, int outgoing, int incoming )
+    private void updateRelationshipsCountsFromDegrees( int type, int label, long outgoing, long incoming )
     {
         // untyped
         counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, outgoing );
@@ -1047,12 +1067,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         try ( StoreStatement statement = storeLayer.acquireStatement() )
         {
-            return StateHandlingStatementOperations.nodeGetLabels( storeLayer, statement,
-                    txState, nodeId );
-        }
-        catch ( EntityNotFoundException ex )
-        {
-            return PrimitiveIntCollections.emptyIterator();
+            try ( Cursor<NodeItem> node = operations.entityReadOperations().nodeCursor( this, statement, nodeId ) )
+            {
+                if ( node.next() )
+                {
+                    return node.get().getLabels();
+                }
+                else
+                {
+                    return PrimitiveIntCollections.emptyIterator();
+
+                }
+            }
         }
     }
 

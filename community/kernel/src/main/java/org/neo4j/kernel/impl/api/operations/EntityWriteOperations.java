@@ -33,8 +33,8 @@ public interface EntityWriteOperations
 
     long relationshipCreate( KernelStatement statement,
             int relationshipTypeId,
-            long startNodeId,
-            long endNodeId ) throws EntityNotFoundException;
+            NodeItem startNodeId,
+            NodeItem endNodeId ) throws EntityNotFoundException;
 
     long nodeCreate( KernelStatement statement );
 

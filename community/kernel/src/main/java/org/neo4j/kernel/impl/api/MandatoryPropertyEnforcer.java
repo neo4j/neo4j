@@ -92,7 +92,7 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
         validateNode( id );
         super.visitNodeLabelChanges( id, added, removed );
     }
-
+    
     @Override
     public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
             throws ConstraintValidationKernelException
@@ -108,6 +108,7 @@ public class MandatoryPropertyEnforcer extends TxStateVisitor.Adapter
         validateRelationship( id );
         super.visitRelPropertyChanges( id, added, changed, removed );
     }
+    
 
 
     private void validateNode( long nodeId ) throws ConstraintValidationKernelException

@@ -27,7 +27,6 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -150,7 +149,7 @@ public class TxStateTransactionDataViewTest
         Node node = mock( Node.class );
         when( node.getId() ).thenReturn( 1l );
         when( storeStatement.acquireSingleNodeCursor( 1 ) ).thenReturn( asNodeCursor( 1 ) );
-        when( ops.nodeGetLabels( storeStatement, 1l ) ).thenReturn( PrimitiveIntCollections.emptyIterator() );
+//        when( ops.nodeGetLabels( storeStatement, 1l ) ).thenReturn( PrimitiveIntCollections.emptyIterator() );
 
         // When & Then
         assertThat( snapshot().isDeleted( node ), equalTo( true ) );
@@ -262,7 +261,7 @@ public class TxStateTransactionDataViewTest
         // Given
         state.nodeDoAddLabel( 2, 1l );
         when( ops.labelGetName( 2 ) ).thenReturn( "theLabel" );
-        when( ops.nodeGetLabels( storeStatement, 1l ) ).thenReturn( PrimitiveIntCollections.emptyIterator() );
+        when( storeStatement.acquireSingleNodeCursor( 1 ) ).thenReturn( asNodeCursor( 1 ) );
 
         // When
         Iterable<LabelEntry> labelEntries = snapshot().assignedLabels();

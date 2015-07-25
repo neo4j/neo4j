@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.cursor;
 
 import org.neo4j.function.IntSupplier;
-import org.neo4j.function.ToIntFunction;
 
 /**
  * Represents a single label on a node
@@ -28,12 +27,4 @@ import org.neo4j.function.ToIntFunction;
 public interface LabelItem
         extends IntSupplier
 {
-    ToIntFunction<LabelItem> GET_LABEL = new ToIntFunction<LabelItem>()
-    {
-        @Override
-        public int apply( LabelItem item )
-        {
-            return item.getAsInt();
-        }
-    };
 }

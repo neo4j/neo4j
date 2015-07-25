@@ -25,10 +25,12 @@ import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
@@ -63,7 +65,9 @@ public class DiskLayerLabelTest extends DiskLayerTest
         }
 
         // THEN
-        PrimitiveIntIterator readLabels = disk.nodeGetLabels( disk.acquireStatement(), nodeId );
+        Cursor<NodeItem> node = disk.acquireStatement().acquireSingleNodeCursor( nodeId );
+        node.next();
+        PrimitiveIntIterator readLabels = node.get().getLabels();
         assertEquals( new HashSet<>( asList( labelId1, labelId2 ) ),
                 addToCollection( readLabels, new HashSet<Integer>() ) );
     }

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.cursor;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
 import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.cursor.EntityItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -32,7 +33,8 @@ import org.neo4j.kernel.impl.util.Cursors;
 /**
  * Overlays transaction state on a {@link RelationshipItem} cursor.
  */
-public abstract class TxAbstractRelationshipCursor implements Cursor<RelationshipItem>, RelationshipItem,
+public abstract class TxAbstractRelationshipCursor
+        extends EntityItem.EntityItemHelper implements Cursor<RelationshipItem>, RelationshipItem,
         RelationshipVisitor<RuntimeException>
 {
     protected final TransactionState state;

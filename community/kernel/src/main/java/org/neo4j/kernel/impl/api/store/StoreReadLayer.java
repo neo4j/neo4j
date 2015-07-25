@@ -23,13 +23,9 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.cursor.Cursor;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -41,7 +37,6 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.core.Token;
@@ -56,29 +51,6 @@ public interface StoreReadLayer
 {
     // Cursor
     StoreStatement acquireStatement();
-
-    PrimitiveIntIterator nodeGetLabels( StoreStatement statement, long nodeId ) throws EntityNotFoundException;
-
-    RelationshipIterator nodeListRelationships( StoreStatement statement,
-            long nodeId,
-            Direction direction )
-            throws EntityNotFoundException;
-
-    RelationshipIterator nodeListRelationships( StoreStatement statement, long nodeId, Direction direction,
-            int[] relTypes ) throws EntityNotFoundException;
-
-    int nodeGetDegree( StoreStatement statement, long nodeId, Direction direction )
-            throws EntityNotFoundException;
-
-    int nodeGetDegree( StoreStatement statement, long nodeId,
-            Direction direction,
-            int relType )
-            throws EntityNotFoundException;
-
-    boolean nodeVisitDegrees( StoreStatement statement, long nodeId, DegreeVisitor visitor );
-
-    PrimitiveIntIterator nodeGetRelationshipTypes( StoreStatement statement, long nodeId )
-            throws EntityNotFoundException;
 
     Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
 
@@ -192,8 +164,4 @@ public interface StoreReadLayer
     long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    Cursor<NodeItem> nodesGetAllCursor( StoreStatement statement );
-
-    Cursor<RelationshipItem> relationshipsGetAllCursor( StoreStatement storeStatement );
 }

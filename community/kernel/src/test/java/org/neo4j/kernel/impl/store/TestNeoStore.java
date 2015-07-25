@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -33,6 +27,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
@@ -84,6 +84,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestNeoStore
@@ -412,39 +413,36 @@ public class TestNeoStore
         }
         assertEquals( 3, count );
         count = 0;
-        PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), node, Direction.BOTH );
-        while ( relationships.hasNext() )
+
+        try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
+                .acquireSingleNodeCursor(
+                node ) )
         {
-            long rel = relationships.next();
-            if ( rel == rel1 )
+            nodeCursor.next();
+
+            try ( Cursor<RelationshipItem> relationships = nodeCursor.get().relationships( Direction.BOTH ) )
             {
-                storeLayer.relationshipVisit( rel, new RelationshipVisitor<RuntimeException>()
+                while ( relationships.next() )
                 {
-                    @Override
-                    public void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
+                    long rel = relationships.get().id();
+                    if ( rel == rel1 )
                     {
-                        assertEquals( node, startNode );
-                        assertEquals( relType1, type );
+                        assertEquals( node, relationships.get().startNode() );
+                        assertEquals( relType1, relationships.get().type() );
                     }
-                } );
-            }
-            else if ( rel == rel2 )
-            {
-                storeLayer.relationshipVisit( rel, new RelationshipVisitor<RuntimeException>()
-                {
-                    @Override
-                    public void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
+                    else if ( rel == rel2 )
                     {
-                        assertEquals( node, endNode );
-                        assertEquals( relType2, type );
+                        assertEquals( node, relationships.get().endNode() );
+                        assertEquals( relType2, relationships.get().type() );
                     }
-                } );
+                    else
+                    {
+                        throw new IOException();
+                    }
+                    count++;
+
+                }
             }
-            else
-            {
-                throw new IOException();
-            }
-            count++;
         }
         assertEquals( 2, count );
     }
@@ -506,39 +504,34 @@ public class TestNeoStore
         assertEquals( 3, count );
         count = 0;
 
-        PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), node, Direction.BOTH );
-        while ( relationships.hasNext() )
+        try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement().acquireSingleNodeCursor(
+                node ) )
         {
-            long rel = relationships.next();
-            if ( rel == rel1 )
+            nodeCursor.next();
+
+            try ( Cursor<RelationshipItem> relationships = nodeCursor.get().relationships( Direction.BOTH ) )
             {
-                storeLayer.relationshipVisit( rel, new RelationshipVisitor<RuntimeException>()
+                while ( relationships.next() )
                 {
-                    @Override
-                    public void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
+                    long rel = relationships.get().id();
+                    if ( rel == rel1 )
                     {
-                        assertEquals( node, endNode );
-                        assertEquals( relType1, type );
+                        assertEquals( node, relationships.get().endNode() );
+                        assertEquals( relType1, relationships.get().type() );
                     }
-                } );
-            }
-            else if ( rel == rel2 )
-            {
-                storeLayer.relationshipVisit( rel, new RelationshipVisitor<RuntimeException>()
-                {
-                    @Override
-                    public void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
+                    else if ( rel == rel2 )
                     {
-                        assertEquals( node, startNode );
-                        assertEquals( relType2, type );
+                        assertEquals( node, relationships.get().startNode() );
+                        assertEquals( relType2, relationships.get().type() );
                     }
-                } );
+                    else
+                    {
+                        throw new IOException();
+                    }
+                    count++;
+
+                }
             }
-            else
-            {
-                throw new IOException();
-            }
-            count++;
         }
         assertEquals( 2, count );
     }
@@ -738,12 +731,10 @@ public class TestNeoStore
         assertEquals( 3, propertyCounter.count );
         assertRelationshipData( rel, firstNode, secondNode, relType );;
         transaction.relDelete( rel );
-        PrimitiveLongIterator first = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), firstNode, Direction.BOTH );
-        first.next();
-        PrimitiveLongIterator second = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), secondNode, Direction.BOTH );
-        second.next();
-        assertTrue( first.hasNext() );
-        assertTrue( second.hasNext() );
+
+        assertHasRelationships( firstNode );
+
+        assertHasRelationships( secondNode );
     }
 
     private static class CountingPropertyReceiver implements PropertyReceiver
@@ -801,10 +792,24 @@ public class TestNeoStore
         assertEquals( 3, propertyCounter.count );
         assertRelationshipData( rel, firstNode, secondNode, relType );
         transaction.relDelete( rel );
-        PrimitiveLongIterator first = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), firstNode, Direction.BOTH );
-        PrimitiveLongIterator second = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), secondNode, Direction.BOTH );
-        assertTrue( first.hasNext() );
-        assertTrue( second.hasNext() );
+
+        assertHasRelationships( firstNode );
+
+        assertHasRelationships( secondNode );
+
+    }
+
+    private void assertHasRelationships( long node )
+    {
+        try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
+                .acquireSingleNodeCursor(
+
+                node ) )
+        {
+            nodeCursor.next();
+            PrimitiveLongIterator rels = nodeCursor.get().getRelationships( Direction.BOTH );
+            assertTrue( rels.hasNext() );
+        }
     }
 
     private void deleteNode1( long node, DefinedProperty prop1,
@@ -849,8 +854,7 @@ public class TestNeoStore
         CountingPropertyReceiver propertyCounter = new CountingPropertyReceiver();
         propertyLoader.nodeLoadProperties( node, propertyCounter );
         assertEquals( 3, propertyCounter.count );
-        PrimitiveLongIterator rels = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), node, Direction.BOTH );
-        assertTrue( rels.hasNext() );
+        assertHasRelationships( node );
         transaction.nodeDelete( node );
     }
 
@@ -896,8 +900,9 @@ public class TestNeoStore
         CountingPropertyReceiver propertyCounter = new CountingPropertyReceiver();
         propertyLoader.nodeLoadProperties( node, propertyCounter );
         assertEquals( 3, propertyCounter.count );
-        PrimitiveLongIterator rels = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), node, Direction.BOTH );
-        assertTrue( rels.hasNext() );
+
+        assertHasRelationships( node );
+
         transaction.nodeDelete( node );
     }
 
@@ -940,12 +945,18 @@ public class TestNeoStore
         startTx();
         for ( int i = 0; i < 3; i += 2 )
         {
-            PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), nodeIds[i], Direction.BOTH
-            );
-            while ( relationships.hasNext() )
+            try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
+                    .acquireSingleNodeCursor(
+                    nodeIds[i] ) )
             {
-                transaction.relDelete( relationships.next() );
+                nodeCursor.next();
+                PrimitiveLongIterator relationships = nodeCursor.get().getRelationships( Direction.BOTH );
+                while ( relationships.hasNext() )
+                {
+                    transaction.relDelete( relationships.next() );
+                }
             }
+
             transaction.nodeDelete( nodeIds[i] );
         }
         commitTx();
@@ -980,12 +991,18 @@ public class TestNeoStore
         startTx();
         for ( int i = 0; i < 3; i++ )
         {
-            PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( ((KernelStatement)tx.acquireStatement()).getStoreStatement(), nodeIds[i], Direction.BOTH
-            );
-            while ( relationships.hasNext() )
+            try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
+                    .acquireSingleNodeCursor(
+                    nodeIds[i] ) )
             {
-                transaction.relDelete( relationships.next() );
+                nodeCursor.next();
+                PrimitiveLongIterator relationships = nodeCursor.get().getRelationships( Direction.BOTH );
+                while ( relationships.hasNext() )
+                {
+                    transaction.relDelete( relationships.next() );
+                }
             }
+
             transaction.nodeDelete( nodeIds[i] );
         }
         commitTx();
