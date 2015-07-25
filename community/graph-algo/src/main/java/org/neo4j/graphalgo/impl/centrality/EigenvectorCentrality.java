@@ -28,10 +28,11 @@ import org.neo4j.graphdb.Node;
  */
 public interface EigenvectorCentrality
 {
+    public static double DETACHED_VERTEX_CENTRALITY = 0d;
     /**
      * This can be used to retrieve the result for every node. Might return null
-     * if the node is not contained in the node set initially given, or doesn't
-     * receive a result because no relationship points to it.
+     * if the node is not contained in the node set initially given.
+     * Return {@link #DETACHED_VERTEX_CENTRALITY} if node has no relationships.
      * @param node
      *            The node for which we would like the value.
      * @return the centrality value for the given node.
